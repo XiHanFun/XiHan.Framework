@@ -9,20 +9,36 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
+/// <summary>
+/// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策：成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传。
+/// </summary>
 public sealed class UnitOfWorkMiddlewareTests
 {
+    /// <summary>
+    /// 记录调用顺序的工作单元替身；提交结果可预设，用于验证中间件对各种结果的处理。
+    /// </summary>
     private sealed class RecordingUnitOfWork : IUnitOfWork
     {
+        /// <summary>
+        /// 按发生顺序记录的调用名：begin、commit、rollback。
+        /// </summary>
         public List<string> Calls { get; } = [];
 
+        /// <summary>
+        /// <see cref="CommitAsync"/> 返回的预设结果。
+        /// </summary>
         public Result CommitResult { get; init; } = Result.Success();
 
+        /// <inheritdoc />
         public UnitOfWorkState State { get; private set; }
 
+        /// <inheritdoc />
         public string? TenantId { get; private set; }
 
+        /// <inheritdoc />
         public bool IsReadOnly { get; private set; }
 
+        /// <inheritdoc />
         public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
         {
             Calls.Add("begin");
@@ -32,6 +48,7 @@ public sealed class UnitOfWorkMiddlewareTests
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task<Result> CommitAsync(CancellationToken cancellationToken)
         {
             Calls.Add("commit");
@@ -39,6 +56,7 @@ public sealed class UnitOfWorkMiddlewareTests
             return Task.FromResult(CommitResult);
         }
 
+        /// <inheritdoc />
         public Task RollbackAsync(CancellationToken cancellationToken)
         {
             Calls.Add("rollback");
@@ -47,6 +65,9 @@ public sealed class UnitOfWorkMiddlewareTests
         }
     }
 
+    /// <summary>
+    /// 构造只注册了替身工作单元的调用上下文。
+    /// </summary>
     private static (InvocationContext Context, RecordingUnitOfWork UnitOfWork) Arrange(Result? commitResult = null)
     {
         var unitOfWork = new RecordingUnitOfWork { CommitResult = commitResult ?? Result.Success() };
@@ -70,7 +91,7 @@ public sealed class UnitOfWorkMiddlewareTests
     public async Task FailureOutcome_RollsBackWithoutCommit_AndKeepsOutcome()
     {
         var (context, unitOfWork) = Arrange();
-        var failure = Error.Validation("PERSISTENCE_VALIDATION_999", "拒绝");
+        var failure = Error.Literal("PERSISTENCE_VALIDATION_999", "Rejected.");
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, ctx =>
         {
@@ -96,7 +117,7 @@ public sealed class UnitOfWorkMiddlewareTests
     [Fact]
     public async Task CommitFailure_BecomesOutcome()
     {
-        var conflict = Error.Conflict(PersistenceErrors.Concurrency, "并发");
+        var conflict = Error.Literal(PersistenceErrors.Concurrency, "Concurrency conflict.");
         var (context, unitOfWork) = Arrange(commitResult: conflict);
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);

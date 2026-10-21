@@ -26,6 +26,6 @@ public sealed class AuthenticatedPolicy : IPolicy
         ArgumentNullException.ThrowIfNull(request);
         return ValueTask.FromResult(request.Security.Principal.IsAuthenticated
             ? AuthorizationResult.Allow()
-            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, "本调用需要认证。")));
+            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired)));
     }
 }

@@ -21,8 +21,19 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     /// </summary>
     public const string SchemeName = "Bearer";
 
+    /// <summary>
+    /// 令牌处理器；关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// </summary>
     private readonly JsonWebTokenHandler _handler = new() { MapInboundClaims = false };
+
+    /// <summary>
+    /// 由选项推出的校验参数；构造时固定。
+    /// </summary>
     private readonly TokenValidationParameters _parameters;
+
+    /// <summary>
+    /// JWT 选项；提供主体声明类型。
+    /// </summary>
     private readonly JwtOptions _options;
 
     /// <summary>
@@ -31,6 +42,7 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     public JwtAuthenticationHandler(JwtOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        // 签名、exp 与有效期始终强制；签发者与受众只在配置了才校验
         _parameters = new TokenValidationParameters
         {
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Secret)),
@@ -55,16 +67,18 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     {
         ArgumentNullException.ThrowIfNull(credential);
         var validation = await _handler.ValidateTokenAsync(credential.Value, _parameters).ConfigureAwait(false);
+        // 所有校验失败统一归为 InvalidCredential，不向调用方泄露具体原因
         if (!validation.IsValid || validation.ClaimsIdentity is null)
         {
-            return Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, "令牌无效、过期或签名不符。"));
+            return Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidToken));
         }
 
+        // MapInboundClaims 已关闭：sub、role 等声明按原始类型名进入主体，与 ApiKey 处理器的声明形态一致
         var claims = validation.ClaimsIdentity.Claims.Select(static c => new KeyValuePair<string, string>(c.Type, c.Value)).ToList();
         var subject = validation.ClaimsIdentity.FindFirst(_options.NameClaim)?.Value;
         if (string.IsNullOrWhiteSpace(subject))
         {
-            return Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, $"令牌缺少主体声明 '{_options.NameClaim}'。"));
+            return Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.TokenSubjectMissing, MessageArguments.Of(("claim", _options.NameClaim))));
         }
 
         return Result.Success(new Principal(subject, SchemeName)

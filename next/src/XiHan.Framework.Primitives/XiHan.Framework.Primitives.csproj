@@ -8,6 +8,11 @@
     <XiHanRing>0</XiHanRing>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <!-- 版本常量由构建期生成，FrameworkInfo.Version 不经反射读取程序集特性 -->
   <Target Name="GenerateFrameworkVersion" BeforeTargets="CoreCompile">
     <PropertyGroup>

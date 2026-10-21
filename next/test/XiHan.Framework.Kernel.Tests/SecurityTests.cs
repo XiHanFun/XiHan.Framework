@@ -8,8 +8,14 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// 安全原语的行为：资源名解析、主体声明查询、上下文中的安全上下文读写、有界权限注册表与授权结果转换。
+/// </summary>
 public sealed class SecurityTests
 {
+    /// <summary>
+    /// 空容器；这些测试只需要一个服务提供器来创建上下文。
+    /// </summary>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]
@@ -77,7 +83,7 @@ public sealed class SecurityTests
     public async Task AuthorizationResult_ConvertsToResult()
     {
         Assert.True(AuthorizationResult.Allow().ToResult().IsSuccess);
-        Assert.Equal("SECURITY_DENIED_002", AuthorizationResult.Deny(Error.Denied("SECURITY_DENIED_002", "拒绝")).ToResult().Error!.Code);
+        Assert.Equal("SECURITY_DENIED_002", AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "Denied.")).ToResult().Error!.Code);
         Assert.False(default(AuthorizationResult).IsAllowed);
 
         IPolicy policy = new DenyAll();
@@ -86,11 +92,20 @@ public sealed class SecurityTests
         Assert.Throws<ArgumentException>(() => new AuthorizationRequest(SecurityContext.Anonymous, " "));
     }
 
+    /// <summary>
+    /// 拒绝一切请求的策略。
+    /// </summary>
     private sealed class DenyAll : IPolicy
     {
+        /// <summary>
+        /// 策略名。
+        /// </summary>
         public string Name => "deny-all";
 
+        /// <summary>
+        /// 总是拒绝。
+        /// </summary>
         public ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
-            => ValueTask.FromResult(AuthorizationResult.Deny(Error.Denied("SECURITY_DENIED_002", "deny-all")));
+            => ValueTask.FromResult(AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all")));
     }
 }

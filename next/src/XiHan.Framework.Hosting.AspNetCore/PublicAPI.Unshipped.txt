@@ -18,13 +18,14 @@ static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator !=(XiHan.Framew
 static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.HealthResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.HealthResponse? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.AcceptedLocales(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.FormatBaggage(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! baggage) -> string!
 static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.GetXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
 static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata!
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int

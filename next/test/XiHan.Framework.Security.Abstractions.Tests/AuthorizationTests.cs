@@ -8,8 +8,14 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.Abstractions.Tests;
 
+/// <summary>
+/// 权限检查器、策略目录与授权中间件的契约测试。
+/// </summary>
 public sealed class AuthorizationTests
 {
+    /// <summary>
+    /// 测试用授予：角色授予、通配授予、用户全局授予与租户专属授予。
+    /// </summary>
     private static readonly PermissionGrant[] _grants =
     [
         new(GrantSubject.ForRole("editor"), "orders.read"),
@@ -18,12 +24,18 @@ public sealed class AuthorizationTests
         new(GrantSubject.ForUser("alice"), "reports.export", "acme"),
     ];
 
+    /// <summary>
+    /// 记录是否到达下游的终端步骤。
+    /// </summary>
     private static PipelineStep Handler(bool[] reached) => _ =>
     {
         reached[0] = true;
         return ValueTask.CompletedTask;
     };
 
+    /// <summary>
+    /// 构造带策略目录的服务：已认证策略、可选的额外策略，权限登记表只含 <c>orders.read</c>。
+    /// </summary>
     private static IServiceProvider Services(IPolicy? extra = null)
     {
         var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions());
@@ -143,7 +155,7 @@ public sealed class AuthorizationTests
         var policy = new RecordingPolicy("owner-only", request =>
         {
             seen = request;
-            return AuthorizationResult.Deny(Error.Denied("ORDERS_DENIED_001", "不是所有者"));
+            return AuthorizationResult.Deny(Error.Literal("ORDERS_DENIED_001", "Not the owner."));
         });
         var context = SecurityHosts.Context(Services(policy));
         var resource = ResourceName.Parse("xrn:xihan:orders:acme:order/42");
@@ -171,10 +183,15 @@ public sealed class AuthorizationTests
         Assert.Throws<ArgumentException>(static () => new AuthorizationRequirement(" "));
     }
 
+    /// <summary>
+    /// 把判定委托给回调的策略，用于观察中间件传入的请求。
+    /// </summary>
     private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, AuthorizationResult> evaluate) : IPolicy
     {
+        /// <inheritdoc />
         public string Name => name;
 
+        /// <inheritdoc />
         public ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
     }
 }

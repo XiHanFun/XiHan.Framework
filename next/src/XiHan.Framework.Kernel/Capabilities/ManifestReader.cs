@@ -32,11 +32,12 @@ public static class ManifestReader
         }
         catch (JsonException exception)
         {
-            return new Error(KernelErrors.InvalidManifest, $"清单不是合法的 JSON：{exception.Message}");
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", exception.Message)));
         }
 
+        // 字面量 "null" 能成功反序列化为 null，同样视为非法清单。
         return document is null
-            ? new Error(KernelErrors.InvalidManifest, "清单为空。")
+            ? new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty)
             : Convert(document);
     }
 
@@ -48,7 +49,7 @@ public static class ManifestReader
         ArgumentNullException.ThrowIfNull(path);
         if (!File.Exists(path))
         {
-            return new Error(KernelErrors.InvalidManifest, $"清单文件 '{path}' 不存在。");
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestFileMissing, MessageArguments.Of(("path", path)));
         }
 
         return Read(File.ReadAllText(path));
@@ -60,6 +61,7 @@ public static class ManifestReader
     public static string Write(Manifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
+        // 枚举统一写为小写名，与 schema 的枚举值一致；隔离边界的 kebab-case 映射与 Convert 中的读取一一对应。
         var document = new ManifestDocument
         {
             Schema = "https://spec.xihanfun.com/manifest/v1.json",
@@ -96,8 +98,13 @@ public static class ManifestReader
         return JsonSerializer.Serialize(document, ManifestJsonContext.Default.ManifestDocument);
     }
 
+    /// <summary>
+    /// 把 JSON 形态转换为 <see cref="Manifest"/>：必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+    /// </summary>
     private static Result<Manifest> Convert(ManifestDocument document)
     {
+        // 原语层以 ArgumentException 报告单字段格式错误，阶段名未知以 FrameworkException 报告；
+        // 这里把两者都翻译成 Result 失败，调用方不需要区分异常来源。
         try
         {
             var manifest = new Manifest
@@ -115,7 +122,7 @@ public static class ManifestReader
                     "in-process" => PluginIsolation.InProcess,
                     "out-of-process" => PluginIsolation.OutOfProcess,
                     "wasm" => PluginIsolation.Wasm,
-                    _ => throw new ArgumentException($"isolation 的值 '{document.Isolation}' 不合法。"),
+                    _ => throw new ArgumentException($"The value '{document.Isolation}' of field 'isolation' is not valid."),
                 },
                 Provides = (document.Provides ?? []).Select(static p => new CapabilityDeclaration(p.Id ?? throw Missing("provides.id"), ParseInt(p.Version ?? throw Missing("provides.version"), "provides.version"))).ToList(),
                 Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id ?? throw Missing("requires.id"), ParseVersion(r.Version ?? throw Missing("requires.version")), r.Optional ?? false)).ToList(),
@@ -124,7 +131,7 @@ public static class ManifestReader
                 {
                     Pipeline = (document.Contributes.Pipeline ?? []).Select(static p => new PipelineContribution(
                         p.Middleware ?? throw Missing("contributes.pipeline.middleware"),
-                        PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"未知的管道阶段 '{p.Stage}'。"),
+                        PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{p.Stage}'."),
                         p.Before,
                         p.After)).ToList(),
                     Operations = document.Contributes.Operations ?? [],
@@ -138,31 +145,49 @@ public static class ManifestReader
             };
 
             var validation = manifest.Validate();
-            return validation.IsSuccess ? manifest : new Error(KernelErrors.InvalidManifest, validation.Error!.Message);
+            return validation.IsSuccess ? manifest : validation.Error!.WithCode(KernelErrors.InvalidManifest);
         }
         catch (ArgumentException exception)
         {
-            return new Error(KernelErrors.InvalidManifest, exception.Message);
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
         catch (FrameworkException exception)
         {
-            return new Error(KernelErrors.InvalidManifest, exception.Message);
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
     }
 
-    private static ArgumentException Missing(string field) => new($"清单缺少必填字段 '{field}'。");
+    /// <summary>
+    /// 构造"必填字段缺失"异常；在对象初始化器里以 <c>?? throw</c> 形式使用。
+    /// </summary>
+    /// <param name="field">字段的 JSON 路径，例如 <c>provides.id</c>。</param>
+    private static ArgumentException Missing(string field) => new($"The manifest is missing the required field '{field}'.");
 
+    /// <summary>
+    /// 把字段文本解析为正整数；非数字或小于 1 时抛出 <see cref="ArgumentException"/>。
+    /// </summary>
+    /// <param name="text">原始文本。</param>
+    /// <param name="field">字段的 JSON 路径，用于错误信息。</param>
     private static int ParseInt(string text, string field)
         => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
             ? value
-            : throw new ArgumentException($"字段 '{field}' 的值 '{text}' 必须是正整数。");
+            : throw new ArgumentException($"The value '{text}' of field '{field}' must be a positive integer.");
 
+    /// <summary>
+    /// 解析 <c>requires.version</c>：允许 <c>^</c> 前缀，语义与不带前缀相同。
+    /// </summary>
     private static int ParseVersion(string text)
         => ParseInt(text.StartsWith('^') ? text[1..] : text, "requires.version");
 
+    /// <summary>
+    /// 把字段文本解析为枚举，不区分大小写；未定义的值抛出 <see cref="ArgumentException"/>。
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型。</typeparam>
+    /// <param name="text">原始文本。</param>
+    /// <param name="field">字段的 JSON 路径，用于错误信息。</param>
     private static TEnum ParseEnum<TEnum>(string text, string field)
         where TEnum : struct, Enum
         => Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) && Enum.IsDefined(value)
             ? value
-            : throw new ArgumentException($"字段 '{field}' 的值 '{text}' 不合法。");
+            : throw new ArgumentException($"The value '{text}' of field '{field}' is not valid.");
 }

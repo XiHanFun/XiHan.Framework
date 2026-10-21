@@ -9,8 +9,14 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.Abstractions.Tests;
 
+/// <summary>
+/// 凭据解析、认证中间件与安全选项的契约测试。
+/// </summary>
 public sealed class AuthenticationTests
 {
+    /// <summary>
+    /// 记录是否到达下游的终端步骤。
+    /// </summary>
     private static PipelineStep Handler(bool[] reached) => _ =>
     {
         reached[0] = true;
@@ -83,7 +89,7 @@ public sealed class AuthenticationTests
     public async Task HandlerFailure_BecomesOutcome_AndSuccessSetsPrincipal_SchemeCaseInsensitive()
     {
         var services = SecurityHosts.Services(static s => s.AddSingleton<IAuthenticationHandler>(new StaticHandler("Bearer", static c =>
-            c.Value == "good" ? Result.Success(SecurityHosts.Alice("admin")) : Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, "坏令牌")))));
+            c.Value == "good" ? Result.Success(SecurityHosts.Alice("admin")) : Result.Failure<Principal>(Error.Literal(SecurityErrors.InvalidCredential, "Bad token.")))));
 
         var bad = SecurityHosts.Context(services);
         bad.SetCredential(new AuthenticationCredential("bearer", "bad"));
@@ -107,6 +113,7 @@ public sealed class AuthenticationTests
     [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
+        // 用内存键值对构造配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

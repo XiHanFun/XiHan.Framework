@@ -17,15 +17,28 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
+/// <summary>
+/// ASP.NET Core 宿主集成验证：请求头到调用上下文的翻译、Problem Details 回写、探针与应用状态。
+/// </summary>
 public sealed class WebHostTests
 {
+    /// <summary>
+    /// 捕获最近一次请求的调用上下文，供测试在响应之后断言。
+    /// </summary>
     private sealed class Captured
     {
+        /// <summary>
+        /// 最近一次经过管道的调用上下文；尚无请求时为 <c>null</c>。
+        /// </summary>
         public InvocationContext? Context { get; set; }
     }
 
+    /// <summary>
+    /// 把调用上下文写入 <see cref="Captured"/> 后放行的中间件。
+    /// </summary>
     private sealed class CaptureMiddleware(Captured captured) : IPipelineMiddleware
     {
+        /// <inheritdoc />
         public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
         {
             captured.Context = context;
@@ -33,6 +46,9 @@ public sealed class WebHostTests
         }
     }
 
+    /// <summary>
+    /// 用 TestServer 启动一个装配了捕获中间件与若干测试端点的应用，返回应用、客户端与捕获器。
+    /// </summary>
     private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync(Action<AppBuilder>? extra = null)
     {
         var captured = new Captured();
@@ -41,6 +57,7 @@ public sealed class WebHostTests
         builder.Services.AddSingleton(captured);
         builder.AddXiHan(xihan =>
         {
+            // 捕获中间件放在 Tenant 阶段：此时 Ingress 已完成翻译，凭据与授权要求都已进入上下文
             xihan.UseFeature(new StubFeature(TestManifests.Create("xihan.test.web"))
             {
                 OnConfigure = context => context.AddMiddleware<CaptureMiddleware>(PipelineStage.Tenant),
@@ -54,7 +71,7 @@ public sealed class WebHostTests
         app.MapGet("/ok", () => "ok");
         app.MapGet("/missing", (HttpContext http) =>
         {
-            http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("ORDERS_NOTFOUND_001", "没有"));
+            http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.Literal("ORDERS_NOTFOUND_001", "The order does not exist."));
             return Results.Empty;
         });
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
@@ -180,6 +197,7 @@ public sealed class WebHostTests
             Assert.Equal("xihan.test.web", body.RootElement.GetProperty("features")[0].GetProperty("id").GetString());
         }
 
+        // 只停内核应用、不停 TestServer：探针应报 503，普通端点应被 UseXiHan 拦下返回 503
         await app.Services.GetRequiredService<App>().StopAsync(CancellationToken.None);
 
         var ready = await client.GetAsync("/health/ready");
@@ -204,12 +222,12 @@ public sealed class WebHostTests
     [Fact]
     public void ProblemResponse_MapsKindsToStatusCodes()
     {
-        Assert.Equal(400, ProblemResponse.StatusCodeFor(Error.Validation("ORDERS_VALIDATION_001", "x")));
-        Assert.Equal(401, ProblemResponse.StatusCodeFor(Error.Denied("SECURITY_DENIED_001", "x")));
-        Assert.Equal(403, ProblemResponse.StatusCodeFor(Error.Denied("SECURITY_DENIED_002", "x")));
-        Assert.Equal(409, ProblemResponse.StatusCodeFor(Error.Conflict("ORDERS_CONFLICT_001", "x")));
-        Assert.Equal(503, ProblemResponse.StatusCodeFor(Error.Unavailable("ORDERS_UNAVAILABLE_001", "x")));
-        Assert.Equal(504, ProblemResponse.StatusCodeFor(new Error("KERNEL_TIMEOUT_001", "x")));
-        Assert.Equal(500, ProblemResponse.StatusCodeFor(new Error("KERNEL_HOSTING_004", "x")));
+        Assert.Equal(400, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_VALIDATION_001", "x")));
+        Assert.Equal(401, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_001", "x")));
+        Assert.Equal(403, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_002", "x")));
+        Assert.Equal(409, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_CONFLICT_001", "x")));
+        Assert.Equal(503, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_UNAVAILABLE_001", "x")));
+        Assert.Equal(504, ProblemResponse.StatusCodeFor(Error.Literal("KERNEL_TIMEOUT_001", "x")));
+        Assert.Equal(500, ProblemResponse.StatusCodeFor(Error.Literal("KERNEL_HOSTING_004", "x")));
     }
 }

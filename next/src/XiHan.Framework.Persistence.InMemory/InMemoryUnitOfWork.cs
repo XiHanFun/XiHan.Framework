@@ -13,7 +13,14 @@ namespace XiHan.Framework.Persistence.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
 {
+    /// <summary>
+    /// 提交目标存储。
+    /// </summary>
     private readonly InMemoryStore _store = store ?? throw new ArgumentNullException(nameof(store));
+
+    /// <summary>
+    /// 按实体类型索引的覆盖层；工作单元是作用域服务，不需要并发保护。
+    /// </summary>
     private readonly Dictionary<Type, IPendingChanges> _pending = [];
 
     /// <inheritdoc />
@@ -31,7 +38,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         ArgumentNullException.ThrowIfNull(options);
         if (State != UnitOfWorkState.NotStarted)
         {
-            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"工作单元处于 {State}，不能再次开始。");
+            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
         }
 
         TenantId = options.TenantId;
@@ -45,15 +52,17 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     {
         if (State != UnitOfWorkState.Active)
         {
-            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"工作单元处于 {State}，不能提交。");
+            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
+        // 只读工作单元允许仓储把变更写进覆盖层，但在提交点统一拒绝并回滚，而不是在每次写入时判断
         if (IsReadOnly && _pending.Values.Any(static p => p.HasChanges))
         {
             State = UnitOfWorkState.RolledBack;
-            return Task.FromResult<Result>(Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, "只读工作单元不能写入。"));
+            return Task.FromResult<Result>(Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly));
         }
 
+        // 每张表各自原子应用；跨表不是一个事务，某张表失败时先前已应用的表不会撤销，工作单元整体记为回滚
         foreach (var pending in _pending.Values)
         {
             var applied = pending.Apply(_store);
@@ -72,6 +81,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     /// <inheritdoc />
     public Task RollbackAsync(CancellationToken cancellationToken)
     {
+        // 回滚只需丢弃覆盖层；表从未被未提交的变更触碰过
         _pending.Clear();
         State = UnitOfWorkState.RolledBack;
         return Task.CompletedTask;
@@ -118,7 +128,14 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
+        /// <summary>
+        /// 待新增或更新的实体，按标识索引；同一标识只保留最后一次写入。
+        /// </summary>
         private readonly Dictionary<TKey, TEntity> _upserts = [];
+
+        /// <summary>
+        /// 待物理删除的标识。与 <see cref="_upserts"/> 互斥：同一标识不会同时出现在两边。
+        /// </summary>
         private readonly HashSet<TKey> _removals = [];
 
         /// <inheritdoc />
@@ -130,6 +147,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         public void Upsert(TEntity entity)
         {
             ArgumentNullException.ThrowIfNull(entity);
+            // 同一工作单元内先删后加：撤销删除标记，让实体重新可见
             _removals.Remove(entity.Id);
             _upserts[entity.Id] = entity;
         }
@@ -139,6 +157,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         /// </summary>
         public void Remove(TKey id)
         {
+            // 同一工作单元内先加后删：丢弃未提交的新增，并对表里可能存在的同键行记录删除
             _upserts.Remove(id);
             _removals.Add(id);
         }
@@ -162,6 +181,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         public IEnumerable<TEntity> Overlay(IEnumerable<TEntity> snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
+            // 快照里被覆盖层删除或更新的行先跳过，再补上覆盖层的实体，保证每个标识只出现一次且以本工作单元的版本为准
             foreach (var entity in snapshot)
             {
                 if (_removals.Contains(entity.Id) || _upserts.ContainsKey(entity.Id))

@@ -10,18 +10,42 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
+/// <summary>
+/// <see cref="IdempotencyMiddleware"/> 的单元测试：首次执行与回放、处理中冲突、异常清理、租户与主体隔离、键校验。
+/// </summary>
 public sealed class IdempotencyMiddlewareTests
 {
+    /// <summary>
+    /// 承载幂等记录的假存储，可直接检查写入的键。
+    /// </summary>
     private readonly FakeCacheStore _store = new();
+
+    /// <summary>
+    /// 使用默认选项的被测中间件。
+    /// </summary>
     private readonly IdempotencyMiddleware _middleware = new(new IdempotencyOptions());
+
+    /// <summary>
+    /// 只注册了 <see cref="ISharedCache"/> 的服务提供者。
+    /// </summary>
     private readonly IServiceProvider _services;
+
+    /// <summary>
+    /// 处理器实际执行的次数。
+    /// </summary>
     private int _executions;
 
+    /// <summary>
+    /// 用假存储与反射版序列化器装配共享缓存。
+    /// </summary>
     public IdempotencyMiddlewareTests()
     {
         _services = new ServiceCollection().AddSingleton<ISharedCache>(new SerializingCache(_store, JsonCacheSerializer.CreateReflectionBased())).BuildServiceProvider();
     }
 
+    /// <summary>
+    /// 创建调用上下文；<paramref name="key"/> 不为 <see langword="null"/> 时放入幂等键 Baggage，<paramref name="tenant"/> 不为 <see langword="null"/> 时设置租户。
+    /// </summary>
     private InvocationContext Context(string? key, string? tenant = null)
     {
         var context = TestInvocationContext.Create(_services, baggage: key is null ? null : new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = key });
@@ -33,6 +57,9 @@ public sealed class IdempotencyMiddlewareTests
         return context;
     }
 
+    /// <summary>
+    /// 只计数、不设置结果的处理器。
+    /// </summary>
     private ValueTask Handler(InvocationContext context)
     {
         _executions++;
@@ -54,7 +81,7 @@ public sealed class IdempotencyMiddlewareTests
     [Fact]
     public async Task FirstCall_Executes_SecondCall_ReplaysOutcome()
     {
-        var failure = Error.Validation("ORDERS_VALIDATION_001", "库存不足");
+        var failure = Error.Literal("ORDERS_VALIDATION_001", "Insufficient stock.");
         var first = Context("req-1");
 
         await _middleware.InvokeAsync(first, ctx =>
@@ -103,7 +130,7 @@ public sealed class IdempotencyMiddlewareTests
     [Fact]
     public async Task Exception_ClearsMarker_AndRethrows_SoRetryExecutes()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await _middleware.InvokeAsync(Context("boom"), static _ => throw new InvalidOperationException("崩溃")));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await _middleware.InvokeAsync(Context("boom"), static _ => throw new InvalidOperationException("The handler crashed.")));
         Assert.Equal(0, _store.Count);
 
         await _middleware.InvokeAsync(Context("boom"), Handler);
@@ -146,8 +173,8 @@ public sealed class IdempotencyMiddlewareTests
         Assert.False(IdempotencyRecord.From(Result.Success()).IsInProgress);
         Assert.True(IdempotencyRecord.InProgress.IsInProgress);
 
-        var restored = IdempotencyRecord.From(Error.NotFound("ORDERS_NOTFOUND_001", "没有订单")).ToResult();
+        var restored = IdempotencyRecord.From(Error.Literal("ORDERS_NOTFOUND_001", "The order does not exist.")).ToResult();
         Assert.Equal("ORDERS_NOTFOUND_001", restored.Error?.Code);
-        Assert.Equal("没有订单", restored.Error?.Message);
+        Assert.Equal("The order does not exist.", restored.Error?.Message);
     }
 }

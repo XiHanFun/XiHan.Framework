@@ -22,4 +22,7 @@ public static class MessagingErrors
 
     /// <summary>队列已满。</summary>
     public const string QueueFull = "MESSAGING_UNAVAILABLE_002";
+
+    /// <summary>处理器抛出未处理异常（代理侧记录）。</summary>
+    public const string HandlerFailed = "MESSAGING_UNEXPECTED_001";
 }

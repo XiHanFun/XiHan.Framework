@@ -9,6 +9,10 @@ const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidKey = "CACHING_V
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidOptions = "CACHING_VALIDATION_002" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.LockHeld = "CACHING_CONFLICT_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.StoreUnavailable = "CACHING_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.CatalogName = "caching" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentInProgress = "caching.idempotency.in_progress" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentRecentlyCompleted = "caching.idempotency.recently_completed" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.InvalidIdempotencyKey = "caching.idempotency.invalid_key" -> string!
 const XiHan.Framework.Caching.Abstractions.IdempotencyOptions.ConfigurationSection = "XiHan:Caching:Idempotency" -> string!
 const XiHan.Framework.Caching.Abstractions.IdempotencyRecord.CompletedState = "completed" -> string!
 const XiHan.Framework.Caching.Abstractions.IdempotencyRecord.InProgressState = "in-progress" -> string!
@@ -34,6 +38,7 @@ static XiHan.Framework.Caching.Abstractions.CacheKey.operator !=(XiHan.Framework
 static XiHan.Framework.Caching.Abstractions.CacheKey.operator ==(XiHan.Framework.Caching.Abstractions.CacheKey left, XiHan.Framework.Caching.Abstractions.CacheKey right) -> bool
 static XiHan.Framework.Caching.Abstractions.CacheKey.Validate(string! value) -> string!
 static XiHan.Framework.Caching.Abstractions.CacheSerializerRegistration.TryAddJsonSerializer(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> bool
+static XiHan.Framework.Caching.Abstractions.CachingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
 static XiHan.Framework.Caching.Abstractions.IdempotencyMiddleware.WasReplayed(XiHan.Framework.Primitives.InvocationContext! context) -> bool
 static XiHan.Framework.Caching.Abstractions.IdempotencyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Caching.Abstractions.IdempotencyOptions!
 static XiHan.Framework.Caching.Abstractions.IdempotencyOptions.operator !=(XiHan.Framework.Caching.Abstractions.IdempotencyOptions? left, XiHan.Framework.Caching.Abstractions.IdempotencyOptions? right) -> bool
@@ -60,6 +65,7 @@ XiHan.Framework.Caching.Abstractions.CacheKey.Value.get -> string!
 XiHan.Framework.Caching.Abstractions.CacheSerializerRegistration
 XiHan.Framework.Caching.Abstractions.CachingCapabilities
 XiHan.Framework.Caching.Abstractions.CachingErrors
+XiHan.Framework.Caching.Abstractions.CachingMessages
 XiHan.Framework.Caching.Abstractions.ICache
 XiHan.Framework.Caching.Abstractions.ICache.GetAsync<T>(XiHan.Framework.Caching.Abstractions.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<T>>
 XiHan.Framework.Caching.Abstractions.ICache.GetOrCreateAsync<T>(XiHan.Framework.Caching.Abstractions.CacheKey key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! factory, XiHan.Framework.Caching.Abstractions.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
@@ -88,13 +94,17 @@ XiHan.Framework.Caching.Abstractions.IdempotencyOptions.TimeToLive.get -> System
 XiHan.Framework.Caching.Abstractions.IdempotencyOptions.TimeToLive.init -> void
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.<Clone>$() -> XiHan.Framework.Caching.Abstractions.IdempotencyRecord!
-XiHan.Framework.Caching.Abstractions.IdempotencyRecord.Deconstruct(out string! State, out string? ErrorCode, out string? ErrorMessage) -> void
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.Deconstruct(out string! State, out string? ErrorCode, out string? ErrorMessage, out string? ErrorMessageKey, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? ErrorDetails) -> void
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.Equals(XiHan.Framework.Caching.Abstractions.IdempotencyRecord? other) -> bool
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorCode.get -> string?
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorCode.init -> void
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorDetails.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorDetails.init -> void
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorMessage.get -> string?
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorMessage.init -> void
-XiHan.Framework.Caching.Abstractions.IdempotencyRecord.IdempotencyRecord(string! State, string? ErrorCode = null, string? ErrorMessage = null) -> void
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorMessageKey.get -> string?
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.ErrorMessageKey.init -> void
+XiHan.Framework.Caching.Abstractions.IdempotencyRecord.IdempotencyRecord(string! State, string? ErrorCode = null, string? ErrorMessage = null, string? ErrorMessageKey = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? ErrorDetails = null) -> void
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.IsInProgress.get -> bool
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.State.get -> string!
 XiHan.Framework.Caching.Abstractions.IdempotencyRecord.State.init -> void

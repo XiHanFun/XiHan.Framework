@@ -11,6 +11,9 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
+/// <summary>
+/// <see cref="InMemoryCachingFeature"/> 的宿主级测试：独占时注册的服务、让位给显式 Provider 时的收缩、幂等端到端。
+/// </summary>
 public sealed class InMemoryCachingFeatureTests
 {
     /// <summary>
@@ -18,8 +21,14 @@ public sealed class InMemoryCachingFeatureTests
     /// </summary>
     private sealed class ExplicitSharedCacheFeature : IFeature
     {
+        /// <summary>
+        /// 以 Provider 角色声明 <c>caching.distributed@1</c> 的清单。
+        /// </summary>
         public Manifest Manifest { get; } = TestManifests.Create("xihan.caching.fake-shared", provides: ["caching.distributed@1"], requires: ["kernel.hosting@1"]);
 
+        /// <summary>
+        /// 故意不注册任何服务，便于断言内存包没有替它补上共享缓存。
+        /// </summary>
         public void Configure(FeatureContext context)
         {
         }
@@ -63,7 +72,7 @@ public sealed class InMemoryCachingFeatureTests
         var first = await host.InvokeAsync(ctx =>
         {
             executions++;
-            ctx.SetOutcome(Error.Conflict("ORDERS_CONFLICT_001", "已下单"));
+            ctx.SetOutcome(Error.Literal("ORDERS_CONFLICT_001", "The order has already been placed."));
             return ValueTask.CompletedTask;
         }, baggage: baggage);
         var second = await host.InvokeAsync(ctx =>

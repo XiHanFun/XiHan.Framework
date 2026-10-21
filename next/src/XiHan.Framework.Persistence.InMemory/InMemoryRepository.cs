@@ -15,8 +15,19 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
+    /// <summary>
+    /// 已提交数据所在的存储。
+    /// </summary>
     private readonly InMemoryStore _store = store ?? throw new ArgumentNullException(nameof(store));
+
+    /// <summary>
+    /// 本作用域的工作单元；提供覆盖层与当前租户。
+    /// </summary>
     private readonly InMemoryUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+
+    /// <summary>
+    /// 审计字段使用的时间源。
+    /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <inheritdoc />
@@ -32,6 +43,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(query);
         IEnumerable<TEntity> items = Visible(query);
+        // 第一项排序用 OrderBy，后续用 ThenBy 叠加，保证多级排序按声明顺序生效而不是互相覆盖
         foreach (var ordering in query.Orderings)
         {
             var key = ordering.KeySelector.Compile();
@@ -55,9 +67,10 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
+        // 重复判定不做可见性过滤：已软删除或属于其他租户的同键行同样与新键冲突
         if (Lookup(changes, entity.Id).HasValue)
         {
-            return Task.FromResult<Result>(Error.Conflict(PersistenceErrors.Duplicate, $"{typeof(TEntity).Name} 已存在标识 {entity.Id}。"));
+            return Task.FromResult<Result>(Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id))));
         }
 
         var applied = PersistenceConventions.ApplyOnAdd(entity, _unitOfWork.TenantId, _timeProvider.GetUtcNow());
@@ -95,6 +108,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
             return Task.FromResult<Result>(NotFound(entity.Id));
         }
 
+        // 软删除是一次打标更新，走 Upsert；物理删除才进入覆盖层的删除集合
         if (PersistenceConventions.TrySoftDelete(entity, _timeProvider.GetUtcNow()))
         {
             changes.Upsert(entity);
@@ -107,11 +121,17 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         return Task.FromResult(Result.Success());
     }
 
+    /// <summary>
+    /// 处于活动状态的工作单元；不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// </summary>
     private InMemoryUnitOfWork Active => _unitOfWork.State == UnitOfWorkState.Active
         ? _unitOfWork
-        : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"工作单元处于 {_unitOfWork.State}；仓储必须在 Transaction 阶段之内使用。");
+        : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
-    private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, $"{typeof(TEntity).Name} 不存在标识 {id}。");
+    /// <summary>
+    /// 构造实体不存在的错误。
+    /// </summary>
+    private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, PersistenceMessages.NotFound, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
     /// 先查覆盖层，再查表；覆盖层标记为删除的视为不存在。
@@ -122,9 +142,15 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         return found ? (removed ? default : Maybe.From(pending)) : _store.Table<TEntity, TKey>().Find(id);
     }
 
+    /// <summary>
+    /// 实体是否存在且对当前调用可见（未软删除、租户匹配）；更新与删除以此判定目标。
+    /// </summary>
     private bool Exists(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id)
         => Lookup(changes, id).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false);
 
+    /// <summary>
+    /// 把覆盖层合并到表快照上，再施加可见性与查询过滤；排序与分页由调用方处理。
+    /// </summary>
     private IEnumerable<TEntity> Visible(EntityQuery<TEntity> query)
     {
         var items = Active.Changes<TEntity, TKey>().Overlay(_store.Table<TEntity, TKey>().Snapshot())
@@ -132,6 +158,9 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         return query.Filter is null ? items : items.Where(query.Filter.IsSatisfiedBy);
     }
 
+    /// <summary>
+    /// 实体是否对当前调用可见：租户必须匹配，且除非显式包含，已软删除的不可见。
+    /// </summary>
     private bool IsVisible(TEntity entity, bool includeDeleted)
         => PersistenceConventions.IsVisibleTo(entity, _unitOfWork.TenantId) && (includeDeleted || !PersistenceConventions.IsDeleted(entity));
 }

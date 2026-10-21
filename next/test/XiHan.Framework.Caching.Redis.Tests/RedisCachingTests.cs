@@ -12,6 +12,9 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Caching.Redis.Tests;
 
+/// <summary>
+/// Redis Provider 的单元与宿主级测试：值编码、选项解析，以及与内存包并存时的服务分工。
+/// </summary>
 public sealed class RedisCachingTests
 {
     [Fact]
@@ -40,6 +43,7 @@ public sealed class RedisCachingTests
     [Fact]
     public void Options_FromConfigurationAndBinding_PreferConfiguration()
     {
+        // 用内存键值对构建配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
         var binding = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", "bound:6379", new Dictionary<string, string>()));
@@ -73,7 +77,7 @@ public sealed class RedisCachingTests
 
         var executions = 0;
         var baggage = new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = $"redis-{Guid.NewGuid():N}" };
-        var first = await host.InvokeAsync(ctx => { executions++; ctx.SetOutcome(Error.Validation("ORDERS_VALIDATION_001", "拒绝")); return ValueTask.CompletedTask; }, baggage: baggage);
+        var first = await host.InvokeAsync(ctx => { executions++; ctx.SetOutcome(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")); return ValueTask.CompletedTask; }, baggage: baggage);
         var second = await host.InvokeAsync(ctx => { executions++; return ValueTask.CompletedTask; }, baggage: baggage);
 
         Assert.Equal(1, executions);

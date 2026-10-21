@@ -21,12 +21,14 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
+        // 没有授权要求的调用直接放行；要求由宿主端点元数据或操作契约在更早阶段设置
         if (context.GetAuthorizationRequirement().TryGetValue(out var requirement))
         {
             var catalog = context.Services.GetRequiredService<PolicyCatalog>();
+            // 策略不存在按拒绝处理而不是放行：配置错误不能变成越权
             if (!catalog.Find(requirement.Policy).TryGetValue(out var policy))
             {
-                context.SetOutcome(Error.NotFound(SecurityErrors.PolicyNotFound, $"策略 '{requirement.Policy}' 不存在。"));
+                context.SetOutcome(Error.NotFound(SecurityErrors.PolicyNotFound, SecurityMessages.PolicyNotFound, MessageArguments.Of(("policy", requirement.Policy))));
                 return;
             }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Domain;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -43,13 +44,17 @@ public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(PersistenceMessages.Catalog);
         var options = InMemoryPersistenceOptions.FromConfiguration(context.Configuration);
         context.Services.AddSingleton(options);
+        // 存储是进程内单例，跨作用域共享；工作单元按作用域注册，同一调用内的仓储共享同一个覆盖层
         context.Services.AddSingleton<InMemoryStore>();
         context.Services.TryAddScoped<InMemoryUnitOfWork>();
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<InMemoryUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
+        // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);
     }
 

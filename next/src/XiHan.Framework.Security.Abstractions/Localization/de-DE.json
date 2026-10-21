@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "Der API-Schlüssel ist ungültig.",
+  "security.authentication.required": "Dieser Aufruf erfordert eine Authentifizierung.",
+  "security.authentication.unsupported_scheme": "Das Authentifizierungsschema '{scheme}' wird nicht unterstützt.",
+  "security.grant_store.capacity_exceeded": "Der In-Memory-Berechtigungsspeicher hat seine Kapazität von {capacity} erreicht.",
+  "security.permission.missing": "Die Berechtigung '{permission}' fehlt.",
+  "security.policy.not_found": "Die Richtlinie '{policy}' existiert nicht.",
+  "security.principal_store.capacity_exceeded": "Der In-Memory-Prinzipalspeicher hat seine Kapazität von {capacity} erreicht.",
+  "security.token.invalid": "Das Token ist ungültig, abgelaufen oder hat eine ungültige Signatur.",
+  "security.token.subject_missing": "Dem Token fehlt der Subject-Claim '{claim}'."
+}

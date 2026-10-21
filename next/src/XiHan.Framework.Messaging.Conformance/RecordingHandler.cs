@@ -20,11 +20,11 @@ public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
         log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId));
         if (log.ThrowingIds.ContainsKey(delivery.Envelope.Id))
         {
-            throw new InvalidOperationException($"处理器按指示对 {delivery.Envelope.Id} 抛异常。");
+            throw new InvalidOperationException($"The handler threw for '{delivery.Envelope.Id}' as instructed.");
         }
 
         return ValueTask.FromResult(log.FailingIds.ContainsKey(delivery.Envelope.Id)
-            ? Result.Failure(Error.Validation("CONFORMANCE_VALIDATION_001", "处理器按指示失败。"))
+            ? Result.Failure(Error.Literal("CONFORMANCE_VALIDATION_001", "The handler failed as instructed."))
             : Result.Success());
     }
 }

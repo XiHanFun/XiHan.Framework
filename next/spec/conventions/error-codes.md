@@ -14,6 +14,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 1. 框架错误码在本文登记，新增走 RFC 附件。
 2. 错误码进入 `Error.Code`，HTTP 适配器把它放进 RFC 9457 Problem Details 的 `type` 或扩展字段，gRPC 放进 trailing metadata，插件协议放进响应元数据。
 3. 消息面向人，错误码面向程序；客户端只应依赖错误码。
+4. 文案不写在代码里：错误携带消息键（`<领域>Messages` 常量）与参数（`Error.Details`），文案在所属包的 `Localization/<区域>.json`（10 种区域各一个文件，RFC-0010）；一个错误码可以对应多个消息键。
 
 ## 已登记的框架错误码
 
@@ -63,6 +64,9 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `MESSAGING_UNAVAILABLE_001` | 消息代理不可达或操作失败 |
 | `MESSAGING_UNAVAILABLE_002` | 队列已满 |
 | `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常（代理侧记录） |
+| `LOCALIZATION_VALIDATION_001` | 区域名不合法 |
+| `LOCALIZATION_VALIDATION_002` | 消息目录不合法（JSON、键或区域名错误） |
+| `LOCALIZATION_CONFLICT_001` | 同名消息目录重复注册 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `SECURITY_DENIED_003` | 凭据无效、过期或签名不符 |

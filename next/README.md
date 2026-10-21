@@ -24,11 +24,13 @@ next/
 | `XiHan.Framework.Primitives` | 0 | 原语与契约，只增不改 |
 | `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象 |
 | `XiHan.Framework.Domain` | 2 | 实体协议、值对象、领域事件缓冲、规约；纯契约 |
+| `XiHan.Framework.Localization.Abstractions` | 2 | 区域名、内置 10 种区域（默认 `en-US`）、消息目录（每种语言一个文件）、显式区域的本地化接口；消息键、模板与 `key.L()` 在原语层 |
 | `XiHan.Framework.Persistence.Abstractions` | 2 | 仓储、工作单元、查询、标识生成、Transaction 阶段中间件、实体登记 |
 | `XiHan.Framework.Caching.Abstractions` | 2 | 字节存储、类型化缓存、序列化器、分布式锁、Idempotency 阶段中间件 |
 | `XiHan.Framework.MultiTenancy.Abstractions` | 2 | 租户信息与存储、租户解析器、Tenant 阶段中间件 |
 | `XiHan.Framework.Security.Abstractions` | 2 | 凭据与认证处理器、授权要求与策略目录、RBAC 授予，Authenticate / Authorize 阶段中间件 |
 | `XiHan.Framework.Messaging.Abstractions` | 2 | CloudEvents 信封、代理与发布者、处理器订阅、经管道的派发、事务性发件箱 |
+| `XiHan.Framework.Localization.InMemory` | 3 | 内存本地化默认实现：汇集各包目录，精确区域 → 同语言 → 默认区域 → `en-US` 回退，设进程默认消息作用域 |
 | `XiHan.Framework.Persistence.InMemory` | 3 | 内存持久化默认实现（`role: default`）：有界、读己之写、软删除与租户隔离 |
 | `XiHan.Framework.Persistence.EntityFrameworkCore` | 3 | EF Core Provider：应用自有 DbContext、事务型工作单元、协议约定（非 AOT） |
 | `XiHan.Framework.Caching.InMemory` | 3 | 内存缓存默认实现：有界 LRU、绝对与滑动过期，兼任单进程共享缓存 |
@@ -38,9 +40,9 @@ next/
 | `XiHan.Framework.Security.Jwt` | 3 | JWT Bearer 认证 Provider（非 AOT） |
 | `XiHan.Framework.Messaging.InMemory` | 3 | 内存消息代理默认实现：有界通道、顺序投递、重试与死信 |
 | `XiHan.Framework.Messaging.RabbitMQ` | 3 | RabbitMQ Provider：持久队列、手动确认、重试与死信队列（非 AOT） |
-| `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、探针端点、Problem Details |
+| `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、`Accept-Language` 协商、探针端点、本地化的 Problem Details |
 | `XiHan.Framework.Plugins.InProcess` | 5 | 可收集 AssemblyLoadContext 的插件宿主（非 AOT） |
-| `XiHan.Framework.Profiles.Minimal` | 6 | 组合包：原语层 + 内核 + ASP.NET Core 宿主 |
+| `XiHan.Framework.Profiles.Minimal` | 6 | 组合包：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化 |
 | `XiHan.Framework.Profiles.Standard` | 6 | 组合包：Minimal + Domain + 五个子系统的抽象与内存默认实现，`UseStandardProfile()` |
 | `XiHan.Framework.Kernel.Analyzers` | 工具链 | Roslyn 分析器 XH0001–XH0005：ApiLevel、命名、Internal 引用、零反射 |
 | `XiHan.Framework.Testing` | 工具链 | 测试宿主、特性桩、清单与上下文构造 |
@@ -63,7 +65,10 @@ curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" -
 curl -s localhost:5000/orders -H "Authorization: ApiKey dev-bob-key"          # viewer 只能读
 curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: application/json" -d '{"name":"x","amount":1}'   # 403 SECURITY_DENIED_004
 curl -s localhost:5000/orders/stats -H "Authorization: ApiKey dev-alice-key"  # 发件箱投递后的消息处理计数
+curl -s localhost:5000/missing -H "Accept-Language: zh-CN"                     # Problem Details 的 detail 按 Accept-Language 翻译，默认英文
 ```
+
+文案不写在代码里：`SampleMessages` 只定义键，`Localization/<区域>.json` 每种语言一个文件，端点里 `SampleMessages.ResourceMissing.L()` 得到当前请求语言的文案，`Error.NotFound(code, SampleMessages.ResourceMissing)` 由宿主在 Egress 翻译（RFC-0010）。
 
 换 Provider 只加包与配置：再 `UseFeature<EntityFrameworkCorePersistenceFeature<AppDbContext>>()`、`UseFeature<RedisCachingFeature>()`、`UseFeature<JwtSecurityFeature>()` 或 `UseFeature<RabbitMQMessagingFeature>()`，对应的内存默认实现自动让位。
 
@@ -91,4 +96,4 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 
 ## 阶段
 
-P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统已完成：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）、`Caching`（抽象、内存默认实现、Redis Provider、一致性套件、幂等中间件，RFC-0006）、`MultiTenancy`（抽象、内存默认实现、一致性套件、Tenant 阶段中间件，RFC-0007）、`Security`（抽象、内存默认实现、JWT Provider、一致性套件、Authenticate / Authorize 阶段中间件，RFC-0008）、`Messaging`（抽象、内存默认实现、RabbitMQ Provider、一致性套件、CloudEvents 信封、发件箱，RFC-0009）、`Profiles.Minimal` / `Profiles.Standard` 与 Standard 组合示例。退出条件已满足：全部默认实现与 Provider 通过一致性套件（Redis、RabbitMQ、SQLite 在真实服务上验证），Standard 示例零外部基础设施运行，换 Provider 只改配置与包引用。下一阶段 P3：操作契约、协议适配器（HTTP / gRPC / MCP / CloudEvents）、`Kernel.Generators`、`Cli`、OpenID Connect。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
+P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统已完成：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）、`Caching`（抽象、内存默认实现、Redis Provider、一致性套件、幂等中间件，RFC-0006）、`MultiTenancy`（抽象、内存默认实现、一致性套件、Tenant 阶段中间件，RFC-0007）、`Security`（抽象、内存默认实现、JWT Provider、一致性套件、Authenticate / Authorize 阶段中间件，RFC-0008）、`Messaging`（抽象、内存默认实现、RabbitMQ Provider、一致性套件、CloudEvents 信封、发件箱，RFC-0009）、`Localization`（原语层消息键、模板、`key.L()` 与 `MessageScope`；抽象与内存默认实现；默认 `en-US` 与内置 10 种区域、每包每种语言一个文件、宿主 `Accept-Language` 协商与 Problem Details 本地化，RFC-0010）、`Profiles.Minimal` / `Profiles.Standard` 与 Standard 组合示例。退出条件已满足：全部默认实现与 Provider 通过一致性套件（Redis、RabbitMQ、SQLite 在真实服务上验证），Standard 示例零外部基础设施运行，换 Provider 只改配置与包引用。下一阶段 P3：操作契约、协议适配器（HTTP / gRPC / MCP / CloudEvents）、`Kernel.Generators`、`Cli`、OpenID Connect。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。

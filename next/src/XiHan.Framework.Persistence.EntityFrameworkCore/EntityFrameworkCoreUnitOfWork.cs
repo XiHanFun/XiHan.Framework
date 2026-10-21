@@ -15,6 +15,9 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWork, IAsyncDisposable
 {
+    /// <summary>
+    /// 延迟开启的数据库事务；为 <see langword="null"/> 表示本工作单元尚未写入。
+    /// </summary>
     private IDbContextTransaction? _transaction;
 
     /// <summary>
@@ -37,7 +40,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
         ArgumentNullException.ThrowIfNull(options);
         if (State != UnitOfWorkState.NotStarted)
         {
-            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"工作单元处于 {State}，不能再次开始。");
+            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
         }
 
         TenantId = options.TenantId;
@@ -53,9 +56,10 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     {
         if (State != UnitOfWorkState.Active)
         {
-            throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"工作单元处于 {State}，不能开启事务。");
+            throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{State}' and cannot begin a transaction.");
         }
 
+        // 只开一次：第一次写入开启事务，之后的写入复用同一事务
         _transaction ??= await Context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -64,23 +68,26 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     {
         if (State != UnitOfWorkState.Active)
         {
-            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"工作单元处于 {State}，不能提交。");
+            throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
+        // 只读工作单元里仓储已在写入前拒绝；这里兜住绕过仓储直接改跟踪实体的情况
         if (IsReadOnly && Context.ChangeTracker.HasChanges())
         {
             await RollbackAsync(cancellationToken).ConfigureAwait(false);
-            return Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, "只读工作单元不能写入。");
+            return Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly);
         }
 
         try
         {
+            // 仓储每次写入都已保存；这里只处理调用方直接修改跟踪实体而未经仓储的残余变更，并保证它们落在事务内
             if (Context.ChangeTracker.HasChanges())
             {
                 await EnsureTransactionAsync(cancellationToken).ConfigureAwait(false);
                 await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            // 没有事务说明本工作单元只读过数据，无需提交
             if (_transaction is not null)
             {
                 await _transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -89,7 +96,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
         catch (DbUpdateConcurrencyException exception)
         {
             await RollbackAsync(cancellationToken).ConfigureAwait(false);
-            return Error.Conflict(PersistenceErrors.Concurrency, $"提交时发生乐观并发冲突：{exception.Message}");
+            return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.CommitConflict, MessageArguments.Of(("reason", exception.Message)));
         }
 
         State = UnitOfWorkState.Committed;
@@ -104,6 +111,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             await _transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        // 清空跟踪器：已保存但被回滚的实体不能再以"未修改"状态留在上下文里
         Context.ChangeTracker.Clear();
         State = UnitOfWorkState.RolledBack;
     }
@@ -111,6 +119,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        // 作用域结束时若事务仍未提交（例如中间件之外的直接使用），释放即回滚
         if (_transaction is not null)
         {
             await _transaction.DisposeAsync().ConfigureAwait(false);

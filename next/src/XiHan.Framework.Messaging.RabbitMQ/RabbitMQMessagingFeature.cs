@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -22,7 +23,14 @@ public sealed class RabbitMQMessagingFeature : IHostedFeature
     /// </summary>
     public const string ConnectionBinding = "queue";
 
+    /// <summary>
+    /// 启动后取得的运行时；停止时用它结束消费。
+    /// </summary>
     private MessagingRuntime? _runtime;
+
+    /// <summary>
+    /// 启动时连接的代理；停止时释放连接。
+    /// </summary>
     private RabbitMQMessageBroker? _broker;
 
     /// <inheritdoc />
@@ -50,6 +58,8 @@ public sealed class RabbitMQMessagingFeature : IHostedFeature
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(MessagingMessages.Catalog);
         context.Services.AddSingleton(RabbitMQMessagingOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding)));
         context.Services.AddSingleton<RabbitMQMessageBroker>();
         context.Services.TryAddSingleton<IMessageBroker>(static sp => sp.GetRequiredService<RabbitMQMessageBroker>());

@@ -3,9 +3,15 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="Result{T}"/> 的行为：成功值非空、失败携带错误、<c>default</c> 视为未初始化失败、组合方法的传播与相等语义。
+/// </summary>
 public sealed class ResultOfTTests
 {
-    private static readonly Error _sampleError = Error.NotFound("ORDERS_NOTFOUND_001", "订单不存在");
+    /// <summary>
+    /// 各测试共用的失败样例。
+    /// </summary>
+    private static readonly Error _sampleError = Error.Literal("ORDERS_NOTFOUND_001", "Order not found.");
 
     [Fact]
     public void Success_CarriesValue()
@@ -64,8 +70,8 @@ public sealed class ResultOfTTests
     {
         Result<int> success = 2;
 
-        var chained = success.Bind(static v => v > 1 ? Result.Success("big") : Error.Validation("ORDERS_VALIDATION_001", "太小"));
-        var failed = success.Bind(static v => v > 5 ? Result.Success("big") : Error.Validation("ORDERS_VALIDATION_001", "太小"));
+        var chained = success.Bind(static v => v > 1 ? Result.Success("big") : Error.Literal("ORDERS_VALIDATION_001", "Too small."));
+        var failed = success.Bind(static v => v > 5 ? Result.Success("big") : Error.Literal("ORDERS_VALIDATION_001", "Too small."));
 
         Assert.Equal("big", chained.ValueOrThrow());
         Assert.Equal("ORDERS_VALIDATION_001", failed.Error!.Code);

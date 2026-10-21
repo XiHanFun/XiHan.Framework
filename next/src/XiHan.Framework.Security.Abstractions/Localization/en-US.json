@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "The API key is invalid.",
+  "security.authentication.required": "This invocation requires authentication.",
+  "security.authentication.unsupported_scheme": "Authentication scheme '{scheme}' is not supported.",
+  "security.grant_store.capacity_exceeded": "The in-memory grant store has reached its capacity of {capacity}.",
+  "security.permission.missing": "Permission '{permission}' is missing.",
+  "security.policy.not_found": "Policy '{policy}' does not exist.",
+  "security.principal_store.capacity_exceeded": "The in-memory principal store has reached its capacity of {capacity}.",
+  "security.token.invalid": "The token is invalid, expired, or has an invalid signature.",
+  "security.token.subject_missing": "The token is missing the subject claim '{claim}'."
+}

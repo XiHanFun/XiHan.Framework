@@ -11,6 +11,10 @@ namespace XiHan.Framework.Kernel.Security;
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct AuthorizationResult
 {
+    /// <summary>
+    /// 创建结果。<see cref="IsAllowed"/> 由工厂方法通过初始化器设置，保证 <c>default</c> 实例是拒绝。
+    /// </summary>
+    /// <param name="reason">拒绝原因。</param>
     private AuthorizationResult(Error? reason) => Reason = reason;
 
     /// <summary>
@@ -42,5 +46,6 @@ public readonly record struct AuthorizationResult
     /// </summary>
     public Result ToResult() => IsAllowed
         ? Result.Success()
-        : Result.Failure(Reason ?? Error.Denied("SECURITY_DENIED_002", "策略拒绝。"));
+        // 只有 default 实例才会没有原因：它表示"从未判定"，按拒绝处理以免放行。
+        : Result.Failure(Reason ?? Error.Denied("SECURITY_DENIED_002", KernelMessages.DeniedByPolicy));
 }

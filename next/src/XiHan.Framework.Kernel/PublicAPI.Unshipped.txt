@@ -33,6 +33,21 @@ const XiHan.Framework.Kernel.KernelErrors.PipelineCycle = "KERNEL_PIPELINE_001" 
 const XiHan.Framework.Kernel.KernelErrors.PipelineRegistration = "KERNEL_PIPELINE_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
+const XiHan.Framework.Kernel.KernelMessages.Cancelled = "kernel.invocation.cancelled" -> string!
+const XiHan.Framework.Kernel.KernelMessages.DeadlineBeforeStart = "kernel.invocation.deadline_before_start" -> string!
+const XiHan.Framework.Kernel.KernelMessages.DeadlineExceeded = "kernel.invocation.deadline_exceeded" -> string!
+const XiHan.Framework.Kernel.KernelMessages.DeniedByPolicy = "kernel.authorization.denied_by_policy" -> string!
+const XiHan.Framework.Kernel.KernelMessages.DuplicatePermission = "kernel.permission.duplicate" -> string!
+const XiHan.Framework.Kernel.KernelMessages.FeatureStartFailed = "kernel.feature.start_failed" -> string!
+const XiHan.Framework.Kernel.KernelMessages.FeatureStopFailed = "kernel.feature.stop_failed" -> string!
+const XiHan.Framework.Kernel.KernelMessages.FeatureStopTimeout = "kernel.feature.stop_timeout" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ManifestEmpty = "kernel.manifest.empty" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ManifestFileMissing = "kernel.manifest.file_missing" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ManifestInvalid = "kernel.manifest.invalid" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ManifestInvalidJson = "kernel.manifest.invalid_json" -> string!
+const XiHan.Framework.Kernel.KernelMessages.NotServing = "kernel.hosting.not_serving" -> string!
+const XiHan.Framework.Kernel.KernelMessages.PermissionRegistryFull = "kernel.permission.registry_full" -> string!
+const XiHan.Framework.Kernel.KernelMessages.UnhandledException = "kernel.invocation.unhandled_exception" -> string!
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Security.PermissionRegistry.DefaultCapacity = 10000 -> int
 override XiHan.Framework.Kernel.Capabilities.ResolvedNode.ToString() -> string!
@@ -304,6 +319,7 @@ XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.get -> bool
 XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.init -> void
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
+XiHan.Framework.Kernel.KernelMessages
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ContextItemKey(string! name) -> void
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.Name.get -> string!

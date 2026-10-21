@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "API キーが無効です。",
+  "security.authentication.required": "この呼び出しには認証が必要です。",
+  "security.authentication.unsupported_scheme": "認証スキーム '{scheme}' はサポートされていません。",
+  "security.grant_store.capacity_exceeded": "インメモリ権限付与ストアは容量上限 {capacity} に達しました。",
+  "security.permission.missing": "権限 '{permission}' がありません。",
+  "security.policy.not_found": "ポリシー '{policy}' は存在しません。",
+  "security.principal_store.capacity_exceeded": "インメモリプリンシパルストアは容量上限 {capacity} に達しました。",
+  "security.token.invalid": "トークンが無効、期限切れ、または署名が不正です。",
+  "security.token.subject_missing": "トークンにサブジェクトクレーム '{claim}' がありません。"
+}

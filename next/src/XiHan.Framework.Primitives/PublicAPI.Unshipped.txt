@@ -1,4 +1,8 @@
 #nullable enable
+~override XiHan.Framework.Primitives.Maybe<T>.Equals(object obj) -> bool
+~override XiHan.Framework.Primitives.Result.Equals(object obj) -> bool
+~override XiHan.Framework.Primitives.Result<T>.Equals(object obj) -> bool
+~override XiHan.Framework.Primitives.TypedId<TTag, TValue>.Equals(object obj) -> bool
 const XiHan.Framework.Primitives.BaggageKeys.Correlation = "xihan.correlation" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.IdempotencyKey = "xihan.idempotency-key" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.Locale = "xihan.locale" -> string!
@@ -8,6 +12,13 @@ const XiHan.Framework.Primitives.ErrorCode.InvalidArgument = "PRIMITIVES_VALIDAT
 const XiHan.Framework.Primitives.ErrorCode.UninitializedResult = "PRIMITIVES_VALIDATION_002" -> string!
 const XiHan.Framework.Primitives.FrameworkInfo.Name = "XiHan Framework" -> string!
 const XiHan.Framework.Primitives.FrameworkInfo.SpecVersion = "1" -> string!
+const XiHan.Framework.Primitives.Manifests.ManifestMessages.DuplicateBindings = "primitives.manifest.duplicate_bindings" -> string!
+const XiHan.Framework.Primitives.Manifests.ManifestMessages.DuplicateProvides = "primitives.manifest.duplicate_provides" -> string!
+const XiHan.Framework.Primitives.Manifests.ManifestMessages.DuplicateRequires = "primitives.manifest.duplicate_requires" -> string!
+const XiHan.Framework.Primitives.Manifests.ManifestMessages.IsolationNotAllowed = "primitives.manifest.isolation_not_allowed" -> string!
+const XiHan.Framework.Primitives.Manifests.ManifestMessages.IsolationRequired = "primitives.manifest.isolation_required" -> string!
+const XiHan.Framework.Primitives.MessageTemplate.MaxKeyLength = 128 -> int
+const XiHan.Framework.Primitives.ResultMessages.Uninitialized = "primitives.result.uninitialized" -> string!
 override XiHan.Framework.Primitives.Error.Equals(object? obj) -> bool
 override XiHan.Framework.Primitives.Error.GetHashCode() -> int
 override XiHan.Framework.Primitives.Error.ToString() -> string!
@@ -43,14 +54,15 @@ override XiHan.Framework.Primitives.TypedId<TTag, TValue>.ToString() -> string!
 static XiHan.Framework.Primitives.BaggageKeys.IsRegistered(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.IsWellFormed(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.Registered.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static XiHan.Framework.Primitives.Error.Conflict(string! code, string! message) -> XiHan.Framework.Primitives.Error!
-static XiHan.Framework.Primitives.Error.Denied(string! code, string! message) -> XiHan.Framework.Primitives.Error!
-static XiHan.Framework.Primitives.Error.NotFound(string! code, string! message) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Conflict(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Denied(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Literal(string! code, string! text, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null, XiHan.Framework.Primitives.Error? inner = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.NotFound(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.operator !=(XiHan.Framework.Primitives.Error? left, XiHan.Framework.Primitives.Error? right) -> bool
 static XiHan.Framework.Primitives.Error.operator ==(XiHan.Framework.Primitives.Error? left, XiHan.Framework.Primitives.Error? right) -> bool
-static XiHan.Framework.Primitives.Error.Unavailable(string! code, string! message) -> XiHan.Framework.Primitives.Error!
-static XiHan.Framework.Primitives.Error.Unexpected(string! code, string! message, XiHan.Framework.Primitives.Error? inner = null) -> XiHan.Framework.Primitives.Error!
-static XiHan.Framework.Primitives.Error.Validation(string! code, string! message, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Unavailable(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Unexpected(string! code, string! messageKey, XiHan.Framework.Primitives.Error? inner = null, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Validation(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.ErrorCode.DomainOf(string! code) -> string!
 static XiHan.Framework.Primitives.ErrorCode.IsValid(string? code) -> bool
 static XiHan.Framework.Primitives.ErrorCode.KindOf(string! code) -> string!
@@ -92,6 +104,23 @@ static XiHan.Framework.Primitives.Maybe.Some<T>(T value) -> XiHan.Framework.Prim
 static XiHan.Framework.Primitives.Maybe<T>.implicit operator XiHan.Framework.Primitives.Maybe<T>(T value) -> XiHan.Framework.Primitives.Maybe<T>
 static XiHan.Framework.Primitives.Maybe<T>.operator !=(XiHan.Framework.Primitives.Maybe<T> left, XiHan.Framework.Primitives.Maybe<T> right) -> bool
 static XiHan.Framework.Primitives.Maybe<T>.operator ==(XiHan.Framework.Primitives.Maybe<T> left, XiHan.Framework.Primitives.Maybe<T> right) -> bool
+static XiHan.Framework.Primitives.MessageArguments.Of(params System.ReadOnlySpan<(string! Name, object? Value)> pairs) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static XiHan.Framework.Primitives.MessageArguments.Positional(params System.ReadOnlySpan<object?> values) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+static XiHan.Framework.Primitives.MessageKeyExtensions.L(this string! key, params System.ReadOnlySpan<(string! Name, object? Value)> arguments) -> string!
+static XiHan.Framework.Primitives.MessageKeyExtensions.L(this string! key, params System.ReadOnlySpan<object?> values) -> string!
+static XiHan.Framework.Primitives.MessageKeyExtensions.L(this string! key, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
+static XiHan.Framework.Primitives.MessageKeyExtensions.L(this string! key) -> string!
+static XiHan.Framework.Primitives.MessageScope.Current.get -> XiHan.Framework.Primitives.MessageScope?
+static XiHan.Framework.Primitives.MessageScope.Default.get -> XiHan.Framework.Primitives.MessageScope?
+static XiHan.Framework.Primitives.MessageScope.SetDefault(XiHan.Framework.Primitives.IMessageResolver? resolver, string? locale) -> void
+static XiHan.Framework.Primitives.MessageScope.Use(XiHan.Framework.Primitives.IMessageResolver? resolver, string? locale) -> XiHan.Framework.Primitives.MessageScope!
+static XiHan.Framework.Primitives.MessageTemplate.Describe(string! key, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments = null) -> string!
+static XiHan.Framework.Primitives.MessageTemplate.DomainOf(string! key) -> string!
+static XiHan.Framework.Primitives.MessageTemplate.Format(string! text, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, System.IFormatProvider? provider = null) -> string!
+static XiHan.Framework.Primitives.MessageTemplate.IsValidKey(string? key) -> bool
+static XiHan.Framework.Primitives.MessageTemplate.PlaceholdersOf(string! text) -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Primitives.MessageTemplate.TryFormat(string! text, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, System.IFormatProvider? provider, out string? result) -> bool
+static XiHan.Framework.Primitives.MessageTemplate.ValidateKey(string! key, string? paramName = null) -> string!
 static XiHan.Framework.Primitives.PipelineStageExtensions.All.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.PipelineStage>!
 static XiHan.Framework.Primitives.PipelineStageExtensions.ToManifestName(this XiHan.Framework.Primitives.PipelineStage stage) -> string!
 static XiHan.Framework.Primitives.PipelineStageExtensions.TryParse(string? name, out XiHan.Framework.Primitives.PipelineStage stage) -> bool
@@ -120,16 +149,22 @@ XiHan.Framework.Primitives.Error.<Clone>$() -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Primitives.Error.Code.get -> string!
 XiHan.Framework.Primitives.Error.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 XiHan.Framework.Primitives.Error.Equals(XiHan.Framework.Primitives.Error? other) -> bool
-XiHan.Framework.Primitives.Error.Error(string! code, string! message, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null, XiHan.Framework.Primitives.Error? inner = null) -> void
+XiHan.Framework.Primitives.Error.Error(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null, XiHan.Framework.Primitives.Error? inner = null) -> void
 XiHan.Framework.Primitives.Error.Inner.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Primitives.Error.Kind.get -> string!
 XiHan.Framework.Primitives.Error.Message.get -> string!
+XiHan.Framework.Primitives.Error.MessageKey.get -> string?
+XiHan.Framework.Primitives.Error.Text.get -> string?
+XiHan.Framework.Primitives.Error.WithCode(string! code) -> XiHan.Framework.Primitives.Error!
+XiHan.Framework.Primitives.Error.WithText(string! text) -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Primitives.ErrorCode
 XiHan.Framework.Primitives.FrameworkException
 XiHan.Framework.Primitives.FrameworkException.Code.get -> string!
 XiHan.Framework.Primitives.FrameworkException.FrameworkException(string! code, string! message, System.Exception? innerException = null) -> void
 XiHan.Framework.Primitives.FrameworkException.ToError() -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Primitives.FrameworkInfo
+XiHan.Framework.Primitives.IMessageResolver
+XiHan.Framework.Primitives.IMessageResolver.TryResolve(string! key, string? locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, out string? text) -> bool
 XiHan.Framework.Primitives.InvocationContext
 XiHan.Framework.Primitives.InvocationContext.Baggage.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Primitives.InvocationContext.Baggage.init -> void
@@ -149,6 +184,7 @@ XiHan.Framework.Primitives.InvocationContext.TraceId.get -> string!
 XiHan.Framework.Primitives.InvocationContext.TraceId.init -> void
 XiHan.Framework.Primitives.InvocationContext.TryGetBaggage(string! key, out string! value) -> bool
 XiHan.Framework.Primitives.InvocationContext.WithBaggage(string! key, string! value) -> XiHan.Framework.Primitives.InvocationContext!
+XiHan.Framework.Primitives.InvocationContext.WithCancellation(System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
 XiHan.Framework.Primitives.ITypedId<TValue>
 XiHan.Framework.Primitives.ITypedId<TValue>.Value.get -> TValue
 XiHan.Framework.Primitives.LifecycleState
@@ -246,6 +282,7 @@ XiHan.Framework.Primitives.Manifests.ManifestKind.Host = 3 -> XiHan.Framework.Pr
 XiHan.Framework.Primitives.Manifests.ManifestKind.Plugin = 2 -> XiHan.Framework.Primitives.Manifests.ManifestKind
 XiHan.Framework.Primitives.Manifests.ManifestKind.Protocol = 4 -> XiHan.Framework.Primitives.Manifests.ManifestKind
 XiHan.Framework.Primitives.Manifests.ManifestKind.Provider = 1 -> XiHan.Framework.Primitives.Manifests.ManifestKind
+XiHan.Framework.Primitives.Manifests.ManifestMessages
 XiHan.Framework.Primitives.Manifests.ManifestRole
 XiHan.Framework.Primitives.Manifests.ManifestRole.Default = 1 -> XiHan.Framework.Primitives.Manifests.ManifestRole
 XiHan.Framework.Primitives.Manifests.ManifestRole.Provider = 0 -> XiHan.Framework.Primitives.Manifests.ManifestRole
@@ -275,6 +312,14 @@ XiHan.Framework.Primitives.Maybe<T>.ToResult(XiHan.Framework.Primitives.Error! e
 XiHan.Framework.Primitives.Maybe<T>.TryGetValue(out T value) -> bool
 XiHan.Framework.Primitives.Maybe<T>.ValueOr(T fallback) -> T
 XiHan.Framework.Primitives.Maybe<T>.ValueOrThrow() -> T
+XiHan.Framework.Primitives.MessageArguments
+XiHan.Framework.Primitives.MessageKeyExtensions
+XiHan.Framework.Primitives.MessageScope
+XiHan.Framework.Primitives.MessageScope.Dispose() -> void
+XiHan.Framework.Primitives.MessageScope.Locale.get -> string?
+XiHan.Framework.Primitives.MessageScope.Resolve(string! key, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments = null) -> string!
+XiHan.Framework.Primitives.MessageScope.Resolver.get -> XiHan.Framework.Primitives.IMessageResolver?
+XiHan.Framework.Primitives.MessageTemplate
 XiHan.Framework.Primitives.PipelineStage
 XiHan.Framework.Primitives.PipelineStage.Authenticate = 3 -> XiHan.Framework.Primitives.PipelineStage
 XiHan.Framework.Primitives.PipelineStage.Authorize = 5 -> XiHan.Framework.Primitives.PipelineStage
@@ -310,6 +355,7 @@ XiHan.Framework.Primitives.Result<T>.ToResult() -> XiHan.Framework.Primitives.Re
 XiHan.Framework.Primitives.Result<T>.TryGetValue(out T value) -> bool
 XiHan.Framework.Primitives.Result<T>.ValueOr(T fallback) -> T
 XiHan.Framework.Primitives.Result<T>.ValueOrThrow() -> T
+XiHan.Framework.Primitives.ResultMessages
 XiHan.Framework.Primitives.Stability
 XiHan.Framework.Primitives.Stability.Deprecated = 4 -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Primitives.Stability.Experimental = 2 -> XiHan.Framework.Primitives.Stability
@@ -323,8 +369,3 @@ XiHan.Framework.Primitives.TypedId<TTag, TValue>.TypedId() -> void
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.TypedId(TValue Value) -> void
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.get -> TValue
 XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.init -> void
-~override XiHan.Framework.Primitives.Maybe<T>.Equals(object obj) -> bool
-~override XiHan.Framework.Primitives.Result.Equals(object obj) -> bool
-~override XiHan.Framework.Primitives.Result<T>.Equals(object obj) -> bool
-~override XiHan.Framework.Primitives.TypedId<TTag, TValue>.Equals(object obj) -> bool
-XiHan.Framework.Primitives.InvocationContext.WithCancellation(System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
