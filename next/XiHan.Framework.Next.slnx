@@ -11,6 +11,7 @@
     <Project Path="src/XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
   </Folder>
   <Folder Name="/3.Providers/">
     <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
@@ -20,6 +21,7 @@
     <Project Path="src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
   </Folder>
   <Folder Name="/4.Hosting/">
     <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
@@ -34,6 +36,7 @@
     <Project Path="src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy.Conformance/XiHan.Framework.MultiTenancy.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
     <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/7.Tests/">
@@ -56,6 +59,8 @@
     <Project Path="test/XiHan.Framework.Security.Abstractions.Tests/XiHan.Framework.Security.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.InMemory.Tests/XiHan.Framework.Security.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Jwt.Tests/XiHan.Framework.Security.Jwt.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.Abstractions.Tests/XiHan.Framework.Messaging.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.InMemory.Tests/XiHan.Framework.Messaging.InMemory.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />

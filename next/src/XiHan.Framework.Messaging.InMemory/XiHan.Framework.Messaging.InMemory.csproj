@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存消息代理（默认实现，仅单进程）：每主题一条有界通道、单消费者顺序投递、重试与死信。</Description>
+    <PackageTags>xihan;framework;messaging;in-memory;channels</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
