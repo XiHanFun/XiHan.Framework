@@ -6,7 +6,7 @@ using System.Reflection;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 依赖门禁：只能依赖更低的环，Ring 0/1 与抽象包零第三方依赖，公开签名不泄漏第三方类型。
+/// 依赖门禁：只能依赖更低的环（同环只经契约包），Ring 0/1 与抽象包零第三方依赖，公开签名不泄漏第三方类型。
 /// </summary>
 public sealed class DependencyTests
 {
@@ -27,7 +27,7 @@ public sealed class DependencyTests
                 var targetRing = PackageGrammar.Ring(target);
                 var ok = sourceRing is 6 or 7
                     || targetRing < sourceRing
-                    || (targetRing == sourceRing && PackageGrammar.IsAbstractions(target));
+                    || (targetRing == sourceRing && PackageGrammar.IsContract(target));
 
                 if (!ok)
                 {
