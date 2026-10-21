@@ -60,8 +60,22 @@ public sealed class WebHostTests
             return Results.Empty;
         });
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
+        app.MapGet("/secure", () => "secure").RequireXiHanPermission("orders.read");
         await app.StartAsync();
         return (app, app.GetTestClient(), captured);
+    }
+
+    [Fact]
+    public async Task EndpointMetadata_BecomesAuthorizationRequirement()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+
+        // 没有装配安全子系统时要求只进入上下文，不被判定
+        var response = await client.GetAsync("/secure");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(AuthorizationRequirement.Permission("orders.read"), captured.Context!.GetAuthorizationRequirement().ValueOrThrow());
     }
 
     [Fact]
