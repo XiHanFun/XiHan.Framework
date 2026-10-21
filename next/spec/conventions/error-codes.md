@@ -45,6 +45,14 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PLUGINS_DENIED_001` | 插件声明的权限未被宿主授予 |
 | `PLUGINS_CONFLICT_001` | 同一清单 ID 的插件已加载 |
 | `PLUGINS_UNEXPECTED_001` | 插件加载、配置、启动或停止时发生未处理异常 |
+| `PERSISTENCE_VALIDATION_001` | 多租户实体在没有当前租户的调用中新增 |
+| `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作（重复开始、未开始就提交、只读却写入） |
+| `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） |
+| `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配 |
+| `PERSISTENCE_CONFLICT_002` | 新增的标识已存在 |
+| `PERSISTENCE_UNAVAILABLE_001` | 没有活动的工作单元（仓储在 Transaction 阶段之外使用；以异常抛出） |
+| `PERSISTENCE_UNAVAILABLE_002` | 存储容量已满（内存实现的每类实体上限） |
+| `PERSISTENCE_UNAVAILABLE_003` | 存储不可达 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |

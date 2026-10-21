@@ -122,7 +122,11 @@ internal static partial class PackageGrammar
         };
     }
 
-    public static bool IsAbstractions(string packageId) => packageId.EndsWith(".Abstractions", StringComparison.Ordinal);
+    /// <summary>
+    /// 契约包：同环之间只能经契约包往来。<c>.Abstractions</c> 之外，术语表把 <c>Domain</c> 定义为纯契约、无实现包，同样算契约包。
+    /// </summary>
+    public static bool IsContract(string packageId)
+        => packageId.EndsWith(".Abstractions", StringComparison.Ordinal) || packageId == Workspace.PackagePrefix + "Domain";
 
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex RoleSegment();
