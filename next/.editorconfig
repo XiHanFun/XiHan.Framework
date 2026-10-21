@@ -8,7 +8,20 @@ tab_width = 4
 end_of_line = lf
 insert_final_newline = true
 
-# 命名
+# 命名：规则本身的 severity 只对 IDE 生效，构建期（EnforceCodeStyleInBuild）按下面的诊断 severity 报告
+dotnet_diagnostic.IDE1006.severity = warning
+# 未使用的 using
+dotnet_diagnostic.IDE0005.severity = warning
+
+# 私有常量 PascalCase（先于下面的静态字段规则匹配，const 也带 static 修饰）
+dotnet_naming_rule.private_constants_should_be_pascal_case.severity = warning
+dotnet_naming_rule.private_constants_should_be_pascal_case.symbols = private_constants
+dotnet_naming_rule.private_constants_should_be_pascal_case.style = pascal_case
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
 dotnet_naming_rule.private_fields_should_have_underscore.severity = warning
 dotnet_naming_rule.private_fields_should_have_underscore.symbols = private_fields
 dotnet_naming_rule.private_fields_should_have_underscore.style = underscore_prefix

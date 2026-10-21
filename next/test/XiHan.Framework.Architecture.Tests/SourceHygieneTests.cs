@@ -11,7 +11,7 @@ public sealed class SourceHygieneTests
     private const string HeaderLine1 = "// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.";
     private const string HeaderLine2 = "// See the LICENSE file in the project root for full license text.";
 
-    private static readonly string[] ReflectionTokens =
+    private static readonly string[] _reflectionTokens =
     [
         "using System.Reflection",
         "Activator.",
@@ -29,7 +29,7 @@ public sealed class SourceHygieneTests
         "MakeGenericMethod(",
     ];
 
-    private static readonly string[] RequiredFiles = ["README.md", "PublicAPI.Shipped.txt", "PublicAPI.Unshipped.txt"];
+    private static readonly string[] _requiredFiles = ["README.md", "PublicAPI.Shipped.txt", "PublicAPI.Unshipped.txt"];
 
     [Fact]
     public void SourceFiles_StartWithCopyrightHeader()
@@ -58,7 +58,7 @@ public sealed class SourceHygieneTests
             foreach (var file in Workspace.SourceFiles(project.Directory))
             {
                 var text = File.ReadAllText(file);
-                foreach (var token in ReflectionTokens)
+                foreach (var token in _reflectionTokens)
                 {
                     if (text.Contains(token, StringComparison.Ordinal))
                     {
@@ -78,7 +78,7 @@ public sealed class SourceHygieneTests
 
         foreach (var project in Workspace.SourceProjects)
         {
-            foreach (var required in RequiredFiles)
+            foreach (var required in _requiredFiles)
             {
                 if (!File.Exists(Path.Combine(project.Directory, required)))
                 {

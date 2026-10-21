@@ -18,7 +18,7 @@ internal static partial class PackageGrammar
         "Default", "Core", "Common", "Shared", "Base", "Impl", "Util", "Utils", "Helper", "Manager", "Bus", "Engine",
     };
 
-    private static readonly Dictionary<string, string[]> FixedSuffixes = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string[]> _fixedSuffixes = new(StringComparer.Ordinal)
     {
         ["Kernel"] = ["Analyzers", "Generators"],
         ["Hosting"] = ["AspNetCore", "CommandLine"],
@@ -27,7 +27,7 @@ internal static partial class PackageGrammar
         ["Profiles"] = ["Minimal", "Standard", "Full"],
     };
 
-    private static readonly HashSet<string> Standalone = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> _standalone = new(StringComparer.Ordinal)
     {
         "Primitives", "Kernel", "Domain", "Testing", "Cli",
     };
@@ -45,7 +45,7 @@ internal static partial class PackageGrammar
 
         if (segments.Length == 1)
         {
-            if (Standalone.Contains(head))
+            if (_standalone.Contains(head))
             {
                 reason = string.Empty;
                 return true;
@@ -71,7 +71,7 @@ internal static partial class PackageGrammar
             return CompatRole().IsMatch(role);
         }
 
-        if (FixedSuffixes.TryGetValue(head, out var allowed))
+        if (_fixedSuffixes.TryGetValue(head, out var allowed))
         {
             reason = $"{head} 允许的角色段：{string.Join("、", allowed)}";
             return Array.IndexOf(allowed, role) >= 0;

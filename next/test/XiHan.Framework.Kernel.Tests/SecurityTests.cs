@@ -10,7 +10,7 @@ namespace XiHan.Framework.Kernel.Tests;
 
 public sealed class SecurityTests
 {
-    private static readonly ServiceProvider Services = new ServiceCollection().BuildServiceProvider();
+    private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]
     public void ResourceName_ParsesAndFormats()
@@ -44,7 +44,7 @@ public sealed class SecurityTests
     [Fact]
     public void SecurityContext_DefaultsToAnonymousAndCanBeReplaced()
     {
-        var context = App.CreateContext(Services, CancellationToken.None);
+        var context = App.CreateContext(_services, CancellationToken.None);
 
         Assert.Same(SecurityContext.Anonymous, context.GetSecurity());
 

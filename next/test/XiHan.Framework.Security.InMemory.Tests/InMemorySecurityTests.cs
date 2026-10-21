@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -15,7 +14,7 @@ namespace XiHan.Framework.Security.InMemory.Tests;
 
 public sealed class InMemorySecurityTests
 {
-    private static readonly KeyValuePair<string, string?>[] Configuration =
+    private static readonly KeyValuePair<string, string?>[] _configuration =
     [
         new("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
         new("XiHan:Security:InMemory:Principals:alice:DisplayName", "Alice"),
@@ -44,7 +43,7 @@ public sealed class InMemorySecurityTests
     [Fact]
     public void Options_FromConfiguration_LoadsPrincipalsAndGrants()
     {
-        var options = InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(Configuration).Build());
+        var options = InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(_configuration).Build());
 
         var alice = options.Principals.Single(static p => p.Id == "alice");
         Assert.Equal("dev-alice-key", alice.ApiKey);
@@ -85,7 +84,7 @@ public sealed class InMemorySecurityTests
     [Fact]
     public async Task Feature_EndToEnd_ApiKeyAuthentication_AndPermissionAuthorization()
     {
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>(), Configuration);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>(), _configuration);
         Assert.Contains(nameof(AuthenticationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
         Assert.Contains(nameof(AuthorizationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
 
@@ -112,7 +111,7 @@ public sealed class InMemorySecurityTests
     [Fact]
     public async Task Feature_WhenExplicitAuthenticationProviderWins_RegistersOnlyAuthorization()
     {
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.security.fake-jwt", provides: ["security.authentication@1"], requires: ["kernel.hosting@1"]))), Configuration);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.security.fake-jwt", provides: ["security.authentication@1"], requires: ["kernel.hosting@1"]))), _configuration);
 
         Assert.Empty(host.Services.GetServices<IAuthenticationHandler>());
         Assert.DoesNotContain(nameof(AuthenticationMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);

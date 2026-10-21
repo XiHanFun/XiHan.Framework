@@ -13,7 +13,7 @@ namespace XiHan.Framework.Security.Conformance;
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class PermissionGrantStoreConformance
 {
-    private static readonly PermissionGrant[] Seed =
+    private static readonly PermissionGrant[] _seed =
     [
         new(GrantSubject.ForRole("editor"), "orders.read"),
         new(GrantSubject.ForRole("editor"), "orders.write"),
@@ -34,7 +34,7 @@ public abstract class PermissionGrantStoreConformance
     [Fact]
     public async Task Grants_AreReturnedPerSubject_AndEmptyForUnknown()
     {
-        var store = await CreateStoreAsync(Seed).ConfigureAwait(false);
+        var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
         Assert.Equal(["orders.read", "orders.write"], Sorted(await store.GetGrantsAsync(GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)));
         Assert.Equal([PermissionGrant.All], Sorted(await store.GetGrantsAsync(GrantSubject.ForRole("admin"), null, CancellationToken.None).ConfigureAwait(false)));
@@ -49,7 +49,7 @@ public abstract class PermissionGrantStoreConformance
     [Fact]
     public async Task TenantScopedGrants_ApplyOnlyToThatTenant()
     {
-        var store = await CreateStoreAsync(Seed).ConfigureAwait(false);
+        var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
         Assert.Equal(["reports.export", "reports.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)));
         Assert.Equal(["reports.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)));
@@ -62,7 +62,7 @@ public abstract class PermissionGrantStoreConformance
     [Fact]
     public async Task SubjectIds_AreCaseSensitive()
     {
-        var store = await CreateStoreAsync(Seed).ConfigureAwait(false);
+        var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
         Assert.Equal(["audit.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("Bob"), null, CancellationToken.None).ConfigureAwait(false)));
         Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForUser("bob"), null, CancellationToken.None).ConfigureAwait(false));

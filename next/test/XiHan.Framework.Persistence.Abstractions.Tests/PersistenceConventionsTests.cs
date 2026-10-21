@@ -7,18 +7,18 @@ namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 public sealed class PersistenceConventionsTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void ApplyOnAdd_WritesTenantCreationTimeAndStamp()
     {
         var entity = new AuditedWidget { Id = Guid.NewGuid() };
 
-        var result = PersistenceConventions.ApplyOnAdd(entity, "acme", Now);
+        var result = PersistenceConventions.ApplyOnAdd(entity, "acme", _now);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("acme", entity.TenantId);
-        Assert.Equal(Now, entity.CreatedAt);
+        Assert.Equal(_now, entity.CreatedAt);
         Assert.Equal(32, entity.ConcurrencyStamp.Length);
     }
 
@@ -27,11 +27,11 @@ public sealed class PersistenceConventionsTests
     {
         var entity = new AuditedWidget { Id = Guid.NewGuid() };
 
-        var result = PersistenceConventions.ApplyOnAdd(entity, tenantId: null, Now);
+        var result = PersistenceConventions.ApplyOnAdd(entity, tenantId: null, _now);
 
         Assert.True(result.IsFailure);
         Assert.Equal(PersistenceErrors.TenantRequired, result.Error!.Code);
-        Assert.True(PersistenceConventions.ApplyOnAdd(new Widget { Id = Guid.NewGuid() }, tenantId: null, Now).IsSuccess);
+        Assert.True(PersistenceConventions.ApplyOnAdd(new Widget { Id = Guid.NewGuid() }, tenantId: null, _now).IsSuccess);
     }
 
     [Fact]
@@ -39,9 +39,9 @@ public sealed class PersistenceConventionsTests
     {
         var entity = new AuditedWidget { Id = Guid.NewGuid(), ConcurrencyStamp = "old" };
 
-        PersistenceConventions.ApplyOnUpdate(entity, Now);
+        PersistenceConventions.ApplyOnUpdate(entity, _now);
 
-        Assert.Equal(Now, entity.ModifiedAt);
+        Assert.Equal(_now, entity.ModifiedAt);
         Assert.NotEqual("old", entity.ConcurrencyStamp);
     }
 
@@ -51,12 +51,12 @@ public sealed class PersistenceConventionsTests
         var soft = new AuditedWidget { Id = Guid.NewGuid() };
         var plain = new Widget { Id = Guid.NewGuid() };
 
-        Assert.True(PersistenceConventions.TrySoftDelete(soft, Now));
+        Assert.True(PersistenceConventions.TrySoftDelete(soft, _now));
         Assert.True(soft.IsDeleted);
-        Assert.Equal(Now, soft.DeletedAt);
+        Assert.Equal(_now, soft.DeletedAt);
         Assert.True(PersistenceConventions.IsDeleted(soft));
 
-        Assert.False(PersistenceConventions.TrySoftDelete(plain, Now));
+        Assert.False(PersistenceConventions.TrySoftDelete(plain, _now));
         Assert.False(PersistenceConventions.IsDeleted(plain));
     }
 
@@ -76,7 +76,7 @@ public sealed class PersistenceConventionsTests
     [Fact]
     public void GuidV7IdGenerator_UsesTimeProvider_AndIsOrdered()
     {
-        var clock = new FakeTimeProvider(Now);
+        var clock = new FakeTimeProvider(_now);
         var generator = new GuidV7IdGenerator(clock);
 
         var first = generator.NewId();

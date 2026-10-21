@@ -1,10 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text.Json.Serialization;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -38,36 +36,3 @@ public sealed class GreetingFeature : IFeature
         context.AddMiddleware<CountingMiddleware>(PipelineStage.Observe);
     }
 }
-
-/// <summary>
-/// 已处理的调用次数。
-/// </summary>
-public sealed class GreetingCounter
-{
-    private long _count;
-
-    public long Count => Interlocked.Read(ref _count);
-
-    public void Increment() => Interlocked.Increment(ref _count);
-}
-
-public sealed class CountingMiddleware(GreetingCounter counter) : IPipelineMiddleware
-{
-    public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
-    {
-        counter.Increment();
-        await nextStep(context);
-    }
-}
-
-public sealed record Greeting(string Message, long Served);
-
-public sealed record WhoAmI(string Principal, bool IsAuthenticated, string? Tenant);
-
-[JsonSerializable(typeof(Greeting))]
-[JsonSerializable(typeof(WhoAmI))]
-[JsonSerializable(typeof(PlaceOrderRequest))]
-[JsonSerializable(typeof(OrderResponse))]
-[JsonSerializable(typeof(List<OrderResponse>))]
-[JsonSerializable(typeof(OrderStatistics))]
-internal sealed partial class SampleJsonContext : JsonSerializerContext;

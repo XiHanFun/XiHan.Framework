@@ -4,11 +4,6 @@
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 术语表条目：领域词及其在能力 ID、配置节、错误码域中的形态。
-/// </summary>
-internal sealed record VocabularyEntry(string Word, string CapabilityPrefix, string ConfigSection, string ErrorDomain);
-
-/// <summary>
 /// 从 <c>spec/conventions/vocabulary.md</c> 的表格读取术语表。规范文件是唯一事实源，测试不另存一份。
 /// </summary>
 internal static class Vocabulary

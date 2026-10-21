@@ -7,30 +7,8 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.Kernel.Hosting;
-
-/// <summary>
-/// 一个特性的状态快照。
-/// </summary>
-/// <param name="Manifest">清单。</param>
-/// <param name="State">生命周期状态。</param>
-/// <param name="Error">失败原因。</param>
-/// <param name="IsHosted">是否实现 <see cref="IHostedFeature"/>。</param>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed record FeatureStatus(Manifest Manifest, LifecycleState State, Error? Error, bool IsHosted);
-
-/// <summary>
-/// 健康快照，直接映射 Kubernetes 的三种探针。
-/// </summary>
-/// <param name="Started">startup 探针：所有特性都已到达 <see cref="LifecycleState.Started"/> 之后的状态。</param>
-/// <param name="Ready">readiness 探针：应用处于 <see cref="LifecycleState.Ready"/> 或 <see cref="LifecycleState.Degraded"/>。</param>
-/// <param name="Live">liveness 探针：应用未处于 <see cref="LifecycleState.Failed"/>。</param>
-/// <param name="State">应用聚合状态。</param>
-/// <param name="Features">各特性状态。</param>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed record HealthSnapshot(bool Started, bool Ready, bool Live, LifecycleState State, IReadOnlyList<FeatureStatus> Features);
 
 /// <summary>
 /// 应用实例：持有已解析图、特性运行时与管道；按拓扑顺序启动、逆序停止；聚合健康状态。
@@ -38,7 +16,7 @@ public sealed record HealthSnapshot(bool Started, bool Ready, bool Live, Lifecyc
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class App : IDisposable
 {
-    private static readonly ContextItemKey<PipelineStep> HandlerKey = new("xihan.handler");
+    private static readonly ContextItemKey<PipelineStep> _handlerKey = new("xihan.handler");
 
     private readonly IServiceProvider _services;
     private readonly AppModel _model;
@@ -148,7 +126,7 @@ public sealed partial class App : IDisposable
             throw new FrameworkException(KernelErrors.InvalidAppState, $"应用处于 {State}，不能接收调用。");
         }
 
-        context.Set(HandlerKey, handler);
+        context.Set(_handlerKey, handler);
         await Pipeline(context).ConfigureAwait(false);
         return context.GetOutcome().ValueOr(Result.Success());
     }
@@ -225,7 +203,7 @@ public sealed partial class App : IDisposable
     public void Dispose() => _lifecycleLock.Dispose();
 
     private static ValueTask Terminal(InvocationContext context)
-        => context.Get(HandlerKey).Match(handler => handler(context), static () => ValueTask.CompletedTask);
+        => context.Get(_handlerKey).Match(handler => handler(context), static () => ValueTask.CompletedTask);
 
     private static LifecycleState Aggregate(List<LifecycleState> states, FailurePolicy policy)
     {
@@ -334,41 +312,4 @@ public sealed partial class App : IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "应用状态 {State}")]
     private static partial void LogState(ILogger logger, LifecycleState state);
-}
-
-/// <summary>
-/// 特性的运行时记录：实例、节点、状态机。
-/// </summary>
-internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
-{
-    private LifecycleState _state = LifecycleState.Configured;
-
-    public ResolvedNode Node { get; } = node;
-
-    public IFeature Feature { get; } = feature;
-
-    public LifecycleState State => _state;
-
-    public Error? Error { get; private set; }
-
-    public FeatureStatus Status => new(Node.Manifest, _state, Error, Feature is IHostedFeature);
-
-    public void Transition(LifecycleState to)
-    {
-        if (!_state.CanTransitionTo(to))
-        {
-            throw new FrameworkException(KernelErrors.InvalidAppState, $"特性 '{Node.Manifest.Id}' 不能从 {_state} 迁移到 {to}。");
-        }
-
-        _state = to;
-    }
-
-    public void Fail(Error error)
-    {
-        Error = error;
-        if (_state.CanTransitionTo(LifecycleState.Failed))
-        {
-            _state = LifecycleState.Failed;
-        }
-    }
 }

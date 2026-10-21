@@ -14,23 +14,6 @@ using Xunit;
 namespace XiHan.Framework.Persistence.Conformance;
 
 /// <summary>
-/// 套件用的可拨动时钟。
-/// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed class ConformanceClock(DateTimeOffset start) : TimeProvider
-{
-    private DateTimeOffset _now = start;
-
-    /// <inheritdoc />
-    public override DateTimeOffset GetUtcNow() => _now;
-
-    /// <summary>
-    /// 前进。
-    /// </summary>
-    public void Advance(TimeSpan by) => _now += by;
-}
-
-/// <summary>
 /// <c>persistence.relational@1</c> Provider 的一致性套件。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
 /// 每个用例都以 <see cref="TestHost"/> 走完整管道：工作单元由 Transaction 阶段的中间件开启、提交或回滚。
 /// </summary>

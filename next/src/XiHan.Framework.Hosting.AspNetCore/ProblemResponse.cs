@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Primitives;
 
@@ -50,26 +49,3 @@ public sealed record ProblemResponse(string Type, string Title, int Status, stri
         };
     }
 }
-
-/// <summary>
-/// 探针端点的响应体。
-/// </summary>
-/// <param name="Status"><c>pass</c> 或 <c>fail</c>。</param>
-/// <param name="State">应用聚合状态。</param>
-/// <param name="Features">各特性状态。</param>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed record HealthResponse(string Status, string State, IReadOnlyList<FeatureHealth> Features);
-
-/// <summary>
-/// 探针端点中的单个特性状态。
-/// </summary>
-/// <param name="Id">清单 ID。</param>
-/// <param name="State">生命周期状态。</param>
-/// <param name="Error">失败原因的错误码。</param>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed record FeatureHealth(string Id, string State, string? Error);
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
-[JsonSerializable(typeof(ProblemResponse))]
-[JsonSerializable(typeof(HealthResponse))]
-internal sealed partial class HostingJsonContext : JsonSerializerContext;
