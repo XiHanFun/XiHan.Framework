@@ -42,3 +42,4 @@ spec/
 | [0004](rfcs/0004-pipeline-stages.md) | 管道阶段与排序 | 已采纳（参考实现 `Kernel.Pipeline`） |
 | [0005](rfcs/0005-persistence.md) | 领域协议与持久化 | 已采纳（参考实现 `Domain`、`Persistence.Abstractions`，套件 `Persistence.Conformance`） |
 | [0006](rfcs/0006-caching.md) | 缓存、分布式锁与幂等 | 已采纳（参考实现 `Caching.Abstractions`、`Caching.InMemory`、`Caching.Redis`，套件 `Caching.Conformance`） |
+| [0007](rfcs/0007-multitenancy.md) | 多租户 | 已采纳（参考实现 `MultiTenancy.Abstractions`、`MultiTenancy.InMemory`，套件 `MultiTenancy.Conformance`） |

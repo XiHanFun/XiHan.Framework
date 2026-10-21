@@ -1,0 +1,10 @@
+#nullable enable
+abstract XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.CreateStoreAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!>! tenants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.ITenantStore!>
+static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Acme.get -> XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!
+static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Dormant.get -> XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_IsCaseSensitive() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_PreservesDisabledFlag_AndMissingDisplayName() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_ReturnsSeededTenant_AndNoneForMissing() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.List_ReturnsAllTenants() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.TenantStoreConformance() -> void

@@ -60,4 +60,8 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
+| `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |
+| `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
+| `MULTITENANCY_DENIED_001` | 租户已禁用 |
+| `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满 |
