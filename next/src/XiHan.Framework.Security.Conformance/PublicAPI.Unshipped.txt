@@ -1,0 +1,8 @@
+#nullable enable
+abstract XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.CreateStoreAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.PermissionGrant!>! grants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.IPermissionGrantStore!>
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.EmptyStore_ReturnsNothing() -> System.Threading.Tasks.Task!
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.Grants_AreReturnedPerSubject_AndEmptyForUnknown() -> System.Threading.Tasks.Task!
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.PermissionGrantStoreConformance() -> void
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.SubjectIds_AreCaseSensitive() -> System.Threading.Tasks.Task!
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.TenantScopedGrants_ApplyOnlyToThatTenant() -> System.Threading.Tasks.Task!
