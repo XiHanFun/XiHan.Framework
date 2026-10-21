@@ -28,13 +28,13 @@ public sealed class TenantResolutionMiddlewareTests
             => ValueTask.FromResult(tenantId is null ? default : Maybe.Some(tenantId));
     }
 
-    private static readonly TenantInfo Acme = new() { Id = "acme", DisplayName = "Acme" };
-    private static readonly TenantInfo Dormant = new() { Id = "dormant", IsEnabled = false };
+    private static readonly TenantInfo _acme = new() { Id = "acme", DisplayName = "Acme" };
+    private static readonly TenantInfo _dormant = new() { Id = "dormant", IsEnabled = false };
 
     private static (InvocationContext Context, bool[] Reached) Arrange(MultiTenancyOptions options, string? baggageTenant = null, params ITenantResolver[] resolvers)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<ITenantStore>(new DictionaryTenantStore(Acme, Dormant));
+        services.AddSingleton<ITenantStore>(new DictionaryTenantStore(_acme, _dormant));
         services.AddSingleton(options);
         foreach (var resolver in resolvers)
         {

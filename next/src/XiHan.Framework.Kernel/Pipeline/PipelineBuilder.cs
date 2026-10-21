@@ -8,27 +8,6 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 管道中一个中间件的描述：类型、阶段、位置、归属与相对约束。
-/// </summary>
-/// <param name="Middleware">中间件类型。</param>
-/// <param name="Stage">所属阶段。</param>
-/// <param name="Placement">阶段内位置。</param>
-/// <param name="Owner">注册者（清单 ID 或 <c>app</c>）。</param>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed record MiddlewareDescriptor(Type Middleware, PipelineStage Stage, Placement Placement, string Owner)
-{
-    /// <summary>
-    /// 必须位于这些中间件之前。
-    /// </summary>
-    public IReadOnlyList<Type> Before { get; init; } = [];
-
-    /// <summary>
-    /// 必须位于这些中间件之后。
-    /// </summary>
-    public IReadOnlyList<Type> After { get; init; } = [];
-}
-
-/// <summary>
 /// 管道构建器。中间件按固定阶段插入，阶段内按 <see cref="Placement"/>、相对约束、归属与注册顺序确定排序；结果可打印。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]

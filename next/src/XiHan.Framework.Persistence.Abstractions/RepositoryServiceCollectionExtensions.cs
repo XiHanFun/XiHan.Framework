@@ -1,0 +1,46 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Domain;
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Persistence.Abstractions;
+
+/// <summary>
+/// 实体登记扩展。
+/// </summary>
+[ApiLevel(Stability.Stable, "5.0")]
+public static class RepositoryServiceCollectionExtensions
+{
+    /// <summary>
+    /// 登记实体，由当前装配的持久化 Provider 注册仓储。可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
+    /// </summary>
+    public static IServiceCollection AddRepository<TEntity, TKey>(this IServiceCollection services)
+        where TEntity : class, IEntity<TKey>
+        where TKey : notnull, IEquatable<TKey>
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.GetRepositoryRegistrations().Add<TEntity, TKey>();
+        return services;
+    }
+
+    /// <summary>
+    /// 取（必要时创建）登记集合。
+    /// </summary>
+    public static RepositoryRegistrations GetRepositoryRegistrations(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(RepositoryRegistrations) && descriptor.ImplementationInstance is RepositoryRegistrations existing)
+            {
+                return existing;
+            }
+        }
+
+        var registrations = new RepositoryRegistrations();
+        services.AddSingleton(registrations);
+        return registrations;
+    }
+}

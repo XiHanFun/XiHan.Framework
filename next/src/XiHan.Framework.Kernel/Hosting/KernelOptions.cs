@@ -8,19 +8,6 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 特性启动失败时宿主的处理策略。
-/// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
-public enum FailurePolicy
-{
-    /// <summary>终止启动，抛出 <see cref="KernelErrors.FeatureStartFailed"/>。</summary>
-    TerminateStartup = 0,
-
-    /// <summary>隔离该特性（<see cref="LifecycleState.Failed"/>），继续启动其余特性；应用不就绪。</summary>
-    IsolateFeature = 1,
-}
-
-/// <summary>
 /// 内核选项。从配置节 <c>XiHan:Kernel</c> 显式读取，不经反射绑定。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]

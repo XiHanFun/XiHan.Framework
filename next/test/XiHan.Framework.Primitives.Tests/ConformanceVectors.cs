@@ -10,7 +10,7 @@ namespace XiHan.Framework.Primitives.Tests;
 /// </summary>
 internal static class ConformanceVectors
 {
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
     public static string Directory { get; } = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "primitives");
 
@@ -18,7 +18,7 @@ internal static class ConformanceVectors
     {
         var path = Path.Combine(Directory, fileName);
         using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<T>(stream, Options) ?? throw new InvalidOperationException($"向量文件 {path} 为空。");
+        return JsonSerializer.Deserialize<T>(stream, _options) ?? throw new InvalidOperationException($"向量文件 {path} 为空。");
     }
 
     private static string LocateRoot()

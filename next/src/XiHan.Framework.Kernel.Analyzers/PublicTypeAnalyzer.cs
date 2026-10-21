@@ -13,7 +13,7 @@ namespace XiHan.Framework.Kernel.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class PublicTypeAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly ImmutableArray<string> ForbiddenSuffixes = ImmutableArray.Create("Manager", "Helper", "Utils", "Util", "Common", "Shared", "Impl", "Base");
+    private static readonly ImmutableArray<string> _forbiddenSuffixes = ImmutableArray.Create("Manager", "Helper", "Utils", "Util", "Common", "Shared", "Impl", "Base");
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
@@ -62,7 +62,7 @@ public sealed class PublicTypeAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        foreach (var suffix in ForbiddenSuffixes)
+        foreach (var suffix in _forbiddenSuffixes)
         {
             if (type.Name.Length > suffix.Length && type.Name.EndsWith(suffix, StringComparison.Ordinal))
             {

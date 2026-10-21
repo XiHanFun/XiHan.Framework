@@ -5,7 +5,7 @@ namespace XiHan.Framework.Primitives.Tests;
 
 public sealed class ResultTests
 {
-    private static readonly Error SampleError = Error.Conflict("ORDERS_CONFLICT_001", "订单已存在");
+    private static readonly Error _sampleError = Error.Conflict("ORDERS_CONFLICT_001", "订单已存在");
 
     [Fact]
     public void Success_IsSuccessWithoutError()
@@ -21,10 +21,10 @@ public sealed class ResultTests
     [Fact]
     public void Failure_CarriesError()
     {
-        Result result = SampleError;
+        Result result = _sampleError;
 
         Assert.True(result.IsFailure);
-        Assert.Same(SampleError, result.Error);
+        Assert.Same(_sampleError, result.Error);
         Assert.Equal("Failure([ORDERS_CONFLICT_001] 订单已存在)", result.ToString());
     }
 
@@ -49,31 +49,31 @@ public sealed class ResultTests
     public void Match_SelectsBranch()
     {
         Assert.Equal("ok", Result.Success().Match(static () => "ok", static e => e.Code));
-        Assert.Equal("ORDERS_CONFLICT_001", Result.Failure(SampleError).Match(static () => "ok", static e => e.Code));
+        Assert.Equal("ORDERS_CONFLICT_001", Result.Failure(_sampleError).Match(static () => "ok", static e => e.Code));
     }
 
     [Fact]
     public void Bind_ShortCircuitsOnFailure()
     {
         var called = false;
-        var result = Result.Failure(SampleError).Bind(() =>
+        var result = Result.Failure(_sampleError).Bind(() =>
         {
             called = true;
             return Result.Success();
         });
 
         Assert.False(called);
-        Assert.Same(SampleError, result.Error);
+        Assert.Same(_sampleError, result.Error);
         Assert.True(Result.Success().Bind(Result.Success).IsSuccess);
     }
 
     [Fact]
     public void ThrowIfFailure_ThrowsFrameworkExceptionWithCode()
     {
-        var exception = Assert.Throws<FrameworkException>(() => Result.Failure(SampleError).ThrowIfFailure());
+        var exception = Assert.Throws<FrameworkException>(() => Result.Failure(_sampleError).ThrowIfFailure());
 
-        Assert.Equal(SampleError.Code, exception.Code);
-        Assert.Equal(SampleError.Message, exception.Message);
+        Assert.Equal(_sampleError.Code, exception.Code);
+        Assert.Equal(_sampleError.Message, exception.Message);
         Result.Success().ThrowIfFailure();
     }
 
@@ -81,7 +81,7 @@ public sealed class ResultTests
     public void Equality_ComparesStateAndError()
     {
         Assert.Equal(Result.Success(), Result.Success());
-        Assert.Equal(Result.Failure(SampleError), Result.Failure(SampleError));
-        Assert.NotEqual(Result.Success(), Result.Failure(SampleError));
+        Assert.Equal(Result.Failure(_sampleError), Result.Failure(_sampleError));
+        Assert.NotEqual(Result.Success(), Result.Failure(_sampleError));
     }
 }

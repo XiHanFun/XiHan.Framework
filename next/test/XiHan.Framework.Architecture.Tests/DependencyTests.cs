@@ -10,9 +10,9 @@ namespace XiHan.Framework.Architecture.Tests;
 /// </summary>
 public sealed class DependencyTests
 {
-    private static readonly string[] AllowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives"];
+    private static readonly string[] _allowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives"];
 
-    private static readonly string[] AllowedSignatureAssemblyPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.Extensions.", Workspace.PackagePrefix];
+    private static readonly string[] _allowedSignatureAssemblyPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.Extensions.", Workspace.PackagePrefix];
 
     [Fact]
     public void ProjectReferences_PointToLowerRingsOrSameRingAbstractions()
@@ -65,7 +65,7 @@ public sealed class DependencyTests
             {
                 var allowed = (reference.Id.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
                         && reference.Id.EndsWith(".Abstractions", StringComparison.Ordinal))
-                    || Array.IndexOf(AllowedExternalPackages, reference.Id) >= 0;
+                    || Array.IndexOf(_allowedExternalPackages, reference.Id) >= 0;
 
                 if (!allowed)
                 {
@@ -92,7 +92,7 @@ public sealed class DependencyTests
                     foreach (var referenced in ReferencedTypes(member))
                     {
                         var owner = referenced.Assembly.GetName().Name ?? string.Empty;
-                        if (!AllowedSignatureAssemblyPrefixes.Any(prefix => owner.StartsWith(prefix, StringComparison.Ordinal)))
+                        if (!_allowedSignatureAssemblyPrefixes.Any(prefix => owner.StartsWith(prefix, StringComparison.Ordinal)))
                         {
                             failures.Add($"{type.FullName}.{member.Name} 的签名暴露了第三方类型 {referenced.FullName}（{owner}）");
                         }

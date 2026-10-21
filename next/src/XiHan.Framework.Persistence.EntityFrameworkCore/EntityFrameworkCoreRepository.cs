@@ -16,8 +16,8 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
-    private static readonly bool IsSoftDeletable = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity));
-    private static readonly bool IsMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
+    private static readonly bool _isSoftDeletable = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity));
+    private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
 
     private readonly EntityFrameworkCoreUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
@@ -212,12 +212,12 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     private IQueryable<TEntity> Visible(bool includeDeleted)
     {
         IQueryable<TEntity> source = Set;
-        if (IsSoftDeletable && !includeDeleted)
+        if (_isSoftDeletable && !includeDeleted)
         {
             source = source.Where(static e => !EF.Property<bool>(e, nameof(ISoftDeletable.IsDeleted)));
         }
 
-        if (IsMultiTenant)
+        if (_isMultiTenant)
         {
             var tenantId = _unitOfWork.TenantId;
             source = source.Where(e => EF.Property<string>(e, nameof(IMultiTenant.TenantId)) == tenantId);

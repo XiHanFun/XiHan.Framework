@@ -9,6 +9,8 @@
     <!-- NuGet 审计：高危(NU1903)/严重(NU1904)漏洞直接中断构建 -->
     <WarningsAsErrors>$(WarningsAsErrors);NU1903;NU1904</WarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- .editorconfig 里的命名与风格规则在构建期一并执行，IDE 与 CI 同一口径 -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

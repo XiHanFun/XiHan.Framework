@@ -16,7 +16,7 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class MessageDispatcher(IServiceProvider services, App app, MessageSubscriptions subscriptions)
 {
-    private static readonly ContextItemKey<MessageDelivery> DeliveryKey = new("xihan.messaging.delivery");
+    private static readonly ContextItemKey<MessageDelivery> _deliveryKey = new("xihan.messaging.delivery");
 
     private readonly IServiceProvider _services = services ?? throw new ArgumentNullException(nameof(services));
     private readonly App _app = app ?? throw new ArgumentNullException(nameof(app));
@@ -28,7 +28,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     public static Maybe<MessageDelivery> GetDelivery(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return context.Get(DeliveryKey);
+        return context.Get(_deliveryKey);
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
 
         await using var scope = _services.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, TraceIdOf(delivery.Envelope), SpanIdOf(delivery.Envelope), null, BaggageOf(delivery.Envelope));
-        context.Set(DeliveryKey, delivery);
+        context.Set(_deliveryKey, delivery);
 
         return await _app.InvokeAsync(context, async ctx =>
         {

@@ -14,7 +14,7 @@ namespace XiHan.Framework.Kernel.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly ImmutableHashSet<string> ReflectiveTypeMembers = ImmutableHashSet.Create(
+    private static readonly ImmutableHashSet<string> _reflectiveTypeMembers = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         "GetMethod", "GetMethods", "GetProperty", "GetProperties", "GetField", "GetFields", "GetConstructor", "GetConstructors",
         "GetMember", "GetMembers", "GetEvent", "GetEvents", "GetNestedType", "GetNestedTypes", "InvokeMember", "MakeGenericType", "GetType",
@@ -23,7 +23,7 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// <c>typeof(T).Name</c> 这类只读元数据不是反射：MemberInfo 上的这些成员放行。
     /// </summary>
-    private static readonly ImmutableHashSet<string> HarmlessMemberInfoMembers = ImmutableHashSet.Create(
+    private static readonly ImmutableHashSet<string> _harmlessMemberInfoMembers = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         "Name", "DeclaringType", "ReflectedType", "MemberType", "MetadataToken", "IsCollectible");
 
@@ -80,7 +80,7 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
         var ns = containingType.ContainingNamespace?.ToDisplayString() ?? string.Empty;
         if (ns.StartsWith("System.Reflection", StringComparison.Ordinal))
         {
-            return !(string.Equals(containingType.Name, "MemberInfo", StringComparison.Ordinal) && HarmlessMemberInfoMembers.Contains(member.Name));
+            return !(string.Equals(containingType.Name, "MemberInfo", StringComparison.Ordinal) && _harmlessMemberInfoMembers.Contains(member.Name));
         }
 
         if (string.Equals(ns, "System", StringComparison.Ordinal))
@@ -90,7 +90,7 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
                 return true;
             }
 
-            if (string.Equals(containingType.Name, "Type", StringComparison.Ordinal) && ReflectiveTypeMembers.Contains(member.Name))
+            if (string.Equals(containingType.Name, "Type", StringComparison.Ordinal) && _reflectiveTypeMembers.Contains(member.Name))
             {
                 // object.GetType() 不是反射；只拦 Type.GetType(string) 这类按名查找
                 return !string.Equals(member.Name, "GetType", StringComparison.Ordinal) || member is IMethodSymbol { Parameters.Length: > 0 };
