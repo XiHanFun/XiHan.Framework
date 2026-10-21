@@ -1,0 +1,3 @@
+#nullable enable
+static XiHan.Framework.Profiles.Standard.StandardProfile.UseStandardProfile(this XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> XiHan.Framework.Kernel.Hosting.AppBuilder!
+XiHan.Framework.Profiles.Standard.StandardProfile

@@ -30,6 +30,10 @@
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
   </Folder>
+  <Folder Name="/6.Profiles/">
+    <Project Path="src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <Project Path="src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+  </Folder>
   <Folder Name="/6.Tooling/">
     <Project Path="src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
     <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />

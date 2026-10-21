@@ -11,6 +11,9 @@ override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanAuthentication<TBuilder>(this TBuilder builder) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator !=(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.HealthResponse? right) -> bool
@@ -26,6 +29,7 @@ static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Fram
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.FeatureHealth
 XiHan.Framework.Hosting.AspNetCore.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.FeatureHealth!
 XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Deconstruct(out string! Id, out string! State, out string? Error) -> void

@@ -62,5 +62,12 @@ public sealed class CountingMiddleware(GreetingCounter counter) : IPipelineMiddl
 
 public sealed record Greeting(string Message, long Served);
 
+public sealed record WhoAmI(string Principal, bool IsAuthenticated, string? Tenant);
+
 [JsonSerializable(typeof(Greeting))]
+[JsonSerializable(typeof(WhoAmI))]
+[JsonSerializable(typeof(PlaceOrderRequest))]
+[JsonSerializable(typeof(OrderResponse))]
+[JsonSerializable(typeof(List<OrderResponse>))]
+[JsonSerializable(typeof(OrderStatistics))]
 internal sealed partial class SampleJsonContext : JsonSerializerContext;

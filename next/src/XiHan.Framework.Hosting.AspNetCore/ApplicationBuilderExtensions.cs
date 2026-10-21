@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 
 namespace XiHan.Framework.Hosting.AspNetCore;
 
@@ -18,8 +19,8 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
-    /// 让其余 ASP.NET Core 管道在内核管道内执行：请求头翻译为调用上下文，失败结果在响应未开始时以 Problem Details 回写；
-    /// 应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
+    /// 让其余 ASP.NET Core 管道在内核管道内执行：请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 进入上下文，
+    /// 失败结果在响应未开始时以 Problem Details 回写；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
     /// </summary>
     public static IApplicationBuilder UseXiHan(this IApplicationBuilder app)
     {
@@ -41,6 +42,11 @@ public static class ApplicationBuilderExtensions
             }
 
             var context = HttpInvocation.CreateContext(httpContext);
+            if (httpContext.GetEndpoint()?.Metadata.GetMetadata<AuthorizationRequirement>() is { } requirement)
+            {
+                context.RequireAuthorization(requirement);
+            }
+
             var outcome = await xihan.InvokeAsync(context, async _ => await next(httpContext).ConfigureAwait(false)).ConfigureAwait(false);
 
             if (outcome.IsFailure && !httpContext.Response.HasStarted)
