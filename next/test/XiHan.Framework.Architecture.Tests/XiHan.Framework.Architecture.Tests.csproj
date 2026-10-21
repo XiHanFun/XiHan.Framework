@@ -10,5 +10,9 @@
     <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
   </ItemGroup>
 </Project>

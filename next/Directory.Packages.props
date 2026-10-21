@@ -26,6 +26,18 @@
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
+  <!-- Ring 3 实现包按机制引用的第三方库 -->
+  <ItemGroup Label="Provider">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- 一致性套件只引用 xunit 的核心与断言包，不引元包 xunit.v3，避免被当作可执行测试项目 -->
+  <ItemGroup Label="Conformance">
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.2" />
+  </ItemGroup>
+
   <ItemGroup Label="基准">
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>

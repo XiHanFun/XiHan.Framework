@@ -5,8 +5,13 @@
   <Folder Name="/1.Kernel/">
     <Project Path="src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
   </Folder>
-  <Folder Name="/2.Subsystems/" />
-  <Folder Name="/3.Providers/" />
+  <Folder Name="/2.Subsystems/">
+    <Project Path="src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/3.Providers/">
+    <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+  </Folder>
   <Folder Name="/4.Hosting/">
     <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
   </Folder>
@@ -16,6 +21,7 @@
   <Folder Name="/6.Tooling/">
     <Project Path="src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
     <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
     <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/7.Tests/">
@@ -26,6 +32,9 @@
     <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Analyzers.Tests/XiHan.Framework.Kernel.Analyzers.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Domain.Tests/XiHan.Framework.Domain.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.Abstractions.Tests/XiHan.Framework.Persistence.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.InMemory.Tests/XiHan.Framework.Persistence.InMemory.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />

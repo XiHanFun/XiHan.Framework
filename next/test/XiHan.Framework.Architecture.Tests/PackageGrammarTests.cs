@@ -35,6 +35,14 @@ public sealed class PackageGrammarTests
     }
 
     [Theory]
+    [InlineData("XiHan.Framework.Domain", true)]
+    [InlineData("XiHan.Framework.Persistence.Abstractions", true)]
+    [InlineData("XiHan.Framework.Persistence.InMemory", false)]
+    [InlineData("XiHan.Framework.Kernel", false)]
+    public void IsContract_RecognizesAbstractionsAndDomain(string packageId, bool expected)
+        => Assert.Equal(expected, PackageGrammar.IsContract(packageId));
+
+    [Theory]
     [InlineData("XiHan.Framework.Abi")]
     [InlineData("XiHan.Framework.Data.Abstractions")]
     [InlineData("XiHan.Framework.Caching.Default")]
