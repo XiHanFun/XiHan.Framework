@@ -12,7 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
@@ -60,6 +62,28 @@ public sealed class WebHostTests
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
         await app.StartAsync();
         return (app, app.GetTestClient(), captured);
+    }
+
+    [Fact]
+    public async Task AuthorizationHeader_BecomesCredential_WithoutInterpretation()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.TryAddWithoutValidation("Authorization", "Bearer abc.def.ghi");
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(captured.Context);
+        var credential = captured.Context.GetCredential().ValueOrThrow();
+        Assert.Equal("Bearer", credential.Scheme);
+        Assert.Equal("abc.def.ghi", credential.Value);
+        Assert.False(captured.Context.GetSecurity().Principal.IsAuthenticated);
+
+        var anonymous = await client.GetAsync("/ok");
+        Assert.Equal(HttpStatusCode.OK, anonymous.StatusCode);
+        Assert.False(captured.Context!.GetCredential().HasValue);
     }
 
     [Fact]
