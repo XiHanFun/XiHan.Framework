@@ -167,7 +167,8 @@ public sealed class AppBuilder
         var runtimes = new List<FeatureRuntime>();
         foreach (var node in graph.Nodes)
         {
-            if (!featuresById.TryGetValue(node.Manifest.Id, out var feature))
+            // 声明了能力却一个都没被选中的节点（被显式 Provider 顶替的 default 等）不装配、不启动
+            if (node.IsShadowed || !featuresById.TryGetValue(node.Manifest.Id, out var feature))
             {
                 continue;
             }
