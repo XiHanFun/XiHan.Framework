@@ -29,6 +29,8 @@ public interface IRepositoryRegistrar
 public sealed class RepositoryRegistrations
 {
     private readonly List<Action<IServiceCollection, IRepositoryRegistrar>> _registrations = [];
+    private IServiceCollection? _services;
+    private IRepositoryRegistrar? _registrar;
 
     /// <summary>
     /// 已登记的注册动作。
@@ -41,15 +43,25 @@ public sealed class RepositoryRegistrations
     public void Add<TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
-        => _registrations.Add(static (services, registrar) => registrar.Register<TEntity, TKey>(services));
+    {
+        Action<IServiceCollection, IRepositoryRegistrar> registration = static (services, registrar) => registrar.Register<TEntity, TKey>(services);
+        _registrations.Add(registration);
+        if (_services is not null && _registrar is not null)
+        {
+            // Provider 已装配：立即注册，让后装配的特性也能登记实体
+            registration(_services, _registrar);
+        }
+    }
 
     /// <summary>
-    /// 让 Provider 完成全部注册。
+    /// 让 Provider 完成全部注册；此后再登记的实体立即注册。
     /// </summary>
     public void ApplyTo(IServiceCollection services, IRepositoryRegistrar registrar)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(registrar);
+        _services = services;
+        _registrar = registrar;
         foreach (var registration in _registrations)
         {
             registration(services, registrar);
@@ -64,7 +76,7 @@ public sealed class RepositoryRegistrations
 public static class RepositoryServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记实体，由当前装配的持久化 Provider 注册仓储。必须在 <c>AddXiHan()</c> 之前调用。
+    /// 登记实体，由当前装配的持久化 Provider 注册仓储。可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
     /// </summary>
     public static IServiceCollection AddRepository<TEntity, TKey>(this IServiceCollection services)
         where TEntity : class, IEntity<TKey>

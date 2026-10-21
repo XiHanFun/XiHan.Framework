@@ -58,6 +58,11 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `CACHING_UNAVAILABLE_001` | 缓存存储不可达或操作失败 |
 | `CACHING_CONFLICT_001` | 分布式锁被其他持有者占用 |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
+| `MESSAGING_VALIDATION_001` | 主题不合法 |
+| `MESSAGING_VALIDATION_002` | 信封不合法或无法解码 |
+| `MESSAGING_UNAVAILABLE_001` | 消息代理不可达或操作失败 |
+| `MESSAGING_UNAVAILABLE_002` | 队列已满 |
+| `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常（代理侧记录） |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `SECURITY_DENIED_003` | 凭据无效、过期或签名不符 |
