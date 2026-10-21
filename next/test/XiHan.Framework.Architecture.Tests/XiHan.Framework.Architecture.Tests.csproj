@@ -28,6 +28,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
   </ItemGroup>
 </Project>

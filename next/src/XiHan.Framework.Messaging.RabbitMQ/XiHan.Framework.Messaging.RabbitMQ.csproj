@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.RabbitMQ</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.RabbitMQ</RootNamespace>
+    <Description>XiHan Framework 消息的 RabbitMQ Provider：每主题一个持久队列，手动确认、重试与死信队列，基于 RabbitMQ.Client 7。</Description>
+    <PackageTags>xihan;framework;messaging;rabbitmq;amqp</PackageTags>
+    <!-- RabbitMQ.Client 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RabbitMQ.Client" />
+  </ItemGroup>
+</Project>
