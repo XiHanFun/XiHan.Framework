@@ -14,7 +14,14 @@ namespace XiHan.Framework.Security.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPrincipalStore
 {
+    /// <summary>
+    /// 主体记录，按主体 ID 索引（区分大小写）。
+    /// </summary>
     private readonly Dictionary<string, PrincipalRecord> _byId = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 保护主体表的锁。
+    /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
@@ -57,9 +64,10 @@ public sealed class InMemoryPrincipalStore
         ArgumentNullException.ThrowIfNull(principal);
         lock (_gate)
         {
+            // 替换已有主体不占新容量，只有新增才受上限约束
             if (!_byId.ContainsKey(principal.Id) && _byId.Count >= Capacity)
             {
-                return Error.Unavailable(SecurityErrors.CapacityExceeded, $"内存主体存储已达容量上限 {Capacity}。");
+                return Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.PrincipalStoreCapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
             }
 
             _byId[principal.Id] = principal;
@@ -85,6 +93,7 @@ public sealed class InMemoryPrincipalStore
     public Maybe<PrincipalRecord> FindByApiKey(string apiKey)
     {
         ArgumentNullException.ThrowIfNull(apiKey);
+        // 逐条做常量时间比较而不是字典查找，避免通过耗时差异推断 API Key；长度不同直接跳过，长度本身不是秘密
         var candidate = Encoding.UTF8.GetBytes(apiKey);
         lock (_gate)
         {

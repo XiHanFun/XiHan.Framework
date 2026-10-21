@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "정책에 의해 거부되었습니다.",
+  "kernel.feature.start_failed": "기능 '{id}'을(를) 시작하지 못했습니다: {reason}",
+  "kernel.feature.stop_failed": "기능 '{id}'을(를) 중지하지 못했습니다: {reason}",
+  "kernel.feature.stop_timeout": "기능 '{id}' 중지가 시간 제한을 초과했습니다.",
+  "kernel.hosting.not_serving": "애플리케이션이 {state} 상태이므로 요청을 받지 않습니다.",
+  "kernel.invocation.cancelled": "호출이 취소되었습니다.",
+  "kernel.invocation.deadline_before_start": "호출이 시작되기 전에 기한을 초과했습니다.",
+  "kernel.invocation.deadline_exceeded": "호출이 기한을 초과했습니다.",
+  "kernel.invocation.unhandled_exception": "호출 중 처리되지 않은 예외가 발생했습니다.",
+  "kernel.manifest.empty": "매니페스트가 비어 있습니다.",
+  "kernel.manifest.file_missing": "매니페스트 파일 '{path}'이(가) 없습니다.",
+  "kernel.manifest.invalid": "매니페스트가 올바르지 않습니다: {reason}",
+  "kernel.manifest.invalid_json": "매니페스트가 올바른 JSON이 아닙니다: {reason}",
+  "kernel.permission.duplicate": "권한 코드 '{code}'이(가) 이미 등록되었습니다.",
+  "kernel.permission.registry_full": "권한 레지스트리가 용량 한도 {capacity}에 도달했습니다."
+}

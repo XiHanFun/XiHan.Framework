@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "Le magasin de locataires en mémoire a atteint sa capacité de {capacity}.",
+  "multitenancy.tenant.disabled": "Le locataire '{tenantId}' est désactivé.",
+  "multitenancy.tenant.invalid_id": "L'identifiant de locataire '{tenantId}' n'est pas valide.",
+  "multitenancy.tenant.not_found": "Le locataire '{tenantId}' n'existe pas.",
+  "multitenancy.tenant.required": "Cet appel nécessite un locataire, mais aucun n'a été résolu."
+}

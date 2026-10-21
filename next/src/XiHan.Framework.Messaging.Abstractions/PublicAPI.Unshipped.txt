@@ -8,9 +8,21 @@ const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Queue = "mess
 const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Stream = "messaging.stream" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Version = 1 -> int
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.BrokerUnavailable = "MESSAGING_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.HandlerFailed = "MESSAGING_UNEXPECTED_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidEnvelope = "MESSAGING_VALIDATION_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidTopic = "MESSAGING_VALIDATION_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.QueueFull = "MESSAGING_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.CatalogName = "messaging" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeAttributesRequired = "messaging.envelope.attributes_required" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalid = "messaging.envelope.invalid" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidBase64 = "messaging.envelope.invalid_base64" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidExtension = "messaging.envelope.invalid_extension" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidJson = "messaging.envelope.invalid_json" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidTime = "messaging.envelope.invalid_time" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeSpecVersion = "messaging.envelope.spec_version" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.HandlerFailed = "messaging.handler.failed" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.InvalidTopic = "messaging.topic.invalid" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.QueueFull = "messaging.queue.full" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingOptions.ConfigurationSection = "XiHan:Messaging" -> string!
 const XiHan.Framework.Messaging.Abstractions.OutboxOptions.ConfigurationSection = "XiHan:Messaging:Outbox" -> string!
 const XiHan.Framework.Messaging.Abstractions.TopicName.MaxLength = 128 -> int
@@ -34,6 +46,7 @@ static XiHan.Framework.Messaging.Abstractions.MessageDelivery.operator ==(XiHan.
 static XiHan.Framework.Messaging.Abstractions.MessageDispatcher.GetDelivery(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Messaging.Abstractions.MessageDelivery!>
 static XiHan.Framework.Messaging.Abstractions.MessageEnvelope.operator !=(XiHan.Framework.Messaging.Abstractions.MessageEnvelope? left, XiHan.Framework.Messaging.Abstractions.MessageEnvelope? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessageEnvelope.operator ==(XiHan.Framework.Messaging.Abstractions.MessageEnvelope? left, XiHan.Framework.Messaging.Abstractions.MessageEnvelope? right) -> bool
+static XiHan.Framework.Messaging.Abstractions.MessagingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator !=(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator ==(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
@@ -101,6 +114,7 @@ XiHan.Framework.Messaging.Abstractions.MessageSubscriptions.MessageSubscriptions
 XiHan.Framework.Messaging.Abstractions.MessageSubscriptions.Topics.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Messaging.Abstractions.MessagingCapabilities
 XiHan.Framework.Messaging.Abstractions.MessagingErrors
+XiHan.Framework.Messaging.Abstractions.MessagingMessages
 XiHan.Framework.Messaging.Abstractions.MessagingOptions
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.DeadLetterSuffix.get -> string!

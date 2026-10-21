@@ -32,5 +32,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
   </ItemGroup>
 </Project>

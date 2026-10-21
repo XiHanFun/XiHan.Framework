@@ -11,6 +11,9 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class DirectPublisher(IMessageBroker broker) : IMessagePublisher
 {
+    /// <summary>
+    /// 目标代理。
+    /// </summary>
     private readonly IMessageBroker _broker = broker ?? throw new ArgumentNullException(nameof(broker));
 
     /// <inheritdoc />
@@ -19,6 +22,6 @@ public sealed class DirectPublisher(IMessageBroker broker) : IMessagePublisher
         ArgumentNullException.ThrowIfNull(envelope);
         return TopicName.IsValid(topic)
             ? _broker.PublishAsync(topic, envelope, cancellationToken)
-            : ValueTask.FromResult<Result>(Error.Validation(MessagingErrors.InvalidTopic, $"主题 '{topic}' 不合法。"));
+            : ValueTask.FromResult<Result>(Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", topic))));
     }
 }

@@ -13,15 +13,25 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
+/// <summary>
+/// 内存代理的选项解析、容量与死信，以及发件箱与内存持久化配合的测试。
+/// </summary>
 public sealed class InMemoryMessagingTests
 {
+    /// <summary>
+    /// 测试订阅的主题。
+    /// </summary>
     private const string Topic = "orders";
 
+    /// <summary>
+    /// 来源 <c>/tests</c>、类型 <c>orders.placed</c> 的测试信封。
+    /// </summary>
     private static MessageEnvelope Envelope(string id) => new() { Id = id, Source = "/tests", Type = "orders.placed" };
 
     [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
+        // 用内存键值对构造配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
@@ -83,7 +93,7 @@ public sealed class InMemoryMessagingTests
         {
             var published = await ctx.Services.GetRequiredService<IMessagePublisher>().PublishAsync(Topic, Envelope("rolled-back"), ctx.CancellationToken);
             published.ThrowIfFailure();
-            ctx.SetOutcome(Error.Validation("ORDERS_VALIDATION_001", "业务拒绝"));
+            ctx.SetOutcome(Error.Literal("ORDERS_VALIDATION_001", "Rejected by a business rule."));
         });
         var committed = await host.InvokeAsync(async ctx =>
         {

@@ -12,8 +12,19 @@ namespace XiHan.Framework.Security.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
 {
+    /// <summary>
+    /// 授予表：键为主体种类、主体 ID 与租户（<see langword="null"/> 为全局），值为权限码集合。
+    /// </summary>
     private readonly Dictionary<(string Kind, string Id, string? Tenant), HashSet<string>> _grants = [];
+
+    /// <summary>
+    /// 保护授予表与计数的锁。
+    /// </summary>
     private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 当前授予总数；用于容量检查。
+    /// </summary>
     private int _count;
 
     /// <summary>
@@ -53,6 +64,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     {
         lock (_gate)
         {
+            // 全局授予与该租户的授予取并集；没有租户时只有全局授予
             var result = new HashSet<string>(StringComparer.Ordinal);
             if (_grants.TryGetValue((subject.Kind, subject.Id, null), out var global))
             {
@@ -83,6 +95,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
                 _grants[key] = set;
             }
 
+            // 重复授予幂等成功且不占容量；容量只在真正新增时检查
             if (set.Contains(grant.Permission))
             {
                 return Result.Success();
@@ -90,7 +103,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
 
             if (_count >= Capacity)
             {
-                return Error.Unavailable(SecurityErrors.CapacityExceeded, $"内存授予存储已达容量上限 {Capacity}。");
+                return Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
             }
 
             set.Add(grant.Permission);

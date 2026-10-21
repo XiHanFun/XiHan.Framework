@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "被原則拒絕。",
+  "kernel.feature.start_failed": "特性 '{id}' 啟動失敗：{reason}",
+  "kernel.feature.stop_failed": "特性 '{id}' 停止失敗：{reason}",
+  "kernel.feature.stop_timeout": "特性 '{id}' 停止逾時。",
+  "kernel.hosting.not_serving": "應用程式處於 {state} 狀態，暫不接收請求。",
+  "kernel.invocation.cancelled": "呼叫已取消。",
+  "kernel.invocation.deadline_before_start": "呼叫在開始前就已超過截止時間。",
+  "kernel.invocation.deadline_exceeded": "呼叫超過了截止時間。",
+  "kernel.invocation.unhandled_exception": "呼叫期間發生未處理的例外。",
+  "kernel.manifest.empty": "清單為空。",
+  "kernel.manifest.file_missing": "清單檔案 '{path}' 不存在。",
+  "kernel.manifest.invalid": "清單不合法：{reason}",
+  "kernel.manifest.invalid_json": "清單不是合法的 JSON：{reason}",
+  "kernel.permission.duplicate": "權限碼 '{code}' 已登記。",
+  "kernel.permission.registry_full": "權限註冊表已達到容量上限 {capacity}。"
+}

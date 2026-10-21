@@ -7,6 +7,12 @@ const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.Disabled = "M
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.InvalidTenantId = "MULTITENANCY_VALIDATION_001" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.MissingTenant = "MULTITENANCY_VALIDATION_002" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.NotFound = "MULTITENANCY_NOTFOUND_001" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.CapacityExceeded = "multitenancy.store.capacity_exceeded" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.CatalogName = "multitenancy" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.InvalidTenantId = "multitenancy.tenant.invalid_id" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantDisabled = "multitenancy.tenant.disabled" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantNotFound = "multitenancy.tenant.not_found" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantRequired = "multitenancy.tenant.required" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ConfigurationSection = "XiHan:MultiTenancy" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.TenantIdentifier.MaxLength = 64 -> int
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.Equals(object? obj) -> bool
@@ -15,6 +21,7 @@ override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ToString(
 override XiHan.Framework.MultiTenancy.Abstractions.TenantInfo.Equals(object? obj) -> bool
 override XiHan.Framework.MultiTenancy.Abstractions.TenantInfo.GetHashCode() -> int
 override XiHan.Framework.MultiTenancy.Abstractions.TenantInfo.ToString() -> string!
+static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions!
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.operator !=(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? right) -> bool
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.operator ==(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? right) -> bool
@@ -35,6 +42,7 @@ XiHan.Framework.MultiTenancy.Abstractions.ITenantStore.FindAsync(string! tenantI
 XiHan.Framework.MultiTenancy.Abstractions.ITenantStore.ListAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!>!>
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyCapabilities
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors
+XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.<Clone>$() -> XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions!
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.DefaultTenant.get -> string?

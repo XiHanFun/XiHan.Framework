@@ -3,8 +3,14 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="Error"/> 与 <see cref="ErrorCode"/> 的行为：格式校验、KIND 段约束、相等语义与文本形式。
+/// </summary>
 public sealed class ErrorTests
 {
+    /// <summary>
+    /// <c>error-codes.json</c> 向量：合法与非法的错误码。
+    /// </summary>
     private sealed record ErrorCodeVectors(string[] Valid, string[] Invalid);
 
     [Fact]
@@ -26,7 +32,7 @@ public sealed class ErrorTests
     [Fact]
     public void Constructor_WithInvalidCode_ThrowsArgumentException()
     {
-        var exception = Assert.Throws<ArgumentException>(() => new Error("bad-code", "message"));
+        var exception = Assert.Throws<ArgumentException>(() => Error.Literal("bad-code", "message"));
 
         Assert.Equal("code", exception.ParamName);
     }
@@ -34,26 +40,26 @@ public sealed class ErrorTests
     [Fact]
     public void Constructor_WithBlankMessage_ThrowsArgumentException()
     {
-        Assert.Throws<ArgumentException>(() => new Error("KERNEL_UNEXPECTED_001", " "));
+        Assert.Throws<ArgumentException>(() => Error.Literal("KERNEL_UNEXPECTED_001", " "));
     }
 
     [Fact]
     public void Factories_EnforceKindSegment()
     {
-        var error = Error.NotFound("ORDERS_NOTFOUND_001", "订单不存在");
+        var error = Error.NotFound("ORDERS_NOTFOUND_001", "orders.order.not_found");
 
         Assert.Equal("NOTFOUND", error.Kind);
-        Assert.Throws<ArgumentException>(() => Error.NotFound("ORDERS_CONFLICT_001", "错误的种类"));
-        Assert.Throws<ArgumentException>(() => Error.Validation("ORDERS_NOTFOUND_001", "错误的种类"));
+        Assert.Throws<ArgumentException>(() => Error.NotFound("ORDERS_CONFLICT_001", "orders.order.not_found"));
+        Assert.Throws<ArgumentException>(() => Error.Conflict("ORDERS_NOTFOUND_001", "orders.order.conflict"));
     }
 
     [Fact]
     public void Equality_IgnoresDetailsIdentityOnlyWhenSameReference()
     {
         var details = new Dictionary<string, object?> { ["field"] = "name" };
-        var left = new Error("ORDERS_VALIDATION_001", "缺少字段", details);
-        var right = new Error("ORDERS_VALIDATION_001", "缺少字段", details);
-        var other = new Error("ORDERS_VALIDATION_001", "缺少字段", new Dictionary<string, object?> { ["field"] = "name" });
+        var left = Error.Literal("ORDERS_VALIDATION_001", "Missing field.", details);
+        var right = Error.Literal("ORDERS_VALIDATION_001", "Missing field.", details);
+        var other = Error.Literal("ORDERS_VALIDATION_001", "Missing field.", new Dictionary<string, object?> { ["field"] = "name" });
 
         Assert.Equal(left, right);
         Assert.NotEqual(left, other);
@@ -62,16 +68,16 @@ public sealed class ErrorTests
     [Fact]
     public void ToString_FormatsCodeAndMessage()
     {
-        var error = Error.Conflict("ORDERS_CONFLICT_002", "订单已关闭");
+        var error = Error.Literal("ORDERS_CONFLICT_002", "Order is closed.");
 
-        Assert.Equal("[ORDERS_CONFLICT_002] 订单已关闭", error.ToString());
+        Assert.Equal("[ORDERS_CONFLICT_002] Order is closed.", error.ToString());
     }
 
     [Fact]
     public void Unexpected_CarriesInnerError()
     {
-        var inner = Error.Unavailable("PERSISTENCE_UNAVAILABLE_001", "数据库不可用");
-        var outer = Error.Unexpected("ORDERS_UNEXPECTED_001", "创建订单失败", inner);
+        var inner = Error.Literal("PERSISTENCE_UNAVAILABLE_001", "Database unavailable.");
+        var outer = Error.Literal("ORDERS_UNEXPECTED_001", "Failed to create order.", inner: inner);
 
         Assert.Same(inner, outer.Inner);
     }

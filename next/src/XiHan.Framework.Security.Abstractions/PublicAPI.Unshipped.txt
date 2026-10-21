@@ -16,6 +16,16 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyDenied = "SECUR
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyNotFound = "SECURITY_NOTFOUND_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "SECURITY_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidToken = "security.token.invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PermissionMissing = "security.permission.missing" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PolicyNotFound = "security.policy.not_found" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PrincipalStoreCapacityExceeded = "security.principal_store.capacity_exceeded" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.TokenSubjectMissing = "security.token.subject_missing" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.UnsupportedScheme = "security.authentication.unsupported_scheme" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityOptions.ConfigurationSection = "XiHan:Security" -> string!
 override XiHan.Framework.Security.Abstractions.AuthenticationCredential.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.AuthenticationCredential.GetHashCode() -> int
@@ -50,6 +60,7 @@ static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetAut
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetCredential(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.AuthenticationCredential!>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.RequireAuthorization(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.AuthorizationRequirement! requirement) -> void
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.SetCredential(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential) -> void
+static XiHan.Framework.Security.Abstractions.SecurityMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
 static XiHan.Framework.Security.Abstractions.SecurityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Abstractions.SecurityOptions!
 static XiHan.Framework.Security.Abstractions.SecurityOptions.operator !=(XiHan.Framework.Security.Abstractions.SecurityOptions? left, XiHan.Framework.Security.Abstractions.SecurityOptions? right) -> bool
 static XiHan.Framework.Security.Abstractions.SecurityOptions.operator ==(XiHan.Framework.Security.Abstractions.SecurityOptions? left, XiHan.Framework.Security.Abstractions.SecurityOptions? right) -> bool
@@ -116,6 +127,7 @@ XiHan.Framework.Security.Abstractions.PolicyCatalog.PolicyCatalog(System.Collect
 XiHan.Framework.Security.Abstractions.SecurityCapabilities
 XiHan.Framework.Security.Abstractions.SecurityErrors
 XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions
+XiHan.Framework.Security.Abstractions.SecurityMessages
 XiHan.Framework.Security.Abstractions.SecurityOptions
 XiHan.Framework.Security.Abstractions.SecurityOptions.<Clone>$() -> XiHan.Framework.Security.Abstractions.SecurityOptions!
 XiHan.Framework.Security.Abstractions.SecurityOptions.Equals(XiHan.Framework.Security.Abstractions.SecurityOptions? other) -> bool

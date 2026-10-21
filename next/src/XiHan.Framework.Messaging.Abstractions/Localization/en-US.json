@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "The 'id', 'source', and 'type' attributes are required.",
+  "messaging.envelope.invalid": "The envelope is invalid: {reason}",
+  "messaging.envelope.invalid_base64": "The 'data_base64' attribute is not valid Base64.",
+  "messaging.envelope.invalid_extension": "Extension attribute name '{name}' is invalid.",
+  "messaging.envelope.invalid_json": "The document is not valid CloudEvents JSON: {reason}",
+  "messaging.envelope.invalid_time": "The 'time' attribute '{time}' is not an RFC 3339 timestamp.",
+  "messaging.envelope.spec_version": "The 'specversion' attribute must be '{specVersion}'.",
+  "messaging.handler.failed": "The message handler threw an unhandled exception: {reason}",
+  "messaging.queue.full": "The in-memory queue for topic '{topic}' is full (capacity {capacity}).",
+  "messaging.topic.invalid": "Topic '{topic}' is invalid."
+}

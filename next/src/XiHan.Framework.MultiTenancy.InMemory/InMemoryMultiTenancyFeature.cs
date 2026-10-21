@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -42,10 +43,13 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(MultiTenancyMessages.Catalog);
         context.Services.AddSingleton(MultiTenancyOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryTenantStore>();
         context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+        // 解析器的注册顺序就是解析顺序：先信已认证主体的声明，再看调用方自报的 Baggage，防止自报租户覆盖身份里的租户
         context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
         context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
         context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);

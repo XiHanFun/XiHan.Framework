@@ -7,7 +7,10 @@
 | 类型 | 用途 |
 | --- | --- |
 | `Result` / `Result<T>` | 成功或携带 `Error` 的失败；用 `Result.Success(value)`、`Result.Failure<T>(error)` 创建，值与错误可隐式转换；`default` 视为未初始化失败 |
-| `Error` / `ErrorCode` | 错误码 `<领域>_<KIND>_<NNN>`、消息、细节、内部错误；工厂方法校验 KIND 段 |
+| `Error` / `ErrorCode` | 错误码 `<领域>_<KIND>_<NNN>`、消息键与参数、内部错误；工厂方法校验 KIND 段；`Literal` 承载线上还原与异常转换的自由文本 |
+| `MessageTemplate` / `MessageArguments` / `MessageKeyExtensions` | 消息键文法、`{name}` / `{0}` 模板格式化、参数字典、`key.L()` 按当前区域取文案（RFC-0010） |
+| `IMessageResolver` / `MessageScope` | 解析器契约与环境作用域：内核按调用的 Baggage 区域安装，本地化特性设进程默认 |
+| `ManifestMessages` / `ResultMessages` | 本包的消息键常量；文案在 `Localization/<区域>.json` |
 | `Maybe` / `Maybe<T>` | 类型层面的"可能没有值"；`default` 即无值 |
 | `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
 | `InvocationContext` / `BaggageKeys` | 取消、截止、W3C Trace、Baggage、作用域对象袋与服务 |
@@ -17,7 +20,7 @@
 | `FrameworkException` / `FrameworkInfo` | 带错误码的异常基类；框架身份（版本由构建期常量提供，不经反射） |
 | `Manifests.*` | `xihan.manifest.json` 的对象模型与格式校验：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`CapabilityId`、`ManifestId` |
 
-不包含：任何实现、基类、宿主、依赖注入、反射、序列化代码。线上 JSON 编码由协议适配器与生成器实现。
+不包含：任何实现、基类、宿主、依赖注入、反射、序列化代码。线上 JSON 编码由协议适配器与生成器实现。语言文件只是嵌入资源，由 `Localization.InMemory` 代为装载。
 
 ## 依赖方向
 

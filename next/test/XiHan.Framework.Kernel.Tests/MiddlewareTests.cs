@@ -11,8 +11,14 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// 内置中间件与上下文扩展的行为：<see cref="DeadlineMiddleware"/> 对超时与取消的翻译、<see cref="ObserveMiddleware"/> 对异常的收敛、强类型 Items 与结果槽。
+/// </summary>
 public sealed class MiddlewareTests
 {
+    /// <summary>
+    /// 空容器；这些测试直接调用中间件，不经过容器解析。
+    /// </summary>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]
@@ -40,6 +46,7 @@ public sealed class MiddlewareTests
         var middleware = new DeadlineMiddleware(time);
         var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
 
+        // 下游先挂起，再推进虚拟时间越过截止点，触发定时取消。
         var invocation = middleware.InvokeAsync(context, async inner =>
         {
             Assert.NotEqual(context.CancellationToken, inner.CancellationToken);
@@ -89,7 +96,7 @@ public sealed class MiddlewareTests
         var middleware = new ObserveMiddleware(NullLoggerFactory.Instance);
         var context = App.CreateContext(_services, CancellationToken.None);
 
-        await middleware.InvokeAsync(context, static _ => throw new FrameworkException("ORDERS_CONFLICT_001", "冲突"));
+        await middleware.InvokeAsync(context, static _ => throw new FrameworkException("ORDERS_CONFLICT_001", "Conflict."));
 
         var error = context.GetOutcome().ValueOrThrow().Error!;
         Assert.Equal(KernelErrors.Unexpected, error.Code);
@@ -120,8 +127,9 @@ public sealed class MiddlewareTests
         Assert.False(context.Get(key).HasValue);
         context.Set(key, 7);
         Assert.Equal(7, context.Get(key).ValueOrThrow());
+        // 第二次 SetOutcomeIfMissing 不覆盖已有结果。
         context.SetOutcomeIfMissing(Result.Success());
-        context.SetOutcomeIfMissing(Error.Conflict("ORDERS_CONFLICT_001", "后来者"));
+        context.SetOutcomeIfMissing(Error.Literal("ORDERS_CONFLICT_001", "Second outcome."));
         Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
         Assert.Equal("test.number", key.ToString());
     }

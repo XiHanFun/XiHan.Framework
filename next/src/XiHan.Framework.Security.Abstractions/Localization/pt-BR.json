@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "A chave de API é inválida.",
+  "security.authentication.required": "Esta chamada requer autenticação.",
+  "security.authentication.unsupported_scheme": "O esquema de autenticação '{scheme}' não é suportado.",
+  "security.grant_store.capacity_exceeded": "O armazenamento de concessões em memória atingiu sua capacidade de {capacity}.",
+  "security.permission.missing": "A permissão '{permission}' está ausente.",
+  "security.policy.not_found": "A política '{policy}' não existe.",
+  "security.principal_store.capacity_exceeded": "O armazenamento de principais em memória atingiu sua capacidade de {capacity}.",
+  "security.token.invalid": "O token é inválido, expirou ou tem uma assinatura inválida.",
+  "security.token.subject_missing": "O token não contém a declaração de sujeito '{claim}'."
+}

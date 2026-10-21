@@ -3,6 +3,9 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="Maybe{T}"/> 的行为：有值与无值的构造、<c>default</c> 即无值、组合方法对无值的传播。
+/// </summary>
 public sealed class MaybeTests
 {
     [Fact]
@@ -67,7 +70,7 @@ public sealed class MaybeTests
     [Fact]
     public void ToResult_UsesErrorForNone()
     {
-        var error = Error.NotFound("ORDERS_NOTFOUND_001", "订单不存在");
+        var error = Error.Literal("ORDERS_NOTFOUND_001", "Order not found.");
 
         Assert.Equal(1, Maybe.Some(1).ToResult(error).ValueOrThrow());
         Assert.Same(error, Maybe.None<int>().ToResult(error).Error);

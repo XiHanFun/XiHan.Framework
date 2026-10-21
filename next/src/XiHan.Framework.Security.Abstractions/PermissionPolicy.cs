@@ -17,6 +17,9 @@ public sealed class PermissionPolicy : IPolicy
     /// </summary>
     public const string Prefix = "permission:";
 
+    /// <summary>
+    /// 权限检查器；判定主体是否持有 <see cref="PermissionCode"/>。
+    /// </summary>
     private readonly IPermissionChecker _checker;
 
     /// <summary>
@@ -24,7 +27,7 @@ public sealed class PermissionPolicy : IPolicy
     /// </summary>
     public PermissionPolicy(string permissionCode, IPermissionChecker checker)
     {
-        PermissionCode = !string.IsNullOrWhiteSpace(permissionCode) ? permissionCode : throw new ArgumentException("权限码不能为空。", nameof(permissionCode));
+        PermissionCode = !string.IsNullOrWhiteSpace(permissionCode) ? permissionCode : throw new ArgumentException("The permission code must not be empty.", nameof(permissionCode));
         _checker = checker ?? throw new ArgumentNullException(nameof(checker));
     }
 
@@ -49,6 +52,7 @@ public sealed class PermissionPolicy : IPolicy
     /// 从策略名取权限码；不是权限策略返回 <see langword="null"/>。
     /// </summary>
     public static string? CodeOf(string policyName)
+        // 前缀之后必须还有内容："permission:" 本身不是权限策略
         => policyName is not null && policyName.StartsWith(Prefix, StringComparison.Ordinal) && policyName.Length > Prefix.Length
             ? policyName[Prefix.Length..]
             : null;
@@ -57,13 +61,14 @@ public sealed class PermissionPolicy : IPolicy
     public async ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // 先判未认证：匿名主体得到 NotAuthenticated 而不是 PermissionMissing，调用方可以区分未登录与越权
         if (!request.Security.Principal.IsAuthenticated)
         {
-            return AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, "本调用需要认证。"));
+            return AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired));
         }
 
         return await _checker.HasPermissionAsync(request.Security, PermissionCode, cancellationToken).ConfigureAwait(false)
             ? AuthorizationResult.Allow()
-            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PermissionMissing, $"缺少权限 '{PermissionCode}'。"));
+            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PermissionMissing, SecurityMessages.PermissionMissing, MessageArguments.Of(("permission", PermissionCode))));
     }
 }
