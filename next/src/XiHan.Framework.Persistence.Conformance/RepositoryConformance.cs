@@ -86,7 +86,7 @@ public abstract class RepositoryConformance
         {
             unitOfWork = context.Services.GetRequiredService<IUnitOfWork>();
             var repository = Repository<ConformanceOrder, Guid>(context);
-            var result = await repository.AddAsync(new ConformanceOrder { Id = id, Name = "first", Amount = 10m }, context.CancellationToken).ConfigureAwait(false);
+            var result = await repository.AddAsync(new ConformanceOrder { Id = id, Name = "first", Amount = 10 }, context.CancellationToken).ConfigureAwait(false);
             inside = await repository.FindAsync(id, context.CancellationToken).ConfigureAwait(false);
             return result;
         }).ConfigureAwait(false);
