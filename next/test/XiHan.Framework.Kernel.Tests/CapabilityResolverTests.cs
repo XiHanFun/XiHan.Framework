@@ -59,8 +59,12 @@ public sealed class CapabilityResolverTests
         var ambiguous = Assert.Throws<FrameworkException>(() => CapabilityResolver.Resolve([KernelCapabilities.Manifest, app, memory, redis]));
         Assert.Equal(KernelErrors.AmbiguousProvider, ambiguous.Code);
 
+        // default 只在没有显式 Provider 时被选中
         var withDefault = CapabilityResolver.Resolve([KernelCapabilities.Manifest, app, memory with { Role = ManifestRole.Default }, redis]);
-        Assert.Equal("xihan.caching.inmemory", withDefault.Providers["caching.local"].Manifest.Id);
+        Assert.Equal("xihan.caching.redis", withDefault.Providers["caching.local"].Manifest.Id);
+
+        var onlyDefault = CapabilityResolver.Resolve([KernelCapabilities.Manifest, app, memory with { Role = ManifestRole.Default }]);
+        Assert.Equal("xihan.caching.inmemory", onlyDefault.Providers["caching.local"].Manifest.Id);
 
         var selected = CapabilityResolver.Resolve([KernelCapabilities.Manifest, app, memory, redis], new Dictionary<string, string> { ["caching.local"] = "xihan.caching.redis" });
         Assert.Equal("xihan.caching.redis", selected.Providers["caching.local"].Manifest.Id);

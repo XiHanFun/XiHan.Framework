@@ -8,13 +8,14 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// 已解析图中的一个节点：清单、它所依赖的节点、缺失的可选依赖。
+/// 已解析图中的一个节点：清单、它所依赖的节点、缺失的可选依赖、被选中提供的能力。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ResolvedNode
 {
     private readonly List<ResolvedNode> _dependencies = [];
     private readonly List<CapabilityRequirement> _missingOptional = [];
+    private readonly HashSet<string> _selected = new(StringComparer.Ordinal);
 
     internal ResolvedNode(Manifest manifest) => Manifest = manifest;
 
@@ -38,9 +39,30 @@ public sealed class ResolvedNode
     /// </summary>
     public bool IsDegraded => _missingOptional.Count > 0;
 
+    /// <summary>
+    /// 本节点被选中提供的能力 ID。声明了但未被选中的能力由别的节点提供，本节点不得为其注册服务或中间件。
+    /// </summary>
+    public IReadOnlyCollection<string> SelectedCapabilities => _selected;
+
+    /// <summary>
+    /// 本节点声明了能力却一个都没被选中：宿主不装配、不启动它。
+    /// </summary>
+    public bool IsShadowed => Manifest.Provides.Count > 0 && _selected.Count == 0;
+
+    /// <summary>
+    /// 本节点是否被选中提供该能力。
+    /// </summary>
+    public bool IsSelectedFor(string capabilityId)
+    {
+        ArgumentNullException.ThrowIfNull(capabilityId);
+        return _selected.Contains(capabilityId);
+    }
+
     internal void AddDependency(ResolvedNode node) => _dependencies.Add(node);
 
     internal void AddMissingOptional(CapabilityRequirement requirement) => _missingOptional.Add(requirement);
+
+    internal void AddSelected(string capabilityId) => _selected.Add(capabilityId);
 
     /// <inheritdoc />
     public override string ToString() => Manifest.Id;
@@ -96,10 +118,21 @@ public sealed class ResolvedGraph
                 builder.Append(" (default)");
             }
 
+            if (node.IsShadowed)
+            {
+                builder.Append(" (shadowed)");
+            }
+
             builder.Append('\n');
             foreach (var provided in node.Manifest.Provides)
             {
-                builder.Append("  provides ").Append(provided).Append('\n');
+                builder.Append("  provides ").Append(provided);
+                if (!node.IsSelectedFor(provided.Id))
+                {
+                    builder.Append(" (not selected)");
+                }
+
+                builder.Append('\n');
             }
 
             foreach (var requirement in node.Manifest.Requires)
