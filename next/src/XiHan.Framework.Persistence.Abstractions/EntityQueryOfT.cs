@@ -30,7 +30,7 @@ public sealed record EntityQuery<T>
     public int Skip
     {
         get => field;
-        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Skip 不能为负。");
+        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "'Skip' must not be negative.");
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed record EntityQuery<T>
     public int Take
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Take 必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "'Take' must be positive.");
     } = EntityQuery.DefaultMaxTake;
 
     /// <summary>
@@ -53,6 +53,7 @@ public sealed record EntityQuery<T>
     public EntityQuery<T> Where(ISpecification<T> filter)
     {
         ArgumentNullException.ThrowIfNull(filter);
+        // 已有过滤时与新条件取 And；先把已有的 ISpecification 包成 Specification 才能使用组合方法
         return this with { Filter = Filter is null ? filter : new Specification<T>(Filter.Criteria).And(filter) };
     }
 

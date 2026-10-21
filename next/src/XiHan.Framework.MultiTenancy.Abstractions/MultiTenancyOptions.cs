@@ -42,7 +42,7 @@ public sealed record MultiTenancyOptions
     public string TenantClaim
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("租户声明类型不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The tenant claim type cannot be empty.", nameof(value));
     } = "tenant";
 
     /// <summary>
@@ -54,6 +54,7 @@ public sealed record MultiTenancyOptions
         var options = new MultiTenancyOptions();
         if (configuration[$"{ConfigurationSection}:DefaultTenant"] is { } defaultTenant)
         {
+            // 空字符串表示显式清除默认租户，而不是一个不合法的 ID
             options = options with { DefaultTenant = defaultTenant.Length == 0 ? null : defaultTenant };
         }
 
@@ -75,6 +76,9 @@ public sealed record MultiTenancyOptions
         return options;
     }
 
+    /// <summary>
+    /// 读取配置节下的布尔值；未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>。
+    /// </summary>
     private static bool? ReadBool(IConfiguration configuration, string name)
     {
         var raw = configuration[$"{ConfigurationSection}:{name}"];
@@ -85,6 +89,6 @@ public sealed record MultiTenancyOptions
 
         return bool.TryParse(raw, out var value)
             ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} 必须是 true 或 false，实际 '{raw}'。");
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be 'true' or 'false', but was '{raw}'.");
     }
 }

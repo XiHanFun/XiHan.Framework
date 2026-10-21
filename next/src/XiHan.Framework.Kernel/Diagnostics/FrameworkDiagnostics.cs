@@ -31,10 +31,10 @@ public static class FrameworkDiagnostics
     /// <summary>
     /// 调用计数，按结果标记。
     /// </summary>
-    public static Counter<long> Invocations { get; } = Meter.CreateCounter<long>("xihan.invocations", "{invocation}", "管道调用次数");
+    public static Counter<long> Invocations { get; } = Meter.CreateCounter<long>("xihan.invocations", "{invocation}", "Number of pipeline invocations.");
 
     /// <summary>
     /// 调用耗时直方图。
     /// </summary>
-    public static Histogram<double> InvocationDuration { get; } = Meter.CreateHistogram<double>("xihan.invocation.duration", "ms", "管道调用耗时");
+    public static Histogram<double> InvocationDuration { get; } = Meter.CreateHistogram<double>("xihan.invocation.duration", "ms", "Duration of pipeline invocations.");
 }

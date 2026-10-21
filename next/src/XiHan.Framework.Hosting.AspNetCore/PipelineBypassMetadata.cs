@@ -12,6 +12,9 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PipelineBypassMetadata
 {
+    /// <summary>
+    /// 不允许外部构造；元数据无状态，统一使用 <see cref="Instance"/>。
+    /// </summary>
     private PipelineBypassMetadata()
     {
     }

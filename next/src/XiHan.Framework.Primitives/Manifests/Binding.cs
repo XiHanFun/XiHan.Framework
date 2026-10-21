@@ -23,12 +23,12 @@ public sealed partial record Binding
         ArgumentNullException.ThrowIfNull(type);
         if (!NamePattern().IsMatch(name))
         {
-            throw new ArgumentException($"绑定名 '{name}' 必须是小写字母开头的小写字母、数字、连字符。", nameof(name));
+            throw new ArgumentException($"Binding name '{name}' must start with a lowercase letter and contain only lowercase letters, digits, and hyphens.", nameof(name));
         }
 
         if (!TypePattern().IsMatch(type))
         {
-            throw new ArgumentException($"绑定类型 '{type}' 必须是 <类别>[:<子类>] 形式的小写标识。", nameof(type));
+            throw new ArgumentException($"Binding type '{type}' must be a lowercase identifier of the form '<category>[:<subtype>]'.", nameof(type));
         }
 
         Name = name;
@@ -51,9 +51,15 @@ public sealed partial record Binding
     /// </summary>
     public bool Required { get; }
 
+    /// <summary>
+    /// 绑定名格式的正则：小写字母开头的小写字母、数字、连字符。
+    /// </summary>
     [GeneratedRegex("^[a-z][a-z0-9-]*$")]
     private static partial Regex NamePattern();
 
+    /// <summary>
+    /// 资源类型格式的正则：小写类别，可选冒号加小写子类。
+    /// </summary>
     [GeneratedRegex("^[a-z]+(:[a-z]+)?$")]
     private static partial Regex TypePattern();
 }

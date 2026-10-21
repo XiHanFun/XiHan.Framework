@@ -8,6 +8,9 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Testing.Tests;
 
+/// <summary>
+/// 测试宿主、特性桩与独立调用上下文的行为验证。
+/// </summary>
 public sealed class TestHostTests
 {
     [Fact]
@@ -41,6 +44,7 @@ public sealed class TestHostTests
         var feature = new StubFeature(TestManifests.Create("xihan.test.stub"));
         var host = await TestHost.StartAsync(b => b.UseFeature(feature));
 
+        // 释放两次：第二次必须是空操作，不能再触发 stop
         await host.DisposeAsync();
         await host.DisposeAsync();
 

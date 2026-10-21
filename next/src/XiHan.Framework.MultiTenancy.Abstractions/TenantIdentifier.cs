@@ -30,9 +30,12 @@ public static partial class TenantIdentifier
         ArgumentNullException.ThrowIfNull(tenantId);
         return IsValid(tenantId)
             ? tenantId
-            : throw new ArgumentException($"租户 ID '{tenantId}' 不合法：字母或数字开头，只含字母、数字、'.'、'_'、'-'，不超过 {MaxLength} 个字符。", nameof(tenantId));
+            : throw new ArgumentException($"Tenant ID '{tenantId}' is invalid: it must start with a letter or digit, contain only letters, digits, '.', '_' and '-', and be at most {MaxLength} characters long.", nameof(tenantId));
     }
 
+    /// <summary>
+    /// 租户 ID 文法的编译期正则；首字符限定字母或数字，总长不超过 <see cref="MaxLength"/>。
+    /// </summary>
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")]
     private static partial Regex Pattern();
 }

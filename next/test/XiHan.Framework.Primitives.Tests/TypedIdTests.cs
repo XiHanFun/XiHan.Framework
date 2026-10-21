@@ -3,10 +3,19 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="TypedId{TTag, TValue}"/> 的行为：同标签同值相等、不同标签是不同类型、文本形式取底层值。
+/// </summary>
 public sealed class TypedIdTests
 {
+    /// <summary>
+    /// 标签类型样例：订单。
+    /// </summary>
     private sealed class Order;
 
+    /// <summary>
+    /// 标签类型样例：客户。
+    /// </summary>
     private sealed class Customer;
 
     [Fact]

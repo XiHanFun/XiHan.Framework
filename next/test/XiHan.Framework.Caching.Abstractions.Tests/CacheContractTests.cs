@@ -8,8 +8,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
+/// <summary>
+/// 缓存契约层的单元测试：键与选项的校验、JSON 序列化器、序列化缓存、基于存储的锁、序列化器注册与幂等选项。
+/// </summary>
 public sealed class CacheContractTests
 {
+    /// <summary>
+    /// 往返测试用的示例值类型。
+    /// </summary>
     private sealed record Profile(string Name, int Age);
 
     [Theory]
@@ -86,7 +92,7 @@ public sealed class CacheContractTests
             factoryCalls++;
             return ValueTask.FromResult(new Profile("ada", 36));
         }, CacheEntryOptions.Default, CancellationToken.None);
-        var again = await cache.GetOrCreateAsync<Profile>(key, static _ => throw new InvalidOperationException("不应再调用工厂"), CacheEntryOptions.Default, CancellationToken.None);
+        var again = await cache.GetOrCreateAsync<Profile>(key, static _ => throw new InvalidOperationException("The factory should not be called again."), CacheEntryOptions.Default, CancellationToken.None);
 
         Assert.Equal(created, again);
         Assert.Equal(1, factoryCalls);

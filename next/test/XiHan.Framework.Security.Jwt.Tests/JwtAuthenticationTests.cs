@@ -16,14 +16,34 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.Jwt.Tests;
 
+/// <summary>
+/// JWT 处理器的令牌校验、选项解析与特性装配测试。
+/// </summary>
 public sealed class JwtAuthenticationTests
 {
+    /// <summary>
+    /// 测试用对称密钥；满足最小长度。
+    /// </summary>
     private const string Secret = "unit-test-secret-key-with-at-least-32-bytes!";
+
+    /// <summary>
+    /// 测试用签发者。
+    /// </summary>
     private const string Issuer = "https://issuer.test";
+
+    /// <summary>
+    /// 测试用受众。
+    /// </summary>
     private const string Audience = "api";
 
+    /// <summary>
+    /// 严格选项：校验签发者与受众，时钟偏移为零。
+    /// </summary>
     private static readonly JwtOptions _options = new() { Secret = Secret, Issuer = Issuer, Audience = Audience, ClockSkew = TimeSpan.Zero };
 
+    /// <summary>
+    /// 签发 HS256 令牌；默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// </summary>
     private static string CreateToken(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
     {
         var identity = new ClaimsIdentity();
@@ -48,6 +68,9 @@ public sealed class JwtAuthenticationTests
         });
     }
 
+    /// <summary>
+    /// 用给定选项（默认严格选项）认证 Bearer 令牌。
+    /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(string token, JwtOptions? options = null)
         => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);
 
@@ -101,6 +124,7 @@ public sealed class JwtAuthenticationTests
     [Fact]
     public void Options_FromConfiguration_RequireSecret_AndParseRest()
     {
+        // 用内存键值对构造配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

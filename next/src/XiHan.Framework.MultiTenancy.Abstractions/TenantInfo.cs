@@ -11,6 +11,9 @@ namespace XiHan.Framework.MultiTenancy.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record TenantInfo
 {
+    /// <summary>
+    /// 共享的空属性表，避免每个租户各建一个空字典。
+    /// </summary>
     private static readonly IReadOnlyDictionary<string, string> _noProperties = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>

@@ -8,8 +8,14 @@ using Microsoft.CodeAnalysis.Testing;
 
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 
+/// <summary>
+/// 五条规则的端到端验证：用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用。
+/// </summary>
 public sealed class AnalyzerTests
 {
+    /// <summary>
+    /// 原语层里 <c>ApiLevelAttribute</c> 与 <c>Stability</c> 的最小替身；分析器按元数据名查找，不依赖真实程序集。
+    /// </summary>
     private const string ApiLevelSource = """
         namespace XiHan.Framework.Primitives
         {
@@ -25,6 +31,9 @@ public sealed class AnalyzerTests
         }
         """;
 
+    /// <summary>
+    /// 以指定的框架包与环层设置运行单个分析器，并核对期望的诊断。
+    /// </summary>
     private static Task RunAsync<TAnalyzer>(string source, bool frameworkPackage, int ring = -1, params DiagnosticResult[] expected)
         where TAnalyzer : DiagnosticAnalyzer, new()
     {
@@ -34,6 +43,8 @@ public sealed class AnalyzerTests
             ReferenceAssemblies = ReferenceAssemblies.Net.Net80,
         };
         test.TestState.Sources.Add(ApiLevelSource);
+
+        // 分析器从 build_property.* 读取范围，这里用全局 .globalconfig 模拟 MSBuild 的 CompilerVisibleProperty
         test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", $"""
             is_global = true
             build_property.XiHanFrameworkPackage = {(frameworkPackage ? "true" : "false")}
@@ -120,6 +131,7 @@ public sealed class AnalyzerTests
                 """,
         };
 
+        // XH0003 只报跨程序集的使用，所以被引用的类型放在单独的 Library 项目里
         var library = new ProjectState("Library", LanguageNames.CSharp, "Library", "cs");
         library.Sources.Add(ApiLevelSource);
         library.Sources.Add("""

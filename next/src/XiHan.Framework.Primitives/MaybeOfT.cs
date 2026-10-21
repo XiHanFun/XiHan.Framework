@@ -13,9 +13,20 @@ namespace XiHan.Framework.Primitives;
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct Maybe<T>
 {
+    /// <summary>
+    /// 是否有值；<c>default</c> 实例为 <see langword="false"/>。
+    /// </summary>
     private readonly bool _hasValue;
+
+    /// <summary>
+    /// 有值时的值；无值时为类型默认值，不得读取。
+    /// </summary>
     private readonly T? _value;
 
+    /// <summary>
+    /// 创建有值实例。只供 <see cref="Maybe"/> 的工厂方法调用，调用方已保证值非空。
+    /// </summary>
+    /// <param name="value">非空的值。</param>
     internal Maybe(T value)
     {
         _hasValue = true;
@@ -49,7 +60,7 @@ public readonly record struct Maybe<T>
     /// <summary>
     /// 有值时返回值，否则抛出 <see cref="InvalidOperationException"/>。
     /// </summary>
-    public T ValueOrThrow() => _hasValue ? _value! : throw new InvalidOperationException("Maybe 没有值。");
+    public T ValueOrThrow() => _hasValue ? _value! : throw new InvalidOperationException("The Maybe has no value.");
 
     /// <summary>
     /// 按有值或无值分支求值。

@@ -24,7 +24,7 @@ public sealed record InMemoryMessagingOptions
     public int MaxQueuedMessages
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "条目上限必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of queued messages must be positive.");
     } = 10_000;
 
     /// <summary>
@@ -41,6 +41,6 @@ public sealed record InMemoryMessagingOptions
 
         return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
             ? new InMemoryMessagingOptions { MaxQueuedMessages = value }
-            : throw new ArgumentException($"{ConfigurationSection}:MaxQueuedMessages 必须是正整数，实际 '{raw}'。");
+            : throw new ArgumentException($"{ConfigurationSection}:MaxQueuedMessages must be a positive integer, but was '{raw}'.");
     }
 }

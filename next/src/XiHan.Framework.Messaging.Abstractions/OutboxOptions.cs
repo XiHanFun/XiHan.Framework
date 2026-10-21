@@ -24,7 +24,7 @@ public sealed record OutboxOptions
     public TimeSpan PollInterval
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "轮询间隔必须为正。");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The poll interval must be positive.");
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record OutboxOptions
     public int BatchSize
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "批大小必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The batch size must be positive.");
     } = 100;
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed record OutboxOptions
         {
             options = double.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { PollInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:PollIntervalSeconds 必须是正数，实际 '{interval}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:PollIntervalSeconds must be a positive number, but was '{interval}'.");
         }
 
         var batch = configuration[$"{ConfigurationSection}:BatchSize"];
@@ -56,7 +56,7 @@ public sealed record OutboxOptions
         {
             options = int.TryParse(batch, NumberStyles.None, CultureInfo.InvariantCulture, out var size) && size >= 1
                 ? options with { BatchSize = size }
-                : throw new ArgumentException($"{ConfigurationSection}:BatchSize 必须是正整数，实际 '{batch}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:BatchSize must be a positive integer, but was '{batch}'.");
         }
 
         return options;

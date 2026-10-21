@@ -16,6 +16,9 @@ namespace XiHan.Framework.Caching.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class JsonCacheSerializer : ICacheSerializer
 {
+    /// <summary>
+    /// 带类型解析器的序列化选项，所有类型信息都由它提供。
+    /// </summary>
     private readonly JsonSerializerOptions _options;
 
     /// <summary>
@@ -24,16 +27,17 @@ public sealed class JsonCacheSerializer : ICacheSerializer
     public JsonCacheSerializer(JsonSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        // 构造时就拒绝没有解析器的选项，否则 AOT 下会在首次序列化时才失败
         _options = options.TypeInfoResolver is not null
             ? options
-            : throw new ArgumentException("JsonSerializerOptions 必须设置 TypeInfoResolver（源生成上下文），否则无法在不依赖反射的情况下取得类型信息。", nameof(options));
+            : throw new ArgumentException("JsonSerializerOptions must have a TypeInfoResolver (a source-generated context); without it, type information cannot be obtained without reflection.", nameof(options));
     }
 
     /// <summary>
     /// 创建按反射解析类型的序列化器（Web 默认：camelCase、大小写不敏感）。不能用于 Native AOT。
     /// </summary>
-    [RequiresUnreferencedCode("按反射序列化需要保留被缓存类型的成员。")]
-    [RequiresDynamicCode("按反射序列化可能需要运行时生成代码。")]
+    [RequiresUnreferencedCode("Reflection-based serialization requires the members of cached types to be preserved.")]
+    [RequiresDynamicCode("Reflection-based serialization may require runtime code generation.")]
     public static JsonCacheSerializer CreateReflectionBased()
         => new(new JsonSerializerOptions(JsonSerializerDefaults.Web) { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
 
@@ -45,5 +49,5 @@ public sealed class JsonCacheSerializer : ICacheSerializer
     public T Deserialize<T>(ReadOnlyMemory<byte> data)
         => JsonSerializer.Deserialize(data.Span, _options.GetTypeInfo(typeof(T))) is T value
             ? value
-            : throw new InvalidOperationException($"缓存数据不能还原为 {typeof(T).Name}。");
+            : throw new InvalidOperationException($"The cached data cannot be deserialized as '{typeof(T).Name}'.");
 }

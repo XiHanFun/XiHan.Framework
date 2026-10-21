@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "Das Manifest '{id}' deklariert denselben Bindungsnamen in 'bindings' mehr als einmal.",
+  "primitives.manifest.duplicate_provides": "Das Manifest '{id}' deklariert dieselbe Fähigkeits-ID in 'provides' mehr als einmal.",
+  "primitives.manifest.duplicate_requires": "Das Manifest '{id}' deklariert dieselbe Fähigkeits-ID in 'requires' mehr als einmal.",
+  "primitives.manifest.isolation_not_allowed": "Das Manifest '{id}' ist kein Plugin und darf weder 'isolation' noch 'permissions' deklarieren.",
+  "primitives.manifest.isolation_required": "Das Plugin-Manifest '{id}' muss 'isolation' deklarieren.",
+  "primitives.result.uninitialized": "Das Ergebnis ist nicht initialisiert: Ein Standardwert ist kein gültiges Ergebnis."
+}

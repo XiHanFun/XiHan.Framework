@@ -36,6 +36,6 @@ public sealed record EntityFrameworkCorePersistenceOptions
 
         return bool.TryParse(raw, out var ensureCreated)
             ? new EntityFrameworkCorePersistenceOptions { EnsureCreated = ensureCreated }
-            : throw new ArgumentException($"{ConfigurationSection}:EnsureCreated 必须是 true 或 false，实际 '{raw}'。");
+            : throw new ArgumentException($"'{ConfigurationSection}:EnsureCreated' must be 'true' or 'false', but was '{raw}'.");
     }
 }

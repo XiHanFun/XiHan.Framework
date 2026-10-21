@@ -32,6 +32,7 @@ public static class MessagingServiceCollectionExtensions
     public static MessageSubscriptions GetMessageSubscriptions(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        // 订阅表以实例注册，多次调用返回同一对象，特性与应用可以共同填充
         foreach (var descriptor in services)
         {
             if (descriptor.ServiceType == typeof(MessageSubscriptions) && descriptor.ImplementationInstance is MessageSubscriptions existing)

@@ -9,6 +9,9 @@ namespace XiHan.Framework.Primitives;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PipelineStageExtensions
 {
+    /// <summary>
+    /// 清单中的小写阶段名，下标即 <see cref="PipelineStage"/> 的枚举值。
+    /// </summary>
     private static readonly string[] _names =
     [
         "ingress", "observe", "resilience", "authenticate", "tenant", "authorize", "validate", "idempotency", "transaction", "handle", "egress",
@@ -28,7 +31,7 @@ public static class PipelineStageExtensions
         var index = (int)stage;
         return index >= 0 && index < _names.Length
             ? _names[index]
-            : throw new ArgumentOutOfRangeException(nameof(stage), stage, "未知的管道阶段。");
+            : throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown pipeline stage.");
     }
 
     /// <summary>

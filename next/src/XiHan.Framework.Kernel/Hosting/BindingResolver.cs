@@ -30,6 +30,7 @@ public static class BindingResolver
         ArgumentNullException.ThrowIfNull(configuration);
         var result = new Dictionary<string, BindingValue>(StringComparer.Ordinal);
 
+        // 先读目录再读配置：配置后写入，同名绑定整体覆盖目录来源，而不是逐属性合并。
         serviceBindingRoot ??= Environment.GetEnvironmentVariable(ServiceBindingRootVariable);
         if (!string.IsNullOrEmpty(serviceBindingRoot) && Directory.Exists(serviceBindingRoot))
         {
@@ -49,10 +50,14 @@ public static class BindingResolver
         return result;
     }
 
+    /// <summary>
+    /// 从配置节 <c>XiHan:Bindings:&lt;name&gt;</c> 读取一个绑定：节本身的标量值或子键 <c>value</c> 作主值，子键 <c>type</c> 作类型，其余子键作属性。
+    /// </summary>
     private static BindingValue FromSection(IConfigurationSection section)
     {
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);
         var type = string.Empty;
+        // 允许 "XiHan:Bindings:cache" = "localhost:6379" 这种纯标量写法，没有子键时主值就是节的值。
         string? value = section.Value;
 
         foreach (var child in section.GetChildren())
@@ -79,6 +84,9 @@ public static class BindingResolver
         return new BindingValue(section.Key, type, value, properties);
     }
 
+    /// <summary>
+    /// 按 Service Binding 规范从一个目录读取绑定：目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。
+    /// </summary>
     private static BindingValue FromDirectory(string directory)
     {
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -87,12 +95,14 @@ public static class BindingResolver
 
         foreach (var file in Directory.EnumerateFiles(directory))
         {
+            // 规范允许挂载工具放置以点开头的元数据文件（如 ..data 符号链接），它们不是绑定属性。
             var key = Path.GetFileName(file);
             if (key.StartsWith('.'))
             {
                 continue;
             }
 
+            // 文件内容常带尾部换行，统一修剪；类型文件不进属性，uri 既是主值也保留为属性。
             var content = File.ReadAllText(file).Trim();
             switch (key)
             {

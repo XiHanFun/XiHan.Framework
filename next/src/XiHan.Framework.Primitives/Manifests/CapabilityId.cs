@@ -25,7 +25,7 @@ public static partial class CapabilityId
         ArgumentNullException.ThrowIfNull(id, paramName);
         if (!Pattern().IsMatch(id))
         {
-            throw new ArgumentException($"能力 ID '{id}' 不符合 <领域>.<能力> 格式。", paramName);
+            throw new ArgumentException($"Capability ID '{id}' does not match the '<domain>.<capability>' format.", paramName);
         }
 
         return id;
@@ -40,6 +40,9 @@ public static partial class CapabilityId
         return id[..id.IndexOf('.', StringComparison.Ordinal)];
     }
 
+    /// <summary>
+    /// 能力 ID 格式的正则：小写领域段，点，小写字母开头的能力段（允许数字与连字符）。
+    /// </summary>
     [GeneratedRegex("^[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*$")]
     private static partial Regex Pattern();
 }

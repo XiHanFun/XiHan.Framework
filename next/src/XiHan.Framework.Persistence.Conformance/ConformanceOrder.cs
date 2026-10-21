@@ -12,6 +12,9 @@ namespace XiHan.Framework.Persistence.Conformance;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {
+    /// <summary>
+    /// 以组合方式持有的领域事件缓冲；不映射到存储。
+    /// </summary>
     private readonly DomainEventBuffer _events = new();
 
     /// <inheritdoc />

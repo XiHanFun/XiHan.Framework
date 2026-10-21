@@ -30,9 +30,12 @@ public static partial class TopicName
         ArgumentNullException.ThrowIfNull(topic);
         return IsValid(topic)
             ? topic
-            : throw new ArgumentException($"主题 '{topic}' 不合法：小写字母或数字开头，只含小写字母、数字、'.'、'_'、'-'，不超过 {MaxLength} 个字符。", nameof(topic));
+            : throw new ArgumentException($"Topic '{topic}' is invalid: it must start with a lowercase letter or digit, contain only lowercase letters, digits, '.', '_', and '-', and be at most {MaxLength} characters long.", nameof(topic));
     }
 
+    /// <summary>
+    /// 主题文法的正则：首字符小写字母或数字，总长不超过 <see cref="MaxLength"/>。
+    /// </summary>
     [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}$")]
     private static partial Regex Pattern();
 }

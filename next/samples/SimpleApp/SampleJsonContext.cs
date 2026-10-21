@@ -5,6 +5,9 @@ using System.Text.Json.Serialization;
 
 namespace SimpleApp;
 
+/// <summary>
+/// 示例端点请求与响应类型的源生成序列化上下文；示例以 AOT 发布做冒烟，所有 JSON 类型都要登记在这里。
+/// </summary>
 [JsonSerializable(typeof(Greeting))]
 [JsonSerializable(typeof(WhoAmI))]
 [JsonSerializable(typeof(PlaceOrderRequest))]
