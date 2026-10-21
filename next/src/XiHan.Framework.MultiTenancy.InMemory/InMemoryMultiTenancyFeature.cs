@@ -1,0 +1,53 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+
+namespace XiHan.Framework.MultiTenancy.InMemory;
+
+/// <summary>
+/// 内存多租户的能力包入口：默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。
+/// </summary>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class InMemoryMultiTenancyFeature : IFeature
+{
+    /// <inheritdoc />
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.multitenancy.inmemory",
+        Package = "XiHan.Framework.MultiTenancy.InMemory",
+        Version = FrameworkInfo.Version,
+        Primitives = 1,
+        Stability = Stability.Preview,
+        Kind = ManifestKind.Provider,
+        Role = ManifestRole.Default,
+        Provides = [new CapabilityDeclaration(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version)],
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Contributes = new Contributions
+        {
+            Pipeline = [new PipelineContribution(typeof(TenantResolutionMiddleware).FullName!, PipelineStage.Tenant)],
+            Config = new ConfigContribution("XiHan:MultiTenancy"),
+            Health = ["multitenancy.inmemory.capacity"],
+        },
+        Entry = typeof(InMemoryMultiTenancyFeature).FullName,
+    };
+
+    /// <inheritdoc />
+    public void Configure(FeatureContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        context.Services.AddSingleton(MultiTenancyOptions.FromConfiguration(context.Configuration));
+        context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
+        context.Services.AddSingleton<InMemoryTenantStore>();
+        context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+        context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
+        context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
+        context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);
+    }
+}
