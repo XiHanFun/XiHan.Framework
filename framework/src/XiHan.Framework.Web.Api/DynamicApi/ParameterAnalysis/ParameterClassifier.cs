@@ -124,6 +124,17 @@ public static class ParameterClassifier
     }
 
     /// <summary>
+    /// 判断参数种类是否可以绑定请求体
+    /// </summary>
+    /// <remarks>
+    /// 复杂类型与集合类型都以 JSON 请求体传输；简单类型与基础设施参数不能作为请求体。
+    /// </remarks>
+    public static bool IsBodyEligibleKind(ParameterKind kind)
+    {
+        return kind is ParameterKind.Complex or ParameterKind.Collection;
+    }
+
+    /// <summary>
     /// 判断是否是特殊类型（基础设施参数）
     /// </summary>
     public static bool IsSpecialType(Type type)

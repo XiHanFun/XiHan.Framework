@@ -107,7 +107,7 @@ public class ParameterRuleValidator
     private void ValidateBodyParameterType(List<ParameterDescriptor> descriptors)
     {
         var invalidBodyParams = descriptors
-            .Where(d => d.Source == ParameterSource.Body && d.Kind != ParameterKind.Complex)
+            .Where(d => d.Source == ParameterSource.Body && !ParameterClassifier.IsBodyEligibleKind(d.Kind))
             .ToList();
 
         if (invalidBodyParams.Count != 0)
@@ -115,7 +115,7 @@ public class ParameterRuleValidator
             var paramInfo = invalidBodyParams.First();
             throw new DynamicApiException(
                 $"方法 '{_methodName}' 的参数 '{paramInfo.Name}' 类型为 '{paramInfo.Type.Name}'，" +
-                "不能使用 FromBody。FromBody 参数必须是复杂类型（DTO / class / record）。");
+                "不能使用 FromBody。FromBody 参数必须是复杂类型（DTO / class / record）或集合类型。");
         }
     }
 

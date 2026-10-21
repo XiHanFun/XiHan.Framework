@@ -11,6 +11,8 @@ namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 /// </summary>
 /// <remarks>
 /// 绑定位置只有两个来源：参数上的显式绑定特性，以及按 HTTP 方法与参数类型决定的 Body/Query 兜底。
+/// 允许请求体的方法上，首个复杂类型或集合类型参数绑定请求体，与 ASP.NET Core <c>[ApiController]</c> 的推断口径一致；
+/// 集合要走查询串时显式标注 <see cref="FromQueryAttribute"/>。
 /// 不按参数名推断路由：名称是实现细节，让它决定 URL 会使「给既有方法加一个参数」变成静默的线上破坏性变更。
 /// </remarks>
 public class ParameterSourceResolver
@@ -72,8 +74,8 @@ public class ParameterSourceResolver
             return ParameterSource.Form;
         }
 
-        // 5.Body 参数推断（只能 1 个）
-        if (allowBody && descriptor.Kind == ParameterKind.Complex)
+        // 5.Body 参数推断（只能 1 个）：复杂类型与集合类型都以 JSON 请求体传输
+        if (allowBody && ParameterClassifier.IsBodyEligibleKind(descriptor.Kind))
         {
             // 确保只有一个 Body 参数
             if (_bodyParameterCount == 0)
@@ -82,7 +84,7 @@ public class ParameterSourceResolver
                 return ParameterSource.Body;
             }
 
-            // 如果已经有 Body 参数，复杂类型降级为 Query
+            // 如果已经有 Body 参数，后续复杂类型与集合类型降级为 Query
             return ParameterSource.Query;
         }
 
