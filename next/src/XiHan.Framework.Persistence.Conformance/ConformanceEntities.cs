@@ -20,8 +20,8 @@ public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, I
     /// <summary>名称。</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>金额。</summary>
-    public decimal Amount { get; set; }
+    /// <summary>金额（整数，避免 Provider 对 decimal 的排序差异）。</summary>
+    public int Amount { get; set; }
 
     /// <inheritdoc />
     public DateTimeOffset CreatedAt { get; set; }

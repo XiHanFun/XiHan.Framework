@@ -32,7 +32,7 @@ XiHan.Framework.Persistence.Conformance.ConformanceNote.TenantId.set -> void
 XiHan.Framework.Persistence.Conformance.ConformanceNote.Text.get -> string!
 XiHan.Framework.Persistence.Conformance.ConformanceNote.Text.set -> void
 XiHan.Framework.Persistence.Conformance.ConformanceOrder
-XiHan.Framework.Persistence.Conformance.ConformanceOrder.Amount.get -> decimal
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Amount.get -> int
 XiHan.Framework.Persistence.Conformance.ConformanceOrder.Amount.set -> void
 XiHan.Framework.Persistence.Conformance.ConformanceOrder.ClearDomainEvents() -> void
 XiHan.Framework.Persistence.Conformance.ConformanceOrder.ConcurrencyStamp.get -> string!
