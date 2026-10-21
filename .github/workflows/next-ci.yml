@@ -34,6 +34,15 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      rabbitmq:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
     runs-on: ubuntu-latest
 
     steps:
@@ -55,8 +64,9 @@ jobs:
 
       - name: 测试（MTP 模式，采集覆盖率）
         env:
-          # Caching.Redis 的一致性套件只在设置了此变量时运行
+          # Caching.Redis 与 Messaging.RabbitMQ 的一致性套件只在设置了这些变量时运行
           XIHAN_TEST_REDIS: localhost:6379
+          XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
         # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
         run: >
           dotnet test --solution next/XiHan.Framework.Next.slnx
