@@ -116,9 +116,8 @@ public class MyModule : XiHanModule { }
 1. **显式绑定优先**：参数已标 `[FromRoute]`/`[FromQuery]`/`[FromBody]`/`[FromForm]`/`[FromHeader]`/`[FromServices]` 时直接采用，并保留其 `Name`。
 2. **基础设施类型 → `Services`**：`CancellationToken`/`HttpContext`/`ClaimsPrincipal`/`IServiceProvider` 等特殊类型自动注入，不计入客户端必填参数。
 3. **表单文件 → `Form`**：参数类型（含嵌套属性/集合）包含 `IFormFile`/`IFormFileCollection` 时判为表单来源，动作方法自动加 `[Consumes("multipart/form-data")]`，因此文件上传应用服务方法无需手写控制器即可工作。
-4. **Id 形参 → `Route`**：参数名为 `id` 或以 `Id`/`ID` 结尾、类型为常见标识类型（`long`/`int`/`Guid`/`string` 等）或自定义 Id 值对象（类型名以 `Id` 结尾或实现 `IParsable<TSelf>`）时：`GET`/`DELETE`/`HEAD` 直接拼入路由；`PUT`/`PATCH` 仅第一个此类参数拼入路由，其余降级为 `Query`。
-5. **唯一复杂类型 → `Body`**：非 `GET`/`DELETE`/`HEAD` 方法下，首个复杂类型（class/record）参数判为请求体；若已有一个 Body 参数，后续复杂类型参数降级为 `Query`（避免多 Body 冲突）。
-6. **兜底 → `Query`**：其余简单类型/集合类型参数走查询字符串。
+4. **唯一复杂类型或集合 → `Body`**：非 `GET`/`DELETE`/`HEAD` 方法下，首个复杂类型（class/record）或集合类型（`List<T>`/`T[]`/`IEnumerable<T>` 等，元素类型不限）参数判为请求体，与 ASP.NET Core `[ApiController]` 的推断一致；若已有一个 Body 参数，后续复杂类型与集合参数降级为 `Query`（避免多 Body 冲突）。集合要走查询字符串时显式标 `[FromQuery]`。
+5. **兜底 → `Query`**：其余简单类型参数，以及 `GET`/`DELETE`/`HEAD` 方法上的集合参数走查询字符串。参数名不参与推断，路由段只由显式 `[FromRoute]` 产生。
 
 同一 HTTP 方法 + 路由模板出现重复映射（多为重载方法未显式区分路由）时，控制器生成阶段直接抛 `DynamicApiException` 报冲突，而非放任运行期路由歧义。
 
