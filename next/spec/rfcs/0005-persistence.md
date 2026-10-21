@@ -1,6 +1,6 @@
 # RFC-0005 领域协议与持久化
 
-> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：0005 | 参考实现：`XiHan.Framework.Domain`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Persistence.InMemory` | 一致性：`XiHan.Framework.Persistence.Conformance`
+> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：0005 | 参考实现：`XiHan.Framework.Domain`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Persistence.InMemory`、`XiHan.Framework.Persistence.EntityFrameworkCore` | 一致性：`XiHan.Framework.Persistence.Conformance`
 
 ## 摘要
 
@@ -27,7 +27,7 @@
 - 作用域生命周期，一次调用一个；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启，用安全上下文中的租户作为当前租户。
 - 状态机：`NotStarted → Active → Committed | RolledBack`。违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`。
 - 调用结果为成功则提交；结果为失败或抛出异常则回滚。提交失败（并发冲突、标识重复、容量）作为调用结果返回。
-- 只读工作单元在提交时发现写入返回 `PERSISTENCE_VALIDATION_002`。
+- 只读工作单元拒绝写入，返回 `PERSISTENCE_VALIDATION_002`；Provider 可在写入时或提交时拒绝。
 - 读己之写：同一工作单元内新增、更新、删除对随后的查找与查询可见；提交前对其他工作单元不可见。
 
 ## 仓储
@@ -54,6 +54,13 @@
 | 能力 | `persistence.relational@1`；`persistence.document@1` 预留 |
 | 配置节 | `XiHan:Persistence`；内存实现 `XiHan:Persistence:InMemory:MaxEntitiesPerType`（默认 100000） |
 | 默认实现 | `XiHan.Framework.Persistence.InMemory`，`role: default`，`stability: preview`，只用于开发与测试 |
+
+## Provider
+
+| Provider | 角色 | 要点 |
+| --- | --- | --- |
+| `Persistence.InMemory` | default | 每类实体一张有界表；覆盖层实现读己之写，提交时原子应用；存引用不拷贝 |
+| `Persistence.EntityFrameworkCore` | provider | 应用持有 `DbContext`；工作单元在首次写入时开启数据库事务，每次写入立即 `SaveChanges`；软删除与租户过滤用 `EF.Property` 显式施加，不用全局过滤器；`ApplyPersistenceConventions()` 把并发戳设为并发令牌；游离实体更新先比对并发戳 |
 
 ## 一致性
 
