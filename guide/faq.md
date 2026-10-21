@@ -171,6 +171,16 @@ public async Task<InvoiceDto> CreateInvoiceAsync(InvoiceCreateDto input) { … }
 
 方法名以 `Get` 开头会被推导为 GET，请求体自然绑不上。**分页方法必须显式标 `[HttpPost]`**。方法上显式标注的 `[HttpGet]` / `[HttpPost]` 优先于前缀推导。
 
+### 一次上传多个文件
+
+参数写成 `List<IFormFile>`、`IFormFile[]`、`IFormFileCollection`，或放进 DTO 的 `List<IFormFile>` 属性，前端把多个文件追加到同一个 `FormData` 字段即可，不必逐个调用接口。
+
+```csharp
+public Task<List<FileDto>> UploadFilesAsync(List<IFormFile> files, FileUploadOptionsDto options)
+```
+
+同一方法里的 DTO 与集合参数随表单一起提交，字段直接用属性名。`string remark` 这类简单参数默认走查询字符串，要放进表单就标 `[FromForm]`。不要给与文件同处的参数标 `[FromBody]`：表单请求没有 JSON 请求体，框架会在启动时报错。
+
 ### 改了动词映射表，前端全 404 了
 
 改 `Conventions.HttpMethodConventions`、`PreserveRoutePredicate`、`UseLowercaseRoutes`、`Routes.*` 中任何一个，都会让**已有接口的 URL 变化**。上线后再动这些开关等于一次破坏性变更，前端必须同步改。

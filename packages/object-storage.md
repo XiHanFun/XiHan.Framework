@@ -51,7 +51,7 @@ public class MyModule : XiHanModule { }
 
 ## 核心能力
 
-- **统一存储抽象**：`IFileStorageProvider` 定义上传、下载、删除、存在性检查、获取元数据、复制、移动、目录列举、预签名 URL 与分片上传全套操作，四种后端实现同一接口。
+- **统一存储抽象**：`IFileStorageProvider` 定义上传、批量上传、下载、删除、批量删除、存在性检查、获取元数据、复制、移动、目录列举、预签名 URL 与分片上传全套操作，四种后端实现同一接口。
 - **能力自描述**：每个 Provider 通过 `SupportChunkedUpload` / `SupportResumableUpload` 声明是否支持分片/断点续传。基类默认二者为 `false`，不支持的方法调用会抛 `NotSupportedException`。
 - **多提供程序管理**：`IFileStorageProviderManager` 按名称取出提供程序（带缓存），可 `TryGetProvider` 安全获取、`GetRegisteredProviderNames` 查询已注册名单。
 - **业务路由**：`IFileStorageRouter` 按业务路由键（如 `avatar`、`attachment`）解析并选择目标提供程序，支持严格匹配开关 `StrictRouteMatch`。
@@ -78,12 +78,14 @@ public class MyModule : XiHanModule { }
 | `string ProviderName { get; }` | 提供程序名称 |
 | `bool SupportChunkedUpload { get; }` / `bool SupportResumableUpload { get; }` | 能力声明 |
 | `Task<FileUploadResult> UploadAsync(FileUploadRequest request, ...)` | 上传文件 |
+| `Task<IReadOnlyList<FileUploadResult>> UploadManyAsync(IReadOnlyList<FileUploadRequest> requests, ...)` | 批量上传，结果与请求顺序一一对应，单个失败不影响其余文件 |
 | `Task<string> InitiateChunkedUploadAsync(ChunkedUploadInitRequest request, ...)` | 初始化分片上传，返回 uploadId |
 | `Task<ChunkUploadResult> UploadChunkAsync(ChunkUploadRequest request, ...)` | 上传单个分片 |
 | `Task<FileUploadResult> CompleteChunkedUploadAsync(ChunkedUploadCompleteRequest request, ...)` | 合并完成分片上传 |
 | `Task AbortChunkedUploadAsync(string uploadId, ...)` | 取消分片上传 |
 | `Task<Stream> DownloadAsync(string path, ...)` | 下载文件为流 |
 | `Task DeleteAsync(string path, ...)` / `Task DeleteAsync(string path, string? bucketName, ...)` | 删除文件（可指定桶） |
+| `Task DeleteManyAsync(IReadOnlyList<string> paths, string? bucketName = null, ...)` | 批量删除，全部尝试后把失败路径汇总为 `AggregateException` |
 | `Task<bool> ExistsAsync(string path, ...)` / `(string path, string? bucketName, ...)` | 存在性检查 |
 | `Task<FileMetadata> GetMetadataAsync(string path, ...)` / `(string path, string? bucketName, ...)` | 读取元数据 |
 | `Task<string> GeneratePresignedUrlAsync(string path, TimeSpan expiresIn, ...)` | 生成预签名 URL |
@@ -249,6 +251,7 @@ public class DownloadService
 ## 注意事项与最佳实践
 
 - **上传不抛异常**：`UploadAsync` 内部把异常收敛为 `FileUploadResult { Success=false, ErrorMessage=... }`。调用方务必检查 `result.Success`，不要只 `try/catch`。
+- **多个文件用批量方法**：一次处理多个文件时调用 `UploadManyAsync` / `DeleteManyAsync`，不要在调用方循环单条方法。批量上传逐项检查 `Success`，取消会抛出而不会被收成失败结果；批量删除会尝试每个路径，失败项在结束后汇总抛出。基类默认逐个转调单条方法，支持原生批量接口的 Provider 可覆写。
 - **分片能力先检查**：调用分片方法前先看目标 Provider 的 `SupportChunkedUpload`；MinIO 的分片方法是占位实现，调用不会报错但数据不会落盘，大文件改用 `UploadAsync`。
 - **云端未完成分片仍需生命周期策略**：框架会回收 24 小时无活动的进程内 OSS/COS 会话，但不会在请求线程批量调用远端 Abort；生产桶应配置清理未完成 Multipart Upload 的生命周期规则。
 - **本地预签名无时效**：`LocalFileStorageProvider.GeneratePresignedUrlAsync` 只是返回静态直链，`expiresIn` 被忽略，也没有鉴权。需要真实时效/鉴权控制请改用云存储 Provider。
