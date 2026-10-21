@@ -11,6 +11,8 @@ ASP.NET Core 宿主适配（Ring 4）。
 
 不负责：操作契约与路由推导（`Protocols.Http`，P3）、认证与租户解析（安全与多租户子系统）。
 
+`Authorization` 头原样进入上下文凭据（`SetCredential`），由安全子系统的 Authenticate 阶段解释；宿主不认证。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Kernel` 与 `Microsoft.AspNetCore.App`。

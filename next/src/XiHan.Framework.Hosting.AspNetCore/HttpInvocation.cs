@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 
 namespace XiHan.Framework.Hosting.AspNetCore;
 
@@ -23,7 +24,8 @@ public static partial class HttpInvocation
     private const string ContextItemKey = "xihan.invocation-context";
 
     /// <summary>
-    /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>。
+    /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>、
+    /// <c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -46,6 +48,11 @@ public static partial class HttpInvocation
         }
 
         var context = App.CreateContext(httpContext.RequestServices, httpContext.RequestAborted, traceId, spanId, deadline, ParseBaggage(headers["baggage"].ToString()));
+        if (AuthenticationCredential.TryParse(headers.Authorization.ToString(), out var credential))
+        {
+            context.SetCredential(credential);
+        }
+
         httpContext.Items[ContextItemKey] = context;
         return context;
     }
