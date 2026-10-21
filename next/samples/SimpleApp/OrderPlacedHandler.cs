@@ -11,6 +11,9 @@ namespace SimpleApp;
 /// </summary>
 public sealed class OrderPlacedHandler(OrderEventCounter counter) : IMessageHandler
 {
+    /// <summary>
+    /// 每收到一条订单消息计数加一，总是返回成功；失败时返回的错误会让消息进入重试与死信流程。
+    /// </summary>
     public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
     {
         counter.Increment();

@@ -22,8 +22,14 @@ public static class Specification
     /// </summary>
     public static Specification<T> Of<T>(Expression<Func<T, bool>> criteria) => new(criteria);
 
+    /// <summary>
+    /// 按类型缓存恒真规约，避免每次调用 <see cref="All{T}"/> 都新建实例。
+    /// </summary>
     private static class AllOf<T>
     {
+        /// <summary>
+        /// 该类型的恒真规约单例。
+        /// </summary>
         public static readonly Specification<T> Instance = new(static _ => true);
     }
 }

@@ -13,8 +13,19 @@ namespace XiHan.Framework.Persistence.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class RepositoryRegistrations
 {
+    /// <summary>
+    /// 按登记顺序保存的注册动作；每个动作把一种实体交给 Provider 注册。
+    /// </summary>
     private readonly List<Action<IServiceCollection, IRepositoryRegistrar>> _registrations = [];
+
+    /// <summary>
+    /// <see cref="ApplyTo"/> 之后记住的服务集合；为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// </summary>
     private IServiceCollection? _services;
+
+    /// <summary>
+    /// <see cref="ApplyTo"/> 之后记住的 Provider 注册器；为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// </summary>
     private IRepositoryRegistrar? _registrar;
 
     /// <summary>
@@ -45,6 +56,7 @@ public sealed class RepositoryRegistrations
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(registrar);
+        // 先记住 Provider 再回放：此后 Add 看到非空的 _services 与 _registrar 就会直接注册，不会漏掉晚登记的实体
         _services = services;
         _registrar = registrar;
         foreach (var registration in _registrations)

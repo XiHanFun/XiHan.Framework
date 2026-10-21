@@ -27,7 +27,7 @@ public sealed record RabbitMQMessagingOptions
         get => field;
         init => field = Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "amqp" or "amqps"
             ? value
-            : throw new ArgumentException("RabbitMQ 连接必须是 amqp:// 或 amqps:// URI。", nameof(value));
+            : throw new ArgumentException("The RabbitMQ connection must be an 'amqp://' or 'amqps://' URI.", nameof(value));
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public sealed record RabbitMQMessagingOptions
     public ushort PrefetchCount
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "预取数必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The prefetch count must be positive.");
     } = 16;
 
     /// <summary>
@@ -52,7 +52,7 @@ public sealed record RabbitMQMessagingOptions
         ArgumentNullException.ThrowIfNull(configuration);
         var connection = configuration[$"{ConfigurationSection}:Configuration"]
             ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"没有 RabbitMQ 连接：设置 {ConfigurationSection}:Configuration 或提供绑定 queue。");
+            ?? throw new ArgumentException($"No RabbitMQ connection is configured: set {ConfigurationSection}:Configuration or provide the 'queue' binding.");
 
         var options = new RabbitMQMessagingOptions { Configuration = connection };
         if (configuration[$"{ConfigurationSection}:QueuePrefix"] is { } prefix)
@@ -65,7 +65,7 @@ public sealed record RabbitMQMessagingOptions
         {
             options = ushort.TryParse(prefetch, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count >= 1
                 ? options with { PrefetchCount = count }
-                : throw new ArgumentException($"{ConfigurationSection}:PrefetchCount 必须是 1–65535 的整数，实际 '{prefetch}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:PrefetchCount must be an integer between 1 and 65535, but was '{prefetch}'.");
         }
 
         return options;

@@ -9,25 +9,41 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
+/// <summary>
+/// 主题文法、信封、CloudEvents 编码、订阅表、直接发布者与选项解析的契约测试。
+/// </summary>
 public sealed class MessageContractTests
 {
+    /// <summary>
+    /// 什么都不做、总是成功的处理器。
+    /// </summary>
     private sealed class NoopHandler : IMessageHandler
     {
+        /// <inheritdoc />
         public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
     }
 
+    /// <summary>
+    /// 只记录发布、不消费的代理。
+    /// </summary>
     private sealed class RecordingBroker : IMessageBroker
     {
+        /// <summary>
+        /// 收到的发布，按顺序。
+        /// </summary>
         public List<(string Topic, MessageEnvelope Envelope)> Published { get; } = [];
 
+        /// <inheritdoc />
         public ValueTask<Result> PublishAsync(string topic, MessageEnvelope envelope, CancellationToken cancellationToken)
         {
             Published.Add((topic, envelope));
             return ValueTask.FromResult(Result.Success());
         }
 
+        /// <inheritdoc />
         public Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
 
+        /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
@@ -147,6 +163,7 @@ public sealed class MessageContractTests
     [Fact]
     public void Options_FromConfiguration_ParseAndRejectInvalid()
     {
+        // 用内存键值对构造配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

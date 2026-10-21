@@ -5,6 +5,9 @@ using XiHan.Framework.Domain;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
+/// <summary>
+/// <see cref="EntityQuery{T}"/> 的默认值、过滤组合、排序追加、分页与参数校验。
+/// </summary>
 public sealed class EntityQueryTests
 {
     [Fact]
@@ -45,6 +48,7 @@ public sealed class EntityQueryTests
         Assert.False(query.Orderings[1].Descending);
         Assert.Equal(10, query.Skip);
         Assert.Equal(20, query.Take);
+        // 查询不可变：派生不影响共享的 All 实例
         Assert.Empty(EntityQuery.All<Widget>().Orderings);
     }
 

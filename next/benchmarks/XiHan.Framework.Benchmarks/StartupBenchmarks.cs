@@ -15,11 +15,20 @@ namespace XiHan.Framework.Benchmarks;
 [MemoryDiagnoser]
 public class StartupBenchmarks
 {
+    /// <summary>
+    /// 空配置；所有迭代共用，不计配置构建时间。
+    /// </summary>
     private static readonly IConfiguration _configuration = new ConfigurationBuilder().Build();
 
+    /// <summary>
+    /// 装配的特性数量。
+    /// </summary>
     [Params(1, 10)]
     public int Features { get; set; }
 
+    /// <summary>
+    /// 装配 <see cref="Features"/> 个链式依赖的特性桩，构建容器，启动再停止应用。
+    /// </summary>
     [Benchmark]
     public async Task BuildAndStart()
     {
@@ -27,6 +36,7 @@ public class StartupBenchmarks
         var builder = new AppBuilder(services, _configuration);
         for (var i = 0; i < Features; i++)
         {
+            // 每个特性依赖前一个特性提供的能力，形成一条链，让能力解析与拓扑排序的开销随数量线性增长
             var id = $"xihan.benchmark.feature{i}";
             var requires = i == 0 ? ["kernel.hosting@1"] : new[] { $"benchmark.feature{i - 1}@1" };
             builder.UseFeature(new StubFeature(TestManifests.Create(id, provides: [$"benchmark.feature{i}@1"], requires: requires)));

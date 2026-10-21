@@ -32,7 +32,7 @@ public sealed record JwtOptions
         get => field;
         init => field = value is not null && Encoding.UTF8.GetByteCount(value) >= MinSecretBytes
             ? value
-            : throw new ArgumentException($"JWT 密钥至少 {MinSecretBytes} 字节。", nameof(value));
+            : throw new ArgumentException($"The JWT secret must be at least {MinSecretBytes} bytes long.", nameof(value));
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public sealed record JwtOptions
     public TimeSpan ClockSkew
     {
         get => field;
-        init => field = value >= TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "时钟偏移不能为负。");
+        init => field = value >= TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The clock skew must not be negative.");
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
@@ -60,7 +60,7 @@ public sealed record JwtOptions
     public string NameClaim
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("主体声明类型不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The subject claim type must not be empty.", nameof(value));
     } = "sub";
 
     /// <summary>
@@ -71,7 +71,7 @@ public sealed record JwtOptions
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new JwtOptions
         {
-            Secret = configuration[$"{ConfigurationSection}:Secret"] ?? throw new ArgumentException($"{ConfigurationSection}:Secret 不能缺失。"),
+            Secret = configuration[$"{ConfigurationSection}:Secret"] ?? throw new ArgumentException($"{ConfigurationSection}:Secret is required."),
             Issuer = configuration[$"{ConfigurationSection}:Issuer"],
             Audience = configuration[$"{ConfigurationSection}:Audience"],
         };
@@ -81,7 +81,7 @@ public sealed record JwtOptions
         {
             options = double.TryParse(skew, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
                 ? options with { ClockSkew = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:ClockSkewSeconds 必须是非负数，实际 '{skew}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:ClockSkewSeconds must be a non-negative number, but was '{skew}'.");
         }
 
         if (configuration[$"{ConfigurationSection}:NameClaim"] is { } nameClaim)

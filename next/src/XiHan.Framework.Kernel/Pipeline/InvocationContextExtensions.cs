@@ -11,6 +11,9 @@ namespace XiHan.Framework.Kernel.Pipeline;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class InvocationContextExtensions
 {
+    /// <summary>
+    /// 调用结果在 <see cref="InvocationContext.Items"/> 中的键。
+    /// </summary>
     private static readonly ContextItemKey<Result> _outcomeKey = new("xihan.outcome");
 
     /// <summary>
@@ -20,6 +23,7 @@ public static class InvocationContextExtensions
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(key);
+        // 键存在但值类型不符也视为无值，不抛转换异常。
         return context.Items.TryGetValue(key, out var value) && value is T typed ? Maybe.Some(typed) : default;
     }
 

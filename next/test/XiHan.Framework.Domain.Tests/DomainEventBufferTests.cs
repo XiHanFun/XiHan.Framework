@@ -3,8 +3,15 @@
 
 namespace XiHan.Framework.Domain.Tests;
 
+/// <summary>
+/// <see cref="DomainEventBuffer"/> 的记录顺序、清空、容量上限与参数校验。
+/// </summary>
 public sealed class DomainEventBufferTests
 {
+    /// <summary>
+    /// 只携带发生时间的测试事件。
+    /// </summary>
+    /// <param name="OccurredAt">发生时间。</param>
     private sealed record Happened(DateTimeOffset OccurredAt) : IDomainEvent;
 
     [Fact]
@@ -31,6 +38,7 @@ public sealed class DomainEventBufferTests
         events.Add(new Happened(DateTimeOffset.UnixEpoch));
         events.Add(new Happened(DateTimeOffset.UnixEpoch));
 
+        // 超限的事件被拒绝且不会被部分记录
         Assert.Throws<InvalidOperationException>(() => events.Add(new Happened(DateTimeOffset.UnixEpoch)));
         Assert.Equal(2, events.Items.Count);
     }

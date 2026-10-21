@@ -24,7 +24,7 @@ public sealed record IdempotencyOptions
     public TimeSpan TimeToLive
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "保留时间必须为正。");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The time to live must be positive.");
     } = TimeSpan.FromHours(24);
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record IdempotencyOptions
     public TimeSpan InProgressTimeToLive
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "处理中保留时间必须为正。");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The in-progress time to live must be positive.");
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
@@ -56,6 +56,9 @@ public sealed record IdempotencyOptions
         return options;
     }
 
+    /// <summary>
+    /// 读取配置节下的秒数；未配置返回 <see langword="null"/>，不是正数抛出 <see cref="ArgumentException"/>。
+    /// </summary>
     private static TimeSpan? ReadSeconds(IConfiguration configuration, string name)
     {
         var raw = configuration[$"{ConfigurationSection}:{name}"];
@@ -64,8 +67,9 @@ public sealed record IdempotencyOptions
             return null;
         }
 
+        // 用不变区域性解析，避免小数点随宿主区域设置变化
         return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
             ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} 必须是正数，实际 '{raw}'。");
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{raw}'.");
     }
 }

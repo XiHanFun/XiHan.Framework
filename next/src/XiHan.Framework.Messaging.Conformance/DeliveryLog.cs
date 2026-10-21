@@ -13,8 +13,19 @@ namespace XiHan.Framework.Messaging.Conformance;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class DeliveryLog
 {
+    /// <summary>
+    /// 到达通知通道；<see cref="WaitAsync"/> 靠它被唤醒。
+    /// </summary>
     private readonly Channel<ReceivedMessage> _received = Channel.CreateUnbounded<ReceivedMessage>();
+
+    /// <summary>
+    /// 全部到达，按记录顺序。
+    /// </summary>
     private readonly List<ReceivedMessage> _all = [];
+
+    /// <summary>
+    /// 保护到达列表的锁。
+    /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
@@ -62,6 +73,7 @@ public sealed class DeliveryLog
     {
         ArgumentNullException.ThrowIfNull(predicate);
         using var cts = new CancellationTokenSource(timeout);
+        // 先看快照，避免错过在等待前已到达的消息；之后每来一条重新计数，直到满足或超时
         var matched = All.Where(predicate).ToList();
         if (matched.Count >= count)
         {
@@ -80,7 +92,7 @@ public sealed class DeliveryLog
         }
         catch (OperationCanceledException)
         {
-            throw new TimeoutException($"{timeout} 内没有等到 {count} 条匹配的投递；已到达 {All.Count} 条。");
+            throw new TimeoutException($"Did not receive {count} matching deliveries within {timeout}; {All.Count} deliveries arrived in total.");
         }
 
         return All.Where(predicate).ToList();

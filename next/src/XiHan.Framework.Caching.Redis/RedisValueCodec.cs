@@ -11,9 +11,19 @@ namespace XiHan.Framework.Caching.Redis;
 /// </summary>
 internal static class RedisValueCodec
 {
+    /// <summary>
+    /// 头部标记：绝对过期，后面直接是载荷。
+    /// </summary>
     private const byte Absolute = 0;
+
+    /// <summary>
+    /// 头部标记：滑动过期，后面先是 8 字节窗口毫秒数，再是载荷。
+    /// </summary>
     private const byte Sliding = 1;
 
+    /// <summary>
+    /// 编码：给载荷加上头部；<paramref name="sliding"/> 不为 <see langword="null"/> 时一并写入窗口。
+    /// </summary>
     public static byte[] Encode(ReadOnlyMemory<byte> payload, TimeSpan? sliding)
     {
         if (sliding is null)
@@ -31,21 +41,25 @@ internal static class RedisValueCodec
         return encoded;
     }
 
+    /// <summary>
+    /// 解码：按头部拆出载荷与滑动窗口；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// </summary>
     public static (ReadOnlyMemory<byte> Payload, TimeSpan? Sliding) Decode(byte[] encoded)
     {
         ArgumentNullException.ThrowIfNull(encoded);
         if (encoded.Length == 0)
         {
-            throw new InvalidOperationException("Redis 缓存值为空，不是本 Provider 写入的格式。");
+            throw new InvalidOperationException("The Redis cache value is empty and was not written in this provider's format.");
         }
 
+        // 头部字节决定布局；滑动过期的值至少要容得下 8 字节窗口，否则按损坏处理而不是静默当作绝对过期
         return encoded[0] switch
         {
             Absolute => (new ReadOnlyMemory<byte>(encoded, 1, encoded.Length - 1), null),
             Sliding when encoded.Length >= 1 + sizeof(long) => (
                 new ReadOnlyMemory<byte>(encoded, 1 + sizeof(long), encoded.Length - 1 - sizeof(long)),
                 TimeSpan.FromMilliseconds(BinaryPrimitives.ReadInt64LittleEndian(encoded.AsSpan(1)))),
-            _ => throw new InvalidOperationException("Redis 缓存值头部不合法，不是本 Provider 写入的格式。"),
+            _ => throw new InvalidOperationException("The Redis cache value has an invalid header and was not written in this provider's format."),
         };
     }
 }

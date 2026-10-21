@@ -16,15 +16,30 @@ internal static class Vocabulary
         "Primitives", "Kernel", "Domain", "Hosting", "Protocols", "Plugins", "Profiles", "Testing", "Cli", "Compat",
     };
 
+    /// <summary>
+    /// 术语表文件路径。
+    /// </summary>
     public static string FilePath => Path.Combine(Workspace.SpecRoot, "conventions", "vocabulary.md");
 
+    /// <summary>
+    /// 术语表全部条目，按文件顺序。
+    /// </summary>
     public static IReadOnlyList<VocabularyEntry> Entries { get; } = Load();
 
+    /// <summary>
+    /// 全部领域词。
+    /// </summary>
     public static IReadOnlySet<string> Words { get; } = Entries.Select(static e => e.Word).ToHashSet(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 子系统领域词：领域词中去掉结构词。
+    /// </summary>
     public static IReadOnlySet<string> SubsystemWords { get; } =
         Words.Where(static w => !StructuralWords.Contains(w)).ToHashSet(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 解析 Markdown 表格：只取以 <c>| `</c> 开头的数据行（表头与分隔行不以反引号开头），前四列依次为领域词、能力 ID 前缀、配置节、错误码域。
+    /// </summary>
     private static List<VocabularyEntry> Load()
     {
         var entries = new List<VocabularyEntry>();
@@ -52,5 +67,8 @@ internal static class Vocabulary
         return entries;
     }
 
+    /// <summary>
+    /// 去掉单元格两端的空白与反引号。
+    /// </summary>
     private static string Strip(string cell) => cell.Trim().Trim('`').Trim();
 }

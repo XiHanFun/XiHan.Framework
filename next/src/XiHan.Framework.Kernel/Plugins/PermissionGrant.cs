@@ -12,6 +12,9 @@ namespace XiHan.Framework.Kernel.Plugins;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionGrant
 {
+    /// <summary>
+    /// 已授予的权限，序号比较。
+    /// </summary>
     private readonly HashSet<string> _granted;
 
     /// <summary>

@@ -17,8 +17,8 @@ public sealed record AuthenticationCredential
     /// </summary>
     public AuthenticationCredential(string scheme, string value)
     {
-        Scheme = !string.IsNullOrWhiteSpace(scheme) ? scheme : throw new ArgumentException("认证方案不能为空。", nameof(scheme));
-        Value = !string.IsNullOrEmpty(value) ? value : throw new ArgumentException("凭据值不能为空。", nameof(value));
+        Scheme = !string.IsNullOrWhiteSpace(scheme) ? scheme : throw new ArgumentException("The authentication scheme must not be empty.", nameof(scheme));
+        Value = !string.IsNullOrEmpty(value) ? value : throw new ArgumentException("The credential value must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -43,6 +43,7 @@ public sealed record AuthenticationCredential
         }
 
         var trimmed = header.Trim();
+        // 分隔符不能在首尾：方案与值都必须非空，"Bearer" 或 " token" 都不算凭据
         var separator = trimmed.IndexOf(' ', StringComparison.Ordinal);
         if (separator <= 0 || separator == trimmed.Length - 1)
         {

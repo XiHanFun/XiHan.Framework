@@ -12,9 +12,15 @@ namespace XiHan.Framework.Kernel.Tests;
 /// </summary>
 public sealed class ProviderSelectionTests
 {
+    /// <summary>
+    /// 同时提供本地与分布式缓存的内存实现；默认为 default 角色。
+    /// </summary>
     private static Manifest Memory(ManifestRole role = ManifestRole.Default)
         => Manifests.Create("xihan.caching.inmemory", provides: ["caching.local@1", "caching.distributed@1"], requires: ["kernel.hosting@1"], role: role);
 
+    /// <summary>
+    /// 只提供分布式缓存的显式 Provider；清单 ID 可改，便于构造第二个显式 Provider。
+    /// </summary>
     private static Manifest Redis(string id = "xihan.caching.redis")
         => Manifests.Create(id, provides: ["caching.distributed@1"], requires: ["kernel.hosting@1"]);
 
@@ -71,6 +77,7 @@ public sealed class ProviderSelectionTests
     {
         var thrown = Assert.Throws<FrameworkException>(() => CapabilityResolver.Resolve([KernelCapabilities.Manifest, Memory(), Redis(), Redis("xihan.caching.garnet")]));
 
+        // 候选列表只列显式 Provider，被顶替的 default 不应出现在报错里。
         Assert.Equal(KernelErrors.AmbiguousProvider, thrown.Code);
         Assert.Contains("xihan.caching.redis", thrown.Message, StringComparison.Ordinal);
         Assert.Contains("xihan.caching.garnet", thrown.Message, StringComparison.Ordinal);

@@ -21,7 +21,7 @@ public sealed partial record ConfigContribution
         ArgumentNullException.ThrowIfNull(section);
         if (!SectionPattern().IsMatch(section))
         {
-            throw new ArgumentException($"配置节 '{section}' 必须是 XiHan:<领域> 形式。", nameof(section));
+            throw new ArgumentException($"Configuration section '{section}' must be of the form 'XiHan:<Domain>'.", nameof(section));
         }
 
         Section = section;
@@ -38,6 +38,9 @@ public sealed partial record ConfigContribution
     /// </summary>
     public string? Schema { get; }
 
+    /// <summary>
+    /// 配置节格式的正则：<c>XiHan:</c> 前缀加 PascalCase 领域词。
+    /// </summary>
     [GeneratedRegex("^XiHan:[A-Z][A-Za-z0-9]*$")]
     private static partial Regex SectionPattern();
 }

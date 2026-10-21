@@ -7,8 +7,14 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
+/// <summary>
+/// RabbitMQ 选项从配置与绑定解析的测试。
+/// </summary>
 public sealed class RabbitMQMessagingOptionsTests
 {
+    /// <summary>
+    /// 用内存键值对构造配置。
+    /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

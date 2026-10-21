@@ -26,6 +26,9 @@ public static partial class EnvelopeExtensions
     /// </summary>
     public static bool IsValidName(string? name) => name is not null && NamePattern().IsMatch(name);
 
+    /// <summary>
+    /// 扩展属性名文法：小写字母与数字，1 到 20 个字符。
+    /// </summary>
     [GeneratedRegex("^[a-z0-9]{1,20}$")]
     private static partial Regex NamePattern();
 }

@@ -12,6 +12,9 @@ namespace XiHan.Framework.Caching.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCacheStore : ICacheStore
 {
+    /// <summary>
+    /// 承载字节条目的有界 LRU 表。
+    /// </summary>
     private readonly BoundedLruTable<byte[]> _table;
 
     /// <summary>
@@ -37,6 +40,7 @@ public sealed class InMemoryCacheStore : ICacheStore
     public ValueTask SetAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
+        // 复制一份再存：调用方之后修改自己的缓冲区不会影响缓存内容
         _table.Set(key.Value, value.ToArray(), options.Validated());
         return ValueTask.CompletedTask;
     }

@@ -12,6 +12,9 @@ namespace XiHan.Framework.Primitives;
 [ApiLevelAttribute(Stability.Stable, "5.0")]
 public sealed partial class InvocationContext
 {
+    /// <summary>
+    /// 调用作用域内的对象袋；派生上下文与源上下文共享同一个实例。
+    /// </summary>
     private readonly Dictionary<object, object?> _items;
 
     /// <summary>
@@ -22,9 +25,16 @@ public sealed partial class InvocationContext
         _items = [];
     }
 
+    /// <summary>
+    /// 从已有上下文派生：复制截止时间、Trace 与服务提供器，替换 Baggage 与取消令牌，并共享 <see cref="Items"/>。
+    /// </summary>
+    /// <param name="source">源上下文。</param>
+    /// <param name="baggage">派生上下文的 Baggage，调用方已校验。</param>
+    /// <param name="cancellationToken">派生上下文的取消令牌。</param>
     [SetsRequiredMembers]
     private InvocationContext(InvocationContext source, IReadOnlyDictionary<string, string> baggage, CancellationToken cancellationToken)
     {
+        // 直接引用源字典而非复制：中间件在派生上下文上写入的 Items 必须对上游可见（例如调用结果槽）。
         _items = source._items;
         CancellationToken = cancellationToken;
         Deadline = source.Deadline;
@@ -55,7 +65,7 @@ public sealed partial class InvocationContext
             ArgumentNullException.ThrowIfNull(value);
             field = TraceIdPattern().IsMatch(value)
                 ? value
-                : throw new ArgumentException("TraceId 必须是 32 位小写十六进制。", nameof(value));
+                : throw new ArgumentException("TraceId must be 32 lowercase hexadecimal characters.", nameof(value));
         }
     }
 
@@ -70,7 +80,7 @@ public sealed partial class InvocationContext
             ArgumentNullException.ThrowIfNull(value);
             field = SpanIdPattern().IsMatch(value)
                 ? value
-                : throw new ArgumentException("SpanId 必须是 16 位小写十六进制。", nameof(value));
+                : throw new ArgumentException("SpanId must be 16 lowercase hexadecimal characters.", nameof(value));
         }
     }
 
@@ -110,9 +120,10 @@ public sealed partial class InvocationContext
         ArgumentNullException.ThrowIfNull(value);
         if (!BaggageKeys.IsWellFormed(key))
         {
-            throw new ArgumentException($"Baggage 键 '{key}' 不符合 xihan.<name> 格式。", nameof(key));
+            throw new ArgumentException($"Baggage key '{key}' does not match the 'xihan.<name>' format.", nameof(key));
         }
 
+        // Baggage 不可变：复制一份再写入，源上下文看不到新键。
         var copy = new Dictionary<string, string>(Baggage, StringComparer.Ordinal)
         {
             [key] = value,
@@ -140,10 +151,14 @@ public sealed partial class InvocationContext
             return null;
         }
 
+        // 已超时统一收敛为零而不是负数，便于调用方直接作为超时时长使用。
         var remaining = deadline - now;
         return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 
+    /// <summary>
+    /// 校验 Baggage 的每个键都符合 <c>xihan.&lt;name&gt;</c> 格式；通过时原样返回字典。
+    /// </summary>
     private static IReadOnlyDictionary<string, string> ValidateBaggage(IReadOnlyDictionary<string, string> baggage)
     {
         ArgumentNullException.ThrowIfNull(baggage);
@@ -151,16 +166,22 @@ public sealed partial class InvocationContext
         {
             if (!BaggageKeys.IsWellFormed(key))
             {
-                throw new ArgumentException($"Baggage 键 '{key}' 不符合 xihan.<name> 格式。", nameof(baggage));
+                throw new ArgumentException($"Baggage key '{key}' does not match the 'xihan.<name>' format.", nameof(baggage));
             }
         }
 
         return baggage;
     }
 
+    /// <summary>
+    /// trace-id 格式的正则：32 位小写十六进制。
+    /// </summary>
     [GeneratedRegex("^[0-9a-f]{32}$")]
     private static partial Regex TraceIdPattern();
 
+    /// <summary>
+    /// parent-id 格式的正则：16 位小写十六进制。
+    /// </summary>
     [GeneratedRegex("^[0-9a-f]{16}$")]
     private static partial Regex SpanIdPattern();
 }

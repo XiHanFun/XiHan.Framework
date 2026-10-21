@@ -22,12 +22,12 @@ public readonly record struct GrantSubject(string Kind, string Id)
     /// <summary>
     /// 种类。
     /// </summary>
-    public string Kind { get; } = Kind is User or Role ? Kind : throw new ArgumentException($"主体种类必须是 {User} 或 {Role}，实际 '{Kind}'。", nameof(Kind));
+    public string Kind { get; } = Kind is User or Role ? Kind : throw new ArgumentException($"The subject kind must be '{User}' or '{Role}', but was '{Kind}'.", nameof(Kind));
 
     /// <summary>
     /// ID。
     /// </summary>
-    public string Id { get; } = !string.IsNullOrWhiteSpace(Id) ? Id : throw new ArgumentException("主体 ID 不能为空。", nameof(Id));
+    public string Id { get; } = !string.IsNullOrWhiteSpace(Id) ? Id : throw new ArgumentException("The subject ID must not be empty.", nameof(Id));
 
     /// <summary>
     /// 用户主体。

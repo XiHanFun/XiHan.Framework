@@ -17,7 +17,7 @@ public sealed record AuthorizationRequirement(string Policy, ResourceName? Resou
     /// <summary>
     /// 策略名。
     /// </summary>
-    public string Policy { get; } = !string.IsNullOrWhiteSpace(Policy) ? Policy : throw new ArgumentException("策略名不能为空。", nameof(Policy));
+    public string Policy { get; } = !string.IsNullOrWhiteSpace(Policy) ? Policy : throw new ArgumentException("The policy name must not be empty.", nameof(Policy));
 
     /// <summary>
     /// 只要求已认证。

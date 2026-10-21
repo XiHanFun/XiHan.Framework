@@ -31,6 +31,8 @@ public static class RepositoryServiceCollectionExtensions
     public static RepositoryRegistrations GetRepositoryRegistrations(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        // 在服务描述里找已有实例而不是另建：应用、Provider 与多个特性必须共享同一个登记集合，
+        // 否则 Provider 装配前登记的实体会丢失
         foreach (var descriptor in services)
         {
             if (descriptor.ServiceType == typeof(RepositoryRegistrations) && descriptor.ImplementationInstance is RepositoryRegistrations existing)

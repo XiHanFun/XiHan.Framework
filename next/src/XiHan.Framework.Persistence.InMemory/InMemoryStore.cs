@@ -13,6 +13,9 @@ namespace XiHan.Framework.Persistence.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryStore(InMemoryPersistenceOptions options)
 {
+    /// <summary>
+    /// 按实体类型索引的表；值是对应的 <see cref="InMemoryTable{TEntity, TKey}"/>，并发创建由字典保证只保留一张。
+    /// </summary>
     private readonly ConcurrentDictionary<Type, object> _tables = new();
 
     /// <summary>

@@ -5,8 +5,14 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
+/// <summary>
+/// <see cref="PersistenceConventions"/> 对各协议字段的写入、软删除、租户可见性，以及 <see cref="GuidV7IdGenerator"/> 的时序。
+/// </summary>
 public sealed class PersistenceConventionsTests
 {
+    /// <summary>
+    /// 约定写入审计字段时使用的固定时刻。
+    /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -31,6 +37,7 @@ public sealed class PersistenceConventionsTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(PersistenceErrors.TenantRequired, result.Error!.Code);
+        // 非多租户实体不需要租户
         Assert.True(PersistenceConventions.ApplyOnAdd(new Widget { Id = Guid.NewGuid() }, tenantId: null, _now).IsSuccess);
     }
 
@@ -83,6 +90,7 @@ public sealed class PersistenceConventionsTests
         clock.Advance(TimeSpan.FromMilliseconds(5));
         var second = generator.NewId();
 
+        // 版本 7 的前缀是毫秒时间戳，时钟前进后字符串顺序随之递增
         Assert.Equal(7, first.Version);
         Assert.True(string.CompareOrdinal(first.ToString(), second.ToString()) < 0);
     }

@@ -12,6 +12,9 @@ namespace XiHan.Framework.Kernel.Security;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SecurityContextExtensions
 {
+    /// <summary>
+    /// 安全上下文在 <see cref="InvocationContext.Items"/> 中的键。
+    /// </summary>
     private static readonly ContextItemKey<SecurityContext> _key = new("xihan.security");
 
     /// <summary>

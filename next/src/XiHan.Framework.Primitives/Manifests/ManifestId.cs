@@ -25,12 +25,15 @@ public static partial class ManifestId
         ArgumentNullException.ThrowIfNull(id, paramName);
         if (!Pattern().IsMatch(id))
         {
-            throw new ArgumentException($"清单 ID '{id}' 不符合 xihan.<领域>.<名称> 格式。", paramName);
+            throw new ArgumentException($"Manifest ID '{id}' does not match the 'xihan.<domain>.<name>' format.", paramName);
         }
 
         return id;
     }
 
+    /// <summary>
+    /// 清单 ID 格式的正则：<c>xihan.</c> 前缀，小写领域段，小写字母开头的名称段（允许数字与连字符）。
+    /// </summary>
     [GeneratedRegex("^xihan\\.[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*$")]
     private static partial Regex Pattern();
 }

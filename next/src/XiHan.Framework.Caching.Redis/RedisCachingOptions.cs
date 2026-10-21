@@ -25,7 +25,7 @@ public sealed record RedisCachingOptions
     public required string Configuration
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("Redis 连接字符串不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The Redis connection string cannot be empty.", nameof(value));
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed record RedisCachingOptions
     public TimeSpan DefaultTimeToLive
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "默认存活时间必须为正。");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The default time to live must be positive.");
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
@@ -48,9 +48,10 @@ public sealed record RedisCachingOptions
     public static RedisCachingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        // 显式配置优先于宿主注入的绑定，便于本地覆盖；两者都没有直接报错而不是静默退回
         var connection = configuration[$"{ConfigurationSection}:Configuration"]
             ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"没有 Redis 连接：设置 {ConfigurationSection}:Configuration 或提供绑定 cache。");
+            ?? throw new ArgumentException($"No Redis connection is configured: set {ConfigurationSection}:Configuration or provide the 'cache' binding.");
 
         var options = new RedisCachingOptions { Configuration = connection };
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)
@@ -63,7 +64,7 @@ public sealed record RedisCachingOptions
         {
             options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { DefaultTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds 必须是正数，实际 '{ttl}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
         }
 
         return options;

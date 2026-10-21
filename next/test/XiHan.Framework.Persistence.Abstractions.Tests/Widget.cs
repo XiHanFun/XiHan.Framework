@@ -5,11 +5,21 @@ using XiHan.Framework.Domain;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
+/// <summary>
+/// 不实现任何协议的测试实体，用于验证约定对普通实体不生效。
+/// </summary>
 internal sealed class Widget : IEntity<Guid>
 {
+    /// <inheritdoc />
     public Guid Id { get; init; }
 
+    /// <summary>
+    /// 名称；查询测试按它过滤与排序。
+    /// </summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 排名；查询测试按它过滤与排序。
+    /// </summary>
     public int Rank { get; set; }
 }

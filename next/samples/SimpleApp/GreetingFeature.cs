@@ -13,6 +13,9 @@ namespace SimpleApp;
 /// </summary>
 public sealed class GreetingFeature : IFeature
 {
+    /// <summary>
+    /// 清单：只依赖内核宿主能力，声明贡献的中间件与健康项，让内核在装配前就能校验。
+    /// </summary>
     public Manifest Manifest { get; } = new()
     {
         Id = "xihan.samples.greeting",
@@ -30,6 +33,9 @@ public sealed class GreetingFeature : IFeature
         Entry = typeof(GreetingFeature).FullName,
     };
 
+    /// <summary>
+    /// 注册计数服务，并把计数中间件挂到 Observe 阶段；挂载的阶段必须与清单声明一致。
+    /// </summary>
     public void Configure(FeatureContext context)
     {
         context.Services.AddSingleton<GreetingCounter>();

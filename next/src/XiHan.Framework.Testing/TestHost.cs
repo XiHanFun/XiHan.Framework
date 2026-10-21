@@ -15,9 +15,19 @@ namespace XiHan.Framework.Testing;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TestHost : IAsyncDisposable
 {
+    /// <summary>
+    /// 根服务提供器；宿主释放时一并释放。
+    /// </summary>
     private readonly ServiceProvider _provider;
+
+    /// <summary>
+    /// 是否已释放；释放后拒绝再发起调用。
+    /// </summary>
     private bool _disposed;
 
+    /// <summary>
+    /// 以已启动的应用、其服务提供器与配置创建宿主；只由 <see cref="StartAsync"/> 调用。
+    /// </summary>
     private TestHost(ServiceProvider provider, App app, IConfiguration configuration)
     {
         _provider = provider;
@@ -62,6 +72,7 @@ public sealed class TestHost : IAsyncDisposable
         configure(builder);
         builder.Build();
 
+        // ValidateScopes：在根容器解析 Scoped 服务直接报错，让错误的生存期注册在测试里暴露
         var provider = collection.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
         var app = provider.GetRequiredService<App>();
         try
@@ -70,6 +81,7 @@ public sealed class TestHost : IAsyncDisposable
         }
         catch
         {
+            // 启动失败时没有宿主实例可供调用方释放，这里先释放容器再抛出，避免已创建的单例泄漏
             await provider.DisposeAsync().ConfigureAwait(false);
             throw;
         }
@@ -88,6 +100,8 @@ public sealed class TestHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(handler);
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // 每次调用一个独立作用域，与真实宿主里一请求一作用域的语义一致
         await using var scope = _provider.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, deadline: deadline, baggage: baggage);
         return await App.InvokeAsync(context, handler).ConfigureAwait(false);
@@ -98,6 +112,7 @@ public sealed class TestHost : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+        // 幂等：重复释放直接返回
         if (_disposed)
         {
             return;

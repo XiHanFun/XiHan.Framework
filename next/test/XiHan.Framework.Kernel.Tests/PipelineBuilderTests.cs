@@ -8,6 +8,9 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// <see cref="PipelineBuilder"/> 的行为：阶段内排序键、相对约束、环与跨阶段约束的报错、重复注册、委托构建顺序与打印格式。
+/// </summary>
 public sealed class PipelineBuilderTests
 {
     [Fact]
@@ -86,6 +89,7 @@ public sealed class PipelineBuilderTests
             .AddSingleton<MiddlewareA>()
             .AddSingleton<MiddlewareB>()
             .BuildServiceProvider();
+        // B 先注册但在更靠后的阶段，执行顺序必须由阶段决定。
         var pipeline = new PipelineBuilder()
             .UseAt<MiddlewareB>(PipelineStage.Handle)
             .UseAt<MiddlewareA>(PipelineStage.Ingress)

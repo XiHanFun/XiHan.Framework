@@ -11,8 +11,19 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessagingRuntime(IMessageBroker broker, MessageDispatcher dispatcher, MessageSubscriptions subscriptions)
 {
+    /// <summary>
+    /// 消息代理；启动与停止消费由它执行。
+    /// </summary>
     private readonly IMessageBroker _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+
+    /// <summary>
+    /// 派发器；代理的每次投递交给它。
+    /// </summary>
     private readonly MessageDispatcher _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+
+    /// <summary>
+    /// 订阅表；决定要消费哪些主题。
+    /// </summary>
     private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
 
     /// <summary>

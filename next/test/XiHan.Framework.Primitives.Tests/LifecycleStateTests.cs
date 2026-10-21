@@ -3,8 +3,14 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="LifecycleState"/> 迁移表与派生判断的行为，以一致性向量为准。
+/// </summary>
 public sealed class LifecycleStateTests
 {
+    /// <summary>
+    /// <c>lifecycle-transitions.json</c> 向量：允许的迁移，每项为 <c>[from, to]</c> 的状态名。
+    /// </summary>
     private sealed record TransitionVectors(string[][] Allowed);
 
     [Fact]
@@ -15,6 +21,7 @@ public sealed class LifecycleStateTests
             .Select(static pair => (Enum.Parse<LifecycleState>(pair[0]), Enum.Parse<LifecycleState>(pair[1])))
             .ToHashSet();
 
+        // 全量枚举笛卡尔积：向量之外的任何迁移都必须被拒绝，防止实现比规范宽松。
         var states = Enum.GetValues<LifecycleState>();
         foreach (var from in states)
         {

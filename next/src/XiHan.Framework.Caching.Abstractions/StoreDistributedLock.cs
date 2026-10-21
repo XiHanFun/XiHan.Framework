@@ -12,14 +12,21 @@ namespace XiHan.Framework.Caching.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class StoreDistributedLock(ICacheStore store) : IDistributedLock
 {
+    /// <summary>
+    /// 锁条目的键前缀，与普通缓存条目隔开。
+    /// </summary>
     private const string Prefix = "lock:";
 
+    /// <summary>
+    /// 承载锁条目的字节存储。
+    /// </summary>
     private readonly ICacheStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <inheritdoc />
     public async ValueTask<Maybe<LockHandle>> TryAcquireAsync(CacheKey resource, TimeSpan timeToLive, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
+        // 每次获取生成唯一令牌并作为条目的值：释放时按值比较删，锁到期后被他人获取会换成新令牌，旧句柄就无法误删
         var key = new CacheKey(Prefix + resource.Value);
         var token = Guid.NewGuid().ToString("N");
         var tokenBytes = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(token));

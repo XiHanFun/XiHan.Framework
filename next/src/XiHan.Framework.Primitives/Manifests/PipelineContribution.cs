@@ -21,7 +21,7 @@ public sealed record PipelineContribution(
     /// 中间件类型的完全限定名。
     /// </summary>
     public string Middleware { get; } = string.IsNullOrWhiteSpace(Middleware)
-        ? throw new ArgumentException("中间件名不能为空。", nameof(Middleware))
+        ? throw new ArgumentException("The middleware name must not be empty.", nameof(Middleware))
         : Middleware;
 
     /// <summary>

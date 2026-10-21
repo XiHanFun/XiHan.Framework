@@ -3,9 +3,18 @@
 
 namespace XiHan.Framework.Kernel.Capabilities;
 
+/// <summary>
+/// <c>xihan.manifest.json</c> 中 <c>contributes.config</c> 的 JSON 形态。
+/// </summary>
 internal sealed class ConfigDocument
 {
+    /// <summary>
+    /// 配置节。
+    /// </summary>
     public string? Section { get; set; }
 
+    /// <summary>
+    /// JSON Schema 的相对路径。
+    /// </summary>
     public string? Schema { get; set; }
 }

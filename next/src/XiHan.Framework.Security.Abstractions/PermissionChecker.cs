@@ -12,7 +12,14 @@ namespace XiHan.Framework.Security.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionChecker(IPermissionGrantStore store, SecurityOptions options) : IPermissionChecker
 {
+    /// <summary>
+    /// 授予存储；每次判定按主体与租户查询。
+    /// </summary>
     private readonly IPermissionGrantStore _store = store ?? throw new ArgumentNullException(nameof(store));
+
+    /// <summary>
+    /// 安全选项；提供承载角色的声明类型。
+    /// </summary>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />
@@ -20,11 +27,13 @@ public sealed class PermissionChecker(IPermissionGrantStore store, SecurityOptio
     {
         ArgumentNullException.ThrowIfNull(security);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
+        // 匿名主体没有任何权限，也不访问存储
         if (!security.Principal.IsAuthenticated)
         {
             return false;
         }
 
+        // 先查用户本身的授予，再逐个角色查；任一命中即放行，避免多余的存储访问
         var tenantId = security.Tenant?.Id;
         if (Matches(await _store.GetGrantsAsync(GrantSubject.ForUser(security.Principal.Id), tenantId, cancellationToken).ConfigureAwait(false), permission))
         {
@@ -42,6 +51,9 @@ public sealed class PermissionChecker(IPermissionGrantStore store, SecurityOptio
         return false;
     }
 
+    /// <summary>
+    /// 授予集合是否命中：通配 <see cref="PermissionGrant.All"/> 或与权限码精确相等（区分大小写）。
+    /// </summary>
     private static bool Matches(IReadOnlyCollection<string> grants, string permission)
     {
         foreach (var grant in grants)

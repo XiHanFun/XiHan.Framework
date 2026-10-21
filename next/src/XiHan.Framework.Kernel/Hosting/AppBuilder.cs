@@ -22,10 +22,29 @@ namespace XiHan.Framework.Kernel.Hosting;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AppBuilder
 {
+    /// <summary>
+    /// 通过 <see cref="UseFeature(IFeature)"/> 加入的特性，按加入顺序。
+    /// </summary>
     private readonly List<IFeature> _features = [];
+
+    /// <summary>
+    /// 通过 <see cref="UseProvider"/> 在代码里显式指定的提供者：能力 ID → 清单 ID。
+    /// </summary>
     private readonly Dictionary<string, string> _providerSelections = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 通过 <see cref="UseOptions"/> 覆盖的内核选项；<see langword="null"/> 时从配置读取。
+    /// </summary>
     private KernelOptions? _options;
+
+    /// <summary>
+    /// 通过 <see cref="UseServiceBindingRoot"/> 覆盖的 Service Binding 根目录；<see langword="null"/> 时读环境变量。
+    /// </summary>
     private string? _serviceBindingRoot;
+
+    /// <summary>
+    /// 是否已调用过 <see cref="Build"/>；构建后禁止再修改。
+    /// </summary>
     private bool _built;
 
     /// <summary>
@@ -123,20 +142,22 @@ public sealed class AppBuilder
         _built = true;
 
         var options = _options ?? KernelOptions.FromConfiguration(Configuration);
+        // 内核清单永远参与求解，它是所有 kernel.* 能力的唯一提供者，也是图谱的根。
         var manifests = new List<Manifest> { KernelCapabilities.Manifest };
         var featuresById = new Dictionary<string, IFeature>(StringComparer.Ordinal);
         foreach (var feature in _features)
         {
-            var manifest = feature.Manifest ?? throw new FrameworkException(ErrorCode.InvalidArgument, $"特性 {feature.GetType().FullName} 的清单为 null。");
+            var manifest = feature.Manifest ?? throw new FrameworkException(ErrorCode.InvalidArgument, $"Feature '{feature.GetType().FullName}' has a null manifest.");
             manifest.Validate().ThrowIfFailure();
             if (!featuresById.TryAdd(manifest.Id, feature))
             {
-                throw new FrameworkException(KernelErrors.DuplicateManifest, $"清单 ID '{manifest.Id}' 被多个特性使用。");
+                throw new FrameworkException(KernelErrors.DuplicateManifest, $"Manifest ID '{manifest.Id}' is used by more than one feature.");
             }
 
             manifests.Add(manifest);
         }
 
+        // 提供者指定的优先级：代码里的 UseProvider 覆盖配置节 XiHan:Providers，后写入者胜出。
         var selections = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var section in Configuration.GetSection("XiHan:Providers").GetChildren())
         {
@@ -155,6 +176,7 @@ public sealed class AppBuilder
         var bindings = BindingResolver.Resolve(Configuration, _serviceBindingRoot);
         var permissions = new PermissionRegistry();
 
+        // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后。
         if (options.UseBuiltInMiddleware)
         {
             Services.TryAddSingleton<ObserveMiddleware>();
@@ -172,16 +194,18 @@ public sealed class AppBuilder
                 continue;
             }
 
+            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 TryGetBinding 处理。
             foreach (var binding in node.Manifest.Bindings.Where(static b => b.Required))
             {
                 if (!bindings.TryGetValue(binding.Name, out var value))
                 {
-                    throw new FrameworkException(KernelErrors.MissingBinding, $"特性 '{node.Manifest.Id}' 需要的绑定 '{binding.Name}'（{binding.Type}）未提供。");
+                    throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' ({binding.Type}) required by feature '{node.Manifest.Id}' is not provided.");
                 }
 
+                // 来源未声明类型（空字符串）时不做类型比对，只有显式声明且不一致才算错误。
                 if (value.Type.Length > 0 && !string.Equals(value.Type, binding.Type, StringComparison.Ordinal))
                 {
-                    throw new FrameworkException(KernelErrors.MissingBinding, $"特性 '{node.Manifest.Id}' 需要的绑定 '{binding.Name}' 类型为 {binding.Type}，提供的是 {value.Type}。");
+                    throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' required by feature '{node.Manifest.Id}' must be of type '{binding.Type}', but the provided binding is of type '{value.Type}'.");
                 }
             }
 
@@ -189,6 +213,7 @@ public sealed class AppBuilder
             runtimes.Add(new FeatureRuntime(node, feature));
         }
 
+        // 宿主可能已经注册了时间源、日志与审计，这里只补缺省实现，不覆盖。
         Services.TryAddSingleton(TimeProvider.System);
         Services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         Services.TryAddSingleton<IAuditSink>(NullAuditSink.Instance);
@@ -201,11 +226,14 @@ public sealed class AppBuilder
         return graph;
     }
 
+    /// <summary>
+    /// 构建后再修改或重复构建时抛出 <see cref="KernelErrors.InvalidAppState"/>。
+    /// </summary>
     private void EnsureNotBuilt()
     {
         if (_built)
         {
-            throw new FrameworkException(KernelErrors.InvalidAppState, "AppBuilder 已经构建，不能再修改或重复构建。");
+            throw new FrameworkException(KernelErrors.InvalidAppState, "The AppBuilder has already been built and can no longer be modified or built again.");
         }
     }
 }

@@ -20,6 +20,7 @@ public static class CacheSerializerRegistration
     public static bool TryAddJsonSerializer(IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        // 只扫描描述符、不构建容器；优先级：显式 ICacheSerializer > 已注册的 JsonSerializerOptions > 交给调用方决定
         var hasSerializer = false;
         var hasOptions = false;
         foreach (var descriptor in services)

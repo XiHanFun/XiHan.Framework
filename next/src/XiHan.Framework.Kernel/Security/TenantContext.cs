@@ -15,7 +15,7 @@ public sealed record TenantContext(string Id)
     /// <summary>
     /// 租户 ID。
     /// </summary>
-    public string Id { get; } = string.IsNullOrWhiteSpace(Id) ? throw new ArgumentException("租户 ID 不能为空。", nameof(Id)) : Id;
+    public string Id { get; } = string.IsNullOrWhiteSpace(Id) ? throw new ArgumentException("The tenant ID must not be empty.", nameof(Id)) : Id;
 
     /// <summary>
     /// 显示名。

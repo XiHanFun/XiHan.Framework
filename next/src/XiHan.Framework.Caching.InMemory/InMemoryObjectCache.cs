@@ -13,6 +13,9 @@ namespace XiHan.Framework.Caching.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryObjectCache : ISharedCache
 {
+    /// <summary>
+    /// 直接保存对象引用的有界 LRU 表；与字节存储各自独立计数。
+    /// </summary>
     private readonly BoundedLruTable<object> _table;
 
     /// <summary>
@@ -34,6 +37,7 @@ public sealed class InMemoryObjectCache : ISharedCache
     /// </summary>
     public int Count => _table.Count;
 
+    // 同一键可能被以别的类型写过：类型不匹配视为未命中而不是抛出，与序列化缓存反序列化失败的语义不同
     /// <inheritdoc />
     public ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)
         => ValueTask.FromResult(_table.Get(key.Value) is T value ? Maybe.Some(value) : default);

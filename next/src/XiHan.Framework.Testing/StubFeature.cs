@@ -13,6 +13,9 @@ namespace XiHan.Framework.Testing;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class StubFeature : IHostedFeature
 {
+    /// <summary>
+    /// 按发生顺序记录的生命周期事件。
+    /// </summary>
     private readonly List<string> _events = [];
 
     /// <summary>
@@ -56,6 +59,7 @@ public sealed class StubFeature : IHostedFeature
     /// <inheritdoc />
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
+        // 先记事件再执行注入行为，行为抛出时事件也已留痕，便于断言启动失败的时机
         _events.Add("start");
         if (OnStart is not null)
         {

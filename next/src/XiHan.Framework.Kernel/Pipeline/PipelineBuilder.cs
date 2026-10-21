@@ -18,7 +18,14 @@ public sealed class PipelineBuilder
     /// </summary>
     public const string AppOwner = "app";
 
+    /// <summary>
+    /// 全部注册，按注册顺序。
+    /// </summary>
     private readonly List<Registration> _registrations = [];
+
+    /// <summary>
+    /// 按中间件类型索引的注册，用于去重与解析约束目标。
+    /// </summary>
     private readonly Dictionary<Type, Registration> _byType = [];
 
     /// <summary>
@@ -95,6 +102,7 @@ public sealed class PipelineBuilder
     {
         ArgumentNullException.ThrowIfNull(terminal);
         var ordered = Order();
+        // 从终点向前逐层包裹：每一层捕获它的下一步，最终返回最外层（第一个中间件）的委托。
         var next = terminal;
         for (var i = ordered.Count - 1; i >= 0; i--)
         {
@@ -106,17 +114,25 @@ public sealed class PipelineBuilder
         return next;
     }
 
+    /// <summary>
+    /// 登记一个中间件：校验阶段合法、类型未重复，并记录注册序号作为最终排序的决胜键。
+    /// </summary>
+    /// <param name="middleware">中间件类型。</param>
+    /// <param name="stage">所属阶段。</param>
+    /// <param name="placement">阶段内位置。</param>
+    /// <param name="owner">注册者。</param>
+    /// <param name="resolve">每次调用时取得中间件实例的方法。</param>
     private PipelineBuilder Add(Type middleware, PipelineStage stage, Placement placement, string owner, Func<IServiceProvider, IPipelineMiddleware> resolve)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(owner);
         if (!Enum.IsDefined(stage))
         {
-            throw new FrameworkException(KernelErrors.UnknownStage, $"未知的管道阶段 {stage}。");
+            throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{stage}'.");
         }
 
         if (_byType.ContainsKey(middleware))
         {
-            throw new FrameworkException(KernelErrors.PipelineRegistration, $"中间件 {middleware.FullName} 已注册，同一管道中每个中间件类型只能出现一次。");
+            throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{middleware.FullName}' is already registered; each middleware type may appear only once in a pipeline.");
         }
 
         var registration = new Registration(middleware, stage, placement, owner, _registrations.Count, resolve);
@@ -125,16 +141,23 @@ public sealed class PipelineBuilder
         return this;
     }
 
+    /// <summary>
+    /// 取已注册的中间件；未注册时抛出 <see cref="KernelErrors.PipelineRegistration"/>。约束必须在注册之后声明。
+    /// </summary>
     private Registration Require(Type middleware)
         => _byType.TryGetValue(middleware, out var registration)
             ? registration
-            : throw new FrameworkException(KernelErrors.PipelineRegistration, $"中间件 {middleware.FullName} 尚未注册，不能对它声明顺序约束。");
+            : throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{middleware.FullName}' is not registered, so no ordering constraint can be declared for it.");
 
+    /// <summary>
+    /// 计算全部中间件的最终顺序：按阶段枚举顺序逐阶段处理，阶段内先按位置、归属、注册序号排出基准次序，再按相对约束调整。
+    /// </summary>
     private List<Registration> Order()
     {
         var result = new List<Registration>(_registrations.Count);
         foreach (var stage in PipelineStageExtensions.All)
         {
+            // 归属按序号比较而不是注册顺序：同阶段里不同包的中间件顺序与 UseFeature 的调用顺序无关，结果可复现。
             var inStage = _registrations
                 .Where(r => r.Stage == stage)
                 .OrderBy(static r => r.Placement == Placement.Beginning ? 0 : 1)
@@ -148,6 +171,11 @@ public sealed class PipelineBuilder
         return result;
     }
 
+    /// <summary>
+    /// 在一个阶段内按 Before/After 约束做稳定拓扑排序：无约束时保持 <paramref name="candidates"/> 的次序，约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>。
+    /// </summary>
+    /// <param name="candidates">该阶段的中间件，已按基准次序排好。</param>
+    /// <param name="stage">所属阶段，用于错误信息与跨阶段校验。</param>
     private List<Registration> SortByConstraints(List<Registration> candidates, PipelineStage stage)
     {
         // 边：from 必须先于 to。入度为零的按原有次序出队，保证确定性。
@@ -182,54 +210,99 @@ public sealed class PipelineBuilder
             {
                 if (--indegree[successor.Middleware] == 0)
                 {
+                    // 新就绪的节点按基准次序插回队列，而不是追加到末尾，这样约束只改变必要的相对位置。
                     var insertAt = ready.FindIndex(r => candidates.IndexOf(r) > candidates.IndexOf(successor));
                     ready.Insert(insertAt < 0 ? ready.Count : insertAt, successor);
                 }
             }
         }
 
+        // 有节点始终入度不为零，说明约束之间成环；把仍被卡住的节点列出来。
         if (ordered.Count != candidates.Count)
         {
-            var stuck = candidates.Where(r => indegree[r.Middleware] > 0).Select(static r => r.Middleware.FullName);
-            throw new FrameworkException(KernelErrors.PipelineCycle, $"阶段 {stage.ToManifestName()} 的中间件顺序约束成环：{string.Join("、", stuck)}。");
+            var stuck = candidates.Where(r => indegree[r.Middleware] > 0).Select(static r => $"'{r.Middleware.FullName}'");
+            throw new FrameworkException(KernelErrors.PipelineCycle, $"Middleware ordering constraints in stage '{stage.ToManifestName()}' form a cycle: {string.Join(", ", stuck)}.");
         }
 
         return ordered;
     }
 
+    /// <summary>
+    /// 解析约束指向的中间件：必须已注册且与 <paramref name="source"/> 在同一阶段，否则抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// </summary>
+    /// <param name="source">声明约束的中间件。</param>
+    /// <param name="target">约束指向的中间件类型。</param>
+    /// <param name="stage">当前阶段。</param>
     private Registration ResolveConstraintTarget(Registration source, Type target, PipelineStage stage)
     {
         if (!_byType.TryGetValue(target, out var other))
         {
-            throw new FrameworkException(KernelErrors.PipelineRegistration, $"{source.Middleware.FullName} 的顺序约束引用了未注册的中间件 {target.FullName}。");
+            throw new FrameworkException(KernelErrors.PipelineRegistration, $"The ordering constraint of middleware '{source.Middleware.FullName}' references unregistered middleware '{target.FullName}'.");
         }
 
+        // 跨阶段的先后由阶段顺序决定，相对约束只在阶段内有意义。
         if (other.Stage != stage)
         {
-            throw new FrameworkException(KernelErrors.PipelineRegistration, $"{source.Middleware.FullName}（{stage.ToManifestName()}）与 {target.FullName}（{other.Stage.ToManifestName()}）不在同一阶段，不能声明相对顺序。");
+            throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{source.Middleware.FullName}' (stage '{stage.ToManifestName()}') and '{target.FullName}' (stage '{other.Stage.ToManifestName()}') are not in the same stage, so no relative order can be declared between them.");
         }
 
         return other;
     }
 
+    /// <summary>
+    /// 一条中间件注册：类型、阶段、位置、归属、注册序号、实例解析方法与相对约束。
+    /// </summary>
+    /// <param name="middleware">中间件类型。</param>
+    /// <param name="stage">所属阶段。</param>
+    /// <param name="placement">阶段内位置。</param>
+    /// <param name="owner">注册者。</param>
+    /// <param name="sequence">注册序号，同位置同归属时的决胜键。</param>
+    /// <param name="resolve">每次调用时取得中间件实例的方法。</param>
     private sealed class Registration(Type middleware, PipelineStage stage, Placement placement, string owner, int sequence, Func<IServiceProvider, IPipelineMiddleware> resolve)
     {
+        /// <summary>
+        /// 中间件类型。
+        /// </summary>
         public Type Middleware { get; } = middleware;
 
+        /// <summary>
+        /// 所属阶段。
+        /// </summary>
         public PipelineStage Stage { get; } = stage;
 
+        /// <summary>
+        /// 阶段内位置。
+        /// </summary>
         public Placement Placement { get; } = placement;
 
+        /// <summary>
+        /// 注册者（清单 ID 或 <c>app</c>）。
+        /// </summary>
         public string Owner { get; } = owner;
 
+        /// <summary>
+        /// 注册序号。
+        /// </summary>
         public int Sequence { get; } = sequence;
 
+        /// <summary>
+        /// 每次调用时取得中间件实例的方法。
+        /// </summary>
         public Func<IServiceProvider, IPipelineMiddleware> Resolve { get; } = resolve;
 
+        /// <summary>
+        /// 必须位于这些中间件之前。
+        /// </summary>
         public List<Type> Before { get; } = [];
 
+        /// <summary>
+        /// 必须位于这些中间件之后。
+        /// </summary>
         public List<Type> After { get; } = [];
 
+        /// <summary>
+        /// 对外公开的描述。
+        /// </summary>
         public MiddlewareDescriptor Descriptor => new(Middleware, Stage, Placement, Owner) { Before = Before, After = After };
     }
 }

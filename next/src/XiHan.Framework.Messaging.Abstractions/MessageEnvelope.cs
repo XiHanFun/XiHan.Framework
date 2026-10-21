@@ -11,6 +11,9 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MessageEnvelope
 {
+    /// <summary>
+    /// 共享的空扩展表；没有扩展的信封都指向它。
+    /// </summary>
     private static readonly IReadOnlyDictionary<string, string> _noExtensions = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
@@ -24,7 +27,7 @@ public sealed record MessageEnvelope
     public required string Id
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("事件 ID 不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The event ID must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -33,7 +36,7 @@ public sealed record MessageEnvelope
     public required string Source
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("来源不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The source must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -42,7 +45,7 @@ public sealed record MessageEnvelope
     public required string Type
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("事件类型不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The event type must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -61,7 +64,7 @@ public sealed record MessageEnvelope
     public string DataContentType
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("数据内容类型不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The data content type must not be empty.", nameof(value));
     } = "application/json";
 
     /// <summary>
@@ -82,7 +85,7 @@ public sealed record MessageEnvelope
             {
                 if (!EnvelopeExtensions.IsValidName(name))
                 {
-                    throw new ArgumentException($"扩展属性名 '{name}' 不合法：只含小写字母与数字、不超过 20 个字符。", nameof(value));
+                    throw new ArgumentException($"Extension attribute name '{name}' is invalid: it must contain only lowercase letters and digits and be at most 20 characters long.", nameof(value));
                 }
             }
 

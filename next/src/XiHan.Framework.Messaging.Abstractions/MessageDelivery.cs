@@ -24,5 +24,5 @@ public sealed record MessageDelivery(string Topic, MessageEnvelope Envelope, int
     /// <summary>
     /// 第几次尝试。
     /// </summary>
-    public int Attempt { get; } = Attempt >= 1 ? Attempt : throw new ArgumentOutOfRangeException(nameof(Attempt), Attempt, "尝试次数从 1 起。");
+    public int Attempt { get; } = Attempt >= 1 ? Attempt : throw new ArgumentOutOfRangeException(nameof(Attempt), Attempt, "The attempt number starts at 1.");
 }

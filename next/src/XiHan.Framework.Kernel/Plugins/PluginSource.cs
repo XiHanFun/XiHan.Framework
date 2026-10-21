@@ -16,7 +16,7 @@ public sealed record PluginSource(string Directory, PermissionGrant Permissions)
     /// <summary>
     /// 目录。
     /// </summary>
-    public string Directory { get; } = string.IsNullOrWhiteSpace(Directory) ? throw new ArgumentException("插件目录不能为空。", nameof(Directory)) : Directory;
+    public string Directory { get; } = string.IsNullOrWhiteSpace(Directory) ? throw new ArgumentException("The plugin directory must not be empty.", nameof(Directory)) : Directory;
 
     /// <summary>
     /// 授予的权限。

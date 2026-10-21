@@ -12,7 +12,14 @@ namespace XiHan.Framework.Security.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SecurityInvocationExtensions
 {
+    /// <summary>
+    /// 调用上下文里存放凭据的键。
+    /// </summary>
     private static readonly ContextItemKey<AuthenticationCredential> _credentialKey = new("xihan.security.credential");
+
+    /// <summary>
+    /// 调用上下文里存放授权要求的键。
+    /// </summary>
     private static readonly ContextItemKey<AuthorizationRequirement> _requirementKey = new("xihan.security.requirement");
 
     /// <summary>

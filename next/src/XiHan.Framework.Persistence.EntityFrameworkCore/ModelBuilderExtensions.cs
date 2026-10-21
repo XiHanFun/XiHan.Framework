@@ -20,9 +20,11 @@ public static class ModelBuilderExtensions
     public static ModelBuilder ApplyPersistenceConventions(this ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+        // 先物化实体类型列表：配置属性与索引可能修改模型，不能一边枚举一边改
         foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToList())
         {
             var clrType = entityType.ClrType;
+            // 并发戳由 PersistenceConventions.NewStamp 生成，是 32 位十六进制，长度与之对齐
             if (typeof(IHasConcurrencyStamp).IsAssignableFrom(clrType))
             {
                 modelBuilder.Entity(clrType).Property(nameof(IHasConcurrencyStamp.ConcurrencyStamp)).IsConcurrencyToken().HasMaxLength(32);

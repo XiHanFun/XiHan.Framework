@@ -22,5 +22,5 @@ public sealed record AuthorizationRequest(SecurityContext Security, string Actio
     /// <summary>
     /// 动作。
     /// </summary>
-    public string Action { get; } = string.IsNullOrWhiteSpace(Action) ? throw new ArgumentException("动作不能为空。", nameof(Action)) : Action;
+    public string Action { get; } = string.IsNullOrWhiteSpace(Action) ? throw new ArgumentException("The action must not be empty.", nameof(Action)) : Action;
 }

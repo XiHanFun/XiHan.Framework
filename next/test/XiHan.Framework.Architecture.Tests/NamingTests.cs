@@ -25,30 +25,31 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
+        // 术语表每行的能力 ID 前缀、配置节与错误码域都必须能从领域词机械推出；"—" 表示该领域没有对应形态。
         foreach (var entry in Vocabulary.Entries)
         {
             if (!PascalWord().IsMatch(entry.Word))
             {
-                failures.Add($"领域词 {entry.Word} 不是 PascalCase");
+                failures.Add($"Domain word '{entry.Word}' is not PascalCase.");
             }
 
             if (entry.CapabilityPrefix != "—" && !string.Equals(entry.CapabilityPrefix, entry.Word.ToLowerInvariant(), StringComparison.Ordinal))
             {
-                failures.Add($"{entry.Word} 的能力 ID 前缀应为 {entry.Word.ToLowerInvariant()}，实际 {entry.CapabilityPrefix}");
+                failures.Add($"The capability ID prefix of '{entry.Word}' should be '{entry.Word.ToLowerInvariant()}', but it is '{entry.CapabilityPrefix}'.");
             }
 
             if (entry.ConfigSection != "—" && !string.Equals(entry.ConfigSection, "XiHan:" + entry.Word, StringComparison.Ordinal))
             {
-                failures.Add($"{entry.Word} 的配置节应为 XiHan:{entry.Word}，实际 {entry.ConfigSection}");
+                failures.Add($"The configuration section of '{entry.Word}' should be 'XiHan:{entry.Word}', but it is '{entry.ConfigSection}'.");
             }
 
             if (entry.ErrorDomain != "—" && !string.Equals(entry.ErrorDomain, entry.Word.ToUpperInvariant(), StringComparison.Ordinal))
             {
-                failures.Add($"{entry.Word} 的错误码域应为 {entry.Word.ToUpperInvariant()}，实际 {entry.ErrorDomain}");
+                failures.Add($"The error code domain of '{entry.Word}' should be '{entry.Word.ToUpperInvariant()}', but it is '{entry.ErrorDomain}'.");
             }
         }
 
-        Assert.True(Vocabulary.Entries.Count >= 20, $"术语表只有 {Vocabulary.Entries.Count} 条，疑似解析失败：{Vocabulary.FilePath}");
+        Assert.True(Vocabulary.Entries.Count >= 20, $"The vocabulary has only {Vocabulary.Entries.Count} entries, which suggests the table failed to parse: '{Vocabulary.FilePath}'.");
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
@@ -61,13 +62,13 @@ public sealed partial class NamingTests
         {
             if (!PackageGrammar.TryValidate(project.PackageId, Vocabulary.SubsystemWords, out var reason))
             {
-                failures.Add($"{project.PackageId}：{reason}");
+                failures.Add($"'{project.PackageId}': {reason}");
             }
 
             var folder = Path.GetFileName(project.Directory);
             if (!string.Equals(folder, project.PackageId, StringComparison.Ordinal))
             {
-                failures.Add($"{project.PackageId}：目录名 {folder} 必须等于包 ID");
+                failures.Add($"'{project.PackageId}': directory name '{folder}' must equal the package ID.");
             }
         }
 
@@ -85,6 +86,7 @@ public sealed partial class NamingTests
             {
                 foreach (Match match in NamespaceDeclaration().Matches(File.ReadAllText(file)))
                 {
+                    // 命名空间要么等于包 ID，要么只多一层 PascalCase 子段。
                     var ns = match.Groups["ns"].Value;
                     var ok = string.Equals(ns, project.PackageId, StringComparison.Ordinal)
                         || (ns.StartsWith(project.PackageId + ".", StringComparison.Ordinal)
@@ -92,7 +94,7 @@ public sealed partial class NamingTests
 
                     if (!ok)
                     {
-                        failures.Add($"{Workspace.Relative(file)}：命名空间 {ns} 必须等于 {project.PackageId} 或其下一层");
+                        failures.Add($"'{Workspace.Relative(file)}': namespace '{ns}' must equal '{project.PackageId}' or be exactly one segment below it.");
                     }
                 }
             }
@@ -112,7 +114,7 @@ public sealed partial class NamingTests
             {
                 if (type.Name.StartsWith("XiHan", StringComparison.Ordinal))
                 {
-                    failures.Add($"{assembly.GetName().Name}：{type.FullName} 类型名不得带 XiHan 前缀");
+                    failures.Add($"'{assembly.GetName().Name}': type name '{type.FullName}' must not carry the 'XiHan' prefix.");
                 }
             }
         }
@@ -120,6 +122,9 @@ public sealed partial class NamingTests
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
+    /// <summary>
+    /// 加载全部正式包的程序集；分析器与生成器面向编译器运行，不加载。
+    /// </summary>
     internal static IEnumerable<Assembly> LoadSourceAssemblies()
     {
         foreach (var project in Workspace.SourceProjects)
@@ -133,9 +138,15 @@ public sealed partial class NamingTests
         }
     }
 
+    /// <summary>
+    /// PascalCase 标识符的正则。
+    /// </summary>
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex PascalWord();
 
+    /// <summary>
+    /// 匹配文件级或块级 <c>namespace</c> 声明并捕获名称。
+    /// </summary>
     [GeneratedRegex(@"^\s*namespace\s+(?<ns>[A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline)]
     private static partial Regex NamespaceDeclaration();
 }

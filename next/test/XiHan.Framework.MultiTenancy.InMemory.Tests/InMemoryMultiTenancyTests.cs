@@ -10,8 +10,14 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
+/// <summary>
+/// 内存多租户包的测试：从配置装载租户、存储的容量与增删，以及能力包在宿主里的租户解析。
+/// </summary>
 public sealed class InMemoryMultiTenancyTests
 {
+    /// <summary>
+    /// 用内存键值对构建配置。
+    /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

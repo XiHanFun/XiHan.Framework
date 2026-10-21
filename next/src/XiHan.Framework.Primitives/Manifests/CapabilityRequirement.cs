@@ -58,7 +58,7 @@ public sealed record CapabilityRequirement
         ArgumentNullException.ThrowIfNull(text);
         return TryParse(text, out var requirement)
             ? requirement
-            : throw new ArgumentException($"'{text}' 不是合法的能力依赖，期望 <能力ID>@[^]<版本>[?]。", nameof(text));
+            : throw new ArgumentException($"'{text}' is not a valid capability requirement; expected '<capability-id>@[^]<version>[?]'.", nameof(text));
     }
 
     /// <summary>
@@ -66,12 +66,14 @@ public sealed record CapabilityRequirement
     /// </summary>
     public static bool TryParse(string? text, out CapabilityRequirement requirement)
     {
+        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求。
         requirement = null!;
         if (text is null)
         {
             return false;
         }
 
+        // 先剥掉末尾的可选标记，再按 '@' 拆分能力 ID 与版本。
         var optional = text.EndsWith('?');
         var body = optional ? text[..^1] : text;
         var at = body.IndexOf('@', StringComparison.Ordinal);
@@ -80,6 +82,7 @@ public sealed record CapabilityRequirement
             return false;
         }
 
+        // 接口版本是整数，'^' 只是兼容 SemVer 习惯的书写，语义上与不带前缀相同。
         var versionText = body[(at + 1)..];
         if (versionText.StartsWith('^'))
         {

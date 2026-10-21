@@ -10,6 +10,9 @@ namespace XiHan.Framework.Security.InMemory.Tests;
 /// </summary>
 public sealed class SampleConfigurationTests
 {
+    /// <summary>
+    /// 从测试输出目录向上找到 next 工作区，定位示例应用的 appsettings.json。
+    /// </summary>
     private static string Locate()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
@@ -18,7 +21,7 @@ public sealed class SampleConfigurationTests
             directory = directory.Parent;
         }
 
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("找不到 next 工作区。"), "samples", "SimpleApp", "appsettings.json");
+        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The next workspace could not be located."), "samples", "SimpleApp", "appsettings.json");
     }
 
     [Fact]

@@ -15,6 +15,7 @@ public sealed class BaggageTenantResolver : ITenantResolver
     public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // Baggage 是调用方自报的，这里只取值不信任；是否存在、是否启用由中间件对照存储核对
         return ValueTask.FromResult(context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId) ? Maybe.Some(tenantId) : default);
     }
 }

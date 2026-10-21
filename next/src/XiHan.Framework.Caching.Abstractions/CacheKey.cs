@@ -44,6 +44,7 @@ public readonly record struct CacheKey
             return false;
         }
 
+        // 逐字符拒绝空白与控制字符：键会出现在日志、协议行与前缀拼接里，这些字符会造成截断或歧义
         foreach (var c in value)
         {
             if (char.IsWhiteSpace(c) || char.IsControl(c))
@@ -63,7 +64,7 @@ public readonly record struct CacheKey
         ArgumentNullException.ThrowIfNull(value);
         return IsValid(value)
             ? value
-            : throw new ArgumentException($"缓存键 '{value}' 不合法：必须非空、不含空白与控制字符、不超过 {MaxLength} 个字符。", nameof(value));
+            : throw new ArgumentException($"Cache key '{value}' is invalid: it must be non-empty, contain no whitespace or control characters, and be at most {MaxLength} characters long.", nameof(value));
     }
 
     /// <inheritdoc />

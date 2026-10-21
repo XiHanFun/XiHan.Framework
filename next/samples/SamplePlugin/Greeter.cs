@@ -8,10 +8,19 @@ namespace SamplePlugin;
 /// </summary>
 public sealed class Greeter
 {
+    /// <summary>
+    /// 已问候的次数。
+    /// </summary>
     private int _greetings;
 
+    /// <summary>
+    /// 已问候的次数。
+    /// </summary>
     public int Greetings => _greetings;
 
+    /// <summary>
+    /// 问候指定对象并计数。
+    /// </summary>
     public string Greet(string name)
     {
         _greetings++;

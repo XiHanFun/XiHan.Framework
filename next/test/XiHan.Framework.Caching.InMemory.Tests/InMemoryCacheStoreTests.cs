@@ -8,12 +8,24 @@ using XiHan.Framework.Caching.Abstractions;
 
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
+/// <summary>
+/// <see cref="InMemoryCacheStore"/> 的单元测试：用假时钟验证 LRU 淘汰、默认与滑动过期、不存在才写、字节隔离与选项解析。
+/// </summary>
 public sealed class InMemoryCacheStoreTests
 {
+    /// <summary>
+    /// 假时钟的起始时刻。
+    /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
+    /// <summary>
+    /// 文本转 UTF-8 字节。
+    /// </summary>
     private static ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
+    /// <summary>
+    /// 创建带假时钟的存储；默认容量 100、默认存活 5 分钟。
+    /// </summary>
     private static (InMemoryCacheStore Store, FakeTimeProvider Clock) Arrange(int maxEntries = 100, TimeSpan? defaultTtl = null)
     {
         var clock = new FakeTimeProvider(_now);
@@ -94,6 +106,7 @@ public sealed class InMemoryCacheStoreTests
     [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
+        // 用内存键值对构建配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 

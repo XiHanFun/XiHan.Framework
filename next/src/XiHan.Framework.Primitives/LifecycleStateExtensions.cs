@@ -16,16 +16,19 @@ public static class LifecycleStateExtensions
     /// </summary>
     public static bool CanTransitionTo(this LifecycleState from, LifecycleState to)
     {
+        // 自迁移不算迁移，避免状态机把重复进入同一状态当作合法事件。
         if (from == to)
         {
             return false;
         }
 
+        // Failed 是通配目标：除终态 Stopped 与已经失败外，任何状态都可以失败。
         if (to == LifecycleState.Failed)
         {
             return from is not LifecycleState.Stopped and not LifecycleState.Failed;
         }
 
+        // 其余迁移逐对枚举，与 spec/conformance/vectors/primitives/lifecycle-transitions.json 保持一致。
         return (from, to) switch
         {
             (LifecycleState.Declared, LifecycleState.Resolved) => true,

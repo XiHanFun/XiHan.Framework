@@ -28,7 +28,7 @@ public sealed record SecurityOptions
     public string RoleClaim
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("角色声明类型不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The role claim type must not be empty.", nameof(value));
     } = "role";
 
     /// <summary>
@@ -43,7 +43,7 @@ public sealed record SecurityOptions
         {
             options = bool.TryParse(require, out var value)
                 ? options with { RequireAuthentication = value }
-                : throw new ArgumentException($"{ConfigurationSection}:RequireAuthentication 必须是 true 或 false，实际 '{require}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:RequireAuthentication must be 'true' or 'false', but was '{require}'.");
         }
 
         if (configuration[$"{ConfigurationSection}:RoleClaim"] is { } roleClaim)

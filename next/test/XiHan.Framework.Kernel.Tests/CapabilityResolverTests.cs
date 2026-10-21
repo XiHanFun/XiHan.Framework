@@ -7,6 +7,9 @@ using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// <see cref="CapabilityResolver"/> 的行为：拓扑排序、缺失与版本冲突的可解释报错、多候选选择规则、可选依赖降级、环检测与重复清单。
+/// </summary>
 public sealed class CapabilityResolverTests
 {
     [Fact]
@@ -34,7 +37,7 @@ public sealed class CapabilityResolverTests
         var exception = Assert.Throws<FrameworkException>(() => CapabilityResolver.Resolve([KernelCapabilities.Manifest, app]));
 
         Assert.Equal(KernelErrors.MissingCapability, exception.Code);
-        Assert.Contains("xihan.app.main 需要 caching.local@1", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("'xihan.app.main' requires 'caching.local@1'", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -46,7 +49,7 @@ public sealed class CapabilityResolverTests
         var exception = Assert.Throws<FrameworkException>(() => CapabilityResolver.Resolve([KernelCapabilities.Manifest, app, caching]));
 
         Assert.Equal(KernelErrors.CapabilityVersionConflict, exception.Code);
-        Assert.Contains("xihan.caching.redis 提供 caching.local@2", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("'xihan.caching.redis' provides 'caching.local@2'", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -156,8 +156,9 @@ public abstract class CacheStoreConformance
 
         await Task.Delay(window / 2).ConfigureAwait(false);
         Assert.True((await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)).HasValue);
+        // 第二次读取发生在原始窗口之外：只有第一次读取延长过到期时刻才仍然命中
         await Task.Delay(window / 2 + ExpirationGrace / 2).ConfigureAwait(false);
-        Assert.True((await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)).HasValue, "读取应延长滑动过期");
+        Assert.True((await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)).HasValue, "Reading should extend the sliding expiration.");
 
         await Task.Delay(window + ExpirationGrace).ConfigureAwait(false);
         Assert.False((await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)).HasValue);
@@ -206,8 +207,8 @@ public abstract class CacheStoreConformance
         {
             Assert.Equal(resource, second.Resource);
             await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
-            Assert.True((await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).HasValue, "到期后应能被他人获取");
-            Assert.False(await second.ReleaseAsync(CancellationToken.None).ConfigureAwait(false), "到期后令牌不再匹配，释放失败");
+            Assert.True((await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).HasValue, "After expiry, the lock should be acquirable by others.");
+            Assert.False(await second.ReleaseAsync(CancellationToken.None).ConfigureAwait(false), "After expiry, the token no longer matches and release should fail.");
         }
     }
 
