@@ -55,7 +55,7 @@ public readonly record struct Result<T>
 
 ```json
 { "ok": true, "value": … }
-{ "ok": false, "error": { "code": "PERSISTENCE_CONFLICT_001", "message": "…", "details": { … }, "inner": { … } } }
+{ "ok": false, "error": { "code": "PERSISTENCE_CONFLICT_001", "message": "…", "messageKey": "persistence.entity.stale_stamp", "details": { … }, "inner": { … } } }
 ```
 
 ### Error 与 ErrorCode
@@ -63,19 +63,31 @@ public readonly record struct Result<T>
 ```csharp
 public sealed record Error
 {
-    public Error(string code, string message, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null);
+    public Error(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null);
     public string Code { get; }
-    public string Message { get; }
-    public IReadOnlyDictionary<string, object?>? Details { get; }   // 按引用比较
+    public string? MessageKey { get; }                              // 消息键；Literal 创建的为 null
+    public string? Text { get; }                                    // 已解析的文案；未解析为 null
+    public string Message { get; }                                  // Text，否则按进程默认区域解析，再否则"键 (参数)"
+    public IReadOnlyDictionary<string, object?>? Details { get; }   // 模板参数，也是结构化细节；按引用比较
     public Error? Inner { get; }
     public string Kind { get; }                                     // 错误码的 KIND 段
-    public static Error Validation(string code, string message, IReadOnlyDictionary<string, object?>? details = null);
-    public static Error NotFound(string code, string message);
-    public static Error Conflict(string code, string message);
-    public static Error Denied(string code, string message);
-    public static Error Unavailable(string code, string message);
-    public static Error Unexpected(string code, string message, Error? inner = null);
+    public static Error Literal(string code, string text, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null);   // 线上还原、异常转换
+    public static Error Validation(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null);
+    public static Error NotFound(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null);
+    public static Error Conflict(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null);
+    public static Error Denied(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null);
+    public static Error Unavailable(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null);
+    public static Error Unexpected(string code, string messageKey, Error? inner = null, IReadOnlyDictionary<string, object?>? details = null);
+    public Error WithCode(string code);                             // 换码，保留键、文案、参数
+    public Error WithText(string text);                             // 填入已解析文案
 }
+
+// 消息原语（RFC-0010）：键文法与模板格式化、参数字典、key.L()、环境作用域
+public static class MessageTemplate { IsValidKey; ValidateKey; DomainOf; Describe; Format; TryFormat; PlaceholdersOf; }
+public static class MessageArguments { Of(params (string, object?)[]); Positional(params object?[]); }
+public static class MessageKeyExtensions { L(this string key); L(key, params (string, object?)[]); L(key, params object?[]); L(key, IReadOnlyDictionary); }
+public interface IMessageResolver { bool TryResolve(string key, string? locale, IReadOnlyDictionary<string, object?>? arguments, out string? text); }
+public sealed class MessageScope : IDisposable { static Current; static Default; static Use(resolver, locale); static SetDefault(resolver, locale); Resolve(key, arguments); }
 
 public static class ErrorCode
 {
@@ -90,6 +102,7 @@ public static class ErrorCode
 
 - `Code` 必须符合 `<领域大写>_<KIND>_<NNN>`；工厂方法校验 KIND 段与方法名一致。
 - `Message` 面向人，不参与程序判断；`Details` 只允许 JSON 可表示的值。
+- `MessageKey` 文法 `^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$`，文案在语言文件里（RFC-0010）；`message` 线上字段是发送端已解析的文案，`messageKey` 让接收端可再翻译。
 
 ### Maybe
 

@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "Die Attribute 'id', 'source' und 'type' sind erforderlich.",
+  "messaging.envelope.invalid": "Der Umschlag ist ungültig: {reason}",
+  "messaging.envelope.invalid_base64": "Das Attribut 'data_base64' ist kein gültiges Base64.",
+  "messaging.envelope.invalid_extension": "Der Erweiterungsattributname '{name}' ist ungültig.",
+  "messaging.envelope.invalid_json": "Das Dokument ist kein gültiges CloudEvents-JSON: {reason}",
+  "messaging.envelope.invalid_time": "Das Attribut 'time' '{time}' ist kein RFC-3339-Zeitstempel.",
+  "messaging.envelope.spec_version": "Das Attribut 'specversion' muss '{specVersion}' sein.",
+  "messaging.handler.failed": "Der Nachrichtenhandler hat eine unbehandelte Ausnahme ausgelöst: {reason}",
+  "messaging.queue.full": "Die In-Memory-Warteschlange für das Thema '{topic}' ist voll (Kapazität {capacity}).",
+  "messaging.topic.invalid": "Das Thema '{topic}' ist ungültig."
+}

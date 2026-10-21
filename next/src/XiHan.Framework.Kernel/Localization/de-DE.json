@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "Durch die Richtlinie abgelehnt.",
+  "kernel.feature.start_failed": "Das Feature '{id}' konnte nicht gestartet werden: {reason}",
+  "kernel.feature.stop_failed": "Das Feature '{id}' konnte nicht gestoppt werden: {reason}",
+  "kernel.feature.stop_timeout": "Das Feature '{id}' hat beim Stoppen die Zeitüberschreitung erreicht.",
+  "kernel.hosting.not_serving": "Die Anwendung befindet sich im Zustand {state} und nimmt keine Anfragen an.",
+  "kernel.invocation.cancelled": "Der Aufruf wurde abgebrochen.",
+  "kernel.invocation.deadline_before_start": "Der Aufruf hat seine Frist bereits vor dem Start überschritten.",
+  "kernel.invocation.deadline_exceeded": "Der Aufruf hat seine Frist überschritten.",
+  "kernel.invocation.unhandled_exception": "Während des Aufrufs ist eine unbehandelte Ausnahme aufgetreten.",
+  "kernel.manifest.empty": "Das Manifest ist leer.",
+  "kernel.manifest.file_missing": "Die Manifestdatei '{path}' existiert nicht.",
+  "kernel.manifest.invalid": "Das Manifest ist ungültig: {reason}",
+  "kernel.manifest.invalid_json": "Das Manifest ist kein gültiges JSON: {reason}",
+  "kernel.permission.duplicate": "Der Berechtigungscode '{code}' ist bereits registriert.",
+  "kernel.permission.registry_full": "Die Berechtigungsregistrierung hat ihre Kapazität von {capacity} erreicht."
+}

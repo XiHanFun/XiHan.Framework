@@ -4,7 +4,9 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 
@@ -21,17 +23,21 @@ public static partial class HttpInvocation
     /// </summary>
     public const string DeadlineHeader = "xihan-deadline";
 
+    /// <summary>
+    /// 调用上下文在 <see cref="HttpContext.Items"/> 里的键。
+    /// </summary>
     private const string ContextItemKey = "xihan.invocation-context";
 
     /// <summary>
     /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>、
-    /// <c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）。
+    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         var headers = httpContext.Request.Headers;
 
+        // traceparent 不合法时视为缺失，由内核生成新的 trace-id，不把坏值带进链路
         string? traceId = null;
         string? spanId = null;
         var traceparent = TraceParent().Match(headers["traceparent"].ToString());
@@ -41,13 +47,30 @@ public static partial class HttpInvocation
             spanId = traceparent.Groups["span"].Value;
         }
 
+        // 截止时间按不变文化解析并统一为 UTC；解析失败视为没有截止时间
         DateTimeOffset? deadline = null;
         if (DateTimeOffset.TryParse(headers[DeadlineHeader].ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
         {
             deadline = parsed;
         }
 
-        var context = App.CreateContext(httpContext.RequestServices, httpContext.RequestAborted, traceId, spanId, deadline, ParseBaggage(headers["baggage"].ToString()));
+        var baggage = ParseBaggageCore(headers["baggage"].ToString());
+
+        // Accept-Language 只在调用方没有显式给出 xihan.locale 时生效：按权重排序的候选经本地化选项协商成启用的区域；
+        // 没有装配本地化时取第一个合法值并规范化，让下游服务仍能拿到调用方语言
+        if (!baggage.ContainsKey(BaggageKeys.Locale))
+        {
+            var accepted = AcceptedLocales(httpContext);
+            if (accepted.Count > 0)
+            {
+                var options = httpContext.RequestServices.GetService<LocalizationOptions>();
+                baggage[BaggageKeys.Locale] = options is not null ? options.Negotiate(accepted) : LocaleName.Normalize(accepted[0]);
+            }
+        }
+
+        var context = App.CreateContext(httpContext.RequestServices, httpContext.RequestAborted, traceId, spanId, deadline, baggage);
+
+        // 凭据只做格式拆分（scheme 与值），不在这里验证；解释交给安全子系统的 Authenticate 阶段
         if (AuthenticationCredential.TryParse(headers.Authorization.ToString(), out var credential))
         {
             context.SetCredential(credential);
@@ -67,9 +90,35 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
+    /// 从 <c>Accept-Language</c> 头取候选区域：按权重降序（同权重保持原顺序），跳过 <c>*</c>、权重为 0 与格式不合法的项。
+    /// </summary>
+    public static IReadOnlyList<string> AcceptedLocales(HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        var accepted = httpContext.Request.GetTypedHeaders().AcceptLanguage;
+        if (accepted.Count == 0)
+        {
+            return [];
+        }
+
+        return accepted
+            .Select(static (value, index) => (Locale: value.Value.ToString(), Quality: value.Quality ?? 1.0, Index: index))
+            .Where(static v => v.Quality > 0 && !string.Equals(v.Locale, "*", StringComparison.Ordinal) && LocaleName.IsValid(v.Locale))
+            .OrderByDescending(static v => v.Quality)
+            .ThenBy(static v => v.Index)
+            .Select(static v => v.Locale)
+            .ToList();
+    }
+
+    /// <summary>
     /// 解析 W3C <c>baggage</c> 头，只保留格式合法的 <c>xihan.</c> 键；值按 URL 解码。
     /// </summary>
-    public static IReadOnlyDictionary<string, string> ParseBaggage(string? header)
+    public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
+
+    /// <summary>
+    /// <see cref="ParseBaggage"/> 的可变字典版本，供 <see cref="CreateContext"/> 在构造上下文前补入协商出的区域。
+    /// </summary>
+    private static Dictionary<string, string> ParseBaggageCore(string? header)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         if (string.IsNullOrWhiteSpace(header))
@@ -79,6 +128,7 @@ public static partial class HttpInvocation
 
         foreach (var member in header.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
+            // 成员形如 key=value;prop1;prop2，分号后的属性不进入 Baggage
             var pair = member.Split(';', 2)[0];
             var separator = pair.IndexOf('=', StringComparison.Ordinal);
             if (separator <= 0)
@@ -86,6 +136,7 @@ public static partial class HttpInvocation
                 continue;
             }
 
+            // 只收 xihan. 前缀且格式合法的键，其他键不属于本框架，直接丢弃
             var key = pair[..separator].Trim();
             if (!BaggageKeys.IsWellFormed(key))
             {
@@ -107,6 +158,9 @@ public static partial class HttpInvocation
         return string.Join(",", baggage.Select(static pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"));
     }
 
+    /// <summary>
+    /// W3C <c>traceparent</c> 头（版本 00）的匹配：捕获 32 位 trace-id 与 16 位 span-id。
+    /// </summary>
     [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
     private static partial Regex TraceParent();
 }

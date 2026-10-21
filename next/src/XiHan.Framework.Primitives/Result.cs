@@ -11,11 +11,26 @@ namespace XiHan.Framework.Primitives;
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct Result
 {
-    internal static readonly Error Uninitialized = new(ErrorCode.UninitializedResult, "Result 未初始化：default 值不是合法结果。");
+    /// <summary>
+    /// <c>default</c> 结果被读取时统一返回的错误；<see cref="Result{T}"/> 复用同一实例。
+    /// </summary>
+    internal static readonly Error Uninitialized = new(ErrorCode.UninitializedResult, ResultMessages.Uninitialized);
 
+    /// <summary>
+    /// 是否成功；<c>default</c> 实例为 <see langword="false"/>，因此 default 天然落入失败分支。
+    /// </summary>
     private readonly bool _isSuccess;
+
+    /// <summary>
+    /// 失败时的错误；<c>default</c> 实例为 <see langword="null"/>，读取时以 <see cref="Uninitialized"/> 代替。
+    /// </summary>
     private readonly Error? _error;
 
+    /// <summary>
+    /// 创建结果。只供工厂方法调用，保证成功时无错误、失败时有错误。
+    /// </summary>
+    /// <param name="isSuccess">是否成功。</param>
+    /// <param name="error">失败时的错误。</param>
     private Result(bool isSuccess, Error? error)
     {
         _isSuccess = isSuccess;

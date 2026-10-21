@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "插件程序集 '{path}' 不存在。",
+  "plugins.entry.manifest_mismatch": "入口类型的清单 ID '{actual}' 与清单文件的 ID '{expected}' 不一致。",
+  "plugins.entry.not_found": "在插件程序集 '{package}' 里找不到入口类型 '{entry}'。",
+  "plugins.entry.not_plugin": "入口类型 '{entry}' 未实现 'IPlugin'。",
+  "plugins.manifest.entry_required": "插件清单 '{id}' 必须同时声明 'package'（程序集名）和 'entry'（入口类型）。",
+  "plugins.manifest.invalid": "插件目录 '{directory}' 里的清单不合法：{reason}",
+  "plugins.manifest.not_in_process": "清单 '{id}' 描述的不是进程内插件（kind={kind}，isolation={isolation}）。",
+  "plugins.permission.not_granted": "插件 '{id}' 声明的权限未被授予：{permissions}。",
+  "plugins.plugin.already_loaded": "插件 '{id}' 已加载。",
+  "plugins.plugin.load_failed": "插件 '{id}' 加载失败：{reason}",
+  "plugins.plugin.not_loaded": "插件 '{id}' 未加载。",
+  "plugins.plugin.stop_failed": "插件 '{id}' 停止失败：{reason}"
+}

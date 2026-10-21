@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
@@ -41,6 +42,9 @@ public sealed class JwtSecurityFeature : IFeature
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(SecurityMessages.Catalog);
+        // SecurityOptions 用 TryAdd：与内存安全特性共存时只注册一次
         context.Services.TryAddSingleton(SecurityOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(JwtOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<IAuthenticationHandler, JwtAuthenticationHandler>();

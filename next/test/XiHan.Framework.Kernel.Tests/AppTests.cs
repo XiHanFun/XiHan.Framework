@@ -9,6 +9,9 @@ using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// <see cref="App"/> 与 <see cref="AppBuilder"/> 的端到端行为：生命周期顺序、失败策略、停止超时、管道调用、绑定与提供者选择、构建期约束。
+/// </summary>
 public sealed class AppTests
 {
     [Fact]
@@ -17,6 +20,7 @@ public sealed class AppTests
         var log = new List<string>();
         var caching = new RecordingFeature(Manifests.Create("xihan.caching.inmemory", provides: ["caching.local@1"], requires: ["kernel.hosting@1"]), log);
         var app = new RecordingFeature(Manifests.Create("xihan.app.main", requires: ["caching.local@1"]), log);
+        // 故意按依赖者在前的顺序加入，验证顺序由图谱而不是 UseFeature 的调用顺序决定。
         var (provider, instance) = Hosts.BuildApp(b => b.UseFeature(app).UseFeature(caching));
         using var _ = provider;
 
@@ -120,6 +124,7 @@ public sealed class AppTests
         var (provider, app) = Hosts.BuildApp(b => b.UseFeature(feature));
         using var _ = provider;
 
+        // 未启动的应用不接收调用。
         var before = await Assert.ThrowsAsync<FrameworkException>(async () => await app.InvokeAsync(Hosts.Context(provider), static _ => ValueTask.CompletedTask));
         Assert.Equal(KernelErrors.InvalidAppState, before.Code);
 
@@ -128,7 +133,7 @@ public sealed class AppTests
         var result = await app.InvokeAsync(Hosts.Context(scope.ServiceProvider), context =>
         {
             log.Add("handler");
-            context.SetOutcome(Error.NotFound("ORDERS_NOTFOUND_001", "没有"));
+            context.SetOutcome(Error.Literal("ORDERS_NOTFOUND_001", "Not found."));
             return ValueTask.CompletedTask;
         });
 

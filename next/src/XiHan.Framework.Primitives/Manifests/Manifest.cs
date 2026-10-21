@@ -37,7 +37,7 @@ public sealed partial record Manifest
             ArgumentNullException.ThrowIfNull(value);
             field = SemVerPattern().IsMatch(value)
                 ? value
-                : throw new ArgumentException($"版本 '{value}' 不是合法的 SemVer。", nameof(value));
+                : throw new ArgumentException($"Version '{value}' is not a valid SemVer string.", nameof(value));
         }
     }
 
@@ -47,7 +47,7 @@ public sealed partial record Manifest
     public required int Primitives
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "原语层大版本必须是正整数。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The primitives major version must be a positive integer.");
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ public sealed partial record Manifest
     public IReadOnlyList<string> Activation
     {
         get => field;
-        init => field = ValidateAll(value, ActivationPattern(), "激活事件");
+        init => field = ValidateAll(value, ActivationPattern(), "Activation event");
     } = ["onStartup"];
 
     /// <summary>
@@ -105,7 +105,7 @@ public sealed partial record Manifest
     public IReadOnlyList<string> Permissions
     {
         get => field;
-        init => field = ValidateAll(value, PermissionPattern(), "权限");
+        init => field = ValidateAll(value, PermissionPattern(), "Permission");
     } = [];
 
     /// <summary>
@@ -118,34 +118,41 @@ public sealed partial record Manifest
     /// </summary>
     public Result Validate()
     {
+        // 单字段格式在 init 访问器里已经拦截，这里只做字段之间的组合约束。
         if (Kind == ManifestKind.Plugin && Isolation is null)
         {
-            return Error.Validation(ErrorCode.InvalidArgument, $"插件清单 '{Id}' 必须声明 isolation。");
+            return Error.Validation(ErrorCode.InvalidArgument, ManifestMessages.IsolationRequired, MessageArguments.Of(("id", Id)));
         }
 
         if (Kind != ManifestKind.Plugin && (Isolation is not null || Permissions.Count > 0))
         {
-            return Error.Validation(ErrorCode.InvalidArgument, $"清单 '{Id}' 不是插件，不得声明 isolation 或 permissions。");
+            return Error.Validation(ErrorCode.InvalidArgument, ManifestMessages.IsolationNotAllowed, MessageArguments.Of(("id", Id)));
         }
 
         if (HasDuplicates(Provides.Select(static p => p.Id)))
         {
-            return Error.Validation(ErrorCode.InvalidArgument, $"清单 '{Id}' 的 provides 有重复的能力 ID。");
+            return Error.Validation(ErrorCode.InvalidArgument, ManifestMessages.DuplicateProvides, MessageArguments.Of(("id", Id)));
         }
 
         if (HasDuplicates(Requires.Select(static r => r.Id)))
         {
-            return Error.Validation(ErrorCode.InvalidArgument, $"清单 '{Id}' 的 requires 有重复的能力 ID。");
+            return Error.Validation(ErrorCode.InvalidArgument, ManifestMessages.DuplicateRequires, MessageArguments.Of(("id", Id)));
         }
 
         if (HasDuplicates(Bindings.Select(static b => b.Name)))
         {
-            return Error.Validation(ErrorCode.InvalidArgument, $"清单 '{Id}' 的 bindings 有重复的绑定名。");
+            return Error.Validation(ErrorCode.InvalidArgument, ManifestMessages.DuplicateBindings, MessageArguments.Of(("id", Id)));
         }
 
         return Result.Success();
     }
 
+    /// <summary>
+    /// 校验列表中每一项都匹配 <paramref name="pattern"/>；通过时原样返回列表。
+    /// </summary>
+    /// <param name="values">待校验的值。</param>
+    /// <param name="pattern">每一项必须匹配的正则。</param>
+    /// <param name="what">出错时用于描述该项的名词，例如 <c>Activation event</c>。</param>
     private static IReadOnlyList<string> ValidateAll(IReadOnlyList<string> values, Regex pattern, string what)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -153,13 +160,16 @@ public sealed partial record Manifest
         {
             if (value is null || !pattern.IsMatch(value))
             {
-                throw new ArgumentException($"{what} '{value}' 不符合格式。", nameof(values));
+                throw new ArgumentException($"{what} '{value}' is not well-formed.", nameof(values));
             }
         }
 
         return values;
     }
 
+    /// <summary>
+    /// 序列中是否有重复项（序号比较）。
+    /// </summary>
     private static bool HasDuplicates(IEnumerable<string> values)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -174,12 +184,21 @@ public sealed partial record Manifest
         return false;
     }
 
+    /// <summary>
+    /// SemVer 2.0 版本号的正则：三段数字，可选预发布与构建元数据。
+    /// </summary>
     [GeneratedRegex("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$")]
     private static partial Regex SemVerPattern();
 
+    /// <summary>
+    /// 激活事件的正则：<c>onStartup</c>、<c>onOperation:&lt;模式&gt;</c> 或 <c>onEvent:&lt;模式&gt;</c>。
+    /// </summary>
     [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)$")]
     private static partial Regex ActivationPattern();
 
+    /// <summary>
+    /// 插件权限的正则：<c>net.outbound</c>、<c>fs.read</c>、<c>fs.write</c> 或 <c>capability</c> 前缀加冒号与目标。
+    /// </summary>
     [GeneratedRegex("^(net\\.outbound|fs\\.read|fs\\.write|capability):.+$")]
     private static partial Regex PermissionPattern();
 }

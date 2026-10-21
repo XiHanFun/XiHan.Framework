@@ -19,11 +19,12 @@ public static class PersistenceConventions
         where TEntity : class
     {
         ArgumentNullException.ThrowIfNull(entity);
+        // 租户校验放在最前面：失败时实体保持原样，不会只写入了一半审计字段
         if (entity is IMultiTenant tenant)
         {
             if (string.IsNullOrEmpty(tenantId))
             {
-                return Error.Validation(PersistenceErrors.TenantRequired, $"{typeof(TEntity).Name} 是多租户实体，当前调用没有租户。");
+                return Error.Validation(PersistenceErrors.TenantRequired, PersistenceMessages.TenantRequired, MessageArguments.Of(("entity", typeof(TEntity).Name)));
             }
 
             tenant.TenantId = tenantId;
@@ -84,6 +85,7 @@ public static class PersistenceConventions
         where TEntity : class
     {
         ArgumentNullException.ThrowIfNull(entity);
+        // 没有当前租户（null）的调用看不到任何多租户实体：新增时已保证 TenantId 非空，所以 null 永远不相等
         return entity is not IMultiTenant tenant || string.Equals(tenant.TenantId, tenantId, StringComparison.Ordinal);
     }
 

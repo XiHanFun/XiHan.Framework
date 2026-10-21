@@ -17,7 +17,14 @@ public sealed class PermissionRegistry
     /// </summary>
     public const int DefaultCapacity = 10_000;
 
+    /// <summary>
+    /// 已登记的权限，按权限码索引。
+    /// </summary>
     private readonly ConcurrentDictionary<string, PermissionDefinition> _permissions = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 容量上限。
+    /// </summary>
     private readonly int _capacity;
 
     /// <summary>
@@ -41,14 +48,16 @@ public sealed class PermissionRegistry
     public Result Add(PermissionDefinition permission)
     {
         ArgumentNullException.ThrowIfNull(permission);
+        // 容量检查与插入不是一个原子操作：并发登记在临界点可能略微越过上限。
+        // 登记只发生在配置阶段且按拓扑顺序串行执行，这里不为此加锁。
         if (_permissions.Count >= _capacity)
         {
-            return new Error(KernelErrors.PermissionRegistryFull, $"权限注册表已达容量上限 {_capacity}。");
+            return new Error(KernelErrors.PermissionRegistryFull, KernelMessages.PermissionRegistryFull, MessageArguments.Of(("capacity", _capacity)));
         }
 
         return _permissions.TryAdd(permission.Code, permission)
             ? Result.Success()
-            : new Error(KernelErrors.DuplicatePermission, $"权限码 '{permission.Code}' 已登记。");
+            : new Error(KernelErrors.DuplicatePermission, KernelMessages.DuplicatePermission, MessageArguments.Of(("code", permission.Code)));
     }
 
     /// <summary>

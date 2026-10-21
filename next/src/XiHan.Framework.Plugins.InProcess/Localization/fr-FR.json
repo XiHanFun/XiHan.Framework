@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "L'assembly du plugin '{path}' n'existe pas.",
+  "plugins.entry.manifest_mismatch": "L'identifiant de manifeste '{actual}' du type d'entrée ne correspond pas à l'identifiant '{expected}' du fichier de manifeste.",
+  "plugins.entry.not_found": "Le type d'entrée '{entry}' est introuvable dans l'assembly du plugin '{package}'.",
+  "plugins.entry.not_plugin": "Le type d'entrée '{entry}' n'implémente pas 'IPlugin'.",
+  "plugins.manifest.entry_required": "Le manifeste du plugin '{id}' doit déclarer à la fois 'package' (le nom de l'assembly) et 'entry' (le type d'entrée).",
+  "plugins.manifest.invalid": "Le manifeste du répertoire de plugin '{directory}' n'est pas valide : {reason}",
+  "plugins.manifest.not_in_process": "Le manifeste '{id}' ne décrit pas un plugin in-process (kind={kind}, isolation={isolation}).",
+  "plugins.permission.not_granted": "Les permissions déclarées par le plugin '{id}' n'ont pas été accordées : {permissions}.",
+  "plugins.plugin.already_loaded": "Le plugin '{id}' est déjà chargé.",
+  "plugins.plugin.load_failed": "Le plugin '{id}' n'a pas pu être chargé : {reason}",
+  "plugins.plugin.not_loaded": "Le plugin '{id}' n'est pas chargé.",
+  "plugins.plugin.stop_failed": "Le plugin '{id}' n'a pas pu s'arrêter : {reason}"
+}

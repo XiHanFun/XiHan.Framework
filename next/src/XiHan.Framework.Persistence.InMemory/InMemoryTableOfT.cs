@@ -15,7 +15,14 @@ public sealed class InMemoryTable<TEntity, TKey>(int capacity)
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
+    /// <summary>
+    /// 已提交的行，按标识索引；所有访问都在 <see cref="_gate"/> 内进行。
+    /// </summary>
     private readonly Dictionary<TKey, TEntity> _rows = [];
+
+    /// <summary>
+    /// 保护 <see cref="_rows"/> 的锁；读取只在锁内复制快照，写入在锁内整批应用。
+    /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
@@ -60,7 +67,7 @@ public sealed class InMemoryTable<TEntity, TKey>(int capacity)
     }
 
     /// <summary>
-    /// 原子应用一批变更。新增超出容量返回 <see cref="PersistenceErrors.CapacityExceeded"/>，新增撞键返回 <see cref="PersistenceErrors.Duplicate"/>；任一失败则整批不写。
+    /// 原子应用一批变更：同键覆盖、缺键新增、删除缺键忽略；重复标识的判定在仓储 <c>AddAsync</c> 完成，不在这里。新增超出容量返回 <see cref="PersistenceErrors.CapacityExceeded"/>，此时整批不写。
     /// </summary>
     public Result Apply(IReadOnlyDictionary<TKey, TEntity> upserts, IReadOnlySet<TKey> removals)
     {
@@ -68,10 +75,12 @@ public sealed class InMemoryTable<TEntity, TKey>(int capacity)
         ArgumentNullException.ThrowIfNull(removals);
         lock (_gate)
         {
+            // 先在锁内算出应用后的条数：现有条数减去确实存在的删除，加上真正新增的键（覆盖已有行不占容量）；
+            // 校验通过前不改任何行，失败时表保持原样
             var additions = upserts.Keys.Count(key => !_rows.ContainsKey(key));
             if (_rows.Count - removals.Count(_rows.ContainsKey) + additions > Capacity)
             {
-                return Error.Unavailable(PersistenceErrors.CapacityExceeded, $"{typeof(TEntity).Name} 的内存表已达容量上限 {Capacity}。");
+                return Error.Unavailable(PersistenceErrors.CapacityExceeded, PersistenceMessages.CapacityExceeded, MessageArguments.Of(("entity", typeof(TEntity).Name), ("capacity", Capacity)));
             }
 
             foreach (var key in removals)

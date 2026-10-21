@@ -18,7 +18,14 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
     /// </summary>
     public const string SchemeName = "ApiKey";
 
+    /// <summary>
+    /// 主体存储；按 API Key 查找记录。
+    /// </summary>
     private readonly InMemoryPrincipalStore _store = store ?? throw new ArgumentNullException(nameof(store));
+
+    /// <summary>
+    /// 安全选项；提供角色声明类型。
+    /// </summary>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />
@@ -30,9 +37,10 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
         ArgumentNullException.ThrowIfNull(credential);
         if (!_store.FindByApiKey(credential.Value).TryGetValue(out var record))
         {
-            return ValueTask.FromResult(Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, "API Key 无效。")));
+            return ValueTask.FromResult(Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidApiKey)));
         }
 
+        // 角色写成 RoleClaim 声明、租户写成 tenant 声明，再附加记录里的其他声明；顺序固定便于断言
         var claims = new List<KeyValuePair<string, string>>(record.Roles.Count + record.Claims.Count + 1);
         claims.AddRange(record.Roles.Select(role => new KeyValuePair<string, string>(_options.RoleClaim, role)));
         if (record.Tenant is not null)

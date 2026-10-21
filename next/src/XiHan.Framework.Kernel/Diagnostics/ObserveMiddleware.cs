@@ -15,6 +15,9 @@ namespace XiHan.Framework.Kernel.Diagnostics;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IPipelineMiddleware
 {
+    /// <summary>
+    /// 本中间件的日志器。
+    /// </summary>
     private readonly ILogger _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<ObserveMiddleware>();
 
     /// <inheritdoc />
@@ -23,6 +26,7 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
+        // 用上下文里的 trace-id 与 parent-id 拼出 W3C traceparent，让 Activity 挂到上游链路而不是另起一条。
         using var activity = FrameworkDiagnostics.ActivitySource.StartActivity("xihan.invoke", ActivityKind.Internal, $"00-{context.TraceId}-{context.SpanId}-01");
         var started = Stopwatch.GetTimestamp();
         try
@@ -31,11 +35,13 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            // 取消不在这里吞掉：由 Resilience 阶段的 DeadlineMiddleware 区分超时与外部取消并写入结果。
             LogUnexpected(_logger, exception, context.TraceId);
-            context.SetOutcome(Error.Unexpected(KernelErrors.Unexpected, "调用期间发生未处理异常。", exception is FrameworkException framework ? framework.ToError() : null));
+            context.SetOutcome(Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, exception is FrameworkException framework ? framework.ToError() : null));
         }
         finally
         {
+            // 无论成功、失败还是取消都记指标；结果未设置时标记为 unset，便于发现没有写结果的管道。
             var outcome = context.GetOutcome();
             var status = outcome.Match(static r => r.IsSuccess ? "success" : "failure", static () => "unset");
             var tag = new KeyValuePair<string, object?>("xihan.outcome", status);
@@ -49,6 +55,9 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "调用 {TraceId} 发生未处理异常")]
+    /// <summary>
+    /// 记录调用期间的未处理异常。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception during invocation '{TraceId}'.")]
     private static partial void LogUnexpected(ILogger logger, Exception exception, string traceId);
 }

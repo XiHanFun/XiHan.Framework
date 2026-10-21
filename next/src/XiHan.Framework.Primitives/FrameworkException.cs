@@ -29,5 +29,5 @@ public class FrameworkException : Exception
     /// <summary>
     /// 转换为 <see cref="Error"/>；内部异常若也是 <see cref="FrameworkException"/> 则成为 <see cref="Error.Inner"/>。
     /// </summary>
-    public Error ToError() => new(Code, Message, null, InnerException is FrameworkException inner ? inner.ToError() : null);
+    public Error ToError() => Error.Literal(Code, Message, null, InnerException is FrameworkException inner ? inner.ToError() : null);
 }

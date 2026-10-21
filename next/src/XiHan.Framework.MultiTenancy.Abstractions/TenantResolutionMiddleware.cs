@@ -17,6 +17,9 @@ namespace XiHan.Framework.MultiTenancy.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IPipelineMiddleware
 {
+    /// <summary>
+    /// 默认租户、是否必须带租户、是否对照存储校验。
+    /// </summary>
     private readonly MultiTenancyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />
@@ -25,22 +28,25 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
+        // 解析器都没给出结果时才退回默认租户；默认租户同样要走下面的格式与存储校验
         var tenantId = await ResolveAsync(context).ConfigureAwait(false) ?? _options.DefaultTenant;
         if (tenantId is null)
         {
             if (_options.RequireTenant)
             {
-                context.SetOutcome(Error.Validation(MultiTenancyErrors.MissingTenant, "本调用必须带租户，但没有解析到租户。"));
+                context.SetOutcome(Error.Validation(MultiTenancyErrors.MissingTenant, MultiTenancyMessages.TenantRequired));
                 return;
             }
 
+            // 不强制带租户：无租户调用照常放行，安全上下文里租户保持为空
             await nextStep(context).ConfigureAwait(false);
             return;
         }
 
+        // 先校验文法再查存储：不把来自外部、未经校验的 ID 直接交给 Provider
         if (!TenantIdentifier.IsValid(tenantId))
         {
-            context.SetOutcome(Error.Validation(MultiTenancyErrors.InvalidTenantId, $"租户 ID '{tenantId}' 不合法。"));
+            context.SetOutcome(Error.Validation(MultiTenancyErrors.InvalidTenantId, MultiTenancyMessages.InvalidTenantId, MessageArguments.Of(("tenantId", tenantId))));
             return;
         }
 
@@ -51,20 +57,22 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
             var found = await store.FindAsync(tenantId, context.CancellationToken).ConfigureAwait(false);
             if (!found.TryGetValue(out var info))
             {
-                context.SetOutcome(Error.NotFound(MultiTenancyErrors.NotFound, $"租户 '{tenantId}' 不存在。"));
+                context.SetOutcome(Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantId))));
                 return;
             }
 
             if (!info.IsEnabled)
             {
-                context.SetOutcome(Error.Denied(MultiTenancyErrors.Disabled, $"租户 '{tenantId}' 已禁用。"));
+                context.SetOutcome(Error.Denied(MultiTenancyErrors.Disabled, MultiTenancyMessages.TenantDisabled, MessageArguments.Of(("tenantId", tenantId))));
                 return;
             }
 
+            // 以存储里的记录为准，显示名随之带入安全上下文
             tenant = new TenantContext(info.Id) { DisplayName = info.DisplayName };
         }
         else
         {
+            // 关闭存储校验：只保证格式合法，没有显示名
             tenant = new TenantContext(tenantId);
         }
 
@@ -72,8 +80,12 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         await nextStep(context).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// 按注册顺序依次调用解析器，返回第一个解析出的租户 ID；都没有返回 <see langword="null"/>。
+    /// </summary>
     private static async ValueTask<string?> ResolveAsync(InvocationContext context)
     {
+        // 注册顺序即优先级：先注册的解析器（如已认证主体的声明）压过后注册的（如调用方自报的 Baggage）
         foreach (var resolver in context.Services.GetServices<ITenantResolver>())
         {
             var resolved = await resolver.ResolveAsync(context, context.CancellationToken).ConfigureAwait(false);

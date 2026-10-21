@@ -65,6 +65,7 @@ public abstract class RepositoryConformance
         Maybe<ConformanceOrder> inside = default;
         IUnitOfWork? unitOfWork = null;
 
+        // 把作用域内的工作单元引用带出管道，调用结束后才能断言它的终态
         var added = await RunAsync(host, async context =>
         {
             unitOfWork = context.Services.GetRequiredService<IUnitOfWork>();
@@ -100,6 +101,7 @@ public abstract class RepositoryConformance
         {
             await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id }, context.CancellationToken).ConfigureAwait(false);
 
+            // 在当前调用尚未提交时，用另一个作用域（即另一个工作单元与连接）读取同一标识，模拟并发的第二个调用
             await using var other = context.Services.CreateAsyncScope();
             var otherUnitOfWork = other.ServiceProvider.GetRequiredService<IUnitOfWork>();
             await otherUnitOfWork.BeginAsync(UnitOfWorkOptions.Default, context.CancellationToken).ConfigureAwait(false);
@@ -126,6 +128,7 @@ public abstract class RepositoryConformance
         var across = await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id }, context.CancellationToken)).ConfigureAwait(false);
         Assert.Equal(PersistenceErrors.Duplicate, across.Error?.Code);
 
+        // 同一工作单元内第二次新增失败，整个调用以失败结果回滚，第一次新增也不应落库
         var other = Guid.CreateVersion7();
         var within = await RunAsync(host, async context =>
         {
@@ -209,6 +212,7 @@ public abstract class RepositoryConformance
         Assert.True(tombstone.IsDeleted);
         Assert.Equal(Clock.GetUtcNow(), tombstone.DeletedAt);
 
+        // 已软删除的实体对更新与删除都视为不存在，即使调用方手里还拿着它
         var updated = await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).UpdateAsync(tombstone, context.CancellationToken)).ConfigureAwait(false);
         var removedAgain = await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).RemoveAsync(tombstone, context.CancellationToken)).ConfigureAwait(false);
         Assert.Equal(PersistenceErrors.NotFound, updated.Error?.Code);
@@ -233,6 +237,7 @@ public abstract class RepositoryConformance
 
         Assert.True(removed.IsSuccess, removed.ToString());
         Assert.False((await FindAsync<ConformanceItem, int>(host, 7).ConfigureAwait(false)).HasValue);
+        // IncludeDeleted 也看不到：物理删除没有墓碑
         Assert.Equal(0, await CountAsync<ConformanceItem, int>(host, EntityQuery.All<ConformanceItem>() with { IncludeDeleted = true }).ConfigureAwait(false));
     }
 
@@ -244,7 +249,7 @@ public abstract class RepositoryConformance
     {
         await using var host = await StartAsync().ConfigureAwait(false);
         var id = Guid.CreateVersion7();
-        var rejection = Error.Validation("CONFORMANCE_VALIDATION_001", "业务拒绝");
+        var rejection = Error.Literal("CONFORMANCE_VALIDATION_001", "Rejected by the business rule.");
         IUnitOfWork? unitOfWork = null;
 
         var result = await RunAsync(host, async context =>
@@ -274,7 +279,7 @@ public abstract class RepositoryConformance
         {
             unitOfWork = context.Services.GetRequiredService<IUnitOfWork>();
             (await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
-            throw new InvalidOperationException("处理器崩溃");
+            throw new InvalidOperationException("The handler crashed.");
         }).ConfigureAwait(false);
 
         Assert.Equal(KernelErrors.Unexpected, result.Error?.Code);
@@ -325,6 +330,7 @@ public abstract class RepositoryConformance
             return Result.Success();
         }).ConfigureAwait(false)).ThrowIfFailure();
 
+        // Amount >= 2 命中 o2..o5，降序后跳过 1 条取 2 条得到 o4、o3；计数仍是全部命中的 4 条
         var query = EntityQuery.All<ConformanceOrder>()
             .Where(new Specification<ConformanceOrder>(static o => o.Amount >= 2))
             .OrderBy(static o => o.Amount, descending: true)
@@ -346,6 +352,7 @@ public abstract class RepositoryConformance
     public async Task Repository_OutsideTransactionStage_Throws()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
+        // 直接从作用域解析仓储而不经过管道：工作单元从未开始
         await using var scope = host.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
@@ -398,6 +405,7 @@ public abstract class RepositoryConformance
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(action);
+        // 租户不直接写安全上下文，而是放进 Baggage 由 ConformanceFeature 的 Tenant 阶段中间件解析，与真实调用路径一致
         var baggage = tenantId is null ? null : new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = tenantId };
         return await host.InvokeAsync(async context => context.SetOutcome(await action(context).ConfigureAwait(false)), baggage: baggage).ConfigureAwait(false);
     }

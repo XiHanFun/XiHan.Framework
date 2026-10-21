@@ -3,9 +3,15 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="Result"/> 的行为：成功与失败的构造、<c>default</c> 视为未初始化失败、短路组合、抛出转换与相等语义。
+/// </summary>
 public sealed class ResultTests
 {
-    private static readonly Error _sampleError = Error.Conflict("ORDERS_CONFLICT_001", "订单已存在");
+    /// <summary>
+    /// 各测试共用的失败样例。
+    /// </summary>
+    private static readonly Error _sampleError = Error.Literal("ORDERS_CONFLICT_001", "Order already exists.");
 
     [Fact]
     public void Success_IsSuccessWithoutError()
@@ -25,7 +31,7 @@ public sealed class ResultTests
 
         Assert.True(result.IsFailure);
         Assert.Same(_sampleError, result.Error);
-        Assert.Equal("Failure([ORDERS_CONFLICT_001] 订单已存在)", result.ToString());
+        Assert.Equal("Failure([ORDERS_CONFLICT_001] Order already exists.)", result.ToString());
     }
 
     [Fact]

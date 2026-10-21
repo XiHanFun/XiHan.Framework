@@ -36,6 +36,7 @@ public static class CloudEventsFormat
             DataContentType = envelope.DataContentType,
         };
 
+        // JSON 数据内联为 data 成员，其他数据按 Base64 放进 data_base64，二者互斥；空数据两者都不写
         if (envelope.Data.Length > 0)
         {
             if (envelope.IsJsonData)
@@ -47,7 +48,7 @@ public static class CloudEventsFormat
                 }
                 catch (JsonException exception)
                 {
-                    throw new FrameworkException(MessagingErrors.InvalidEnvelope, $"信封 '{envelope.Id}' 声明为 JSON 数据但不是合法 JSON。", exception);
+                    throw new FrameworkException(MessagingErrors.InvalidEnvelope, $"Envelope '{envelope.Id}' declares JSON data, but the data is not valid JSON.", exception);
                 }
             }
             else
@@ -56,6 +57,7 @@ public static class CloudEventsFormat
             }
         }
 
+        // 扩展属性是顶层成员，与规范属性平级，经 JsonExtensionData 写出
         if (envelope.Extensions.Count > 0)
         {
             document.Extensions = envelope.Extensions.ToDictionary(
@@ -79,17 +81,17 @@ public static class CloudEventsFormat
         }
         catch (JsonException exception)
         {
-            return Error.Validation(MessagingErrors.InvalidEnvelope, $"不是合法的 CloudEvents JSON：{exception.Message}");
+            return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidJson, MessageArguments.Of(("reason", exception.Message)));
         }
 
         if (document is null || document.SpecVersion != MessageEnvelope.SpecVersion)
         {
-            return Error.Validation(MessagingErrors.InvalidEnvelope, $"specversion 必须是 {MessageEnvelope.SpecVersion}。");
+            return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeSpecVersion, MessageArguments.Of(("specVersion", MessageEnvelope.SpecVersion)));
         }
 
         if (string.IsNullOrWhiteSpace(document.Id) || string.IsNullOrWhiteSpace(document.Source) || string.IsNullOrWhiteSpace(document.Type))
         {
-            return Error.Validation(MessagingErrors.InvalidEnvelope, "id、source、type 不能缺失。");
+            return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeAttributesRequired);
         }
 
         DateTimeOffset? time = null;
@@ -97,7 +99,7 @@ public static class CloudEventsFormat
         {
             if (!DateTimeOffset.TryParse(document.Time, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedTime))
             {
-                return Error.Validation(MessagingErrors.InvalidEnvelope, $"time '{document.Time}' 不是 RFC 3339 时间。");
+                return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidTime, MessageArguments.Of(("time", document.Time)));
             }
 
             time = parsedTime;
@@ -116,7 +118,7 @@ public static class CloudEventsFormat
             }
             catch (FormatException)
             {
-                return Error.Validation(MessagingErrors.InvalidEnvelope, "data_base64 不是合法的 Base64。");
+                return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidBase64);
             }
         }
 
@@ -125,9 +127,10 @@ public static class CloudEventsFormat
         {
             if (!EnvelopeExtensions.IsValidName(name))
             {
-                return Error.Validation(MessagingErrors.InvalidEnvelope, $"扩展属性名 '{name}' 不合法。");
+                return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidExtension, MessageArguments.Of(("name", name)));
             }
 
+            // 扩展值只接受字符串、数字与布尔（数字与布尔按原文保留）；其他类型按空字符串处理
             extensions[name] = value.ValueKind switch
             {
                 JsonValueKind.String => value.GetString() ?? string.Empty,
@@ -136,6 +139,7 @@ public static class CloudEventsFormat
             };
         }
 
+        // 信封构造器会再次校验必填项与扩展名，把它的异常转为验证错误而不是抛出
         try
         {
             return Result.Success(new MessageEnvelope
@@ -152,7 +156,7 @@ public static class CloudEventsFormat
         }
         catch (ArgumentException exception)
         {
-            return Error.Validation(MessagingErrors.InvalidEnvelope, exception.Message);
+            return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
     }
 }

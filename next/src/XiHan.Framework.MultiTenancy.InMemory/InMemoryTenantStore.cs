@@ -13,7 +13,14 @@ namespace XiHan.Framework.MultiTenancy.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryTenantStore : ITenantStore
 {
+    /// <summary>
+    /// 按 ID 索引的租户；读取无锁。
+    /// </summary>
     private readonly ConcurrentDictionary<string, TenantInfo> _tenants = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 串行化新增与替换，使容量检查与写入成为一个原子步骤。
+    /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
@@ -58,9 +65,10 @@ public sealed class InMemoryTenantStore : ITenantStore
         ArgumentNullException.ThrowIfNull(tenant);
         lock (_gate)
         {
+            // 容量检查与写入必须在同一把锁内，否则并发新增可能越过上限；替换已有租户不占新容量
             if (!_tenants.ContainsKey(tenant.Id) && _tenants.Count >= Capacity)
             {
-                return Error.Unavailable(MultiTenancyErrors.CapacityExceeded, $"内存租户存储已达容量上限 {Capacity}。");
+                return Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
             }
 
             _tenants[tenant.Id] = tenant;

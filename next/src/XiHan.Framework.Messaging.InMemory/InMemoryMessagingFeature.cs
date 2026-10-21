@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -17,6 +18,9 @@ namespace XiHan.Framework.Messaging.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMessagingFeature : IHostedFeature
 {
+    /// <summary>
+    /// 启动后取得的运行时；停止时用它结束消费。
+    /// </summary>
     private MessagingRuntime? _runtime;
 
     /// <inheritdoc />
@@ -43,6 +47,8 @@ public sealed class InMemoryMessagingFeature : IHostedFeature
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(MessagingMessages.Catalog);
         context.Services.AddSingleton(InMemoryMessagingOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryMessageBroker>();
         context.Services.TryAddSingleton<IMessageBroker>(static sp => sp.GetRequiredService<InMemoryMessageBroker>());

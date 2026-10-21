@@ -15,6 +15,7 @@
 
 - 不处理 HTTP，不含任何子系统抽象，不含具体插件加载器。
 - 零反射；零第三方依赖，只引用 `Microsoft.Extensions.*` 抽象包。
+- 失败结果只携带消息键（`KernelMessages`）与参数，文案在 `Localization/<区域>.json`（10 种区域各一个文件，由 `Localization.InMemory` 装载）；`App.InvokeAsync` 按 Baggage `xihan.locale` 安装 `MessageScope`，让 `key.L()` 在调用链里得到调用方语言（RFC-0010）。启动期的 `FrameworkException` 不本地化。
 
 ## 依赖方向
 
