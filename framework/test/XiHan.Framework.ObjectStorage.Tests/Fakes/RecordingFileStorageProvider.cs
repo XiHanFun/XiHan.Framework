@@ -37,9 +37,24 @@ public class RecordingFileStorageProvider : FileStorageProviderBase
     public FileUploadResult UploadCoreResult { get; set; } = new() { Success = true };
 
     /// <summary>
+    /// 按请求决定 UploadCoreAsync 的返回值，为空时使用 <see cref="UploadCoreResult"/>；处理器抛出的异常照常向外传
+    /// </summary>
+    public Func<FileUploadRequest, FileUploadResult>? UploadCoreHandler { get; set; }
+
+    /// <summary>
+    /// UploadCoreAsync 收到的文件名，按调用顺序记录
+    /// </summary>
+    public List<string> UploadedFileNames { get; } = [];
+
+    /// <summary>
     /// DeleteAsync(path, cancellationToken) 收到的路径
     /// </summary>
     public List<string> DeletedPaths { get; } = [];
+
+    /// <summary>
+    /// 删除时要抛出异常的路径
+    /// </summary>
+    public HashSet<string> FailingDeletePaths { get; } = [];
 
     /// <summary>
     /// ExistsAsync(path, cancellationToken) 收到的路径
@@ -69,6 +84,11 @@ public class RecordingFileStorageProvider : FileStorageProviderBase
     /// </summary>
     public override Task DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
+        if (FailingDeletePaths.Contains(path))
+        {
+            throw new IOException($"模拟删除失败：{path}");
+        }
+
         DeletedPaths.Add(path);
         return Task.CompletedTask;
     }
@@ -145,12 +165,13 @@ public class RecordingFileStorageProvider : FileStorageProviderBase
     protected override Task<FileUploadResult> UploadCoreAsync(FileUploadRequest request, CancellationToken cancellationToken)
     {
         UploadCoreCallCount++;
+        UploadedFileNames.Add(request.FileName);
 
         if (UploadCoreException is not null)
         {
             throw UploadCoreException;
         }
 
-        return Task.FromResult(UploadCoreResult);
+        return Task.FromResult(UploadCoreHandler?.Invoke(request) ?? UploadCoreResult);
     }
 }

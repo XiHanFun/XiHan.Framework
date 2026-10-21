@@ -26,7 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+        <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
     </ItemGroup>
 
     <!-- 离线知识库：文档站正文、各包项目文件、模块类与选项类源码，随工具一起发布；文件名里的 .Sms 之类不当作区域性 -->
