@@ -45,6 +45,29 @@ public class ParameterRuleValidator
 
         // 5. 多个复杂类型参数（除了 Body）
         ValidateMultipleComplexParameters(descriptorList);
+
+        // 6. Body 与 Form 不能并存
+        ValidateBodyWithForm(descriptorList);
+    }
+
+    /// <summary>
+    /// 校验 Body 参数与 Form 参数不并存
+    /// </summary>
+    /// <remarks>
+    /// 含 Form 参数的动作只接受 multipart/form-data，同一请求没有 JSON 请求体，Body 参数的请求必然以 415 失败。
+    /// </remarks>
+    private void ValidateBodyWithForm(List<ParameterDescriptor> descriptors)
+    {
+        var bodyParams = descriptors.Where(d => d.Source == ParameterSource.Body).ToList();
+        var formParams = descriptors.Where(d => d.Source == ParameterSource.Form).ToList();
+
+        if (bodyParams.Count != 0 && formParams.Count != 0)
+        {
+            throw new DynamicApiException(
+                $"方法 '{_methodName}' 同时有 FromBody 参数（{string.Join(", ", bodyParams.Select(p => p.Name))}）" +
+                $"和表单参数（{string.Join(", ", formParams.Select(p => p.Name))}）。表单请求没有 JSON 请求体，" +
+                "请去掉 [FromBody] 让该参数随表单提交，或把文件与其余字段合并为单个 DTO。");
+        }
     }
 
     /// <summary>

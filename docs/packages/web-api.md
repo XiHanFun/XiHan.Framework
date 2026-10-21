@@ -115,7 +115,7 @@ public class MyModule : XiHanModule { }
 
 1. **显式绑定优先**：参数已标 `[FromRoute]`/`[FromQuery]`/`[FromBody]`/`[FromForm]`/`[FromHeader]`/`[FromServices]` 时直接采用，并保留其 `Name`。
 2. **基础设施类型 → `Services`**：`CancellationToken`/`HttpContext`/`ClaimsPrincipal`/`IServiceProvider` 等特殊类型自动注入，不计入客户端必填参数。
-3. **表单文件 → `Form`**：参数类型（含嵌套属性/集合）包含 `IFormFile`/`IFormFileCollection` 时判为表单来源，动作方法自动加 `[Consumes("multipart/form-data")]`，因此文件上传应用服务方法无需手写控制器即可工作。
+3. **表单文件 → `Form`**：参数类型（含嵌套属性/集合）包含 `IFormFile`/`IFormFileCollection` 时判为表单来源，动作方法自动加 `[Consumes("multipart/form-data")]`，因此文件上传应用服务方法无需手写控制器即可工作。`List<IFormFile>`、`IFormFile[]`、`IFormFileCollection` 与含文件列表的 DTO 都能在一次请求里接收多个文件。同一方法里其余未标注的复杂类型与集合参数随同一表单绑定；简单类型参数仍走查询字符串，要随表单提交时标 `[FromForm]`。显式 `[FromBody]` 与表单参数并存的方法在装配阶段报错，因为这种动作的请求必然返回 415。
 4. **唯一复杂类型或集合 → `Body`**：非 `GET`/`DELETE`/`HEAD` 方法下，首个复杂类型（class/record）或集合类型（`List<T>`/`T[]`/`IEnumerable<T>` 等，元素类型不限）参数判为请求体，与 ASP.NET Core `[ApiController]` 的推断一致；若已有一个 Body 参数，后续复杂类型与集合参数降级为 `Query`（避免多 Body 冲突）。集合要走查询字符串时显式标 `[FromQuery]`。
 5. **兜底 → `Query`**：其余简单类型参数，以及 `GET`/`DELETE`/`HEAD` 方法上的集合参数走查询字符串。参数名不参与推断，路由段只由显式 `[FromRoute]` 产生。
 

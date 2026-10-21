@@ -13,11 +13,13 @@ namespace XiHan.Framework.Web.Api.DynamicApi.ParameterAnalysis;
 /// 绑定位置只有两个来源：参数上的显式绑定特性，以及按 HTTP 方法与参数类型决定的 Body/Query 兜底。
 /// 允许请求体的方法上，首个复杂类型或集合类型参数绑定请求体，与 ASP.NET Core <c>[ApiController]</c> 的推断口径一致；
 /// 集合要走查询串时显式标注 <see cref="FromQueryAttribute"/>。
+/// 方法含表单参数（表单文件或显式 <see cref="FromFormAttribute"/>）时请求以表单提交，原本推断为请求体的参数改从同一表单绑定。
 /// 不按参数名推断路由：名称是实现细节，让它决定 URL 会使「给既有方法加一个参数」变成静默的线上破坏性变更。
 /// </remarks>
 public class ParameterSourceResolver
 {
     private readonly string _httpMethod;
+    private readonly bool _isFormRequest;
     private int _bodyParameterCount;
 
     /// <summary>
@@ -25,8 +27,19 @@ public class ParameterSourceResolver
     /// </summary>
     /// <param name="httpMethod">HTTP 方法</param>
     public ParameterSourceResolver(string httpMethod)
+        : this(httpMethod, isFormRequest: false)
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="httpMethod">HTTP 方法</param>
+    /// <param name="isFormRequest">请求是否以表单提交；为 <see langword="true"/> 时原本推断为请求体的参数改从表单绑定，通常取 <see cref="IsFormRequest"/> 的结果</param>
+    public ParameterSourceResolver(string httpMethod, bool isFormRequest)
     {
         _httpMethod = httpMethod.ToUpperInvariant();
+        _isFormRequest = isFormRequest;
         _bodyParameterCount = 0;
     }
 
@@ -66,7 +79,7 @@ public class ParameterSourceResolver
         }
 
         // 3.根据 HTTP Method 决策
-        var allowBody = IsBodyAllowed();
+        var allowBody = IsBodyAllowed(_httpMethod);
 
         // 4.表单文件参数推断
         if (allowBody && ParameterClassifier.ContainsFormFile(descriptor.Type))
@@ -77,6 +90,12 @@ public class ParameterSourceResolver
         // 5.Body 参数推断（只能 1 个）：复杂类型与集合类型都以 JSON 请求体传输
         if (allowBody && ParameterClassifier.IsBodyEligibleKind(descriptor.Kind))
         {
+            // 表单请求没有 JSON 请求体，这些参数与文件在同一个表单里提交
+            if (_isFormRequest)
+            {
+                return ParameterSource.Form;
+            }
+
             // 确保只有一个 Body 参数
             if (_bodyParameterCount == 0)
             {
@@ -90,6 +109,45 @@ public class ParameterSourceResolver
 
         // 6.Query 参数兜底规则
         return ParameterSource.Query;
+    }
+
+    /// <summary>
+    /// 判断方法的请求是否以表单提交
+    /// </summary>
+    /// <remarks>
+    /// 存在显式 <see cref="FromFormAttribute"/> 参数，或允许请求体的方法上存在未显式标注、包含表单文件的参数时成立。
+    /// </remarks>
+    /// <param name="descriptors">方法的全部参数描述符</param>
+    /// <param name="httpMethod">HTTP 方法</param>
+    /// <returns>是否以表单提交</returns>
+    public static bool IsFormRequest(IEnumerable<ParameterDescriptor> descriptors, string httpMethod)
+    {
+        ArgumentNullException.ThrowIfNull(descriptors);
+        ArgumentNullException.ThrowIfNull(httpMethod);
+
+        var allowBody = IsBodyAllowed(httpMethod.ToUpperInvariant());
+        foreach (var descriptor in descriptors)
+        {
+            if (descriptor.ParameterInfo != null &&
+                TryGetExplicitBinding(descriptor.ParameterInfo, out var explicitSource, out _))
+            {
+                if (explicitSource == ParameterSource.Form)
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (allowBody &&
+                descriptor.Kind != ParameterKind.Special &&
+                ParameterClassifier.ContainsFormFile(descriptor.Type))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -159,10 +217,11 @@ public class ParameterSourceResolver
     /// <summary>
     /// 判断是否允许 Body 参数
     /// </summary>
-    private bool IsBodyAllowed()
+    /// <param name="upperHttpMethod">大写的 HTTP 方法</param>
+    private static bool IsBodyAllowed(string upperHttpMethod)
     {
         // GET / DELETE / HEAD 不允许 Body
-        return _httpMethod is not "GET" and not "DELETE" and not "HEAD";
+        return upperHttpMethod is not "GET" and not "DELETE" and not "HEAD";
     }
 
 }
