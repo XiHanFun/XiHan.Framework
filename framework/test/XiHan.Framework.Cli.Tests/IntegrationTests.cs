@@ -158,6 +158,7 @@ public sealed class IntegrationTests : IDisposable
 
         await using (var client = await McpClient.CreateAsync(new StreamClientTransport(toServer.Writer.AsStream(), toClient.Reader.AsStream()), cancellationToken: cancellationToken))
         {
+            Assert.NotNull(client.ServerInfo);
             Assert.Equal(McpHost.ServerName, client.ServerInfo.Name);
             Assert.Equal("说明", client.ServerInstructions);
 
