@@ -34,6 +34,18 @@ public interface IFileStorageProvider
     Task<FileUploadResult> UploadAsync(FileUploadRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 批量上传文件
+    /// </summary>
+    /// <remarks>
+    /// 按请求顺序逐个上传，结果与请求一一对应。单个文件失败记入对应结果的 <see cref="FileUploadResult.Success"/>
+    /// 与 <see cref="FileUploadResult.ErrorMessage"/>，不影响其余文件；取消时抛出 <see cref="OperationCanceledException"/>。
+    /// </remarks>
+    /// <param name="requests">上传请求列表，不能包含空项</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>与请求顺序一致的上传结果</returns>
+    Task<IReadOnlyList<FileUploadResult>> UploadManyAsync(IReadOnlyList<FileUploadRequest> requests, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 初始化分片上传
     /// </summary>
     /// <param name="request">初始化请求</param>
@@ -86,6 +98,18 @@ public interface IFileStorageProvider
     /// <param name="bucketName">存储桶名称</param>
     /// <param name="cancellationToken">取消令牌</param>
     Task DeleteAsync(string path, string? bucketName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 批量删除文件
+    /// </summary>
+    /// <remarks>
+    /// 对去重后的每个路径都尝试删除。有路径删除失败时，在全部尝试结束后抛出 <see cref="AggregateException"/>，
+    /// 每个内部异常对应一个失败路径；取消时立即抛出 <see cref="OperationCanceledException"/>。
+    /// </remarks>
+    /// <param name="paths">文件路径列表，不能包含空路径</param>
+    /// <param name="bucketName">存储桶名称，为空时使用默认存储桶</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task DeleteManyAsync(IReadOnlyList<string> paths, string? bucketName = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 检查文件是否存在
