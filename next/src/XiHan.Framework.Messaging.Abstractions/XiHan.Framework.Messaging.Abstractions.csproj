@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.Abstractions</RootNamespace>
+    <Description>XiHan Framework 消息契约（Ring 2）：CloudEvents 信封、代理与发布者、处理器订阅、经内核管道的派发、事务性发件箱。</Description>
+    <PackageTags>xihan;framework;messaging;cloudevents;outbox</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

@@ -31,6 +31,18 @@ public sealed class RepositoryRegistrationTests
     }
 
     [Fact]
+    public void AddRepository_AfterApplyTo_RegistersImmediately()
+    {
+        var services = new ServiceCollection();
+        var registrar = new RecordingRegistrar();
+        services.GetRepositoryRegistrations().ApplyTo(services, registrar);
+
+        services.AddRepository<Widget, Guid>();
+
+        Assert.Equal(["Widget<Guid>"], registrar.Registered);
+    }
+
+    [Fact]
     public void GetRepositoryRegistrations_ReturnsSingleSharedInstance()
     {
         var services = new ServiceCollection();
