@@ -1,6 +1,8 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using XiHan.Framework.Application.Attributes;
 using XiHan.Framework.Application.Contracts.Services;
 using XiHan.Framework.Web.Api.DynamicApi.Controllers;
@@ -144,6 +146,25 @@ public class DynamicApiGenerationFailureTests : IDisposable
     {
         Assert.True(new DynamicApiOptions().ThrowOnGenerationFailure);
     }
+
+    /// <summary>
+    /// 显式 [FromBody] 参数与表单文件并存时装配失败，并指明双方参数
+    /// </summary>
+    /// <remarks>
+    /// 这种签名的动作只接受 multipart/form-data，请求体参数永远读不到，运行期每次都是 415。
+    /// </remarks>
+    [Fact]
+    public void CreateControllerType_ForExplicitBodyWithFormFile_Throws()
+    {
+        var options = new DynamicApiOptions();
+
+        var exception = Assert.Throws<DynamicApiException>(
+            () => DynamicApiControllerFactory.CreateControllerType(
+                typeof(BodyWithFormFileAppService), new DefaultDynamicApiConvention(options), options));
+
+        Assert.Contains("options", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("file", exception.Message, StringComparison.Ordinal);
+    }
 }
 
 /// <summary>
@@ -151,6 +172,20 @@ public class DynamicApiGenerationFailureTests : IDisposable
 /// </summary>
 [CollectionDefinition("DynamicApiFactory", DisableParallelization = true)]
 public class DynamicApiFactoryCollection;
+
+/// <summary>
+/// 显式请求体参数与表单文件并存的应用服务
+/// </summary>
+public class BodyWithFormFileAppService : IApplicationService
+{
+    /// <summary>
+    /// 上传文件，选项显式标注 [FromBody]
+    /// </summary>
+    /// <param name="options">上传选项</param>
+    /// <param name="file">文件</param>
+    /// <returns></returns>
+    public Task<string> UploadAsync([FromBody] UploadOptionsInput options, IFormFile file) => Task.FromResult(file.FileName);
+}
 
 /// <summary>
 /// 订单应用服务
