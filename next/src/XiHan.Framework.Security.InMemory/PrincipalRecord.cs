@@ -17,7 +17,7 @@ public sealed record PrincipalRecord
     public required string Id
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("主体 ID 不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The principal ID must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -26,7 +26,7 @@ public sealed record PrincipalRecord
     public required string ApiKey
     {
         get => field;
-        init => field = value is { Length: >= 8 } ? value : throw new ArgumentException("API Key 至少 8 个字符。", nameof(value));
+        init => field = value is { Length: >= 8 } ? value : throw new ArgumentException("The API key must be at least 8 characters long.", nameof(value));
     }
 
     /// <summary>

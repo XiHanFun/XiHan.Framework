@@ -47,6 +47,7 @@ public sealed record KernelOptions
         var section = configuration.GetSection(ConfigurationSection);
         var options = new KernelOptions();
 
+        // 每个键单独读取并显式解析，缺省回落到默认实例的值；不用 Bind 以保持零反射与 AOT 友好。
         return options with
         {
             StartTimeout = ReadSeconds(section, "StartTimeoutSeconds") ?? options.StartTimeout,
@@ -56,6 +57,9 @@ public sealed record KernelOptions
         };
     }
 
+    /// <summary>
+    /// 读取以秒计的时长键；缺省返回 <see langword="null"/>，非正数或非数字抛出 <see cref="ArgumentException"/>。
+    /// </summary>
     private static TimeSpan? ReadSeconds(IConfiguration section, string key)
     {
         var raw = section[key];
@@ -66,9 +70,12 @@ public sealed record KernelOptions
 
         return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
             ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{key} 必须是正数，实际 '{raw}'。");
+            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be a positive number, but the value is '{raw}'.");
     }
 
+    /// <summary>
+    /// 读取布尔键；缺省返回 <see langword="null"/>，无法解析抛出 <see cref="ArgumentException"/>。
+    /// </summary>
     private static bool? ReadBool(IConfiguration section, string key)
     {
         var raw = section[key];
@@ -77,9 +84,13 @@ public sealed record KernelOptions
             return null;
         }
 
-        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"{ConfigurationSection}:{key} 必须是 true 或 false，实际 '{raw}'。");
+        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be 'true' or 'false', but the value is '{raw}'.");
     }
 
+    /// <summary>
+    /// 读取枚举键，不区分大小写；缺省返回 <see langword="null"/>，未定义的值抛出 <see cref="ArgumentException"/>。
+    /// </summary>
+    /// <typeparam name="TEnum">枚举类型。</typeparam>
     private static TEnum? ReadEnum<TEnum>(IConfiguration section, string key)
         where TEnum : struct, Enum
     {
@@ -91,6 +102,6 @@ public sealed record KernelOptions
 
         return Enum.TryParse<TEnum>(raw, ignoreCase: true, out var value) && Enum.IsDefined(value)
             ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{key} 的值 '{raw}' 不是 {typeof(TEnum).Name} 的合法取值。");
+            : throw new ArgumentException($"The value '{raw}' of '{ConfigurationSection}:{key}' is not a valid '{typeof(TEnum).Name}' value.");
     }
 }

@@ -18,7 +18,14 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OutboxFeature : IHostedFeature, IDisposable
 {
+    /// <summary>
+    /// 停止信号；<see cref="StopAsync"/> 取消它让投递循环退出。
+    /// </summary>
     private CancellationTokenSource? _stopping;
+
+    /// <summary>
+    /// 正在运行的投递循环；停止时等待它结束。
+    /// </summary>
     private Task? _loop;
 
     /// <inheritdoc />
@@ -46,6 +53,7 @@ public sealed class OutboxFeature : IHostedFeature, IDisposable
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddSingleton(OutboxOptions.FromConfiguration(context.Configuration));
         context.Services.AddRepository<OutboxMessage, Guid>();
+        // 用 Replace 而不是 TryAdd：Provider 已注册的 DirectPublisher 必须让位给发件箱发布者
         context.Services.Replace(ServiceDescriptor.Scoped<IMessagePublisher, OutboxPublisher>());
         context.Services.TryAddSingleton<OutboxDispatcher>();
     }

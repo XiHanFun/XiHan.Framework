@@ -21,7 +21,7 @@ public sealed partial record PermissionDefinition
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         if (!CodePattern().IsMatch(code))
         {
-            throw new ArgumentException($"权限码 '{code}' 必须是至少两段的小写点分标识。", nameof(code));
+            throw new ArgumentException($"Permission code '{code}' must be a lowercase dot-separated identifier with at least two segments.", nameof(code));
         }
 
         Code = code;
@@ -44,6 +44,9 @@ public sealed partial record PermissionDefinition
     /// </summary>
     public string? Description { get; }
 
+    /// <summary>
+    /// 权限码格式的正则：至少两段、点分隔、每段小写字母开头并允许数字与连字符。
+    /// </summary>
     [GeneratedRegex("^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$")]
     private static partial Regex CodePattern();
 }

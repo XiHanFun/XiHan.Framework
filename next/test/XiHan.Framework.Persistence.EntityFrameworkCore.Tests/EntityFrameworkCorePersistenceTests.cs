@@ -13,12 +13,24 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
+/// <summary>
+/// EF Core Provider 独有的行为：选项解析、模型约定、游离实体更新与并发戳、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
+/// </summary>
 public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 {
+    /// <summary>
+    /// 本测试实例独占的临时 SQLite 数据库。
+    /// </summary>
     private readonly SqliteDatabase _database = new();
 
+    /// <summary>
+    /// 测试结束后删除临时数据库文件。
+    /// </summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>
+    /// 用键值对构造内存配置。
+    /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
@@ -42,6 +54,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
         Assert.Equal(32, stamp.GetMaxLength());
         Assert.Contains(model.FindEntityType(typeof(ConformanceNote))!.GetIndexes(), static i => i.Properties.Single().Name == nameof(ConformanceNote.TenantId));
         Assert.Contains(model.FindEntityType(typeof(ConformanceOrder))!.GetIndexes(), static i => i.Properties.Single().Name == nameof(ConformanceOrder.IsDeleted));
+        // 只读的领域事件集合不能被当作列映射
         Assert.Null(model.FindEntityType(typeof(ConformanceOrder))!.FindProperty(nameof(ConformanceOrder.DomainEvents)));
     }
 
@@ -52,6 +65,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
         var id = Guid.CreateVersion7();
         (await RunAsync(host, ctx => Repository(ctx).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, ctx.CancellationToken))).ThrowIfFailure();
 
+        // 复制一份带当时并发戳的游离实体，之后另一个调用更新同一行使这份戳过期
         ConformanceOrder? stale = null;
         (await RunAsync(host, async ctx =>
         {
@@ -96,6 +110,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 
         var updated = await RunAsync(host, ctx => Repository(ctx).UpdateAsync(detached!, ctx.CancellationToken));
 
+        // 游离实例本身要拿到新的修改时间与并发戳，才能用于下一次更新
         Assert.True(updated.IsSuccess, updated.ToString());
         Assert.NotNull(detached!.ModifiedAt);
         ConformanceOrder? current = null;
@@ -120,6 +135,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 
         var added = await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None);
 
+        // 与内存实现不同：EF 仓储在写入前就拒绝，所以提交时没有残余变更，工作单元正常提交
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, added.Error?.Code);
         Assert.True((await unitOfWork.CommitAsync(CancellationToken.None)).IsSuccess);
         Assert.Equal(UnitOfWorkState.Committed, unitOfWork.State);
@@ -147,6 +163,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     [Fact]
     public async Task Feature_WithoutEnsureCreated_LeavesSchemaToApplication()
     {
+        // 只给连接绑定、不开 EnsureCreated：启动后数据库应保持空白
         await using var host = await TestHost.StartAsync(
             builder => builder.UseFeature(SqliteDatabase.CreateFeature()),
             [new("XiHan:Bindings:db", _database.ConnectionString)],
@@ -157,9 +174,15 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
         Assert.False(await context.Database.GetService<IRelationalDatabaseCreator>().HasTablesAsync());
     }
 
+    /// <summary>
+    /// 取调用作用域内的订单仓储。
+    /// </summary>
     private static IRepository<ConformanceOrder, Guid> Repository(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
+    /// <summary>
+    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// </summary>
     private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));
 }

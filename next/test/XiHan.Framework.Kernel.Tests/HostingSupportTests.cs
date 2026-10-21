@@ -5,6 +5,9 @@ using XiHan.Framework.Kernel.Hosting;
 
 namespace XiHan.Framework.Kernel.Tests;
 
+/// <summary>
+/// 宿主支撑类型的行为：<see cref="KernelOptions"/> 的显式配置读取与 <see cref="BindingResolver"/> 对目录与配置两种来源的合并。
+/// </summary>
 public sealed class HostingSupportTests
 {
     [Fact]
@@ -49,6 +52,7 @@ public sealed class HostingSupportTests
             Assert.Equal("app", fromDirectory.Property("username").ValueOrThrow());
             Assert.False(fromDirectory.Properties.ContainsKey(".metadata"));
 
+            // 配置里的同名绑定整体覆盖目录来源：目录里的 type 不会合并进来。
             var overridden = BindingResolver.Resolve(Hosts.Configuration(("XiHan:Bindings:db:value", "Host=override")), root)["db"];
             Assert.Equal("Host=override", overridden.Value);
             Assert.Equal(string.Empty, overridden.Type);

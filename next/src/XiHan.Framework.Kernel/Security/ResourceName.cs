@@ -24,7 +24,7 @@ public readonly partial record struct ResourceName(string Partition, string Serv
     public static ResourceName Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return TryParse(text, out var name) ? name : throw new ArgumentException($"'{text}' 不是合法的资源名，期望 xrn:<partition>:<service>:<tenant>:<type>/<id>。", nameof(text));
+        return TryParse(text, out var name) ? name : throw new ArgumentException($"'{text}' is not a valid resource name; expected 'xrn:<partition>:<service>:<tenant>:<type>/<id>'.", nameof(text));
     }
 
     /// <summary>
@@ -51,6 +51,9 @@ public readonly partial record struct ResourceName(string Partition, string Serv
     /// <inheritdoc />
     public override string ToString() => $"xrn:{Partition}:{Service}:{Tenant}:{Type}/{Id}";
 
+    /// <summary>
+    /// 资源名格式的正则：租户段允许为空（全局资源），ID 段不含斜杠与空白。
+    /// </summary>
     [GeneratedRegex("^xrn:(?<p>[a-z0-9-]+):(?<s>[a-z0-9-]+):(?<t>[a-z0-9-]*):(?<type>[a-z0-9-]+)/(?<id>[^/\\s]+)$")]
     private static partial Regex Pattern();
 }

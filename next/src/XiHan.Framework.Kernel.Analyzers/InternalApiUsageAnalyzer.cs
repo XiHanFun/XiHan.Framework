@@ -27,12 +27,14 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
         context.EnableConcurrentExecution();
         context.RegisterCompilationStartAction(static start =>
         {
+            // 编译里没有 ApiLevelAttribute，说明没有引用原语层，也就没有可检查的标注
             var attribute = start.Compilation.GetTypeByMetadataName(Rules.ApiLevelAttributeName);
             if (attribute is null)
             {
                 return;
             }
 
+            // 成员使用走操作树（调用、构造、成员引用），类型名出现走语法树；两条路径各报各的，互不重复
             var assembly = start.Compilation.Assembly;
             start.RegisterOperationAction(
                 operationContext => AnalyzeOperation(operationContext, attribute, assembly),
@@ -49,6 +51,9 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
         });
     }
 
+    /// <summary>
+    /// 检查调用、构造与成员引用：目标成员来自其他程序集且自身标注 Internal 时报告。
+    /// </summary>
     private static void AnalyzeOperation(OperationAnalysisContext context, INamedTypeSymbol attribute, IAssemblySymbol assembly)
     {
         ISymbol? member = context.Operation switch
@@ -59,11 +64,13 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
+        // 程序集内部可以使用自己的 Internal API
         if (member is null || IsSameAssembly(member, assembly))
         {
             return;
         }
 
+        // 以原始定义判定，泛型实例化后的成员仍能命中标注
         var original = member.OriginalDefinition;
         if (Rules.IsInternalStability(original, attribute))
         {
@@ -71,8 +78,12 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
         }
     }
 
+    /// <summary>
+    /// 检查标识符与泛型名解析到的类型：类型或其包含类型标注 Internal 且来自其他程序集时报告。
+    /// </summary>
     private static void AnalyzeTypeSyntax(SyntaxNodeAnalysisContext context, INamedTypeSymbol attribute, IAssemblySymbol assembly)
     {
+        // var 是隐式类型关键字，不是对某个类型名的引用
         if (context.Node is IdentifierNameSyntax { IsVar: true })
         {
             return;
@@ -90,6 +101,9 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
         }
     }
 
+    /// <summary>
+    /// 符号是否属于当前编译的程序集。没有归属程序集的符号（数组、指针等）视为同程序集，不报告。
+    /// </summary>
     private static bool IsSameAssembly(ISymbol symbol, IAssemblySymbol assembly)
         => symbol.ContainingAssembly is null || SymbolEqualityComparer.Default.Equals(symbol.ContainingAssembly, assembly);
 }

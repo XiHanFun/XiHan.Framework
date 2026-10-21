@@ -24,7 +24,7 @@ public sealed record MessagingOptions
     public int MaxAttempts
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "最多投递次数必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of attempts must be positive.");
     } = 3;
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record MessagingOptions
     public string DeadLetterSuffix
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("死信后缀不能为空。", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The dead-letter suffix must not be empty.", nameof(value));
     } = ".dlq";
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed record MessagingOptions
         {
             options = int.TryParse(attempts, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
                 ? options with { MaxAttempts = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxAttempts 必须是正整数，实际 '{attempts}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:MaxAttempts must be a positive integer, but was '{attempts}'.");
         }
 
         if (configuration[$"{ConfigurationSection}:DeadLetterSuffix"] is { } suffix)

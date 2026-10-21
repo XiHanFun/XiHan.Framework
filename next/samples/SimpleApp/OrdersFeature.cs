@@ -18,8 +18,14 @@ namespace SimpleApp;
 /// </summary>
 public sealed class OrdersFeature : IFeature
 {
+    /// <summary>
+    /// 订单消息的主题；发布与订阅共用。
+    /// </summary>
     public const string Topic = "orders";
 
+    /// <summary>
+    /// 清单：依赖持久化、消息、授权与多租户四个能力，并声明贡献的权限码。
+    /// </summary>
     public Manifest Manifest { get; } = new()
     {
         Id = "xihan.samples.orders",
@@ -40,12 +46,17 @@ public sealed class OrdersFeature : IFeature
         Entry = typeof(OrdersFeature).FullName,
     };
 
+    /// <summary>
+    /// 登记订单仓储、事件计数器、<see cref="Topic"/> 的消息处理器，以及清单里声明的两个权限。
+    /// </summary>
     public void Configure(FeatureContext context)
     {
         context.Services.AddRepository<Order, Guid>();
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
-        context.AddPermission(new PermissionDefinition("orders.read", "读订单"));
-        context.AddPermission(new PermissionDefinition("orders.write", "下订单"));
+
+        // 权限码必须先在这里登记，端点上的 RequireXiHanPermission 才能引用；未登记的权限码在装配时报错
+        context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
+        context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
     }
 }

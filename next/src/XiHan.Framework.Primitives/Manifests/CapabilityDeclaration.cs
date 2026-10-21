@@ -41,7 +41,7 @@ public sealed record CapabilityDeclaration
         ArgumentNullException.ThrowIfNull(text);
         return TryParse(text, out var declaration)
             ? declaration
-            : throw new ArgumentException($"'{text}' 不是合法的能力声明，期望 <能力ID>@<版本>。", nameof(text));
+            : throw new ArgumentException($"'{text}' is not a valid capability declaration; expected '<capability-id>@<version>'.", nameof(text));
     }
 
     /// <summary>
@@ -49,6 +49,7 @@ public sealed record CapabilityDeclaration
     /// </summary>
     public static bool TryParse(string? text, out CapabilityDeclaration declaration)
     {
+        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求。
         declaration = null!;
         if (text is null)
         {
@@ -61,6 +62,7 @@ public sealed record CapabilityDeclaration
             return false;
         }
 
+        // 版本只接受无符号十进制整数且至少为 1，拒绝 "+1"、"01" 之外的前缀与空白。
         if (!int.TryParse(text[(at + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var version) || version < 1)
         {
             return false;

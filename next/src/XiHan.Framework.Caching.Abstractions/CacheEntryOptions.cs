@@ -49,9 +49,12 @@ public sealed record CacheEntryOptions
     /// </summary>
     public CacheEntryOptions Validated()
         => TimeToLive is not null && SlidingExpiration is not null
-            ? throw new ArgumentException("TimeToLive 与 SlidingExpiration 不能同时设置。")
+            ? throw new ArgumentException("TimeToLive and SlidingExpiration cannot both be set.")
             : this;
 
+    /// <summary>
+    /// 校验过期时间：<see langword="null"/> 表示不设置，否则必须为正。
+    /// </summary>
     private static TimeSpan? ValidatePositive(TimeSpan? value, string name)
-        => value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(name, value, "过期时间必须为正。");
+        => value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(name, value, "The expiration must be positive.");
 }

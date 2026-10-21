@@ -31,7 +31,8 @@ if (-not (Test-Path $unshippedPath)) {
     throw "Missing $unshippedPath"
 }
 
-$output = & dotnet build $projectPath -c Release --no-restore 2>&1 | ForEach-Object { "$_" }
+# 增量构建会跳过已是最新的项目而不再输出分析器诊断，必须强制重新编译本项目才能拿到完整的 RS0016 / RS0017
+$output = & dotnet build $projectPath -c Release --no-restore --no-incremental 2>&1 | ForEach-Object { "$_" }
 
 $toAdd = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
 $toRemove = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

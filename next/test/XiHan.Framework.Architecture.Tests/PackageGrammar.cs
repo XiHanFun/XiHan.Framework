@@ -18,6 +18,9 @@ internal static partial class PackageGrammar
         "Default", "Core", "Common", "Shared", "Base", "Impl", "Util", "Utils", "Helper", "Manager", "Bus", "Engine",
     };
 
+    /// <summary>
+    /// 结构词领域的固定角色段：这些领域不接受任意机制名，只允许枚举出的后缀。
+    /// </summary>
     private static readonly Dictionary<string, string[]> _fixedSuffixes = new(StringComparer.Ordinal)
     {
         ["Kernel"] = ["Analyzers", "Generators"],
@@ -27,22 +30,32 @@ internal static partial class PackageGrammar
         ["Profiles"] = ["Minimal", "Standard", "Full"],
     };
 
+    /// <summary>
+    /// 允许单段出现（不带角色段）的包名。
+    /// </summary>
     private static readonly HashSet<string> _standalone = new(StringComparer.Ordinal)
     {
         "Primitives", "Kernel", "Domain", "Testing", "Cli",
     };
 
+    /// <summary>
+    /// 校验包 ID 是否符合文法；不符合时 <paramref name="reason"/> 说明原因。
+    /// </summary>
+    /// <param name="packageId">包 ID。</param>
+    /// <param name="subsystems">术语表中的子系统领域词。</param>
+    /// <param name="reason">不符合时的原因；符合时为空字符串。</param>
     public static bool TryValidate(string packageId, IReadOnlySet<string> subsystems, out string reason)
     {
         if (!packageId.StartsWith(Workspace.PackagePrefix, StringComparison.Ordinal))
         {
-            reason = $"必须以 {Workspace.PackagePrefix} 开头";
+            reason = $"The package ID must start with '{Workspace.PackagePrefix}'.";
             return false;
         }
 
         var segments = packageId[Workspace.PackagePrefix.Length..].Split('.');
         var head = segments[0];
 
+        // 单段：只有少数结构词可以独立成包；子系统领域词必须带角色段。
         if (segments.Length == 1)
         {
             if (_standalone.Contains(head))
@@ -52,46 +65,47 @@ internal static partial class PackageGrammar
             }
 
             reason = subsystems.Contains(head)
-                ? "子系统包必须带角色段（Abstractions、Conformance、Generators、机制或技术名）"
-                : "不是术语表中的领域词";
+                ? "A subsystem package must have a role segment (Abstractions, Conformance, Generators, or a mechanism or technology name)."
+                : "The head segment is not a domain word in the vocabulary.";
             return false;
         }
 
         if (segments.Length != 2)
         {
-            reason = "包 ID 最多两段：领域 + 角色";
+            reason = "A package ID has at most two segments: domain and role.";
             return false;
         }
 
         var role = segments[1];
 
+        // Compat 与固定后缀的结构词先于一般子系统规则判定，它们的角色段是封闭集合。
         if (head == "Compat")
         {
-            reason = "Compat 的角色段必须是 V + 大版本号";
+            reason = "The role segment of Compat must be 'V' followed by a major version number.";
             return CompatRole().IsMatch(role);
         }
 
         if (_fixedSuffixes.TryGetValue(head, out var allowed))
         {
-            reason = $"{head} 允许的角色段：{string.Join("、", allowed)}";
+            reason = $"The role segments allowed for '{head}' are: {string.Join(", ", allowed)}.";
             return Array.IndexOf(allowed, role) >= 0;
         }
 
         if (!subsystems.Contains(head))
         {
-            reason = "不是术语表中的子系统领域词";
+            reason = "The head segment is not a subsystem domain word in the vocabulary.";
             return false;
         }
 
         if (!RoleSegment().IsMatch(role))
         {
-            reason = "角色段必须是 PascalCase 标识符";
+            reason = "The role segment must be a PascalCase identifier.";
             return false;
         }
 
         if (ForbiddenRoleWords.Contains(role))
         {
-            reason = $"角色段禁用词：{role}";
+            reason = $"The role segment uses a forbidden word: '{role}'.";
             return false;
         }
 
@@ -128,9 +142,15 @@ internal static partial class PackageGrammar
     public static bool IsContract(string packageId)
         => packageId.EndsWith(".Abstractions", StringComparison.Ordinal) || packageId == Workspace.PackagePrefix + "Domain";
 
+    /// <summary>
+    /// 角色段的正则：PascalCase 标识符。
+    /// </summary>
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex RoleSegment();
 
+    /// <summary>
+    /// Compat 角色段的正则：<c>V</c> 加不以零开头的大版本号。
+    /// </summary>
     [GeneratedRegex("^V[1-9][0-9]*$")]
     private static partial Regex CompatRole();
 }

@@ -9,26 +9,48 @@ using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.InMemory.Tests;
 
+/// <summary>
+/// 内存 Provider 独有的行为：选项解析、容量上限、只读工作单元、状态机、覆盖层回滚与并发提交。一致性套件覆盖的通用行为不在此重复。
+/// </summary>
 public sealed class InMemoryPersistenceTests
 {
+    /// <summary>
+    /// 不实现任何协议的测试实体。
+    /// </summary>
     private sealed class Widget : IEntity<Guid>
     {
+        /// <inheritdoc />
         public Guid Id { get; init; }
 
+        /// <summary>
+        /// 名称；用于验证更新后的值。
+        /// </summary>
         public string Name { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// 注入仓储的固定时刻。
+    /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
+    /// <summary>
+    /// 用键值对构造内存配置。
+    /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
+    /// <summary>
+    /// 新建指定容量的存储，并在其上打开一个工作单元与仓储。
+    /// </summary>
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Arrange(int capacity = 100)
     {
         var store = new InMemoryStore(new InMemoryPersistenceOptions { MaxEntitiesPerType = capacity });
         return Open(store);
     }
 
+    /// <summary>
+    /// 在已有存储上打开一个新的工作单元与仓储；用于模拟第二个作用域。
+    /// </summary>
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Open(InMemoryStore store)
     {
         var unitOfWork = new InMemoryUnitOfWork(store);
@@ -55,6 +77,7 @@ public sealed class InMemoryPersistenceTests
         await repository.AddAsync(new Widget { Id = Guid.NewGuid() }, CancellationToken.None);
         Assert.True((await first.CommitAsync(CancellationToken.None)).IsSuccess);
 
+        // 容量在提交时才校验：覆盖层允许写入第三条，提交整批失败且表保持两条
         var (_, second, secondRepository) = Open(store);
         await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
         await secondRepository.AddAsync(new Widget { Id = Guid.NewGuid() }, CancellationToken.None);
@@ -128,6 +151,7 @@ public sealed class InMemoryPersistenceTests
         await Assert.ThrowsAsync<FrameworkException>(() => repository.AddAsync(widget, CancellationToken.None));
         await Assert.ThrowsAsync<FrameworkException>(() => repository.ListAsync(EntityQuery.All<Widget>(), CancellationToken.None));
 
+        // 提交之后工作单元不再活动，仓储同样拒绝
         await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
         await unitOfWork.CommitAsync(CancellationToken.None);
         await Assert.ThrowsAsync<FrameworkException>(() => repository.AddAsync(widget, CancellationToken.None));
@@ -153,6 +177,7 @@ public sealed class InMemoryPersistenceTests
         var store = new InMemoryStore(new InMemoryPersistenceOptions());
         const int writers = 32;
 
+        // 每个写入者各自一个工作单元，Task.Yield 让它们真正交错执行，验证表的锁能让各自的提交互不干扰
         var results = await Task.WhenAll(Enumerable.Range(0, writers).Select(async i =>
         {
             await Task.Yield();

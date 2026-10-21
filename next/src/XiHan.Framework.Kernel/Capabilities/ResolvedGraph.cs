@@ -13,8 +13,16 @@ namespace XiHan.Framework.Kernel.Capabilities;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ResolvedGraph
 {
+    /// <summary>
+    /// 按清单 ID 索引的节点，供索引器与 <see cref="Contains"/> 使用。
+    /// </summary>
     private readonly Dictionary<string, ResolvedNode> _byId;
 
+    /// <summary>
+    /// 创建已解析图。只由 <see cref="CapabilityResolver"/> 调用，节点必须已拓扑排序。
+    /// </summary>
+    /// <param name="nodes">拓扑有序的节点。</param>
+    /// <param name="providers">每个能力 ID 选中的提供者。</param>
     internal ResolvedGraph(IReadOnlyList<ResolvedNode> nodes, IReadOnlyDictionary<string, ResolvedNode> providers)
     {
         Nodes = nodes;
@@ -36,7 +44,7 @@ public sealed class ResolvedGraph
     /// 按清单 ID 取节点。
     /// </summary>
     public ResolvedNode this[string manifestId]
-        => _byId.TryGetValue(manifestId, out var node) ? node : throw new KeyNotFoundException($"已解析图中没有清单 '{manifestId}'。");
+        => _byId.TryGetValue(manifestId, out var node) ? node : throw new KeyNotFoundException($"The resolved graph does not contain manifest '{manifestId}'.");
 
     /// <summary>
     /// 是否包含清单。
@@ -74,6 +82,7 @@ public sealed class ResolvedGraph
                 builder.Append('\n');
             }
 
+            // 依赖的去向从节点边里反查：找不到匹配的依赖节点只可能是缺失的可选依赖，必需依赖缺失在求解时就已失败。
             foreach (var requirement in node.Manifest.Requires)
             {
                 builder.Append("  requires ").Append(requirement).Append(" -> ");

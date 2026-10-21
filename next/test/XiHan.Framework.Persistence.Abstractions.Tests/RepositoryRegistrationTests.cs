@@ -6,12 +6,22 @@ using XiHan.Framework.Domain;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
+/// <summary>
+/// 实体登记与 Provider 注册器之间的回放、即时注册与单例共享。
+/// </summary>
 public sealed class RepositoryRegistrationTests
 {
+    /// <summary>
+    /// 只记录被登记实体名称的注册器替身，不向容器写入任何服务。
+    /// </summary>
     private sealed class RecordingRegistrar : IRepositoryRegistrar
     {
+        /// <summary>
+        /// 按注册顺序记录的实体描述，形如 <c>Widget&lt;Guid&gt;</c>。
+        /// </summary>
         public List<string> Registered { get; } = [];
 
+        /// <inheritdoc />
         public void Register<TEntity, TKey>(IServiceCollection services)
             where TEntity : class, IEntity<TKey>
             where TKey : notnull, IEquatable<TKey>

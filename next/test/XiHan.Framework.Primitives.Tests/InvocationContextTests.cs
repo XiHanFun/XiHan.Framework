@@ -3,18 +3,40 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// <see cref="InvocationContext"/> 与 <see cref="BaggageKeys"/> 的行为：Trace 格式、Baggage 键校验、派生上下文的共享语义与截止时间计算。
+/// </summary>
 public sealed class InvocationContextTests
 {
+    /// <summary>
+    /// 合法的 W3C trace-id 样例。
+    /// </summary>
     private const string TraceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+
+    /// <summary>
+    /// 合法的 W3C parent-id 样例。
+    /// </summary>
     private const string SpanId = "00f067aa0ba902b7";
 
+    /// <summary>
+    /// <c>baggage-keys.json</c> 向量：格式合法、格式非法与已登记的键。
+    /// </summary>
     private sealed record BaggageVectors(string[] WellFormed, string[] IllFormed, string[] Registered);
 
+    /// <summary>
+    /// 不提供任何服务的提供器，满足上下文的必填成员。
+    /// </summary>
     private sealed class EmptyServices : IServiceProvider
     {
+        /// <summary>
+        /// 总是返回 <see langword="null"/>。
+        /// </summary>
         public object? GetService(Type serviceType) => null;
     }
 
+    /// <summary>
+    /// 创建一个字段合法的上下文；各参数缺省时用样例值。
+    /// </summary>
     private static InvocationContext Create(
         DateTimeOffset? deadline = null,
         IReadOnlyDictionary<string, string>? baggage = null,

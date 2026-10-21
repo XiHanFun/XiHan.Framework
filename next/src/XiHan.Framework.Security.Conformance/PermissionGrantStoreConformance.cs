@@ -13,6 +13,9 @@ namespace XiHan.Framework.Security.Conformance;
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class PermissionGrantStoreConformance
 {
+    /// <summary>
+    /// 套件的种子授予：角色与用户、全局与租户专属、仅大小写不同的用户 ID 各占一例。
+    /// </summary>
     private static readonly PermissionGrant[] _seed =
     [
         new(GrantSubject.ForRole("editor"), "orders.read"),
@@ -79,5 +82,8 @@ public abstract class PermissionGrantStoreConformance
         Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForRole("admin"), "acme", CancellationToken.None).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// 按序数排序，便于与期望列表逐项比较。
+    /// </summary>
     private static List<string> Sorted(IReadOnlyCollection<string> grants) => grants.OrderBy(static g => g, StringComparer.Ordinal).ToList();
 }

@@ -16,7 +16,14 @@ public sealed class DomainEventBuffer
     /// </summary>
     public const int DefaultCapacity = 256;
 
+    /// <summary>
+    /// 尚未派发的事件，按记录顺序保存。
+    /// </summary>
     private readonly List<IDomainEvent> _events = [];
+
+    /// <summary>
+    /// 容量上限；达到后 <see cref="Add"/> 拒绝继续记录。
+    /// </summary>
     private readonly int _capacity;
 
     /// <summary>
@@ -40,9 +47,10 @@ public sealed class DomainEventBuffer
     public void Add(IDomainEvent domainEvent)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
+        // 容量上限防止聚合在一次事务内无界累积事件；超限视为用法错误而不是静默丢弃
         if (_events.Count >= _capacity)
         {
-            throw new InvalidOperationException($"聚合累积了 {_capacity} 个未派发的领域事件，先提交再继续。");
+            throw new InvalidOperationException($"The aggregate has accumulated {_capacity} undispatched domain events; commit them before adding more.");
         }
 
         _events.Add(domainEvent);

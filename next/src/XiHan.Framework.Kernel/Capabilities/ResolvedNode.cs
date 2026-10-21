@@ -12,10 +12,25 @@ namespace XiHan.Framework.Kernel.Capabilities;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ResolvedNode
 {
+    /// <summary>
+    /// 依赖的节点，按清单 <c>requires</c> 顺序追加。
+    /// </summary>
     private readonly List<ResolvedNode> _dependencies = [];
+
+    /// <summary>
+    /// 缺失的可选依赖。
+    /// </summary>
     private readonly List<CapabilityRequirement> _missingOptional = [];
+
+    /// <summary>
+    /// 被选中提供的能力 ID。
+    /// </summary>
     private readonly HashSet<string> _selected = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 创建节点。只由 <see cref="CapabilityResolver"/> 调用，依赖与选中结果在求解过程中追加。
+    /// </summary>
+    /// <param name="manifest">清单。</param>
     internal ResolvedNode(Manifest manifest) => Manifest = manifest;
 
     /// <summary>
@@ -57,10 +72,19 @@ public sealed class ResolvedNode
         return _selected.Contains(capabilityId);
     }
 
+    /// <summary>
+    /// 追加一个依赖节点。求解期调用。
+    /// </summary>
     internal void AddDependency(ResolvedNode node) => _dependencies.Add(node);
 
+    /// <summary>
+    /// 记录一条无法满足的可选依赖。求解期调用。
+    /// </summary>
     internal void AddMissingOptional(CapabilityRequirement requirement) => _missingOptional.Add(requirement);
 
+    /// <summary>
+    /// 标记本节点被选中提供某能力。求解期调用。
+    /// </summary>
     internal void AddSelected(string capabilityId) => _selected.Add(capabilityId);
 
     /// <inheritdoc />

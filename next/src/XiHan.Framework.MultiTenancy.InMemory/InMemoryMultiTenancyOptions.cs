@@ -30,7 +30,7 @@ public sealed record InMemoryMultiTenancyOptions
     public int MaxTenants
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "租户上限必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The tenant limit must be positive.");
     } = 1_000;
 
     /// <summary>
@@ -54,16 +54,17 @@ public sealed record InMemoryMultiTenancyOptions
         {
             options = int.TryParse(max, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
                 ? options with { MaxTenants = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxTenants 必须是正整数，实际 '{max}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:MaxTenants must be a positive integer, but was '{max}'.");
         }
 
+        // 每个子节的节名就是租户 ID，文法由 TenantInfo 构造时校验；缺省 IsEnabled 视为启用
         var tenants = new List<TenantInfo>();
         foreach (var section in configuration.GetSection(TenantsSection).GetChildren())
         {
             var enabledRaw = section["IsEnabled"];
             var enabled = enabledRaw is null
                 ? true
-                : bool.TryParse(enabledRaw, out var parsed) ? parsed : throw new ArgumentException($"{TenantsSection}:{section.Key}:IsEnabled 必须是 true 或 false，实际 '{enabledRaw}'。");
+                : bool.TryParse(enabledRaw, out var parsed) ? parsed : throw new ArgumentException($"{TenantsSection}:{section.Key}:IsEnabled must be 'true' or 'false', but was '{enabledRaw}'.");
             var properties = section.GetSection("Properties").GetChildren()
                 .Where(static p => p.Value is not null)
                 .ToDictionary(static p => p.Key, static p => p.Value!, StringComparer.Ordinal);

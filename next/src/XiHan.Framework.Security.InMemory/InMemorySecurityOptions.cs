@@ -25,7 +25,7 @@ public sealed record InMemorySecurityOptions
     public int MaxPrincipals
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "主体上限必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of principals must be positive.");
     } = 1_000;
 
     /// <summary>
@@ -34,7 +34,7 @@ public sealed record InMemorySecurityOptions
     public int MaxGrants
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "授予上限必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of grants must be positive.");
     } = 10_000;
 
     /// <summary>
@@ -79,7 +79,7 @@ public sealed record InMemorySecurityOptions
             principals.Add(new PrincipalRecord
             {
                 Id = section.Key,
-                ApiKey = section["ApiKey"] ?? throw new ArgumentException($"{ConfigurationSection}:Principals:{section.Key}:ApiKey 不能缺失。"),
+                ApiKey = section["ApiKey"] ?? throw new ArgumentException($"{ConfigurationSection}:Principals:{section.Key}:ApiKey is required."),
                 DisplayName = section["DisplayName"],
                 Roles = Split(section["Roles"]),
                 Tenant = section["Tenant"],
@@ -90,6 +90,7 @@ public sealed record InMemorySecurityOptions
             });
         }
 
+        // 配置里的授予都是全局的（无租户）；租户专属授予只能在运行时通过 Grant 添加
         var grants = new List<PermissionGrant>();
         foreach (var kind in new[] { GrantSubject.Role, GrantSubject.User })
         {
@@ -105,6 +106,9 @@ public sealed record InMemorySecurityOptions
         return options with { Principals = principals, Grants = grants };
     }
 
+    /// <summary>
+    /// 读取配置节下的正整数；缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// </summary>
     private static int? ReadPositive(IConfiguration configuration, string name)
     {
         var raw = configuration[$"{ConfigurationSection}:{name}"];
@@ -115,9 +119,12 @@ public sealed record InMemorySecurityOptions
 
         return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
             ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} 必须是正整数，实际 '{raw}'。");
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
     }
 
+    /// <summary>
+    /// 按逗号拆分并去掉空白与空项；<see langword="null"/> 得到空列表。
+    /// </summary>
     private static List<string> Split(string? value)
         => value is null ? [] : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 }

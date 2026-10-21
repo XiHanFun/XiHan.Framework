@@ -3,13 +3,16 @@
 
 namespace XiHan.Framework.Primitives.Tests;
 
+/// <summary>
+/// 框架级原语的行为：<see cref="FrameworkException"/>、<see cref="FrameworkInfo"/>、<see cref="ApiLevelAttribute"/> 与管道阶段名互转。
+/// </summary>
 public sealed class FrameworkTests
 {
     [Fact]
     public void FrameworkException_CarriesCodeAndConvertsToError()
     {
-        var inner = new FrameworkException("PERSISTENCE_UNAVAILABLE_001", "数据库不可用");
-        var outer = new FrameworkException("ORDERS_UNEXPECTED_001", "创建订单失败", inner);
+        var inner = new FrameworkException("PERSISTENCE_UNAVAILABLE_001", "Database unavailable.");
+        var outer = new FrameworkException("ORDERS_UNEXPECTED_001", "Failed to create order.", inner);
 
         var error = outer.ToError();
 

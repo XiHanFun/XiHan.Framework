@@ -24,7 +24,7 @@ public sealed record InMemoryCachingOptions
     public int MaxEntries
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "条目上限必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The entry limit must be positive.");
     } = 10_000;
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record InMemoryCachingOptions
     public TimeSpan DefaultTimeToLive
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "默认存活时间必须为正。");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The default time to live must be positive.");
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed record InMemoryCachingOptions
         {
             options = int.TryParse(maxEntries, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
                 ? options with { MaxEntries = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxEntries 必须是正整数，实际 '{maxEntries}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:MaxEntries must be a positive integer, but was '{maxEntries}'.");
         }
 
         var ttl = configuration[$"{ConfigurationSection}:DefaultTimeToLiveSeconds"];
@@ -56,7 +56,7 @@ public sealed record InMemoryCachingOptions
         {
             options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { DefaultTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds 必须是正数，实际 '{ttl}'。");
+                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
         }
 
         return options;

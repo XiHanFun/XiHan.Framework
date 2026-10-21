@@ -5,6 +5,9 @@ using System.Text.Json.Serialization;
 
 namespace XiHan.Framework.Messaging.Abstractions;
 
+/// <summary>
+/// CloudEvents 文档的源生成序列化上下文；写出时忽略 <see langword="null"/> 成员。
+/// </summary>
 [JsonSerializable(typeof(CloudEventDocument))]
 [JsonSerializable(typeof(string))]
 [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]

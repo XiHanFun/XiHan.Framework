@@ -8,9 +8,19 @@ namespace XiHan.Framework.Architecture.Tests;
 /// </summary>
 public sealed class SourceHygieneTests
 {
+    /// <summary>
+    /// 标准版权头第一行。
+    /// </summary>
     private const string HeaderLine1 = "// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.";
+
+    /// <summary>
+    /// 标准版权头第二行。
+    /// </summary>
     private const string HeaderLine2 = "// See the LICENSE file in the project root for full license text.";
 
+    /// <summary>
+    /// 源码中出现即视为使用反射的文本片段。
+    /// </summary>
     private static readonly string[] _reflectionTokens =
     [
         "using System.Reflection",
@@ -29,6 +39,9 @@ public sealed class SourceHygieneTests
         "MakeGenericMethod(",
     ];
 
+    /// <summary>
+    /// 每个正式包目录必须存在的文件。
+    /// </summary>
     private static readonly string[] _requiredFiles = ["README.md", "PublicAPI.Shipped.txt", "PublicAPI.Unshipped.txt"];
 
     [Fact]
@@ -45,7 +58,7 @@ public sealed class SourceHygieneTests
             }
         }
 
-        Assert.True(failures.Count == 0, "缺少标准版权头：" + Environment.NewLine + string.Join(Environment.NewLine, failures));
+        Assert.True(failures.Count == 0, "Files missing the standard copyright header:" + Environment.NewLine + string.Join(Environment.NewLine, failures));
     }
 
     [Fact]
@@ -53,6 +66,7 @@ public sealed class SourceHygieneTests
     {
         var failures = new List<string>();
 
+        // 以文本匹配而不是编译后扫描：注释里出现这些片段同样算违规，避免被注释掉的反射代码留在仓库里。
         foreach (var project in Workspace.SourceProjects.Where(static p => PackageGrammar.Ring(p.PackageId) <= 1))
         {
             foreach (var file in Workspace.SourceFiles(project.Directory))
@@ -62,7 +76,7 @@ public sealed class SourceHygieneTests
                 {
                     if (text.Contains(token, StringComparison.Ordinal))
                     {
-                        failures.Add($"{Workspace.Relative(file)} 使用了 {token}");
+                        failures.Add($"'{Workspace.Relative(file)}' uses '{token}'.");
                     }
                 }
             }
@@ -82,7 +96,7 @@ public sealed class SourceHygieneTests
             {
                 if (!File.Exists(Path.Combine(project.Directory, required)))
                 {
-                    failures.Add($"{project.PackageId} 缺少 {required}");
+                    failures.Add($"'{project.PackageId}' is missing '{required}'.");
                 }
             }
         }

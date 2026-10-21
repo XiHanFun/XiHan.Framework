@@ -22,5 +22,5 @@ public sealed record PermissionGrant(GrantSubject Subject, string Permission, st
     /// <summary>
     /// 权限码。
     /// </summary>
-    public string Permission { get; } = !string.IsNullOrWhiteSpace(Permission) ? Permission : throw new ArgumentException("权限码不能为空。", nameof(Permission));
+    public string Permission { get; } = !string.IsNullOrWhiteSpace(Permission) ? Permission : throw new ArgumentException("The permission code must not be empty.", nameof(Permission));
 }

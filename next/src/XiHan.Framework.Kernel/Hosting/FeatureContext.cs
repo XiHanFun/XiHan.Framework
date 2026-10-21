@@ -19,6 +19,15 @@ namespace XiHan.Framework.Kernel.Hosting;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class FeatureContext
 {
+    /// <summary>
+    /// 创建特性上下文。只由 <see cref="AppBuilder"/> 在配置阶段按拓扑顺序创建。
+    /// </summary>
+    /// <param name="node">本特性在已解析图中的节点。</param>
+    /// <param name="services">宿主的服务集合。</param>
+    /// <param name="configuration">宿主配置。</param>
+    /// <param name="pipeline">应用的管道构建器。</param>
+    /// <param name="bindings">宿主解析出的全部绑定。</param>
+    /// <param name="permissions">权限注册表。</param>
     internal FeatureContext(
         ResolvedNode node,
         IServiceCollection services,
@@ -89,7 +98,7 @@ public sealed class FeatureContext
         ArgumentNullException.ThrowIfNull(name);
         return Bindings.TryGetValue(name, out var binding)
             ? binding
-            : throw new FrameworkException(KernelErrors.MissingBinding, $"特性 '{Manifest.Id}' 需要的绑定 '{name}' 未提供。");
+            : throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{name}' required by feature '{Manifest.Id}' is not provided.");
     }
 
     /// <summary>

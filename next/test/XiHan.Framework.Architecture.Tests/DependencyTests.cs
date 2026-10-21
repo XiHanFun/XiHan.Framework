@@ -10,8 +10,14 @@ namespace XiHan.Framework.Architecture.Tests;
 /// </summary>
 public sealed class DependencyTests
 {
+    /// <summary>
+    /// Ring 1/2 除 <c>Microsoft.Extensions.*.Abstractions</c> 外额外允许的包：它们没有 Abstractions 拆分但本身只含契约与原语。
+    /// </summary>
     private static readonly string[] _allowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives"];
 
+    /// <summary>
+    /// 公开签名允许引用的程序集名前缀：BCL、Microsoft.Extensions 与框架自身。
+    /// </summary>
     private static readonly string[] _allowedSignatureAssemblyPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.Extensions.", Workspace.PackagePrefix];
 
     [Fact]
@@ -24,6 +30,7 @@ public sealed class DependencyTests
             var sourceRing = PackageGrammar.Ring(project.PackageId);
             foreach (var target in project.ProjectReferences)
             {
+                // Profiles（6）与工具链（7）可以引用任何环；其余只能向下，同环必须经契约包。
                 var targetRing = PackageGrammar.Ring(target);
                 var ok = sourceRing is 6 or 7
                     || targetRing < sourceRing
@@ -31,7 +38,7 @@ public sealed class DependencyTests
 
                 if (!ok)
                 {
-                    failures.Add($"{project.PackageId}（Ring {sourceRing}）不得引用 {target}（Ring {targetRing}）");
+                    failures.Add($"'{project.PackageId}' (ring {sourceRing}) must not reference '{target}' (ring {targetRing}).");
                 }
             }
         }
@@ -61,6 +68,7 @@ public sealed class DependencyTests
                 continue;
             }
 
+            // PrivateAssets=all 的引用（分析器、构建工具）不进入包依赖，不受此约束。
             foreach (var reference in project.PackageReferences.Where(static r => !r.IsPrivate))
             {
                 var allowed = (reference.Id.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
@@ -69,7 +77,7 @@ public sealed class DependencyTests
 
                 if (!allowed)
                 {
-                    failures.Add($"{project.PackageId} 不得引用 {reference.Id}：Ring 0/1 与抽象包只允许 Microsoft.Extensions.* 抽象包");
+                    failures.Add($"'{project.PackageId}' must not reference '{reference.Id}': ring 0/1 and abstraction packages may only reference Microsoft.Extensions.* abstraction packages.");
                 }
             }
         }
@@ -94,7 +102,7 @@ public sealed class DependencyTests
                         var owner = referenced.Assembly.GetName().Name ?? string.Empty;
                         if (!_allowedSignatureAssemblyPrefixes.Any(prefix => owner.StartsWith(prefix, StringComparison.Ordinal)))
                         {
-                            failures.Add($"{type.FullName}.{member.Name} 的签名暴露了第三方类型 {referenced.FullName}（{owner}）");
+                            failures.Add($"The signature of '{type.FullName}.{member.Name}' exposes third-party type '{referenced.FullName}' ({owner}).");
                         }
                     }
                 }
@@ -114,9 +122,12 @@ public sealed class DependencyTests
             .Where(id => !self.ProjectReferences.Contains(id, StringComparer.Ordinal))
             .ToList();
 
-        Assert.True(missing.Count == 0, "架构测试项目必须引用全部正式包，缺少：" + string.Join("、", missing));
+        Assert.True(missing.Count == 0, "The architecture test project must reference every source package; missing: " + string.Join(", ", missing) + ".");
     }
 
+    /// <summary>
+    /// 枚举成员公开签名里直接出现的类型：返回类型、参数类型、属性与字段类型、事件处理器类型。
+    /// </summary>
     private static IEnumerable<Type> ReferencedTypes(MemberInfo member)
     {
         switch (member)

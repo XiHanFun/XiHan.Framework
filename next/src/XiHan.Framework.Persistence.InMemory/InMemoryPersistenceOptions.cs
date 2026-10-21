@@ -24,7 +24,7 @@ public sealed record InMemoryPersistenceOptions
     public int MaxEntitiesPerType
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "容量必须为正。");
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The capacity must be positive.");
     } = 100_000;
 
     /// <summary>
@@ -39,8 +39,9 @@ public sealed record InMemoryPersistenceOptions
             return new InMemoryPersistenceOptions();
         }
 
+        // NumberStyles.None 只接受纯数字：带符号、空白或千分位的值一律视为非法，而不是宽松解析
         return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
             ? new InMemoryPersistenceOptions { MaxEntitiesPerType = value }
-            : throw new ArgumentException($"{ConfigurationSection}:MaxEntitiesPerType 必须是正整数，实际 '{raw}'。");
+            : throw new ArgumentException($"'{ConfigurationSection}:MaxEntitiesPerType' must be a positive integer, but was '{raw}'.");
     }
 }

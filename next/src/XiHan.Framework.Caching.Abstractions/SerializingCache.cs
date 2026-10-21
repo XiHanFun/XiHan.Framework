@@ -11,6 +11,9 @@ namespace XiHan.Framework.Caching.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class SerializingCache(ICacheStore store, ICacheSerializer serializer) : ISharedCache
 {
+    /// <summary>
+    /// 值与字节之间的序列化器。
+    /// </summary>
     private readonly ICacheSerializer _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 
     /// <inheritdoc />
@@ -47,6 +50,7 @@ public sealed class SerializingCache(ICacheStore store, ICacheSerializer seriali
             return hit;
         }
 
+        // 未命中不做并发合并：多个调用者各自执行工厂并写入，后写覆盖先写
         var created = await factory(cancellationToken).ConfigureAwait(false);
         await SetAsync(key, created, options, cancellationToken).ConfigureAwait(false);
         return created;

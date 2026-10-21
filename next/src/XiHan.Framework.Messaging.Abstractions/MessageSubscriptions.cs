@@ -11,6 +11,9 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageSubscriptions
 {
+    /// <summary>
+    /// 主题到处理器类型列表的映射；列表保持订阅顺序。
+    /// </summary>
     private readonly Dictionary<string, List<Type>> _handlers = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -40,6 +43,7 @@ public sealed class MessageSubscriptions
             _handlers[topic] = handlers;
         }
 
+        // 同一处理器重复订阅同一主题只记一次，避免一条消息被同一处理器处理两遍
         if (!handlers.Contains(handlerType))
         {
             handlers.Add(handlerType);

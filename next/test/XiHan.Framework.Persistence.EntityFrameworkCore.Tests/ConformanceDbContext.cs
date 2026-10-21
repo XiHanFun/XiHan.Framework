@@ -11,10 +11,14 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 /// </summary>
 public sealed class ConformanceDbContext(DbContextOptions<ConformanceDbContext> options) : DbContext(options)
 {
+    /// <summary>
+    /// 注册三种套件实体，再统一应用并发令牌与索引约定。
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConformanceOrder>();
         modelBuilder.Entity<ConformanceNote>();
+        // 整数标识由用例自行指定，不能交给数据库自增，否则插入 Id = 7 会被覆盖
         modelBuilder.Entity<ConformanceItem>(static item => item.Property(static i => i.Id).ValueGeneratedNever());
         modelBuilder.ApplyPersistenceConventions();
     }

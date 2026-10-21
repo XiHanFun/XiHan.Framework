@@ -12,6 +12,9 @@ namespace XiHan.Framework.Persistence.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class GuidV7IdGenerator(TimeProvider timeProvider) : IIdGenerator<Guid>
 {
+    /// <summary>
+    /// 提供时间戳部分的时间源；注入可拨动的时钟即可得到确定的标识顺序。
+    /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <inheritdoc />

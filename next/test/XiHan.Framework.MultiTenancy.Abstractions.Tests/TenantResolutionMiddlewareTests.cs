@@ -9,28 +9,59 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
+/// <summary>
+/// <see cref="TenantResolutionMiddleware"/> 的单元测试：解析、格式与存储校验、默认租户、必须带租户，以及解析器顺序。
+/// </summary>
 public sealed class TenantResolutionMiddlewareTests
 {
+    /// <summary>
+    /// 固定租户集合的只读存储。
+    /// </summary>
     private sealed class DictionaryTenantStore(params TenantInfo[] tenants) : ITenantStore
     {
+        /// <summary>
+        /// 按 ID 索引的租户，区分大小写。
+        /// </summary>
         private readonly Dictionary<string, TenantInfo> _tenants = tenants.ToDictionary(static t => t.Id, StringComparer.Ordinal);
 
+        /// <summary>
+        /// 按 ID 查找。
+        /// </summary>
         public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
             => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : default);
 
+        /// <summary>
+        /// 枚举全部租户。
+        /// </summary>
         public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
             => ValueTask.FromResult<IReadOnlyList<TenantInfo>>(_tenants.Values.ToList());
     }
 
+    /// <summary>
+    /// 总是返回固定租户 ID 的解析器；<see langword="null"/> 表示总是解析不到。
+    /// </summary>
     private sealed class FixedResolver(string? tenantId) : ITenantResolver
     {
+        /// <summary>
+        /// 不看上下文，直接返回构造时给定的值。
+        /// </summary>
         public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
             => ValueTask.FromResult(tenantId is null ? default : Maybe.Some(tenantId));
     }
 
+    /// <summary>
+    /// 启用且带显示名的租户。
+    /// </summary>
     private static readonly TenantInfo _acme = new() { Id = "acme", DisplayName = "Acme" };
+
+    /// <summary>
+    /// 已禁用的租户。
+    /// </summary>
     private static readonly TenantInfo _dormant = new() { Id = "dormant", IsEnabled = false };
 
+    /// <summary>
+    /// 装配带存储、选项与给定解析器的上下文；<paramref name="baggageTenant"/> 不为 <see langword="null"/> 时放入租户 Baggage。返回的数组用于记录处理器是否被执行。
+    /// </summary>
     private static (InvocationContext Context, bool[] Reached) Arrange(MultiTenancyOptions options, string? baggageTenant = null, params ITenantResolver[] resolvers)
     {
         var services = new ServiceCollection();
@@ -46,6 +77,9 @@ public sealed class TenantResolutionMiddlewareTests
         return (TestInvocationContext.Create(provider, baggage: baggage), new bool[1]);
     }
 
+    /// <summary>
+    /// 把到达标记置为 <see langword="true"/> 的处理器。
+    /// </summary>
     private static PipelineStep Handler(bool[] reached) => _ =>
     {
         reached[0] = true;

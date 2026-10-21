@@ -16,10 +16,27 @@ namespace XiHan.Framework.Primitives;
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct Result<T>
 {
+    /// <summary>
+    /// 是否成功；<c>default</c> 实例为 <see langword="false"/>，因此 default 天然落入失败分支。
+    /// </summary>
     private readonly bool _isSuccess;
+
+    /// <summary>
+    /// 成功时的值；失败时为类型默认值，不得读取。
+    /// </summary>
     private readonly T? _value;
+
+    /// <summary>
+    /// 失败时的错误；<c>default</c> 实例为 <see langword="null"/>，读取时以 <see cref="Result.Uninitialized"/> 代替。
+    /// </summary>
     private readonly Error? _error;
 
+    /// <summary>
+    /// 创建结果。只供 <see cref="Result"/> 的工厂方法与本类型的组合方法调用，保证成功时值非空、失败时有错误。
+    /// </summary>
+    /// <param name="isSuccess">是否成功。</param>
+    /// <param name="value">成功时的值。</param>
+    /// <param name="error">失败时的错误。</param>
     internal Result(bool isSuccess, T? value, Error? error)
     {
         _isSuccess = isSuccess;
@@ -97,6 +114,7 @@ public readonly record struct Result<T>
     public Result<TOut> Map<TOut>(Func<T, TOut> map)
     {
         ArgumentNullException.ThrowIfNull(map);
+        // 失败分支显式带上 Uninitialized：default 结果经 Map 后仍是可解释的失败，而不是又一个 default。
         return _isSuccess ? Result.Success(map(_value!)) : new Result<TOut>(false, default, _error ?? Result.Uninitialized);
     }
 

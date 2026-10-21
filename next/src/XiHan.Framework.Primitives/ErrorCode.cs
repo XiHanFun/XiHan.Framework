@@ -37,7 +37,7 @@ public static partial class ErrorCode
         ArgumentNullException.ThrowIfNull(code, paramName);
         if (!Pattern().IsMatch(code))
         {
-            throw new ArgumentException($"错误码 '{code}' 不符合 <领域>_<KIND>_<NNN> 格式。", paramName);
+            throw new ArgumentException($"Error code '{code}' does not match the '<DOMAIN>_<KIND>_<NNN>' format.", paramName);
         }
 
         return code;
@@ -49,6 +49,7 @@ public static partial class ErrorCode
     public static string KindOf(string code)
     {
         Validate(code);
+        // 格式已保证恰好三段，KIND 位于首个与末个下划线之间。
         var first = code.IndexOf('_', StringComparison.Ordinal);
         var last = code.LastIndexOf('_');
         return code[(first + 1)..last];
@@ -63,6 +64,9 @@ public static partial class ErrorCode
         return code[..code.IndexOf('_', StringComparison.Ordinal)];
     }
 
+    /// <summary>
+    /// 错误码格式的正则：三段大写标识，末段为三位数字。
+    /// </summary>
     [GeneratedRegex("^[A-Z][A-Z0-9]*_[A-Z][A-Z0-9]*_[0-9]{3}$")]
     private static partial Regex Pattern();
 }

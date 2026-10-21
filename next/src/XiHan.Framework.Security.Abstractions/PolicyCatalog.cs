@@ -12,8 +12,19 @@ namespace XiHan.Framework.Security.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PolicyCatalog
 {
+    /// <summary>
+    /// 显式注册的策略，按名索引（区分大小写）。
+    /// </summary>
     private readonly Dictionary<string, IPolicy> _policies = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 权限登记表；只为已登记的权限码动态创建权限策略。
+    /// </summary>
     private readonly PermissionRegistry _permissions;
+
+    /// <summary>
+    /// 动态创建的权限策略所用的检查器。
+    /// </summary>
     private readonly IPermissionChecker _checker;
 
     /// <summary>
@@ -28,7 +39,7 @@ public sealed class PolicyCatalog
         {
             if (!_policies.TryAdd(policy.Name, policy))
             {
-                throw new ArgumentException($"策略名 '{policy.Name}' 重复。", nameof(policies));
+                throw new ArgumentException($"Policy name '{policy.Name}' is duplicated.", nameof(policies));
             }
         }
     }
@@ -49,6 +60,7 @@ public sealed class PolicyCatalog
             return Maybe.Some(policy);
         }
 
+        // 注册表里没有再看是否为权限策略：只为已登记的权限码动态创建，未登记的权限码视为策略不存在
         var code = PermissionPolicy.CodeOf(name);
         return code is not null && _permissions.Find(code).HasValue
             ? Maybe.Some<IPolicy>(new PermissionPolicy(code, _checker))

@@ -12,8 +12,14 @@ using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.InMemory.Tests;
 
+/// <summary>
+/// 内存安全特性的选项解析、存储容量与端到端认证授权测试。
+/// </summary>
 public sealed class InMemorySecurityTests
 {
+    /// <summary>
+    /// 两个主体（alice 带角色、租户与附加声明，bob 只有 API Key）与角色、用户授予的配置。
+    /// </summary>
     private static readonly KeyValuePair<string, string?>[] _configuration =
     [
         new("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
@@ -31,8 +37,10 @@ public sealed class InMemorySecurityTests
     /// </summary>
     private sealed class OrdersFeature : IFeature
     {
+        /// <inheritdoc />
         public Manifest Manifest { get; } = TestManifests.Create("xihan.app.orders", requires: ["security.authorization@1"]);
 
+        /// <inheritdoc />
         public void Configure(FeatureContext context)
         {
             context.AddPermission(new PermissionDefinition("orders.read", "读订单"));
@@ -119,6 +127,9 @@ public sealed class InMemorySecurityTests
         Assert.NotNull(host.Services.GetService<PolicyCatalog>());
     }
 
+    /// <summary>
+    /// 在新作用域里经完整管道调用：可选放入 Authorization 头形式的凭据与授权要求，返回结果与处理器看到的主体。
+    /// </summary>
     private static async Task<(Result Result, Principal? Principal)> InvokeAsync(TestHost host, string? authorization, AuthorizationRequirement? requirement)
     {
         await using var scope = host.Services.CreateAsyncScope();
