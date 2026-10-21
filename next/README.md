@@ -25,13 +25,17 @@ next/
 | `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象 |
 | `XiHan.Framework.Domain` | 2 | 实体协议、值对象、领域事件缓冲、规约；纯契约 |
 | `XiHan.Framework.Persistence.Abstractions` | 2 | 仓储、工作单元、查询、标识生成、Transaction 阶段中间件、实体登记 |
+| `XiHan.Framework.Caching.Abstractions` | 2 | 字节存储、类型化缓存、序列化器、分布式锁、Idempotency 阶段中间件 |
 | `XiHan.Framework.Persistence.InMemory` | 3 | 内存持久化默认实现（`role: default`）：有界、读己之写、软删除与租户隔离 |
 | `XiHan.Framework.Persistence.EntityFrameworkCore` | 3 | EF Core Provider：应用自有 DbContext、事务型工作单元、协议约定（非 AOT） |
+| `XiHan.Framework.Caching.InMemory` | 3 | 内存缓存默认实现：有界 LRU、绝对与滑动过期，兼任单进程共享缓存 |
+| `XiHan.Framework.Caching.Redis` | 3 | Redis Provider：共享缓存、分布式锁、幂等（非 AOT） |
 | `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、探针端点、Problem Details |
 | `XiHan.Framework.Plugins.InProcess` | 5 | 可收集 AssemblyLoadContext 的插件宿主（非 AOT） |
 | `XiHan.Framework.Kernel.Analyzers` | 工具链 | Roslyn 分析器 XH0001–XH0005：ApiLevel、命名、Internal 引用、零反射 |
 | `XiHan.Framework.Testing` | 工具链 | 测试宿主、特性桩、清单与上下文构造 |
 | `XiHan.Framework.Persistence.Conformance` | 工具链 | `persistence.relational` Provider 必须通过的 xUnit 套件 |
+| `XiHan.Framework.Caching.Conformance` | 工具链 | `ICacheStore` 实现必须通过的 xUnit 套件 |
 
 基准在 `benchmarks/XiHan.Framework.Benchmarks`，本地运行：`dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --filter '*'`。
 
@@ -59,4 +63,4 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 
 ## 阶段
 
-P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统进行中：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）已完成；Caching、MultiTenancy、Security、Messaging 与 Profiles 待做。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
+P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统进行中：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）、`Caching`（抽象、内存默认实现、Redis Provider、一致性套件、幂等中间件，RFC-0006）已完成；MultiTenancy、Security、Messaging 与 Profiles 待做。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
