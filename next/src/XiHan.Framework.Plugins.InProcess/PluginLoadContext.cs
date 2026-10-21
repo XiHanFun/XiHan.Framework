@@ -11,14 +11,14 @@ namespace XiHan.Framework.Plugins.InProcess;
 /// </summary>
 internal sealed class PluginLoadContext(string name, string assemblyPath) : AssemblyLoadContext(name, isCollectible: true)
 {
-    private static readonly string[] SharedPrefixes = ["XiHan.Framework.", "Microsoft.Extensions.", "System.", "netstandard", "mscorlib"];
+    private static readonly string[] _sharedPrefixes = ["XiHan.Framework.", "Microsoft.Extensions.", "System.", "netstandard", "mscorlib"];
 
     private readonly AssemblyDependencyResolver _resolver = new(assemblyPath);
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
         var simpleName = assemblyName.Name ?? string.Empty;
-        if (SharedPrefixes.Any(prefix => simpleName.StartsWith(prefix, StringComparison.Ordinal)))
+        if (_sharedPrefixes.Any(prefix => simpleName.StartsWith(prefix, StringComparison.Ordinal)))
         {
             return null;
         }

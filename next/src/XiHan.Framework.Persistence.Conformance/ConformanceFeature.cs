@@ -3,8 +3,6 @@
 
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -38,25 +36,5 @@ public sealed class ConformanceFeature : IFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.AddMiddleware<TenantFromBaggageMiddleware>(PipelineStage.Tenant);
-    }
-}
-
-/// <summary>
-/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户。
-/// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
-public sealed class TenantFromBaggageMiddleware : IPipelineMiddleware
-{
-    /// <inheritdoc />
-    public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(nextStep);
-        if (context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId))
-        {
-            context.SetTenant(new TenantContext(tenantId));
-        }
-
-        return nextStep(context);
     }
 }

@@ -12,7 +12,7 @@ internal static class RedisTestServer
 {
     public const string EnvironmentVariable = "XIHAN_TEST_REDIS";
 
-    private static readonly Lazy<IConnectionMultiplexer> Connection = new(() => ConnectionMultiplexer.Connect(Configuration!));
+    private static readonly Lazy<IConnectionMultiplexer> _connection = new(() => ConnectionMultiplexer.Connect(Configuration!));
 
     public static string? Configuration => Environment.GetEnvironmentVariable(EnvironmentVariable);
 
@@ -25,7 +25,7 @@ internal static class RedisTestServer
     public static IConnectionMultiplexer Connect()
     {
         RequireConfiguration();
-        return Connection.Value;
+        return _connection.Value;
     }
 
     public static RedisCachingOptions Options(string configuration) => new()

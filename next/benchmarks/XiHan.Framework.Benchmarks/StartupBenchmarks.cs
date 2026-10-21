@@ -15,7 +15,7 @@ namespace XiHan.Framework.Benchmarks;
 [MemoryDiagnoser]
 public class StartupBenchmarks
 {
-    private static readonly IConfiguration Configuration = new ConfigurationBuilder().Build();
+    private static readonly IConfiguration _configuration = new ConfigurationBuilder().Build();
 
     [Params(1, 10)]
     public int Features { get; set; }
@@ -24,7 +24,7 @@ public class StartupBenchmarks
     public async Task BuildAndStart()
     {
         var services = new ServiceCollection();
-        var builder = new AppBuilder(services, Configuration);
+        var builder = new AppBuilder(services, _configuration);
         for (var i = 0; i < Features; i++)
         {
             var id = $"xihan.benchmark.feature{i}";

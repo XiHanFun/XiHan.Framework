@@ -10,13 +10,13 @@ namespace XiHan.Framework.Caching.InMemory.Tests;
 
 public sealed class InMemoryCacheStoreTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     private static ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
     private static (InMemoryCacheStore Store, FakeTimeProvider Clock) Arrange(int maxEntries = 100, TimeSpan? defaultTtl = null)
     {
-        var clock = new FakeTimeProvider(Now);
+        var clock = new FakeTimeProvider(_now);
         return (new InMemoryCacheStore(new InMemoryCachingOptions { MaxEntries = maxEntries, DefaultTimeToLive = defaultTtl ?? TimeSpan.FromMinutes(5) }, clock), clock);
     }
 

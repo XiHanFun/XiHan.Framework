@@ -18,7 +18,7 @@ public sealed class InMemoryPersistenceTests
         public string Name { get; set; } = string.Empty;
     }
 
-    private static readonly DateTimeOffset Now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
@@ -32,7 +32,7 @@ public sealed class InMemoryPersistenceTests
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Open(InMemoryStore store)
     {
         var unitOfWork = new InMemoryUnitOfWork(store);
-        return (store, unitOfWork, new InMemoryRepository<Widget, Guid>(store, unitOfWork, new FakeTimeProvider(Now)));
+        return (store, unitOfWork, new InMemoryRepository<Widget, Guid>(store, unitOfWork, new FakeTimeProvider(_now)));
     }
 
     [Fact]

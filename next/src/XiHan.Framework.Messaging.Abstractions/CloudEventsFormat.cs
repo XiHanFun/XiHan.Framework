@@ -4,51 +4,9 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions;
-
-/// <summary>
-/// CloudEvents 结构化 JSON 文档。
-/// </summary>
-internal sealed class CloudEventDocument
-{
-    [JsonPropertyName("specversion")]
-    public string? SpecVersion { get; set; }
-
-    [JsonPropertyName("id")]
-    public string? Id { get; set; }
-
-    [JsonPropertyName("source")]
-    public string? Source { get; set; }
-
-    [JsonPropertyName("type")]
-    public string? Type { get; set; }
-
-    [JsonPropertyName("time")]
-    public string? Time { get; set; }
-
-    [JsonPropertyName("subject")]
-    public string? Subject { get; set; }
-
-    [JsonPropertyName("datacontenttype")]
-    public string? DataContentType { get; set; }
-
-    [JsonPropertyName("data")]
-    public JsonElement? Data { get; set; }
-
-    [JsonPropertyName("data_base64")]
-    public string? DataBase64 { get; set; }
-
-    [JsonExtensionData]
-    public Dictionary<string, JsonElement>? Extensions { get; set; }
-}
-
-[JsonSerializable(typeof(CloudEventDocument))]
-[JsonSerializable(typeof(string))]
-[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
-internal sealed partial class MessagingJsonContext : JsonSerializerContext;
 
 /// <summary>
 /// CloudEvents 1.0 结构化 JSON 编码（<c>application/cloudevents+json</c>）。JSON 数据内联在 <c>data</c>，其他数据放在 <c>data_base64</c>，扩展属性是顶层成员。

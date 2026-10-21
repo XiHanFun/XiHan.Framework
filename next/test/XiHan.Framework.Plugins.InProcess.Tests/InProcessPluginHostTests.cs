@@ -10,7 +10,7 @@ namespace XiHan.Framework.Plugins.InProcess.Tests;
 
 public sealed class InProcessPluginHostTests
 {
-    private static readonly PermissionGrant Granted = new(["capability:kernel.diagnostics"]);
+    private static readonly PermissionGrant _granted = new(["capability:kernel.diagnostics"]);
 
     private static string PluginDirectory
     {
@@ -34,7 +34,7 @@ public sealed class InProcessPluginHostTests
     {
         await using var host = CreateHost();
 
-        var loaded = await host.LoadAsync(new PluginSource(PluginDirectory, Granted), CancellationToken.None);
+        var loaded = await host.LoadAsync(new PluginSource(PluginDirectory, _granted), CancellationToken.None);
 
         var status = loaded.ValueOrThrow();
         Assert.Equal("xihan.samples.plugin", status.Manifest.Id);
@@ -42,7 +42,7 @@ public sealed class InProcessPluginHostTests
         Assert.Single(host.Plugins);
         Assert.DoesNotContain(AppDomain.CurrentDomain.GetAssemblies(), static a => a.GetName().Name == "SamplePlugin" && a.GetType("SamplePlugin.SamplePlugin") is not null && System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(a) == System.Runtime.Loader.AssemblyLoadContext.Default);
 
-        var duplicate = await host.LoadAsync(new PluginSource(PluginDirectory, Granted), CancellationToken.None);
+        var duplicate = await host.LoadAsync(new PluginSource(PluginDirectory, _granted), CancellationToken.None);
         Assert.Equal(PluginErrors.AlreadyLoaded, duplicate.Error!.Code);
 
         var unloaded = await host.UnloadAsync("xihan.samples.plugin", CancellationToken.None);
@@ -70,7 +70,7 @@ public sealed class InProcessPluginHostTests
         Directory.CreateDirectory(empty);
         try
         {
-            var result = await host.LoadAsync(new PluginSource(empty, Granted), CancellationToken.None);
+            var result = await host.LoadAsync(new PluginSource(empty, _granted), CancellationToken.None);
 
             Assert.Equal(PluginErrors.InvalidSource, result.Error!.Code);
         }
@@ -90,7 +90,7 @@ public sealed class InProcessPluginHostTests
         {
             File.Copy(Path.Combine(PluginDirectory, "xihan.manifest.json"), Path.Combine(directory, "xihan.manifest.json"));
 
-            var result = await host.LoadAsync(new PluginSource(directory, Granted), CancellationToken.None);
+            var result = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
 
             Assert.Equal(PluginErrors.NotFound, result.Error!.Code);
         }
@@ -114,7 +114,7 @@ public sealed class InProcessPluginHostTests
                 .Replace("\"permissions\": [ \"capability:kernel.diagnostics\" ],", string.Empty, StringComparison.Ordinal);
             await File.WriteAllTextAsync(Path.Combine(directory, "xihan.manifest.json"), json);
 
-            var result = await host.LoadAsync(new PluginSource(directory, Granted), CancellationToken.None);
+            var result = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
 
             Assert.Equal(PluginErrors.InvalidSource, result.Error!.Code);
         }

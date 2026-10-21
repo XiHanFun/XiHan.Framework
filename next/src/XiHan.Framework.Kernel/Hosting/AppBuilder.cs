@@ -4,7 +4,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Capabilities;
@@ -208,47 +207,5 @@ public sealed class AppBuilder
         {
             throw new FrameworkException(KernelErrors.InvalidAppState, "AppBuilder 已经构建，不能再修改或重复构建。");
         }
-    }
-}
-
-/// <summary>
-/// 构建产物：已解析图、特性运行时、管道与选项。由 <see cref="App"/> 消费。
-/// </summary>
-internal sealed record AppModel(
-    ResolvedGraph Graph,
-    IReadOnlyList<FeatureRuntime> Features,
-    PipelineBuilder Pipeline,
-    KernelOptions Options,
-    IReadOnlyDictionary<string, BindingValue> Bindings);
-
-/// <summary>
-/// 把 <see cref="App"/> 接入 Generic Host 的生命周期。
-/// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "由容器通过 AddHostedService 实例化。")]
-internal sealed class AppHostedService(App app) : IHostedService
-{
-    public Task StartAsync(CancellationToken cancellationToken) => app.StartAsync(cancellationToken);
-
-    public Task StopAsync(CancellationToken cancellationToken) => app.StopAsync(cancellationToken);
-}
-
-/// <summary>
-/// <see cref="IHostApplicationBuilder"/> 的接入点。
-/// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
-public static class HostApplicationBuilderExtensions
-{
-    /// <summary>
-    /// 在宿主构建器上装配 XiHan 应用：共享宿主的服务集合与配置，<see cref="App"/> 随宿主启动与停止。
-    /// </summary>
-    public static TBuilder AddXiHan<TBuilder>(this TBuilder builder, Action<AppBuilder> configure)
-        where TBuilder : IHostApplicationBuilder
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-        ArgumentNullException.ThrowIfNull(configure);
-        var appBuilder = new AppBuilder(builder.Services, builder.Configuration);
-        configure(appBuilder);
-        appBuilder.Build();
-        return builder;
     }
 }

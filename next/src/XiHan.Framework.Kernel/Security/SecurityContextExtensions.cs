@@ -12,21 +12,21 @@ namespace XiHan.Framework.Kernel.Security;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SecurityContextExtensions
 {
-    private static readonly ContextItemKey<SecurityContext> Key = new("xihan.security");
+    private static readonly ContextItemKey<SecurityContext> _key = new("xihan.security");
 
     /// <summary>
     /// 读取安全上下文；未设置时为 <see cref="SecurityContext.Anonymous"/>。
     /// </summary>
-    public static SecurityContext GetSecurity(this InvocationContext context) => context.Get(Key).ValueOr(SecurityContext.Anonymous);
+    public static SecurityContext GetSecurity(this InvocationContext context) => context.Get(_key).ValueOr(SecurityContext.Anonymous);
 
     /// <summary>
     /// 写入安全上下文。Authenticate 与 Tenant 阶段调用；之后的阶段不应再改。
     /// </summary>
-    public static void SetSecurity(this InvocationContext context, SecurityContext security) => context.Set(Key, security);
+    public static void SetSecurity(this InvocationContext context, SecurityContext security) => context.Set(_key, security);
 
     /// <summary>
     /// 只替换租户，保留主体。
     /// </summary>
     public static void SetTenant(this InvocationContext context, TenantContext? tenant)
-        => context.Set(Key, context.GetSecurity() with { Tenant = tenant });
+        => context.Set(_key, context.GetSecurity() with { Tenant = tenant });
 }

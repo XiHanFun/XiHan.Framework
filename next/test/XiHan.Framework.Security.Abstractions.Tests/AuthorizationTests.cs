@@ -10,7 +10,7 @@ namespace XiHan.Framework.Security.Abstractions.Tests;
 
 public sealed class AuthorizationTests
 {
-    private static readonly PermissionGrant[] Grants =
+    private static readonly PermissionGrant[] _grants =
     [
         new(GrantSubject.ForRole("editor"), "orders.read"),
         new(GrantSubject.ForRole("admin"), PermissionGrant.All),
@@ -26,7 +26,7 @@ public sealed class AuthorizationTests
 
     private static IServiceProvider Services(IPolicy? extra = null)
     {
-        var checker = new PermissionChecker(new DictionaryGrantStore(Grants), new SecurityOptions());
+        var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions());
         var policies = new List<IPolicy> { new AuthenticatedPolicy() };
         if (extra is not null)
         {
@@ -39,7 +39,7 @@ public sealed class AuthorizationTests
     [Fact]
     public async Task PermissionChecker_UnionsUserAndRoleGrants_AndHonoursWildcardAndTenant()
     {
-        var checker = new PermissionChecker(new DictionaryGrantStore(Grants), new SecurityOptions());
+        var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions());
         var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
         var aliceInAcme = new SecurityContext(SecurityHosts.Alice("editor"), new TenantContext("acme"));
         var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);

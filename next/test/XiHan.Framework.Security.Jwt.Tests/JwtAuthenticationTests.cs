@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
@@ -23,7 +22,7 @@ public sealed class JwtAuthenticationTests
     private const string Issuer = "https://issuer.test";
     private const string Audience = "api";
 
-    private static readonly JwtOptions Options = new() { Secret = Secret, Issuer = Issuer, Audience = Audience, ClockSkew = TimeSpan.Zero };
+    private static readonly JwtOptions _options = new() { Secret = Secret, Issuer = Issuer, Audience = Audience, ClockSkew = TimeSpan.Zero };
 
     private static string CreateToken(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
     {
@@ -50,7 +49,7 @@ public sealed class JwtAuthenticationTests
     }
 
     private static async Task<Result<Principal>> AuthenticateAsync(string token, JwtOptions? options = null)
-        => await new JwtAuthenticationHandler(options ?? Options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);
+        => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);
 
     [Fact]
     public async Task ValidToken_BecomesPrincipalWithRawClaims()

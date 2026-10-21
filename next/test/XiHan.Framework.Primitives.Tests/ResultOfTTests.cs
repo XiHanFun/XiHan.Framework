@@ -5,7 +5,7 @@ namespace XiHan.Framework.Primitives.Tests;
 
 public sealed class ResultOfTTests
 {
-    private static readonly Error SampleError = Error.NotFound("ORDERS_NOTFOUND_001", "订单不存在");
+    private static readonly Error _sampleError = Error.NotFound("ORDERS_NOTFOUND_001", "订单不存在");
 
     [Fact]
     public void Success_CarriesValue()
@@ -29,14 +29,14 @@ public sealed class ResultOfTTests
     [Fact]
     public void Failure_CarriesError()
     {
-        Result<int> result = SampleError;
+        Result<int> result = _sampleError;
 
         Assert.True(result.IsFailure);
-        Assert.Same(SampleError, result.Error);
+        Assert.Same(_sampleError, result.Error);
         Assert.False(result.TryGetValue(out _));
         Assert.Equal(-1, result.ValueOr(-1));
         var exception = Assert.Throws<FrameworkException>(() => result.ValueOrThrow());
-        Assert.Equal(SampleError.Code, exception.Code);
+        Assert.Equal(_sampleError.Code, exception.Code);
     }
 
     [Fact]
@@ -53,10 +53,10 @@ public sealed class ResultOfTTests
     public void Map_TransformsValueAndPropagatesError()
     {
         Result<int> success = 2;
-        Result<int> failure = SampleError;
+        Result<int> failure = _sampleError;
 
         Assert.Equal("4", success.Map(static v => (v * 2).ToString(System.Globalization.CultureInfo.InvariantCulture)).ValueOrThrow());
-        Assert.Same(SampleError, failure.Map(static v => v * 2).Error);
+        Assert.Same(_sampleError, failure.Map(static v => v * 2).Error);
     }
 
     [Fact]
@@ -75,20 +75,20 @@ public sealed class ResultOfTTests
     public void Match_SelectsBranch()
     {
         Result<int> success = 1;
-        Result<int> failure = SampleError;
+        Result<int> failure = _sampleError;
 
         Assert.Equal("1", success.Match(static v => v.ToString(System.Globalization.CultureInfo.InvariantCulture), static e => e.Code));
-        Assert.Equal(SampleError.Code, failure.Match(static v => v.ToString(System.Globalization.CultureInfo.InvariantCulture), static e => e.Code));
+        Assert.Equal(_sampleError.Code, failure.Match(static v => v.ToString(System.Globalization.CultureInfo.InvariantCulture), static e => e.Code));
     }
 
     [Fact]
     public void ToResult_DropsValue()
     {
         Result<int> success = 1;
-        Result<int> failure = SampleError;
+        Result<int> failure = _sampleError;
 
         Assert.True(success.ToResult().IsSuccess);
-        Assert.Same(SampleError, failure.ToResult().Error);
+        Assert.Same(_sampleError, failure.ToResult().Error);
     }
 
     [Fact]
@@ -96,6 +96,6 @@ public sealed class ResultOfTTests
     {
         Assert.Equal(Result.Success(1), Result.Success(1));
         Assert.NotEqual(Result.Success(1), Result.Success(2));
-        Assert.Equal(Result.Failure<int>(SampleError), Result.Failure<int>(SampleError));
+        Assert.Equal(Result.Failure<int>(_sampleError), Result.Failure<int>(_sampleError));
     }
 }

@@ -13,14 +13,14 @@ namespace XiHan.Framework.Kernel.Tests;
 
 public sealed class MiddlewareTests
 {
-    private static readonly ServiceProvider Services = new ServiceCollection().BuildServiceProvider();
+    private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]
     public async Task Deadline_AlreadyExpired_ShortCircuits()
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(Services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(-1));
+        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(-1));
         var called = false;
 
         await middleware.InvokeAsync(context, _ =>
@@ -38,7 +38,7 @@ public sealed class MiddlewareTests
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(Services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
+        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
 
         var invocation = middleware.InvokeAsync(context, async inner =>
         {
@@ -57,7 +57,7 @@ public sealed class MiddlewareTests
         using var cancellation = new CancellationTokenSource();
         var time = new FakeTimeProvider();
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(Services, cancellation.Token, deadline: time.GetUtcNow().AddMinutes(1));
+        var context = App.CreateContext(_services, cancellation.Token, deadline: time.GetUtcNow().AddMinutes(1));
 
         var invocation = middleware.InvokeAsync(context, async inner => await Task.Delay(Timeout.InfiniteTimeSpan, inner.CancellationToken));
         await cancellation.CancelAsync();
@@ -70,7 +70,7 @@ public sealed class MiddlewareTests
     public async Task Deadline_NoDeadline_PassesOriginalContext()
     {
         var middleware = new DeadlineMiddleware(new FakeTimeProvider());
-        var context = App.CreateContext(Services, CancellationToken.None);
+        var context = App.CreateContext(_services, CancellationToken.None);
         InvocationContext? seen = null;
 
         await middleware.InvokeAsync(context, inner =>
@@ -87,7 +87,7 @@ public sealed class MiddlewareTests
     public async Task Observe_UnhandledException_BecomesUnexpectedOutcomeWithInnerFrameworkError()
     {
         var middleware = new ObserveMiddleware(NullLoggerFactory.Instance);
-        var context = App.CreateContext(Services, CancellationToken.None);
+        var context = App.CreateContext(_services, CancellationToken.None);
 
         await middleware.InvokeAsync(context, static _ => throw new FrameworkException("ORDERS_CONFLICT_001", "冲突"));
 
@@ -100,7 +100,7 @@ public sealed class MiddlewareTests
     public async Task Observe_Success_LeavesOutcomeUntouched()
     {
         var middleware = new ObserveMiddleware(NullLoggerFactory.Instance);
-        var context = App.CreateContext(Services, CancellationToken.None);
+        var context = App.CreateContext(_services, CancellationToken.None);
 
         await middleware.InvokeAsync(context, static inner =>
         {
@@ -115,7 +115,7 @@ public sealed class MiddlewareTests
     public void ContextItems_TypedKeysRoundTrip()
     {
         var key = new ContextItemKey<int>("test.number");
-        var context = App.CreateContext(Services, CancellationToken.None);
+        var context = App.CreateContext(_services, CancellationToken.None);
 
         Assert.False(context.Get(key).HasValue);
         context.Set(key, 7);
