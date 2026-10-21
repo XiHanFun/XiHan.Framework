@@ -22,6 +22,7 @@
     <Project Path="src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
     <Project Path="src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
   </Folder>
   <Folder Name="/4.Hosting/">
     <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
@@ -61,6 +62,7 @@
     <Project Path="test/XiHan.Framework.Security.Jwt.Tests/XiHan.Framework.Security.Jwt.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Messaging.Abstractions.Tests/XiHan.Framework.Messaging.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Messaging.InMemory.Tests/XiHan.Framework.Messaging.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.RabbitMQ.Tests/XiHan.Framework.Messaging.RabbitMQ.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
