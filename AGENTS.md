@@ -112,6 +112,10 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - `TreatWarningsAsErrors`、PublicAPI 文件、包验证、AOT 分析器与 `next/test/XiHan.Framework.Architecture.Tests` 都是 CI 必过项；不放宽、不绕过、不加 `NoWarn`。
 - 不把 4.x 的 `XiHanModule`、生命周期钩子、`[DependsOn]`、Castle 代理、`DefaultXxx`、`Utils` 带进 `next/`；旧代码只作迁移映射的参照。
 - 阶段按 `nextdocs/architecture/05-开发计划.md` 的门槛推进，当前阶段写在 `next/README.md`。
+- 代码规范（细则见 `nextdocs/architecture/03-代码规范.md`）：一个类型一个文件，泛型类型文件名加 `OfT`，只有嵌套类型留在外层类型的文件里；所有类型与成员，含 private / internal / protected、字段、常量、嵌套类型与测试辅助类型，都写中文 `/// <summary>`（`[Fact]` / `[Theory]` 方法除外，实现接口与重写用 `<inheritdoc />`）；方法内部的关键逻辑（锁与临界区、状态转移、回退链、容量与并发判定、安全判定顺序、延迟开启的事务）写中文 `//` 注释说明为什么。
+- 面向人的文案不写在代码里（RFC-0010）：代码只引用消息键常量（`<领域>Messages`，键如 `security.token.subject_missing`），每种语言一个文件 `Localization/<区域>.json`（含 `en-US.json`，键 → 模板，`{name}` 或 `{0}` 占位符，可带 `:format`），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入；内置与 XiHan.UI 相同的 10 种区域（`en-US` 默认、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU`），新增键必须同时补 10 个文件。任何地方取文案用 `key.L()` / `key.L(("id", id))` / `key.L(a, b)`（按 `MessageScope` 的当前区域：调用链里是调用方语言，否则是默认语言）；`Error` 用 `Error.NotFound(code, OrdersMessages.NotFound, MessageArguments.Of(...))` 只携带键与参数，宿主在 Egress 翻译成调用方语言；`Error.Literal` 只用于线上还原与异常转换。架构测试 `LocalizationTests` 核对文件齐全、占位符一致、常量与 `en-US.json` 一一对应、调用点只用常量。
+- 其余运行时英文：`FrameworkException` / `ArgumentException` 的消息（配置与编程错误，不本地化）、`LoggerMessage` 模板、分析器诊断、一致性套件与测试里的断言与夹具文本、`RequiresUnreferencedCode` / `RequiresDynamicCode` 的消息；句子以句号结尾，标识符与 ID 用单引号（分析器标题与单句消息按 RS1031 / RS1032 不加句号）。XML 文档、`//` 注释、README、RFC 与提交说明保持中文。
+- 命名与样式在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误）：私有实例与私有静态字段 `_camelCase`，私有常量 PascalCase，未使用的 using 必须删除（批量清理用 `dotnet format style next/XiHan.Framework.Next.slnx --diagnostics IDE0005 --severity warn`）；不降低 `.editorconfig` 的 severity，不加 `NoWarn`。
 
 ## 测试
 

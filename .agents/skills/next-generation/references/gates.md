@@ -17,7 +17,9 @@ dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --
 
 | 门禁 | 位置 | 失败时 |
 | --- | --- | --- |
-| 警告即错误、`latest-recommended` 分析器、Nullable | `next/Directory.Build.props` | 修代码，不加 `NoWarn`（测试项目仅允许 CA1515、CA1707、xUnit1051） |
+| 警告即错误、`latest-recommended` 分析器、Nullable | `next/Directory.Build.props` | 修代码，不加 `NoWarn`（测试、示例、基准项目仅允许 CA1515、CA1707、xUnit1051、CS1591） |
+| 构建期代码样式 `EnforceCodeStyleInBuild`：IDE1006 命名（私有字段 `_camelCase`、私有常量 PascalCase）、IDE0005 未使用 using | `next/Directory.Build.props`、`next/.editorconfig` | 改名、删 using；批量清理 `dotnet format style next/XiHan.Framework.Next.slnx --diagnostics IDE0005 --severity warn`；增量构建可能不重编译，验证时加 `--no-incremental` |
+| XML 文档 `GenerateDocumentationFile`（CS1591 在 src 为错误） | `src/Directory.Build.props` | 给全部成员含私有补中文 `<summary>` |
 | NU1903/NU1904 漏洞 | 同上 | 升级依赖 |
 | PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 运行 `pwsh -File next/scripts/Sync-PublicApi.ps1 -Project <csproj>` 同步 `PublicAPI.Unshipped.txt`；已发布行不改 |
 | 包验证 `EnablePackageValidation` | 同上 | 小版本不得破坏；大版本列出破坏清单 |
@@ -26,7 +28,7 @@ dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --
 | 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |
 | 新正式包 | 同上 `EverySourceProject_IsReferencedByArchitectureTests` | 把新包加进架构测试项目引用 |
 
-架构测试覆盖：包 ID 文法、目录名等于包 ID、命名空间等于包 ID 或其下一层、公开类型不带 `XiHan` 前缀、依赖只向下或同环抽象、`Primitives` 无引用、Ring 1/2 只引用 `Microsoft.Extensions.*` 抽象包、公开签名不泄漏第三方类型、Ring 0/1 零反射、版权头、README 与 PublicAPI 文件存在、术语表自洽。
+架构测试覆盖：包 ID 文法、目录名等于包 ID、命名空间等于包 ID 或其下一层、公开类型不带 `XiHan` 前缀、依赖只向下或同环契约包、`Primitives` 无引用、Ring 1/2 只引用 `Microsoft.Extensions.*` 抽象包、公开签名不泄漏第三方类型、Ring 0/1 零反射、版权头、README 与 PublicAPI 文件存在、术语表自洽、本地化约定（`LocalizationTests`：带 `Localization/` 的包每种内置区域一个文件且键集一致、占位符与 `en-US` 一致、键首段是术语表领域词、文件以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入；`<领域>Messages` 的 `const string` 与 `en-US.json` 的键一一对应且全局唯一；正式包里 `Error.*` 的第二个参数必须是常量，`Error.Literal` 只允许在 `FrameworkException.cs` 与 `IdempotencyRecord.cs`）。
 
 ## 新建正式包的步骤
 
@@ -34,6 +36,8 @@ dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --
 2. 放入 `<包 ID>.csproj`（`PackageId`、`RootNamespace`、`Description`、`PackageTags`）、`README.md`（定位、责任边界、依赖方向、不负责的内容、状态）、`PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`（首行 `#nullable enable`）。
 3. 加进 `XiHan.Framework.Next.slnx` 对应环层目录，加进架构测试项目的引用。
 4. 若引入新能力 ID 或错误码，登记到 `next/spec/conventions/`。
+5. 有面向人的文案时：`<领域>Messages` 加键常量，`Localization/<区域>.json` 10 个文件各加一行，csproj 加 `<EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />`，Ring ≥2 的包用 `MessageCatalog.FromEmbeddedResources(名, typeof(<领域>Messages))` 暴露 `Catalog`，Provider 的 `Configure` 第一行 `AddMessageCatalog`。
+6. 同步 PublicAPI：`pwsh -NoProfile -File next/scripts/Sync-PublicApi.ps1 -Project <csproj>`，按依赖顺序执行（被依赖项编译失败时只会写出一行）。
 
 ## 阶段退出条件
 
