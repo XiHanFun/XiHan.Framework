@@ -91,6 +91,12 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PROTOCOLS_CONFLICT_002` | gRPC：两个操作得到同一个服务 / 方法名（启动失败） |
 | `PROTOCOLS_CONFLICT_003` | gRPC：同名 protobuf 消息在不同操作里形状不同（启动失败） |
 | `PROTOCOLS_UNEXPECTED_001` | gRPC：操作的响应无法按 Schema 编码为 protobuf |
+| `PROTOCOLS_VALIDATION_008` | CloudEvents：请求不是 CloudEvent（内容类型既非结构化 / 批量格式，也没有 `ce-specversion` 头） |
+| `PROTOCOLS_VALIDATION_009` | CloudEvents：事件类型没有映射到主题，类型本身也不是合法主题 |
+| `PROTOCOLS_NOTFOUND_003` | CloudEvents：派发模式下主题没有处理器 |
+| `PROTOCOLS_NOTFOUND_004` | CloudEvents：主题没有配置出站 Webhook |
+| `PROTOCOLS_UNAVAILABLE_001` | CloudEvents：Webhook 返回非 2xx |
+| `PROTOCOLS_UNAVAILABLE_002` | CloudEvents：Webhook 无法连接 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

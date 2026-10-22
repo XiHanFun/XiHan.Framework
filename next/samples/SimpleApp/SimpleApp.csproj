@@ -14,6 +14,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
     <!-- 同一份契约经 gRPC 暴露：Orders/Create、Orders/List，.proto 从 Schema 生成 -->
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
+    <!-- 入站 CloudEvents（POST /events）按类型映射到主题，经管道交给消息处理器 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
     <!-- 源生成器：从 [Operation] 生成登记代码与 JSON Schema，不进入运行时依赖 -->
     <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
