@@ -278,10 +278,21 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State, r.Error)).ToList();
 
     /// <summary>
+    /// 已释放。
+    /// </summary>
+    private bool _disposed;
+
+    /// <summary>
     /// 停止全部插件并释放。
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         await StopAllAsync(CancellationToken.None).ConfigureAwait(false);
         foreach (var runtime in _order.ToList())
         {

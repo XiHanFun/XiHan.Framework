@@ -54,6 +54,7 @@ Wasm 插件与进程外插件共用同一套消息；本文只定义载体：模
 - WASI：时钟与随机数可用；stdin 为空；stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`（宿主不逐行转发，日志应走 `xihan.log`）；无参数；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`。
 - 文件系统：`fs.read:<客体路径>` / `fs.write:<客体路径>` 各预开放一个目录（只读 / 可写）；宿主侧目录由宿主配置映射，未映射视为未授予（`PLUGINS_DENIED_001`）。
 - 网络：ABI v1 不提供套接字；`net.outbound:` 永不授予。
+- 再入：插件回调宿主期间，宿主可能在导入函数返回前再次调用该模块的导出（它自己贡献的中间件、操作或事件处理）；再入在同一线程上同步完成、受外层调用的截止时间约束。模块跨导入调用不得持有不可重入的借用或锁。
 
 ## 5. 实例、沙箱与生命周期
 
@@ -63,6 +64,7 @@ Wasm 插件与进程外插件共用同一套消息；本文只定义载体：模
 - 状态机同 `lifecycle.md`：实例化（含 `_initialize`）+ `xihan_handshake` → `Resolved`；`xihan_configure` → `Configured`；`xihan_start` → `Started` → `Ready`；健康轮询 `xihan_health`；`xihan_stop` 后丢弃实例 → `Stopped`。
 - 崩溃：任何陷阱或 `xihan_*` 返回 `0`：插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节含陷阱种类），宿主 `Degraded`，按 `lifecycle.md` §6 退避重建实例并重走握手、配置、启动；重建后的握手声明必须与首次一致。
 - 激活：`onStartup` 加载时实例化并启动；`onOperation:` / `onEvent:` 在加载时实例化、握手后丢弃实例，首次调用或投递时再实例化。
+- 宿主进程：wasmtime 的陷阱处理与 Windows 用户态影子栈（CET）冲突，影子栈强制时陷阱会让进程 fail-fast；.NET 宿主的可执行项目必须设置 `<CETCompat>false</CETCompat>`，宿主在创建引擎前检测并以 `PLUGINS_UNAVAILABLE_003` 拒绝。
 - 每个插件是宿主的健康条目 `plugins.<清单 ID>`。
 
 ## 6. 中间件钩子

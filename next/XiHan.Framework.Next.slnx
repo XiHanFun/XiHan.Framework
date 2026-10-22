@@ -51,6 +51,7 @@
     <Project Path="src/XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
     <Project Path="src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <Project Path="src/XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" />
   </Folder>
   <Folder Name="/6.Profiles/">
     <Project Path="src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
@@ -84,6 +85,7 @@
     <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Plugins.OutOfProcess.Tests/XiHan.Framework.Plugins.OutOfProcess.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Plugins.Wasm.Tests/XiHan.Framework.Plugins.Wasm.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Analyzers.Tests/XiHan.Framework.Kernel.Analyzers.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Domain.Tests/XiHan.Framework.Domain.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.Abstractions.Tests/XiHan.Framework.Persistence.Abstractions.Tests.csproj" />

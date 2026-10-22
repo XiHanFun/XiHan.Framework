@@ -401,3 +401,5 @@ FodyWeavers.xsd
 
 #wwwroot
 wwwroot/
+# Rust Wasm 插件示例的构建产物目录
+next/samples/EchoWasmPlugin/target/

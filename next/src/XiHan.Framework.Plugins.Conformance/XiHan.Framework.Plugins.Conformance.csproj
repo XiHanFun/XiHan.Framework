@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Plugins.Conformance</PackageId>
     <RootNamespace>XiHan.Framework.Plugins.Conformance</RootNamespace>
-    <Description>XiHan Framework 插件协议一致性套件：任何语言实现的 xihan.plugin.v1 进程外插件都必须通过的 xUnit 抽象测试类（黑盒：启动进程、握手、生命周期、调用、事件、退出）。</Description>
+    <Description>XiHan Framework 插件协议一致性套件：任何语言实现的 xihan.plugin.v1 插件都必须通过的 xUnit 抽象测试类——进程外载体（启动进程、握手、生命周期、调用、事件、退出）与 Wasm 载体（导出表、握手、生命周期、调用、事件、中间件钩子）。</Description>
     <PackageTags>xihan;framework;plugins;conformance;xunit;grpc</PackageTags>
     <IsAotCompatible>false</IsAotCompatible>
     <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
@@ -12,9 +12,12 @@
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Wasm 用例直接使用引擎与 WASI 配置 -->
+    <PackageReference Include="Wasmtime" />
     <PackageReference Include="xunit.v3.assert" />
     <PackageReference Include="xunit.v3.extensibility.core" />
   </ItemGroup>

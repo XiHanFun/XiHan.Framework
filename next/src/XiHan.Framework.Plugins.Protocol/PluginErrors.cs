@@ -49,4 +49,7 @@ public static class PluginErrors
 
     /// <summary>沙箱资源不足：回调嵌套超限、客体内存分配失败。</summary>
     public const string ResourceExhausted = "PLUGINS_UNAVAILABLE_002";
+
+    /// <summary>宿主进程不满足载体要求：Windows 强制用户态影子栈（CET）时 Wasm 陷阱会终止进程。</summary>
+    public const string HostUnsupported = "PLUGINS_UNAVAILABLE_003";
 }

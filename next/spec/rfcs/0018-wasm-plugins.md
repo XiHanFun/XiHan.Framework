@@ -60,6 +60,7 @@ Wasm 插件是 `xihan.plugin.v1` 的第二种载体：**同一套消息（`plugi
 - 导入函数的响应由宿主经 `xihan_alloc` 写进客体内存并返回 `(ptr << 32) | len`（宿主函数回调客体导出是允许的，同一实例内重入）。
 - 权限未授予不陷阱：返回 `Status.error = PLUGINS_DENIED_002`，与 gRPC 回调的 `PermissionDenied` 对应。
 - 回调在当前调用的截止时间内完成；嵌套深度上限 8，超过返回 `PLUGINS_UNAVAILABLE_002`。
+- **再入**：插件经 `invoke` / `publish` 回调宿主时，宿主管道可能再次进入同一插件（它自己贡献的中间件、它自己的操作或订阅）。这种再入在同一执行线程上、导入函数返回前同步完成（wasmtime 允许导入函数内再调导出），不另设截止时间、受外层调用的截止时间约束；嵌套深度计入回调上限。模块必须允许导出在导入调用返回前被再次调用：跨导入调用不得持有不可重入的借用或锁。
 - WASI preview 1 由宿主提供：时钟、随机数；stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`（宿主不逐行转发，日志应走 `xihan.log`）；stdin 为空；无参数；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`（没有会话令牌与宿主地址，它们在 Wasm 里没有意义）。
 - 文件系统：清单 `fs.read:<客体路径>` / `fs.write:<客体路径>` 权限各预开放一个目录（只读 / 可写），宿主侧真实目录由宿主配置映射（`XiHan:Plugins:Wasm:Mounts:<清单 ID>:<客体路径>`），未映射视为未授予。
 - 网络：ABI v1 不提供套接字；`net.outbound:` 权限宿主永不授予，声明了即加载失败（`PLUGINS_DENIED_001`）。
@@ -72,6 +73,7 @@ Wasm 插件是 `xihan.plugin.v1` 的第二种载体：**同一套消息（`plugi
 - **状态机**与 `lifecycle.md` 相同：实例化 + `_initialize` + `xihan_handshake` 成功 → `Resolved`；`xihan_configure` → `Configured`；`xihan_start` → `Started` → `Ready`；健康按 `HealthIntervalSeconds` 轮询 `xihan_health`，连续失败达到阈值视为失效；`xihan_stop` 后丢弃实例 → `Stopped`。
 - **崩溃**：任何陷阱（含栈溢出、内存超限、未处理 panic）或 `xihan_*` 返回 `0` 都是崩溃：插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节含陷阱消息）、宿主 `Degraded`、按 `lifecycle.md` §6 的退避重建实例（重建 = 重新实例化同一模块并重走握手、配置、启动，握手声明必须与首次一致）。
 - **激活**：`onStartup` 加载时实例化并启动；`onOperation:` / `onEvent:` 在加载时实例化、握手取得声明后丢弃实例，首次调用或投递时再实例化（Wasm 实例化在毫秒级，懒激活成本远低于子进程）。
+- **宿主进程**：wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（Intel CET）冲突：.NET 9 起 apphost 默认 CET 兼容，影子栈强制时第一次陷阱就让进程 fail-fast（`0xC0000409`），到不了宿主的崩溃处理。宿主可执行项目必须设置 `<CETCompat>false</CETCompat>`；参考实现在创建引擎前查询进程的影子栈策略，强制（启用且非审计）时以 `PLUGINS_UNAVAILABLE_003` 抛出配置错误拒绝创建宿主，而不是运行到第一次陷阱才崩溃。Linux / macOS 不受影响。
 - 每个插件是宿主的健康条目 `plugins.<清单 ID>`（内核 `IHealthContributor`），语义同进程外插件。
 
 ### 6. 中间件贡献
@@ -121,7 +123,7 @@ enum MiddlewareAction {
 | `PLUGINS_VALIDATION_005` | Wasm 模块不合法：不是 reactor、ABI 版本不支持、缺少必需导出或签名不符、导入了宿主不提供的函数、运行期加载含中间件贡献的插件 |
 | `PLUGINS_UNAVAILABLE_002` | 沙箱资源不足：回调嵌套超限、响应内存分配失败 |
 
-陷阱与 `0` 返回沿用 `PLUGINS_UNEXPECTED_002`；超时沿用 `KERNEL_TIMEOUT_001`；权限沿用 `PLUGINS_DENIED_001` / `PLUGINS_DENIED_002`。
+陷阱与 `0` 返回沿用 `PLUGINS_UNEXPECTED_002`；超时沿用 `KERNEL_TIMEOUT_001`；权限沿用 `PLUGINS_DENIED_001` / `PLUGINS_DENIED_002`。宿主进程强制影子栈时新增 `PLUGINS_UNAVAILABLE_003`（配置错误，`FrameworkException`，不本地化）。
 
 ## 一致性
 

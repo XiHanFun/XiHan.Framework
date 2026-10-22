@@ -59,6 +59,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PLUGINS_UNEXPECTED_002` | 进程外：插件进程异常退出；Wasm：陷阱或导出函数返回 0 |
 | `PLUGINS_VALIDATION_005` | Wasm：模块不合法（不是 reactor、ABI 版本不支持、缺少必需导出或签名不符、导入了宿主不提供的函数），或运行期加载含中间件贡献的插件 |
 | `PLUGINS_UNAVAILABLE_002` | Wasm：沙箱资源不足（回调嵌套超限、客体内存分配失败） |
+| `PLUGINS_UNAVAILABLE_003` | Wasm：宿主进程不满足载体要求（Windows 强制用户态影子栈 / CET 时陷阱会终止进程，宿主可执行项目须设 `CETCompat=false`） |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有当前租户的调用中新增 |
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作（重复开始、未开始就提交、只读却写入） |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） |
