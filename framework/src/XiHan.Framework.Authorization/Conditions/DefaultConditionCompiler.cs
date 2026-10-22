@@ -89,7 +89,7 @@ public class DefaultConditionCompiler : IConditionCompiler
         }
 
         var descriptor = resolution.Descriptor;
-        if (!IsOperatorAllowed(clause.Operator, descriptor))
+        if (!ConditionOperatorRules.IsAllowed(clause.Operator, descriptor))
         {
             return new CompiledConditionClause(
                 clause,
@@ -135,22 +135,6 @@ public class DefaultConditionCompiler : IConditionCompiler
 
                 return new CompiledConditionClause(clause, resolution, null, scalar: scalar);
         }
-    }
-
-    private static bool IsOperatorAllowed(ConditionOperator @operator, ConditionAttributeDescriptor descriptor)
-    {
-        return @operator switch
-        {
-            ConditionOperator.Equals or ConditionOperator.NotEquals
-                or ConditionOperator.In or ConditionOperator.NotIn
-                or ConditionOperator.IsNull or ConditionOperator.IsNotNull => true,
-            ConditionOperator.GreaterThan or ConditionOperator.GreaterThanOrEquals
-                or ConditionOperator.LessThan or ConditionOperator.LessThanOrEquals
-                or ConditionOperator.Between => ConditionValues.IsOrdered(descriptor.Kind),
-            ConditionOperator.Contains or ConditionOperator.NotContains => descriptor.IsMultiValued || descriptor.Kind == ConditionValueKind.String,
-            ConditionOperator.StartsWith or ConditionOperator.EndsWith => descriptor.Kind == ConditionValueKind.String,
-            _ => false
-        };
     }
 
     private static bool TryParseList(string raw, ConditionValueKind kind, TimeZoneInfo timeZone, out IReadOnlyList<object> items, out string? error)
