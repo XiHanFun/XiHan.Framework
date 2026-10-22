@@ -206,7 +206,7 @@ The full module catalog lives in the [framework engineering notes](./framework/R
 
 - [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) - A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET
 - [XiHan.UI](https://github.com/XiHanFun/XiHan.UI) - A fast, lightweight, efficient and thoughtfully built framework-agnostic headless UI component library
-- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - A beautifully crafted general-purpose admin kernel built on .NET (XiHan.Framework) and TypeScript (XiHan.UI)
+- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) - A beautifully crafted general-purpose admin kernel built on XiHan.Framework and XiHan.UI
 
 ## Contributing
 
