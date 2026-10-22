@@ -94,6 +94,9 @@ override XiHan.Framework.Kernel.Operations.OperationRequest.ToString() -> string
 override XiHan.Framework.Kernel.Operations.OperationResponse.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Operations.OperationResponse.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationResponse.ToString() -> string!
+override XiHan.Framework.Kernel.Operations.OperationSchema.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Operations.OperationSchema.GetHashCode() -> int
+override XiHan.Framework.Kernel.Operations.OperationSchema.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.GetHashCode() -> int
@@ -159,6 +162,8 @@ static XiHan.Framework.Kernel.Operations.OperationRequest.operator ==(XiHan.Fram
 static XiHan.Framework.Kernel.Operations.OperationResponse.Failure(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Kernel.Operations.OperationResponse!
 static XiHan.Framework.Kernel.Operations.OperationResponse.operator !=(XiHan.Framework.Kernel.Operations.OperationResponse? left, XiHan.Framework.Kernel.Operations.OperationResponse? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationResponse.operator ==(XiHan.Framework.Kernel.Operations.OperationResponse? left, XiHan.Framework.Kernel.Operations.OperationResponse? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationSchema.operator !=(XiHan.Framework.Kernel.Operations.OperationSchema? left, XiHan.Framework.Kernel.Operations.OperationSchema? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationSchema.operator ==(XiHan.Framework.Kernel.Operations.OperationSchema? left, XiHan.Framework.Kernel.Operations.OperationSchema? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Get<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key) -> XiHan.Framework.Primitives.Maybe<T>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.GetOutcome(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Set<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key, T value) -> void
@@ -301,7 +306,7 @@ XiHan.Framework.Kernel.Hosting.FailurePolicy.IsolateFeature = 1 -> XiHan.Framewo
 XiHan.Framework.Kernel.Hosting.FailurePolicy.TerminateStartup = 0 -> XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FeatureContext
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddMiddleware<TMiddleware>(XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
-XiHan.Framework.Kernel.Hosting.FeatureContext.AddOperation<TOperation, TRequest, TResponse>(XiHan.Framework.Kernel.Operations.OperationContract! contract, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
+XiHan.Framework.Kernel.Hosting.FeatureContext.AddOperation<TOperation, TRequest, TResponse>(XiHan.Framework.Kernel.Operations.OperationContract! contract, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo, XiHan.Framework.Kernel.Operations.OperationSchema? schema = null) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddPermission(XiHan.Framework.Kernel.Security.PermissionDefinition! permission) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Bindings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
@@ -403,13 +408,14 @@ XiHan.Framework.Kernel.Operations.OperationContract.Verb.get -> string!
 XiHan.Framework.Kernel.Operations.OperationDescriptor
 XiHan.Framework.Kernel.Operations.OperationDescriptor.Contract.get -> XiHan.Framework.Kernel.Operations.OperationContract!
 XiHan.Framework.Kernel.Operations.OperationDescriptor.Id.get -> string!
-XiHan.Framework.Kernel.Operations.OperationDescriptor.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Type! operationType, System.Type! requestType, System.Type! responseType) -> void
+XiHan.Framework.Kernel.Operations.OperationDescriptor.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Type! operationType, System.Type! requestType, System.Type! responseType, XiHan.Framework.Kernel.Operations.OperationSchema? schema) -> void
 XiHan.Framework.Kernel.Operations.OperationDescriptor.OperationType.get -> System.Type!
 XiHan.Framework.Kernel.Operations.OperationDescriptor.OwnerId.get -> string!
 XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestType.get -> System.Type!
 XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseType.get -> System.Type!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.Schema.get -> XiHan.Framework.Kernel.Operations.OperationSchema?
 XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>
-XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo) -> void
+XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo, XiHan.Framework.Kernel.Operations.OperationSchema? schema = null) -> void
 XiHan.Framework.Kernel.Operations.OperationInvocationExtensions
 XiHan.Framework.Kernel.Operations.OperationRegistry
 XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Primitives.Result
@@ -435,6 +441,12 @@ XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.get -> XiHan.Framewo
 XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.init -> void
 XiHan.Framework.Kernel.Operations.OperationResponse.Payload.get -> System.ReadOnlyMemory<byte>
 XiHan.Framework.Kernel.Operations.OperationResponse.Payload.init -> void
+XiHan.Framework.Kernel.Operations.OperationSchema
+XiHan.Framework.Kernel.Operations.OperationSchema.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationSchema!
+XiHan.Framework.Kernel.Operations.OperationSchema.Equals(XiHan.Framework.Kernel.Operations.OperationSchema? other) -> bool
+XiHan.Framework.Kernel.Operations.OperationSchema.OperationSchema(string! request, string! response) -> void
+XiHan.Framework.Kernel.Operations.OperationSchema.Request.get -> string!
+XiHan.Framework.Kernel.Operations.OperationSchema.Response.get -> string!
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ContextItemKey(string! name) -> void
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.Name.get -> string!

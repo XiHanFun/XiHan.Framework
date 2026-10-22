@@ -20,7 +20,8 @@ public abstract class OperationDescriptor
     /// <param name="operationType">操作实现类型。</param>
     /// <param name="requestType">请求类型。</param>
     /// <param name="responseType">响应类型。</param>
-    protected OperationDescriptor(OperationContract contract, string ownerId, Type operationType, Type requestType, Type responseType)
+    /// <param name="schema">请求与响应的 JSON Schema；手写登记可不提供。</param>
+    protected OperationDescriptor(OperationContract contract, string ownerId, Type operationType, Type requestType, Type responseType, OperationSchema? schema)
     {
         Contract = contract ?? throw new ArgumentNullException(nameof(contract));
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
@@ -28,6 +29,7 @@ public abstract class OperationDescriptor
         OperationType = operationType ?? throw new ArgumentNullException(nameof(operationType));
         RequestType = requestType ?? throw new ArgumentNullException(nameof(requestType));
         ResponseType = responseType ?? throw new ArgumentNullException(nameof(responseType));
+        Schema = schema;
     }
 
     /// <summary>
@@ -59,6 +61,11 @@ public abstract class OperationDescriptor
     /// 响应类型。
     /// </summary>
     public Type ResponseType { get; }
+
+    /// <summary>
+    /// 请求与响应的 JSON Schema；没有时协议适配器只能发布无 Schema 的描述。
+    /// </summary>
+    public OperationSchema? Schema { get; }
 
     /// <summary>
     /// 把 UTF-8 JSON 载荷解码为请求对象；空载荷按 <c>{}</c> 处理；不合法返回 <see cref="KernelErrors.InvalidOperationPayload"/>。

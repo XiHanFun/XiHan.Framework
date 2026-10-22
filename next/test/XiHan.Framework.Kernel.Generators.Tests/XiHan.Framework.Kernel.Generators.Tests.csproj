@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Kernel.Generators.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+</Project>

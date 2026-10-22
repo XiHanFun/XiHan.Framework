@@ -22,8 +22,9 @@ public sealed class CreateOrder : IOperation<CreateOrderRequest, OrderResponse>
 
 - `IOperation<TRequest, TResponse>.HandleAsync` 返回 `Result<TResponse>`；可恢复失败走 `Result`，不抛异常。成功值不能为 `null`。
 - `[Operation]` 是源生成器与工具链的输入，运行期不读；运行期形态是 `OperationContract(id, stability, expose, policy, permission)`，`policy` 与 `permission` 二选一。
-- 登记：特性在 `Configure` 里 `context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(contract, jsonContext.CreateOrderRequest, jsonContext.OrderResponse)`；操作按作用域注册到容器，描述进入 `OperationRegistry`（ID 唯一，容量 10000）。`Kernel.Generators`（P3-02）从 `[Operation]` 生成这段登记代码与 Schema。
-- `OperationDescriptor`：契约、归属特性、实现/请求/响应类型，以及不经反射的 `DecodeRequest`、`EncodeResponse`、`ExecuteAsync`。
+- 登记：特性在 `Configure` 里 `context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(contract, jsonContext.CreateOrderRequest, jsonContext.OrderResponse)`；操作按作用域注册到容器，描述进入 `OperationRegistry`（ID 唯一，容量 10000）。`Kernel.Generators` 从 `[Operation]` 生成这段登记代码（`GeneratedOperations.Add<类名>` 与 `AddGeneratedOperations`）与 Schema，特性只写 `context.AddGeneratedOperations()`。
+- `OperationDescriptor`：契约、归属特性、实现/请求/响应类型、可选的 `OperationSchema`，以及不经反射的 `DecodeRequest`、`EncodeResponse`、`ExecuteAsync`。
+- `OperationSchema`：请求与响应的 JSON Schema（draft 2020-12）文本，两段都必须是 JSON 对象；属性名按序列化上下文的命名策略，`required` 为不可空且无默认值的属性，嵌套对象进 `$defs`，枚举按整数（`JsonStringEnumConverter` 时按字符串）。生成器产出，手写登记可省略；协议适配器据此发布描述（HTTP 的 OpenAPI、MCP 的 tool 描述）。
 
 ## XGI 消息
 
@@ -54,7 +55,11 @@ JSON 是 XGI 的规范编码；gRPC 等二进制协议在适配器里转换，�
 
 ## 协议映射
 
-见 `conventions/operation-ids.md` 的默认推导与显式覆盖；`Expose` 决定适配器是否发布该操作；`Stability.Internal` 的操作不对外发布。
+见 `conventions/operation-ids.md` 的默认推导与显式覆盖；`Expose` 决定适配器是否发布该操作；`Stability.Internal` 的操作不对外发布。适配器发布描述文档时（如 `Protocols.Http` 的 `MapXiHanOpenApi()`）只读登记表与 `OperationSchema`，不读源码、不反射类型。
+
+## 源生成器
+
+`Kernel.Generators` 以分析器形式引用（`OutputItemType="Analyzer" ReferenceOutputAssembly="false"`），不进入运行时依赖；输入是 `[Operation]` 类与项目里标注 `[JsonSerializable]` 的 `JsonSerializerContext`，输出在 `RootNamespace` 下的 `GeneratedOperations`。诊断：`XHG001` 未实现 `IOperation<TRequest, TResponse>`、`XHG002` 请求或响应类型未被任何序列化上下文登记、`XHG003` 操作 ID 不合文法；任一诊断成立时不生成代码。
 
 ## 错误码
 

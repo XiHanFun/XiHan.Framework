@@ -31,6 +31,7 @@ public sealed class HttpProtocolTests
         var app = builder.Build();
         app.UseXiHan();
         var mapped = app.MapXiHanOperations();
+        app.MapXiHanOpenApi();
         await app.StartAsync();
         return (app, app.GetTestClient(), mapped);
     }
@@ -140,6 +141,46 @@ public sealed class HttpProtocolTests
         Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync("/orders/1:secret", Json("{}"))).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync("/orders/1:audit", Json("{}"))).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync("/orders:export", Json("{}"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task OpenApi_DescribesRoutesParametersBodiesAndComponents()
+    {
+        var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));
+        await using var host = app;
+
+        var response = await client.GetAsync("/openapi.json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+        Assert.Equal("3.1.0", root.GetProperty("openapi").GetString());
+
+        // GET /api/orders/{id}：id 是路径参数，其余属性是查询参数，required 来自 Schema
+        var get = root.GetProperty("paths").GetProperty("/api/orders/{id}").GetProperty("get");
+        Assert.Equal("orders.get", get.GetProperty("operationId").GetString());
+        var parameters = get.GetProperty("parameters").EnumerateArray().ToDictionary(static p => p.GetProperty("name").GetString()!, static p => p);
+        Assert.Equal("path", parameters["id"].GetProperty("in").GetString());
+        Assert.Equal("query", parameters["page"].GetProperty("in").GetString());
+        Assert.True(parameters["page"].GetProperty("required").GetBoolean());
+        Assert.False(parameters["name"].GetProperty("required").GetBoolean());
+        Assert.False(get.TryGetProperty("requestBody", out _));
+
+        // POST /api/orders：请求体是提升了 $defs 的 Schema，201 响应带响应 Schema，错误响应引用 ProblemDetails
+        var post = root.GetProperty("paths").GetProperty("/api/orders").GetProperty("post");
+        var body = post.GetProperty("requestBody").GetProperty("content").GetProperty("application/json").GetProperty("schema");
+        Assert.Equal("#/components/schemas/Line", body.GetProperty("properties").GetProperty("line").GetProperty("$ref").GetString());
+        Assert.False(body.TryGetProperty("$defs", out _));
+        Assert.Equal("OrderReply", post.GetProperty("responses").GetProperty("201").GetProperty("content").GetProperty("application/json").GetProperty("schema").GetProperty("title").GetString());
+        Assert.Equal("#/components/schemas/ProblemDetails", post.GetProperty("responses").GetProperty("default").GetProperty("content").GetProperty("application/problem+json").GetProperty("schema").GetProperty("$ref").GetString());
+        var schemas = root.GetProperty("components").GetProperty("schemas");
+        Assert.True(schemas.TryGetProperty("ProblemDetails", out _));
+        Assert.Equal("sku", schemas.GetProperty("Line").GetProperty("required")[0].GetString());
+
+        // 没有 Schema 的操作也发布，只是没有请求体与响应 Schema
+        var cancel = root.GetProperty("paths").GetProperty("/api/orders/{id}:cancel").GetProperty("post");
+        Assert.Equal("orders.cancel", cancel.GetProperty("operationId").GetString());
+        Assert.False(cancel.TryGetProperty("requestBody", out _));
+        Assert.False(root.GetProperty("paths").TryGetProperty("/api/orders/{id}:audit", out _));
     }
 
     [Fact]

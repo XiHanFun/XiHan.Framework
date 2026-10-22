@@ -7,6 +7,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HttpProtocolFeat
 var app = builder.Build();
 app.UseXiHan();              // 构造上下文、把端点元数据里的操作描述放入上下文、回写 Problem Details
 app.MapXiHanOperations();    // orders.create → POST /orders，orders.get → GET /orders/{id} …
+app.MapXiHanOpenApi();       // /openapi.json：OpenAPI 3.1，从登记表与 OperationSchema 生成
 ```
 
 ## 规则
@@ -15,6 +16,7 @@ app.MapXiHanOperations();    // orders.create → POST /orders，orders.get → 
 - 绑定：路由值（最优先）、JSON 请求体（POST/PUT/PATCH，必须是对象）、查询串（多值成数组）合并成一个 JSON 对象交给 `IOperationInvoker`；路由值与查询串是字符串，请求类型要从中绑定数字需启用 `NumberHandling = AllowReadingFromString`；属性名按请求类型序列化上下文的命名策略匹配，建议 `PropertyNamingPolicy = CamelCase` 加 `PropertyNameCaseInsensitive = true`（示例的 `SampleJsonContext`）。
 - 响应：成功 `create` 为 201、其余 200，正文是响应类型的 JSON；失败由 `UseXiHan()` 写成 RFC 9457 Problem Details（`detail` 按 `Accept-Language` 本地化）。
 - 授权：Authorize 阶段按契约的权限或策略判定（描述经端点元数据进入上下文）；`Stability.Internal` 的操作不发布；`Expose` 不含 `Http` 的操作不发布。
+- OpenAPI：`MapXiHanOpenApi(pattern = "/openapi.json")` 在第一次请求时从登记表生成 OpenAPI 3.1 并缓存，绕过内核管道。路径与方法同路由推导；路由参数与（无请求体方法的）查询参数、请求体、成功响应都来自 `OperationSchema`，`$defs` 提升到 `components/schemas`；失败响应统一引用 `ProblemDetails` 组件。没有 Schema 的操作只发布路径与 `operationId`。
 
 ## 依赖方向
 
@@ -22,4 +24,4 @@ app.MapXiHanOperations();    // orders.create → POST /orders，orders.get → 
 
 ## 状态
 
-P3：可用。OpenAPI 描述由 `Kernel.Generators`（P3-02）产出。
+P3：可用。OpenAPI 的 Schema 由 `Kernel.Generators` 产出。

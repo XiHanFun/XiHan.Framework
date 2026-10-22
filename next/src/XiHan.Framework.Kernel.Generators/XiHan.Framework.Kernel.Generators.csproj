@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>XiHan.Framework.Kernel.Generators</PackageId>
+    <RootNamespace>XiHan.Framework.Kernel.Generators</RootNamespace>
+    <Description>XiHan Framework 的源生成器：从 [Operation] 生成操作登记代码与请求/响应的 JSON Schema（draft 2020-12），供 HTTP、MCP 等协议适配器发布描述。</Description>
+    <PackageTags>xihan;framework;generators;roslyn;openapi;json-schema</PackageTags>
+    <!-- 生成器以 netstandard2.0 发布，不适用 AOT 与可空注解以外的运行时属性 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XiHan.Framework.Kernel.Generators.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+</Project>

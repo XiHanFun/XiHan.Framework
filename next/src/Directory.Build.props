@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <!-- 每个正式包都以分析器形式引用自研分析器；分析器自身除外 -->
-  <ItemGroup Condition="'$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Analyzers'">
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Analyzers' and '$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Generators'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 </Project>
