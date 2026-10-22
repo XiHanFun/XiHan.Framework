@@ -37,15 +37,15 @@ dotnet add package XiHan.Framework.Web.Core
 public class MyModule : XiHanModule { }
 ```
 
-模块 `PreConfigureServices` 会把 `IWebHostEnvironment.EnvironmentName` 同步进 `IXiHanHostEnvironment`（当后者为空时）；`ConfigureServices` 调用 `AddXiHanWebCore(configuration)`，注册：`IApplicationBuilder` 的 `ObjectAccessor`、`IHttpContextAccessor`、`XiHanClientInfoOptions`（绑定配置节）、`IClientInfoProvider`（单例）、以及 `ICurrentPrincipalAccessor`（Scoped，实现为 `HttpContextCurrentPrincipalAccessor`）。
+模块 `PreConfigureServices` 会把 `IWebHostEnvironment.EnvironmentName` 同步进 `IXiHanHostEnvironment`（当后者为空时）；`ConfigureServices` 调用 `AddXiHanWebCore(configuration)`，注册：`IApplicationBuilder` 的 `ObjectAccessor`、`IHttpContextAccessor`、`XiHanClientInfoOptions`（绑定配置节）、`IIpRegionResolver`（单例，`TryAdd`）、`IClientInfoProvider`（单例）、以及 `ICurrentPrincipalAccessor`（Scoped，实现为 `HttpContextCurrentPrincipalAccessor`）。
 
 ## 核心能力
 
 - **托管环境接入**：模块前置阶段把 ASP.NET Core 环境名写入 `IXiHanHostEnvironment`。若 DI 中缺 `IWebHostEnvironment`，`GetHostingEnvironment()` 回退到 `EmptyHostingEnvironment`（默认 `Development`）。
 - **HttpContext 与当前主体**：注册 `IHttpContextAccessor`；`HttpContextCurrentPrincipalAccessor` 以 `HttpContext.User` 为当前主体（无请求时回退空 `ClaimsPrincipal`），从而让框架 `ICurrentUser` 在 Web 请求中生效。
 - **客户端信息识别**：`IClientInfoProvider.GetCurrent()` 从当前请求解析出 `ClientInfo`（IP / 归属地 / 原始 UA / 浏览器 / 系统 / 设备）。
-- **真实 IP 解析**：优先取 `X-Forwarded-For` 第一跳，其次 `X-Real-IP`，回退 `Connection.RemoteIpAddress`；对 IPv4-mapped-IPv6 做规范化（`MapToIPv4`）。
-- **IP 归属地定位**：回环 IP 记为「本机」、内网 IP 记为「局域网」；仅公网 IP 才触发 `ip2region`（`IP2Region.Net`）离线查询。数据库文件按候选路径自动探测，缺库时静默跳过、不报错。
+- **客户端 IP**：只取 `Connection.RemoteIpAddress`，对 IPv4-mapped-IPv6 做规范化（`MapToIPv4`）；不直接读 `X-Forwarded-For`、`X-Real-IP` 等请求头（客户端能任意伪造）。部署在反向代理后面时，由 Web.Api 的转发头中间件按受信代理还原这个地址。
+- **IP 归属地定位**：回环 IP 记为「本机」、内网 IP 记为「局域网」；仅公网 IP 才经 `IIpRegionResolver` 查 `ip2region`（`IP2Region.Net`）离线库。IPv4、IPv6 各用一个 xdb，首次用到时整库载入内存；库文件按候选路径自动探测，缺库时该地址族静默跳过、不报错。登录地址与应用的访问策略（地区条件）共用这一份库。
 - **UA 解析**：基于 `UAParser` 解析 User-Agent 得到浏览器 / 系统 / 设备名；桌面浏览器 `Device.Family` 常为 `Other`，会归一化为 `PC`。
 - **Claims 转换（可选）**：`XiHanClaimsTransformation` 支持把标准 OIDC 声明（`sub`/`role`/`email`/`name` 等）映射为框架 `XiHanClaimTypes`；通过 `services.TransformXiHanClaims()` 显式注册后才生效。
 
@@ -55,7 +55,9 @@ public class MyModule : XiHanModule { }
 | --- | --- |
 | `IClientInfoProvider` | 客户端信息提供器契约。唯一方法 `ClientInfo GetCurrent()`。 |
 | `ClientInfo` | 结果模型：`IpAddress` / `Location` / `UserAgent` / `Browser` / `OperatingSystem` / `DeviceName`（均可空）。 |
-| `HttpContextClientInfoProvider` | 默认实现（单例，`IDisposable`）：真实 IP 解析 + ip2region 归属地 + UAParser 解析。IP 查询器懒加载并加锁复用。 |
+| `HttpContextClientInfoProvider` | 默认实现（单例）：真实 IP 解析 + 归属地（交给 `IIpRegionResolver`）+ UAParser 解析。 |
+| `IIpRegionResolver` / `Ip2RegionResolver` | IP 归属地解析：`IpRegion? Resolve(IPAddress)`；默认实现单例、线程安全、`IDisposable`，IPv4 与 IPv6 各懒加载一个 xdb。回环、内网、未启用、缺库、查不到时返回空。 |
+| `IpRegion` | 归属地：`Country` / `Province` / `City` / `Isp` / `CountryCode`，`Location` 为去掉未知段后的展示文本；`TryParse` 兼容新版「国家|省份|城市|运营商|国家代码」与旧版「国家|区域|省份|城市|运营商」。港澳台的国家是「中国」，省份是「香港特别行政区」「澳门特别行政区」「台湾省」。 |
 | `XiHanClientInfoOptions` | 客户端信息配置（配置节 `XiHan:Web:Core:ClientInfo`）。 |
 | `HttpContextCurrentPrincipalAccessor` | 继承 `CurrentPrincipalAccessorBase`，以 `HttpContext.User` 作为当前主体，桥接框架 `ICurrentUser`。 |
 | `XiHanClaimsTransformation` | `IClaimsTransformation` 实现，按映射表补加声明标识。 |
@@ -83,9 +85,10 @@ public class MyModule : XiHanModule { }
 | 字段 | 类型 | 默认值 | 含义 |
 | --- | --- | --- | --- |
 | `EnableIpRegion` | `bool` | `true` | 是否对公网 IP 启用 ip2region 归属地解析。 |
-| `Ip2RegionDbPath` | `string?` | `IpDatabases/ip2region.xdb` | ip2region xdb 文件路径，支持相对路径（相对 `ContentRootPath`）。 |
+| `Ip2RegionDbPath` | `string?` | `IpDatabases/ip2region.xdb` | IPv4 的 ip2region xdb 文件路径，支持相对路径（相对 `ContentRootPath`）。 |
+| `Ip2RegionV6DbPath` | `string?` | `IpDatabases/ip2region_v6.xdb` | IPv6 的 ip2region xdb 文件路径；文件不存在时 IPv6 地址不解析归属地。 |
 
-数据库候选路径顺序：配置的 `Ip2RegionDbPath` → `IpDatabases/ip2region.xdb` → `ip2region.xdb`；逐个探测存在的文件，都不存在时静默跳过归属地解析。
+数据库候选路径顺序：IPv4 为配置的 `Ip2RegionDbPath` → `IpDatabases/ip2region.xdb` → `IpDatabases/ip2region_v4.xdb` → `ip2region.xdb`；IPv6 为配置的 `Ip2RegionV6DbPath` → `IpDatabases/ip2region_v6.xdb`。逐个探测存在的文件，都不存在时静默跳过该地址族的归属地解析。
 
 示例 `appsettings.json`：
 
@@ -96,7 +99,8 @@ public class MyModule : XiHanModule { }
       "Core": {
         "ClientInfo": {
           "EnableIpRegion": true,
-          "Ip2RegionDbPath": "IpDatabases/ip2region.xdb"
+          "Ip2RegionDbPath": "IpDatabases/ip2region.xdb",
+          "Ip2RegionV6DbPath": "IpDatabases/ip2region_v6.xdb"
         }
       }
     }
@@ -142,7 +146,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ## 注意事项与最佳实践
 
 - **归属地依赖离线库**：`ip2region.xdb` 需随应用部署（默认放 `IpDatabases/`）。缺库不会报错，但 `ClientInfo.Location` 对公网 IP 为 `null`。
-- **真实 IP 依赖转发头还原**：X-Forwarded-For 由上层 Web.Api 的 `UseForwardedHeaders` 在管线最前还原；反向代理需正确透传该头，否则解析到的是反代地址。
+- **真实 IP 依赖受信代理配置**：`X-Forwarded-For` 由上层 Web.Api 的 `UseForwardedHeaders` 在管线最前还原，且只采信受信代理（缺省本机回环，其余在 `XiHan:Web:Api:ForwardedHeaders` 配置）；反代不在本机又没配置时，解析到的是反代地址。
 - **`ICurrentUser` 生效前提**：本包只桥接 `HttpContext.User`；用户主体的真实内容由认证中间件（JWT）填充，须在 Web.Api 中启用认证。
 - **声明转换不默认启用**：`XiHanClaimsTransformation` 只有显式调用 `TransformXiHanClaims()` 才注册；未调用时不做任何声明映射。
 

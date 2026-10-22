@@ -36,7 +36,7 @@ dotnet add package XiHan.Framework.Web.Api
 public class MyModule : XiHanModule { }
 ```
 
-模块声明 `[DependsOn(XiHanWebCoreModule, XiHanMultiTenancyModule, XiHanSerializationModule, XiHanAuditingModule)]`。`ConfigureServices` 里配置 `ForwardedHeadersOptions`（信任 `X-Forwarded-For/Proto/Host`）并调用 `AddXiHanWebApi` + `AddXiHanRateLimiting` + `AddXiHanCircuitBreaking`；`OnApplicationInitialization` 装配下述完整中间件管道。
+模块声明 `[DependsOn(XiHanWebCoreModule, XiHanMultiTenancyModule, XiHanSerializationModule, XiHanAuditingModule)]`。`ConfigureServices` 里按 `XiHan:Web:Api:ForwardedHeaders` 配置 `ForwardedHeadersOptions`（还原 `X-Forwarded-For/Proto/Host`，只采信受信代理带来的转发头）并调用 `AddXiHanWebApi` + `AddXiHanRateLimiting` + `AddXiHanCircuitBreaking`；`OnApplicationInitialization` 装配下述完整中间件管道。
 
 `AddXiHanWebApi(configuration)` 内部依次装配：
 
@@ -52,7 +52,7 @@ public class MyModule : XiHanModule { }
 
 | # | 中间件 | 作用一句话 |
 | --- | --- | --- |
-| 1 | `UseForwardedHeaders` | 依据 `X-Forwarded-Proto/Host/For` 还原真实 scheme/host/客户端 IP；必须最前，否则后续读 scheme/host/IP 的中间件全错。 |
+| 1 | `UseForwardedHeaders` | 请求来自受信代理时，依据 `X-Forwarded-Proto/Host/For` 还原真实 scheme/host/客户端 IP；必须最前，否则后续读 scheme/host/IP 的中间件全错。 |
 | 2 | `XiHanTraceIdMiddleware` | 取请求头 `X-Trace-Id`（无则用 `TraceIdentifier`），写入 `HttpContext.Items` 并回写响应头，贯穿全链路。 |
 | 3 | `UseXiHanRequestCulture` | 解析请求文化（`X-Language` 等）并设置到当前线程，使后续管线（含控制器/响应过滤器）在请求文化下执行。 |
 | 4 | `XiHanRequestContextMiddleware` | 汇聚 TraceId/文化/客户端 IP/UA/路径/方法/起始时间为 `RequestContext`，写入 `IRequestContextAccessor`；用户与租户此时尚未可知，由第 15 步定型写回。 |
@@ -67,8 +67,10 @@ public class MyModule : XiHanModule { }
 | 13 | `XiHanOpenApiSecurityMiddleware` | 对受保护路径做签名/内容签名/加密/防重放校验（默认关闭）。 |
 | 14 | `UseAuthentication` | JWT Bearer 认证，填充 `HttpContext.User`。 |
 | 15 | `XiHanTenantResolveMiddleware` | 按解析链解析租户并 `ICurrentTenant.Change`：已认证请求只以令牌为准；请求头、查询串、兜底租户给出的租户须在 `ITenantStore` 中存在且激活，否则以 400 拒绝。解析后把用户与租户定型写回 `RequestContext`。置于认证后（可用用户信息）、授权前（授权可依租户）。 |
-| 16 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。 |
-| 17 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
+| 16 | `XiHanRequestAccessMiddleware` | 请求访问闸门：依次询问应用注册的 `IRequestAccessGate`（按 `Order` 从小到大），第一个拒绝即以统一信封短路（状态码与业务码取闸门给的，可带响应头如 `Retry-After`）。置于认证与租户解析之后（可按用户、角色、租户判定）、会话闸门与授权之前；匿名接口、Minimal API 与实时通道的协商请求同样经过。应用的访问策略、维护模式接在这里；没有注册闸门时直接放行。 |
+| 17 | `XiHanSessionStateMiddleware` | 会话闸门：按应用侧 `ISessionStateGate` 拦截已失效（401）与已锁定（423）的会话。 |
+| 18 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。授权处理器带了失败原因的 403，由 `XiHanAuthorizationMiddlewareResultHandler` 写成统一响应信封（消息取第一条非空原因，如「权限不足」「当前条件下不允许此操作」，带 traceId）；没有失败原因的拒绝与 401 照旧。宿主自己注册了 `IAuthorizationMiddlewareResultHandler` 时不覆盖。 |
+| 19 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
 
 ## 工作原理：动态 API
 
@@ -165,8 +167,23 @@ public class MyModule : XiHanModule { }
 | `XiHanTenantResolveMiddleware` + `HeaderTenantResolveContributor` / `QueryStringTenantResolveContributor` | 多租户解析中间件与两个内置贡献者。 |
 | `XiHanOpenApiSecurityMiddleware` / `IOpenApiSecurityClientStore` / `OpenApiSecurityClient` | OpenAPI 安全中间件、客户端存储与客户端模型。 |
 | `XiHanCircuitBreakerState` | 熔断器状态（滑动窗口统计、Closed/Open/HalfOpen 状态机，多实例各自独立）。 |
+| `XiHanForwardedHeadersOptions` / `XiHanForwardedHeadersConfigurator` | 受信代理配置，以及把它落到 ASP.NET Core `ForwardedHeadersOptions` 的配置器（写错即启动失败）。 |
 
 ## 配置
+
+### 受信代理：`XiHan:Web:Api:ForwardedHeaders`（`XiHanForwardedHeadersOptions`）
+
+转发头只在请求来自受信代理时才被采信，其余来源带的 `X-Forwarded-For` 等一律忽略，客户端伪造不了自己的 IP。本机回环（`127.0.0.0/8`、`::1`）始终受信，这里配的是追加项。
+
+| 字段 | 类型 | 默认 | 含义 |
+| --- | --- | --- | --- |
+| `KnownProxies` | `List<string>` | `[]` | 受信代理的地址，如 `10.0.0.5`、`2001:db8::5`。 |
+| `KnownNetworks` | `List<string>` | `[]` | 受信代理所在网段（CIDR），如 `172.18.0.0/16`；主机位须为 0，单个地址写进 `KnownProxies`。 |
+| `ForwardLimit` | `int` | `1` | 最多从 `X-Forwarded-For` 右端剥几层受信代理；多级代理（CDN → 负载均衡 → nginx）按层数调大，且每一层都要配成受信。 |
+
+- 反向代理不在本机（另一台主机上的 nginx、容器网络里的网关、云负载均衡）时必须配置，否则日志、会话、限流、开放接口白名单看到的客户端 IP 都是代理的地址。
+- 地址、网段写错或 `ForwardLimit` 小于 1 时启动即失败（`InvalidOperationException`，消息里带配置键）。
+- 没有「信任任意来源」的开关：要信一整段地址就把网段写出来。
 
 ### CORS：`XiHan:Web:Api:Cors`（`XiHanCorsOptions`）
 
@@ -267,6 +284,9 @@ public class MyModule : XiHanModule { }
     },
     "Web": {
       "Api": {
+        "ForwardedHeaders": {
+          "KnownNetworks": ["172.18.0.0/16"]
+        },
         "Cors": {
           "AllowedOrigins": ["https://app.example.com"],
           "AllowCredentials": true
@@ -353,7 +373,7 @@ public class PingController : XiHanController
 - **覆盖日志落库**：以 `AddScoped` 覆盖 `IAccessLogWriter`/`IOperationLogWriter`/`IExceptionLogWriter`/`IApiLogWriter`/`ILoginLogWriter`（契约定义在 [Auditing](./auditing) 包，默认 `Null*` 由该包 `TryAddScoped` 注册，后注册的实现胜出）——这是把审计日志接入数据库的标准做法。
 - **自定义租户来源**：向 `XiHanTenantResolveOptions.TenantResolvers` 追加实现 `TenantResolveContributorBase` 的贡献者（默认已含 Header、QueryString）。
 - **OpenApi 安全客户端存储**：替换 `IOpenApiSecurityClientStore`（默认 `DefaultOpenApiSecurityClientStore` 读 `Options.Clients`），改为数据库/远程加载客户端凭据。
-- **反向代理拓扑**：默认 `ForwardedHeadersOptions` 仅信任本机回环代理；反代在其它主机时，应用侧追加 `KnownProxies`/`KnownNetworks`。
+- **反向代理拓扑**：缺省只信任本机回环代理；反代在其它主机时，在 `XiHan:Web:Api:ForwardedHeaders` 里追加 `KnownProxies`/`KnownNetworks`，多级代理同时调大 `ForwardLimit`（见上文配置）。
 
 ## 注意事项与最佳实践
 

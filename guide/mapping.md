@@ -228,7 +228,7 @@ var visible = await ObjectExtensionManager.Instance
 
 ## 时区感知的时间输出
 
-存储统一 UTC，输出按请求头 `X-Timezone`（IANA 标识，如 `Asia/Shanghai`）换算。解析入口：
+存储统一 UTC，输出按请求头 `X-Timezone`（IANA 标识，如 `Asia/Shanghai`；`Asia/Calcutta` 这类旧别名与 `China Standard Time` 这类 Windows ID 同样接受）换算。解析入口：
 
 ```csharp
 private static string? ResolveUserTimeZone()
@@ -237,12 +237,18 @@ private static string? ResolveUserTimeZone()
 }
 ```
 
-| 类型 | 带 `X-Timezone` | 无 `X-Timezone` 或时区非法 |
-| --- | --- | --- |
-| `DateTime` | 值按 UTC 标记后 `ConvertTimeFromUtc`，输出 `2026-08-05 20:30:00` | 按原值输出 `yyyy-MM-dd HH:mm:ss` |
-| `DateTimeOffset` | `ConvertTime` 后输出**无偏移墙钟** `2026-08-05 20:30:00` | 输出 ISO 8601 带偏移 `2026-08-05T12:30:00+00:00` |
+| 类型 | 带 `X-Timezone` | 带 `X-Timezone` 但解析不了 | 无 `X-Timezone` |
+| --- | --- | --- | --- |
+| `DateTime` | 值按 UTC 标记后 `ConvertTimeFromUtc`，输出 `2026-08-05 20:30:00` | 按 UTC 输出 ISO 8601 带偏移 `2026-08-05T12:30:00+00:00` | 按原值输出 `yyyy-MM-dd HH:mm:ss` |
+| `DateTimeOffset` | `ConvertTime` 后输出**无偏移墙钟** `2026-08-05 20:30:00` | 按 UTC 输出 ISO 8601 带偏移 `2026-08-05T12:30:00+00:00` | 输出 ISO 8601 带偏移 `2026-08-05T12:30:00+00:00` |
 
-两种类型换算后的输出格式一致，都是无偏移墙钟——前端拿到直接按本地显示即可，不会被浏览器时区二次偏移。时区标识解析失败时（`TimeZoneInfo.FindSystemTimeZoneById` 抛异常）静默回退到无换算行为，不会让请求失败。
+两种类型换算后的输出格式一致，都是无偏移墙钟——前端拿到直接按本地显示即可，不会被浏览器时区二次偏移。时区解析与 `TimeZoneHelper.TryGetTimeZone` 同一套规则：直接查找，找不到就把 IANA ID 与 Windows ID 互转后再找；Linux 上仍找不到时，在系统时区目录里取与它属于同一个 Windows 时区的时区（ID 按序数取第一个），同组时区现行规则一致，换算结果与 Windows 节点相同。
+
+还是解析不了时不让请求失败，也不按无偏移墙钟输出——那样客户端会把 UTC 当本地时间显示，静默差一个时区偏移。两种类型都按 UTC 输出带 `+00:00` 的 ISO 8601，且不随转换器构造时传入的格式，客户端仍按正确的瞬间解析；输出带偏移本身就说明这次没有按用户时区换算。
+
+::: tip 旧别名从哪来
+新版 tzdata（如 Ubuntu 26，以及把旧链接拆进 `tzdata-legacy` 的发行版与容器镜像）不再带 `Asia/Calcutta`、`America/Indianapolis`、`Europe/Kiev`、`Asia/Katmandu` 这类旧别名，但浏览器 `Intl` 报出的时区、Windows 节点上存下的时区偏好常常正是它们。上面的同组落点就是为这种情况准备的，不需要在服务器上另装别名包。
+:::
 
 ::: warning 业务时间多为 `DateTimeOffset`
 只覆盖 `DateTime` 是不够的。审计字段、业务时间字段大量使用 `DateTimeOffset`，它默认自带偏移，前端会按浏览器时区渲染，看上去"换时区没生效"。四个转换器要一起挂。
@@ -359,7 +365,8 @@ var options = JsonSerializerOptionsHelper.Create(
 | 请求体某字段收不到 | `PropertyNameCaseInsensitive = false`，属性名大小写必须与驼峰完全一致 |
 | `oAuthProviders` 这种怪命名 | camelCase 策略只把首字符变小写，不拆词 |
 | 换了 `X-Timezone` 时间没变 | 只覆盖了 `DateTime` 没覆盖 `DateTimeOffset`；或自加的时间转换器排到了时区版前面 |
-| 时间格式忽然带上 `+08:00` | 请求没带 `X-Timezone`（或时区标识非法），`DateTimeOffset` 回退到 ISO 8601 带偏移 |
+| 时间格式忽然带上 `+08:00` | 请求没带 `X-Timezone`，`DateTimeOffset` 回退到 ISO 8601 带偏移 |
+| 带了 `X-Timezone`，时间却带上 `+00:00` | 服务器找不到该时区，也找不到与它等价的时区，按 UTC 输出；核对请求头的值 |
 | 脏数据变成 0 / `Guid.Empty` / 默认时间 | 转换器读取失败静默落默认值，不抛异常 |
 | 枚举返回的是数字不是名字 | 该 DTO **属性**上标了 `[JsonConverter(typeof(NumericEnumConverter<T>))]`——属性级优先级最高。标在枚举类型上则无效 |
 | `IgnoreNullValues = true` 没效果 | 该属性未被 `ToSystemOptions()` 消费，改用 `DefaultIgnoreCondition` |

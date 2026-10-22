@@ -112,7 +112,7 @@ public override void OnApplicationInitialization(ApplicationInitializationContex
 | --- | --- |
 | `Authorization: Bearer <token>` | 身份认证 |
 | `X-Language` | 请求文化，决定本地化文案与枚举标签 |
-| `X-Timezone` | IANA 时区，决定时间输出 |
+| `X-Timezone` | IANA 时区（旧别名与 Windows ID 同样接受），决定时间输出 |
 | `X-Trace-Id` | 入站链路 ID（未启用 OpenTelemetry 时作为 TraceId 回退来源）；响应头必回 |
 
 ## 异常处理

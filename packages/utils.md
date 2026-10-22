@@ -401,7 +401,7 @@ public static bool IsUnlocked(string filePath)                  // 是否被其�
 
 - **`CultureHelper`**：`IsRtl` 属性、`Use(string culture, string? uiCulture = null)` 返回 `IDisposable` 临时切换文化、`IsValidCultureCode` / `IsCompatibleCulture`。
 - **`CurrencyHelper`**：`GetAllCurrencies()`、`GetCurrencyInfo("CNY")`、`FormatCurrency(decimal amount, string currencyCode)`。带 `CultureInfo` 的重载里，货币符号与小数位数取自 `currencyCode`，数字分组与小数点排版取自 `culture`，两者互不干扰。
-- **`TimeZoneHelper`**：`GetTimeZone(id)`、`ConvertTime(...)`、`GetTimeZoneOffsetString`（如 `"+08:00"`）、`IsTimeZoneExists`。
+- **`TimeZoneHelper`**：`GetTimeZone(id)`、`TryGetTimeZone(id, out timeZone)`、`ConvertTime(...)`、`GetTimeZoneOffsetString`（如 `"+08:00"`）、`IsTimeZoneExists`。按标识取时区的三个方法接受 IANA ID（含 `Asia/Calcutta` 这类旧别名）与 Windows ID；Linux 的时区目录没有旧别名时，按同一个 Windows 时区落到已安装的时区，返回的 `Id` 可能与传入的不同。找不到时 `GetTimeZone` 抛 `TimeZoneNotFoundException`。
 - **`I18nFormatHelper`** / **`LanguageHelper`**：文化相关的日期/数字格式化与 `ResourceManager` 多语言字符串获取。
 
 ### 十二、数学 `Maths`
