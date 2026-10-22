@@ -182,6 +182,21 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
+    /// 关闭 stdin：按约定插件应随之自行退出（<c>handshake.md</c> §1）。
+    /// </summary>
+    public void CloseInput()
+    {
+        try
+        {
+            _process.StandardInput.Close();
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            // stdin 可能已经关闭
+        }
+    }
+
+    /// <summary>
     /// 终止进程树并等待退出。
     /// </summary>
     public async Task KillAsync()
@@ -206,15 +221,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        try
-        {
-            _process.StandardInput.Close();
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException)
-        {
-            // stdin 可能已经关闭
-        }
-
+        CloseInput();
         _channel?.Dispose();
         if (!HasExited)
         {

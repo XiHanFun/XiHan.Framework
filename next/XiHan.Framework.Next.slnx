@@ -70,6 +70,7 @@
     <Project Path="src/XiHan.Framework.Scheduling.Conformance/XiHan.Framework.Scheduling.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Plugins.Conformance/XiHan.Framework.Plugins.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
     <Project Path="src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
     <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />

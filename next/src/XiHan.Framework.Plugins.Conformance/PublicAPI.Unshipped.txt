@@ -1,0 +1,15 @@
+#nullable enable
+abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDirectory.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_WithoutACommonVersion_IsRefused() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Invoke_DeclaredOperations_ReturnAStatus() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Invoke_UnknownOperation_IsUnimplemented() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Lifecycle_ConfigureStartHealthStop_FollowTheProtocol() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginProtocolConformance() -> void
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Process_ExitsWhenStdinCloses() -> System.Threading.Tasks.Task!

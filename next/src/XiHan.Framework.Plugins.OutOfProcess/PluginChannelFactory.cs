@@ -24,6 +24,7 @@ internal static class PluginChannelFactory
     {
         var handler = new SocketsHttpHandler
         {
+            ConnectTimeout = TimeSpan.FromSeconds(5),
             PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
             KeepAlivePingDelay = TimeSpan.FromSeconds(30),
             KeepAlivePingTimeout = TimeSpan.FromSeconds(10),

@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 一致性套件复用进程启动、握手核对与协议桩 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
     <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />

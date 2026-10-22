@@ -26,7 +26,7 @@ internal static partial class PackageGrammar
         ["Kernel"] = ["Analyzers", "Generators"],
         ["Hosting"] = ["AspNetCore", "CommandLine"],
         ["Protocols"] = ["Http", "Grpc", "Mcp", "CloudEvents"],
-        ["Plugins"] = ["InProcess", "OutOfProcess", "Wasm"],
+        ["Plugins"] = ["InProcess", "OutOfProcess", "Wasm", "Conformance"],
         ["Profiles"] = ["Minimal", "Standard", "Full"],
     };
 
@@ -129,6 +129,7 @@ internal static partial class PackageGrammar
             "Kernel" => 7,
             "Domain" => 2,
             "Hosting" => 4,
+            "Plugins" when role == "Conformance" => 7,
             "Protocols" or "Plugins" => 5,
             "Profiles" => 6,
             "Testing" or "Cli" or "Compat" => 7,

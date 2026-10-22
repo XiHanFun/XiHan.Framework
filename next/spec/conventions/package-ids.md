@@ -6,7 +6,7 @@
 PackageId  = "XiHan.Framework." Segment
 Segment    = "Primitives" | "Kernel" [ "." KernelTool ] | "Domain" | "Testing" | "Cli"
            | Subsystem "." Role
-           | "Hosting." Host | "Protocols." Protocol | "Plugins." Isolation | "Profiles." Profile
+           | "Hosting." Host | "Protocols." Protocol | "Plugins." ( Isolation | "Conformance" ) | "Profiles." Profile
            | "Compat." Major
 Subsystem  = 术语表中除结构词以外的领域词
 Role       = "Abstractions" | "Conformance" | "Generators" | Mechanism | Technology
@@ -41,6 +41,6 @@ Major      = "V" 数字
 | 4 | `Hosting.*`、`Protocols.*` |
 | 5 | `Plugins.*` |
 | 6 | `Profiles.*` |
-| 工具链 | `Kernel.Analyzers`、`Kernel.Generators`、`<领域>.Generators`、`<领域>.Conformance`、`Testing`、`Cli`、`Compat.*` |
+| 工具链 | `Kernel.Analyzers`、`Kernel.Generators`、`<领域>.Generators`、`<领域>.Conformance`、`Plugins.Conformance`（插件协议黑盒套件）、`Testing`、`Cli`、`Compat.*` |
 
 只能依赖更低的环；同环之间只能引用对方的 `.Abstractions`；工具链与 Profile 可引用任何环。

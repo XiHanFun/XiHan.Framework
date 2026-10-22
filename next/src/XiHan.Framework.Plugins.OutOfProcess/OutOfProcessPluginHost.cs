@@ -406,7 +406,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <summary>
     /// 入口相对插件目录；Windows 上没有扩展名时补 <c>.exe</c>。不存在返回空。
     /// </summary>
-    private static string? ResolveExecutable(string directory, string entry)
+    internal static string? ResolveExecutable(string directory, string entry)
     {
         var path = Path.GetFullPath(Path.Combine(directory, entry));
         if (File.Exists(path))
