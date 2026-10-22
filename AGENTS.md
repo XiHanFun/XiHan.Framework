@@ -42,7 +42,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 │  ├─ test/                        # 单元与集成测试
 │  ├─ sample/                      # 示例
 │  └─ tool/                        # 工具项目
-├─ next/                           # 下一代框架（XiHan Framework 5）工作区：spec/、src/、test/；见 next/README.md
+├─ next/                           # 下一代框架（XiHan Framework 5）工作区：spec/（framework-spec 的 submodule）、src/、test/；见 next/README.md
 └─ nextdocs/                       # 下一代设计文档：总体方案、architecture/01–05、adr/
 ```
 
@@ -154,7 +154,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 自行创建时直接带分组：`git worktree add -b feat/<名> .claude/worktrees/<名> dev`。审阅他人 PR 时先 `git fetch origin pull/<编号>/head:pr/<编号>-review`，再 `git worktree add .claude/worktrees/pr-<编号> pr/<编号>-review`。
 - 基线默认是本地 `dev`；热修复以对应 `hotfix/v<主版本>` 为基线，用户指定 `next` 或 `release/*` 时以其为准。工具从 `main` 或 `origin/main` 切出且还没有提交时，用 `git merge --ff-only dev` 对齐；不能快进就停下说明，不 reset。
 - 一个 worktree 只承载一项任务、一条分支。并行任务会改到同一文件、同一公共 API 或同一包元数据时，先说明冲突风险再动手。
-- 新 worktree 没有还原结果和构建产物，先执行 `dotnet restore framework/XiHan.Framework.slnx`，改文档时再安装 `docs/` 依赖。
+- 新 worktree 没有还原结果和构建产物，先执行 `dotnet restore framework/XiHan.Framework.slnx`，改文档时再安装 `docs/` 依赖；涉及 `next/` 时先 `git submodule update --init next/spec`（规范是 `XiHanFun/framework-spec` 的 submodule，改规范先在那边提交再更新指针）。
 - worktree 分支的合并、推送、创建 PR 以及 worktree 和分支的删除，只在用户明确要求时执行。
 
 ## Git 与提交

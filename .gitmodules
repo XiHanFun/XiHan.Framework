@@ -1,0 +1,3 @@
+[submodule "next/spec"]
+	path = next/spec
+	url = https://github.com/XiHanFun/framework-spec.git

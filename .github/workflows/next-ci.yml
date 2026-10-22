@@ -48,6 +48,9 @@ jobs:
     steps:
       - name: 检出
         uses: actions/checkout@v7
+        with:
+          # next/spec 是 framework-spec 的 submodule
+          submodules: true
 
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v6
