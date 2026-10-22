@@ -102,6 +102,9 @@ public class XiHanWebApiModule : XiHanModule
         app.UseMiddleware<XiHanOpenApiSecurityMiddleware>();
         app.UseAuthentication();
         app.UseMiddleware<XiHanTenantResolveMiddleware>();
+        // 请求访问闸门：认证与租户解析之后（可按用户、角色、租户判定），会话闸门与授权之前（被拦的请求不进入权限评估）。
+        // 应用在这里接访问策略、维护模式这类按请求放行与否的判定；模块初始化里注册的中间件排在 UseEndpoints 之后，拦不到命中路由的请求。
+        app.UseMiddleware<XiHanRequestAccessMiddleware>();
         // 会话闸门：拦截已失效(401)/已锁定(423)的会话。
         // 必须在认证之后（要读 session_id claim）、租户解析之后（会话表多为多租户实体，
         // 租户上下文未解析会被全局过滤器挡掉）、授权之前（423/401 要先于权限评估短路，不与 403 混淆）。
