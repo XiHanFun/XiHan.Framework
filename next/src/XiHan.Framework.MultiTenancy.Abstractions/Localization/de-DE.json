@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "Der In-Memory-Mandantenspeicher hat seine Kapazität von {capacity} erreicht.",
+  "multitenancy.tenant.disabled": "Der Mandant '{tenantId}' ist deaktiviert.",
+  "multitenancy.tenant.invalid_id": "Die Mandanten-ID '{tenantId}' ist ungültig.",
+  "multitenancy.tenant.not_found": "Der Mandant '{tenantId}' existiert nicht.",
+  "multitenancy.tenant.required": "Dieser Aufruf erfordert einen Mandanten, es wurde jedoch keiner ermittelt."
+}

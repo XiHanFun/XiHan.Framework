@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "Negado pela política.",
+  "kernel.feature.start_failed": "O recurso '{id}' não pôde ser iniciado: {reason}",
+  "kernel.feature.stop_failed": "O recurso '{id}' não pôde ser interrompido: {reason}",
+  "kernel.feature.stop_timeout": "O recurso '{id}' excedeu o tempo limite ao parar.",
+  "kernel.hosting.not_serving": "O aplicativo está no estado {state} e não aceita solicitações.",
+  "kernel.invocation.cancelled": "A chamada foi cancelada.",
+  "kernel.invocation.deadline_before_start": "A chamada excedeu o prazo antes de começar.",
+  "kernel.invocation.deadline_exceeded": "A chamada excedeu o prazo.",
+  "kernel.invocation.unhandled_exception": "Ocorreu uma exceção não tratada durante a chamada.",
+  "kernel.manifest.empty": "O manifesto está vazio.",
+  "kernel.manifest.file_missing": "O arquivo de manifesto '{path}' não existe.",
+  "kernel.manifest.invalid": "O manifesto não é válido: {reason}",
+  "kernel.manifest.invalid_json": "O manifesto não é um JSON válido: {reason}",
+  "kernel.permission.duplicate": "O código de permissão '{code}' já está registrado.",
+  "kernel.permission.registry_full": "O registro de permissões atingiu sua capacidade de {capacity}."
+}

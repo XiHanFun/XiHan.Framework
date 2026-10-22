@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "플러그인 어셈블리 '{path}'이(가) 없습니다.",
+  "plugins.entry.manifest_mismatch": "진입 형식의 매니페스트 ID '{actual}'이(가) 매니페스트 파일의 ID '{expected}'과(와) 일치하지 않습니다.",
+  "plugins.entry.not_found": "플러그인 어셈블리 '{package}'에서 진입 형식 '{entry}'을(를) 찾을 수 없습니다.",
+  "plugins.entry.not_plugin": "진입 형식 '{entry}'이(가) 'IPlugin'을 구현하지 않습니다.",
+  "plugins.manifest.entry_required": "플러그인 매니페스트 '{id}'에는 'package'(어셈블리 이름)와 'entry'(진입 형식)를 모두 선언해야 합니다.",
+  "plugins.manifest.invalid": "플러그인 디렉터리 '{directory}'의 매니페스트가 올바르지 않습니다: {reason}",
+  "plugins.manifest.not_in_process": "매니페스트 '{id}'은(는) 인프로세스 플러그인을 설명하지 않습니다(kind={kind}, isolation={isolation}).",
+  "plugins.permission.not_granted": "플러그인 '{id}'이(가) 선언한 권한이 부여되지 않았습니다: {permissions}.",
+  "plugins.plugin.already_loaded": "플러그인 '{id}'이(가) 이미 로드되었습니다.",
+  "plugins.plugin.load_failed": "플러그인 '{id}'을(를) 로드하지 못했습니다: {reason}",
+  "plugins.plugin.not_loaded": "플러그인 '{id}'이(가) 로드되지 않았습니다.",
+  "plugins.plugin.stop_failed": "플러그인 '{id}'을(를) 중지하지 못했습니다: {reason}"
+}

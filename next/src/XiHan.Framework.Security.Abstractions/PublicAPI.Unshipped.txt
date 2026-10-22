@@ -1,0 +1,138 @@
+#nullable enable
+~override XiHan.Framework.Security.Abstractions.GrantSubject.Equals(object obj) -> bool
+const XiHan.Framework.Security.Abstractions.AuthenticatedPolicy.PolicyName = "authenticated" -> string!
+const XiHan.Framework.Security.Abstractions.GrantSubject.Role = "role" -> string!
+const XiHan.Framework.Security.Abstractions.GrantSubject.User = "user" -> string!
+const XiHan.Framework.Security.Abstractions.PermissionGrant.All = "*" -> string!
+const XiHan.Framework.Security.Abstractions.PermissionPolicy.Prefix = "permission:" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication = "security.authentication" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Version = 1 -> int
+const XiHan.Framework.Security.Abstractions.SecurityErrors.CapacityExceeded = "SECURITY_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.InvalidCredential = "SECURITY_DENIED_003" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.NotAuthenticated = "SECURITY_DENIED_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.PermissionMissing = "SECURITY_DENIED_004" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyDenied = "SECURITY_DENIED_002" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyNotFound = "SECURITY_NOTFOUND_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "SECURITY_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidToken = "security.token.invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PermissionMissing = "security.permission.missing" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PolicyNotFound = "security.policy.not_found" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.PrincipalStoreCapacityExceeded = "security.principal_store.capacity_exceeded" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.TokenSubjectMissing = "security.token.subject_missing" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.UnsupportedScheme = "security.authentication.unsupported_scheme" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityOptions.ConfigurationSection = "XiHan:Security" -> string!
+override XiHan.Framework.Security.Abstractions.AuthenticationCredential.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.AuthenticationCredential.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.AuthenticationCredential.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.AuthorizationRequirement.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.AuthorizationRequirement.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.GrantSubject.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.GrantSubject.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.PermissionGrant.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.PermissionGrant.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.PermissionGrant.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.SecurityOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.SecurityOptions.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.SecurityOptions.ToString() -> string!
+static XiHan.Framework.Security.Abstractions.AuthenticationCredential.operator !=(XiHan.Framework.Security.Abstractions.AuthenticationCredential? left, XiHan.Framework.Security.Abstractions.AuthenticationCredential? right) -> bool
+static XiHan.Framework.Security.Abstractions.AuthenticationCredential.operator ==(XiHan.Framework.Security.Abstractions.AuthenticationCredential? left, XiHan.Framework.Security.Abstractions.AuthenticationCredential? right) -> bool
+static XiHan.Framework.Security.Abstractions.AuthenticationCredential.TryParse(string? header, out XiHan.Framework.Security.Abstractions.AuthenticationCredential? credential) -> bool
+static XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Authenticated.get -> XiHan.Framework.Security.Abstractions.AuthorizationRequirement!
+static XiHan.Framework.Security.Abstractions.AuthorizationRequirement.operator !=(XiHan.Framework.Security.Abstractions.AuthorizationRequirement? left, XiHan.Framework.Security.Abstractions.AuthorizationRequirement? right) -> bool
+static XiHan.Framework.Security.Abstractions.AuthorizationRequirement.operator ==(XiHan.Framework.Security.Abstractions.AuthorizationRequirement? left, XiHan.Framework.Security.Abstractions.AuthorizationRequirement? right) -> bool
+static XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Permission(string! code, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> XiHan.Framework.Security.Abstractions.AuthorizationRequirement!
+static XiHan.Framework.Security.Abstractions.GrantSubject.ForRole(string! role) -> XiHan.Framework.Security.Abstractions.GrantSubject
+static XiHan.Framework.Security.Abstractions.GrantSubject.ForUser(string! userId) -> XiHan.Framework.Security.Abstractions.GrantSubject
+static XiHan.Framework.Security.Abstractions.GrantSubject.operator !=(XiHan.Framework.Security.Abstractions.GrantSubject left, XiHan.Framework.Security.Abstractions.GrantSubject right) -> bool
+static XiHan.Framework.Security.Abstractions.GrantSubject.operator ==(XiHan.Framework.Security.Abstractions.GrantSubject left, XiHan.Framework.Security.Abstractions.GrantSubject right) -> bool
+static XiHan.Framework.Security.Abstractions.PermissionGrant.operator !=(XiHan.Framework.Security.Abstractions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.PermissionGrant? right) -> bool
+static XiHan.Framework.Security.Abstractions.PermissionGrant.operator ==(XiHan.Framework.Security.Abstractions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.PermissionGrant? right) -> bool
+static XiHan.Framework.Security.Abstractions.PermissionPolicy.CodeOf(string! policyName) -> string?
+static XiHan.Framework.Security.Abstractions.PermissionPolicy.NameFor(string! permissionCode) -> string!
+static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetAuthorizationRequirement(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.AuthorizationRequirement!>
+static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetCredential(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.AuthenticationCredential!>
+static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.RequireAuthorization(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.AuthorizationRequirement! requirement) -> void
+static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.SetCredential(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential) -> void
+static XiHan.Framework.Security.Abstractions.SecurityMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Security.Abstractions.SecurityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Abstractions.SecurityOptions!
+static XiHan.Framework.Security.Abstractions.SecurityOptions.operator !=(XiHan.Framework.Security.Abstractions.SecurityOptions? left, XiHan.Framework.Security.Abstractions.SecurityOptions? right) -> bool
+static XiHan.Framework.Security.Abstractions.SecurityOptions.operator ==(XiHan.Framework.Security.Abstractions.SecurityOptions? left, XiHan.Framework.Security.Abstractions.SecurityOptions? right) -> bool
+XiHan.Framework.Security.Abstractions.AuthenticatedPolicy
+XiHan.Framework.Security.Abstractions.AuthenticatedPolicy.AuthenticatedPolicy() -> void
+XiHan.Framework.Security.Abstractions.AuthenticatedPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Security.AuthorizationResult>
+XiHan.Framework.Security.Abstractions.AuthenticatedPolicy.Name.get -> string!
+XiHan.Framework.Security.Abstractions.AuthenticationCredential
+XiHan.Framework.Security.Abstractions.AuthenticationCredential.<Clone>$() -> XiHan.Framework.Security.Abstractions.AuthenticationCredential!
+XiHan.Framework.Security.Abstractions.AuthenticationCredential.AuthenticationCredential(string! scheme, string! value) -> void
+XiHan.Framework.Security.Abstractions.AuthenticationCredential.Equals(XiHan.Framework.Security.Abstractions.AuthenticationCredential? other) -> bool
+XiHan.Framework.Security.Abstractions.AuthenticationCredential.Scheme.get -> string!
+XiHan.Framework.Security.Abstractions.AuthenticationCredential.Value.get -> string!
+XiHan.Framework.Security.Abstractions.AuthenticationMiddleware
+XiHan.Framework.Security.Abstractions.AuthenticationMiddleware.AuthenticationMiddleware(XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
+XiHan.Framework.Security.Abstractions.AuthenticationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Security.Abstractions.AuthorizationMiddleware
+XiHan.Framework.Security.Abstractions.AuthorizationMiddleware.AuthorizationMiddleware() -> void
+XiHan.Framework.Security.Abstractions.AuthorizationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.<Clone>$() -> XiHan.Framework.Security.Abstractions.AuthorizationRequirement!
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.AuthorizationRequirement(string! Policy, XiHan.Framework.Kernel.Security.ResourceName? Resource = null) -> void
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Deconstruct(out string! Policy, out XiHan.Framework.Kernel.Security.ResourceName? Resource) -> void
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Equals(XiHan.Framework.Security.Abstractions.AuthorizationRequirement? other) -> bool
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Policy.get -> string!
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Resource.get -> XiHan.Framework.Kernel.Security.ResourceName?
+XiHan.Framework.Security.Abstractions.AuthorizationRequirement.Resource.init -> void
+XiHan.Framework.Security.Abstractions.GrantSubject
+XiHan.Framework.Security.Abstractions.GrantSubject.Deconstruct(out string! Kind, out string! Id) -> void
+XiHan.Framework.Security.Abstractions.GrantSubject.Equals(XiHan.Framework.Security.Abstractions.GrantSubject other) -> bool
+XiHan.Framework.Security.Abstractions.GrantSubject.GrantSubject() -> void
+XiHan.Framework.Security.Abstractions.GrantSubject.GrantSubject(string! Kind, string! Id) -> void
+XiHan.Framework.Security.Abstractions.GrantSubject.Id.get -> string!
+XiHan.Framework.Security.Abstractions.GrantSubject.Kind.get -> string!
+XiHan.Framework.Security.Abstractions.IAuthenticationHandler
+XiHan.Framework.Security.Abstractions.IAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.Abstractions.IAuthenticationHandler.Scheme.get -> string!
+XiHan.Framework.Security.Abstractions.IPermissionChecker
+XiHan.Framework.Security.Abstractions.IPermissionChecker.HasPermissionAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, string! permission, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Security.Abstractions.IPermissionGrantStore
+XiHan.Framework.Security.Abstractions.IPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>!>
+XiHan.Framework.Security.Abstractions.PermissionChecker
+XiHan.Framework.Security.Abstractions.PermissionChecker.HasPermissionAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, string! permission, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Security.Abstractions.PermissionChecker.PermissionChecker(XiHan.Framework.Security.Abstractions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
+XiHan.Framework.Security.Abstractions.PermissionGrant
+XiHan.Framework.Security.Abstractions.PermissionGrant.<Clone>$() -> XiHan.Framework.Security.Abstractions.PermissionGrant!
+XiHan.Framework.Security.Abstractions.PermissionGrant.Deconstruct(out XiHan.Framework.Security.Abstractions.GrantSubject Subject, out string! Permission, out string? TenantId) -> void
+XiHan.Framework.Security.Abstractions.PermissionGrant.Equals(XiHan.Framework.Security.Abstractions.PermissionGrant? other) -> bool
+XiHan.Framework.Security.Abstractions.PermissionGrant.Permission.get -> string!
+XiHan.Framework.Security.Abstractions.PermissionGrant.PermissionGrant(XiHan.Framework.Security.Abstractions.GrantSubject Subject, string! Permission, string? TenantId = null) -> void
+XiHan.Framework.Security.Abstractions.PermissionGrant.Subject.get -> XiHan.Framework.Security.Abstractions.GrantSubject
+XiHan.Framework.Security.Abstractions.PermissionGrant.Subject.init -> void
+XiHan.Framework.Security.Abstractions.PermissionGrant.TenantId.get -> string?
+XiHan.Framework.Security.Abstractions.PermissionGrant.TenantId.init -> void
+XiHan.Framework.Security.Abstractions.PermissionPolicy
+XiHan.Framework.Security.Abstractions.PermissionPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Security.AuthorizationResult>
+XiHan.Framework.Security.Abstractions.PermissionPolicy.Name.get -> string!
+XiHan.Framework.Security.Abstractions.PermissionPolicy.PermissionCode.get -> string!
+XiHan.Framework.Security.Abstractions.PermissionPolicy.PermissionPolicy(string! permissionCode, XiHan.Framework.Security.Abstractions.IPermissionChecker! checker) -> void
+XiHan.Framework.Security.Abstractions.PolicyCatalog
+XiHan.Framework.Security.Abstractions.PolicyCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Security.IPolicy!>
+XiHan.Framework.Security.Abstractions.PolicyCatalog.Names.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+XiHan.Framework.Security.Abstractions.PolicyCatalog.PolicyCatalog(System.Collections.Generic.IEnumerable<XiHan.Framework.Kernel.Security.IPolicy!>! policies, XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, XiHan.Framework.Security.Abstractions.IPermissionChecker! checker) -> void
+XiHan.Framework.Security.Abstractions.SecurityCapabilities
+XiHan.Framework.Security.Abstractions.SecurityErrors
+XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions
+XiHan.Framework.Security.Abstractions.SecurityMessages
+XiHan.Framework.Security.Abstractions.SecurityOptions
+XiHan.Framework.Security.Abstractions.SecurityOptions.<Clone>$() -> XiHan.Framework.Security.Abstractions.SecurityOptions!
+XiHan.Framework.Security.Abstractions.SecurityOptions.Equals(XiHan.Framework.Security.Abstractions.SecurityOptions? other) -> bool
+XiHan.Framework.Security.Abstractions.SecurityOptions.RequireAuthentication.get -> bool
+XiHan.Framework.Security.Abstractions.SecurityOptions.RequireAuthentication.init -> void
+XiHan.Framework.Security.Abstractions.SecurityOptions.RoleClaim.get -> string!
+XiHan.Framework.Security.Abstractions.SecurityOptions.RoleClaim.init -> void
+XiHan.Framework.Security.Abstractions.SecurityOptions.SecurityOptions() -> void

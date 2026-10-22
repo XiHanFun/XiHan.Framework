@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <!-- 生成文档文件只为让 IDE0005（未使用的 using）在构建期生效；CS1591：示例与基准不要求 XML 文档 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CA1515：基准类必须 public 才能被 BenchmarkDotNet 发现 -->
+    <NoWarn>$(NoWarn);CA1515;CS1591</NoWarn>
+  </PropertyGroup>
+</Project>

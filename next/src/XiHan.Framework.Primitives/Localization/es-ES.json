@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "El manifiesto '{id}' declara el mismo nombre de enlace más de una vez en 'bindings'.",
+  "primitives.manifest.duplicate_provides": "El manifiesto '{id}' declara el mismo identificador de capacidad más de una vez en 'provides'.",
+  "primitives.manifest.duplicate_requires": "El manifiesto '{id}' declara el mismo identificador de capacidad más de una vez en 'requires'.",
+  "primitives.manifest.isolation_not_allowed": "El manifiesto '{id}' no es un complemento y no debe declarar 'isolation' ni 'permissions'.",
+  "primitives.manifest.isolation_required": "El manifiesto del complemento '{id}' debe declarar 'isolation'.",
+  "primitives.result.uninitialized": "El resultado no está inicializado: un valor predeterminado no es un resultado válido."
+}

@@ -1,0 +1,99 @@
+name: Next CI
+
+# 下一代框架（next/）的构建、测试与门禁。只在 next/ 或本文件变动时触发。
+on:
+  push:
+    branches: [next, dev, main]
+    paths:
+      - "next/**"
+      - ".github/workflows/next-ci.yml"
+  pull_request:
+    branches: [next, dev, main]
+    paths:
+      - "next/**"
+      - ".github/workflows/next-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: next-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 构建、测试与门禁
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      rabbitmq:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        # NU1903/NU1904 在 next/Directory.Build.props 中升级为错误，高危漏洞在此中断
+        run: dotnet restore next/XiHan.Framework.Next.slnx
+
+      - name: 构建
+        # TreatWarningsAsErrors + latest-recommended 分析器 + PublicAPI 分析器 + AOT 分析器
+        run: dotnet build next/XiHan.Framework.Next.slnx --configuration Release --no-restore
+
+      - name: 测试（MTP 模式，采集覆盖率）
+        env:
+          # Caching.Redis 与 Messaging.RabbitMQ 的一致性套件只在设置了这些变量时运行
+          XIHAN_TEST_REDIS: localhost:6379
+          XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
+        # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
+        run: >
+          dotnet test --solution next/XiHan.Framework.Next.slnx
+          --configuration Release
+          --no-build
+          -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
+
+      - name: 打包（触发包验证与 README 检查）
+        run: dotnet pack next/XiHan.Framework.Next.slnx --configuration Release --no-build
+
+      - name: 依赖漏洞清单
+        run: dotnet list next/XiHan.Framework.Next.slnx package --vulnerable --include-transitive
+
+      - name: 安装 Native AOT 工具链
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: AOT 发布冒烟
+        # 内核零反射、源生成序列化：示例必须能以 Native AOT 发布
+        run: dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -p:PublishAot=true -o ${{ runner.temp }}/aot
+
+      - name: 上传测试结果与包
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: next-artifacts
+          path: |
+            next/test/**/TestResults/
+            next/artifacts/packages/
+          if-no-files-found: ignore
