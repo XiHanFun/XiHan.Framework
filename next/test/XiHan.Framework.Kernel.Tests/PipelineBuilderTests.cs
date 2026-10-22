@@ -14,6 +14,41 @@ namespace XiHan.Framework.Kernel.Tests;
 public sealed class PipelineBuilderTests
 {
     [Fact]
+    public async Task UseNamedInstance_AllowsSeveralInstancesOfOneType_AndRunsEachOfThem()
+    {
+        var log = new List<string>();
+        var services = new ServiceCollection().BuildServiceProvider();
+        var builder = new PipelineBuilder()
+            .UseNamedInstance("first", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.a")
+            .UseNamedInstance("second", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.b");
+
+        Assert.Equal(["first", "second"], builder.Describe().Select(static d => d.Name));
+        Assert.Contains("MiddlewareA[first]", builder.Dump(), StringComparison.Ordinal);
+        Assert.Contains("MiddlewareA[second]", builder.Dump(), StringComparison.Ordinal);
+
+        var pipeline = builder.Build(_ => ValueTask.CompletedTask);
+        await pipeline(App.CreateContext(services, CancellationToken.None));
+        Assert.Equal(["enter:A", "enter:A", "exit:A", "exit:A"], log);
+    }
+
+    [Fact]
+    public void UseNamedInstance_RejectsDuplicateNames_AndTypeConstraintsOnNamedInstances()
+    {
+        var log = new List<string>();
+        var builder = new PipelineBuilder()
+            .UseNamedInstance("first", new MiddlewareA(log), PipelineStage.Observe)
+            .UseNamedInstance("second", new MiddlewareA(log), PipelineStage.Observe)
+            .UseAt<MiddlewareB>(PipelineStage.Observe);
+
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.UseNamedInstance("first", new MiddlewareA(log), PipelineStage.Observe)).Code);
+        // 同类型有多个命名实例时，按类型的约束无法指向其中某一个
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.Before<MiddlewareA, MiddlewareB>()).Code);
+        // 约束的目标在排序时才解析：指向有多个命名实例的类型同样是登记错误
+        builder.After<MiddlewareB, MiddlewareA>();
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.Describe()).Code);
+    }
+
+    [Fact]
     public void Describe_OrdersByStageThenPlacementThenOwnerThenRegistration()
     {
         var builder = new PipelineBuilder()

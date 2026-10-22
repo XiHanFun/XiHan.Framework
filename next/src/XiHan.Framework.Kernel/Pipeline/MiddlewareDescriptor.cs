@@ -16,6 +16,11 @@ namespace XiHan.Framework.Kernel.Pipeline;
 public sealed record MiddlewareDescriptor(Type Middleware, PipelineStage Stage, Placement Placement, string Owner)
 {
     /// <summary>
+    /// 实例名字；按类型登记的中间件为空，按名字登记的实例（<see cref="PipelineBuilder.UseNamedInstance"/>）为其名字。
+    /// </summary>
+    public string? Name { get; init; }
+
+    /// <summary>
     /// 必须位于这些中间件之前。
     /// </summary>
     public IReadOnlyList<Type> Before { get; init; } = [];
