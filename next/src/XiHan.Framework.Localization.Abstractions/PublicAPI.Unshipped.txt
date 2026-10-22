@@ -5,6 +5,7 @@ const XiHan.Framework.Localization.Abstractions.LocalizationCapabilities.Version
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.DuplicateCatalog = "LOCALIZATION_CONFLICT_001" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.InvalidCatalog = "LOCALIZATION_VALIDATION_002" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.InvalidLocale = "LOCALIZATION_VALIDATION_001" -> string!
+const XiHan.Framework.Localization.Abstractions.LocalizationErrors.TranslationNotFound = "LOCALIZATION_NOTFOUND_001" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationOptions.ConfigurationSection = "XiHan:Localization" -> string!
 const XiHan.Framework.Localization.Abstractions.MessageCatalog.DefaultResourcePrefix = "Localization/" -> string!
 const XiHan.Framework.Localization.Abstractions.SupportedLocales.ChineseSimplified = "zh-CN" -> string!
@@ -27,6 +28,7 @@ override XiHan.Framework.Localization.Abstractions.LocalizedText.ToString() -> s
 static XiHan.Framework.Localization.Abstractions.InvocationContextLocalizationExtensions.Localize(this XiHan.Framework.Primitives.InvocationContext! context, string! key, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments = null) -> string!
 static XiHan.Framework.Localization.Abstractions.InvocationContextLocalizationExtensions.Localize(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Primitives.Error! failure) -> string!
 static XiHan.Framework.Localization.Abstractions.LocaleName.AreEqual(string? left, string? right) -> bool
+static XiHan.Framework.Localization.Abstractions.LocaleName.CultureOf(string! locale) -> System.Globalization.CultureInfo!
 static XiHan.Framework.Localization.Abstractions.LocaleName.IsValid(string? locale) -> bool
 static XiHan.Framework.Localization.Abstractions.LocaleName.LanguageOf(string! locale) -> string!
 static XiHan.Framework.Localization.Abstractions.LocaleName.Normalize(string! locale) -> string!
@@ -58,6 +60,7 @@ XiHan.Framework.Localization.Abstractions.LocalizationOptions.<Clone>$() -> XiHa
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.DefaultLocale.get -> string!
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.DefaultLocale.init -> void
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.Equals(XiHan.Framework.Localization.Abstractions.LocalizationOptions? other) -> bool
+XiHan.Framework.Localization.Abstractions.LocalizationOptions.FallbackChain(string! locale) -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.Locales.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.Locales.init -> void
 XiHan.Framework.Localization.Abstractions.LocalizationOptions.LocalizationOptions() -> void

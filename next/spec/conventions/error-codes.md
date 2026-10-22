@@ -72,6 +72,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `LOCALIZATION_VALIDATION_001` | 区域名不合法 |
 | `LOCALIZATION_VALIDATION_002` | 消息目录不合法（JSON、键或区域名错误） |
 | `LOCALIZATION_CONFLICT_001` | 同名消息目录重复注册 |
+| `LOCALIZATION_NOTFOUND_001` | 数据库里没有这条翻译 |
 | `SECURITY_DENIED_001` | 未认证 |
 | `SECURITY_DENIED_002` | 策略拒绝 |
 | `SECURITY_DENIED_003` | 凭据无效、过期或签名不符 |

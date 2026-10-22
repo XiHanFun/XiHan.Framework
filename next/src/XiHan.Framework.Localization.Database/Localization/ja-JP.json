@@ -1,0 +1,3 @@
+{
+  "localization.translation.not_found": "'{key}' の '{locale}' 向け翻訳はデータベースにありません。"
+}
