@@ -1,0 +1,4 @@
+#nullable enable
+XiHan.Framework.Kernel.Generators.OperationGenerator
+XiHan.Framework.Kernel.Generators.OperationGenerator.Initialize(Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext context) -> void
+XiHan.Framework.Kernel.Generators.OperationGenerator.OperationGenerator() -> void

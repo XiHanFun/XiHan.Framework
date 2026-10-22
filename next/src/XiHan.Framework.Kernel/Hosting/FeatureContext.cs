@@ -109,15 +109,17 @@ public sealed class FeatureContext
     /// <param name="contract">契约。</param>
     /// <param name="requestInfo">请求类型的序列化元数据（源生成）。</param>
     /// <param name="responseInfo">响应类型的序列化元数据（源生成）。</param>
+    /// <param name="schema">请求与响应的 JSON Schema；由 <c>Kernel.Generators</c> 生成的登记代码提供，手写登记可省略。</param>
     public FeatureContext AddOperation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TOperation, TRequest, TResponse>(
         OperationContract contract,
         JsonTypeInfo<TRequest> requestInfo,
-        JsonTypeInfo<TResponse> responseInfo)
+        JsonTypeInfo<TResponse> responseInfo,
+        OperationSchema? schema = null)
         where TOperation : class, IOperation<TRequest, TResponse>
     {
         ArgumentNullException.ThrowIfNull(contract);
         Services.TryAddScoped<TOperation>();
-        Operations.Add(new OperationDescriptor<TOperation, TRequest, TResponse>(contract, Manifest.Id, requestInfo, responseInfo)).ThrowIfFailure();
+        Operations.Add(new OperationDescriptor<TOperation, TRequest, TResponse>(contract, Manifest.Id, requestInfo, responseInfo, schema)).ThrowIfFailure();
         return this;
     }
 

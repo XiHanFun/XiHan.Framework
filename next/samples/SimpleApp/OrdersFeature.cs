@@ -3,7 +3,6 @@
 
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
@@ -60,14 +59,8 @@ public sealed class OrdersFeature : IFeature
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
 
-        // 操作契约：类型即 Schema，HTTP 适配器按操作 ID 推导路由，Authorize 阶段按契约的权限判定
-        context.AddOperation<CreateOrder, PlaceOrderRequest, OrderResponse>(
-            new(CreateOrder.Id, Stability.Experimental, Expose.Http | Expose.Mcp, permission: "orders.write"),
-            SampleJsonContext.Default.PlaceOrderRequest,
-            SampleJsonContext.Default.OrderResponse);
-        context.AddOperation<ListOrders, ListOrdersRequest, OrderList>(
-            new(ListOrders.Id, Stability.Experimental, Expose.Http | Expose.Mcp, permission: "orders.read"),
-            SampleJsonContext.Default.ListOrdersRequest,
-            SampleJsonContext.Default.OrderList);
+        // 操作契约：类型即 Schema。登记代码由 Kernel.Generators 从 [Operation] 生成（含请求/响应 JSON Schema），
+        // HTTP 适配器按操作 ID 推导路由并发布 OpenAPI，Authorize 阶段按契约的权限判定
+        context.AddGeneratedOperations();
     }
 }

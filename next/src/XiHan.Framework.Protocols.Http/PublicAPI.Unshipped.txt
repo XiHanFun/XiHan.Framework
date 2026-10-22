@@ -17,6 +17,8 @@ static XiHan.Framework.Protocols.Http.HttpRoute.operator ==(XiHan.Framework.Prot
 static XiHan.Framework.Protocols.Http.HttpRoute.Parse(string! text) -> XiHan.Framework.Protocols.Http.HttpRoute!
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Http.HttpRoute!
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.SuccessStatusCode(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> int
+static XiHan.Framework.Protocols.Http.OpenApiDocumentBuilder.Build(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! options, string! title, string! version) -> byte[]!
+static XiHan.Framework.Protocols.Http.OpenApiEndpointRouteBuilderExtensions.MapXiHanOpenApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/openapi.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> int
 static XiHan.Framework.Protocols.Http.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, string! operationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 XiHan.Framework.Protocols.Http.HttpProtocolCapabilities
@@ -40,5 +42,7 @@ XiHan.Framework.Protocols.Http.HttpRoute.HttpRoute(string! method, string! templ
 XiHan.Framework.Protocols.Http.HttpRoute.Method.get -> string!
 XiHan.Framework.Protocols.Http.HttpRoute.Template.get -> string!
 XiHan.Framework.Protocols.Http.HttpRouteConvention
+XiHan.Framework.Protocols.Http.OpenApiDocumentBuilder
+XiHan.Framework.Protocols.Http.OpenApiEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.Http.OperationRequestBinder

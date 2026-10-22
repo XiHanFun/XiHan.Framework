@@ -10,7 +10,7 @@
 | `Diagnostics` | `ActivitySource` / `Meter` 桥、`IAuditSink` |
 | `Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`、`AuthorizationResult`、`PermissionRegistry` |
 | `Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PermissionGrant` 抽象；具体隔离机制在 `Plugins.*` 包 |
-| `Operations` | 操作契约与 XGI（RFC-0011）：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationRegistry`、`OperationRequest` / `OperationResponse`、`IOperationInvoker`；特性用 `FeatureContext.AddOperation` 登记，协议适配器按登记表发布 |
+| `Operations` | 操作契约与 XGI（RFC-0011）：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`OperationRequest` / `OperationResponse`、`IOperationInvoker`；特性用 `FeatureContext.AddOperation` 登记（通常由 `Kernel.Generators` 生成的 `AddGeneratedOperations` 代劳），协议适配器按登记表发布 |
 
 ## 责任边界
 

@@ -32,12 +32,20 @@ internal sealed class OrdersFeature : IFeature
         Entry = typeof(OrdersFeature).FullName,
     };
 
+    /// <summary>
+    /// 手写的请求 Schema：带 $defs 的嵌套定义，验证 OpenAPI 把它提升到 components。
+    /// </summary>
+    public static readonly OperationSchema OrderSchema = new(
+        """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderRequest","type":"object","properties":{"id":{"type":["string","null"]},"name":{"type":["string","null"]},"page":{"type":"integer","format":"int32"},"tags":{"type":["array","null"],"items":{"type":"string"}},"line":{"$ref":"#/$defs/Line"}},"required":["page"],"$defs":{"Line":{"type":"object","properties":{"sku":{"type":"string"}},"required":["sku"]}}}""",
+        """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderReply","type":"object","properties":{"operation":{"type":"string"}},"required":["operation"]}""");
+
     /// <inheritdoc />
     public void Configure(FeatureContext context)
     {
         foreach (var id in HttpOperations)
         {
-            Add(context, new OperationContract(id, expose: Expose.Http));
+            // get 与 create 带 Schema，其余不带：OpenAPI 两种情况都要能发布
+            Add(context, new OperationContract(id, expose: Expose.Http), id is "orders.get" or "orders.create" ? OrderSchema : null);
         }
 
         Add(context, new OperationContract("orders.secret", expose: Expose.Mcp));
@@ -47,6 +55,6 @@ internal sealed class OrdersFeature : IFeature
     /// <summary>
     /// 以同一实现登记一个契约。
     /// </summary>
-    private static void Add(FeatureContext context, OperationContract contract)
-        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(contract, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+    private static void Add(FeatureContext context, OperationContract contract, OperationSchema? schema = null)
+        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(contract, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, schema);
 }

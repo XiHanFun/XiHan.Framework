@@ -40,8 +40,9 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// <param name="ownerId">登记它的特性清单 ID。</param>
     /// <param name="requestInfo">请求类型的序列化元数据（源生成）。</param>
     /// <param name="responseInfo">响应类型的序列化元数据（源生成）。</param>
-    public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo)
-        : base(contract, ownerId, typeof(TOperation), typeof(TRequest), typeof(TResponse))
+    /// <param name="schema">请求与响应的 JSON Schema；手写登记可不提供。</param>
+    public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo, OperationSchema? schema = null)
+        : base(contract, ownerId, typeof(TOperation), typeof(TRequest), typeof(TResponse), schema)
     {
         _requestInfo = requestInfo ?? throw new ArgumentNullException(nameof(requestInfo));
         _responseInfo = responseInfo ?? throw new ArgumentNullException(nameof(responseInfo));

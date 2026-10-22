@@ -37,6 +37,7 @@ app.MapXiHanHealth();
 
 // 操作契约经 HTTP 暴露：orders.create → POST /orders（201），orders.list → GET /orders；授权按契约里的权限码判定
 app.MapXiHanOperations();
+app.MapXiHanOpenApi();   // 从登记表与生成的 Schema 发布 /openapi.json
 
 app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
 app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count));

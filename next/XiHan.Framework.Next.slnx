@@ -41,6 +41,7 @@
   </Folder>
   <Folder Name="/6.Tooling/">
     <Project Path="src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
+    <Project Path="src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" />
     <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
     <Project Path="src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
@@ -75,6 +76,7 @@
     <Project Path="test/XiHan.Framework.Localization.Abstractions.Tests/XiHan.Framework.Localization.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.InMemory.Tests/XiHan.Framework.Localization.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.Http.Tests/XiHan.Framework.Protocols.Http.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
