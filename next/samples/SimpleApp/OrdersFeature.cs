@@ -51,7 +51,8 @@ public sealed class OrdersFeature : IFeature
     /// </summary>
     public void Configure(FeatureContext context)
     {
-        context.Services.AddRepository<Order, Guid>();
+        // 仓储登记由 Persistence.Generators 从实体类生成（Order : IAggregateRoot<Guid>）
+        context.Services.AddGeneratedRepositories();
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 

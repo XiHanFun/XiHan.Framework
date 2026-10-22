@@ -1,0 +1,4 @@
+#nullable enable
+XiHan.Framework.Persistence.Generators.EntityGenerator
+XiHan.Framework.Persistence.Generators.EntityGenerator.EntityGenerator() -> void
+XiHan.Framework.Persistence.Generators.EntityGenerator.Initialize(Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext context) -> void
