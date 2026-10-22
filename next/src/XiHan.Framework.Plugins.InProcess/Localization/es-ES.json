@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "El ensamblado del complemento '{path}' no existe.",
+  "plugins.entry.manifest_mismatch": "El identificador de manifiesto '{actual}' del tipo de entrada no coincide con el identificador '{expected}' del archivo de manifiesto.",
+  "plugins.entry.not_found": "No se encontró el tipo de entrada '{entry}' en el ensamblado del complemento '{package}'.",
+  "plugins.entry.not_plugin": "El tipo de entrada '{entry}' no implementa 'IPlugin'.",
+  "plugins.manifest.entry_required": "El manifiesto del complemento '{id}' debe declarar tanto 'package' (el nombre del ensamblado) como 'entry' (el tipo de entrada).",
+  "plugins.manifest.invalid": "El manifiesto del directorio de complementos '{directory}' no es válido: {reason}",
+  "plugins.manifest.not_in_process": "El manifiesto '{id}' no describe un complemento en proceso (kind={kind}, isolation={isolation}).",
+  "plugins.permission.not_granted": "Los permisos declarados por el complemento '{id}' no se han concedido: {permissions}.",
+  "plugins.plugin.already_loaded": "El complemento '{id}' ya está cargado.",
+  "plugins.plugin.load_failed": "El complemento '{id}' no pudo cargarse: {reason}",
+  "plugins.plugin.not_loaded": "El complemento '{id}' no está cargado.",
+  "plugins.plugin.stop_failed": "El complemento '{id}' no pudo detenerse: {reason}"
+}

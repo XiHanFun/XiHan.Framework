@@ -18,7 +18,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 ## 开始前必须做
 
-1. 按任务读取对应技能：模块、分层与公共 API 读取 `.agents/skills/module-development/SKILL.md`；缓存、队列和外部资源读取 `.agents/skills/resource-governance/SKILL.md`；测试、文档、打包和发布读取 `.agents/skills/testing-release/SKILL.md`。
+1. 按任务读取对应技能：模块、分层与公共 API 读取 `.agents/skills/module-development/SKILL.md`；缓存、队列和外部资源读取 `.agents/skills/resource-governance/SKILL.md`；测试、文档、打包和发布读取 `.agents/skills/testing-release/SKILL.md`；下一代框架（`next/`、`nextdocs/`）读取 `.agents/skills/next-generation/SKILL.md`。
 2. 同时涉及多个职责时加载对应多个技能，不要一次读取无关资料。
 3. 检查当前分支、`git status` 和最近提交；保留用户已有改动。在 worktree 中还要按「分支与 worktree」核对分支分组和基线。
 4. 阅读目标模块及其直接依赖的 README、项目文件、Module 类和相邻实现。
@@ -42,7 +42,8 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 │  ├─ test/                        # 单元与集成测试
 │  ├─ sample/                      # 示例
 │  └─ tool/                        # 工具项目
-└─ next/                           # 下一阶段设计与实验；不等同于正式 API
+├─ next/                           # 下一代框架（XiHan Framework 5）工作区：spec/、src/、test/；见 next/README.md
+└─ nextdocs/                       # 下一代设计文档：总体方案、architecture/01–05、adr/
 ```
 
 ## 常用命令
@@ -56,6 +57,10 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 | CI 同形测试 | `dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"` |
 | 文档安装 | `pnpm --dir docs install --frozen-lockfile` |
 | 文档构建 | `pnpm --dir docs build` |
+| 下一代还原 | `dotnet restore next/XiHan.Framework.Next.slnx` |
+| 下一代构建 | `dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore` |
+| 下一代测试 | `dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build` |
+| 下一代打包验证 | `dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build` |
 
 `global.json` 已选择 Microsoft.Testing.Platform。不要改回 VSTest 形式，也不要删除 `--solution` 来规避测试运行错误。
 
@@ -97,6 +102,21 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 分布式与持久化实现由消费应用提供，框架只定义稳定契约和必要扩展点。
 - 缓存、队列、会话和注册表不得无界增长；容量、过期、清理与并发语义必须测试。
 
+## 下一代开发（XiHan Framework 5）
+
+`next/` 与 `nextdocs/` 承载从零重写的下一代框架，在 `next` 分支开发，与 `framework/`（4.x）互不引用；上面「架构约束」中的分层与 `DefaultXxx` 命名只适用于 4.x。涉及下一代的任务先读 `.agents/skills/next-generation/SKILL.md`，再按顺序读 `nextdocs/下一代框架总体方案.md` 与 `nextdocs/architecture/01–05`。
+
+- 环层只能向下依赖：Primitives → Kernel → Domain 与 `.Abstractions` → 实现 → Hosting 与 Protocols → Plugins → Profiles；Ring 0/1 与抽象包零第三方依赖，Ring 0/1 零反射。
+- 包名由 `next/spec/conventions/vocabulary.md` 的术语表与 `package-ids.md` 的文法推出；类型名不带 `XiHan` 前缀；实现包按机制或技术命名，`Default` 不进包名，默认角色写在清单 `role`。
+- 规范先于实现：公开契约先进 `next/spec/rfcs`，再写 `nextdocs/adr`，再写代码与一致性向量。
+- `TreatWarningsAsErrors`、PublicAPI 文件、包验证、AOT 分析器与 `next/test/XiHan.Framework.Architecture.Tests` 都是 CI 必过项；不放宽、不绕过、不加 `NoWarn`。
+- 不把 4.x 的 `XiHanModule`、生命周期钩子、`[DependsOn]`、Castle 代理、`DefaultXxx`、`Utils` 带进 `next/`；旧代码只作迁移映射的参照。
+- 阶段按 `nextdocs/architecture/05-开发计划.md` 的门槛推进，当前阶段写在 `next/README.md`。
+- 代码规范（细则见 `nextdocs/architecture/03-代码规范.md`）：一个类型一个文件，泛型类型文件名加 `OfT`，只有嵌套类型留在外层类型的文件里；所有类型与成员，含 private / internal / protected、字段、常量、嵌套类型与测试辅助类型，都写中文 `/// <summary>`（`[Fact]` / `[Theory]` 方法除外，实现接口与重写用 `<inheritdoc />`）；方法内部的关键逻辑（锁与临界区、状态转移、回退链、容量与并发判定、安全判定顺序、延迟开启的事务）写中文 `//` 注释说明为什么。
+- 面向人的文案不写在代码里（RFC-0010）：代码只引用消息键常量（`<领域>Messages`，键如 `security.token.subject_missing`），每种语言一个文件 `Localization/<区域>.json`（含 `en-US.json`，键 → 模板，`{name}` 或 `{0}` 占位符，可带 `:format`），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入；内置与 XiHan.UI 相同的 10 种区域（`en-US` 默认、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU`），新增键必须同时补 10 个文件。任何地方取文案用 `key.L()` / `key.L(("id", id))` / `key.L(a, b)`（按 `MessageScope` 的当前区域：调用链里是调用方语言，否则是默认语言）；`Error` 用 `Error.NotFound(code, OrdersMessages.NotFound, MessageArguments.Of(...))` 只携带键与参数，宿主在 Egress 翻译成调用方语言；`Error.Literal` 只用于线上还原与异常转换。架构测试 `LocalizationTests` 核对文件齐全、占位符一致、常量与 `en-US.json` 一一对应、调用点只用常量。
+- 其余运行时英文：`FrameworkException` / `ArgumentException` 的消息（配置与编程错误，不本地化）、`LoggerMessage` 模板、分析器诊断、一致性套件与测试里的断言与夹具文本、`RequiresUnreferencedCode` / `RequiresDynamicCode` 的消息；句子以句号结尾，标识符与 ID 用单引号（分析器标题与单句消息按 RS1031 / RS1032 不加句号）。XML 文档、`//` 注释、README、RFC 与提交说明保持中文。
+- 命名与样式在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误）：私有实例与私有静态字段 `_camelCase`，私有常量 PascalCase，未使用的 using 必须删除（批量清理用 `dotnet format style next/XiHan.Framework.Next.slnx --diagnostics IDE0005 --severity warn`）；不降低 `.editorconfig` 的 severity，不加 `NoWarn`。
+
 ## 测试
 
 - 修改哪个正式模块，就在对应测试项目添加或更新测试。
@@ -120,7 +140,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 ## 分支与 worktree
 
-在主检出上的日常改动直接提交到当前分支（通常是 `dev`），不另开分支。新功能或并行开发开启 worktree 时，分支按用途分组命名，不保留工具生成的 `claude/<名>`、`codex/<名>` 等前缀：
+在主检出上的日常改动直接提交到当前分支（通常是 `dev`；下一代 `next/`、`nextdocs/` 的改动提交到 `next`），不另开分支。新功能或并行开发开启 worktree 时，分支按用途分组命名，不保留工具生成的 `claude/<名>`、`codex/<名>` 等前缀：
 
 | 分组 | 用途 | 分支名 |
 | --- | --- | --- |

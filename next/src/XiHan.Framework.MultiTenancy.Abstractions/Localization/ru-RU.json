@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "Хранилище арендаторов в памяти достигло предела ёмкости {capacity}.",
+  "multitenancy.tenant.disabled": "Арендатор '{tenantId}' отключён.",
+  "multitenancy.tenant.invalid_id": "Недопустимый идентификатор арендатора '{tenantId}'.",
+  "multitenancy.tenant.not_found": "Арендатор '{tenantId}' не существует.",
+  "multitenancy.tenant.required": "Для этого вызова требуется арендатор, но он не определён."
+}

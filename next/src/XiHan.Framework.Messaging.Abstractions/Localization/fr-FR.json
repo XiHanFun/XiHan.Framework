@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "Les attributs 'id', 'source' et 'type' sont obligatoires.",
+  "messaging.envelope.invalid": "L'enveloppe n'est pas valide : {reason}",
+  "messaging.envelope.invalid_base64": "L'attribut 'data_base64' n'est pas un Base64 valide.",
+  "messaging.envelope.invalid_extension": "Le nom d'attribut d'extension '{name}' n'est pas valide.",
+  "messaging.envelope.invalid_json": "Le document n'est pas un JSON CloudEvents valide : {reason}",
+  "messaging.envelope.invalid_time": "L'attribut 'time' '{time}' n'est pas un horodatage RFC 3339.",
+  "messaging.envelope.spec_version": "L'attribut 'specversion' doit être '{specVersion}'.",
+  "messaging.handler.failed": "Le gestionnaire de messages a levé une exception non gérée : {reason}",
+  "messaging.queue.full": "La file d'attente en mémoire du sujet '{topic}' est pleine (capacité {capacity}).",
+  "messaging.topic.invalid": "Le sujet '{topic}' n'est pas valide."
+}

@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "'id'、'source' 和 'type' 属性是必需的。",
+  "messaging.envelope.invalid": "信封不合法：{reason}",
+  "messaging.envelope.invalid_base64": "'data_base64' 属性不是合法的 Base64。",
+  "messaging.envelope.invalid_extension": "扩展属性名 '{name}' 不合法。",
+  "messaging.envelope.invalid_json": "文档不是合法的 CloudEvents JSON：{reason}",
+  "messaging.envelope.invalid_time": "'time' 属性 '{time}' 不是 RFC 3339 时间戳。",
+  "messaging.envelope.spec_version": "'specversion' 属性必须是 '{specVersion}'。",
+  "messaging.handler.failed": "消息处理器抛出了未处理的异常：{reason}",
+  "messaging.queue.full": "主题 '{topic}' 的内存队列已满（容量 {capacity}）。",
+  "messaging.topic.invalid": "主题 '{topic}' 不合法。"
+}

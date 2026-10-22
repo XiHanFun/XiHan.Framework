@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "インメモリテナントストアは容量上限 {capacity} に達しました。",
+  "multitenancy.tenant.disabled": "テナント '{tenantId}' は無効化されています。",
+  "multitenancy.tenant.invalid_id": "テナント ID '{tenantId}' が不正です。",
+  "multitenancy.tenant.not_found": "テナント '{tenantId}' は存在しません。",
+  "multitenancy.tenant.required": "この呼び出しにはテナントが必要ですが、解決できませんでした。"
+}

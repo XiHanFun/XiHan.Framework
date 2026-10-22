@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Persistence.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Persistence.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存持久化（默认实现，仅开发与测试）：有界存储、读己之写的工作单元、软删除与租户隔离。</Description>
+    <PackageTags>xihan;framework;persistence;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

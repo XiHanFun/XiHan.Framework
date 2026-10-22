@@ -1,0 +1,10 @@
+{
+  "persistence.entity.concurrency_conflict": "Конфликт оптимистичного параллелизма в сущности '{entity}': {reason}",
+  "persistence.entity.duplicate": "У сущности '{entity}' уже есть элемент с идентификатором '{id}'.",
+  "persistence.entity.not_found": "У сущности '{entity}' нет элемента с идентификатором '{id}'.",
+  "persistence.entity.stale_stamp": "Метка параллелизма сущности '{entity}' с идентификатором '{id}' устарела.",
+  "persistence.entity.tenant_required": "Сущность '{entity}' является мультиарендной, но у текущего вызова нет арендатора.",
+  "persistence.store.capacity_exceeded": "Таблица в памяти для '{entity}' достигла предела ёмкости {capacity}.",
+  "persistence.unit_of_work.concurrency_conflict": "Конфликт оптимистичного параллелизма при фиксации: {reason}",
+  "persistence.unit_of_work.read_only": "Единица работы только для чтения не принимает записи."
+}

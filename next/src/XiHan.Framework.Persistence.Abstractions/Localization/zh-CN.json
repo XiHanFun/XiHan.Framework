@@ -1,0 +1,10 @@
+{
+  "persistence.entity.concurrency_conflict": "实体 '{entity}' 发生乐观并发冲突：{reason}",
+  "persistence.entity.duplicate": "实体 '{entity}' 已存在标识为 '{id}' 的条目。",
+  "persistence.entity.not_found": "实体 '{entity}' 没有标识为 '{id}' 的条目。",
+  "persistence.entity.stale_stamp": "实体 '{entity}'（标识 '{id}'）的并发戳已过期。",
+  "persistence.entity.tenant_required": "实体 '{entity}' 是多租户实体，但当前调用没有租户。",
+  "persistence.store.capacity_exceeded": "实体 '{entity}' 的内存表已达到容量上限 {capacity}。",
+  "persistence.unit_of_work.concurrency_conflict": "提交时发生乐观并发冲突：{reason}",
+  "persistence.unit_of_work.read_only": "只读工作单元不接受写入。"
+}

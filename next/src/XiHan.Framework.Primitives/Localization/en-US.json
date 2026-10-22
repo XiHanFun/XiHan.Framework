@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "Manifest '{id}' declares the same binding name more than once in 'bindings'.",
+  "primitives.manifest.duplicate_provides": "Manifest '{id}' declares the same capability ID more than once in 'provides'.",
+  "primitives.manifest.duplicate_requires": "Manifest '{id}' declares the same capability ID more than once in 'requires'.",
+  "primitives.manifest.isolation_not_allowed": "Manifest '{id}' is not a plugin and must not declare 'isolation' or 'permissions'.",
+  "primitives.manifest.isolation_required": "Plugin manifest '{id}' must declare 'isolation'.",
+  "primitives.result.uninitialized": "The result is uninitialized: a default value is not a valid result."
+}

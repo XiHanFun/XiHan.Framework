@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Localization.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Localization.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存本地化（默认实现）：汇集各包注册的消息目录，按精确区域、同语言、默认区域的回退链取文案并格式化。</Description>
+    <PackageTags>xihan;framework;localization;i18n;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

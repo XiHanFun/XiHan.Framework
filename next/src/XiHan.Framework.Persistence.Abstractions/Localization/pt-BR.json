@@ -1,0 +1,10 @@
+{
+  "persistence.entity.concurrency_conflict": "Ocorreu um conflito de concorrência otimista em '{entity}': {reason}",
+  "persistence.entity.duplicate": "A entidade '{entity}' já tem um item com o identificador '{id}'.",
+  "persistence.entity.not_found": "A entidade '{entity}' não tem nenhum item com o identificador '{id}'.",
+  "persistence.entity.stale_stamp": "O carimbo de concorrência de '{entity}' com o identificador '{id}' está desatualizado.",
+  "persistence.entity.tenant_required": "A entidade '{entity}' é multilocatário, mas a chamada atual não tem locatário.",
+  "persistence.store.capacity_exceeded": "A tabela em memória de '{entity}' atingiu sua capacidade de {capacity}.",
+  "persistence.unit_of_work.concurrency_conflict": "Ocorreu um conflito de concorrência otimista durante a confirmação: {reason}",
+  "persistence.unit_of_work.read_only": "Uma unidade de trabalho somente leitura não aceita gravações."
+}

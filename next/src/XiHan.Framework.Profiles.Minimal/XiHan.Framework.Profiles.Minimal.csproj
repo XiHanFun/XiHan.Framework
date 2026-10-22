@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Profiles.Minimal</PackageId>
+    <RootNamespace>XiHan.Framework.Profiles.Minimal</RootNamespace>
+    <Description>XiHan Framework Minimal 组合包（Ring 6）：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化。边缘服务、工具与插件宿主用。</Description>
+    <PackageTags>xihan;framework;profile;minimal</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+  </ItemGroup>
+</Project>

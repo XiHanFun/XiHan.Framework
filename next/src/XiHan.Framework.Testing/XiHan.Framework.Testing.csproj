@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Testing</PackageId>
+    <RootNamespace>XiHan.Framework.Testing</RootNamespace>
+    <Description>XiHan Framework 测试基座：无 HTTP 的测试宿主、特性桩、清单与调用上下文的构造工具。</Description>
+    <PackageTags>xihan;framework;testing</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>
