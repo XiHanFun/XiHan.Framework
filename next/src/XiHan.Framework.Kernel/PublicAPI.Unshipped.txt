@@ -2,6 +2,9 @@
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.Equals(object obj) -> bool
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.ToString() -> string
 ~override XiHan.Framework.Kernel.Security.ResourceName.Equals(object obj) -> bool
+abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.DecodeRequest(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
+abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.EncodeResponse(object! response) -> System.ReadOnlyMemory<byte>
+abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext! context, object! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<object!>>
 const XiHan.Framework.Kernel.Capabilities.ManifestReader.FileName = "xihan.manifest.json" -> string!
 const XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.SourceName = "XiHan.Framework" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ConfigurationSection = "XiHan:Bindings" -> string!
@@ -20,34 +23,46 @@ const XiHan.Framework.Kernel.KernelErrors.CapabilityVersionConflict = "KERNEL_CA
 const XiHan.Framework.Kernel.KernelErrors.CircularCapability = "KERNEL_CAPABILITY_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DeadlineExceeded = "KERNEL_TIMEOUT_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DuplicateManifest = "KERNEL_CAPABILITY_005" -> string!
+const XiHan.Framework.Kernel.KernelErrors.DuplicateOperation = "KERNEL_OPERATION_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DuplicatePermission = "KERNEL_SECURITY_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.FeatureStartFailed = "KERNEL_HOSTING_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.FeatureStopTimeout = "KERNEL_HOSTING_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidAppState = "KERNEL_HOSTING_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidManifest = "KERNEL_CAPABILITY_006" -> string!
+const XiHan.Framework.Kernel.KernelErrors.InvalidOperationPayload = "KERNEL_VALIDATION_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.MissingBinding = "KERNEL_HOSTING_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.MissingCapability = "KERNEL_CAPABILITY_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.NotServing = "KERNEL_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Kernel.KernelErrors.OperationRegistryFull = "KERNEL_OPERATION_002" -> string!
+const XiHan.Framework.Kernel.KernelErrors.OperationTypeMismatch = "KERNEL_VALIDATION_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PermissionRegistryFull = "KERNEL_SECURITY_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineCycle = "KERNEL_PIPELINE_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineRegistration = "KERNEL_PIPELINE_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -> string!
+const XiHan.Framework.Kernel.KernelErrors.UnknownOperation = "KERNEL_NOTFOUND_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
 const XiHan.Framework.Kernel.KernelMessages.Cancelled = "kernel.invocation.cancelled" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeadlineBeforeStart = "kernel.invocation.deadline_before_start" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeadlineExceeded = "kernel.invocation.deadline_exceeded" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeniedByPolicy = "kernel.authorization.denied_by_policy" -> string!
+const XiHan.Framework.Kernel.KernelMessages.DuplicateOperation = "kernel.operation.duplicate" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DuplicatePermission = "kernel.permission.duplicate" -> string!
 const XiHan.Framework.Kernel.KernelMessages.FeatureStartFailed = "kernel.feature.start_failed" -> string!
 const XiHan.Framework.Kernel.KernelMessages.FeatureStopFailed = "kernel.feature.stop_failed" -> string!
 const XiHan.Framework.Kernel.KernelMessages.FeatureStopTimeout = "kernel.feature.stop_timeout" -> string!
+const XiHan.Framework.Kernel.KernelMessages.InvalidOperationPayload = "kernel.operation.invalid_payload" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestEmpty = "kernel.manifest.empty" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestFileMissing = "kernel.manifest.file_missing" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestInvalid = "kernel.manifest.invalid" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestInvalidJson = "kernel.manifest.invalid_json" -> string!
 const XiHan.Framework.Kernel.KernelMessages.NotServing = "kernel.hosting.not_serving" -> string!
+const XiHan.Framework.Kernel.KernelMessages.OperationNoResponse = "kernel.operation.no_response" -> string!
+const XiHan.Framework.Kernel.KernelMessages.OperationRegistryFull = "kernel.operation.registry_full" -> string!
+const XiHan.Framework.Kernel.KernelMessages.OperationTypeMismatch = "kernel.operation.type_mismatch" -> string!
 const XiHan.Framework.Kernel.KernelMessages.PermissionRegistryFull = "kernel.permission.registry_full" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnhandledException = "kernel.invocation.unhandled_exception" -> string!
+const XiHan.Framework.Kernel.KernelMessages.UnknownOperation = "kernel.operation.unknown" -> string!
+const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Security.PermissionRegistry.DefaultCapacity = 10000 -> int
 override XiHan.Framework.Kernel.Capabilities.ResolvedNode.ToString() -> string!
@@ -66,6 +81,19 @@ override XiHan.Framework.Kernel.Hosting.HealthSnapshot.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.KernelOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.KernelOptions.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.KernelOptions.ToString() -> string!
+override XiHan.Framework.Kernel.Operations.OperationContract.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Operations.OperationContract.GetHashCode() -> int
+override XiHan.Framework.Kernel.Operations.OperationContract.ToString() -> string!
+override XiHan.Framework.Kernel.Operations.OperationDescriptor.ToString() -> string!
+override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.DecodeRequest(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
+override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.EncodeResponse(object! response) -> System.ReadOnlyMemory<byte>
+override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext! context, object! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<object!>>
+override XiHan.Framework.Kernel.Operations.OperationRequest.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Operations.OperationRequest.GetHashCode() -> int
+override XiHan.Framework.Kernel.Operations.OperationRequest.ToString() -> string!
+override XiHan.Framework.Kernel.Operations.OperationResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Operations.OperationResponse.GetHashCode() -> int
+override XiHan.Framework.Kernel.Operations.OperationResponse.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.GetHashCode() -> int
@@ -118,6 +146,19 @@ static XiHan.Framework.Kernel.Hosting.KernelOptions.FromConfiguration(Microsoft.
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator !=(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator ==(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool
 static XiHan.Framework.Kernel.KernelCapabilities.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+static XiHan.Framework.Kernel.Operations.OperationContract.operator !=(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationContract.operator ==(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperation(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperation(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> void
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context, object! request) -> void
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context, object! response) -> void
+static XiHan.Framework.Kernel.Operations.OperationRequest.operator !=(XiHan.Framework.Kernel.Operations.OperationRequest? left, XiHan.Framework.Kernel.Operations.OperationRequest? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationRequest.operator ==(XiHan.Framework.Kernel.Operations.OperationRequest? left, XiHan.Framework.Kernel.Operations.OperationRequest? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationResponse.Failure(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Kernel.Operations.OperationResponse!
+static XiHan.Framework.Kernel.Operations.OperationResponse.operator !=(XiHan.Framework.Kernel.Operations.OperationResponse? left, XiHan.Framework.Kernel.Operations.OperationResponse? right) -> bool
+static XiHan.Framework.Kernel.Operations.OperationResponse.operator ==(XiHan.Framework.Kernel.Operations.OperationResponse? left, XiHan.Framework.Kernel.Operations.OperationResponse? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Get<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key) -> XiHan.Framework.Primitives.Maybe<T>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.GetOutcome(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Set<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key, T value) -> void
@@ -260,12 +301,14 @@ XiHan.Framework.Kernel.Hosting.FailurePolicy.IsolateFeature = 1 -> XiHan.Framewo
 XiHan.Framework.Kernel.Hosting.FailurePolicy.TerminateStartup = 0 -> XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FeatureContext
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddMiddleware<TMiddleware>(XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
+XiHan.Framework.Kernel.Hosting.FeatureContext.AddOperation<TOperation, TRequest, TResponse>(XiHan.Framework.Kernel.Operations.OperationContract! contract, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddPermission(XiHan.Framework.Kernel.Security.PermissionDefinition! permission) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Bindings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Kernel.Hosting.FeatureContext.GetBinding(string! name) -> XiHan.Framework.Kernel.Hosting.BindingValue!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Node.get -> XiHan.Framework.Kernel.Capabilities.ResolvedNode!
+XiHan.Framework.Kernel.Hosting.FeatureContext.Operations.get -> XiHan.Framework.Kernel.Operations.OperationRegistry!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Permissions.get -> XiHan.Framework.Kernel.Security.PermissionRegistry!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Pipeline.get -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
@@ -320,6 +363,78 @@ XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.init -> void
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
 XiHan.Framework.Kernel.KernelMessages
+XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.All = XiHan.Framework.Kernel.Operations.Expose.Http | XiHan.Framework.Kernel.Operations.Expose.Grpc | XiHan.Framework.Kernel.Operations.Expose.Mcp | XiHan.Framework.Kernel.Operations.Expose.CommandLine -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.CommandLine = 8 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.Grpc = 2 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.Http = 1 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.Mcp = 4 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.None = 0 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.IOperation<TRequest, TResponse>
+XiHan.Framework.Kernel.Operations.IOperation<TRequest, TResponse>.HandleAsync(TRequest request, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
+XiHan.Framework.Kernel.Operations.IOperationInvoker
+XiHan.Framework.Kernel.Operations.IOperationInvoker.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationRequest! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Operations.OperationResponse!>
+XiHan.Framework.Kernel.Operations.IOperationInvoker.ExecuteAsync<TRequest, TResponse>(XiHan.Framework.Primitives.InvocationContext! context, string! operationId, TRequest request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
+XiHan.Framework.Kernel.Operations.IOperationInvoker.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationRequest! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Operations.OperationResponse!>
+XiHan.Framework.Kernel.Operations.IOperationInvoker.InvokeAsync<TRequest, TResponse>(XiHan.Framework.Primitives.InvocationContext! context, string! operationId, TRequest request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
+XiHan.Framework.Kernel.Operations.OperationAttribute
+XiHan.Framework.Kernel.Operations.OperationAttribute.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.OperationAttribute.Expose.init -> void
+XiHan.Framework.Kernel.Operations.OperationAttribute.Id.get -> string!
+XiHan.Framework.Kernel.Operations.OperationAttribute.OperationAttribute(string! id) -> void
+XiHan.Framework.Kernel.Operations.OperationAttribute.Permission.get -> string?
+XiHan.Framework.Kernel.Operations.OperationAttribute.Permission.init -> void
+XiHan.Framework.Kernel.Operations.OperationAttribute.Policy.get -> string?
+XiHan.Framework.Kernel.Operations.OperationAttribute.Policy.init -> void
+XiHan.Framework.Kernel.Operations.OperationAttribute.Stability.get -> XiHan.Framework.Primitives.Stability
+XiHan.Framework.Kernel.Operations.OperationAttribute.Stability.init -> void
+XiHan.Framework.Kernel.Operations.OperationContract
+XiHan.Framework.Kernel.Operations.OperationContract.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationContract!
+XiHan.Framework.Kernel.Operations.OperationContract.Equals(XiHan.Framework.Kernel.Operations.OperationContract? other) -> bool
+XiHan.Framework.Kernel.Operations.OperationContract.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.OperationContract.Id.get -> string!
+XiHan.Framework.Kernel.Operations.OperationContract.IsExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> bool
+XiHan.Framework.Kernel.Operations.OperationContract.OperationContract(string! id, XiHan.Framework.Primitives.Stability stability = XiHan.Framework.Primitives.Stability.Stable, XiHan.Framework.Kernel.Operations.Expose expose = XiHan.Framework.Kernel.Operations.Expose.All, string? policy = null, string? permission = null) -> void
+XiHan.Framework.Kernel.Operations.OperationContract.Permission.get -> string?
+XiHan.Framework.Kernel.Operations.OperationContract.Policy.get -> string?
+XiHan.Framework.Kernel.Operations.OperationContract.Resource.get -> string!
+XiHan.Framework.Kernel.Operations.OperationContract.Stability.get -> XiHan.Framework.Primitives.Stability
+XiHan.Framework.Kernel.Operations.OperationContract.Verb.get -> string!
+XiHan.Framework.Kernel.Operations.OperationDescriptor
+XiHan.Framework.Kernel.Operations.OperationDescriptor.Contract.get -> XiHan.Framework.Kernel.Operations.OperationContract!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.Id.get -> string!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Type! operationType, System.Type! requestType, System.Type! responseType) -> void
+XiHan.Framework.Kernel.Operations.OperationDescriptor.OperationType.get -> System.Type!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.OwnerId.get -> string!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestType.get -> System.Type!
+XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseType.get -> System.Type!
+XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>
+XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo) -> void
+XiHan.Framework.Kernel.Operations.OperationInvocationExtensions
+XiHan.Framework.Kernel.Operations.OperationRegistry
+XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Kernel.Operations.OperationRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
+XiHan.Framework.Kernel.Operations.OperationRegistry.Count.get -> int
+XiHan.Framework.Kernel.Operations.OperationRegistry.ExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
+XiHan.Framework.Kernel.Operations.OperationRegistry.Find(string! id) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
+XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(int capacity = 10000) -> void
+XiHan.Framework.Kernel.Operations.OperationRequest
+XiHan.Framework.Kernel.Operations.OperationRequest.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationRequest!
+XiHan.Framework.Kernel.Operations.OperationRequest.Equals(XiHan.Framework.Kernel.Operations.OperationRequest? other) -> bool
+XiHan.Framework.Kernel.Operations.OperationRequest.Id.get -> string!
+XiHan.Framework.Kernel.Operations.OperationRequest.OperationRequest(string! id, System.ReadOnlyMemory<byte> payload = default(System.ReadOnlyMemory<byte>)) -> void
+XiHan.Framework.Kernel.Operations.OperationRequest.Payload.get -> System.ReadOnlyMemory<byte>
+XiHan.Framework.Kernel.Operations.OperationResponse
+XiHan.Framework.Kernel.Operations.OperationResponse.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationResponse!
+XiHan.Framework.Kernel.Operations.OperationResponse.Deconstruct(out XiHan.Framework.Primitives.Result Outcome, out System.ReadOnlyMemory<byte> Payload) -> void
+XiHan.Framework.Kernel.Operations.OperationResponse.Equals(XiHan.Framework.Kernel.Operations.OperationResponse? other) -> bool
+XiHan.Framework.Kernel.Operations.OperationResponse.Error.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Kernel.Operations.OperationResponse.IsSuccess.get -> bool
+XiHan.Framework.Kernel.Operations.OperationResponse.OperationResponse(XiHan.Framework.Primitives.Result Outcome, System.ReadOnlyMemory<byte> Payload) -> void
+XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.get -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.init -> void
+XiHan.Framework.Kernel.Operations.OperationResponse.Payload.get -> System.ReadOnlyMemory<byte>
+XiHan.Framework.Kernel.Operations.OperationResponse.Payload.init -> void
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ContextItemKey(string! name) -> void
 XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.Name.get -> string!

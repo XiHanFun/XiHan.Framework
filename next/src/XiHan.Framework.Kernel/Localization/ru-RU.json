@@ -12,6 +12,12 @@
   "kernel.manifest.file_missing": "Файл манифеста '{path}' не существует.",
   "kernel.manifest.invalid": "Манифест недопустим: {reason}",
   "kernel.manifest.invalid_json": "Манифест не является корректным JSON: {reason}",
+  "kernel.operation.duplicate": "Операция '{id}' уже зарегистрирована компонентом '{owner}'.",
+  "kernel.operation.invalid_payload": "Полезная нагрузка операции '{id}' недопустима: {reason}",
+  "kernel.operation.no_response": "Операция '{id}' завершилась, не создав ответа.",
+  "kernel.operation.registry_full": "Реестр операций достиг предела ёмкости {capacity}.",
+  "kernel.operation.type_mismatch": "Операция '{id}' обрабатывает '{expected}', но передано '{actual}'.",
+  "kernel.operation.unknown": "Операция '{id}' не зарегистрирована.",
   "kernel.permission.duplicate": "Код разрешения '{code}' уже зарегистрирован.",
   "kernel.permission.registry_full": "Реестр разрешений достиг предела ёмкости {capacity}."
 }

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Diagnostics;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -175,6 +176,7 @@ public sealed class AppBuilder
         var graph = CapabilityResolver.Resolve(manifests, selections);
         var bindings = BindingResolver.Resolve(Configuration, _serviceBindingRoot);
         var permissions = new PermissionRegistry();
+        var operations = new OperationRegistry();
 
         // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后。
         if (options.UseBuiltInMiddleware)
@@ -209,7 +211,7 @@ public sealed class AppBuilder
                 }
             }
 
-            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions));
+            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations));
             runtimes.Add(new FeatureRuntime(node, feature));
         }
 
@@ -218,6 +220,8 @@ public sealed class AppBuilder
         Services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         Services.TryAddSingleton<IAuditSink>(NullAuditSink.Instance);
         Services.AddSingleton(permissions);
+        Services.AddSingleton(operations);
+        Services.TryAddSingleton<IOperationInvoker, OperationInvoker>();
         Services.AddSingleton(options);
         Services.AddSingleton(graph);
         Services.AddSingleton(new AppModel(graph, runtimes, Pipeline, options, bindings));

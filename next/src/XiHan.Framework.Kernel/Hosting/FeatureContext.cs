@@ -2,10 +2,12 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel.Capabilities;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -28,13 +30,15 @@ public sealed class FeatureContext
     /// <param name="pipeline">应用的管道构建器。</param>
     /// <param name="bindings">宿主解析出的全部绑定。</param>
     /// <param name="permissions">权限注册表。</param>
+    /// <param name="operations">应用级操作登记表。</param>
     internal FeatureContext(
         ResolvedNode node,
         IServiceCollection services,
         IConfiguration configuration,
         PipelineBuilder pipeline,
         IReadOnlyDictionary<string, BindingValue> bindings,
-        PermissionRegistry permissions)
+        PermissionRegistry permissions,
+        OperationRegistry operations)
     {
         Node = node;
         Services = services;
@@ -42,6 +46,7 @@ public sealed class FeatureContext
         Pipeline = pipeline;
         Bindings = bindings;
         Permissions = permissions;
+        Operations = operations;
     }
 
     /// <summary>
@@ -80,6 +85,11 @@ public sealed class FeatureContext
     public PermissionRegistry Permissions { get; }
 
     /// <summary>
+    /// 应用级操作登记表。
+    /// </summary>
+    public OperationRegistry Operations { get; }
+
+    /// <summary>
     /// 把中间件注册为单例并加入管道指定阶段，归属为本特性的清单 ID。
     /// </summary>
     public FeatureContext AddMiddleware<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement = Placement.End)
@@ -87,6 +97,27 @@ public sealed class FeatureContext
     {
         Services.TryAddSingleton<TMiddleware>();
         Pipeline.UseAt<TMiddleware>(stage, placement, Manifest.Id);
+        return this;
+    }
+
+    /// <summary>
+    /// 登记一个操作：实现按作用域注册到容器，描述以本特性为归属进入登记表；重复 ID 或超限抛出对应错误。
+    /// </summary>
+    /// <typeparam name="TOperation">操作实现。</typeparam>
+    /// <typeparam name="TRequest">请求类型。</typeparam>
+    /// <typeparam name="TResponse">响应类型。</typeparam>
+    /// <param name="contract">契约。</param>
+    /// <param name="requestInfo">请求类型的序列化元数据（源生成）。</param>
+    /// <param name="responseInfo">响应类型的序列化元数据（源生成）。</param>
+    public FeatureContext AddOperation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TOperation, TRequest, TResponse>(
+        OperationContract contract,
+        JsonTypeInfo<TRequest> requestInfo,
+        JsonTypeInfo<TResponse> responseInfo)
+        where TOperation : class, IOperation<TRequest, TResponse>
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        Services.TryAddScoped<TOperation>();
+        Operations.Add(new OperationDescriptor<TOperation, TRequest, TResponse>(contract, Manifest.Id, requestInfo, responseInfo)).ThrowIfFailure();
         return this;
     }
 

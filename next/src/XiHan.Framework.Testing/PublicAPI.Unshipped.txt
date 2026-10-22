@@ -20,6 +20,8 @@ XiHan.Framework.Testing.TestHost.App.get -> XiHan.Framework.Kernel.Hosting.App!
 XiHan.Framework.Testing.TestHost.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Testing.TestHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.TestHost.InvokeAsync(XiHan.Framework.Kernel.Pipeline.PipelineStep! handler, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Testing.TestHost.InvokeOperationAsync<TRequest, TResponse>(string! operationId, TRequest request, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
+XiHan.Framework.Testing.TestHost.InvokeOperationRawAsync(XiHan.Framework.Kernel.Operations.OperationRequest! request, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Operations.OperationResponse!>
 XiHan.Framework.Testing.TestHost.Services.get -> System.IServiceProvider!
 XiHan.Framework.Testing.TestInvocationContext
 XiHan.Framework.Testing.TestManifests

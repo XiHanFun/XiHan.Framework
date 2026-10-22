@@ -12,6 +12,12 @@
   "kernel.manifest.file_missing": "Die Manifestdatei '{path}' existiert nicht.",
   "kernel.manifest.invalid": "Das Manifest ist ungültig: {reason}",
   "kernel.manifest.invalid_json": "Das Manifest ist kein gültiges JSON: {reason}",
+  "kernel.operation.duplicate": "Die Operation '{id}' ist bereits durch '{owner}' registriert.",
+  "kernel.operation.invalid_payload": "Die Nutzlast der Operation '{id}' ist ungültig: {reason}",
+  "kernel.operation.no_response": "Die Operation '{id}' wurde abgeschlossen, ohne eine Antwort zu erzeugen.",
+  "kernel.operation.registry_full": "Die Operationsregistrierung hat ihre Kapazität von {capacity} erreicht.",
+  "kernel.operation.type_mismatch": "Die Operation '{id}' verarbeitet '{expected}', übergeben wurde jedoch '{actual}'.",
+  "kernel.operation.unknown": "Die Operation '{id}' ist nicht registriert.",
   "kernel.permission.duplicate": "Der Berechtigungscode '{code}' ist bereits registriert.",
   "kernel.permission.registry_full": "Die Berechtigungsregistrierung hat ihre Kapazität von {capacity} erreicht."
 }

@@ -67,4 +67,19 @@ public static class KernelErrors
 
     /// <summary>权限注册表已满。</summary>
     public const string PermissionRegistryFull = "KERNEL_SECURITY_002";
+
+    /// <summary>操作未登记。</summary>
+    public const string UnknownOperation = "KERNEL_NOTFOUND_001";
+
+    /// <summary>操作载荷不合法。</summary>
+    public const string InvalidOperationPayload = "KERNEL_VALIDATION_001";
+
+    /// <summary>类型化调用的请求或响应类型与登记不符。</summary>
+    public const string OperationTypeMismatch = "KERNEL_VALIDATION_002";
+
+    /// <summary>操作 ID 重复登记。</summary>
+    public const string DuplicateOperation = "KERNEL_OPERATION_001";
+
+    /// <summary>操作登记表已满。</summary>
+    public const string OperationRegistryFull = "KERNEL_OPERATION_002";
 }
