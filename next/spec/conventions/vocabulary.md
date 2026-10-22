@@ -27,7 +27,7 @@
 | `Plugins` | `plugins` | `XiHan:Plugins` | `PLUGINS` | 插件隔离与宿主 |
 | `Profiles` | — | — | — | 元包 |
 | `Testing` | — | — | — | 测试基座 |
-| `Cli` | — | — | — | 命令行工具 |
+| `Cli` | `cli` | — | `CLI` | 命令行工具 `xihan`：打包、转发应用命令 |
 | `Compat` | — | — | `COMPAT` | 旧版本兼容桥，角色段为大版本号（`Compat.V4`） |
 
 `Hosting`、`Security`、`Plugins` 既是 `Kernel` 的子命名空间，也是独立包的领域词：同域同词，环层由 `Kernel.` 前缀区分。

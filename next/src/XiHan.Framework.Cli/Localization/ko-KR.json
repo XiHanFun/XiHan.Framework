@@ -1,0 +1,13 @@
+{
+  "cli.dotnet.unavailable": "dotnet CLI를 시작할 수 없습니다: {reason}",
+  "cli.graph.description": "애플리케이션의 기능 그래프를 출력합니다('dotnet run -- graph'로 전달).",
+  "cli.invoke.description": "애플리케이션의 작업을 호출합니다('dotnet run -- invoke'로 전달). '<resource> <verb>'는 약식입니다.",
+  "cli.manifest.invalid": "매니페스트 '{path}'이(가) 잘못되었습니다: {reason}",
+  "cli.manifest.not_found": "매니페스트 '{path}'이(가) 존재하지 않습니다.",
+  "cli.operations.description": "애플리케이션의 작업을 나열합니다('dotnet run -- operations'로 전달).",
+  "cli.pack.description": "xihan.app.json에서 배포 산출물을 생성합니다: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.kind_unknown": "알 수 없는 산출물 종류 '{kind}'입니다. dockerfile, kustomize, compose, aspire 중 하나여야 합니다.",
+  "cli.pack.written": "{count}개 파일을 '{output}'에 썼습니다.",
+  "cli.pipeline.description": "애플리케이션의 파이프라인을 출력합니다('dotnet run -- pipeline'으로 전달).",
+  "cli.version.description": "프레임워크 버전을 출력합니다."
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackageId>XiHan.Framework.Cli</PackageId>
+    <RootNamespace>XiHan.Framework.Cli</RootNamespace>
+    <Description>XiHan Framework 命令行工具 xihan：xihan pack 从 xihan.app.json 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物；graph / pipeline / operations / invoke 转发给应用的命令行宿主。</Description>
+    <PackageTags>xihan;framework;cli;tool;pack;docker;kubernetes;aspire</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>xihan</ToolCommandName>
+    <!-- 工具包没有库程序集，包验证不适用 -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XiHan.Framework.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010） -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

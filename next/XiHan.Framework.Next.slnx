@@ -68,6 +68,7 @@
     <Project Path="src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
+    <Project Path="src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
     <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/7.Tests/">
@@ -111,6 +112,7 @@
     <Project Path="test/XiHan.Framework.Profiles.Full.Tests/XiHan.Framework.Profiles.Full.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.Generators.Tests/XiHan.Framework.Persistence.Generators.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Cli.Tests/XiHan.Framework.Cli.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Cli.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
+  </ItemGroup>
+</Project>

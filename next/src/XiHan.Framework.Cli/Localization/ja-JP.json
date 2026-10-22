@@ -1,0 +1,13 @@
+{
+  "cli.dotnet.unavailable": "dotnet CLI を起動できませんでした: {reason}",
+  "cli.graph.description": "アプリケーションの機能グラフを出力します（'dotnet run -- graph' に転送）。",
+  "cli.invoke.description": "アプリケーションの操作を呼び出します（'dotnet run -- invoke' に転送）。'<resource> <verb>' は省略形です。",
+  "cli.manifest.invalid": "マニフェスト '{path}' は無効です: {reason}",
+  "cli.manifest.not_found": "マニフェスト '{path}' は存在しません。",
+  "cli.operations.description": "アプリケーションの操作を一覧します（'dotnet run -- operations' に転送）。",
+  "cli.pack.description": "xihan.app.json からデプロイ成果物を生成します: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire]。",
+  "cli.pack.kind_unknown": "不明な成果物の種類 '{kind}' です。dockerfile、kustomize、compose、aspire のいずれかを指定してください。",
+  "cli.pack.written": "{count} 個のファイルを '{output}' に書き出しました。",
+  "cli.pipeline.description": "アプリケーションのパイプラインを出力します（'dotnet run -- pipeline' に転送）。",
+  "cli.version.description": "フレームワークのバージョンを出力します。"
+}
