@@ -19,7 +19,12 @@ public class XiHanClientInfoOptions
     public bool EnableIpRegion { get; set; } = true;
 
     /// <summary>
-    /// IP2Region xdb 文件路径（支持相对路径）
+    /// IPv4 的 ip2region xdb 文件路径（支持相对路径，按内容根解析）
     /// </summary>
     public string? Ip2RegionDbPath { get; set; } = "IpDatabases/ip2region.xdb";
+
+    /// <summary>
+    /// IPv6 的 ip2region xdb 文件路径（支持相对路径，按内容根解析）；文件不存在时 IPv6 地址不解析归属地
+    /// </summary>
+    public string? Ip2RegionV6DbPath { get; set; } = "IpDatabases/ip2region_v6.xdb";
 }
