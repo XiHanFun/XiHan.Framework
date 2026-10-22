@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.Conformance</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.Conformance</RootNamespace>
+    <Description>XiHan Framework 插件协议一致性套件：任何语言实现的 xihan.plugin.v1 进程外插件都必须通过的 xUnit 抽象测试类（黑盒：启动进程、握手、生命周期、调用、事件、退出）。</Description>
+    <PackageTags>xihan;framework;plugins;conformance;xunit;grpc</PackageTags>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+</Project>

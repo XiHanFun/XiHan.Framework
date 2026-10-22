@@ -61,4 +61,4 @@
 
 ## 7. 一致性
 
-P4-04 的 gRPC 一致性运行器以本文件与 `lifecycle.md` 为用例来源：握手协商、清单一致性、`Invoke` 的上下文与错误映射、流式帧序、事件投递的幂等与失败、回调的令牌与权限。数据向量见 `conformance/vectors/plugin/`。
+gRPC 黑盒套件 `XiHan.Framework.Plugins.Conformance`（`PluginProtocolConformance`，任何语言的插件以其构建产物目录继承运行）以本文件、`handshake.md` 与 `lifecycle.md` 为用例来源：握手行与版本协商、无共同版本时拒绝、清单一致性、Configure / Start / Health / WatchHealth / Stop 与宽限内退出、未知操作 `Unimplemented`、声明的操作都返回 `status`、订阅投递确认、stdin 关闭即退出。回调的令牌与权限、崩溃重启由宿主实现的测试覆盖；流式帧序随流式操作契约补充。数据向量见 `conformance/vectors/plugin/`。

@@ -53,4 +53,4 @@ spec/
 | [0014](rfcs/0014-configuration.md) | 远程配置与密钥 | 已采纳（参考实现 `Configuration.Abstractions`，套件 `Configuration.Conformance`；默认实现是 .NET 原生文件与环境变量，无包） |
 | [0015](rfcs/0015-auditing.md) | 审计 | 已采纳（参考实现 `Auditing.Abstractions`、`Auditing.InMemory`，套件 `Auditing.Conformance`） |
 | [0016](rfcs/0016-packaging.md) | 应用清单与打包 | 已采纳（参考实现 `Cli` 的 `xihan pack`；规范 `packaging/`） |
-| [0017](rfcs/0017-plugin-protocol.md) | 进程外插件协议 `xihan.plugin.v1` | 已采纳（规范 `plugin/`；参考实现 `Plugins.OutOfProcess` 随 P4-02） |
+| [0017](rfcs/0017-plugin-protocol.md) | 进程外插件协议 `xihan.plugin.v1` | 已采纳（规范 `plugin/`；参考实现 `Plugins.OutOfProcess`，套件 `Plugins.Conformance`） |

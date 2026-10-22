@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Plugins.Conformance/XiHan.Framework.Plugins.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />

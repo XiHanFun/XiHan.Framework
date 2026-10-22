@@ -63,7 +63,8 @@ internal sealed class HostClient : IDisposable
     {
         var text = Environment.GetEnvironmentVariable("XIHAN_PLUGIN_HOST_ADDRESS") ?? throw new InvalidOperationException("XIHAN_PLUGIN_HOST_ADDRESS is not set.");
         var parts = text.Split(' ', 2);
-        var handler = new SocketsHttpHandler();
+        // 命名管道在没有服务端时会一直等：连接也要有超时
+        var handler = new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(5) };
         switch (parts[0])
         {
             case "unix":

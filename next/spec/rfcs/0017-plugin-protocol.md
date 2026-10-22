@@ -1,6 +1,6 @@
 # RFC-0017 进程外插件协议
 
-> 状态：已采纳 | 日期：2026-10-23 | 对应 ADR：0006 | 参考实现：`XiHan.Framework.Plugins.OutOfProcess`（P4-02，待实现） | 规范性文本：`spec/plugin/plugin.proto`、`spec/plugin/handshake.md`、`spec/plugin/lifecycle.md`、`spec/plugin/invocation.md`
+> 状态：已采纳 | 日期：2026-10-23 | 对应 ADR：0006 | 参考实现：`XiHan.Framework.Plugins.OutOfProcess`（P4-02）；一致性：`XiHan.Framework.Plugins.Conformance`（P4-04） | 规范性文本：`spec/plugin/plugin.proto`、`spec/plugin/handshake.md`、`spec/plugin/lifecycle.md`、`spec/plugin/invocation.md`
 
 ## 摘要
 
@@ -48,7 +48,7 @@
 ## 一致性
 
 - 数据向量：`conformance/vectors/plugin/handshake-lines.json`（握手行文法）、`protocol-versions.json`（版本协商）。
-- gRPC 黑盒运行器（P4-04）：以本 RFC 的三份规范性文本为用例来源，对插件实现与远程 Provider 做一致性测试。
+- gRPC 黑盒套件（P4-04）：`XiHan.Framework.Plugins.Conformance` 的 `PluginProtocolConformance`，以本 RFC 的三份规范性文本为用例来源，对任何语言的插件实现做一致性测试；远程 Provider 的套件随各子系统的 Conformance 包。
 
 ## 与 .NET 的映射（P4-02）
 
