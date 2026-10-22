@@ -1,0 +1,20 @@
+[package]
+name = "echo_wasm_plugin"
+version = "5.0.0-preview.1"
+edition = "2021"
+publish = false
+description = "XiHan Framework Wasm 插件示例：xihan.plugin.v1 的 Wasm 载体（RFC-0018）"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde_json = "1"
+base64 = "0.22"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

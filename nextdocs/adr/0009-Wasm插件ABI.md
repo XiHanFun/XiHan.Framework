@@ -33,3 +33,4 @@ ADR-0006 把 `Plugins.Wasm` 定为 5.0 的 Experimental 隔离级别。Wasm 插�
 - 新增规范性文本 `spec/plugin/wasm.md`、`plugin.proto` 的中间件消息、向量 `wasm-exports.json`。
 - `Plugins.OutOfProcess` 中与载体无关的部分抽成 `Plugins.Protocol`（Ring 3），包 ID 文法加 `Plugins.Protocol`。
 - ABI v1 只增不改；升到 v2 时 `xihan_abi_version` 返回 2，v1 模块继续可加载。
+- Windows 宿主的可执行项目必须设置 `<CETCompat>false</CETCompat>`：wasmtime 的陷阱处理与 .NET 9 起默认开启的 CET 影子栈冲突，否则陷阱让进程 fail-fast；宿主创建时检测并以 `PLUGINS_UNAVAILABLE_003` 拒绝。

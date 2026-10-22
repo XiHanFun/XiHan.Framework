@@ -12,6 +12,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />

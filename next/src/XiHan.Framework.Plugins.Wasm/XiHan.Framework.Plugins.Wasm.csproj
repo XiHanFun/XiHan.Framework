@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.Wasm</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.Wasm</RootNamespace>
+    <Description>XiHan Framework Wasm 插件宿主（Ring 5，Experimental）：用 wasmtime 在进程内沙箱里加载 WASI preview 1 核心模块，按 xihan.plugin.v1 的 Wasm 载体（导出函数 + 线性内存，JSON 编码）握手、配置、调用、投递事件、贡献中间件，带内存 / CPU 上限、崩溃重建与健康上报。</Description>
+    <PackageTags>xihan;framework;plugins;wasm;wasmtime;wasi</PackageTags>
+    <!-- wasmtime 原生绑定与 Google.Protobuf 都未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- ShadowStackGuard 的 LibraryImport 生成代码需要 unsafe；源码本身不写 unsafe -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 一致性套件与测试复用模块校验与实例 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Wasm.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Wasmtime" />
+  </ItemGroup>
+</Project>

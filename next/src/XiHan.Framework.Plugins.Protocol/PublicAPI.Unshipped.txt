@@ -7,6 +7,7 @@ const XiHan.Framework.Plugins.Protocol.PluginErrors.AlreadyLoaded = "PLUGINS_CON
 const XiHan.Framework.Plugins.Protocol.PluginErrors.CallbackDenied = "PLUGINS_DENIED_002" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginErrors.Crashed = "PLUGINS_UNEXPECTED_002" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginErrors.HandshakeMismatch = "PLUGINS_VALIDATION_004" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.HostUnsupported = "PLUGINS_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidHandshake = "PLUGINS_VALIDATION_003" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidModule = "PLUGINS_VALIDATION_005" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidSource = "PLUGINS_VALIDATION_001" -> string!

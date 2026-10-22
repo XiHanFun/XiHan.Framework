@@ -98,6 +98,13 @@ public sealed class OutOfProcessPluginsFeature : IHostedFeature
         => (_host ?? throw new InvalidOperationException("The feature has not been configured.")).AttachAsync(services, cancellationToken);
 
     /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken)
-        => _host?.StopAllAsync(cancellationToken) ?? Task.CompletedTask;
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_host is { } host)
+        {
+            // 停止全部插件后整体释放：进程、回调服务器与同步原语都不再存活
+            await host.StopAllAsync(cancellationToken).ConfigureAwait(false);
+            await host.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 }
