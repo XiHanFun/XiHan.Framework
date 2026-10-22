@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Auditing.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Auditing.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存审计（默认实现）：有界环形缓冲的接收器与查询，每条事件同时写日志。</Description>
+    <PackageTags>xihan;framework;auditing;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

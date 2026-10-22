@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "감사 쿼리가 잘못되었습니다: {reason}",
+  "auditing.trail.unavailable": "감사 추적을 사용할 수 없습니다: {reason}"
+}

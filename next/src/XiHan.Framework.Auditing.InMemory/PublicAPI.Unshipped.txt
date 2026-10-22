@@ -1,0 +1,26 @@
+#nullable enable
+const XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.ConfigurationSection = "XiHan:Auditing:InMemory" -> string!
+override XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.GetHashCode() -> int
+override XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.ToString() -> string!
+static XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions!
+static XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.operator !=(XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions? left, XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions? right) -> bool
+static XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.operator ==(XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions? left, XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions? right) -> bool
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingFeature
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingFeature.InMemoryAuditingFeature() -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.<Clone>$() -> XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions!
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.Capacity.get -> int
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.Capacity.init -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.Equals(XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions? other) -> bool
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.InMemoryAuditingOptions() -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.LogEvents.get -> bool
+XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions.LogEvents.init -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail.Capacity.get -> int
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail.Count.get -> int
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail.InMemoryAuditTrail(XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail.QueryAsync(XiHan.Framework.Auditing.Abstractions.AuditQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Auditing.Abstractions.AuditPage!>>
+XiHan.Framework.Auditing.InMemory.InMemoryAuditTrail.WriteAsync(XiHan.Framework.Kernel.Diagnostics.AuditEvent! auditEvent, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
