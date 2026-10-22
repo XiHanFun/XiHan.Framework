@@ -38,6 +38,7 @@ public class MyModule : XiHanModule { }
 - 存储：`IRoleStore` → `DefaultRoleStore`、`IPermissionStore` → `DefaultPermissionStore`、`IPolicyStore` → `DefaultPolicyStore`（均 Scoped）
 - 评估：`IPermissionChecker` → `DefaultPermissionChecker`、`IPolicyEvaluator` → `DefaultPolicyEvaluator`、`IAbacAttributeCollector` → `DefaultAbacAttributeCollector`、`IAbacEvaluator` → `DefaultAbacEvaluator`（均 Scoped）
 - 门面：`IAuthorizationService` → `DefaultAuthorizationService`（Scoped）
+- 条件求值：`IConditionAttributeRegistry` → `DefaultConditionAttributeRegistry`、`IConditionCompiler` → `DefaultConditionCompiler`、`IConditionEvaluator` → `DefaultConditionEvaluator`（均 Singleton；属性登记项经 `AddXiHanConditionAttributes(...)` 追加）
 - ASP.NET Core：`IAuthorizationPolicyProvider` → `HybridPermissionPolicyProvider`（Singleton）、`IAuthorizationHandler` += `HybridPermissionAuthorizationHandler`（Scoped，`TryAddEnumerable`）
 
 ## 工作原理
@@ -132,6 +133,74 @@ xihan.hybrid:p={URL编码的权限码};a={URL编码的ABAC策略码}
 | 其它 | 拒绝（不支持的策略） |
 
 `DefaultAbacAttributeCollector` 收集的属性包括：主体 `user_id`/`tenant_id`/`roles`/`is_authenticated` 及所有 `claim.*`；资源 `resource_type` 与反射得到的公共属性，若资源能解析出 `HttpContext` 还含 `route.*`/`query.*`/`http.method`/`http.path`/`http.client_ip`；环境 `permission_code`/`policy_code`/`utc_now`/`utc_hour`/`day_of_week`（有 `HttpContext` 时另含 `client_ip`/`request_path`/`request_method`/`user_agent`）。
+
+## 条件求值（可配置条件）
+
+`XiHan.Framework.Authorization.Conditions` 是一套与存储无关的条件求值器，给「运营在后台配置的条件」用，比如给某条授权加「仅办公网」「仅工作时间」，或者按 IP、地区、客户端拦截请求。它与上面的 ABAC 策略码是两回事：策略码写死在代码里，条件存在应用的库里、随时可改。框架只负责模型、解析、比较与求值；属性从哪里取值、条件存在哪张表，由应用决定。
+
+**模型**：
+
+- `ConditionClause`：属性名 + 运算符 + 条件值原文，可整体取反；
+- `ConditionGroup`：组内且；
+- `ConditionSet`：组间或。没有任何非空组的条件集是「无条件」，求值恒为命中。
+
+**属性登记**：属性要先登记才能用，登记项 `ConditionAttributeDescriptor` 写明值种类（字符串、数字、布尔、日期时间、日期、时刻、IP）、是否多值、旧名别名。名称以 `.*` 结尾的是一族属性，如 `resource.query.*`。
+
+```csharp
+services.AddXiHanConditionAttributes(
+    new ConditionAttributeDescriptor("subject.roleCodes", ConditionValueKind.String, IsMultiValued: true, Aliases: ["subject.role"]),
+    new ConditionAttributeDescriptor("environment.ip", ConditionValueKind.IpAddress),
+    new ConditionAttributeDescriptor("environment.time", ConditionValueKind.TimeOfDay),
+    new ConditionAttributeDescriptor("resource.query.*", ConditionValueKind.String));
+```
+
+**编译与求值**：
+
+- `IConditionCompiler.Compile` 按登记解析条件值，检查运算符配不配得上值种类。出错的子句记进 `Errors`（保存前据此拒绝），但仍保留在结果里，求值时为「无法判定」，这样存量脏数据不会让整个条件集失效。
+- 编译结果不可变，可以缓存、跨请求共用。`ReferencedAttributes` 列出被引用的属性，可据此预取。
+- `IConditionEvaluator.EvaluateAsync` 只向 `IConditionAttributeSource` 取被引用到的属性。`MemoizingConditionAttributeSource` 让同一请求里同一属性只取一次；`DictionaryConditionAttributeSource` 用于试运行和模拟上下文。
+
+```csharp
+var compiled = compiler.Compile(new ConditionSet([
+    new ConditionGroup([
+        new ConditionClause("subject.roleCodes", ConditionOperator.Contains, "admin"),
+        new ConditionClause("environment.ip", ConditionOperator.In, "10.0.0.0/8, 2001:db8::/32", IsNegated: true)
+    ])
+]), new ConditionCompileOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai") });
+
+var result = await evaluator.EvaluateAsync(compiled, new MemoizingConditionAttributeSource(mySource), explain: true);
+```
+
+**运算符**（整数值是持久化契约，不会调整）：
+
+| 运算符 | 语义 |
+| --- | --- |
+| `Equals` / `NotEquals` | 相等；字符串不区分大小写，数字按十进制，IP 按地址（IPv4 映射地址先还原）；多值属性为任一元素相等 |
+| `GreaterThan` / `GreaterThanOrEquals` / `LessThan` / `LessThanOrEquals` | 只用于数字、日期时间、日期、时刻 |
+| `Contains` / `NotContains` | 单值字符串是子串；多值属性是列表含该值 |
+| `In` / `NotIn` | 条件值是集合（JSON 数组、逗号或换行分隔）；IP 集合可以写 CIDR 网段 |
+| `Between` | 闭区间，写作 `9,18`、`[9,18]` 或 `{"min":9,"max":18}`；时刻允许跨零点，如 `22:00,06:00` |
+| `StartsWith` / `EndsWith` | 只用于字符串，不区分大小写 |
+| `IsNull` / `IsNotNull` | 取不到、空串、空列表都算空 |
+
+带 Not 的运算符是对应运算符的否定；子句上的取反再作用于结果，两者叠加时按字面计算。
+
+**结果**：
+
+- 子句结果有四种：
+  - 命中、不命中；
+  - **无法判定**：属性取不到、值转换失败或子句编译出错。按不命中计，**取反不会把它翻成命中**，这样「NOT(ip 在办公网)」在取不到 IP 时不会误判；
+  - **待定**：属性来源返回 `ConditionAttributeValue.Deferred`，表示稍后能补，如模型绑定之后才读得到的数据行属性。
+- 组：有不命中或无法判定就不命中；否则有待定就待定；否则命中。
+- 条件集：任一组命中即命中；否则有待定即待定；否则不命中。
+- 不要求说明（`explain: false`）时短路求值，不分配说明对象；要求说明时，返回每组每个子句的结果、取到的值和原因，供试运行页面展示。
+
+**IP 与时间的解析规则**：
+
+- IPv4 只收四段点分写法，不认 `10.1` 这类简写；IPv6 不收区域标识。
+- 网段的主机位必须为零：`203.0.113.5/24` 视为笔误，直接报错，不替使用者猜。
+- 不带偏移的日期时间条件值，按 `ConditionCompileOptions.TimeZone` 的墙钟解释。
+- 日期时间类属性折算成日期、时刻时，也按这个时区算。
 
 ## 使用示例
 
