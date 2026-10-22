@@ -35,6 +35,19 @@ public static partial class HttpInvocation
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
+        var context = CreateContext(httpContext, httpContext.RequestServices);
+        httpContext.Items[ContextItemKey] = context;
+        return context;
+    }
+
+    /// <summary>
+    /// 以同一请求的头部构造另一个调用上下文：服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。
+    /// 供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道。
+    /// </summary>
+    public static InvocationContext CreateContext(HttpContext httpContext, IServiceProvider services)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(services);
         var headers = httpContext.Request.Headers;
 
         // traceparent 不合法时视为缺失，由内核生成新的 trace-id，不把坏值带进链路
@@ -63,12 +76,12 @@ public static partial class HttpInvocation
             var accepted = AcceptedLocales(httpContext);
             if (accepted.Count > 0)
             {
-                var options = httpContext.RequestServices.GetService<LocalizationOptions>();
+                var options = services.GetService<LocalizationOptions>();
                 baggage[BaggageKeys.Locale] = options is not null ? options.Negotiate(accepted) : LocaleName.Normalize(accepted[0]);
             }
         }
 
-        var context = App.CreateContext(httpContext.RequestServices, httpContext.RequestAborted, traceId, spanId, deadline, baggage);
+        var context = App.CreateContext(services, httpContext.RequestAborted, traceId, spanId, deadline, baggage);
 
         // 凭据只做格式拆分（scheme 与值），不在这里验证；解释交给安全子系统的 Authenticate 阶段
         if (AuthenticationCredential.TryParse(headers.Authorization.ToString(), out var credential))
@@ -76,7 +89,6 @@ public static partial class HttpInvocation
             context.SetCredential(credential);
         }
 
-        httpContext.Items[ContextItemKey] = context;
         return context;
     }
 
@@ -116,7 +128,7 @@ public static partial class HttpInvocation
     public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
 
     /// <summary>
-    /// <see cref="ParseBaggage"/> 的可变字典版本，供 <see cref="CreateContext"/> 在构造上下文前补入协商出的区域。
+    /// <see cref="ParseBaggage"/> 的可变字典版本，供 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 在构造上下文前补入协商出的区域。
     /// </summary>
     private static Dictionary<string, string> ParseBaggageCore(string? header)
     {

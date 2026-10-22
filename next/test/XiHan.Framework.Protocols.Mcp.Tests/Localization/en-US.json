@@ -1,0 +1,5 @@
+{
+  "orders.create.description": "Place an order by name.",
+  "orders.get.description": "Read one order by its id.",
+  "orders.get.title": "Get order"
+}

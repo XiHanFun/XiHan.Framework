@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "Faz um pedido com nome e valor; requer a permissão orders.write.",
+  "orders.list.description": "Lista os pedidos do locatário atual em ordem de criação; requer a permissão orders.read.",
   "samples.resource.missing": "O recurso de exemplo não existe."
 }

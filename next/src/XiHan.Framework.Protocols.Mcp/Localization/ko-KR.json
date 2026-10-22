@@ -1,0 +1,8 @@
+{
+  "protocols.mcp.arguments_invalid": "도구 '{tool}'의 인수는 JSON 객체여야 합니다.",
+  "protocols.mcp.message_invalid": "메시지가 유효한 JSON-RPC 2.0 요청이 아닙니다.",
+  "protocols.mcp.message_not_json": "요청 본문이 유효한 JSON이 아닙니다.",
+  "protocols.mcp.method_unknown": "메서드 '{method}'은(는) 지원되지 않습니다.",
+  "protocols.mcp.tool_unknown": "도구 '{tool}'이(가) 등록되지 않았습니다.",
+  "protocols.mcp.version_unsupported": "MCP 프로토콜 버전 '{version}'은(는) 지원되지 않습니다. 이 서버는 {supported}을(를) 지원합니다."
+}

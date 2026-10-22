@@ -1,0 +1,8 @@
+{
+  "protocols.mcp.arguments_invalid": "工具 '{tool}' 的參數必須是 JSON 物件。",
+  "protocols.mcp.message_invalid": "訊息不是合法的 JSON-RPC 2.0 請求。",
+  "protocols.mcp.message_not_json": "請求主體不是合法的 JSON。",
+  "protocols.mcp.method_unknown": "不支援方法 '{method}'。",
+  "protocols.mcp.tool_unknown": "工具 '{tool}' 未登記。",
+  "protocols.mcp.version_unsupported": "不支援 MCP 協定版本 '{version}'；本伺服端支援 {supported}。"
+}

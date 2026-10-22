@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "Realiza un pedido con un nombre y un importe; requiere el permiso orders.write.",
+  "orders.list.description": "Enumera los pedidos del inquilino actual en orden de creación; requiere el permiso orders.read.",
   "samples.resource.missing": "El recurso de ejemplo no existe."
 }

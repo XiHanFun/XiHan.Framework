@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "依名稱與金額下單；需要 orders.write 權限。",
+  "orders.list.description": "依建立順序列出目前租戶的訂單；需要 orders.read 權限。",
   "samples.resource.missing": "範例資源不存在。"
 }

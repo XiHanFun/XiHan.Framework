@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "Оформляет заказ с названием и суммой; требуется разрешение orders.write.",
+  "orders.list.description": "Перечисляет заказы текущего арендатора в порядке создания; требуется разрешение orders.read.",
   "samples.resource.missing": "Ресурс примера не существует."
 }

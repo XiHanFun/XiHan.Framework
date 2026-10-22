@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Protocols.Mcp</PackageId>
+    <RootNamespace>XiHan.Framework.Protocols.Mcp</RootNamespace>
+    <Description>XiHan Framework MCP 协议适配器（Ring 5）：把标记为 Expose.Mcp 的操作契约发布为 Model Context Protocol 的 tool（JSON-RPC 2.0，Streamable HTTP 传输）；tools/list 复用操作的 JSON Schema 与消息目录里的描述，tools/call 以独立调用经内核管道执行操作，失败按 isError 返回。</Description>
+    <PackageTags>xihan;framework;protocols;mcp;model-context-protocol;json-rpc</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

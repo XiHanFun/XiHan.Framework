@@ -1,0 +1,8 @@
+{
+  "protocols.mcp.arguments_invalid": "The arguments of tool '{tool}' must be a JSON object.",
+  "protocols.mcp.message_invalid": "The message is not a valid JSON-RPC 2.0 request.",
+  "protocols.mcp.message_not_json": "The request body is not valid JSON.",
+  "protocols.mcp.method_unknown": "Method '{method}' is not supported.",
+  "protocols.mcp.tool_unknown": "Tool '{tool}' is not registered.",
+  "protocols.mcp.version_unsupported": "MCP protocol version '{version}' is not supported; this server supports {supported}."
+}

@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "이름과 금액으로 주문합니다. orders.write 권한이 필요합니다.",
+  "orders.list.description": "현재 테넌트의 주문을 생성 순서로 나열합니다. orders.read 권한이 필요합니다.",
   "samples.resource.missing": "샘플 리소스가 없습니다."
 }

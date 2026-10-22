@@ -55,7 +55,9 @@ JSON 是 XGI 的规范编码；gRPC 等二进制协议在适配器里转换，�
 
 ## 协议映射
 
-见 `conventions/operation-ids.md` 的默认推导与显式覆盖；`Expose` 决定适配器是否发布该操作；`Stability.Internal` 的操作不对外发布。适配器发布描述文档时（如 `Protocols.Http` 的 `MapXiHanOpenApi()`）只读登记表与 `OperationSchema`，不读源码、不反射类型。
+见 `conventions/operation-ids.md` 的默认推导与显式覆盖；`Expose` 决定适配器是否发布该操作；`Stability.Internal` 的操作不对外发布。适配器发布描述文档时（如 `Protocols.Http` 的 `MapXiHanOpenApi()`、`Protocols.Mcp` 的 `tools/list`）只读登记表与 `OperationSchema`，不读源码、不反射类型。
+
+面向人的操作标题与描述不写在契约里：放在消息目录，键为 `<操作 ID>.title` 与 `<操作 ID>.description`（ID 里的 `-` 换成 `_`，如 `order_lines.list.description`），由适配器按调用方区域取出（MCP tool 的 `title` / `description`）；没有就不给。
 
 ## 源生成器
 

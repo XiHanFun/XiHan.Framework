@@ -10,4 +10,10 @@ public static class SampleMessages
 {
     /// <summary>示例资源不存在。</summary>
     public const string ResourceMissing = "samples.resource.missing";
+
+    /// <summary>MCP tool <c>orders_create</c> 的描述（约定键 <c>&lt;操作 ID&gt;.description</c>）。</summary>
+    public const string CreateOrderDescription = "orders.create.description";
+
+    /// <summary>MCP tool <c>orders_list</c> 的描述。</summary>
+    public const string ListOrdersDescription = "orders.list.description";
 }
