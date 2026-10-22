@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Protocols.Grpc</PackageId>
+    <RootNamespace>XiHan.Framework.Protocols.Grpc</RootNamespace>
+    <Description>XiHan Framework gRPC 协议适配器（Ring 5）：把标记为 Expose.Grpc 的操作契约发布为 gRPC 一元方法（服务 {Resource}、方法 {Verb}），以操作的 JSON Schema 作为 protobuf 描述在 JSON 与 protobuf 线格式之间转换，生成并发布 .proto 文件；上下文走请求元数据，失败映射为 gRPC 状态与 xihan-error-code 尾部元数据。</Description>
+    <PackageTags>xihan;framework;protocols;grpc;protobuf</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- gRPC 服务端：方法由 IServiceMethodProvider 动态绑定，消息以字节数组传递，不依赖 Google.Protobuf -->
+    <PackageReference Include="Grpc.AspNetCore.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Protocols.Grpc.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+</Project>

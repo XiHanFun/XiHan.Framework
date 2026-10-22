@@ -32,6 +32,7 @@
   <Folder Name="/5.Protocols/">
     <Project Path="src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
     <Project Path="src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
+    <Project Path="src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -78,6 +79,7 @@
     <Project Path="test/XiHan.Framework.Localization.InMemory.Tests/XiHan.Framework.Localization.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.Http.Tests/XiHan.Framework.Protocols.Http.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.Mcp.Tests/XiHan.Framework.Protocols.Mcp.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Protocols.Grpc.Tests/XiHan.Framework.Protocols.Grpc.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">

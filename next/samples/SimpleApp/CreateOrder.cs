@@ -11,13 +11,13 @@ namespace SimpleApp;
 
 /// <summary>
 /// 下单操作：ApiKey 认证 → 主体声明解析租户 → 按契约判定 <c>orders.write</c> 权限 → 工作单元内写订单并经发件箱发消息。
-/// 一份契约多协议暴露：HTTP 上是 <c>POST /orders</c>，MCP 上是 <c>orders_create</c> tool。
+/// 一份契约多协议暴露：HTTP 上是 <c>POST /orders</c>，gRPC 上是 <c>Orders/Create</c>，MCP 上是 <c>orders_create</c> tool。
 /// </summary>
 /// <param name="orders">订单仓储。</param>
 /// <param name="ids">标识生成器。</param>
 /// <param name="publisher">消息发布者（发件箱）。</param>
 /// <param name="clock">时间源。</param>
-[Operation(Id, Stability = Stability.Experimental, Expose = Expose.Http | Expose.Mcp, Permission = "orders.write")]
+[Operation(Id, Stability = Stability.Experimental, Expose = Expose.Http | Expose.Grpc | Expose.Mcp, Permission = "orders.write")]
 public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Guid> ids, IMessagePublisher publisher, TimeProvider clock) : IOperation<PlaceOrderRequest, OrderResponse>
 {
     /// <summary>

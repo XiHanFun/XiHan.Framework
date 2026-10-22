@@ -182,6 +182,22 @@ public sealed class WebHostTests
     }
 
     [Fact]
+    public async Task ExpiredGrpcTimeoutHeader_ReturnsGatewayTimeout()
+    {
+        var (app, client, _) = await StartAsync();
+        await using var _ = app;
+
+        // 1 纳秒的相对超时在构造上下文时就已过期；xihan-deadline 缺失时才看 grpc-timeout
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.Add(HttpInvocation.GrpcTimeoutHeader, "1n");
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("KERNEL_TIMEOUT_001", problem.RootElement.GetProperty("code").GetString());
+    }
+
+    [Fact]
     public async Task HealthEndpoints_ReflectApplicationState()
     {
         var (app, client, _) = await StartAsync();

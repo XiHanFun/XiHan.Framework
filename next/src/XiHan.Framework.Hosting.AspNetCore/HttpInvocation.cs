@@ -24,12 +24,17 @@ public static partial class HttpInvocation
     public const string DeadlineHeader = "xihan-deadline";
 
     /// <summary>
+    /// gRPC 的相对超时头：<c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间。
+    /// </summary>
+    public const string GrpcTimeoutHeader = "grpc-timeout";
+
+    /// <summary>
     /// 调用上下文在 <see cref="HttpContext.Items"/> 里的键。
     /// </summary>
     private const string ContextItemKey = "xihan.invocation-context";
 
     /// <summary>
-    /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>、
+    /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、
     /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
@@ -65,6 +70,21 @@ public static partial class HttpInvocation
         if (DateTimeOffset.TryParse(headers[DeadlineHeader].ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
         {
             deadline = parsed;
+        }
+        else if (GrpcTimeout().Match(headers[GrpcTimeoutHeader].ToString()) is { Success: true } timeout)
+        {
+            // gRPC 只给相对超时：以宿主时钟换算成绝对截止时间，纳秒按 100 纳秒刻度截断
+            var amount = long.Parse(timeout.Groups["value"].Value, CultureInfo.InvariantCulture);
+            var duration = timeout.Groups["unit"].Value switch
+            {
+                "H" => TimeSpan.FromHours(amount),
+                "M" => TimeSpan.FromMinutes(amount),
+                "S" => TimeSpan.FromSeconds(amount),
+                "m" => TimeSpan.FromMilliseconds(amount),
+                "u" => TimeSpan.FromMicroseconds(amount),
+                _ => TimeSpan.FromTicks(amount / 100),
+            };
+            deadline = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow() + duration;
         }
 
         var baggage = ParseBaggageCore(headers["baggage"].ToString());
@@ -175,4 +195,10 @@ public static partial class HttpInvocation
     /// </summary>
     [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
     private static partial Regex TraceParent();
+
+    /// <summary>
+    /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位。
+    /// </summary>
+    [GeneratedRegex("^(?<value>[0-9]{1,8})(?<unit>[HMSmun])$")]
+    private static partial Regex GrpcTimeout();
 }

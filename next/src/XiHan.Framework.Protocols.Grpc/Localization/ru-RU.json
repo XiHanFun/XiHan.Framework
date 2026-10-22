@@ -1,0 +1,4 @@
+{
+  "protocols.grpc.request_malformed": "Запрос операции '{operation}' не является корректным сообщением protobuf: {reason}",
+  "protocols.grpc.response_unencodable": "Ответ операции '{operation}' не удалось закодировать в protobuf."
+}

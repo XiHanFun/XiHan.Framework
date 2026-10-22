@@ -118,7 +118,7 @@ public sealed class OperationGeneratorTests
         // 响应 Schema：uuid、date-time、枚举按整数、可空引用的 anyOf、字节数组 base64
         Assert.Contains("\"id\":{\"type\":\"string\",\"format\":\"uuid\"}", text, StringComparison.Ordinal);
         Assert.Contains("\"createdAt\":{\"type\":\"string\",\"format\":\"date-time\"}", text, StringComparison.Ordinal);
-        Assert.Contains("\"status\":{\"type\":\"integer\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"status\":{\"type\":\"integer\",\"format\":\"int32\"}", text, StringComparison.Ordinal);
         Assert.Contains("\"first\":{\"anyOf\":[{\"$ref\":\"#/$defs/OrderLine\"},{\"type\":\"null\"}]}", text, StringComparison.Ordinal);
         Assert.Contains("\"receipt\":{\"type\":\"string\",\"contentEncoding\":\"base64\"}", text, StringComparison.Ordinal);
 

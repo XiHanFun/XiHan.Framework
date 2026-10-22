@@ -1,0 +1,4 @@
+{
+  "protocols.grpc.request_malformed": "작업 '{operation}'의 요청이 유효한 protobuf 메시지가 아닙니다: {reason}",
+  "protocols.grpc.response_unencodable": "작업 '{operation}'의 응답을 protobuf로 인코딩할 수 없습니다."
+}
