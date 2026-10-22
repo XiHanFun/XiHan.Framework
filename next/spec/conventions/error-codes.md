@@ -104,6 +104,11 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败 |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
+| `SCHEDULING_NOTFOUND_001` | 作业未登记 |
+| `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
+| `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
+| `SCHEDULING_UNAVAILABLE_001` | 调度器未运行 |
+| `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

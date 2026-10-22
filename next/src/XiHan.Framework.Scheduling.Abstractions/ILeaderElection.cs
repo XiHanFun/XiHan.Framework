@@ -1,0 +1,18 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Scheduling.Abstractions;
+
+/// <summary>
+/// 租约式领导选举（RFC-0013）：空闲（或过期）的资源授予租约，被持有时返回 <see cref="SchedulingErrors.LeaseHeld"/>。不可重入。
+/// </summary>
+[ApiLevel(Stability.Preview, "5.0")]
+public interface ILeaderElection
+{
+    /// <summary>
+    /// 尝试获取资源的领导租约，存活 <paramref name="timeToLive"/>。
+    /// </summary>
+    ValueTask<Result<LeaderLease>> TryAcquireAsync(JobName resource, TimeSpan timeToLive, CancellationToken cancellationToken);
+}

@@ -1,0 +1,7 @@
+{
+  "scheduling.job.failed": "O trabalho '{name}' lançou uma exceção não tratada: {reason}",
+  "scheduling.job.not_found": "O trabalho '{name}' não está registrado.",
+  "scheduling.job.running": "O trabalho '{name}' já está em execução e não permite execuções concorrentes.",
+  "scheduling.lease.held": "A concessão de líder para '{resource}' está com outro detentor.",
+  "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução."
+}

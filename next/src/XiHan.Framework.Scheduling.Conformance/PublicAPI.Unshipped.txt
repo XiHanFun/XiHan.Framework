@@ -1,0 +1,37 @@
+#nullable enable
+abstract XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! configure) -> System.Threading.Tasks.Task<XiHan.Framework.Scheduling.Conformance.JobSchedulerHost!>!
+abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.CreateElection() -> XiHan.Framework.Scheduling.Abstractions.ILeaderElection!
+static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentJob.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalJob.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ManualJob.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+virtual XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.WaitTimeout.get -> System.TimeSpan
+virtual XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.ExpirationGrace.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentTrigger_ConflictsUnlessAllowed() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalSchedule_RunsRepeatedly() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.JobSchedulerConformance() -> void
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ThrowingJob_IsAFailureResult() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Trigger_RunsTheJob_AndReportsOutcomeAndStatus() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Trigger_UnknownJob_IsNotFound_AndBatchReturnsPerItem() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerHost
+XiHan.Framework.Scheduling.Conformance.JobSchedulerHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Scheduling.Conformance.JobSchedulerHost.JobSchedulerHost(XiHan.Framework.Scheduling.Abstractions.IJobScheduler! scheduler, System.IAsyncDisposable! host) -> void
+XiHan.Framework.Scheduling.Conformance.JobSchedulerHost.Scheduler.get -> XiHan.Framework.Scheduling.Abstractions.IJobScheduler!
+XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance
+XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Acquire_RefusesWhileHeld_AndSucceedsAfterRelease() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.LeaderElectionConformance() -> void
+XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Lease_ExpiresUnlessRenewed() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.RecordingJob
+XiHan.Framework.Scheduling.Conformance.RecordingJob.RecordingJob(XiHan.Framework.Scheduling.Conformance.RecordingJobLog! log) -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.set -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.FailWith.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.FailWith.set -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Record(XiHan.Framework.Scheduling.Abstractions.JobRun! run, string? correlation) -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.RecordingJobLog() -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Runs.get -> System.Collections.Generic.IReadOnlyList<(XiHan.Framework.Scheduling.Abstractions.JobRun! Run, string? Correlation)>!
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Throw.get -> bool
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Throw.set -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.WaitAsync(XiHan.Framework.Scheduling.Abstractions.JobName name, int count, System.TimeSpan timeout) -> System.Threading.Tasks.Task!

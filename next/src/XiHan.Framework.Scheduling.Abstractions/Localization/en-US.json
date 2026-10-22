@@ -1,0 +1,7 @@
+{
+  "scheduling.job.failed": "Job '{name}' threw an unhandled exception: {reason}",
+  "scheduling.job.not_found": "Job '{name}' is not registered.",
+  "scheduling.job.running": "Job '{name}' is already running and does not allow concurrent runs.",
+  "scheduling.lease.held": "The leader lease for '{resource}' is held by another holder.",
+  "scheduling.scheduler.unavailable": "The job scheduler is not running."
+}

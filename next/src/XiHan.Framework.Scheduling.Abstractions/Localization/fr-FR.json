@@ -1,0 +1,7 @@
+{
+  "scheduling.job.failed": "Le travail '{name}' a levé une exception non gérée : {reason}",
+  "scheduling.job.not_found": "Le travail '{name}' n'est pas enregistré.",
+  "scheduling.job.running": "Le travail '{name}' est déjà en cours et n'autorise pas les exécutions concurrentes.",
+  "scheduling.lease.held": "Le bail de leader pour '{resource}' est détenu par un autre titulaire.",
+  "scheduling.scheduler.unavailable": "Le planificateur de travaux n'est pas en cours d'exécution."
+}

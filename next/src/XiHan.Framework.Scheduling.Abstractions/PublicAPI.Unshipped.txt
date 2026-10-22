@@ -1,0 +1,180 @@
+#nullable enable
+~override XiHan.Framework.Scheduling.Abstractions.JobName.Equals(object obj) -> bool
+abstract XiHan.Framework.Scheduling.Abstractions.LeaderLease.ExpiresAt.get -> System.DateTimeOffset
+abstract XiHan.Framework.Scheduling.Abstractions.LeaderLease.IsHeld.get -> bool
+abstract XiHan.Framework.Scheduling.Abstractions.LeaderLease.ReleaseAsync() -> System.Threading.Tasks.ValueTask
+abstract XiHan.Framework.Scheduling.Abstractions.LeaderLease.RenewAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+const XiHan.Framework.Scheduling.Abstractions.JobName.MaxLength = 128 -> int
+const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Jobs = "scheduling.jobs" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Leader = "scheduling.leader" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Version = 1 -> int
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobFailed = "SCHEDULING_UNEXPECTED_001" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobNotFound = "SCHEDULING_NOTFOUND_001" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobRunning = "SCHEDULING_CONFLICT_001" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseHeld = "SCHEDULING_CONFLICT_002" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.SchedulerUnavailable = "SCHEDULING_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.CatalogName = "scheduling" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobFailed = "scheduling.job.failed" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobNotFound = "scheduling.job.not_found" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobRunning = "scheduling.job.running" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseHeld = "scheduling.lease.held" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.SchedulerUnavailable = "scheduling.scheduler.unavailable" -> string!
+override XiHan.Framework.Scheduling.Abstractions.CronExpression.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobDefinition.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobDefinition.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobDefinition.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobName.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobName.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobOutcome.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobOutcome.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobOutcome.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobRun.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobRun.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobRun.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobSchedule.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobSchedule.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobSchedule.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobStatus.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobStatus.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobStatus.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.ToString() -> string!
+static XiHan.Framework.Scheduling.Abstractions.CronExpression.Parse(string! expression) -> XiHan.Framework.Scheduling.Abstractions.CronExpression!
+static XiHan.Framework.Scheduling.Abstractions.CronExpression.TryParse(string? expression, out XiHan.Framework.Scheduling.Abstractions.CronExpression? parsed) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobDefinition.operator !=(XiHan.Framework.Scheduling.Abstractions.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.JobDefinition? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobDefinition.operator ==(XiHan.Framework.Scheduling.Abstractions.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.JobDefinition? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobDispatcher.GetRun(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.JobRun!>
+static XiHan.Framework.Scheduling.Abstractions.JobName.implicit operator XiHan.Framework.Scheduling.Abstractions.JobName(string! value) -> XiHan.Framework.Scheduling.Abstractions.JobName
+static XiHan.Framework.Scheduling.Abstractions.JobName.IsValid(string? value) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobName.operator !=(XiHan.Framework.Scheduling.Abstractions.JobName left, XiHan.Framework.Scheduling.Abstractions.JobName right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobName.operator ==(XiHan.Framework.Scheduling.Abstractions.JobName left, XiHan.Framework.Scheduling.Abstractions.JobName right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobName.Validate(string! value) -> string!
+static XiHan.Framework.Scheduling.Abstractions.JobOutcome.operator !=(XiHan.Framework.Scheduling.Abstractions.JobOutcome? left, XiHan.Framework.Scheduling.Abstractions.JobOutcome? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobOutcome.operator ==(XiHan.Framework.Scheduling.Abstractions.JobOutcome? left, XiHan.Framework.Scheduling.Abstractions.JobOutcome? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobRun.Create(XiHan.Framework.Scheduling.Abstractions.JobName name, System.DateTimeOffset scheduledAt, XiHan.Framework.Scheduling.Abstractions.JobTrigger trigger) -> XiHan.Framework.Scheduling.Abstractions.JobRun!
+static XiHan.Framework.Scheduling.Abstractions.JobRun.operator !=(XiHan.Framework.Scheduling.Abstractions.JobRun? left, XiHan.Framework.Scheduling.Abstractions.JobRun? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobRun.operator ==(XiHan.Framework.Scheduling.Abstractions.JobRun? left, XiHan.Framework.Scheduling.Abstractions.JobRun? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobSchedule.Every(System.TimeSpan interval) -> XiHan.Framework.Scheduling.Abstractions.JobSchedule!
+static XiHan.Framework.Scheduling.Abstractions.JobSchedule.FromCron(string! expression) -> XiHan.Framework.Scheduling.Abstractions.JobSchedule!
+static XiHan.Framework.Scheduling.Abstractions.JobSchedule.Manual.get -> XiHan.Framework.Scheduling.Abstractions.JobSchedule!
+static XiHan.Framework.Scheduling.Abstractions.JobSchedule.operator !=(XiHan.Framework.Scheduling.Abstractions.JobSchedule? left, XiHan.Framework.Scheduling.Abstractions.JobSchedule? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobSchedule.operator ==(XiHan.Framework.Scheduling.Abstractions.JobSchedule? left, XiHan.Framework.Scheduling.Abstractions.JobSchedule? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobSchedulerExtensions.TriggerAsync(this XiHan.Framework.Scheduling.Abstractions.IJobScheduler! scheduler, XiHan.Framework.Scheduling.Abstractions.JobName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+static XiHan.Framework.Scheduling.Abstractions.JobStatus.operator !=(XiHan.Framework.Scheduling.Abstractions.JobStatus? left, XiHan.Framework.Scheduling.Abstractions.JobStatus? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobStatus.operator ==(XiHan.Framework.Scheduling.Abstractions.JobStatus? left, XiHan.Framework.Scheduling.Abstractions.JobStatus? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.operator !=(XiHan.Framework.Scheduling.Abstractions.JobTriggerResult? left, XiHan.Framework.Scheduling.Abstractions.JobTriggerResult? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.operator ==(XiHan.Framework.Scheduling.Abstractions.JobTriggerResult? left, XiHan.Framework.Scheduling.Abstractions.JobTriggerResult? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.AddJob<TJob>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Scheduling.Abstractions.JobDefinition! definition) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.AddJob<TJob>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Scheduling.Abstractions.JobName name, XiHan.Framework.Scheduling.Abstractions.JobSchedule! schedule) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.GetJobRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Scheduling.Abstractions.JobRegistry!
+XiHan.Framework.Scheduling.Abstractions.CronExpression
+XiHan.Framework.Scheduling.Abstractions.CronExpression.Expression.get -> string!
+XiHan.Framework.Scheduling.Abstractions.CronExpression.Next(System.DateTimeOffset after) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
+XiHan.Framework.Scheduling.Abstractions.IJob
+XiHan.Framework.Scheduling.Abstractions.IJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Abstractions.IJobScheduler
+XiHan.Framework.Scheduling.Abstractions.IJobScheduler.Status(XiHan.Framework.Scheduling.Abstractions.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.JobStatus!>
+XiHan.Framework.Scheduling.Abstractions.IJobScheduler.Statuses() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobStatus!>!
+XiHan.Framework.Scheduling.Abstractions.IJobScheduler.TriggerAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobTriggerResult!>!>
+XiHan.Framework.Scheduling.Abstractions.ILeaderElection
+XiHan.Framework.Scheduling.Abstractions.ILeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.LeaderLease!>>
+XiHan.Framework.Scheduling.Abstractions.JobDefinition
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobDefinition!
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.AllowConcurrent.get -> bool
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.AllowConcurrent.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.Equals(XiHan.Framework.Scheduling.Abstractions.JobDefinition? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.JobDefinition(XiHan.Framework.Scheduling.Abstractions.JobName name, XiHan.Framework.Scheduling.Abstractions.JobSchedule! schedule, System.Type! jobType) -> void
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.JobType.get -> System.Type!
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.LeaderOnly.get -> bool
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.LeaderOnly.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.Name.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.JobDefinition.Schedule.get -> XiHan.Framework.Scheduling.Abstractions.JobSchedule!
+XiHan.Framework.Scheduling.Abstractions.JobDispatcher
+XiHan.Framework.Scheduling.Abstractions.JobDispatcher.DispatchAsync(XiHan.Framework.Scheduling.Abstractions.JobRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Abstractions.JobDispatcher.JobDispatcher(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Scheduling.Abstractions.JobRegistry! registry) -> void
+XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.JobName.Equals(XiHan.Framework.Scheduling.Abstractions.JobName other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobName.JobName() -> void
+XiHan.Framework.Scheduling.Abstractions.JobName.JobName(string! value) -> void
+XiHan.Framework.Scheduling.Abstractions.JobName.Value.get -> string!
+XiHan.Framework.Scheduling.Abstractions.JobOutcome
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobOutcome!
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.CompletedAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.CompletedAt.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Deconstruct(out XiHan.Framework.Scheduling.Abstractions.JobRun! Run, out System.DateTimeOffset StartedAt, out System.DateTimeOffset CompletedAt, out XiHan.Framework.Primitives.Result Result) -> void
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Equals(XiHan.Framework.Scheduling.Abstractions.JobOutcome? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.JobOutcome(XiHan.Framework.Scheduling.Abstractions.JobRun! Run, System.DateTimeOffset StartedAt, System.DateTimeOffset CompletedAt, XiHan.Framework.Primitives.Result Result) -> void
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Result.get -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Result.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Run.get -> XiHan.Framework.Scheduling.Abstractions.JobRun!
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.Run.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.StartedAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Abstractions.JobOutcome.StartedAt.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobRegistry
+XiHan.Framework.Scheduling.Abstractions.JobRegistry.Add(XiHan.Framework.Scheduling.Abstractions.JobDefinition! definition) -> XiHan.Framework.Scheduling.Abstractions.JobRegistry!
+XiHan.Framework.Scheduling.Abstractions.JobRegistry.Find(XiHan.Framework.Scheduling.Abstractions.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.JobDefinition!>
+XiHan.Framework.Scheduling.Abstractions.JobRegistry.JobRegistry() -> void
+XiHan.Framework.Scheduling.Abstractions.JobRegistry.Jobs.get -> System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Scheduling.Abstractions.JobDefinition!>!
+XiHan.Framework.Scheduling.Abstractions.JobRun
+XiHan.Framework.Scheduling.Abstractions.JobRun.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobRun!
+XiHan.Framework.Scheduling.Abstractions.JobRun.Deconstruct(out string! Id, out XiHan.Framework.Scheduling.Abstractions.JobName Name, out System.DateTimeOffset ScheduledAt, out XiHan.Framework.Scheduling.Abstractions.JobTrigger Trigger) -> void
+XiHan.Framework.Scheduling.Abstractions.JobRun.Equals(XiHan.Framework.Scheduling.Abstractions.JobRun? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobRun.Id.get -> string!
+XiHan.Framework.Scheduling.Abstractions.JobRun.Id.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobRun.JobRun(string! Id, XiHan.Framework.Scheduling.Abstractions.JobName Name, System.DateTimeOffset ScheduledAt, XiHan.Framework.Scheduling.Abstractions.JobTrigger Trigger) -> void
+XiHan.Framework.Scheduling.Abstractions.JobRun.Name.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.JobRun.Name.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobRun.ScheduledAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Abstractions.JobRun.ScheduledAt.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobRun.Trigger.get -> XiHan.Framework.Scheduling.Abstractions.JobTrigger
+XiHan.Framework.Scheduling.Abstractions.JobRun.Trigger.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobSchedule
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobSchedule!
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.Cron.get -> XiHan.Framework.Scheduling.Abstractions.CronExpression?
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.Equals(XiHan.Framework.Scheduling.Abstractions.JobSchedule? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.Interval.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.Kind.get -> XiHan.Framework.Scheduling.Abstractions.JobScheduleKind
+XiHan.Framework.Scheduling.Abstractions.JobSchedule.NextRun(System.DateTimeOffset after) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
+XiHan.Framework.Scheduling.Abstractions.JobScheduleKind
+XiHan.Framework.Scheduling.Abstractions.JobScheduleKind.Cron = 2 -> XiHan.Framework.Scheduling.Abstractions.JobScheduleKind
+XiHan.Framework.Scheduling.Abstractions.JobScheduleKind.Interval = 1 -> XiHan.Framework.Scheduling.Abstractions.JobScheduleKind
+XiHan.Framework.Scheduling.Abstractions.JobScheduleKind.Manual = 0 -> XiHan.Framework.Scheduling.Abstractions.JobScheduleKind
+XiHan.Framework.Scheduling.Abstractions.JobSchedulerExtensions
+XiHan.Framework.Scheduling.Abstractions.JobStatus
+XiHan.Framework.Scheduling.Abstractions.JobStatus.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobStatus!
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Deconstruct(out XiHan.Framework.Scheduling.Abstractions.JobDefinition! Definition, out System.DateTimeOffset? NextRun, out XiHan.Framework.Scheduling.Abstractions.JobOutcome? Last, out int RunningCount) -> void
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Definition.get -> XiHan.Framework.Scheduling.Abstractions.JobDefinition!
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Definition.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Equals(XiHan.Framework.Scheduling.Abstractions.JobStatus? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobStatus.IsRunning.get -> bool
+XiHan.Framework.Scheduling.Abstractions.JobStatus.JobStatus(XiHan.Framework.Scheduling.Abstractions.JobDefinition! Definition, System.DateTimeOffset? NextRun, XiHan.Framework.Scheduling.Abstractions.JobOutcome? Last, int RunningCount) -> void
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Last.get -> XiHan.Framework.Scheduling.Abstractions.JobOutcome?
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Last.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobStatus.Name.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.JobStatus.NextRun.get -> System.DateTimeOffset?
+XiHan.Framework.Scheduling.Abstractions.JobStatus.NextRun.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobStatus.RunningCount.get -> int
+XiHan.Framework.Scheduling.Abstractions.JobStatus.RunningCount.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobTrigger
+XiHan.Framework.Scheduling.Abstractions.JobTrigger.Manual = 1 -> XiHan.Framework.Scheduling.Abstractions.JobTrigger
+XiHan.Framework.Scheduling.Abstractions.JobTrigger.Schedule = 0 -> XiHan.Framework.Scheduling.Abstractions.JobTrigger
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.JobTriggerResult!
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Deconstruct(out XiHan.Framework.Scheduling.Abstractions.JobName Name, out XiHan.Framework.Primitives.Result Outcome) -> void
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Equals(XiHan.Framework.Scheduling.Abstractions.JobTriggerResult? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.JobTriggerResult(XiHan.Framework.Scheduling.Abstractions.JobName Name, XiHan.Framework.Primitives.Result Outcome) -> void
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Name.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Name.init -> void
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Outcome.get -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Scheduling.Abstractions.JobTriggerResult.Outcome.init -> void
+XiHan.Framework.Scheduling.Abstractions.LeaderLease
+XiHan.Framework.Scheduling.Abstractions.LeaderLease.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Scheduling.Abstractions.LeaderLease.Holder.get -> string!
+XiHan.Framework.Scheduling.Abstractions.LeaderLease.LeaderLease(XiHan.Framework.Scheduling.Abstractions.JobName resource, string! holder) -> void
+XiHan.Framework.Scheduling.Abstractions.LeaderLease.Resource.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities
+XiHan.Framework.Scheduling.Abstractions.SchedulingErrors
+XiHan.Framework.Scheduling.Abstractions.SchedulingMessages
+XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions
