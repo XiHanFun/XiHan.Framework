@@ -34,4 +34,7 @@ public static class SecurityErrors
 
     /// <summary>存储容量已满。</summary>
     public const string CapacityExceeded = "SECURITY_UNAVAILABLE_002";
+
+    /// <summary>签发者的发现文档或 JWKS 不可达且没有缓存。</summary>
+    public const string IssuerUnavailable = "SECURITY_UNAVAILABLE_003";
 }

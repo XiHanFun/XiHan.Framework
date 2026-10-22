@@ -1,6 +1,6 @@
 # RFC-0008 认证与授权
 
-> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：— | 参考实现：`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Security.InMemory`、`XiHan.Framework.Security.Jwt` | 一致性：`XiHan.Framework.Security.Conformance`
+> 状态：已采纳 | 日期：2026-10-21 | 对应 ADR：— | 参考实现：`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Security.InMemory`、`XiHan.Framework.Security.Jwt`、`XiHan.Framework.Security.OpenIdConnect` | 一致性：`XiHan.Framework.Security.Conformance`
 
 ## 摘要
 
@@ -13,7 +13,7 @@
 | `security.authentication@1` | 凭据 → 主体 | `Security.InMemory`（`ApiKey` 方案，配置装载） |
 | `security.authorization@1` | 策略判定与权限授予 | `Security.InMemory`（RBAC 授予存储） |
 
-`Security.Jwt`（`Bearer`，HS256）是显式的认证 Provider；OpenID Connect 顺延到 P3 随宿主适配器实现。
+`Security.Jwt`（`Bearer`，HS256 对称密钥）与 `Security.OpenIdConnect`（`Bearer`，签发者 JWKS 的非对称密钥）是显式的认证 Provider，同一时刻只装配其一。
 
 ## 认证
 
@@ -21,6 +21,14 @@
 2. Authenticate 阶段：没有凭据保持匿名；有凭据交给方案匹配（不区分大小写）的 `IAuthenticationHandler`。不支持的方案返回 `SECURITY_VALIDATION_001`；凭据无效返回 `SECURITY_DENIED_003`，不区分原因对外暴露；成功写入 `SecurityContext.Principal`，保留已有租户。
 3. `XiHan:Security:RequireAuthentication` 为真时匿名调用在此被拒绝（`SECURITY_DENIED_001`）；默认由策略决定。
 4. 声明按原始类型名保留，不映射为 .NET 长类型；角色声明类型由 `XiHan:Security:RoleClaim`（默认 `role`）决定，租户声明类型由多租户选项决定。
+
+## OpenID Connect
+
+1. 配置 `XiHan:Security:OpenIdConnect:Authority`（必填，绝对 URI）。发现文档默认在 `<Authority>/.well-known/openid-configuration`，可用 `MetadataAddress` 覆盖；`RequireHttpsMetadata`（默认真）要求发现文档与 JWKS 都经 HTTPS，只在本地开发时关闭。
+2. 元数据按需取得：首次认证时取发现文档的 `issuer` 与 `jwks_uri`，再取 JWKS 的签名密钥；`RefreshInterval`（默认 12 小时）后自动刷新。并发认证只发一次请求，其余等待同一结果。
+3. 签名密钥未知（`kid` 不在 JWKS 里）时按需刷新一次再校验；两次按需刷新至少间隔 `MinimumRefreshInterval`（默认 5 分钟），伪造 `kid` 不能让签发者被打爆。
+4. 刷新失败沿用最后一份密钥，`MinimumRefreshInterval` 后再试；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`，5 秒退避后再试。读不出的令牌不访问签发者，直接返回 `SECURITY_DENIED_003`。
+5. 校验：签名、过期与有效期强制；签发者取 `Issuer` 覆盖或发现文档的 `issuer`；受众只在配置了 `Audience` 才校验；主体与声明的映射与 JWT Provider 相同。
 
 ## 授权
 

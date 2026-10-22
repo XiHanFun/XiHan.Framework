@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.OpenIdConnect</PackageId>
+    <RootNamespace>XiHan.Framework.Security.OpenIdConnect</RootNamespace>
+    <Description>XiHan Framework 认证的 OpenID Connect Provider：从签发者的发现文档与 JWKS 取签名密钥校验 Bearer 令牌（非对称签名、签发者、受众、有效期），密钥轮换时按需刷新并映射为主体。</Description>
+    <PackageTags>xihan;framework;security;openid-connect;oidc;jwks;bearer</PackageTags>
+    <!-- Microsoft.IdentityModel 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+  </ItemGroup>
+</Project>

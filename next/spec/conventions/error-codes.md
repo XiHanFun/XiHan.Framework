@@ -120,6 +120,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `AUDITING_UNAVAILABLE_001` | 审计存储不可达 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
+| `SECURITY_UNAVAILABLE_003` | 签发者的发现文档或 JWKS 不可达且没有缓存 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |

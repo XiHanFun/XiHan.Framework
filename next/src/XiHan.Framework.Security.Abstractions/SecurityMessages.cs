@@ -44,6 +44,9 @@ public static class SecurityMessages
     /// <summary>令牌缺少主体声明。参数：<c>claim</c>。</summary>
     public const string TokenSubjectMissing = "security.token.subject_missing";
 
+    /// <summary>签发者的元数据不可达。参数：<c>authority</c>。</summary>
+    public const string IssuerUnavailable = "security.issuer.unavailable";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>

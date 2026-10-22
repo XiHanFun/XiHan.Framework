@@ -25,6 +25,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.OpenIdConnect/XiHan.Framework.Security.OpenIdConnect.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />

@@ -3,6 +3,7 @@
   "security.authentication.required": "Cet appel nécessite une authentification.",
   "security.authentication.unsupported_scheme": "Le schéma d'authentification '{scheme}' n'est pas pris en charge.",
   "security.grant_store.capacity_exceeded": "Le magasin d'octrois en mémoire a atteint sa capacité de {capacity}.",
+  "security.issuer.unavailable": "Les métadonnées OpenID Connect de l'émetteur '{authority}' n'ont pas pu être récupérées.",
   "security.permission.missing": "La permission '{permission}' est manquante.",
   "security.policy.not_found": "La stratégie '{policy}' n'existe pas.",
   "security.principal_store.capacity_exceeded": "Le magasin de principaux en mémoire a atteint sa capacité de {capacity}.",

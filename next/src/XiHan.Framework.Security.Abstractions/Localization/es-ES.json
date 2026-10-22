@@ -3,6 +3,7 @@
   "security.authentication.required": "Esta llamada requiere autenticación.",
   "security.authentication.unsupported_scheme": "El esquema de autenticación '{scheme}' no es compatible.",
   "security.grant_store.capacity_exceeded": "El almacén de concesiones en memoria alcanzó su capacidad de {capacity}.",
+  "security.issuer.unavailable": "No se pudieron obtener los metadatos de OpenID Connect del emisor '{authority}'.",
   "security.permission.missing": "Falta el permiso '{permission}'.",
   "security.policy.not_found": "La política '{policy}' no existe.",
   "security.principal_store.capacity_exceeded": "El almacén de identidades en memoria alcanzó su capacidad de {capacity}.",

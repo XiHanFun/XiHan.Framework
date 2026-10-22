@@ -3,6 +3,7 @@
   "security.authentication.required": "此调用需要认证。",
   "security.authentication.unsupported_scheme": "不支持认证方案 '{scheme}'。",
   "security.grant_store.capacity_exceeded": "内存授予存储已达到容量上限 {capacity}。",
+  "security.issuer.unavailable": "无法取得签发者 '{authority}' 的 OpenID Connect 元数据。",
   "security.permission.missing": "缺少权限 '{permission}'。",
   "security.policy.not_found": "策略 '{policy}' 不存在。",
   "security.principal_store.capacity_exceeded": "内存主体存储已达到容量上限 {capacity}。",

@@ -3,6 +3,7 @@
   "security.authentication.required": "이 호출에는 인증이 필요합니다.",
   "security.authentication.unsupported_scheme": "인증 체계 '{scheme}'은(는) 지원되지 않습니다.",
   "security.grant_store.capacity_exceeded": "메모리 내 권한 부여 저장소가 용량 한도 {capacity}에 도달했습니다.",
+  "security.issuer.unavailable": "발급자 '{authority}'의 OpenID Connect 메타데이터를 가져올 수 없습니다.",
   "security.permission.missing": "권한 '{permission}'이(가) 없습니다.",
   "security.policy.not_found": "정책 '{policy}'이(가) 없습니다.",
   "security.principal_store.capacity_exceeded": "메모리 내 주체 저장소가 용량 한도 {capacity}에 도달했습니다.",
