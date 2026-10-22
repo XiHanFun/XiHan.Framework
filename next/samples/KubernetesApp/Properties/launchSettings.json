@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "KubernetesApp": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:60788;http://localhost:60789"
+    }
+  }
+}
