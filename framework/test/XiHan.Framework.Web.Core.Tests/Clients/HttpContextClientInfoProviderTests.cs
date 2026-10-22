@@ -19,7 +19,7 @@ namespace XiHan.Framework.Web.Core.Tests.Clients;
 /// 这个提供器是审计日志里 IP、归属地、设备信息的唯一来源，取值口径出错会污染全部审计数据，
 /// 因此重点覆盖三条：多级代理下取哪一跳、代理头缺失/全空白时的回退次序、异常 UA 不能把整次采集打挂。
 /// 全部用例用 <see cref="DefaultHttpContext"/> 直接造请求上下文，不起真实管道。
-/// 归属地部分刻意把内容根指向一个不存在的目录，让 ip2region 的三个候选路径统统落空，
+/// 归属地部分刻意把内容根指向一个不存在的目录，让 ip2region 的候选路径统统落空，
 /// 这样"公网 IP 的归属地"结果稳定为 null，用例不依赖仓库里是否放了 xdb 数据文件。
 /// </remarks>
 public class HttpContextClientInfoProviderTests
@@ -42,7 +42,7 @@ public class HttpContextClientInfoProviderTests
     [Fact]
     public void GetCurrent_WithoutHttpContext_ReturnsEmptyInfo()
     {
-        using var provider = CreateProvider(null);
+        var provider = CreateProvider(null);
 
         var info = provider.GetCurrent();
 
@@ -61,7 +61,7 @@ public class HttpContextClientInfoProviderTests
     [Fact]
     public void GetCurrent_WithoutAnyAddressSource_ReturnsNullIpAndLocation()
     {
-        using var provider = CreateProvider(new DefaultHttpContext());
+        var provider = CreateProvider(new DefaultHttpContext());
 
         var info = provider.GetCurrent();
 
@@ -87,7 +87,7 @@ public class HttpContextClientInfoProviderTests
         httpContext.Request.Headers["X-Real-IP"] = "198.51.100.222";
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.9");
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal(expected, provider.GetCurrent().IpAddress);
     }
@@ -106,7 +106,7 @@ public class HttpContextClientInfoProviderTests
         httpContext.Request.Headers["X-Real-IP"] = " 198.51.100.9 ";
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.9");
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal("198.51.100.9", provider.GetCurrent().IpAddress);
     }
@@ -120,7 +120,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.20");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("203.0.113.20", provider.GetCurrent().IpAddress);
     }
@@ -134,7 +134,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("::ffff:203.0.113.20");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("203.0.113.20", provider.GetCurrent().IpAddress);
     }
@@ -150,7 +150,7 @@ public class HttpContextClientInfoProviderTests
         httpContext.Request.Headers["X-Real-IP"] = "198.51.100.9";
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("70.41.3.18");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("203.0.113.7", provider.GetCurrent().IpAddress);
     }
@@ -165,7 +165,7 @@ public class HttpContextClientInfoProviderTests
         httpContext.Request.Headers["X-Real-IP"] = "198.51.100.9";
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("70.41.3.18");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("198.51.100.9", provider.GetCurrent().IpAddress);
     }
@@ -188,7 +188,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-Forwarded-For"] = ipAddress;
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal(expectedLocation, provider.GetCurrent().Location);
     }
@@ -211,7 +211,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-Forwarded-For"] = ipAddress;
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         var info = provider.GetCurrent();
 
@@ -228,7 +228,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.20";
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions
         {
             EnableIpRegion = true,
             Ip2RegionDbPath = "IpDatabases/definitely-missing-ip2region.xdb"
@@ -249,7 +249,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = DesktopChromeUserAgent;
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -274,7 +274,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = "XiHanTestAgent";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -296,7 +296,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = userAgent;
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -315,7 +315,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = "   XiHanTestAgent   ";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal("XiHanTestAgent", provider.GetCurrent().UserAgent);
     }
@@ -333,7 +333,7 @@ public class HttpContextClientInfoProviderTests
         httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.30";
         httpContext.Request.Headers.UserAgent = "XiHanTestAgent";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var results = await Task.WhenAll(Enumerable.Range(0, 32)
             .Select(_ => Task.Run(provider.GetCurrent, TestContext.Current.CancellationToken)));
@@ -357,30 +357,13 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.30";
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         var first = provider.GetCurrent();
         var second = provider.GetCurrent();
 
         Assert.NotSame(first, second);
         Assert.Equal(first.IpAddress, second.IpAddress);
-    }
-
-    /// <summary>
-    /// 从未创建过查询器时释放不报错，且允许重复释放
-    /// </summary>
-    [Fact]
-    public void Dispose_WithoutSearcher_IsSafeAndIdempotent()
-    {
-        var provider = CreateProvider(new DefaultHttpContext());
-
-        var exception = Record.Exception(() =>
-        {
-            provider.Dispose();
-            provider.Dispose();
-        });
-
-        Assert.Null(exception);
     }
 
     /// <summary>
@@ -401,8 +384,9 @@ public class HttpContextClientInfoProviderTests
 
         return new HttpContextClientInfoProvider(
             new FakeHttpContextAccessor { HttpContext = httpContext },
-            hostingEnvironment,
-            new OptionsWrapper<XiHanClientInfoOptions>(options ?? new XiHanClientInfoOptions()),
-            NullLogger<HttpContextClientInfoProvider>.Instance);
+            new Ip2RegionResolver(
+                hostingEnvironment,
+                new OptionsWrapper<XiHanClientInfoOptions>(options ?? new XiHanClientInfoOptions()),
+                NullLogger<Ip2RegionResolver>.Instance));
     }
 }
