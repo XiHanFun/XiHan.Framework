@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Observability.OpenTelemetry</PackageId>
+    <RootNamespace>XiHan.Framework.Observability.OpenTelemetry</RootNamespace>
+    <Description>XiHan Framework 可观测性（OpenTelemetry）：把内核与运行时的 Activity、Meter 与日志接到 OpenTelemetry，按配置启用 OTLP 与控制台导出器、采样与资源属性。</Description>
+    <PackageTags>xihan;framework;observability;opentelemetry;otlp;tracing;metrics</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+  </ItemGroup>
+</Project>
