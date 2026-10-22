@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "Плагину '{id}' не предоставлено разрешение '{permission}'.",
+  "plugins.callback.messaging_unavailable": "У хоста нет издателя сообщений; плагин '{id}' не может публиковать.",
+  "plugins.callback.session_invalid": "Токен сеанса плагина отсутствует или недопустим.",
+  "plugins.handshake.invalid": "Плагин '{id}' не прошёл рукопожатие: {reason}",
+  "plugins.handshake.mismatch": "Ответ рукопожатия плагина '{id}' не соответствует его манифесту: {reason}",
+  "plugins.process.already_loaded": "Плагин '{id}' уже загружен.",
+  "plugins.process.crashed": "Плагин '{id}' неожиданно завершился с кодом {exitCode}.",
+  "plugins.process.entry_required": "Манифест плагина '{id}' должен объявлять 'entry' (исполняемый файл относительно каталога плагина).",
+  "plugins.process.executable_missing": "Исполняемый файл плагина '{path}' не существует.",
+  "plugins.process.failed": "Плагин '{id}' завершился ошибкой на этапе {phase}: {reason}",
+  "plugins.process.manifest_invalid": "Манифест в каталоге плагина '{directory}' недопустим: {reason}",
+  "plugins.process.not_loaded": "Плагин '{id}' не загружен.",
+  "plugins.process.not_out_of_process": "Манифест '{id}' не описывает внепроцессный плагин (kind={kind}, isolation={isolation}).",
+  "plugins.process.permissions_not_granted": "Разрешения, объявленные плагином '{id}', не были предоставлены: {permissions}.",
+  "plugins.process.timeout": "Плагин '{id}' превысил время ожидания на этапе {phase}.",
+  "plugins.process.unavailable": "Плагин '{id}' недоступен (состояние: {state})."
+}

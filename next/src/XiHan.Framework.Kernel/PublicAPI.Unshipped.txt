@@ -74,6 +74,9 @@ override XiHan.Framework.Kernel.Diagnostics.AuditEvent.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.BindingValue.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.BindingValue.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.BindingValue.ToString() -> string!
+override XiHan.Framework.Kernel.Hosting.ContributorStatus.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Hosting.ContributorStatus.GetHashCode() -> int
+override XiHan.Framework.Kernel.Hosting.ContributorStatus.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.FeatureStatus.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.FeatureStatus.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.FeatureStatus.ToString() -> string!
@@ -143,6 +146,8 @@ static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensio
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Resolve(string? directory = null) -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator !=(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool
+static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator ==(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator !=(XiHan.Framework.Kernel.Hosting.FeatureStatus? left, XiHan.Framework.Kernel.Hosting.FeatureStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator ==(XiHan.Framework.Kernel.Hosting.FeatureStatus? left, XiHan.Framework.Kernel.Hosting.FeatureStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.HealthSnapshot.operator !=(XiHan.Framework.Kernel.Hosting.HealthSnapshot? left, XiHan.Framework.Kernel.Hosting.HealthSnapshot? right) -> bool
@@ -265,6 +270,7 @@ XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware.ObserveMiddleware(Microsoft
 XiHan.Framework.Kernel.Hosting.App
 XiHan.Framework.Kernel.Hosting.App.App(System.IServiceProvider! services, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Kernel.Hosting.App.Bindings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
+XiHan.Framework.Kernel.Hosting.App.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Kernel.Hosting.App.DescribeGraph() -> string!
 XiHan.Framework.Kernel.Hosting.App.DescribePipeline() -> string!
 XiHan.Framework.Kernel.Hosting.App.Dispose() -> void
@@ -305,6 +311,16 @@ XiHan.Framework.Kernel.Hosting.BindingValue.Type.init -> void
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.get -> string?
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.init -> void
 XiHan.Framework.Kernel.Hosting.ConfigurationDirectory
+XiHan.Framework.Kernel.Hosting.ContributorStatus
+XiHan.Framework.Kernel.Hosting.ContributorStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.ContributorStatus!
+XiHan.Framework.Kernel.Hosting.ContributorStatus.ContributorStatus(string! Name, XiHan.Framework.Primitives.LifecycleState State, XiHan.Framework.Primitives.Error? Error = null) -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Deconstruct(out string! Name, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error) -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Equals(XiHan.Framework.Kernel.Hosting.ContributorStatus? other) -> bool
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Error.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Error.init -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Name.get -> string!
+XiHan.Framework.Kernel.Hosting.ContributorStatus.State.get -> XiHan.Framework.Primitives.LifecycleState
+XiHan.Framework.Kernel.Hosting.ContributorStatus.State.init -> void
 XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FailurePolicy.IsolateFeature = 1 -> XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FailurePolicy.TerminateStartup = 0 -> XiHan.Framework.Kernel.Hosting.FailurePolicy
@@ -337,11 +353,13 @@ XiHan.Framework.Kernel.Hosting.FeatureStatus.State.get -> XiHan.Framework.Primit
 XiHan.Framework.Kernel.Hosting.FeatureStatus.State.init -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.<Clone>$() -> XiHan.Framework.Kernel.Hosting.HealthSnapshot!
-XiHan.Framework.Kernel.Hosting.HealthSnapshot.Deconstruct(out bool Started, out bool Ready, out bool Live, out XiHan.Framework.Primitives.LifecycleState State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features) -> void
+XiHan.Framework.Kernel.Hosting.HealthSnapshot.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Kernel.Hosting.HealthSnapshot.Contributions.init -> void
+XiHan.Framework.Kernel.Hosting.HealthSnapshot.Deconstruct(out bool Started, out bool Ready, out bool Live, out XiHan.Framework.Primitives.LifecycleState State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>! Contributions) -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Equals(XiHan.Framework.Kernel.Hosting.HealthSnapshot? other) -> bool
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>!
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Features.init -> void
-XiHan.Framework.Kernel.Hosting.HealthSnapshot.HealthSnapshot(bool Started, bool Ready, bool Live, XiHan.Framework.Primitives.LifecycleState State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features) -> void
+XiHan.Framework.Kernel.Hosting.HealthSnapshot.HealthSnapshot(bool Started, bool Ready, bool Live, XiHan.Framework.Primitives.LifecycleState State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>! Contributions) -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Live.get -> bool
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Live.init -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Ready.get -> bool
@@ -354,6 +372,8 @@ XiHan.Framework.Kernel.Hosting.HostApplicationBuilderExtensions
 XiHan.Framework.Kernel.Hosting.IFeature
 XiHan.Framework.Kernel.Hosting.IFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Kernel.Hosting.IFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Kernel.Hosting.IHealthContributor
+XiHan.Framework.Kernel.Hosting.IHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Kernel.Hosting.IHostedFeature
 XiHan.Framework.Kernel.Hosting.IHostedFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.Hosting.IHostedFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

@@ -22,6 +22,7 @@ public sealed partial class LocalizationTests
     [
         "XiHan.Framework.Primitives/FrameworkException.cs",
         "XiHan.Framework.Caching.Abstractions/IdempotencyRecord.cs",
+        "XiHan.Framework.Plugins.OutOfProcess/PluginErrorMapper.cs",
     ];
 
     /// <summary>

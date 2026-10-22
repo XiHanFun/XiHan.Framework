@@ -232,6 +232,35 @@ public sealed class AppTests
     }
 
     [Fact]
+    public async Task HealthContributor_DegradesTheApp_WithoutFailingIt()
+    {
+        var contributor = new StubContributor();
+        var (provider, app) = Hosts.BuildApp(b =>
+        {
+            b.UseFeature(new RecordingFeature(Manifests.Create("xihan.app.main"), []));
+            b.Services.AddSingleton<IHealthContributor>(contributor);
+        });
+        using var _ = provider;
+        await app.StartAsync(CancellationToken.None);
+        Assert.Equal(LifecycleState.Ready, app.State);
+
+        // 条目失败只把应用压成 Degraded：仍就绪、仍存活、特性状态不变
+        contributor.State = LifecycleState.Failed;
+        Assert.Equal(LifecycleState.Degraded, app.State);
+        var health = app.Health();
+        Assert.Equal(LifecycleState.Degraded, health.State);
+        Assert.True(health.Ready);
+        Assert.True(health.Live);
+        var contribution = Assert.Single(health.Contributions);
+        Assert.Equal("plugins.demo", contribution.Name);
+        Assert.Equal(LifecycleState.Failed, contribution.State);
+        Assert.Equal(LifecycleState.Ready, Assert.Single(app.Features).State);
+
+        contributor.State = LifecycleState.Ready;
+        Assert.Equal(LifecycleState.Ready, app.State);
+    }
+
+    [Fact]
     public void Build_DuplicateFeatureManifest_Throws()
     {
         var first = new RecordingFeature(Manifests.Create("xihan.test.dup"), []);
@@ -240,5 +269,19 @@ public sealed class AppTests
         var exception = Assert.Throws<FrameworkException>(() => Hosts.BuildApp(b => b.UseFeature(first).UseFeature(second)));
 
         Assert.Equal(KernelErrors.DuplicateManifest, exception.Code);
+    }
+
+    /// <summary>
+    /// 可改状态的健康贡献者。
+    /// </summary>
+    private sealed class StubContributor : IHealthContributor
+    {
+        /// <summary>
+        /// 条目状态。
+        /// </summary>
+        public LifecycleState State { get; set; } = LifecycleState.Ready;
+
+        /// <inheritdoc />
+        public IReadOnlyList<ContributorStatus> Check() => [new ContributorStatus("plugins.demo", State)];
     }
 }

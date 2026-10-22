@@ -94,7 +94,8 @@ public static class ApplicationBuilderExtensions
         var response = new HealthResponse(
             pass ? "pass" : "fail",
             snapshot.State.ToString(),
-            snapshot.Features.Select(static f => new FeatureHealth(f.Manifest.Id, f.State.ToString(), f.Error?.Code)).ToList());
+            snapshot.Features.Select(static f => new FeatureHealth(f.Manifest.Id, f.State.ToString(), f.Error?.Code)).ToList(),
+            snapshot.Contributions.Select(static c => new FeatureHealth(c.Name, c.State.ToString(), c.Error?.Code)).ToList());
 
         httpContext.Response.StatusCode = pass ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
         return httpContext.Response.WriteAsJsonAsync(response, HostingJsonContext.Default.HealthResponse, cancellationToken: httpContext.RequestAborted);

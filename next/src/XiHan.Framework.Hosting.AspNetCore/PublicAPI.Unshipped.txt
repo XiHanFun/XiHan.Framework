@@ -47,11 +47,13 @@ XiHan.Framework.Hosting.AspNetCore.FeatureHealth.State.get -> string!
 XiHan.Framework.Hosting.AspNetCore.FeatureHealth.State.init -> void
 XiHan.Framework.Hosting.AspNetCore.HealthResponse
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.HealthResponse!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Deconstruct(out string! Status, out string! State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features) -> void
+XiHan.Framework.Hosting.AspNetCore.HealthResponse.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>!
+XiHan.Framework.Hosting.AspNetCore.HealthResponse.Contributions.init -> void
+XiHan.Framework.Hosting.AspNetCore.HealthResponse.Deconstruct(out string! Status, out string! State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Contributions) -> void
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.Equals(XiHan.Framework.Hosting.AspNetCore.HealthResponse? other) -> bool
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>!
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.Features.init -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.HealthResponse(string! Status, string! State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features) -> void
+XiHan.Framework.Hosting.AspNetCore.HealthResponse.HealthResponse(string! Status, string! State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Contributions) -> void
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.State.get -> string!
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.State.init -> void
 XiHan.Framework.Hosting.AspNetCore.HealthResponse.Status.get -> string!

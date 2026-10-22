@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "プラグイン '{id}' には権限 '{permission}' が付与されていません。",
+  "plugins.callback.messaging_unavailable": "ホストにメッセージ発行者がないため、プラグイン '{id}' は発行できません。",
+  "plugins.callback.session_invalid": "プラグインのセッショントークンがないか無効です。",
+  "plugins.handshake.invalid": "プラグイン '{id}' のハンドシェイクに失敗しました: {reason}",
+  "plugins.handshake.mismatch": "プラグイン '{id}' のハンドシェイク応答がマニフェストと一致しません: {reason}",
+  "plugins.process.already_loaded": "プラグイン '{id}' は既に読み込まれています。",
+  "plugins.process.crashed": "プラグイン '{id}' が終了コード {exitCode} で予期せず終了しました。",
+  "plugins.process.entry_required": "プラグインマニフェスト '{id}' は 'entry'（プラグインディレクトリからの相対実行ファイル）を宣言する必要があります。",
+  "plugins.process.executable_missing": "プラグイン実行ファイル '{path}' が存在しません。",
+  "plugins.process.failed": "プラグイン '{id}' は {phase} で失敗しました: {reason}",
+  "plugins.process.manifest_invalid": "プラグインディレクトリ '{directory}' のマニフェストが無効です: {reason}",
+  "plugins.process.not_loaded": "プラグイン '{id}' は読み込まれていません。",
+  "plugins.process.not_out_of_process": "マニフェスト '{id}' はプロセス外プラグインを記述していません (kind={kind}, isolation={isolation})。",
+  "plugins.process.permissions_not_granted": "プラグイン '{id}' が宣言した権限が付与されていません: {permissions}。",
+  "plugins.process.timeout": "プラグイン '{id}' は {phase} でタイムアウトしました。",
+  "plugins.process.unavailable": "プラグイン '{id}' は利用できません (状態: {state})。"
+}

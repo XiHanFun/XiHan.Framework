@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "O plugin '{id}' não recebeu a permissão '{permission}'.",
+  "plugins.callback.messaging_unavailable": "O host não tem um publicador de mensagens; o plugin '{id}' não pode publicar.",
+  "plugins.callback.session_invalid": "O token de sessão do plugin está ausente ou é inválido.",
+  "plugins.handshake.invalid": "O plugin '{id}' falhou no handshake: {reason}",
+  "plugins.handshake.mismatch": "O handshake do plugin '{id}' não corresponde ao seu manifesto: {reason}",
+  "plugins.process.already_loaded": "O plugin '{id}' já está carregado.",
+  "plugins.process.crashed": "O plugin '{id}' terminou inesperadamente com o código {exitCode}.",
+  "plugins.process.entry_required": "O manifesto do plugin '{id}' deve declarar 'entry' (o executável relativo ao diretório do plugin).",
+  "plugins.process.executable_missing": "O executável do plugin '{path}' não existe.",
+  "plugins.process.failed": "O plugin '{id}' falhou durante {phase}: {reason}",
+  "plugins.process.manifest_invalid": "O manifesto no diretório do plugin '{directory}' é inválido: {reason}",
+  "plugins.process.not_loaded": "O plugin '{id}' não está carregado.",
+  "plugins.process.not_out_of_process": "O manifesto '{id}' não descreve um plugin fora de processo (kind={kind}, isolation={isolation}).",
+  "plugins.process.permissions_not_granted": "As permissões declaradas pelo plugin '{id}' não foram concedidas: {permissions}.",
+  "plugins.process.timeout": "O plugin '{id}' excedeu o tempo durante {phase}.",
+  "plugins.process.unavailable": "O plugin '{id}' não está disponível (estado: {state})."
+}

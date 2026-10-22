@@ -11,5 +11,6 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 /// <param name="Status"><c>pass</c> 或 <c>fail</c>。</param>
 /// <param name="State">应用聚合状态。</param>
 /// <param name="Features">各特性状态。</param>
+/// <param name="Contributions">各健康贡献条目（如插件）的状态。</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record HealthResponse(string Status, string State, IReadOnlyList<FeatureHealth> Features);
+public sealed record HealthResponse(string Status, string State, IReadOnlyList<FeatureHealth> Features, IReadOnlyList<FeatureHealth> Contributions);
