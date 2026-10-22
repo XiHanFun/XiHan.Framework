@@ -119,6 +119,7 @@
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
     <Project Path="samples/SimpleCli/SimpleCli.csproj" />
+    <Project Path="samples/KubernetesApp/KubernetesApp.csproj" />
     <Project Path="samples/SamplePlugin/SamplePlugin.csproj" />
   </Folder>
   <Folder Name="/9.Solution Items/">

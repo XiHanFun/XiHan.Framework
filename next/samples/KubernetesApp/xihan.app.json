@@ -1,0 +1,17 @@
+{
+  "$schema": "https://spec.xihanfun.com/packaging/app.v1.json",
+  "name": "kubernetes-app",
+  "project": "KubernetesApp.csproj",
+  "profile": "full",
+  "build": { "context": "../.." },
+  "image": { "repository": "ghcr.io/xihanfun/kubernetes-app", "tag": "5.0.0-preview.1" },
+  "ports": { "http": 8080, "grpc": 8081 },
+  "config": { "files": ["appsettings.Production.json"] },
+  "probes": { "startupSeconds": 60, "periodSeconds": 10, "timeoutSeconds": 2 },
+  "shutdown": { "graceSeconds": 25 },
+  "resources": { "requests": { "cpu": "100m", "memory": "128Mi" }, "limits": { "cpu": "500m", "memory": "256Mi" } },
+  "replicas": 2,
+  "scaling": { "min": 2, "max": 4, "cpuPercent": 70 },
+  "leader": { "lease": "kubernetes-app-scheduler" },
+  "environment": { "ASPNETCORE_ENVIRONMENT": "Production" }
+}
