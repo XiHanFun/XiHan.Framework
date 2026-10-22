@@ -53,7 +53,7 @@
 ## 与 .NET 的映射（P4-02）
 
 - `Plugins.OutOfProcess`（Ring 5）：`OutOfProcessPluginHost : IPluginHost`，进程管理、握手、健康、重启退避；代理操作以 `OperationDescriptor` 登记进 `OperationRegistry`（`DecodeRequest` / `EncodeResponse` 直通 JSON，`ExecuteAsync` 发 `Invoke`）；事件订阅经 `AddMessageHandler`。
-- protobuf 线格式由 `Protocols.Grpc` 已有的编解码器按本 `.proto` 的消息描述处理，不引入 `Google.Protobuf`；其他语言用各自的 protobuf 工具链从同一份 `.proto` 生成。
+- 协议消息的 .NET 类型由 `Grpc.Tools` 从同一份 `.proto` 生成（运行时 `Google.Protobuf`，Ring 5 允许第三方依赖）；`Protocols.Grpc` 的动态编解码只服务于没有编译期 Schema 的操作消息，不用于本协议。其他语言用各自的 protobuf 工具链从同一份 `.proto` 生成。
 - 错误码常量 `PluginErrors` 与消息键 `PluginMessages` 随包实现，文案 10 种区域各一个文件（RFC-0010）。
 
 ## 非目标
