@@ -491,6 +491,8 @@ XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Equals(XiHan.Framework.Kern
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Middleware.get -> System.Type!
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Middleware.init -> void
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.MiddlewareDescriptor(System.Type! Middleware, XiHan.Framework.Primitives.PipelineStage Stage, XiHan.Framework.Kernel.Pipeline.Placement Placement, string! Owner) -> void
+XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Name.get -> string?
+XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Name.init -> void
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Owner.get -> string!
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Owner.init -> void
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Placement.get -> XiHan.Framework.Kernel.Pipeline.Placement
@@ -507,6 +509,7 @@ XiHan.Framework.Kernel.Pipeline.PipelineBuilder.PipelineBuilder() -> void
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Use<TMiddleware>() -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseAt<TMiddleware>(XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseInstance<TMiddleware>(TMiddleware! instance, XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
+XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseNamedInstance(string! name, XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware! instance, XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineStep
 XiHan.Framework.Kernel.Pipeline.Placement
 XiHan.Framework.Kernel.Pipeline.Placement.Beginning = 1 -> XiHan.Framework.Kernel.Pipeline.Placement

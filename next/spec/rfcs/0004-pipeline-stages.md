@@ -36,6 +36,7 @@ ingress → observe → resilience → authenticate → tenant → authorize →
 4. 显式 `Use<T>()` 不带阶段时归入 `transaction` 阶段末尾。
 6. 阶段内先按 `Placement`（Beginning 在前），再按归属（清单 ID 字典序），再按注册顺序，最后应用 `before` / `after` 约束做稳定拓扑排序。
 5. 未知阶段名报 `KERNEL_PIPELINE_002`。
+7. 同一中间件类型默认只登记一次；需要同类型多个实例时（如插件贡献的多个中间件）按名字登记，名字在类型内唯一，打印时以 `类型名[名字]` 标出；按类型声明的 `before` / `after` 在该类型有多个实例时不可用（`KERNEL_PIPELINE_003`）。
 
 ## 打印格式
 
