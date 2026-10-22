@@ -12,19 +12,21 @@ namespace XiHan.Framework.Cli.Packaging;
 internal static class DockerfileGenerator
 {
     /// <summary>
-    /// 生成 <c>Dockerfile</c> 与 <c>.dockerignore</c>。
+    /// 生成 <c>Dockerfile</c> 与 <c>Dockerfile.dockerignore</c>；<paramref name="projectInContext"/> 是项目文件相对构建上下文的路径。
     /// </summary>
-    public static IEnumerable<PackOutput> Generate(AppManifest manifest)
+    public static IEnumerable<PackOutput> Generate(AppManifest manifest, string projectInContext)
     {
         ArgumentNullException.ThrowIfNull(manifest);
-        yield return new PackOutput("Dockerfile", Dockerfile(manifest));
-        yield return new PackOutput(".dockerignore", "**/bin/\n**/obj/\n**/deploy/\n.git/\n");
+        ArgumentNullException.ThrowIfNull(projectInContext);
+        yield return new PackOutput("Dockerfile", Dockerfile(manifest, projectInContext));
+        // BuildKit 读与 Dockerfile 同目录的 <Dockerfile>.dockerignore，产物目录不必是构建上下文根
+        yield return new PackOutput("Dockerfile.dockerignore", "**/bin/\n**/obj/\n**/deploy/\n.git/\n");
     }
 
     /// <summary>
     /// Dockerfile 文本。
     /// </summary>
-    private static string Dockerfile(AppManifest manifest)
+    private static string Dockerfile(AppManifest manifest, string projectInContext)
     {
         var builder = new StringBuilder();
         builder.Append("# syntax=docker/dockerfile:1\n");
@@ -38,7 +40,7 @@ internal static class DockerfileGenerator
 
         builder.Append("WORKDIR /src\n");
         builder.Append("COPY . .\n");
-        builder.Append(CultureInfo.InvariantCulture, $"RUN dotnet publish \"{manifest.Project.Replace('\\', '/')}\" --configuration Release --arch $TARGETARCH --output /app/publish");
+        builder.Append(CultureInfo.InvariantCulture, $"RUN dotnet publish \"{projectInContext}\" --configuration Release --arch $TARGETARCH --output /app/publish");
         builder.Append(manifest.Image.Aot ? " --self-contained true -p:PublishAot=true\n" : " --self-contained false\n");
         builder.Append('\n');
         builder.Append(manifest.Image.Aot ? "FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled AS runtime\n" : "FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime\n");

@@ -13,7 +13,7 @@ xihan version
 
 | 命令 | 说明 |
 | --- | --- |
-| `pack` | 从 `xihan.app.json`（规范：`spec/packaging/app-manifest.md`）生成 `Dockerfile` + `.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例、kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`；逐行输出写出的文件 |
+| `pack` | 从 `xihan.app.json`（规范：`spec/packaging/app-manifest.md`）生成 `Dockerfile` + `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例、kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`；逐行输出写出的文件 |
 | `graph` / `pipeline` / `operations` / `invoke` | 转发给应用自己的命令行宿主（`Hosting.CommandLine`）：`dotnet run --project <project> --configuration <c> -- <命令> …`；项目取 `--project`，否则取当前目录清单的 `project` |
 | `version` | 框架版本 |
 | `help` | 命令列表 |

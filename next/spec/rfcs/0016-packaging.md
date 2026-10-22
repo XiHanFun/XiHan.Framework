@@ -21,7 +21,7 @@
 
 | 产物 | 路径 | 说明 |
 | --- | --- | --- |
-| Dockerfile | `Dockerfile`、`.dockerignore` | 多阶段：`sdk:10.0` 发布 → `aspnet:10.0-noble-chiseled`（AOT 时 `runtime-deps:10.0-noble-chiseled` 并在构建阶段装 clang）；非 root（`USER $APP_UID`）；Kestrel 端点与停机超时以环境变量写入 |
+| Dockerfile | `Dockerfile`、`Dockerfile.dockerignore`（BuildKit 读与 Dockerfile 同目录的同名忽略文件） | 多阶段：`sdk:10.0` 发布 → `aspnet:10.0-noble-chiseled`（AOT 时 `runtime-deps:10.0-noble-chiseled` 并在构建阶段装 clang）；非 root（`USER $APP_UID`）；Kestrel 端点与停机超时以环境变量写入 |
 | Kustomize | `kustomize/*.yaml` | Deployment（探针、宽限、安全上下文、只读根文件系统、绑定与配置挂载）、Service、ConfigMap、HPA（有 `scaling` 时）、PDB（副本大于 1 时）、ServiceAccount + Role + RoleBinding（有 `leader` 时）、`bindings.example.yaml`（Secret 示例，不在 kustomization 里） |
 | Compose | `compose.yaml` | 应用服务 + 每个绑定一个依赖服务（PostgreSQL、Redis、RabbitMQ、MinIO），以 `XiHan__Bindings__<name>__type/value` 注入 |
 | Aspire | `aspire/XiHanAppHost.g.cs` | `Add<Name>(this IDistributedApplicationBuilder)`：按绑定添加资源并把连接串注入 `XiHan__Bindings__<name>__value` |

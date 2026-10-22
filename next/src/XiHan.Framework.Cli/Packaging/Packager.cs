@@ -17,9 +17,11 @@ internal static class Packager
         ArgumentNullException.ThrowIfNull(manifestDirectory);
         ArgumentNullException.ThrowIfNull(outputDirectory);
         var outputs = new List<PackOutput>();
+        // 构建上下文默认是清单所在目录；单仓库里可指向仓库根，项目路径与 Dockerfile 路径都相对它
+        var contextDirectory = Path.GetFullPath(Path.Combine(manifestDirectory, manifest.Build.Context));
         if (kinds.HasFlag(PackKinds.Dockerfile))
         {
-            outputs.AddRange(DockerfileGenerator.Generate(manifest));
+            outputs.AddRange(DockerfileGenerator.Generate(manifest, Relative(contextDirectory, Path.Combine(manifestDirectory, manifest.Project))));
         }
 
         if (kinds.HasFlag(PackKinds.Kustomize))
@@ -29,9 +31,9 @@ internal static class Packager
 
         if (kinds.HasFlag(PackKinds.Compose))
         {
-            // 构建上下文是清单所在目录（项目相对它），Dockerfile 相对上下文
-            var context = Relative(outputDirectory, manifestDirectory);
-            var dockerfile = Relative(manifestDirectory, Path.Combine(outputDirectory, "Dockerfile"));
+            // Compose 文件里的上下文相对 compose 文件自己，Dockerfile 相对上下文
+            var context = Relative(outputDirectory, contextDirectory);
+            var dockerfile = Relative(contextDirectory, Path.Combine(outputDirectory, "Dockerfile"));
             outputs.Add(ComposeGenerator.Generate(manifest, context, dockerfile));
         }
 

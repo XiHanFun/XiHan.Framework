@@ -65,6 +65,15 @@ internal static partial class AppManifestReader
             problems.Add($"project '{manifest.Project}' does not exist next to the manifest");
         }
 
+        if (string.IsNullOrWhiteSpace(manifest.Build.Context))
+        {
+            problems.Add("build.context must not be blank");
+        }
+        else if (!Directory.Exists(Path.Combine(manifestDirectory, manifest.Build.Context)))
+        {
+            problems.Add($"build.context '{manifest.Build.Context}' does not exist relative to the manifest");
+        }
+
         if (manifest.Profile is not ("minimal" or "standard" or "full"))
         {
             problems.Add($"profile '{manifest.Profile}' must be minimal, standard or full");

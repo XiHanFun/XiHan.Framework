@@ -37,7 +37,18 @@ public sealed class PackagerTests
         Assert.Contains("USER $APP_UID", dockerfile, StringComparison.Ordinal);
         Assert.Contains("ENTRYPOINT [\"dotnet\", \"Orders.dll\"]", dockerfile, StringComparison.Ordinal);
         Assert.DoesNotContain("clang", dockerfile, StringComparison.Ordinal);
-        Assert.Contains("**/bin/", files[".dockerignore"], StringComparison.Ordinal);
+        Assert.Contains("**/bin/", files["Dockerfile.dockerignore"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Dockerfile_WithBuildContext_PublishesTheProjectRelativeToTheContext()
+    {
+        using var fixture = new ManifestFixture("""{ "name": "simple", "project": "Orders.csproj", "build": { "context": ".." } }""");
+        var (_, files) = Generate(fixture, PackKinds.Dockerfile | PackKinds.Compose);
+        var folder = Path.GetFileName(fixture.Directory);
+
+        Assert.Contains($"RUN dotnet publish \"{folder}/Orders.csproj\"", files["Dockerfile"], StringComparison.Ordinal);
+        Assert.Contains($"context: ../..\n      dockerfile: {folder}/deploy/Dockerfile\n", files["compose.yaml"], StringComparison.Ordinal);
     }
 
     [Fact]

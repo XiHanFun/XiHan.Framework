@@ -11,6 +11,11 @@
     "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$", "description": "DNS 标签；镜像、k8s 资源与 Compose 项目的默认名" },
     "project": { "type": "string", "minLength": 1, "description": "相对清单所在目录的项目文件" },
     "profile": { "enum": ["minimal", "standard", "full"], "default": "standard" },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "context": { "type": "string", "minLength": 1, "default": "." } }
+    },
     "image": {
       "type": "object",
       "additionalProperties": false,

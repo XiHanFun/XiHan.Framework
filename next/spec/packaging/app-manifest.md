@@ -9,6 +9,7 @@
 | `name` | 是 | — | `^[a-z][a-z0-9-]{0,62}$`，不以 `-` 结尾 |
 | `project` | 是 | — | 相对清单所在目录的项目文件，必须存在 |
 | `profile` | 否 | `standard` | `minimal` / `standard` / `full`，信息性（写进标签） |
+| `build.context` | 否 | `.` | Docker 构建上下文，相对清单所在目录，必须存在；Dockerfile 里的项目路径与 Compose 的 `context` / `dockerfile` 都相对它 |
 | `image.repository` | 否 | `name` | 镜像仓库（可含注册表前缀） |
 | `image.tag` | 否 | `latest` | 镜像标签 |
 | `image.aot` | 否 | `false` | 为真时 Native AOT 发布，运行镜像为 `runtime-deps` |
