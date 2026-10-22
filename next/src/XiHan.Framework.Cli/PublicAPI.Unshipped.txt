@@ -1,0 +1,15 @@
+#nullable enable
+const XiHan.Framework.Cli.CliMessages.CatalogName = "cli" -> string!
+const XiHan.Framework.Cli.CliMessages.DotnetUnavailable = "cli.dotnet.unavailable" -> string!
+const XiHan.Framework.Cli.CliMessages.GraphDescription = "cli.graph.description" -> string!
+const XiHan.Framework.Cli.CliMessages.InvokeDescription = "cli.invoke.description" -> string!
+const XiHan.Framework.Cli.CliMessages.ManifestInvalid = "cli.manifest.invalid" -> string!
+const XiHan.Framework.Cli.CliMessages.ManifestNotFound = "cli.manifest.not_found" -> string!
+const XiHan.Framework.Cli.CliMessages.OperationsDescription = "cli.operations.description" -> string!
+const XiHan.Framework.Cli.CliMessages.PackDescription = "cli.pack.description" -> string!
+const XiHan.Framework.Cli.CliMessages.PackKindUnknown = "cli.pack.kind_unknown" -> string!
+const XiHan.Framework.Cli.CliMessages.PackWritten = "cli.pack.written" -> string!
+const XiHan.Framework.Cli.CliMessages.PipelineDescription = "cli.pipeline.description" -> string!
+const XiHan.Framework.Cli.CliMessages.VersionDescription = "cli.version.description" -> string!
+static XiHan.Framework.Cli.CliMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+XiHan.Framework.Cli.CliMessages

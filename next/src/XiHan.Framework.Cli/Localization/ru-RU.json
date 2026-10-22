@@ -1,0 +1,13 @@
+{
+  "cli.dotnet.unavailable": "Не удалось запустить dotnet CLI: {reason}",
+  "cli.graph.description": "Выводит граф возможностей приложения (передаётся в 'dotnet run -- graph').",
+  "cli.invoke.description": "Вызывает операцию приложения (передаётся в 'dotnet run -- invoke'); '<resource> <verb>' — сокращённая форма.",
+  "cli.manifest.invalid": "Манифест '{path}' недопустим: {reason}",
+  "cli.manifest.not_found": "Манифест '{path}' не существует.",
+  "cli.operations.description": "Выводит список операций приложения (передаётся в 'dotnet run -- operations').",
+  "cli.pack.description": "Создаёт артефакты развёртывания из xihan.app.json: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.kind_unknown": "Неизвестный вид артефакта '{kind}'; ожидается dockerfile, kustomize, compose или aspire.",
+  "cli.pack.written": "Записано файлов: {count} в '{output}'.",
+  "cli.pipeline.description": "Выводит конвейер приложения (передаётся в 'dotnet run -- pipeline').",
+  "cli.version.description": "Выводит версию фреймворка."
+}

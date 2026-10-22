@@ -124,3 +124,6 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满 |
+| `CLI_NOTFOUND_001` | 应用清单文件不存在 |
+| `CLI_VALIDATION_001` | 应用清单不合法，或 `--only` 的产物种类不认识 |
+| `CLI_UNAVAILABLE_001` | 无法启动 dotnet 命令行 |

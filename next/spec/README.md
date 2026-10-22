@@ -13,6 +13,7 @@ spec/
 ├─ pipeline/       # P1 起：RFC-0004 采纳后的规范性文本
 ├─ plugin/         # P4 起：插件协议 plugin.proto
 ├─ protocol/       # P3 起：HTTP / gRPC / MCP / CloudEvents / 命令行 映射
+├─ packaging/      # P3 起：应用清单 xihan.app.json 与 xihan pack 的产物映射
 └─ conformance/    # P1 起：数据驱动向量与运行器
 ```
 
@@ -51,3 +52,4 @@ spec/
 | [0013](rfcs/0013-scheduling.md) | 调度与领导选举 | 已采纳（参考实现 `Scheduling.Abstractions`、`Scheduling.InMemory`，套件 `Scheduling.Conformance`） |
 | [0014](rfcs/0014-configuration.md) | 远程配置与密钥 | 已采纳（参考实现 `Configuration.Abstractions`，套件 `Configuration.Conformance`；默认实现是 .NET 原生文件与环境变量，无包） |
 | [0015](rfcs/0015-auditing.md) | 审计 | 已采纳（参考实现 `Auditing.Abstractions`、`Auditing.InMemory`，套件 `Auditing.Conformance`） |
+| [0016](rfcs/0016-packaging.md) | 应用清单与打包 | 已采纳（参考实现 `Cli` 的 `xihan pack`；规范 `packaging/`） |

@@ -1,0 +1,13 @@
+{
+  "cli.dotnet.unavailable": "无法启动 dotnet 命令行：{reason}",
+  "cli.graph.description": "打印应用的能力图谱（转发给 'dotnet run -- graph'）。",
+  "cli.invoke.description": "调用应用的操作（转发给 'dotnet run -- invoke'）；'<resource> <verb>' 是简写。",
+  "cli.manifest.invalid": "应用清单 '{path}' 不合法：{reason}",
+  "cli.manifest.not_found": "应用清单 '{path}' 不存在。",
+  "cli.operations.description": "列出应用的操作（转发给 'dotnet run -- operations'）。",
+  "cli.pack.description": "从 xihan.app.json 生成部署产物：pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire]。",
+  "cli.pack.kind_unknown": "不认识的产物种类 '{kind}'；可选 dockerfile、kustomize、compose、aspire。",
+  "cli.pack.written": "已写出 {count} 个文件到 '{output}'。",
+  "cli.pipeline.description": "打印应用的管道（转发给 'dotnet run -- pipeline'）。",
+  "cli.version.description": "打印框架版本。"
+}

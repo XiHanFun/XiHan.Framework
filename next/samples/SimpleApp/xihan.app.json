@@ -1,0 +1,13 @@
+{
+  "$schema": "https://spec.xihanfun.com/packaging/app.v1.json",
+  "name": "simple-app",
+  "project": "SimpleApp.csproj",
+  "profile": "standard",
+  "image": { "repository": "ghcr.io/xihanfun/simple-app", "tag": "5.0.0-preview.1" },
+  "ports": { "http": 8080, "grpc": 8081 },
+  "config": { "files": ["appsettings.json"] },
+  "probes": { "startupSeconds": 60, "periodSeconds": 10 },
+  "shutdown": { "graceSeconds": 30 },
+  "resources": { "requests": { "cpu": "100m", "memory": "128Mi" }, "limits": { "cpu": "500m", "memory": "256Mi" } },
+  "environment": { "ASPNETCORE_ENVIRONMENT": "Production" }
+}

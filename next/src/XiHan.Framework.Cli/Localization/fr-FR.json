@@ -1,0 +1,13 @@
+{
+  "cli.dotnet.unavailable": "Impossible de démarrer la CLI dotnet : {reason}",
+  "cli.graph.description": "Affiche le graphe de capacités de l'application (transmis à 'dotnet run -- graph').",
+  "cli.invoke.description": "Invoque une opération de l'application (transmis à 'dotnet run -- invoke') ; '<resource> <verb>' est un raccourci.",
+  "cli.manifest.invalid": "Le manifeste '{path}' est invalide : {reason}",
+  "cli.manifest.not_found": "Le manifeste '{path}' n'existe pas.",
+  "cli.operations.description": "Liste les opérations de l'application (transmis à 'dotnet run -- operations').",
+  "cli.pack.description": "Génère les artefacts de déploiement à partir de xihan.app.json : pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.kind_unknown": "Type d'artefact inconnu '{kind}' ; attendu : dockerfile, kustomize, compose ou aspire.",
+  "cli.pack.written": "{count} fichiers écrits dans '{output}'.",
+  "cli.pipeline.description": "Affiche le pipeline de l'application (transmis à 'dotnet run -- pipeline').",
+  "cli.version.description": "Affiche la version du framework."
+}
