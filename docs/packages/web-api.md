@@ -65,8 +65,10 @@ public class MyModule : XiHanModule { }
 | 13 | `XiHanOpenApiSecurityMiddleware` | 对受保护路径做签名/内容签名/加密/防重放校验（默认关闭）。 |
 | 14 | `UseAuthentication` | JWT Bearer 认证，填充 `HttpContext.User`。 |
 | 15 | `XiHanTenantResolveMiddleware` | 按解析链解析租户并 `ICurrentTenant.Change`：已认证请求只以令牌为准；请求头、查询串、兜底租户给出的租户须在 `ITenantStore` 中存在且激活，否则以 400 拒绝。解析后把用户与租户定型写回 `RequestContext`。置于认证后（可用用户信息）、授权前（授权可依租户）。 |
-| 16 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。授权处理器带了失败原因的 403，由 `XiHanAuthorizationMiddlewareResultHandler` 写成统一响应信封（消息取第一条非空原因，如「权限不足」「当前条件下不允许此操作」，带 traceId）；没有失败原因的拒绝与 401 照旧。宿主自己注册了 `IAuthorizationMiddlewareResultHandler` 时不覆盖。 |
-| 17 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
+| 16 | `XiHanRequestAccessMiddleware` | 请求访问闸门：依次询问应用注册的 `IRequestAccessGate`（按 `Order` 从小到大），第一个拒绝即以统一信封短路（状态码与业务码取闸门给的，可带响应头如 `Retry-After`）。置于认证与租户解析之后（可按用户、角色、租户判定）、会话闸门与授权之前；匿名接口、Minimal API 与实时通道的协商请求同样经过。应用的访问策略、维护模式接在这里；没有注册闸门时直接放行。 |
+| 17 | `XiHanSessionStateMiddleware` | 会话闸门：按应用侧 `ISessionStateGate` 拦截已失效（401）与已锁定（423）的会话。 |
+| 18 | `UseAuthorization` | 授权（可全局 `FallbackPolicy` 要求已认证用户）。授权处理器带了失败原因的 403，由 `XiHanAuthorizationMiddlewareResultHandler` 写成统一响应信封（消息取第一条非空原因，如「权限不足」「当前条件下不允许此操作」，带 traceId）；没有失败原因的拒绝与 401 照旧。宿主自己注册了 `IAuthorizationMiddlewareResultHandler` 时不覆盖。 |
+| 19 | `UseEndpoints` | `MapControllers()`（含动态控制器，走特性路由）+ `MapOpenApi().AllowAnonymous()`。 |
 
 ## 工作原理：动态 API
 
