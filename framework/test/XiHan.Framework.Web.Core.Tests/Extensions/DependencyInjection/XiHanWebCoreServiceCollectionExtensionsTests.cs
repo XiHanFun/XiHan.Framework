@@ -112,6 +112,10 @@ public class XiHanWebCoreServiceCollectionExtensionsTests
         Assert.Equal(ServiceLifetime.Singleton, clientInfoProvider.Lifetime);
         Assert.Equal(typeof(HttpContextClientInfoProvider), clientInfoProvider.ImplementationType);
 
+        var ipRegionResolver = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IIpRegionResolver));
+        Assert.Equal(ServiceLifetime.Singleton, ipRegionResolver.Lifetime);
+        Assert.Equal(typeof(Ip2RegionResolver), ipRegionResolver.ImplementationType);
+
         var principalAccessor = Assert.Single(services, descriptor => descriptor.ServiceType == typeof(ICurrentPrincipalAccessor));
         Assert.Equal(ServiceLifetime.Scoped, principalAccessor.Lifetime);
         Assert.Equal(typeof(HttpContextCurrentPrincipalAccessor), principalAccessor.ImplementationType);
