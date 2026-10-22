@@ -133,15 +133,15 @@ internal static class KustomizeGenerator
         if (manifest.Config.Files.Count > 0)
         {
             Env(yaml, "XIHAN_CONFIG_PATH", manifest.Config.MountPath);
+            // ConfigMap 更新以符号链接切换，inotify 监视看不到；轮询监视才能触发重载
+            Env(yaml, "DOTNET_USE_POLLING_FILE_WATCHER", "1");
         }
 
         if (manifest.Leader is { } leader)
         {
             Env(yaml, "XiHan__Scheduling__Kubernetes__Lease", leader.Lease);
-            yaml.Line(12, "- name: XIHAN_POD_NAME")
-                .Line(14, "valueFrom:")
-                .Line(16, "fieldRef:")
-                .Pair(18, "fieldPath", "metadata.name");
+            FieldEnv(yaml, "XIHAN_POD_NAME", "metadata.name");
+            FieldEnv(yaml, "POD_NAMESPACE", "metadata.namespace");
         }
 
         foreach (var (key, value) in manifest.Environment.OrderBy(static e => e.Key, StringComparer.Ordinal))
@@ -206,6 +206,15 @@ internal static class KustomizeGenerator
     /// 一个环境变量。
     /// </summary>
     private static void Env(YamlText yaml, string name, string value) => yaml.Line(12, "- name: " + name).Pair(14, "value", value);
+
+    /// <summary>
+    /// 一个取自 Pod 字段的环境变量。
+    /// </summary>
+    private static void FieldEnv(YamlText yaml, string name, string fieldPath)
+        => yaml.Line(12, "- name: " + name)
+            .Line(14, "valueFrom:")
+            .Line(16, "fieldRef:")
+            .Pair(18, "fieldPath", fieldPath);
 
     /// <summary>
     /// 一个 HTTP 探针。

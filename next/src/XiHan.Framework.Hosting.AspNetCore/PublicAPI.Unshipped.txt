@@ -31,6 +31,7 @@ static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framew
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
+static XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Builder.WebApplicationBuilder! builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> Microsoft.AspNetCore.Builder.WebApplicationBuilder!
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.FeatureHealth
@@ -76,3 +77,4 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.TraceId.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.TraceId.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.init -> void
+XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions

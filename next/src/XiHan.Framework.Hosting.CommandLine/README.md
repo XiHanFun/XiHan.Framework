@@ -28,6 +28,8 @@ app mcp                                    # Protocols.Mcp 注册的 stdio 传�
 - 日志：`AddXiHanCommandLine()` 把日志改为只写 stderr，stdout 只承载命令输出。
 - 扩展：实现 `ICommand`（名字、说明的消息键、执行）并 `AddXiHanCommand<T>()`；命令名重复在启动时失败。
 
+`AddXiHan(this HostApplicationBuilder, …)` 与 ASP.NET Core 宿主一样先装载 `XIHAN_CONFIG_PATH` 目录里的 JSON 文件（可重载）。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions` 与 `Microsoft.Extensions.Logging.Console`。被 `Protocols.Mcp`（`mcp` 命令）引用。

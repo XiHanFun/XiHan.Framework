@@ -42,6 +42,7 @@ static XiHan.Framework.Hosting.CommandLine.CommandLineMessages.Catalog.get -> Xi
 static XiHan.Framework.Hosting.CommandLine.CommandLineParser.Parse(System.Collections.Generic.IReadOnlyList<string!>! args) -> XiHan.Framework.Hosting.CommandLine.ParsedCommandLine!
 static XiHan.Framework.Hosting.CommandLine.CommandLineServiceCollectionExtensions.AddXiHanCommand<TCommand>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Hosting.CommandLine.CommandLineServiceCollectionExtensions.AddXiHanCommandLine(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Hosting.CommandLine.HostApplicationBuilderConfigurationExtensions.AddXiHan(this Microsoft.Extensions.Hosting.HostApplicationBuilder! builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> Microsoft.Extensions.Hosting.HostApplicationBuilder!
 static XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.operator !=(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? left, XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? right) -> bool
 static XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.operator ==(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? left, XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? right) -> bool
 XiHan.Framework.Hosting.CommandLine.CommandContext
@@ -77,6 +78,7 @@ XiHan.Framework.Hosting.CommandLine.HelpCommand.DescriptionKey.get -> string!
 XiHan.Framework.Hosting.CommandLine.HelpCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
 XiHan.Framework.Hosting.CommandLine.HelpCommand.HelpCommand() -> void
 XiHan.Framework.Hosting.CommandLine.HelpCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.HostApplicationBuilderConfigurationExtensions
 XiHan.Framework.Hosting.CommandLine.ICommand
 XiHan.Framework.Hosting.CommandLine.ICommand.DescriptionKey.get -> string!
 XiHan.Framework.Hosting.CommandLine.ICommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>

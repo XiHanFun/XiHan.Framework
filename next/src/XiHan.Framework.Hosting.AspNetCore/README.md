@@ -15,6 +15,10 @@ ASP.NET Core 宿主适配（Ring 4）。
 
 `Authorization` 头原样进入上下文凭据（`SetCredential`），由安全子系统的 Authenticate 阶段解释；宿主不认证。端点用 `RequireXiHanPermission("orders.read")`、`RequireXiHanAuthentication()`、`RequireXiHanPolicy("name")` 挂授权要求，`UseXiHan()` 把它放进上下文，Authorize 阶段判定。
 
+## 挂载的配置目录
+
+`AddXiHan()` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（k8s 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余 `*.json` 按序数随后；都晚于内置配置因而优先，`reloadOnChange` 让 `IOptionsMonitor` 跟着文件变化。`xihan pack` 生成的清单同时设 `DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新）。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions` 与 `Microsoft.AspNetCore.App`。

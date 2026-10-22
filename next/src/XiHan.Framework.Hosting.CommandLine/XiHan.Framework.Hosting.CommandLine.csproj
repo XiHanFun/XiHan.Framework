@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <!-- 控制台日志提供器：命令行宿主把日志定向到 stderr，让 stdout 只承载命令输出 -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 

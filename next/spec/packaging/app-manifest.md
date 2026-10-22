@@ -38,10 +38,10 @@
 | `shutdown.graceSeconds` | `ENV XiHan__Kernel__StopTimeoutSeconds` | 同左 + `terminationGracePeriodSeconds = graceSeconds + 5` | `stop_grace_period` | — |
 | `probes` | — | startup（`failureThreshold = ⌈startup / period⌉`）、readiness、liveness | `healthcheck`（`/health/ready`） | — |
 | `bindings` | — | Secret 挂载 `/bindings/<name>`（`type`、`uri` 两个键），`SERVICE_BINDING_ROOT=/bindings` | 依赖服务 + `XiHan__Bindings__<name>__type/value` | 资源 + `WithEnvironment("XiHan__Bindings__<name>__value", 资源)` |
-| `config` | — | ConfigMap 挂载 `mountPath`，`XIHAN_CONFIG_PATH` | — | — |
+| `config` | — | ConfigMap 挂载 `mountPath`，`XIHAN_CONFIG_PATH`，`DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新，须轮询监视） | — | — |
 | `resources` | — | `resources` | — | — |
 | `replicas` / `scaling` | — | `replicas`（有 `scaling` 时取 `min`）、HPA、PDB（副本 > 1） | — | `WithReplicas` |
-| `leader.lease` | — | ServiceAccount、Role（leases）、RoleBinding，`XiHan__Scheduling__Kubernetes__Lease`，`XIHAN_POD_NAME` | — | — |
+| `leader.lease` | — | ServiceAccount、Role（leases）、RoleBinding，`XiHan__Scheduling__Kubernetes__Lease`，`XIHAN_POD_NAME`、`POD_NAMESPACE`（Pod 字段） | — | — |
 | `environment` | — | `env` | `environment` | `WithEnvironment` |
 
 绑定类型在 Compose 与 Aspire 里的对应：
