@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
   </ItemGroup>
 

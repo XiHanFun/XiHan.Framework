@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using Error = XiHan.Framework.Primitives.Error;

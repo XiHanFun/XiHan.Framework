@@ -8,7 +8,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 调用上下文与协议 <c>InvocationMetadata</c> 之间的映射（RFC-0003、<c>spec/plugin/invocation.md</c>）。

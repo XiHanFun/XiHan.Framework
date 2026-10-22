@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
 using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 原语层 <see cref="Error"/> / <see cref="Result"/> 与协议 <c>Error</c> / <c>Status</c> 之间的转换，以及 gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c>）。

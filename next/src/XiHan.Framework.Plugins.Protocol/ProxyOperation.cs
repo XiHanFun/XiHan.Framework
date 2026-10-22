@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Kernel.Operations;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 握手声明的一个操作：契约、Schema 与是否流式。

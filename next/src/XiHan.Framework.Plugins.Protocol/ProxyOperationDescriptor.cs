@@ -5,12 +5,12 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 插件操作在宿主登记表里的代理：载荷原样搬运，执行时经运行时发给插件进程。
+/// 插件操作在宿主登记表里的代理：载荷原样搬运，执行时经载体的运行时发给插件。
 /// </summary>
-internal sealed class ProxyOperationDescriptor(OperationContract contract, string ownerId, PluginRuntime runtime, OperationSchema? schema)
+internal sealed class ProxyOperationDescriptor(OperationContract contract, string ownerId, IPluginInvoker invoker, OperationSchema? schema)
     : OperationDescriptor(contract, ownerId, typeof(ProxyOperationDescriptor), typeof(PluginPayload), typeof(PluginPayload), schema)
 {
     /// <inheritdoc />
@@ -28,7 +28,7 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
     {
         ArgumentNullException.ThrowIfNull(context);
         return request is PluginPayload payload
-            ? runtime.InvokeAsync(Id, payload.Bytes, context)
+            ? invoker.InvokeAsync(Id, payload.Bytes, context)
             : ValueTask.FromResult(Result.Failure<object>(Error.Validation(KernelErrors.OperationTypeMismatch, KernelMessages.OperationTypeMismatch, MessageArguments.Of(("id", Id), ("expected", nameof(PluginPayload)), ("actual", request?.GetType().Name)))));
     }
 }

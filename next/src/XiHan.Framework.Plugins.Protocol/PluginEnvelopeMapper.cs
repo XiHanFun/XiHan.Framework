@@ -8,7 +8,7 @@ using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using Error = XiHan.Framework.Primitives.Error;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 消息信封与协议 <c>Envelope</c> 之间的映射（RFC-0009）。

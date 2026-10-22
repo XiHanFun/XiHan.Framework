@@ -4,16 +4,16 @@
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 进程外插件宿主的消息键；文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）。
+/// 插件协议各载体共用的消息键；文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginMessages
 {
     /// <summary>消息目录名。</summary>
-    public const string CatalogName = "plugins.out-of-process";
+    public const string CatalogName = "plugins.protocol";
 
     /// <summary>插件目录里的清单不合法。参数：<c>directory</c>、<c>reason</c>。</summary>
     public const string ManifestInvalid = "plugins.process.manifest_invalid";
@@ -62,6 +62,15 @@ public static class PluginMessages
 
     /// <summary>宿主没有消息发布器，无法代插件发布。参数：<c>id</c>。</summary>
     public const string MessagingUnavailable = "plugins.callback.messaging_unavailable";
+
+    /// <summary>Wasm 模块不合法。参数：<c>id</c>、<c>reason</c>。</summary>
+    public const string ModuleInvalid = "plugins.module.invalid";
+
+    /// <summary>Wasm 实例陷阱。参数：<c>id</c>、<c>trap</c>。</summary>
+    public const string ModuleTrapped = "plugins.module.trapped";
+
+    /// <summary>沙箱资源不足。参数：<c>id</c>、<c>reason</c>。</summary>
+    public const string SandboxExhausted = "plugins.sandbox.exhausted";
 
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Localization.Abstractions;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 一次成功握手的结果。

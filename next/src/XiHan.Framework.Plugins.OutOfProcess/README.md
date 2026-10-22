@@ -34,7 +34,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 
 ## 依赖方向
 
-依赖 `Kernel`、`Messaging.Abstractions`、`Localization.Abstractions`，以及 `Google.Protobuf`、`Grpc.AspNetCore.Server`、`Grpc.Net.Client`（协议类型由 `Grpc.Tools` 从 `spec/plugin/plugin.proto` 生成，internal）。非 AOT。
+依赖 `Plugins.Protocol`（协议类型、握手核对、映射与代理操作）、`Kernel`、`Messaging.Abstractions`、`Localization.Abstractions`，以及 `Grpc.AspNetCore.Server`、`Grpc.Net.Client`。非 AOT。
 
 ## 状态
 

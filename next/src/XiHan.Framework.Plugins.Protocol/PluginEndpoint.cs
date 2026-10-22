@@ -6,7 +6,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 一个本机 gRPC 端点：Unix 域套接字、回环 TCP 或 Windows 命名管道（<c>spec/plugin/handshake.md</c>）。

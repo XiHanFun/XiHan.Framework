@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Plugins.OutOfProcess;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives.Manifests;
 

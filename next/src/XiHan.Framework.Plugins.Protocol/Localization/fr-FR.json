@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "Le jeton de session du plugin est absent ou invalide.",
   "plugins.handshake.invalid": "Le plugin '{id}' a échoué à la poignée de main : {reason}",
   "plugins.handshake.mismatch": "La poignée de main du plugin '{id}' ne correspond pas à son manifeste : {reason}",
+  "plugins.module.invalid": "Le module Wasm du plugin '{id}' est invalide : {reason}",
+  "plugins.module.trapped": "Le plugin '{id}' a déclenché un piège : {trap}",
   "plugins.process.already_loaded": "Le plugin '{id}' est déjà chargé.",
   "plugins.process.crashed": "Le plugin '{id}' s'est terminé de façon inattendue avec le code {exitCode}.",
   "plugins.process.entry_required": "Le manifeste du plugin '{id}' doit déclarer 'entry' (l'exécutable relatif au répertoire du plugin).",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "Le manifeste '{id}' ne décrit pas un plugin hors processus (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Les permissions déclarées par le plugin '{id}' n'ont pas été accordées : {permissions}.",
   "plugins.process.timeout": "Le plugin '{id}' a dépassé le délai pendant {phase}.",
-  "plugins.process.unavailable": "Le plugin '{id}' est indisponible (état : {state})."
+  "plugins.process.unavailable": "Le plugin '{id}' est indisponible (état : {state}).",
+  "plugins.sandbox.exhausted": "Le plugin '{id}' a épuisé les ressources du bac à sable : {reason}"
 }

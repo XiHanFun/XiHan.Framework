@@ -7,6 +7,7 @@ using Grpc.Core;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Plugins.OutOfProcess;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -217,7 +218,7 @@ public abstract class PluginProtocolConformance
         try
         {
             var response = await process.Client.HandshakeAsync(HandshakeRequest(PluginProtocol.SupportedVersions), deadline: Deadline()).ConfigureAwait(false);
-            var validated = HandshakeValidator.Validate(manifest, response, 1);
+            var validated = HandshakeValidator.Validate(manifest, response, 1, PluginIsolation.OutOfProcess);
             Assert.True(validated.IsSuccess, validated.Error?.Message);
             return new PluginSession(process, manifest, validated.ValueOrThrow());
         }

@@ -3,6 +3,7 @@
 
 using Grpc.Core;
 using Grpc.Core.Interceptors;
+using XiHan.Framework.Plugins.Protocol;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
 

@@ -13,30 +13,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 一致性套件复用进程启动、握手核对与协议桩 -->
+    <!-- 一致性套件复用进程启动 -->
     <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.AspNetCore.Server" />
     <PackageReference Include="Grpc.Net.Client" />
-    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- 协议消息与桩由规范里的同一份 .proto 生成（RFC-0017）；internal：生成的类型不进公开面 -->
-    <Protobuf Include="../../spec/plugin/plugin.proto" ProtoRoot="../../spec/plugin" GrpcServices="Both" Access="Internal" Link="Protocol/plugin.proto" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
-    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

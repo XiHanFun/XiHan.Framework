@@ -23,7 +23,7 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Plugins.OutOfProcess`（进程启动、握手核对与协议桩）与 xunit 的断言与扩展核心包。
+依赖 `XiHan.Framework.Plugins.Protocol`（协议桩、握手核对）、`XiHan.Framework.Plugins.OutOfProcess`（进程启动）与 xunit 的断言与扩展核心包。
 
 ## 状态
 

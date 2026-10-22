@@ -1,0 +1,67 @@
+#nullable enable
+const XiHan.Framework.Plugins.Protocol.PluginEndpoint.HandshakeLinePrefix = "xihan-plugin/1" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginEndpoint.NamedPipe = "npipe" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginEndpoint.Tcp = "tcp" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginEndpoint.Unix = "unix" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.AlreadyLoaded = "PLUGINS_CONFLICT_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.CallbackDenied = "PLUGINS_DENIED_002" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.Crashed = "PLUGINS_UNEXPECTED_002" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.HandshakeMismatch = "PLUGINS_VALIDATION_004" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidHandshake = "PLUGINS_VALIDATION_003" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidModule = "PLUGINS_VALIDATION_005" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.InvalidSource = "PLUGINS_VALIDATION_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.NotFound = "PLUGINS_NOTFOUND_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.PermissionDenied = "PLUGINS_DENIED_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.ResourceExhausted = "PLUGINS_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.Timeout = "PLUGINS_TIMEOUT_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.Unavailable = "PLUGINS_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginErrors.Unexpected = "PLUGINS_UNEXPECTED_001" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.AlreadyLoaded = "plugins.process.already_loaded" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.CallbackDenied = "plugins.callback.denied" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.CatalogName = "plugins.protocol" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.EntryRequired = "plugins.process.entry_required" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ExecutableMissing = "plugins.process.executable_missing" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.HandshakeInvalid = "plugins.handshake.invalid" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.HandshakeMismatch = "plugins.handshake.mismatch" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ManifestInvalid = "plugins.process.manifest_invalid" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.MessagingUnavailable = "plugins.callback.messaging_unavailable" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ModuleInvalid = "plugins.module.invalid" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ModuleTrapped = "plugins.module.trapped" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.NotLoaded = "plugins.process.not_loaded" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.NotOutOfProcess = "plugins.process.not_out_of_process" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.PermissionsNotGranted = "plugins.process.permissions_not_granted" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessCrashed = "plugins.process.crashed" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessFailed = "plugins.process.failed" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessTimeout = "plugins.process.timeout" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessUnavailable = "plugins.process.unavailable" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.SandboxExhausted = "plugins.sandbox.exhausted" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.SessionInvalid = "plugins.callback.session_invalid" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.ErrorCodeTrailer = "xihan-error-code" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.HostAddressVariable = "XIHAN_PLUGIN_HOST_ADDRESS" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.InstanceVariable = "XIHAN_PLUGIN_INSTANCE" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.LocaleVariable = "XIHAN_PLUGIN_LOCALE" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.PrimitivesVariable = "XIHAN_PLUGIN_PRIMITIVES" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.ProtocolVersionsVariable = "XIHAN_PLUGIN_PROTOCOL_VERSIONS" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.SessionMetadataKey = "xihan-plugin-session" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.SessionVariable = "XIHAN_PLUGIN_SESSION" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginProtocol.Version = 1 -> uint
+override XiHan.Framework.Plugins.Protocol.PluginEndpoint.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.Protocol.PluginEndpoint.GetHashCode() -> int
+override XiHan.Framework.Plugins.Protocol.PluginEndpoint.ToString() -> string!
+static XiHan.Framework.Plugins.Protocol.PluginEndpoint.operator !=(XiHan.Framework.Plugins.Protocol.PluginEndpoint? left, XiHan.Framework.Plugins.Protocol.PluginEndpoint? right) -> bool
+static XiHan.Framework.Plugins.Protocol.PluginEndpoint.operator ==(XiHan.Framework.Plugins.Protocol.PluginEndpoint? left, XiHan.Framework.Plugins.Protocol.PluginEndpoint? right) -> bool
+static XiHan.Framework.Plugins.Protocol.PluginEndpoint.TryParse(string? text, out XiHan.Framework.Plugins.Protocol.PluginEndpoint? endpoint) -> bool
+static XiHan.Framework.Plugins.Protocol.PluginEndpoint.TryParseHandshakeLine(string? line, out XiHan.Framework.Plugins.Protocol.PluginEndpoint? endpoint) -> bool
+static XiHan.Framework.Plugins.Protocol.PluginMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Plugins.Protocol.PluginProtocol.Negotiate(System.Collections.Generic.IEnumerable<uint>! hostVersions, System.Collections.Generic.IEnumerable<uint>! pluginVersions) -> XiHan.Framework.Primitives.Maybe<uint>
+static XiHan.Framework.Plugins.Protocol.PluginProtocol.SupportedVersions.get -> System.Collections.Generic.IReadOnlyList<uint>!
+XiHan.Framework.Plugins.Protocol.PluginEndpoint
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.<Clone>$() -> XiHan.Framework.Plugins.Protocol.PluginEndpoint!
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.Address.get -> string!
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.Equals(XiHan.Framework.Plugins.Protocol.PluginEndpoint? other) -> bool
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.Network.get -> string!
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.PluginEndpoint(string! network, string! address) -> void
+XiHan.Framework.Plugins.Protocol.PluginEndpoint.ToHandshakeLine() -> string!
+XiHan.Framework.Plugins.Protocol.PluginErrors
+XiHan.Framework.Plugins.Protocol.PluginMessages
+XiHan.Framework.Plugins.Protocol.PluginProtocol

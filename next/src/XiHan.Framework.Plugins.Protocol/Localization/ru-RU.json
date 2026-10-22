@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "Токен сеанса плагина отсутствует или недопустим.",
   "plugins.handshake.invalid": "Плагин '{id}' не прошёл рукопожатие: {reason}",
   "plugins.handshake.mismatch": "Ответ рукопожатия плагина '{id}' не соответствует его манифесту: {reason}",
+  "plugins.module.invalid": "Модуль Wasm плагина '{id}' недопустим: {reason}",
+  "plugins.module.trapped": "Плагин '{id}' вызвал ловушку: {trap}",
   "plugins.process.already_loaded": "Плагин '{id}' уже загружен.",
   "plugins.process.crashed": "Плагин '{id}' неожиданно завершился с кодом {exitCode}.",
   "plugins.process.entry_required": "Манифест плагина '{id}' должен объявлять 'entry' (исполняемый файл относительно каталога плагина).",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "Манифест '{id}' не описывает внепроцессный плагин (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Разрешения, объявленные плагином '{id}', не были предоставлены: {permissions}.",
   "plugins.process.timeout": "Плагин '{id}' превысил время ожидания на этапе {phase}.",
-  "plugins.process.unavailable": "Плагин '{id}' недоступен (состояние: {state})."
+  "plugins.process.unavailable": "Плагин '{id}' недоступен (состояние: {state}).",
+  "plugins.sandbox.exhausted": "Плагину '{id}' не хватило ресурсов песочницы: {reason}"
 }

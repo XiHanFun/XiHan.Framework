@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "플러그인 세션 토큰이 없거나 잘못되었습니다.",
   "plugins.handshake.invalid": "플러그인 '{id}' 핸드셰이크에 실패했습니다: {reason}",
   "plugins.handshake.mismatch": "플러그인 '{id}'의 핸드셰이크 응답이 매니페스트와 일치하지 않습니다: {reason}",
+  "plugins.module.invalid": "플러그인 '{id}'의 Wasm 모듈이 잘못되었습니다: {reason}",
+  "plugins.module.trapped": "플러그인 '{id}'에서 트랩이 발생했습니다: {trap}",
   "plugins.process.already_loaded": "플러그인 '{id}'이(가) 이미 로드되었습니다.",
   "plugins.process.crashed": "플러그인 '{id}'이(가) 종료 코드 {exitCode}(으)로 예기치 않게 종료되었습니다.",
   "plugins.process.entry_required": "플러그인 매니페스트 '{id}'은(는) 'entry'(플러그인 디렉터리 기준 실행 파일)를 선언해야 합니다.",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "매니페스트 '{id}'은(는) 프로세스 외부 플러그인을 설명하지 않습니다 (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "플러그인 '{id}'이(가) 선언한 권한이 부여되지 않았습니다: {permissions}.",
   "plugins.process.timeout": "플러그인 '{id}'이(가) {phase} 단계에서 시간 초과되었습니다.",
-  "plugins.process.unavailable": "플러그인 '{id}'을(를) 사용할 수 없습니다 (상태: {state})."
+  "plugins.process.unavailable": "플러그인 '{id}'을(를) 사용할 수 없습니다 (상태: {state}).",
+  "plugins.sandbox.exhausted": "플러그인 '{id}'의 샌드박스 자원이 부족합니다: {reason}"
 }

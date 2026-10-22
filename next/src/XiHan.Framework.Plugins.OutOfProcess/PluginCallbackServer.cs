@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Plugins.Protocol;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
 

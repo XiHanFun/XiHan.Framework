@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using Error = XiHan.Framework.Primitives.Error;

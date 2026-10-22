@@ -11,6 +11,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
