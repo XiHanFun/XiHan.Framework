@@ -32,6 +32,7 @@
     <Project Path="src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
     <Project Path="src/XiHan.Framework.ObjectStorage.FileSystem/XiHan.Framework.ObjectStorage.FileSystem.csproj" />
     <Project Path="src/XiHan.Framework.Scheduling.InMemory/XiHan.Framework.Scheduling.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Scheduling.Kubernetes/XiHan.Framework.Scheduling.Kubernetes.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
   </Folder>
@@ -104,6 +105,7 @@
     <Project Path="test/XiHan.Framework.ObjectStorage.FileSystem.Tests/XiHan.Framework.ObjectStorage.FileSystem.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Scheduling.Abstractions.Tests/XiHan.Framework.Scheduling.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Scheduling.InMemory.Tests/XiHan.Framework.Scheduling.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Scheduling.Kubernetes.Tests/XiHan.Framework.Scheduling.Kubernetes.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Configuration.Abstractions.Tests/XiHan.Framework.Configuration.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Abstractions.Tests/XiHan.Framework.Auditing.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />

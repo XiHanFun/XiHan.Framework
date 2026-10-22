@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "Задание '{name}' не зарегистрировано.",
   "scheduling.job.running": "Задание '{name}' уже выполняется и не допускает параллельных запусков.",
   "scheduling.lease.held": "Аренда лидера для '{resource}' удерживается другим владельцем.",
+  "scheduling.lease.unavailable": "Хранилище аренды лидера для '{resource}' недоступно: {reason}",
   "scheduling.scheduler.unavailable": "Планировщик заданий не запущен."
 }

@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "Der Job '{name}' ist nicht registriert.",
   "scheduling.job.running": "Der Job '{name}' läuft bereits und erlaubt keine gleichzeitigen Läufe.",
   "scheduling.lease.held": "Das Leader-Lease für '{resource}' wird von einem anderen Inhaber gehalten.",
+  "scheduling.lease.unavailable": "Der Leader-Lease-Speicher für '{resource}' ist nicht verfügbar: {reason}",
   "scheduling.scheduler.unavailable": "Der Job-Scheduler läuft nicht."
 }

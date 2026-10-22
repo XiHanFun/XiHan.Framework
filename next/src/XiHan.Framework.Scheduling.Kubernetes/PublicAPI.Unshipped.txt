@@ -1,0 +1,43 @@
+#nullable enable
+const XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ConfigurationSection = "XiHan:Scheduling:Kubernetes" -> string!
+const XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.DefaultResource = "scheduling.jobs" -> string!
+override XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ToString() -> string!
+static XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient.CreateInCluster(XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions! options) -> XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient!
+static XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions!
+static XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.operator !=(XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions? left, XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions? right) -> bool
+static XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.operator ==(XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions? left, XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions? right) -> bool
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaderElection
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaderElection.Holder.get -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaderElection.KubernetesLeaderElection(XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient! client, XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.LeaderLease!>>
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient.KubernetesLeaseClient(System.Net.Http.HttpClient! http, XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions! options) -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesLeaseClient.Namespace.get -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingFeature
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingFeature.KubernetesSchedulingFeature() -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ApiServer.get -> System.Uri?
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ApiServer.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.CertificateAuthorityPath.get -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.CertificateAuthorityPath.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Equals(XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions? other) -> bool
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Holder.get -> string?
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Holder.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.KubernetesSchedulingOptions() -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Lease.get -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Lease.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.LeaseNameFor(XiHan.Framework.Scheduling.Abstractions.JobName resource) -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Namespace.get -> string?
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Namespace.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveApiServer() -> System.Uri!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveHolder() -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveNamespace() -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Token.get -> string?
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Token.init -> void
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.TokenPath.get -> string!
+XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.TokenPath.init -> void

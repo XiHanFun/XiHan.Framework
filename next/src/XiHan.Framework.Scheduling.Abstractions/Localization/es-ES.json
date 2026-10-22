@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "El trabajo '{name}' no está registrado.",
   "scheduling.job.running": "El trabajo '{name}' ya se está ejecutando y no permite ejecuciones concurrentes.",
   "scheduling.lease.held": "La concesión de líder para '{resource}' la tiene otro titular.",
+  "scheduling.lease.unavailable": "El almacén de concesiones de líder para '{resource}' no está disponible: {reason}",
   "scheduling.scheduler.unavailable": "El programador de trabajos no está en ejecución."
 }
