@@ -1,0 +1,6 @@
+{
+  "objectstorage.blob.exists": "コンテナー '{container}' には Blob '{key}' が既に存在します。",
+  "objectstorage.blob.not_found": "コンテナー '{container}' に Blob '{key}' は存在しません。",
+  "objectstorage.quota.exceeded": "{requested} バイトを書き込むとオブジェクトストレージのクォータ {limit} バイトを超えます。",
+  "objectstorage.store.unavailable": "オブジェクトストレージを利用できません: {reason}"
+}

@@ -35,6 +35,9 @@
     <Project Path="src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
     <Project Path="src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
     <Project Path="src/XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectStorage.Abstractions/XiHan.Framework.ObjectStorage.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectStorage.FileSystem/XiHan.Framework.ObjectStorage.FileSystem.csproj" />
+    <Project Path="src/XiHan.Framework.ObjectStorage.Conformance/XiHan.Framework.ObjectStorage.Conformance.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -84,6 +87,7 @@
     <Project Path="test/XiHan.Framework.Protocols.Grpc.Tests/XiHan.Framework.Protocols.Grpc.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.CloudEvents.Tests/XiHan.Framework.Protocols.CloudEvents.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Hosting.CommandLine.Tests/XiHan.Framework.Hosting.CommandLine.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.ObjectStorage.FileSystem.Tests/XiHan.Framework.ObjectStorage.FileSystem.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">

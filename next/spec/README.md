@@ -47,3 +47,4 @@ spec/
 | [0009](rfcs/0009-messaging.md) | 消息、CloudEvents 信封与发件箱 | 已采纳（参考实现 `Messaging.Abstractions`、`Messaging.InMemory`、`Messaging.RabbitMQ`，套件 `Messaging.Conformance`） |
 | [0010](rfcs/0010-localization.md) | 本地化：默认英文与 10 种内置区域 | 已采纳（参考实现 `Localization.Abstractions`、`Localization.InMemory`） |
 | [0011](rfcs/0011-operations.md) | 操作契约与 XGI 消息 | 已采纳（参考实现 `Kernel.Operations`） |
+| [0012](rfcs/0012-objectstorage.md) | 对象存储 | 已采纳（参考实现 `ObjectStorage.Abstractions`、`ObjectStorage.FileSystem`，套件 `ObjectStorage.Conformance`） |
