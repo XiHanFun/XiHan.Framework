@@ -1,0 +1,130 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Globalization;
+using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
+
+namespace XiHan.Framework.Security.InMemory;
+
+/// <summary>
+/// 内存安全选项。配置节 <c>XiHan:Security:InMemory</c>。
+/// </summary>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed record InMemorySecurityOptions
+{
+    /// <summary>
+    /// 配置节。
+    /// </summary>
+    public const string ConfigurationSection = "XiHan:Security:InMemory";
+
+    /// <summary>
+    /// 主体上限；默认 1000。
+    /// </summary>
+    public int MaxPrincipals
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of principals must be positive.");
+    } = 1_000;
+
+    /// <summary>
+    /// 授予上限；默认 10000。
+    /// </summary>
+    public int MaxGrants
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of grants must be positive.");
+    } = 10_000;
+
+    /// <summary>
+    /// 装载的主体。
+    /// </summary>
+    public IReadOnlyList<PrincipalRecord> Principals
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = [];
+
+    /// <summary>
+    /// 装载的授予（全局）。
+    /// </summary>
+    public IReadOnlyList<PermissionGrant> Grants
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = [];
+
+    /// <summary>
+    /// 从配置读取：<c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、
+    /// <c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）。
+    /// </summary>
+    public static InMemorySecurityOptions FromConfiguration(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        var options = new InMemorySecurityOptions();
+        if (ReadPositive(configuration, "MaxPrincipals") is { } maxPrincipals)
+        {
+            options = options with { MaxPrincipals = maxPrincipals };
+        }
+
+        if (ReadPositive(configuration, "MaxGrants") is { } maxGrants)
+        {
+            options = options with { MaxGrants = maxGrants };
+        }
+
+        var principals = new List<PrincipalRecord>();
+        foreach (var section in configuration.GetSection($"{ConfigurationSection}:Principals").GetChildren())
+        {
+            principals.Add(new PrincipalRecord
+            {
+                Id = section.Key,
+                ApiKey = section["ApiKey"] ?? throw new ArgumentException($"{ConfigurationSection}:Principals:{section.Key}:ApiKey is required."),
+                DisplayName = section["DisplayName"],
+                Roles = Split(section["Roles"]),
+                Tenant = section["Tenant"],
+                Claims = section.GetSection("Claims").GetChildren()
+                    .Where(static c => c.Value is not null)
+                    .Select(static c => new KeyValuePair<string, string>(c.Key, c.Value!))
+                    .ToList(),
+            });
+        }
+
+        // 配置里的授予都是全局的（无租户）；租户专属授予只能在运行时通过 Grant 添加
+        var grants = new List<PermissionGrant>();
+        foreach (var kind in new[] { GrantSubject.Role, GrantSubject.User })
+        {
+            foreach (var subject in configuration.GetSection($"{ConfigurationSection}:Grants:{kind}").GetChildren())
+            {
+                foreach (var permission in Split(subject.Value))
+                {
+                    grants.Add(new PermissionGrant(new GrantSubject(kind, subject.Key), permission));
+                }
+            }
+        }
+
+        return options with { Principals = principals, Grants = grants };
+    }
+
+    /// <summary>
+    /// 读取配置节下的正整数；缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// </summary>
+    private static int? ReadPositive(IConfiguration configuration, string name)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{name}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
+            ? value
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
+    }
+
+    /// <summary>
+    /// 按逗号拆分并去掉空白与空项；<see langword="null"/> 得到空列表。
+    /// </summary>
+    private static List<string> Split(string? value)
+        => value is null ? [] : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+}

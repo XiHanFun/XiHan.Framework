@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "매니페스트 '{id}'이(가) 'bindings'에서 같은 바인딩 이름을 두 번 이상 선언했습니다.",
+  "primitives.manifest.duplicate_provides": "매니페스트 '{id}'이(가) 'provides'에서 같은 기능 ID를 두 번 이상 선언했습니다.",
+  "primitives.manifest.duplicate_requires": "매니페스트 '{id}'이(가) 'requires'에서 같은 기능 ID를 두 번 이상 선언했습니다.",
+  "primitives.manifest.isolation_not_allowed": "매니페스트 '{id}'은(는) 플러그인이 아니므로 'isolation' 또는 'permissions'를 선언할 수 없습니다.",
+  "primitives.manifest.isolation_required": "플러그인 매니페스트 '{id}'에는 'isolation'을 선언해야 합니다.",
+  "primitives.result.uninitialized": "결과가 초기화되지 않았습니다: 기본값은 올바른 결과가 아닙니다."
+}

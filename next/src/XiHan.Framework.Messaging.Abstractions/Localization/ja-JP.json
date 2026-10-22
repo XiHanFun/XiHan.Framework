@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "'id'、'source'、'type' 属性は必須です。",
+  "messaging.envelope.invalid": "エンベロープが不正です: {reason}",
+  "messaging.envelope.invalid_base64": "'data_base64' 属性は有効な Base64 ではありません。",
+  "messaging.envelope.invalid_extension": "拡張属性名 '{name}' が不正です。",
+  "messaging.envelope.invalid_json": "ドキュメントは有効な CloudEvents JSON ではありません: {reason}",
+  "messaging.envelope.invalid_time": "'time' 属性 '{time}' は RFC 3339 のタイムスタンプではありません。",
+  "messaging.envelope.spec_version": "'specversion' 属性は '{specVersion}' でなければなりません。",
+  "messaging.handler.failed": "メッセージハンドラーが未処理の例外をスローしました: {reason}",
+  "messaging.queue.full": "トピック '{topic}' のインメモリキューが満杯です (容量 {capacity})。",
+  "messaging.topic.invalid": "トピック '{topic}' が不正です。"
+}

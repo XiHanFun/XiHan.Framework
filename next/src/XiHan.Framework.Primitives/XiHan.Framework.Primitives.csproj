@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Primitives</PackageId>
+    <RootNamespace>XiHan.Framework.Primitives</RootNamespace>
+    <Description>XiHan Framework 原语层（Ring 0）：Result、Error、Maybe、TypedId、调用上下文契约、清单模型与稳定性标记。只增不改。</Description>
+    <PackageTags>xihan;framework;primitives</PackageTags>
+    <!-- Ring 0：分析器据此禁止反射 -->
+    <XiHanRing>0</XiHanRing>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- 版本常量由构建期生成，FrameworkInfo.Version 不经反射读取程序集特性 -->
+  <Target Name="GenerateFrameworkVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_FrameworkVersionFile>$(IntermediateOutputPath)FrameworkVersion.g.cs</_FrameworkVersionFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_FrameworkVersionLine Include="// &lt;auto-generated/&gt;" />
+      <_FrameworkVersionLine Include="namespace XiHan.Framework.Primitives%3B" />
+      <_FrameworkVersionLine Include="internal static class GeneratedVersion" />
+      <_FrameworkVersionLine Include="{" />
+      <_FrameworkVersionLine Include="    public const string Value = &quot;$(Version)&quot;%3B" />
+      <_FrameworkVersionLine Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_FrameworkVersionFile)" Lines="@(_FrameworkVersionLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(_FrameworkVersionFile)" />
+      <FileWrites Include="$(_FrameworkVersionFile)" />
+    </ItemGroup>
+  </Target>
+</Project>

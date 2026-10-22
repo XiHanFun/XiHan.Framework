@@ -1,0 +1,10 @@
+{
+  "persistence.entity.concurrency_conflict": "Un conflit de concurrence optimiste s'est produit sur '{entity}' : {reason}",
+  "persistence.entity.duplicate": "L'entité '{entity}' possède déjà un élément avec l'identifiant '{id}'.",
+  "persistence.entity.not_found": "L'entité '{entity}' n'a aucun élément avec l'identifiant '{id}'.",
+  "persistence.entity.stale_stamp": "Le jeton de concurrence de '{entity}' avec l'identifiant '{id}' est obsolète.",
+  "persistence.entity.tenant_required": "L'entité '{entity}' est multi-locataire, mais l'appel courant n'a aucun locataire.",
+  "persistence.store.capacity_exceeded": "La table en mémoire de '{entity}' a atteint sa capacité de {capacity}.",
+  "persistence.unit_of_work.concurrency_conflict": "Un conflit de concurrence optimiste s'est produit lors de la validation : {reason}",
+  "persistence.unit_of_work.read_only": "Une unité de travail en lecture seule n'accepte pas les écritures."
+}

@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "API Key 无效。",
+  "security.authentication.required": "此调用需要认证。",
+  "security.authentication.unsupported_scheme": "不支持认证方案 '{scheme}'。",
+  "security.grant_store.capacity_exceeded": "内存授予存储已达到容量上限 {capacity}。",
+  "security.permission.missing": "缺少权限 '{permission}'。",
+  "security.policy.not_found": "策略 '{policy}' 不存在。",
+  "security.principal_store.capacity_exceeded": "内存主体存储已达到容量上限 {capacity}。",
+  "security.token.invalid": "令牌无效、已过期或签名不符。",
+  "security.token.subject_missing": "令牌缺少主体声明 '{claim}'。"
+}

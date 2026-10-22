@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Hosting.AspNetCore</PackageId>
+    <RootNamespace>XiHan.Framework.Hosting.AspNetCore</RootNamespace>
+    <Description>XiHan Framework 的 ASP.NET Core 宿主适配（Ring 4）：把 HTTP 请求翻译为调用上下文并经过内核管道，映射探针端点，用 RFC 9457 Problem Details 回写失败结果。</Description>
+    <PackageTags>xihan;framework;hosting;aspnetcore</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

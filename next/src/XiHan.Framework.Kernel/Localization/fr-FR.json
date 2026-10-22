@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "Refusé par la stratégie.",
+  "kernel.feature.start_failed": "La fonctionnalité '{id}' n'a pas pu démarrer : {reason}",
+  "kernel.feature.stop_failed": "La fonctionnalité '{id}' n'a pas pu s'arrêter : {reason}",
+  "kernel.feature.stop_timeout": "La fonctionnalité '{id}' a expiré lors de l'arrêt.",
+  "kernel.hosting.not_serving": "L'application est à l'état {state} et n'accepte pas de requêtes.",
+  "kernel.invocation.cancelled": "L'appel a été annulé.",
+  "kernel.invocation.deadline_before_start": "L'appel a dépassé son échéance avant de commencer.",
+  "kernel.invocation.deadline_exceeded": "L'appel a dépassé son échéance.",
+  "kernel.invocation.unhandled_exception": "Une exception non gérée s'est produite pendant l'appel.",
+  "kernel.manifest.empty": "Le manifeste est vide.",
+  "kernel.manifest.file_missing": "Le fichier de manifeste '{path}' n'existe pas.",
+  "kernel.manifest.invalid": "Le manifeste n'est pas valide : {reason}",
+  "kernel.manifest.invalid_json": "Le manifeste n'est pas un JSON valide : {reason}",
+  "kernel.permission.duplicate": "Le code de permission '{code}' est déjà enregistré.",
+  "kernel.permission.registry_full": "Le registre des permissions a atteint sa capacité de {capacity}."
+}

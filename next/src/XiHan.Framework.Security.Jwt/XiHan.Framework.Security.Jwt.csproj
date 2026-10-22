@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.Jwt</PackageId>
+    <RootNamespace>XiHan.Framework.Security.Jwt</RootNamespace>
+    <Description>XiHan Framework 认证的 JWT Provider：校验 Bearer 令牌（对称密钥、签发者、受众、有效期）并映射为主体。</Description>
+    <PackageTags>xihan;framework;security;jwt;bearer</PackageTags>
+    <!-- Microsoft.IdentityModel 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+  </ItemGroup>
+</Project>

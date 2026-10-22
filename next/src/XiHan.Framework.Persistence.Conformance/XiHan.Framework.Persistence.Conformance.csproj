@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Persistence.Conformance</PackageId>
+    <RootNamespace>XiHan.Framework.Persistence.Conformance</RootNamespace>
+    <Description>XiHan Framework 持久化一致性套件：任何 persistence.relational Provider 都必须通过的 xUnit 抽象测试类与样例实体。</Description>
+    <PackageTags>xihan;framework;persistence;conformance;xunit</PackageTags>
+    <!-- 套件在测试进程里运行，不进入 AOT 产物 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+</Project>

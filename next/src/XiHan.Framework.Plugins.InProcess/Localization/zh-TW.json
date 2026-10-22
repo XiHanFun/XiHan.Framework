@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "外掛組件 '{path}' 不存在。",
+  "plugins.entry.manifest_mismatch": "進入點類型的清單 ID '{actual}' 與清單檔案的 ID '{expected}' 不一致。",
+  "plugins.entry.not_found": "在外掛組件 '{package}' 裡找不到進入點類型 '{entry}'。",
+  "plugins.entry.not_plugin": "進入點類型 '{entry}' 未實作 'IPlugin'。",
+  "plugins.manifest.entry_required": "外掛清單 '{id}' 必須同時宣告 'package'（組件名稱）和 'entry'（進入點類型）。",
+  "plugins.manifest.invalid": "外掛目錄 '{directory}' 裡的清單不合法：{reason}",
+  "plugins.manifest.not_in_process": "清單 '{id}' 描述的不是處理序內外掛（kind={kind}，isolation={isolation}）。",
+  "plugins.permission.not_granted": "外掛 '{id}' 宣告的權限未被授予：{permissions}。",
+  "plugins.plugin.already_loaded": "外掛 '{id}' 已載入。",
+  "plugins.plugin.load_failed": "外掛 '{id}' 載入失敗：{reason}",
+  "plugins.plugin.not_loaded": "外掛 '{id}' 未載入。",
+  "plugins.plugin.stop_failed": "外掛 '{id}' 停止失敗：{reason}"
+}

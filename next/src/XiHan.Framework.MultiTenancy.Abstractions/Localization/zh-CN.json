@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "内存租户存储已达到容量上限 {capacity}。",
+  "multitenancy.tenant.disabled": "租户 '{tenantId}' 已禁用。",
+  "multitenancy.tenant.invalid_id": "租户 ID '{tenantId}' 不合法。",
+  "multitenancy.tenant.not_found": "租户 '{tenantId}' 不存在。",
+  "multitenancy.tenant.required": "此调用必须带租户，但没有解析到租户。"
+}

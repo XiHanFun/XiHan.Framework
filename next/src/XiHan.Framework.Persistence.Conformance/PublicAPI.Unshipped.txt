@@ -1,0 +1,74 @@
+#nullable enable
+abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
+override XiHan.Framework.Persistence.Conformance.ConformanceClock.GetUtcNow() -> System.DateTimeOffset
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.CountAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, string? tenantId = null) -> System.Threading.Tasks.Task<long>!
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.Epoch.get -> System.DateTimeOffset
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.FindAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, TKey id, string? tenantId = null) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Maybe<TEntity!>>!
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.ListAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, string? tenantId = null) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.Repository<TEntity, TKey>(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Persistence.Abstractions.IRepository<TEntity!, TKey>!
+static XiHan.Framework.Persistence.Conformance.RepositoryConformance.RunAsync(XiHan.Framework.Testing.TestHost! host, System.Func<XiHan.Framework.Primitives.InvocationContext!, System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!>! action, string? tenantId = null) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
+virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureApp(XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> void
+virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+XiHan.Framework.Persistence.Conformance.ConformanceClock
+XiHan.Framework.Persistence.Conformance.ConformanceClock.Advance(System.TimeSpan by) -> void
+XiHan.Framework.Persistence.Conformance.ConformanceClock.ConformanceClock(System.DateTimeOffset start) -> void
+XiHan.Framework.Persistence.Conformance.ConformanceFeature
+XiHan.Framework.Persistence.Conformance.ConformanceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Persistence.Conformance.ConformanceFeature.ConformanceFeature() -> void
+XiHan.Framework.Persistence.Conformance.ConformanceFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Persistence.Conformance.ConformanceItem
+XiHan.Framework.Persistence.Conformance.ConformanceItem.ConformanceItem() -> void
+XiHan.Framework.Persistence.Conformance.ConformanceItem.Id.get -> int
+XiHan.Framework.Persistence.Conformance.ConformanceItem.Id.init -> void
+XiHan.Framework.Persistence.Conformance.ConformanceItem.Label.get -> string!
+XiHan.Framework.Persistence.Conformance.ConformanceItem.Label.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceNote
+XiHan.Framework.Persistence.Conformance.ConformanceNote.ConformanceNote() -> void
+XiHan.Framework.Persistence.Conformance.ConformanceNote.Id.get -> System.Guid
+XiHan.Framework.Persistence.Conformance.ConformanceNote.Id.init -> void
+XiHan.Framework.Persistence.Conformance.ConformanceNote.TenantId.get -> string!
+XiHan.Framework.Persistence.Conformance.ConformanceNote.TenantId.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceNote.Text.get -> string!
+XiHan.Framework.Persistence.Conformance.ConformanceNote.Text.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Amount.get -> int
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Amount.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ClearDomainEvents() -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ConcurrencyStamp.get -> string!
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ConcurrencyStamp.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ConformanceOrder() -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.CreatedAt.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.DeletedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.DeletedAt.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.DomainEvents.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.IDomainEvent!>!
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Id.get -> System.Guid
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Id.init -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.IsDeleted.get -> bool
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.IsDeleted.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ModifiedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.ModifiedAt.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Name.get -> string!
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Name.set -> void
+XiHan.Framework.Persistence.Conformance.ConformanceOrder.Raise(XiHan.Framework.Domain.IDomainEvent! domainEvent) -> void
+XiHan.Framework.Persistence.Conformance.RepositoryConformance
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_DuplicateId_ReturnsDuplicate() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_IsReadableInSameUnitOfWork_AndVisibleAfterCommit() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Clock.get -> XiHan.Framework.Persistence.Conformance.ConformanceClock!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Exception_RollsBack_AndBecomesUnexpectedOutcome() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.FailureOutcome_RollsBack() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_AppliesFilterOrderingAndPaging_CountIgnoresPaging() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.MultiTenant_RequiresTenant_AndIsolatesTenants() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Provider_RegistersIdGenerator_AndDeclaresCapability() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_PlainEntity_DeletesPhysically() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_SoftDeletable_HidesEntity_UntilIncludeDeleted() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Repository_OutsideTransactionStage_Throws() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.RepositoryConformance() -> void
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.UncommittedWrite_IsInvisibleToOtherUnitOfWork() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_Missing_ReturnNotFound() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.TenantFromBaggageMiddleware
+XiHan.Framework.Persistence.Conformance.TenantFromBaggageMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Conformance.TenantFromBaggageMiddleware.TenantFromBaggageMiddleware() -> void

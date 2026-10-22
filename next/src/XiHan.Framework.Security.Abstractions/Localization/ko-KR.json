@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "API 키가 유효하지 않습니다.",
+  "security.authentication.required": "이 호출에는 인증이 필요합니다.",
+  "security.authentication.unsupported_scheme": "인증 체계 '{scheme}'은(는) 지원되지 않습니다.",
+  "security.grant_store.capacity_exceeded": "메모리 내 권한 부여 저장소가 용량 한도 {capacity}에 도달했습니다.",
+  "security.permission.missing": "권한 '{permission}'이(가) 없습니다.",
+  "security.policy.not_found": "정책 '{policy}'이(가) 없습니다.",
+  "security.principal_store.capacity_exceeded": "메모리 내 주체 저장소가 용량 한도 {capacity}에 도달했습니다.",
+  "security.token.invalid": "토큰이 유효하지 않거나 만료되었거나 서명이 잘못되었습니다.",
+  "security.token.subject_missing": "토큰에 주체 클레임 '{claim}'이(가) 없습니다."
+}
