@@ -3,10 +3,10 @@
 
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 进程外插件宿主的错误码（<c>PLUGINS_*</c>，见 <c>spec/conventions/error-codes.md</c>）。
+/// 插件协议各载体（进程外、Wasm）共用的错误码（<c>PLUGINS_*</c>，见 <c>spec/conventions/error-codes.md</c>）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginErrors
@@ -41,6 +41,12 @@ public static class PluginErrors
     /// <summary>配置、启动、停止或调用时发生未预期的失败。</summary>
     public const string Unexpected = "PLUGINS_UNEXPECTED_001";
 
-    /// <summary>插件进程异常退出。</summary>
+    /// <summary>插件进程异常退出，或 Wasm 实例陷阱 / 导出函数返回 0。</summary>
     public const string Crashed = "PLUGINS_UNEXPECTED_002";
+
+    /// <summary>Wasm 模块不合法，或运行期加载含中间件贡献的插件。</summary>
+    public const string InvalidModule = "PLUGINS_VALIDATION_005";
+
+    /// <summary>沙箱资源不足：回调嵌套超限、客体内存分配失败。</summary>
+    public const string ResourceExhausted = "PLUGINS_UNAVAILABLE_002";
 }

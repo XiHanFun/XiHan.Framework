@@ -11,6 +11,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.InMemory;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 

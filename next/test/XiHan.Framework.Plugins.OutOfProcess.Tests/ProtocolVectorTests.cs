@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Plugins.Protocol;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 

@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 协议 <c>xihan.plugin.v1</c> 的常量与版本协商（RFC-0017）。

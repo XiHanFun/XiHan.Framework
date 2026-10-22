@@ -48,6 +48,7 @@
     <Project Path="src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
+    <Project Path="src/XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
     <Project Path="src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
   </Folder>

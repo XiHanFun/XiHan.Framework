@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "O token de sessão do plugin está ausente ou é inválido.",
   "plugins.handshake.invalid": "O plugin '{id}' falhou no handshake: {reason}",
   "plugins.handshake.mismatch": "O handshake do plugin '{id}' não corresponde ao seu manifesto: {reason}",
+  "plugins.module.invalid": "O módulo Wasm do plugin '{id}' é inválido: {reason}",
+  "plugins.module.trapped": "O plugin '{id}' disparou uma armadilha: {trap}",
   "plugins.process.already_loaded": "O plugin '{id}' já está carregado.",
   "plugins.process.crashed": "O plugin '{id}' terminou inesperadamente com o código {exitCode}.",
   "plugins.process.entry_required": "O manifesto do plugin '{id}' deve declarar 'entry' (o executável relativo ao diretório do plugin).",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "O manifesto '{id}' não descreve um plugin fora de processo (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "As permissões declaradas pelo plugin '{id}' não foram concedidas: {permissions}.",
   "plugins.process.timeout": "O plugin '{id}' excedeu o tempo durante {phase}.",
-  "plugins.process.unavailable": "O plugin '{id}' não está disponível (estado: {state})."
+  "plugins.process.unavailable": "O plugin '{id}' não está disponível (estado: {state}).",
+  "plugins.sandbox.exhausted": "O plugin '{id}' esgotou os recursos do sandbox: {reason}"
 }

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.Protocol</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.Protocol</RootNamespace>
+    <Description>XiHan Framework 插件协议 xihan.plugin.v1 的 .NET 类型（Ring 3）：从规范 .proto 生成的消息与桩、错误码与消息键、端点与版本协商、握手核对、上下文 / 错误 / 信封映射与代理操作；进程外与 Wasm 宿主共用。</Description>
+    <PackageTags>xihan;framework;plugins;protocol;grpc;protobuf</PackageTags>
+    <!-- Google.Protobuf 的描述符反射未声明裁剪兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 各载体的宿主与一致性套件复用 internal 的协议桩、核对与映射 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.OutOfProcess" />
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Wasm" />
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Core.Api" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 协议消息与桩由规范里的同一份 .proto 生成（RFC-0017）；internal：生成的类型不进公开面 -->
+    <Protobuf Include="../../spec/plugin/plugin.proto" ProtoRoot="../../spec/plugin" GrpcServices="Both" Access="Internal" Link="Protocol/plugin.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

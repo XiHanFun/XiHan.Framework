@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 协议里 JSON 文本字段的编解码：错误细节与配置节。

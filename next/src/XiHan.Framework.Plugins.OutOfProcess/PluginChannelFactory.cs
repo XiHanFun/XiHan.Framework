@@ -4,6 +4,7 @@
 using System.IO.Pipes;
 using System.Net.Sockets;
 using Grpc.Net.Client;
+using XiHan.Framework.Plugins.Protocol;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
 

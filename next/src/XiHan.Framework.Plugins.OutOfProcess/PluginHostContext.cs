@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Plugins.Protocol;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
 

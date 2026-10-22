@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives.Manifests;
 using Error = XiHan.Framework.Primitives.Error;
 using MessageCatalog = XiHan.Framework.Localization.Abstractions.MessageCatalog;
 
-namespace XiHan.Framework.Plugins.OutOfProcess;
+namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
 /// 核对握手响应与目录里的清单（<c>spec/plugin/handshake.md</c> §3）。
@@ -20,7 +20,7 @@ internal static class HandshakeValidator
     /// <summary>
     /// 校验并整理握手结果。
     /// </summary>
-    public static Result<HandshakeInfo> Validate(Manifest manifest, HandshakeResponse response, int primitives)
+    public static Result<HandshakeInfo> Validate(Manifest manifest, HandshakeResponse response, int primitives, PluginIsolation isolation)
     {
         if (!PluginProtocol.SupportedVersions.Contains(response.ProtocolVersion))
         {
@@ -38,9 +38,9 @@ internal static class HandshakeValidator
             return Mismatch(manifest.Id, $"the manifest in the handshake is invalid: {read.Error!.Message}");
         }
 
-        if (declared.Kind != ManifestKind.Plugin || declared.Isolation != PluginIsolation.OutOfProcess)
+        if (declared.Kind != ManifestKind.Plugin || declared.Isolation != isolation)
         {
-            return Mismatch(manifest.Id, "the manifest in the handshake does not describe an out-of-process plugin");
+            return Mismatch(manifest.Id, $"the manifest in the handshake does not describe a plugin with isolation '{isolation}'");
         }
 
         var canonical = ManifestReader.Write(manifest);

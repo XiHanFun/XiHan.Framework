@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "The plugin session token is missing or invalid.",
   "plugins.handshake.invalid": "Plugin '{id}' failed the handshake: {reason}",
   "plugins.handshake.mismatch": "The handshake of plugin '{id}' does not match its manifest: {reason}",
+  "plugins.module.invalid": "The Wasm module of plugin '{id}' is invalid: {reason}",
+  "plugins.module.trapped": "Plugin '{id}' trapped: {trap}",
   "plugins.process.already_loaded": "Plugin '{id}' is already loaded.",
   "plugins.process.crashed": "Plugin '{id}' exited unexpectedly with code {exitCode}.",
   "plugins.process.entry_required": "Plugin manifest '{id}' must declare 'entry' (the executable relative to the plugin directory).",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "Manifest '{id}' does not describe an out-of-process plugin (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Permissions declared by plugin '{id}' have not been granted: {permissions}.",
   "plugins.process.timeout": "Plugin '{id}' timed out during {phase}.",
-  "plugins.process.unavailable": "Plugin '{id}' is not available (state: {state})."
+  "plugins.process.unavailable": "Plugin '{id}' is not available (state: {state}).",
+  "plugins.sandbox.exhausted": "Plugin '{id}' ran out of sandbox resources: {reason}"
 }

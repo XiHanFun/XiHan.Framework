@@ -57,6 +57,7 @@ next/
 | `XiHan.Framework.Protocols.Grpc` | 5 | gRPC 协议适配器：操作成为一元方法，protobuf 线格式由 JSON Schema 推出，`/operations.proto` 发布 |
 | `XiHan.Framework.Protocols.Mcp` | 5 | MCP 协议适配器：操作成为 tool，JSON-RPC 2.0 + Streamable HTTP 与 stdio 传输 |
 | `XiHan.Framework.Protocols.CloudEvents` | 5 | CloudEvents 1.0 HTTP 绑定：入站 `/events` 派发或发布，出站 Webhook 发布者 |
+| `XiHan.Framework.Plugins.Protocol` | 3 | 插件协议 `xihan.plugin.v1` 的 .NET 类型：生成的消息与桩、错误码与消息键、握手核对与映射，各隔离级别的宿主共用（非 AOT） |
 | `XiHan.Framework.Plugins.InProcess` | 5 | 可收集 AssemblyLoadContext 的插件宿主（非 AOT） |
 | `XiHan.Framework.Plugins.OutOfProcess` | 5 | 进程外插件宿主：按 `xihan.plugin.v1` 启动、握手、监视与重启子进程，代理操作、事件投递、受权限约束的回调（非 AOT） |
 | `XiHan.Framework.Profiles.Minimal` | 6 | 组合包：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化 |

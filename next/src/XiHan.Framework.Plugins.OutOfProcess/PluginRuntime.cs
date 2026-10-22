@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -22,7 +23,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess;
 /// <summary>
 /// 一个进程外插件的运行时：进程的启动、握手、配置、启动、健康监视、崩溃重启与停止（<c>spec/plugin/lifecycle.md</c>），以及经它的调用与事件投递。
 /// </summary>
-internal sealed partial class PluginRuntime : IDisposable
+internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
 {
     /// <summary>
     /// 重启退避上限。
@@ -467,7 +468,7 @@ internal sealed partial class PluginRuntime : IDisposable
             return error;
         }
 
-        var validated = HandshakeValidator.Validate(Manifest, response, _host.Primitives);
+        var validated = HandshakeValidator.Validate(Manifest, response, _host.Primitives, PluginIsolation.OutOfProcess);
         if (!validated.TryGetValue(out var info))
         {
             await DiscardAsync(process).ConfigureAwait(false);

@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "Das Sitzungstoken des Plugins fehlt oder ist ungültig.",
   "plugins.handshake.invalid": "Der Handshake des Plugins '{id}' ist fehlgeschlagen: {reason}",
   "plugins.handshake.mismatch": "Der Handshake des Plugins '{id}' stimmt nicht mit seinem Manifest überein: {reason}",
+  "plugins.module.invalid": "Das Wasm-Modul des Plugins '{id}' ist ungültig: {reason}",
+  "plugins.module.trapped": "Plugin '{id}' hat einen Trap ausgelöst: {trap}",
   "plugins.process.already_loaded": "Plugin '{id}' ist bereits geladen.",
   "plugins.process.crashed": "Plugin '{id}' wurde unerwartet mit Code {exitCode} beendet.",
   "plugins.process.entry_required": "Das Plugin-Manifest '{id}' muss 'entry' (die ausführbare Datei relativ zum Plugin-Verzeichnis) deklarieren.",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "Manifest '{id}' beschreibt kein Out-of-Process-Plugin (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Vom Plugin '{id}' deklarierte Berechtigungen wurden nicht erteilt: {permissions}.",
   "plugins.process.timeout": "Plugin '{id}' hat während {phase} das Zeitlimit überschritten.",
-  "plugins.process.unavailable": "Plugin '{id}' ist nicht verfügbar (Zustand: {state})."
+  "plugins.process.unavailable": "Plugin '{id}' ist nicht verfügbar (Zustand: {state}).",
+  "plugins.sandbox.exhausted": "Dem Plugin '{id}' sind die Sandbox-Ressourcen ausgegangen: {reason}"
 }

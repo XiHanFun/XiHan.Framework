@@ -4,6 +4,8 @@
   "plugins.callback.session_invalid": "插件会话令牌缺失或无效。",
   "plugins.handshake.invalid": "插件 '{id}' 握手失败：{reason}",
   "plugins.handshake.mismatch": "插件 '{id}' 的握手响应与清单不一致：{reason}",
+  "plugins.module.invalid": "插件 '{id}' 的 Wasm 模块不合法：{reason}",
+  "plugins.module.trapped": "插件 '{id}' 触发陷阱：{trap}",
   "plugins.process.already_loaded": "插件 '{id}' 已加载。",
   "plugins.process.crashed": "插件 '{id}' 异常退出，退出码 {exitCode}。",
   "plugins.process.entry_required": "插件清单 '{id}' 必须声明 'entry'（相对插件目录的可执行文件）。",
@@ -14,5 +16,6 @@
   "plugins.process.not_out_of_process": "清单 '{id}' 描述的不是进程外插件（kind={kind}，isolation={isolation}）。",
   "plugins.process.permissions_not_granted": "插件 '{id}' 声明的权限未被授予：{permissions}。",
   "plugins.process.timeout": "插件 '{id}' 在 {phase} 阶段超时。",
-  "plugins.process.unavailable": "插件 '{id}' 不可用（状态：{state}）。"
+  "plugins.process.unavailable": "插件 '{id}' 不可用（状态：{state}）。",
+  "plugins.sandbox.exhausted": "插件 '{id}' 的沙箱资源不足：{reason}"
 }
