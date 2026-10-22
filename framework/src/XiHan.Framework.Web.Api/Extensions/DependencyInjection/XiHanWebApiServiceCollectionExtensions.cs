@@ -3,6 +3,7 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
@@ -17,6 +18,7 @@ using XiHan.Framework.Web.Api.Contexts;
 using XiHan.Framework.Web.Api.Cors;
 using XiHan.Framework.Web.Api.DynamicApi.Extensions;
 using XiHan.Framework.Web.Api.Filters;
+using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.Security.OpenApi;
 using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Core.Session;
@@ -64,6 +66,9 @@ public static class XiHanWebApiServiceCollectionExtensions
         services.Configure<XiHanSessionStateOptions>(configuration.GetSection(XiHanSessionStateOptions.SectionName));
         services.TryAddScoped<ISessionStateGate, NullSessionStateGate>();
         services.TryAddScoped<XiHanSessionStateMiddleware>();
+
+        // 请求访问闸门：应用侧按需注册任意个 IRequestAccessGate（不注册即全部放行）；中间件是 IMiddleware，按类型注册
+        services.TryAddScoped<XiHanRequestAccessMiddleware>();
 
         return services;
     }
@@ -225,6 +230,13 @@ public static class XiHanWebApiServiceCollectionExtensions
         else
         {
             services.AddAuthorization();
+        }
+
+        // 带失败原因的 403 写成统一响应信封；宿主已注册自己的结果处理器时不覆盖
+        var resultHandler = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(IAuthorizationMiddlewareResultHandler));
+        if (resultHandler is null || resultHandler.ImplementationType == typeof(AuthorizationMiddlewareResultHandler))
+        {
+            services.Replace(ServiceDescriptor.Singleton<IAuthorizationMiddlewareResultHandler, XiHanAuthorizationMiddlewareResultHandler>());
         }
 
         return services;
