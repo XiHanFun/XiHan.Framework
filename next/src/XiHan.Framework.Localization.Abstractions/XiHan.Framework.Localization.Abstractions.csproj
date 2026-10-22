@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Localization.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.Localization.Abstractions</RootNamespace>
+    <Description>XiHan Framework 本地化契约（Ring 2）：区域名、内置 10 种区域、按键与区域取模板的消息目录、消息本地化接口与目录注册。</Description>
+    <PackageTags>xihan;framework;localization;i18n</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

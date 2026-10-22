@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "Сборка плагина '{path}' не существует.",
+  "plugins.entry.manifest_mismatch": "Идентификатор манифеста '{actual}' типа точки входа не совпадает с идентификатором '{expected}' файла манифеста.",
+  "plugins.entry.not_found": "Тип точки входа '{entry}' не найден в сборке плагина '{package}'.",
+  "plugins.entry.not_plugin": "Тип точки входа '{entry}' не реализует 'IPlugin'.",
+  "plugins.manifest.entry_required": "Манифест плагина '{id}' должен объявлять и 'package' (имя сборки), и 'entry' (тип точки входа).",
+  "plugins.manifest.invalid": "Манифест в каталоге плагина '{directory}' недопустим: {reason}",
+  "plugins.manifest.not_in_process": "Манифест '{id}' не описывает внутрипроцессный плагин (kind={kind}, isolation={isolation}).",
+  "plugins.permission.not_granted": "Разрешения, объявленные плагином '{id}', не предоставлены: {permissions}.",
+  "plugins.plugin.already_loaded": "Плагин '{id}' уже загружен.",
+  "plugins.plugin.load_failed": "Не удалось загрузить плагин '{id}': {reason}",
+  "plugins.plugin.not_loaded": "Плагин '{id}' не загружен.",
+  "plugins.plugin.stop_failed": "Не удалось остановить плагин '{id}': {reason}"
+}

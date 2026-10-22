@@ -1,0 +1,5 @@
+{
+  "caching.idempotency.in_progress": "Una llamada con la misma clave de idempotencia sigue en curso.",
+  "caching.idempotency.invalid_key": "La clave de idempotencia no es válida: no debe estar vacía ni contener espacios en blanco o caracteres de control.",
+  "caching.idempotency.recently_completed": "Una llamada con la misma clave de idempotencia acaba de completarse o sigue en curso; reintente más tarde."
+}

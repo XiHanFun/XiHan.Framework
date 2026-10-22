@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "Os atributos 'id', 'source' e 'type' são obrigatórios.",
+  "messaging.envelope.invalid": "O envelope não é válido: {reason}",
+  "messaging.envelope.invalid_base64": "O atributo 'data_base64' não é um Base64 válido.",
+  "messaging.envelope.invalid_extension": "O nome do atributo de extensão '{name}' não é válido.",
+  "messaging.envelope.invalid_json": "O documento não é um JSON CloudEvents válido: {reason}",
+  "messaging.envelope.invalid_time": "O atributo 'time' '{time}' não é um carimbo de data/hora RFC 3339.",
+  "messaging.envelope.spec_version": "O atributo 'specversion' deve ser '{specVersion}'.",
+  "messaging.handler.failed": "O manipulador de mensagens lançou uma exceção não tratada: {reason}",
+  "messaging.queue.full": "A fila em memória do tópico '{topic}' está cheia (capacidade {capacity}).",
+  "messaging.topic.invalid": "O tópico '{topic}' não é válido."
+}

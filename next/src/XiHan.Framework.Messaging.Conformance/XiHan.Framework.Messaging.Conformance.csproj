@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.Conformance</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.Conformance</RootNamespace>
+    <Description>XiHan Framework 消息一致性套件：任何 messaging.queue Provider 都必须通过的 xUnit 抽象测试类。</Description>
+    <PackageTags>xihan;framework;messaging;conformance;xunit</PackageTags>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+{
+  "caching.idempotency.in_progress": "同一幂等键的调用仍在处理中。",
+  "caching.idempotency.invalid_key": "幂等键不合法：必须非空，且不含空白或控制字符。",
+  "caching.idempotency.recently_completed": "同一幂等键的调用刚刚完成或仍在处理中，请稍后重试。"
+}

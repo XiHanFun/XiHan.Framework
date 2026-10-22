@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "O armazenamento de locatários em memória atingiu sua capacidade de {capacity}.",
+  "multitenancy.tenant.disabled": "O locatário '{tenantId}' está desativado.",
+  "multitenancy.tenant.invalid_id": "O identificador de locatário '{tenantId}' não é válido.",
+  "multitenancy.tenant.not_found": "O locatário '{tenantId}' não existe.",
+  "multitenancy.tenant.required": "Esta chamada requer um locatário, mas nenhum foi resolvido."
+}

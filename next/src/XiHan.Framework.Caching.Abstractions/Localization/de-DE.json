@@ -1,0 +1,5 @@
+{
+  "caching.idempotency.in_progress": "Ein Aufruf mit demselben Idempotenzschlüssel wird noch verarbeitet.",
+  "caching.idempotency.invalid_key": "Der Idempotenzschlüssel ist ungültig: Er darf nicht leer sein und keine Leer- oder Steuerzeichen enthalten.",
+  "caching.idempotency.recently_completed": "Ein Aufruf mit demselben Idempotenzschlüssel wurde gerade abgeschlossen oder wird noch verarbeitet; bitte später erneut versuchen."
+}
