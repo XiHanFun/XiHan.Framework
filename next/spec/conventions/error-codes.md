@@ -12,7 +12,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 ## 规则
 
 1. 框架错误码在本文登记，新增走 RFC 附件。
-2. 错误码进入 `Error.Code`，HTTP 适配器把它放进 RFC 9457 Problem Details 的 `type` 或扩展字段，gRPC 放进 trailing metadata，插件协议放进响应元数据。
+2. 错误码进入 `Error.Code`，HTTP 适配器把它放进 RFC 9457 Problem Details 的 `type` 或扩展字段，gRPC 放进 trailing metadata，插件协议放进 `Status.error.code`（`spec/plugin/plugin.proto`）。
 3. 消息面向人，错误码面向程序；客户端只应依赖错误码。
 4. 文案不写在代码里：错误携带消息键（`<领域>Messages` 常量）与参数（`Error.Details`），文案在所属包的 `Localization/<区域>.json`（10 种区域各一个文件，RFC-0010）；一个错误码可以对应多个消息键。
 
@@ -51,6 +51,12 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PLUGINS_DENIED_001` | 插件声明的权限未被宿主授予 |
 | `PLUGINS_CONFLICT_001` | 同一清单 ID 的插件已加载 |
 | `PLUGINS_UNEXPECTED_001` | 插件加载、配置、启动或停止时发生未处理异常 |
+| `PLUGINS_VALIDATION_003` | 进程外：握手行不合法，或协议版本没有交集 |
+| `PLUGINS_VALIDATION_004` | 进程外：握手响应与清单不一致（原语层版本、清单字段、未声明或重复的操作 / 健康项 / 订阅） |
+| `PLUGINS_DENIED_002` | 进程外：插件回调的会话令牌无效，或所需权限未授予 |
+| `PLUGINS_UNAVAILABLE_001` | 进程外：插件进程未就绪、正在停止、已退出或不可达 |
+| `PLUGINS_TIMEOUT_001` | 进程外：握手、配置、启动或停止超时 |
+| `PLUGINS_UNEXPECTED_002` | 进程外：插件进程异常退出 |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有当前租户的调用中新增 |
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作（重复开始、未开始就提交、只读却写入） |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） |
