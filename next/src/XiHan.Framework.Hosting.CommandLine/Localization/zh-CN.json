@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "未知命令 '{command}'。运行 'help' 查看命令列表。",
+  "hosting.commandline.commands": "命令：",
+  "hosting.commandline.graph_description": "打印能力图谱。",
+  "hosting.commandline.help_description": "显示命令列表。",
+  "hosting.commandline.invoke_authorization_invalid": "--authorization 的值必须是 '<方案> <值>'。",
+  "hosting.commandline.invoke_data_missing": "数据文件 '{path}' 不存在。",
+  "hosting.commandline.invoke_description": "调用暴露给命令行的操作：invoke <操作 ID> [--json <对象> | --data <文件>] [--<字段> <值> ...] [--authorization '<方案> <值>'] [--tenant <租户>] [--locale <区域>] [--correlation <关联 ID>] [--timeout <秒>]。",
+  "hosting.commandline.invoke_json_invalid": "--json 的值必须是 JSON 对象：{reason}",
+  "hosting.commandline.invoke_operation_missing": "需要操作 ID：invoke <操作 ID>。",
+  "hosting.commandline.invoke_timeout_invalid": "--timeout 的值必须是正数秒。",
+  "hosting.commandline.operation_not_exposed": "操作 '{id}' 未登记或未暴露给命令行。",
+  "hosting.commandline.operation_shorthand": "<资源> <动词> [...]：'invoke <资源>.<动词>' 的简写。",
+  "hosting.commandline.operations_description": "列出已登记的操作。",
+  "hosting.commandline.pipeline_description": "打印管道阶段与中间件。",
+  "hosting.commandline.usage": "用法：{program} <命令> [参数] [--选项 <值> ...]"
+}

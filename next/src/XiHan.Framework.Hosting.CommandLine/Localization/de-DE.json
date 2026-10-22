@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "Unbekannter Befehl '{command}'. Führen Sie 'help' aus, um die Befehle aufzulisten.",
+  "hosting.commandline.commands": "Befehle:",
+  "hosting.commandline.graph_description": "Gibt den Fähigkeitsgraphen aus.",
+  "hosting.commandline.help_description": "Zeigt die Befehle an.",
+  "hosting.commandline.invoke_authorization_invalid": "Der Wert von --authorization muss '<Schema> <Wert>' sein.",
+  "hosting.commandline.invoke_data_missing": "Die Datendatei '{path}' existiert nicht.",
+  "hosting.commandline.invoke_description": "Ruft eine für die Befehlszeile freigegebene Operation auf: invoke <Operations-ID> [--json <Objekt> | --data <Datei>] [--<Feld> <Wert> ...] [--authorization '<Schema> <Wert>'] [--tenant <ID>] [--locale <Gebietsschema>] [--correlation <ID>] [--timeout <Sekunden>].",
+  "hosting.commandline.invoke_json_invalid": "Der Wert von --json muss ein JSON-Objekt sein: {reason}",
+  "hosting.commandline.invoke_operation_missing": "Eine Operations-ID ist erforderlich: invoke <Operations-ID>.",
+  "hosting.commandline.invoke_timeout_invalid": "Der Wert von --timeout muss eine positive Anzahl von Sekunden sein.",
+  "hosting.commandline.operation_not_exposed": "Die Operation '{id}' ist nicht registriert oder nicht für die Befehlszeile freigegeben.",
+  "hosting.commandline.operation_shorthand": "<Ressource> <Verb> [...]: Kurzform für 'invoke <Ressource>.<Verb>'.",
+  "hosting.commandline.operations_description": "Listet die registrierten Operationen auf.",
+  "hosting.commandline.pipeline_description": "Gibt die Pipeline-Stufen und Middleware aus.",
+  "hosting.commandline.usage": "Verwendung: {program} <Befehl> [Argumente] [--Option <Wert> ...]"
+}

@@ -3,6 +3,7 @@
   "protocols.mcp.message_invalid": "The message is not a valid JSON-RPC 2.0 request.",
   "protocols.mcp.message_not_json": "The request body is not valid JSON.",
   "protocols.mcp.method_unknown": "Method '{method}' is not supported.",
+  "protocols.mcp.stdio_description": "Serve MCP over stdio: one JSON-RPC message per line on stdin and stdout, logs on stderr.",
   "protocols.mcp.tool_unknown": "Tool '{tool}' is not registered.",
   "protocols.mcp.version_unsupported": "MCP protocol version '{version}' is not supported; this server supports {supported}."
 }

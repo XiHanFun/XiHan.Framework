@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "Comando desconhecido '{command}'. Execute 'help' para listar os comandos.",
+  "hosting.commandline.commands": "Comandos:",
+  "hosting.commandline.graph_description": "Imprime o grafo de capacidades.",
+  "hosting.commandline.help_description": "Mostra os comandos.",
+  "hosting.commandline.invoke_authorization_invalid": "O valor de --authorization deve ser '<esquema> <valor>'.",
+  "hosting.commandline.invoke_data_missing": "O arquivo de dados '{path}' não existe.",
+  "hosting.commandline.invoke_description": "Invoca uma operação exposta à linha de comando: invoke <id da operação> [--json <objeto> | --data <arquivo>] [--<campo> <valor> ...] [--authorization '<esquema> <valor>'] [--tenant <id>] [--locale <localidade>] [--correlation <id>] [--timeout <segundos>].",
+  "hosting.commandline.invoke_json_invalid": "O valor de --json deve ser um objeto JSON: {reason}",
+  "hosting.commandline.invoke_operation_missing": "Um id de operação é obrigatório: invoke <id da operação>.",
+  "hosting.commandline.invoke_timeout_invalid": "O valor de --timeout deve ser um número positivo de segundos.",
+  "hosting.commandline.operation_not_exposed": "A operação '{id}' não está registrada ou não está exposta à linha de comando.",
+  "hosting.commandline.operation_shorthand": "<recurso> <verbo> [...]: forma abreviada de 'invoke <recurso>.<verbo>'.",
+  "hosting.commandline.operations_description": "Lista as operações registradas.",
+  "hosting.commandline.pipeline_description": "Imprime os estágios e o middleware do pipeline.",
+  "hosting.commandline.usage": "Uso: {program} <comando> [argumentos] [--opção <valor> ...]"
+}

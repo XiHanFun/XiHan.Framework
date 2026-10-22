@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "Cumprimenta alguém pelo nome, opcionalmente várias vezes.",
+  "samples.greet.times_invalid": "O número de cumprimentos deve estar entre 1 e 10, mas {times} foi informado."
+}

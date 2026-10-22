@@ -34,6 +34,7 @@
     <Project Path="src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
     <Project Path="src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
     <Project Path="src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
+    <Project Path="src/XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -82,10 +83,12 @@
     <Project Path="test/XiHan.Framework.Protocols.Mcp.Tests/XiHan.Framework.Protocols.Mcp.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.Grpc.Tests/XiHan.Framework.Protocols.Grpc.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Protocols.CloudEvents.Tests/XiHan.Framework.Protocols.CloudEvents.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Hosting.CommandLine.Tests/XiHan.Framework.Hosting.CommandLine.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
+    <Project Path="samples/SimpleCli/SimpleCli.csproj" />
     <Project Path="samples/SamplePlugin/SamplePlugin.csproj" />
   </Folder>
   <Folder Name="/9.Solution Items/">

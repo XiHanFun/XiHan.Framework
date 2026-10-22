@@ -35,6 +35,9 @@ public static class McpMessages
     /// <summary>tool 的参数不是 JSON 对象。参数：<c>tool</c>。</summary>
     public const string ArgumentsInvalid = "protocols.mcp.arguments_invalid";
 
+    /// <summary>命令行宿主里 <c>mcp</c> 命令（stdio 传输）的说明。</summary>
+    public const string StdioDescription = "protocols.mcp.stdio_description";
+
     /// <summary>
     /// 本包的消息目录。
     /// </summary>

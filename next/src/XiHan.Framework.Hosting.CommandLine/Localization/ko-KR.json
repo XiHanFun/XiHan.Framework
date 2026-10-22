@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "알 수 없는 명령 '{command}'입니다. 'help'를 실행하면 명령 목록을 볼 수 있습니다.",
+  "hosting.commandline.commands": "명령:",
+  "hosting.commandline.graph_description": "기능 그래프를 출력합니다.",
+  "hosting.commandline.help_description": "명령 목록을 표시합니다.",
+  "hosting.commandline.invoke_authorization_invalid": "--authorization 값은 '<스킴> <값>'이어야 합니다.",
+  "hosting.commandline.invoke_data_missing": "데이터 파일 '{path}'이(가) 없습니다.",
+  "hosting.commandline.invoke_description": "명령줄에 노출된 작업을 호출합니다: invoke <작업 ID> [--json <객체> | --data <파일>] [--<필드> <값> ...] [--authorization '<스킴> <값>'] [--tenant <ID>] [--locale <로케일>] [--correlation <ID>] [--timeout <초>]",
+  "hosting.commandline.invoke_json_invalid": "--json 값은 JSON 객체여야 합니다: {reason}",
+  "hosting.commandline.invoke_operation_missing": "작업 ID가 필요합니다: invoke <작업 ID>",
+  "hosting.commandline.invoke_timeout_invalid": "--timeout 값은 양수 초여야 합니다.",
+  "hosting.commandline.operation_not_exposed": "작업 '{id}'이(가) 등록되지 않았거나 명령줄에 노출되지 않았습니다.",
+  "hosting.commandline.operation_shorthand": "<리소스> <동사> [...]: 'invoke <리소스>.<동사>'의 축약형입니다.",
+  "hosting.commandline.operations_description": "등록된 작업을 나열합니다.",
+  "hosting.commandline.pipeline_description": "파이프라인 단계와 미들웨어를 출력합니다.",
+  "hosting.commandline.usage": "사용법: {program} <명령> [인수] [--옵션 <값> ...]"
+}

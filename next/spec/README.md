@@ -12,7 +12,7 @@ spec/
 ├─ primitives/     # P1 起：RFC-0001 采纳后的规范性文本
 ├─ pipeline/       # P1 起：RFC-0004 采纳后的规范性文本
 ├─ plugin/         # P4 起：插件协议 plugin.proto
-├─ protocol/       # P3 起：HTTP / gRPC / MCP / CloudEvents 映射
+├─ protocol/       # P3 起：HTTP / gRPC / MCP / CloudEvents / 命令行 映射
 └─ conformance/    # P1 起：数据驱动向量与运行器
 ```
 

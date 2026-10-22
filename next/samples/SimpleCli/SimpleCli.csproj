@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SimpleCli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 通用宿主：Host.CreateApplicationBuilder -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Minimal 组合：内核 + 本地化 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <!-- 命令行宿主：help / graph / pipeline / operations / invoke -->
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
+    <!-- MCP 的 stdio 传输（mcp 命令） -->
+    <ProjectReference Include="../../src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
+    <!-- 源生成器：从 [Operation] 生成登记代码与 JSON Schema -->
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 应用自己的消息模板译文（MCP tool 描述），一种语言一个文件 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

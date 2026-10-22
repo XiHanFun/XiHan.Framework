@@ -9,6 +9,8 @@ app.UseXiHan();        // 构造上下文、认证请求凭据、回写 Problem 
 app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/call
 ```
 
+命令行宿主里同一个服务端经 stdio 提供：`builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`（`McpStdioCommand`），MCP 客户端以子进程方式连接。
+
 ## 规则
 
 - tool 名：`{resource}_{verb}`（`orders.create` → `orders_create`），显式覆盖 `XiHan:Protocols:Mcp:Tools:<操作 ID>`；文法 `^[A-Za-z0-9_-]{1,64}$`，不合法或重复即启动失败。`Stability.Internal` 与 `Expose` 不含 `Mcp` 的操作不发布。
@@ -23,4 +25,4 @@ app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/cal
 
 ## 状态
 
-P3：可用（Streamable HTTP 传输）。stdio 传输随 `Hosting.CommandLine` / `Cli` 复用 `McpServer`。
+P3：可用。传输：Streamable HTTP（`MapXiHanMcp()`）与 stdio（命令行宿主的 `mcp` 命令，`McpStdioTransport`：stdin / stdout 每行一条 JSON-RPC 消息，日志走 stderr）。

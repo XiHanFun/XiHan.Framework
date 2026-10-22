@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "不明なコマンド '{command}' です。'help' を実行するとコマンド一覧を表示します。",
+  "hosting.commandline.commands": "コマンド:",
+  "hosting.commandline.graph_description": "ケイパビリティグラフを表示します。",
+  "hosting.commandline.help_description": "コマンド一覧を表示します。",
+  "hosting.commandline.invoke_authorization_invalid": "--authorization の値は '<スキーム> <値>' でなければなりません。",
+  "hosting.commandline.invoke_data_missing": "データファイル '{path}' が存在しません。",
+  "hosting.commandline.invoke_description": "コマンドラインに公開された操作を呼び出します: invoke <操作 ID> [--json <オブジェクト> | --data <ファイル>] [--<フィールド> <値> ...] [--authorization '<スキーム> <値>'] [--tenant <ID>] [--locale <ロケール>] [--correlation <ID>] [--timeout <秒>]",
+  "hosting.commandline.invoke_json_invalid": "--json の値は JSON オブジェクトでなければなりません: {reason}",
+  "hosting.commandline.invoke_operation_missing": "操作 ID が必要です: invoke <操作 ID>",
+  "hosting.commandline.invoke_timeout_invalid": "--timeout の値は正の秒数でなければなりません。",
+  "hosting.commandline.operation_not_exposed": "操作 '{id}' は登録されていないか、コマンドラインに公開されていません。",
+  "hosting.commandline.operation_shorthand": "<リソース> <動詞> [...]: 'invoke <リソース>.<動詞>' の省略形です。",
+  "hosting.commandline.operations_description": "登録済みの操作を一覧表示します。",
+  "hosting.commandline.pipeline_description": "パイプラインのステージとミドルウェアを表示します。",
+  "hosting.commandline.usage": "使い方: {program} <コマンド> [引数] [--オプション <値> ...]"
+}

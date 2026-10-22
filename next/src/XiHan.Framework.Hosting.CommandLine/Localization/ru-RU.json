@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "Неизвестная команда '{command}'. Выполните 'help', чтобы вывести список команд.",
+  "hosting.commandline.commands": "Команды:",
+  "hosting.commandline.graph_description": "Выводит граф возможностей.",
+  "hosting.commandline.help_description": "Показывает список команд.",
+  "hosting.commandline.invoke_authorization_invalid": "Значение --authorization должно быть '<схема> <значение>'.",
+  "hosting.commandline.invoke_data_missing": "Файл данных '{path}' не существует.",
+  "hosting.commandline.invoke_description": "Вызывает операцию, доступную из командной строки: invoke <ID операции> [--json <объект> | --data <файл>] [--<поле> <значение> ...] [--authorization '<схема> <значение>'] [--tenant <ID>] [--locale <локаль>] [--correlation <ID>] [--timeout <секунды>].",
+  "hosting.commandline.invoke_json_invalid": "Значение --json должно быть объектом JSON: {reason}",
+  "hosting.commandline.invoke_operation_missing": "Требуется ID операции: invoke <ID операции>.",
+  "hosting.commandline.invoke_timeout_invalid": "Значение --timeout должно быть положительным числом секунд.",
+  "hosting.commandline.operation_not_exposed": "Операция '{id}' не зарегистрирована или не доступна из командной строки.",
+  "hosting.commandline.operation_shorthand": "<ресурс> <глагол> [...]: сокращение для 'invoke <ресурс>.<глагол>'.",
+  "hosting.commandline.operations_description": "Выводит список зарегистрированных операций.",
+  "hosting.commandline.pipeline_description": "Выводит стадии конвейера и промежуточное ПО.",
+  "hosting.commandline.usage": "Использование: {program} <команда> [аргументы] [--параметр <значение> ...]"
+}

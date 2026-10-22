@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Hosting.CommandLine</PackageId>
+    <RootNamespace>XiHan.Framework.Hosting.CommandLine</RootNamespace>
+    <Description>XiHan Framework 命令行宿主（Ring 4）：在通用宿主里把命令行参数翻译为内核调用。内置 help、graph、pipeline、operations、invoke 命令，`&lt;resource&gt; &lt;verb&gt;` 是 invoke 的简写；操作结果以 JSON 写到 stdout，失败以错误码映射为退出码并把 Problem 写到 stderr，日志只走 stderr；其他包可注册自己的命令（如 MCP 的 stdio 传输）。</Description>
+    <PackageTags>xihan;framework;hosting;commandline;cli</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 控制台日志提供器：命令行宿主把日志定向到 stderr，让 stdout 只承载命令输出 -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

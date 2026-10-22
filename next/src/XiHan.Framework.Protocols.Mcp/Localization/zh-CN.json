@@ -3,6 +3,7 @@
   "protocols.mcp.message_invalid": "消息不是合法的 JSON-RPC 2.0 请求。",
   "protocols.mcp.message_not_json": "请求体不是合法的 JSON。",
   "protocols.mcp.method_unknown": "不支持方法 '{method}'。",
+  "protocols.mcp.stdio_description": "经 stdio 提供 MCP：stdin / stdout 每行一条 JSON-RPC 消息，日志走 stderr。",
   "protocols.mcp.tool_unknown": "工具 '{tool}' 未登记。",
   "protocols.mcp.version_unsupported": "不支持 MCP 协议版本 '{version}'；本服务端支持 {supported}。"
 }

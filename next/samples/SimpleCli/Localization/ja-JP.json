@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "名前を指定して挨拶します。回数も指定できます。",
+  "samples.greet.times_invalid": "挨拶の回数は 1 から 10 の間でなければなりませんが、{times} が指定されました。"
+}

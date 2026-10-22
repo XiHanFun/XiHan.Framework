@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "Salue quelqu'un par son nom, éventuellement plusieurs fois.",
+  "samples.greet.times_invalid": "Le nombre de salutations doit être compris entre 1 et 10, mais {times} a été indiqué."
+}
