@@ -1,0 +1,12 @@
+#nullable enable
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.CreateStore() -> XiHan.Framework.ObjectStorage.Abstractions.IBlobStore!
+virtual XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Container.get -> XiHan.Framework.ObjectStorage.Abstractions.ContainerName
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.BlobStoreConformance() -> void
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.DeleteMany_ReportsExistencePerKey() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.InvalidIdentifiers_AreRejectedEarly() -> void
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.LargeContent_StreamsThrough() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.List_FiltersByPrefix_OrdersByKey_AndPaginates() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_OverwritesOrConflicts_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_ThenGet_RoundTripsContentAndMetadata() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PutMany_ReturnsOneResultPerUpload_InOrder() -> System.Threading.Tasks.Task!

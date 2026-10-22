@@ -1,0 +1,6 @@
+{
+  "objectstorage.blob.exists": "컨테이너 '{container}'에 Blob '{key}'이(가) 이미 있습니다.",
+  "objectstorage.blob.not_found": "컨테이너 '{container}'에 Blob '{key}'이(가) 없습니다.",
+  "objectstorage.quota.exceeded": "{requested}바이트를 쓰면 개체 스토리지 할당량 {limit}바이트를 초과합니다.",
+  "objectstorage.store.unavailable": "개체 스토리지를 사용할 수 없습니다: {reason}"
+}

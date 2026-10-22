@@ -1,0 +1,6 @@
+{
+  "objectstorage.blob.exists": "容器 '{container}' 裡已存在物件 '{key}'。",
+  "objectstorage.blob.not_found": "容器 '{container}' 裡不存在物件 '{key}'。",
+  "objectstorage.quota.exceeded": "寫入 {requested} 位元組會超出物件儲存配額 {limit} 位元組。",
+  "objectstorage.store.unavailable": "物件儲存無法使用：{reason}"
+}

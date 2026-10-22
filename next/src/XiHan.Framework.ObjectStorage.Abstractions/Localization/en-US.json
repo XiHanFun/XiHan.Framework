@@ -1,0 +1,6 @@
+{
+  "objectstorage.blob.exists": "Blob '{key}' already exists in container '{container}'.",
+  "objectstorage.blob.not_found": "Blob '{key}' does not exist in container '{container}'.",
+  "objectstorage.quota.exceeded": "The object storage quota of {limit} bytes would be exceeded by writing {requested} bytes.",
+  "objectstorage.store.unavailable": "The object storage is unavailable: {reason}"
+}
