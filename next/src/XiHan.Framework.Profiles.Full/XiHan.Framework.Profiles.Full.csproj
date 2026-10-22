@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Profiles.Full</PackageId>
+    <RootNamespace>XiHan.Framework.Profiles.Full</RootNamespace>
+    <Description>XiHan Framework Full 组合包：Standard + ObjectStorage / Scheduling / Configuration / Auditing 的抽象与默认实现 + OpenTelemetry 导出 + HTTP / gRPC / MCP / CloudEvents 协议适配器。</Description>
+    <PackageTags>xihan;framework;profile;full</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+    <ProjectReference Include="../XiHan.Framework.ObjectStorage.Abstractions/XiHan.Framework.ObjectStorage.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.ObjectStorage.FileSystem/XiHan.Framework.ObjectStorage.FileSystem.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Scheduling.InMemory/XiHan.Framework.Scheduling.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
+  </ItemGroup>
+</Project>

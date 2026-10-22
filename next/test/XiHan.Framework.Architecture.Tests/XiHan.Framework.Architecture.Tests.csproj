@@ -53,5 +53,6 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Full/XiHan.Framework.Profiles.Full.csproj" />
   </ItemGroup>
 </Project>

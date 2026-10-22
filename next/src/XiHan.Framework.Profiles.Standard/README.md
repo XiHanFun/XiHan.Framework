@@ -15,7 +15,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 依赖方向
 
-组合包可引用任何环；被应用引用。`Profiles.Full`（ObjectStorage、Scheduling、Configuration、Auditing 与协议适配器）在 P3 之后提供。
+组合包可引用任何环；被应用引用。`Profiles.Full` 在此之上加 ObjectStorage、Scheduling、Auditing 的默认实现、OpenTelemetry 导出与四种协议适配器。
 
 ## 状态
 
