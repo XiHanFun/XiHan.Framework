@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "La consulta de auditoría no es válida: {reason}",
+  "auditing.trail.unavailable": "El registro de auditoría no está disponible: {reason}"
+}

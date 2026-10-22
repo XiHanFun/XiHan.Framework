@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "La requête d'audit est invalide : {reason}",
+  "auditing.trail.unavailable": "La piste d'audit est indisponible : {reason}"
+}

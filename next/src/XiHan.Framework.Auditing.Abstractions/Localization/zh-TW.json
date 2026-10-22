@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "稽核查詢不合法：{reason}",
+  "auditing.trail.unavailable": "稽核儲存無法使用：{reason}"
+}

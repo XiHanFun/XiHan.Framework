@@ -47,5 +47,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Conformance/XiHan.Framework.Scheduling.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
   </ItemGroup>
 </Project>
