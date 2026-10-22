@@ -72,6 +72,8 @@ public sealed class PackagerTests
         Assert.Contains("- name: XIHAN_CONFIG_PATH\n              value: /etc/xihan", deployment, StringComparison.Ordinal);
         Assert.Contains("- name: XiHan__Scheduling__Kubernetes__Lease\n              value: orders-scheduler", deployment, StringComparison.Ordinal);
         Assert.Contains("fieldPath: metadata.name", deployment, StringComparison.Ordinal);
+        Assert.Contains("- name: POD_NAMESPACE\n              valueFrom:\n                fieldRef:\n                  fieldPath: metadata.namespace", deployment, StringComparison.Ordinal);
+        Assert.Contains("- name: DOTNET_USE_POLLING_FILE_WATCHER\n              value: \"1\"", deployment, StringComparison.Ordinal);
         Assert.Contains("- name: ASPNETCORE_ENVIRONMENT\n              value: Production", deployment, StringComparison.Ordinal);
         // 启动探针阈值 = ⌈45 / 10⌉ = 5
         Assert.Contains("startupProbe:\n            httpGet:\n              path: /health/startup\n              port: http\n            periodSeconds: 10\n            timeoutSeconds: 3\n            failureThreshold: 5", deployment, StringComparison.Ordinal);

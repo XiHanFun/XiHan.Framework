@@ -9,6 +9,8 @@ const XiHan.Framework.Kernel.Capabilities.ManifestReader.FileName = "xihan.manif
 const XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.SourceName = "XiHan.Framework" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ConfigurationSection = "XiHan:Bindings" -> string!
 const XiHan.Framework.Kernel.Hosting.BindingResolver.ServiceBindingRootVariable = "SERVICE_BINDING_ROOT" -> string!
+const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.BaseFileName = "appsettings.json" -> string!
+const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Variable = "XIHAN_CONFIG_PATH" -> string!
 const XiHan.Framework.Kernel.Hosting.KernelOptions.ConfigurationSection = "XiHan:Kernel" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Capabilities = "kernel.capabilities" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Diagnostics = "kernel.diagnostics" -> string!
@@ -140,6 +142,7 @@ static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration, string? serviceBindingRoot = null) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
+static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Resolve(string? directory = null) -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator !=(XiHan.Framework.Kernel.Hosting.FeatureStatus? left, XiHan.Framework.Kernel.Hosting.FeatureStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator ==(XiHan.Framework.Kernel.Hosting.FeatureStatus? left, XiHan.Framework.Kernel.Hosting.FeatureStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.HealthSnapshot.operator !=(XiHan.Framework.Kernel.Hosting.HealthSnapshot? left, XiHan.Framework.Kernel.Hosting.HealthSnapshot? right) -> bool
@@ -301,6 +304,7 @@ XiHan.Framework.Kernel.Hosting.BindingValue.Type.get -> string!
 XiHan.Framework.Kernel.Hosting.BindingValue.Type.init -> void
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.get -> string?
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.init -> void
+XiHan.Framework.Kernel.Hosting.ConfigurationDirectory
 XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FailurePolicy.IsolateFeature = 1 -> XiHan.Framework.Kernel.Hosting.FailurePolicy
 XiHan.Framework.Kernel.Hosting.FailurePolicy.TerminateStartup = 0 -> XiHan.Framework.Kernel.Hosting.FailurePolicy

@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
