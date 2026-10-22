@@ -3,6 +3,7 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
@@ -225,6 +226,13 @@ public static class XiHanWebApiServiceCollectionExtensions
         else
         {
             services.AddAuthorization();
+        }
+
+        // 带失败原因的 403 写成统一响应信封；宿主已注册自己的结果处理器时不覆盖
+        var resultHandler = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(IAuthorizationMiddlewareResultHandler));
+        if (resultHandler is null || resultHandler.ImplementationType == typeof(AuthorizationMiddlewareResultHandler))
+        {
+            services.Replace(ServiceDescriptor.Singleton<IAuthorizationMiddlewareResultHandler, XiHanAuthorizationMiddlewareResultHandler>());
         }
 
         return services;
