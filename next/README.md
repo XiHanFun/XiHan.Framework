@@ -47,6 +47,7 @@ next/
 | `XiHan.Framework.Localization.Database` | 3 | 数据库本地化 Provider：翻译经仓储读写，启动后加载并周期刷新，优先于嵌入目录 |
 | `XiHan.Framework.ObjectStorage.FileSystem` | 3 | 文件系统对象存储默认实现：原子替换写入、SHA-256 ETag、总量与单对象配额 |
 | `XiHan.Framework.Scheduling.InMemory` | 3 | 内存调度默认实现：单进程轮询调度器、进程内租约领导选举 |
+| `XiHan.Framework.Scheduling.Kubernetes` | 3 | Kubernetes Provider：以 Lease 做跨 Pod 的领导选举，直接调用 API Server，无客户端库 |
 | `XiHan.Framework.Auditing.InMemory` | 3 | 内存审计默认实现：有界环形缓冲、可查询、每条事件写日志 |
 | `XiHan.Framework.Observability.OpenTelemetry` | 3 | OpenTelemetry 导出：内核与运行时的追踪、指标、日志，OTLP 与控制台导出器 |
 | `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、`Accept-Language` 协商、探针端点、本地化的 Problem Details |

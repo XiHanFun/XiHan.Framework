@@ -23,6 +23,9 @@ public static class SchedulingErrors
     /// <summary>调度器未运行。</summary>
     public const string SchedulerUnavailable = "SCHEDULING_UNAVAILABLE_001";
 
+    /// <summary>领导选举的存储（如 Kubernetes API Server）不可达或超时。</summary>
+    public const string LeaseUnavailable = "SCHEDULING_UNAVAILABLE_002";
+
     /// <summary>作业抛出未处理异常。</summary>
     public const string JobFailed = "SCHEDULING_UNEXPECTED_001";
 }

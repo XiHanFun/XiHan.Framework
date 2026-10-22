@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "ジョブ '{name}' は登録されていません。",
   "scheduling.job.running": "ジョブ '{name}' は既に実行中で、同時実行は許可されていません。",
   "scheduling.lease.held": "'{resource}' のリーダーリースは別の保持者が保持しています。",
+  "scheduling.lease.unavailable": "'{resource}' のリーダーリースストアは利用できません: {reason}",
   "scheduling.scheduler.unavailable": "ジョブスケジューラーは実行されていません。"
 }

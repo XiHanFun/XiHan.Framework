@@ -26,7 +26,8 @@
 ## 领导选举
 
 - `ILeaderElection.TryAcquire(resource, ttl)`：空闲（或租约已过期）时授予 `LeaderLease`；被持有返回 `SCHEDULING_CONFLICT_002`。
-- `LeaderLease.Renew()` 延长 `ttl`；`Release()` 立即放弃；过期后他人可获取，原持有者续约失败。不可重入。
+- `LeaderLease.Renew()` 延长 `ttl`；`Release()` 立即放弃；过期后他人可获取，原持有者续约失败。不可重入。持有者标识是实例身份（进程内实现每次获取生成新值，Kubernetes 实现是 Pod 名）。
+- Provider：`Scheduling.InMemory`（进程内）、`Scheduling.Kubernetes`（`coordination.k8s.io` Lease，直接调用 API Server；存活时间按秒向上取整写入，API Server 不可达 → `SCHEDULING_UNAVAILABLE_002`）。
 - 默认实现的调度器以资源 `XiHan:Scheduling:InMemory:LeaseResource`（默认 `scheduling.jobs`）竞争租约，每个轮询周期续约。
 
 ## 一致性

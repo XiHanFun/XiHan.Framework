@@ -12,12 +12,14 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobFailed = "SCHE
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobNotFound = "SCHEDULING_NOTFOUND_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobRunning = "SCHEDULING_CONFLICT_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseHeld = "SCHEDULING_CONFLICT_002" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseUnavailable = "SCHEDULING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.SchedulerUnavailable = "SCHEDULING_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.CatalogName = "scheduling" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobFailed = "scheduling.job.failed" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobNotFound = "scheduling.job.not_found" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobRunning = "scheduling.job.running" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseHeld = "scheduling.lease.held" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseUnavailable = "scheduling.lease.unavailable" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.SchedulerUnavailable = "scheduling.scheduler.unavailable" -> string!
 override XiHan.Framework.Scheduling.Abstractions.CronExpression.ToString() -> string!
 override XiHan.Framework.Scheduling.Abstractions.JobDefinition.Equals(object? obj) -> bool

@@ -19,6 +19,11 @@ public abstract class LeaderElectionConformance
     protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
 
     /// <summary>
+    /// 过期用例使用的存活时间；只有整数秒粒度的 Provider（如 Kubernetes Lease）改为 1 秒。
+    /// </summary>
+    protected virtual TimeSpan LeaseTimeToLive => TimeSpan.FromMilliseconds(400);
+
+    /// <summary>
     /// 创建被测选举。每个用例调用一次。
     /// </summary>
     protected abstract ILeaderElection CreateElection();
@@ -44,8 +49,9 @@ public abstract class LeaderElectionConformance
         await lease.ReleaseAsync().ConfigureAwait(false);
         Assert.False(lease.IsHeld);
         await lease.ReleaseAsync().ConfigureAwait(false);
+        // 持有者标识是实例身份（如 Pod 名），同一实例再次获取可以相同；旧租约对象必须已失效
         var again = (await election.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.NotEqual(lease.Holder, again.Holder);
+        Assert.True(again.IsHeld);
         Assert.Equal(SchedulingErrors.LeaseHeld, (await lease.RenewAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
     }
 
@@ -57,7 +63,7 @@ public abstract class LeaderElectionConformance
     {
         var election = CreateElection();
         var resource = Resource();
-        var ttl = TimeSpan.FromMilliseconds(400);
+        var ttl = LeaseTimeToLive;
 
         var lease = (await election.TryAcquireAsync(resource, ttl, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         await Task.Delay(ttl / 2).ConfigureAwait(false);
@@ -69,7 +75,7 @@ public abstract class LeaderElectionConformance
         await Task.Delay(ttl + ExpirationGrace).ConfigureAwait(false);
         Assert.False(lease.IsHeld);
         var successor = (await election.TryAcquireAsync(resource, ttl, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.NotEqual(lease.Holder, successor.Holder);
+        Assert.True(successor.IsHeld);
         Assert.Equal(SchedulingErrors.LeaseHeld, (await lease.RenewAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         await successor.DisposeAsync().ConfigureAwait(false);
     }

@@ -6,6 +6,7 @@ static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalJo
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ManualJob.get -> XiHan.Framework.Scheduling.Abstractions.JobName
 virtual XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.WaitTimeout.get -> System.TimeSpan
 virtual XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.ExpirationGrace.get -> System.TimeSpan
+virtual XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.LeaseTimeToLive.get -> System.TimeSpan
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentTrigger_ConflictsUnlessAllowed() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalSchedule_RunsRepeatedly() -> System.Threading.Tasks.Task!

@@ -109,6 +109,7 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_UNAVAILABLE_001` | 调度器未运行 |
+| `SCHEDULING_UNAVAILABLE_002` | 领导选举的存储（如 Kubernetes API Server）不可达或超时 |
 | `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
 | `CONFIGURATION_NOTFOUND_001` | 远程配置的命名空间不存在 |
 | `CONFIGURATION_NOTFOUND_002` | 密钥不存在 |

@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "作業 '{name}' 未登記。",
   "scheduling.job.running": "作業 '{name}' 正在執行，且不允許並行執行。",
   "scheduling.lease.held": "'{resource}' 的領導租約被其他持有者占用。",
+  "scheduling.lease.unavailable": "'{resource}' 的領導租約儲存無法使用：{reason}",
   "scheduling.scheduler.unavailable": "作業排程器未執行。"
 }

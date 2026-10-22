@@ -3,5 +3,6 @@
   "scheduling.job.not_found": "作业 '{name}' 未登记。",
   "scheduling.job.running": "作业 '{name}' 正在运行，且不允许并发运行。",
   "scheduling.lease.held": "'{resource}' 的领导租约被其他持有者占用。",
+  "scheduling.lease.unavailable": "'{resource}' 的领导租约存储不可用：{reason}",
   "scheduling.scheduler.unavailable": "作业调度器未运行。"
 }

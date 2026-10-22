@@ -32,6 +32,9 @@ public static class SchedulingMessages
     /// <summary>调度器未运行。</summary>
     public const string SchedulerUnavailable = "scheduling.scheduler.unavailable";
 
+    /// <summary>领导选举的存储不可达。参数：<c>resource</c>、<c>reason</c>。</summary>
+    public const string LeaseUnavailable = "scheduling.lease.unavailable";
+
     /// <summary>
     /// 本包的消息目录。
     /// </summary>

@@ -26,7 +26,7 @@ public abstract class LeaderLease : IAsyncDisposable
     public JobName Resource { get; }
 
     /// <summary>
-    /// 持有者标识（每次获取都不同）。
+    /// 持有者标识：实例的身份（进程内实现每次获取生成新值，Kubernetes 实现是 Pod 名）。
     /// </summary>
     public string Holder { get; }
 
