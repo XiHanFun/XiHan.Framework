@@ -54,5 +54,6 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Full/XiHan.Framework.Profiles.Full.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
   </ItemGroup>
 </Project>

@@ -18,6 +18,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
     <!-- 源生成器：从 [Operation] 生成登记代码与 JSON Schema，不进入运行时依赖 -->
     <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
