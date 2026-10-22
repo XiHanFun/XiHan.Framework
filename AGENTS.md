@@ -106,7 +106,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 `next/` 与 `nextdocs/` 承载从零重写的下一代框架，在 `next` 分支开发，与 `framework/`（4.x）互不引用；上面「架构约束」中的分层与 `DefaultXxx` 命名只适用于 4.x。涉及下一代的任务先读 `.agents/skills/next-generation/SKILL.md`，再按顺序读 `nextdocs/下一代框架总体方案.md` 与 `nextdocs/architecture/01–05`。
 
-- 环层只能向下依赖：Primitives → Kernel → Domain 与 `.Abstractions` → 实现 → Hosting 与 Protocols → Plugins → Profiles；Ring 0/1 与抽象包零第三方依赖，Ring 0/1 零反射。
+- 环层只能向下依赖：Primitives → Kernel → Domain 与 `.Abstractions` → 实现 → Hosting → Protocols 与 Plugins → Profiles；Ring 0/1 与抽象包零第三方依赖，Ring 0/1 零反射。
 - 包名由 `next/spec/conventions/vocabulary.md` 的术语表与 `package-ids.md` 的文法推出；类型名不带 `XiHan` 前缀；实现包按机制或技术命名，`Default` 不进包名，默认角色写在清单 `role`。
 - 规范先于实现：公开契约先进 `next/spec/rfcs`，再写 `nextdocs/adr`，再写代码与一致性向量。
 - `TreatWarningsAsErrors`、PublicAPI 文件、包验证、AOT 分析器与 `next/test/XiHan.Framework.Architecture.Tests` 都是 CI 必过项；不放宽、不绕过、不加 `NoWarn`。

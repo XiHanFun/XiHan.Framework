@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
@@ -47,7 +48,7 @@ public sealed class OrdersFeature : IFeature
     };
 
     /// <summary>
-    /// 登记订单仓储、事件计数器、<see cref="Topic"/> 的消息处理器，以及清单里声明的两个权限。
+    /// 登记订单仓储、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限，以及两个操作契约。
     /// </summary>
     public void Configure(FeatureContext context)
     {
@@ -55,8 +56,18 @@ public sealed class OrdersFeature : IFeature
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 
-        // 权限码必须先在这里登记，端点上的 RequireXiHanPermission 才能引用；未登记的权限码在装配时报错
+        // 权限码必须先在这里登记，操作契约与端点上的 RequireXiHanPermission 才能引用；未登记的权限码在装配时报错
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
+
+        // 操作契约：类型即 Schema，HTTP 适配器按操作 ID 推导路由，Authorize 阶段按契约的权限判定
+        context.AddOperation<CreateOrder, PlaceOrderRequest, OrderResponse>(
+            new(CreateOrder.Id, Stability.Experimental, Expose.Http | Expose.Mcp, permission: "orders.write"),
+            SampleJsonContext.Default.PlaceOrderRequest,
+            SampleJsonContext.Default.OrderResponse);
+        context.AddOperation<ListOrders, ListOrdersRequest, OrderList>(
+            new(ListOrders.Id, Stability.Experimental, Expose.Http | Expose.Mcp, permission: "orders.read"),
+            SampleJsonContext.Default.ListOrdersRequest,
+            SampleJsonContext.Default.OrderList);
     }
 }

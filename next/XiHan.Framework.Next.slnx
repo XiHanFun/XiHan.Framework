@@ -29,6 +29,9 @@
   <Folder Name="/4.Hosting/">
     <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
   </Folder>
+  <Folder Name="/5.Protocols/">
+    <Project Path="src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
+  </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
   </Folder>
@@ -71,6 +74,7 @@
     <Project Path="test/XiHan.Framework.Messaging.RabbitMQ.Tests/XiHan.Framework.Messaging.RabbitMQ.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Abstractions.Tests/XiHan.Framework.Localization.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.InMemory.Tests/XiHan.Framework.Localization.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Protocols.Http.Tests/XiHan.Framework.Protocols.Http.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />
