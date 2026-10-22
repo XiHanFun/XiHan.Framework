@@ -41,6 +41,8 @@
     <Project Path="src/XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Scheduling.InMemory/XiHan.Framework.Scheduling.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Scheduling.Conformance/XiHan.Framework.Scheduling.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -93,6 +95,7 @@
     <Project Path="test/XiHan.Framework.ObjectStorage.FileSystem.Tests/XiHan.Framework.ObjectStorage.FileSystem.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Scheduling.Abstractions.Tests/XiHan.Framework.Scheduling.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Scheduling.InMemory.Tests/XiHan.Framework.Scheduling.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Configuration.Abstractions.Tests/XiHan.Framework.Configuration.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">

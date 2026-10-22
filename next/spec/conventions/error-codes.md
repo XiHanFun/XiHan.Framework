@@ -109,6 +109,11 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_UNAVAILABLE_001` | 调度器未运行 |
 | `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
+| `CONFIGURATION_NOTFOUND_001` | 远程配置的命名空间不存在 |
+| `CONFIGURATION_NOTFOUND_002` | 密钥不存在 |
+| `CONFIGURATION_UNAVAILABLE_001` | 远程配置不可达或超时 |
+| `CONFIGURATION_UNAVAILABLE_002` | 密钥库不可达或超时 |
+| `CONFIGURATION_DENIED_001` | 没有读取该密钥的权限 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

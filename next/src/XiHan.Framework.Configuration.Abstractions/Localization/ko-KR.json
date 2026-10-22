@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "원격 구성 네임스페이스 '{namespace}'이(가) 존재하지 않습니다.",
+  "configuration.remote.unavailable": "원격 구성 네임스페이스 '{namespace}'을(를) 사용할 수 없습니다: {reason}",
+  "configuration.secret.denied": "비밀 '{name}'에 대한 액세스가 거부되었습니다.",
+  "configuration.secret.not_found": "비밀 '{name}'이(가) 존재하지 않습니다.",
+  "configuration.secrets.unavailable": "비밀 저장소를 사용할 수 없습니다: {reason}"
+}

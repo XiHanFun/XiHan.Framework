@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "El espacio de nombres de configuración remota '{namespace}' no existe.",
+  "configuration.remote.unavailable": "El espacio de nombres de configuración remota '{namespace}' no está disponible: {reason}",
+  "configuration.secret.denied": "Se denegó el acceso al secreto '{name}'.",
+  "configuration.secret.not_found": "El secreto '{name}' no existe.",
+  "configuration.secrets.unavailable": "El almacén de secretos no está disponible: {reason}"
+}

@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "遠端設定命名空間 '{namespace}' 不存在。",
+  "configuration.remote.unavailable": "遠端設定命名空間 '{namespace}' 無法使用：{reason}",
+  "configuration.secret.denied": "沒有讀取密鑰 '{name}' 的權限。",
+  "configuration.secret.not_found": "密鑰 '{name}' 不存在。",
+  "configuration.secrets.unavailable": "密鑰庫無法使用：{reason}"
+}

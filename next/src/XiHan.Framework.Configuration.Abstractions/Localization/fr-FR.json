@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "L'espace de noms de configuration distante '{namespace}' n'existe pas.",
+  "configuration.remote.unavailable": "L'espace de noms de configuration distante '{namespace}' est indisponible : {reason}",
+  "configuration.secret.denied": "L'accès au secret '{name}' est refusé.",
+  "configuration.secret.not_found": "Le secret '{name}' n'existe pas.",
+  "configuration.secrets.unavailable": "Le magasin de secrets est indisponible : {reason}"
+}
