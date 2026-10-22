@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "El almacén de inquilinos en memoria alcanzó su capacidad de {capacity}.",
+  "multitenancy.tenant.disabled": "El inquilino '{tenantId}' está deshabilitado.",
+  "multitenancy.tenant.invalid_id": "El identificador de inquilino '{tenantId}' no es válido.",
+  "multitenancy.tenant.not_found": "El inquilino '{tenantId}' no existe.",
+  "multitenancy.tenant.required": "Esta llamada requiere un inquilino, pero no se resolvió ninguno."
+}

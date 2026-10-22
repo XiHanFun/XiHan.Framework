@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "Le manifeste '{id}' déclare le même nom de liaison plus d'une fois dans 'bindings'.",
+  "primitives.manifest.duplicate_provides": "Le manifeste '{id}' déclare le même identifiant de capacité plus d'une fois dans 'provides'.",
+  "primitives.manifest.duplicate_requires": "Le manifeste '{id}' déclare le même identifiant de capacité plus d'une fois dans 'requires'.",
+  "primitives.manifest.isolation_not_allowed": "Le manifeste '{id}' n'est pas un plugin et ne doit déclarer ni 'isolation' ni 'permissions'.",
+  "primitives.manifest.isolation_required": "Le manifeste du plugin '{id}' doit déclarer 'isolation'.",
+  "primitives.result.uninitialized": "Le résultat n'est pas initialisé : une valeur par défaut n'est pas un résultat valide."
+}

@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "Denied by policy.",
+  "kernel.feature.start_failed": "Feature '{id}' failed to start: {reason}",
+  "kernel.feature.stop_failed": "Feature '{id}' failed to stop: {reason}",
+  "kernel.feature.stop_timeout": "Feature '{id}' timed out while stopping.",
+  "kernel.hosting.not_serving": "The application is in state {state} and is not accepting requests.",
+  "kernel.invocation.cancelled": "The invocation was canceled.",
+  "kernel.invocation.deadline_before_start": "The invocation exceeded its deadline before it started.",
+  "kernel.invocation.deadline_exceeded": "The invocation exceeded its deadline.",
+  "kernel.invocation.unhandled_exception": "An unhandled exception occurred during the invocation.",
+  "kernel.manifest.empty": "The manifest is empty.",
+  "kernel.manifest.file_missing": "Manifest file '{path}' does not exist.",
+  "kernel.manifest.invalid": "The manifest is not valid: {reason}",
+  "kernel.manifest.invalid_json": "The manifest is not valid JSON: {reason}",
+  "kernel.permission.duplicate": "Permission code '{code}' is already registered.",
+  "kernel.permission.registry_full": "The permission registry has reached its capacity of {capacity}."
+}

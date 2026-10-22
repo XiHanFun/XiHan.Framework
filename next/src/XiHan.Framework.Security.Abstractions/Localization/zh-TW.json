@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "API Key 無效。",
+  "security.authentication.required": "此呼叫需要驗證。",
+  "security.authentication.unsupported_scheme": "不支援驗證方案 '{scheme}'。",
+  "security.grant_store.capacity_exceeded": "記憶體授權儲存已達到容量上限 {capacity}。",
+  "security.permission.missing": "缺少權限 '{permission}'。",
+  "security.policy.not_found": "原則 '{policy}' 不存在。",
+  "security.principal_store.capacity_exceeded": "記憶體主體儲存已達到容量上限 {capacity}。",
+  "security.token.invalid": "權杖無效、已過期或簽章不符。",
+  "security.token.subject_missing": "權杖缺少主體宣告 '{claim}'。"
+}

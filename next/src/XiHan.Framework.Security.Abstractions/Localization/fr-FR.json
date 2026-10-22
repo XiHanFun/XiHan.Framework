@@ -1,0 +1,11 @@
+{
+  "security.api_key.invalid": "La clé d'API n'est pas valide.",
+  "security.authentication.required": "Cet appel nécessite une authentification.",
+  "security.authentication.unsupported_scheme": "Le schéma d'authentification '{scheme}' n'est pas pris en charge.",
+  "security.grant_store.capacity_exceeded": "Le magasin d'octrois en mémoire a atteint sa capacité de {capacity}.",
+  "security.permission.missing": "La permission '{permission}' est manquante.",
+  "security.policy.not_found": "La stratégie '{policy}' n'existe pas.",
+  "security.principal_store.capacity_exceeded": "Le magasin de principaux en mémoire a atteint sa capacité de {capacity}.",
+  "security.token.invalid": "Le jeton est invalide, expiré ou sa signature est incorrecte.",
+  "security.token.subject_missing": "Le jeton ne contient pas la revendication de sujet '{claim}'."
+}

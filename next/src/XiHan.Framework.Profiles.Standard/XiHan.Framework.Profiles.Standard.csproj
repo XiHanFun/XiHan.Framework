@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Profiles.Standard</PackageId>
+    <RootNamespace>XiHan.Framework.Profiles.Standard</RootNamespace>
+    <Description>XiHan Framework Standard 组合包（Ring 6）：Minimal（含本地化）+ Domain + Persistence / Caching / MultiTenancy / Security / Messaging 的抽象与内存默认实现。零外部基础设施即可运行，换 Provider 只加包与配置。</Description>
+    <PackageTags>xihan;framework;profile;standard</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+  </ItemGroup>
+</Project>

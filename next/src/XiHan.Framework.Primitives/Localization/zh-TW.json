@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "清單 '{id}' 在 'bindings' 裡重複宣告了同一個繫結名稱。",
+  "primitives.manifest.duplicate_provides": "清單 '{id}' 在 'provides' 裡重複宣告了同一個能力 ID。",
+  "primitives.manifest.duplicate_requires": "清單 '{id}' 在 'requires' 裡重複宣告了同一個能力 ID。",
+  "primitives.manifest.isolation_not_allowed": "清單 '{id}' 不是外掛，不得宣告 'isolation' 或 'permissions'。",
+  "primitives.manifest.isolation_required": "外掛清單 '{id}' 必須宣告 'isolation'。",
+  "primitives.result.uninitialized": "結果未初始化：預設值不是合法的結果。"
+}

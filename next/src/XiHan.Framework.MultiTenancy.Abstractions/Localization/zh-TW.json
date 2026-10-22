@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "記憶體租戶儲存已達到容量上限 {capacity}。",
+  "multitenancy.tenant.disabled": "租戶 '{tenantId}' 已停用。",
+  "multitenancy.tenant.invalid_id": "租戶 ID '{tenantId}' 不合法。",
+  "multitenancy.tenant.not_found": "租戶 '{tenantId}' 不存在。",
+  "multitenancy.tenant.required": "此呼叫必須帶租戶，但沒有解析到租戶。"
+}

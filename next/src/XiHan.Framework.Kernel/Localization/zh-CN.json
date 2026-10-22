@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "被策略拒绝。",
+  "kernel.feature.start_failed": "特性 '{id}' 启动失败：{reason}",
+  "kernel.feature.stop_failed": "特性 '{id}' 停止失败：{reason}",
+  "kernel.feature.stop_timeout": "特性 '{id}' 停止超时。",
+  "kernel.hosting.not_serving": "应用处于 {state} 状态，暂不接收请求。",
+  "kernel.invocation.cancelled": "调用已取消。",
+  "kernel.invocation.deadline_before_start": "调用在开始前就已超过截止时间。",
+  "kernel.invocation.deadline_exceeded": "调用超过了截止时间。",
+  "kernel.invocation.unhandled_exception": "调用期间发生未处理的异常。",
+  "kernel.manifest.empty": "清单为空。",
+  "kernel.manifest.file_missing": "清单文件 '{path}' 不存在。",
+  "kernel.manifest.invalid": "清单不合法：{reason}",
+  "kernel.manifest.invalid_json": "清单不是合法的 JSON：{reason}",
+  "kernel.permission.duplicate": "权限码 '{code}' 已登记。",
+  "kernel.permission.registry_full": "权限注册表已达到容量上限 {capacity}。"
+}

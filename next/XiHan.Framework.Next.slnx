@@ -1,0 +1,85 @@
+<Solution>
+  <Folder Name="/0.Primitives/">
+    <Project Path="src/XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </Folder>
+  <Folder Name="/1.Kernel/">
+    <Project Path="src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/2.Subsystems/">
+    <Project Path="src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/3.Providers/">
+    <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
+    <Project Path="src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+  </Folder>
+  <Folder Name="/4.Hosting/">
+    <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/5.Plugins/">
+    <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
+  </Folder>
+  <Folder Name="/6.Profiles/">
+    <Project Path="src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <Project Path="src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+  </Folder>
+  <Folder Name="/6.Tooling/">
+    <Project Path="src/XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" />
+    <Project Path="src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy.Conformance/XiHan.Framework.MultiTenancy.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
+    <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/7.Tests/">
+    <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Primitives.Tests/XiHan.Framework.Primitives.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Tests/XiHan.Framework.Kernel.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Hosting.AspNetCore.Tests/XiHan.Framework.Hosting.AspNetCore.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Kernel.Analyzers.Tests/XiHan.Framework.Kernel.Analyzers.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Domain.Tests/XiHan.Framework.Domain.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.Abstractions.Tests/XiHan.Framework.Persistence.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.InMemory.Tests/XiHan.Framework.Persistence.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.EntityFrameworkCore.Tests/XiHan.Framework.Persistence.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Caching.Abstractions.Tests/XiHan.Framework.Caching.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Caching.InMemory.Tests/XiHan.Framework.Caching.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Caching.Redis.Tests/XiHan.Framework.Caching.Redis.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.MultiTenancy.Abstractions.Tests/XiHan.Framework.MultiTenancy.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.MultiTenancy.InMemory.Tests/XiHan.Framework.MultiTenancy.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Security.Abstractions.Tests/XiHan.Framework.Security.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Security.InMemory.Tests/XiHan.Framework.Security.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Security.Jwt.Tests/XiHan.Framework.Security.Jwt.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.Abstractions.Tests/XiHan.Framework.Messaging.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.InMemory.Tests/XiHan.Framework.Messaging.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.RabbitMQ.Tests/XiHan.Framework.Messaging.RabbitMQ.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Localization.Abstractions.Tests/XiHan.Framework.Localization.Abstractions.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Localization.InMemory.Tests/XiHan.Framework.Localization.InMemory.Tests.csproj" />
+  </Folder>
+  <Folder Name="/8.Samples/">
+    <Project Path="samples/SimpleApp/SimpleApp.csproj" />
+    <Project Path="samples/SamplePlugin/SamplePlugin.csproj" />
+  </Folder>
+  <Folder Name="/9.Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+</Solution>

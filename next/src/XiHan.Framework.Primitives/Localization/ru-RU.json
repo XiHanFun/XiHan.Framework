@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "Манифест '{id}' объявляет одно и то же имя привязки в 'bindings' более одного раза.",
+  "primitives.manifest.duplicate_provides": "Манифест '{id}' объявляет один и тот же идентификатор возможности в 'provides' более одного раза.",
+  "primitives.manifest.duplicate_requires": "Манифест '{id}' объявляет один и тот же идентификатор возможности в 'requires' более одного раза.",
+  "primitives.manifest.isolation_not_allowed": "Манифест '{id}' не является плагином и не должен объявлять 'isolation' или 'permissions'.",
+  "primitives.manifest.isolation_required": "Манифест плагина '{id}' должен объявлять 'isolation'.",
+  "primitives.result.uninitialized": "Результат не инициализирован: значение по умолчанию не является допустимым результатом."
+}

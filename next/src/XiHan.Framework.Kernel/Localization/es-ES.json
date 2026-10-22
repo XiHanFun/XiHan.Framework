@@ -1,0 +1,17 @@
+{
+  "kernel.authorization.denied_by_policy": "Denegado por la política.",
+  "kernel.feature.start_failed": "La característica '{id}' no pudo iniciarse: {reason}",
+  "kernel.feature.stop_failed": "La característica '{id}' no pudo detenerse: {reason}",
+  "kernel.feature.stop_timeout": "La característica '{id}' agotó el tiempo de espera al detenerse.",
+  "kernel.hosting.not_serving": "La aplicación está en estado {state} y no acepta solicitudes.",
+  "kernel.invocation.cancelled": "La llamada fue cancelada.",
+  "kernel.invocation.deadline_before_start": "La llamada superó su plazo antes de comenzar.",
+  "kernel.invocation.deadline_exceeded": "La llamada superó su plazo.",
+  "kernel.invocation.unhandled_exception": "Se produjo una excepción no controlada durante la llamada.",
+  "kernel.manifest.empty": "El manifiesto está vacío.",
+  "kernel.manifest.file_missing": "El archivo de manifiesto '{path}' no existe.",
+  "kernel.manifest.invalid": "El manifiesto no es válido: {reason}",
+  "kernel.manifest.invalid_json": "El manifiesto no es un JSON válido: {reason}",
+  "kernel.permission.duplicate": "El código de permiso '{code}' ya está registrado.",
+  "kernel.permission.registry_full": "El registro de permisos alcanzó su capacidad de {capacity}."
+}

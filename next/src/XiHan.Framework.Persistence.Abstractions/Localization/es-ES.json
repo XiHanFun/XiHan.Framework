@@ -1,0 +1,10 @@
+{
+  "persistence.entity.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista en '{entity}': {reason}",
+  "persistence.entity.duplicate": "La entidad '{entity}' ya tiene un elemento con el identificador '{id}'.",
+  "persistence.entity.not_found": "La entidad '{entity}' no tiene ningún elemento con el identificador '{id}'.",
+  "persistence.entity.stale_stamp": "El sello de concurrencia de '{entity}' con el identificador '{id}' está obsoleto.",
+  "persistence.entity.tenant_required": "La entidad '{entity}' es multiinquilino, pero la llamada actual no tiene inquilino.",
+  "persistence.store.capacity_exceeded": "La tabla en memoria de '{entity}' alcanzó su capacidad de {capacity}.",
+  "persistence.unit_of_work.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista durante la confirmación: {reason}",
+  "persistence.unit_of_work.read_only": "Una unidad de trabajo de solo lectura no acepta escrituras."
+}

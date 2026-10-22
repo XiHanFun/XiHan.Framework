@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.MultiTenancy.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.MultiTenancy.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存租户存储（默认实现）：从配置装载租户、有界、可编程增删，附默认解析器与 Tenant 阶段中间件。</Description>
+    <PackageTags>xihan;framework;multitenancy;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

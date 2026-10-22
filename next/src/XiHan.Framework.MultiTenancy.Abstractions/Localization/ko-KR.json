@@ -1,0 +1,7 @@
+{
+  "multitenancy.store.capacity_exceeded": "메모리 내 테넌트 저장소가 용량 한도 {capacity}에 도달했습니다.",
+  "multitenancy.tenant.disabled": "테넌트 '{tenantId}'이(가) 비활성화되었습니다.",
+  "multitenancy.tenant.invalid_id": "테넌트 ID '{tenantId}'이(가) 올바르지 않습니다.",
+  "multitenancy.tenant.not_found": "테넌트 '{tenantId}'이(가) 없습니다.",
+  "multitenancy.tenant.required": "이 호출에는 테넌트가 필요하지만 확인되지 않았습니다."
+}

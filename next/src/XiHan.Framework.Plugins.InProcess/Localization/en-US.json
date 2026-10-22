@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "Plugin assembly '{path}' does not exist.",
+  "plugins.entry.manifest_mismatch": "The entry type's manifest ID '{actual}' does not match the manifest file's ID '{expected}'.",
+  "plugins.entry.not_found": "Entry type '{entry}' was not found in plugin assembly '{package}'.",
+  "plugins.entry.not_plugin": "Entry type '{entry}' does not implement 'IPlugin'.",
+  "plugins.manifest.entry_required": "Plugin manifest '{id}' must declare both 'package' (the assembly name) and 'entry' (the entry type).",
+  "plugins.manifest.invalid": "The manifest in plugin directory '{directory}' is invalid: {reason}",
+  "plugins.manifest.not_in_process": "Manifest '{id}' does not describe an in-process plugin (kind={kind}, isolation={isolation}).",
+  "plugins.permission.not_granted": "Permissions declared by plugin '{id}' have not been granted: {permissions}.",
+  "plugins.plugin.already_loaded": "Plugin '{id}' is already loaded.",
+  "plugins.plugin.load_failed": "Plugin '{id}' failed to load: {reason}",
+  "plugins.plugin.not_loaded": "Plugin '{id}' is not loaded.",
+  "plugins.plugin.stop_failed": "Plugin '{id}' failed to stop: {reason}"
+}

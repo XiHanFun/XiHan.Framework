@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "'id', 'source', 'type' 특성은 필수입니다.",
+  "messaging.envelope.invalid": "봉투가 올바르지 않습니다: {reason}",
+  "messaging.envelope.invalid_base64": "'data_base64' 특성이 올바른 Base64가 아닙니다.",
+  "messaging.envelope.invalid_extension": "확장 특성 이름 '{name}'이(가) 올바르지 않습니다.",
+  "messaging.envelope.invalid_json": "문서가 올바른 CloudEvents JSON이 아닙니다: {reason}",
+  "messaging.envelope.invalid_time": "'time' 특성 '{time}'은(는) RFC 3339 타임스탬프가 아닙니다.",
+  "messaging.envelope.spec_version": "'specversion' 특성은 '{specVersion}'이어야 합니다.",
+  "messaging.handler.failed": "메시지 처리기가 처리되지 않은 예외를 발생시켰습니다: {reason}",
+  "messaging.queue.full": "토픽 '{topic}'의 메모리 내 큐가 가득 찼습니다(용량 {capacity}).",
+  "messaging.topic.invalid": "토픽 '{topic}'이(가) 올바르지 않습니다."
+}
