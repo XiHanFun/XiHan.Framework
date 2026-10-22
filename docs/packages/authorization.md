@@ -185,7 +185,7 @@ var result = await evaluator.EvaluateAsync(compiled, new MemoizingConditionAttri
 | `StartsWith` / `EndsWith` | 只用于字符串，不区分大小写 |
 | `IsNull` / `IsNotNull` | 取不到、空串、空列表都算空 |
 
-带 Not 的运算符是对应运算符的否定；子句上的取反再作用于结果，两者叠加时按字面计算。
+带 Not 的运算符是对应运算符的否定；子句上的取反再作用于结果，两者叠加时按字面计算。运算符能否用于某个属性由 `ConditionOperatorRules.IsAllowed` 判定，`ConditionOperatorRules.AllowedFor` 列出某个属性能用的全部运算符，条件编辑界面可据此只给出能用的选项，与编译器的检查一致。
 
 **结果**：
 
