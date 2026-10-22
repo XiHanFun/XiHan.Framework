@@ -1,47 +1,32 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using IP2Region.Net.Abstractions;
-using IP2Region.Net.XDB;
-using Microsoft.Extensions.Options;
 using System.Net;
-using System.Net.Sockets;
 using UAParser;
-using XiHan.Framework.Web.Core.Options;
 
 namespace XiHan.Framework.Web.Core.Clients;
 
 /// <summary>
 /// 基于 HttpContext 的客户端信息提供器
 /// </summary>
-public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDisposable
+/// <remarks>
+/// 归属地交给 <see cref="IIpRegionResolver"/>（与访问策略等共用一份离线库）；回环地址记「本机」，内网地址记「局域网」。
+/// </remarks>
+public sealed class HttpContextClientInfoProvider : IClientInfoProvider
 {
     private static readonly Parser UserAgentParser = Parser.GetDefault();
-    private readonly object _searcherSyncRoot = new();
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IWebHostEnvironment _hostingEnvironment;
-    private readonly XiHanClientInfoOptions _options;
-    private readonly ILogger<HttpContextClientInfoProvider> _logger;
-    private ISearcher? _ipSearcher;
-    private bool _searcherInitialized;
+    private readonly IIpRegionResolver _ipRegionResolver;
 
     /// <summary>
     /// 构造函数
     /// </summary>
-    /// <param name="httpContextAccessor"></param>
-    /// <param name="hostingEnvironment"></param>
-    /// <param name="options"></param>
-    /// <param name="logger"></param>
-    public HttpContextClientInfoProvider(
-        IHttpContextAccessor httpContextAccessor,
-        IWebHostEnvironment hostingEnvironment,
-        IOptions<XiHanClientInfoOptions> options,
-        ILogger<HttpContextClientInfoProvider> logger)
+    /// <param name="httpContextAccessor">HttpContext 访问器</param>
+    /// <param name="ipRegionResolver">IP 归属地解析</param>
+    public HttpContextClientInfoProvider(IHttpContextAccessor httpContextAccessor, IIpRegionResolver ipRegionResolver)
     {
         _httpContextAccessor = httpContextAccessor;
-        _hostingEnvironment = hostingEnvironment;
-        _options = options.Value;
-        _logger = logger;
+        _ipRegionResolver = ipRegionResolver;
     }
 
     /// <summary>
@@ -64,17 +49,6 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
             OperatingSystem = operatingSystem,
             DeviceName = deviceName
         };
-    }
-
-    /// <summary>
-    /// 释放资源
-    /// </summary>
-    public void Dispose()
-    {
-        if (_ipSearcher is IDisposable disposableSearcher)
-        {
-            disposableSearcher.Dispose();
-        }
     }
 
     /// <summary>
@@ -142,128 +116,22 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
     /// <returns></returns>
     private string? ResolveLocation(string? ipAddress)
     {
-        if (string.IsNullOrWhiteSpace(ipAddress))
+        if (string.IsNullOrWhiteSpace(ipAddress) || !IPAddress.TryParse(ipAddress, out var address))
         {
             return null;
         }
 
-        if (IsLoopbackIp(ipAddress))
+        if (IpAddressScope.IsLoopback(address))
         {
             return "本机";
         }
 
-        if (IsPrivateIp(ipAddress))
+        if (IpAddressScope.IsPrivate(address))
         {
             return "局域网";
         }
 
-        if (!_options.EnableIpRegion)
-        {
-            return null;
-        }
-
-        var searcher = GetOrCreateSearcher();
-        if (searcher is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            var region = searcher.Search(ipAddress);
-            return NormalizeRegion(region);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "IP地理位置解析失败，IP: {IpAddress}", ipAddress);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 获取或创建IP查询器
-    /// </summary>
-    /// <returns></returns>
-    private ISearcher? GetOrCreateSearcher()
-    {
-        if (_searcherInitialized)
-        {
-            return _ipSearcher;
-        }
-
-        lock (_searcherSyncRoot)
-        {
-            if (_searcherInitialized)
-            {
-                return _ipSearcher;
-            }
-
-            _ipSearcher = CreateSearcher();
-            _searcherInitialized = true;
-            return _ipSearcher;
-        }
-    }
-
-    /// <summary>
-    /// 创建IP查询器
-    /// </summary>
-    /// <returns></returns>
-    private ISearcher? CreateSearcher()
-    {
-        var candidatePaths = BuildCandidateDbPaths();
-        foreach (var dbPath in candidatePaths)
-        {
-            if (!File.Exists(dbPath))
-            {
-                continue;
-            }
-
-            try
-            {
-                return new Searcher(CachePolicy.Content, dbPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "初始化 IP2Region 查询器失败。Path: {Path}", dbPath);
-            }
-        }
-
-        _logger.LogDebug("未找到可用的 ip2region 数据库文件，跳过IP地理位置解析。Candidates: {Candidates}", string.Join("; ", candidatePaths));
-        return null;
-    }
-
-    /// <summary>
-    /// 构建数据库候选路径
-    /// </summary>
-    /// <returns></returns>
-    private string[] BuildCandidateDbPaths()
-    {
-        var configuredPath = NormalizeToNull(_options.Ip2RegionDbPath);
-        var candidates = new List<string>(3);
-
-        AddCandidate(candidates, configuredPath);
-        AddCandidate(candidates, "IpDatabases/ip2region.xdb");
-        AddCandidate(candidates, "ip2region.xdb");
-
-        return [.. candidates.Distinct(StringComparer.OrdinalIgnoreCase)];
-    }
-
-    /// <summary>
-    /// 添加候选路径
-    /// </summary>
-    /// <param name="candidates"></param>
-    /// <param name="path"></param>
-    private void AddCandidate(List<string> candidates, string? path)
-    {
-        path = NormalizeToNull(path);
-        if (path is null)
-        {
-            return;
-        }
-
-        candidates.Add(Path.IsPathRooted(path)
-            ? path
-            : Path.Combine(_hostingEnvironment.ContentRootPath, path));
+        return _ipRegionResolver.Resolve(address)?.Location;
     }
 
     /// <summary>
@@ -290,44 +158,6 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
         }
 
         return normalized;
-    }
-
-    private static bool IsLoopbackIp(string ipAddress)
-    {
-        if (!IPAddress.TryParse(ipAddress, out var address))
-        {
-            return false;
-        }
-
-        if (address.IsIPv4MappedToIPv6)
-        {
-            address = address.MapToIPv4();
-        }
-
-        return IPAddress.IsLoopback(address);
-    }
-
-    private static bool IsPrivateIp(string ipAddress)
-    {
-        if (!IPAddress.TryParse(ipAddress, out var address))
-        {
-            return false;
-        }
-
-        if (address.AddressFamily == AddressFamily.InterNetworkV6)
-        {
-            if (address.IsIPv4MappedToIPv6)
-            {
-                return IsPrivateIp(address.MapToIPv4().ToString());
-            }
-
-            return address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6Multicast;
-        }
-
-        var bytes = address.GetAddressBytes();
-        return bytes[0] == 10 ||
-               (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
-               (bytes[0] == 192 && bytes[1] == 168);
     }
 
     /// <summary>
@@ -366,22 +196,6 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider, IDispos
         return string.Equals(deviceName, "Other", StringComparison.OrdinalIgnoreCase)
             ? "PC"
             : deviceName;
-    }
-
-    /// <summary>
-    /// 规范化位置字符串
-    /// </summary>
-    /// <param name="region"></param>
-    /// <returns></returns>
-    private static string? NormalizeRegion(string? region)
-    {
-        var tokens = region?
-            .Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Where(static token => !string.Equals(token, "0", StringComparison.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        return tokens is { Length: > 0 } ? string.Join(' ', tokens) : null;
     }
 
     /// <summary>
