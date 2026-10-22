@@ -10,6 +10,7 @@ namespace XiHan.Framework.Web.Core.Clients;
 /// 基于 HttpContext 的客户端信息提供器
 /// </summary>
 /// <remarks>
+/// 客户端 IP 只取 <c>Connection.RemoteIpAddress</c>（部署在反向代理后面时由转发头中间件按受信代理还原），不读转发类请求头。
 /// 归属地交给 <see cref="IIpRegionResolver"/>（与访问策略等共用一份离线库）；回环地址记「本机」，内网地址记「局域网」。
 /// </remarks>
 public sealed class HttpContextClientInfoProvider : IClientInfoProvider
@@ -52,35 +53,19 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider
     }
 
     /// <summary>
-    /// 解析客户端IP
+    /// 解析客户端IP：转发头中间件按受信代理还原后的连接地址，IPv4 映射地址还原成 IPv4
     /// </summary>
     /// <param name="httpContext"></param>
     /// <returns></returns>
     private static string? ResolveClientIp(HttpContext? httpContext)
     {
-        if (httpContext is null)
+        var address = httpContext?.Connection.RemoteIpAddress;
+        if (address is null)
         {
             return null;
         }
 
-        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].ToString();
-        if (!string.IsNullOrWhiteSpace(forwardedFor))
-        {
-            var candidate = forwardedFor.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            var normalized = NormalizeIp(candidate);
-            if (!string.IsNullOrWhiteSpace(normalized))
-            {
-                return normalized;
-            }
-        }
-
-        var realIp = NormalizeIp(httpContext.Request.Headers["X-Real-IP"].ToString());
-        if (!string.IsNullOrWhiteSpace(realIp))
-        {
-            return realIp;
-        }
-
-        return NormalizeIp(httpContext.Connection.RemoteIpAddress?.ToString());
+        return (address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address).ToString();
     }
 
     /// <summary>
@@ -132,32 +117,6 @@ public sealed class HttpContextClientInfoProvider : IClientInfoProvider
         }
 
         return _ipRegionResolver.Resolve(address)?.Location;
-    }
-
-    /// <summary>
-    /// 规范化IP
-    /// </summary>
-    /// <param name="ipAddress"></param>
-    /// <returns></returns>
-    private static string? NormalizeIp(string? ipAddress)
-    {
-        if (string.IsNullOrWhiteSpace(ipAddress))
-        {
-            return null;
-        }
-
-        var normalized = ipAddress.Trim();
-        if (IPAddress.TryParse(normalized, out var parsedAddress))
-        {
-            if (parsedAddress.IsIPv4MappedToIPv6)
-            {
-                parsedAddress = parsedAddress.MapToIPv4();
-            }
-
-            return parsedAddress.ToString();
-        }
-
-        return normalized;
     }
 
     /// <summary>
