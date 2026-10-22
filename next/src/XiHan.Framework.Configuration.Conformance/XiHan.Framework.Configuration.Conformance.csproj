@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Configuration.Conformance</PackageId>
+    <RootNamespace>XiHan.Framework.Configuration.Conformance</RootNamespace>
+    <Description>XiHan Framework 配置一致性套件：任何 IRemoteConfigurationClient 与 ISecretStore 实现都必须通过的 xUnit 抽象测试类。</Description>
+    <PackageTags>xihan;framework;configuration;conformance;xunit</PackageTags>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "Пространство имён удалённой конфигурации '{namespace}' не существует.",
+  "configuration.remote.unavailable": "Пространство имён удалённой конфигурации '{namespace}' недоступно: {reason}",
+  "configuration.secret.denied": "Доступ к секрету '{name}' запрещён.",
+  "configuration.secret.not_found": "Секрет '{name}' не существует.",
+  "configuration.secrets.unavailable": "Хранилище секретов недоступно: {reason}"
+}

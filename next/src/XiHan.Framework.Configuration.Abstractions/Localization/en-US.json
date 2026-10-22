@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "Remote configuration namespace '{namespace}' does not exist.",
+  "configuration.remote.unavailable": "Remote configuration namespace '{namespace}' is unavailable: {reason}",
+  "configuration.secret.denied": "Access to secret '{name}' is denied.",
+  "configuration.secret.not_found": "Secret '{name}' does not exist.",
+  "configuration.secrets.unavailable": "The secret store is unavailable: {reason}"
+}

@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "远程配置命名空间 '{namespace}' 不存在。",
+  "configuration.remote.unavailable": "远程配置命名空间 '{namespace}' 不可用：{reason}",
+  "configuration.secret.denied": "没有读取密钥 '{name}' 的权限。",
+  "configuration.secret.not_found": "密钥 '{name}' 不存在。",
+  "configuration.secrets.unavailable": "密钥库不可用：{reason}"
+}

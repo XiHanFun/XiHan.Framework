@@ -1,0 +1,7 @@
+{
+  "configuration.namespace.not_found": "Der Remote-Konfigurationsnamespace '{namespace}' existiert nicht.",
+  "configuration.remote.unavailable": "Der Remote-Konfigurationsnamespace '{namespace}' ist nicht verfügbar: {reason}",
+  "configuration.secret.denied": "Der Zugriff auf das Geheimnis '{name}' wurde verweigert.",
+  "configuration.secret.not_found": "Das Geheimnis '{name}' existiert nicht.",
+  "configuration.secrets.unavailable": "Der Geheimnisspeicher ist nicht verfügbar: {reason}"
+}
