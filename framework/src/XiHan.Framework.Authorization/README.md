@@ -7,6 +7,7 @@ XiHan.Framework.Authorization 提供授权与权限控制的基础能力，统�
 - 权限与角色授权的基础抽象
 - 授权策略与权限检查流程
 - 与认证、缓存等能力协同
+- 可配置条件的求值（`Conditions`）：属性登记、条件编译与求值，供应用把库里配置的条件（如仅办公网、仅工作时间）接进授权或请求拦截
 
 ## 依赖关系
 - 通过 `XiHanAuthorizationModule` 参与模块化生命周期
@@ -27,6 +28,7 @@ public class MyModule : XiHanModule
 ## 扩展点
 - 自定义权限存储与校验逻辑
 - 授权策略与规则解析扩展
+- 条件属性登记（`AddXiHanConditionAttributes`）与属性来源（`IConditionAttributeSource`）
 
 ## 目录结构
 ```text

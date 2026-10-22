@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using System.Reflection;
 using System.Security.Claims;
 
+using XiHan.Framework.Authorization.AspNetCore;
+
 namespace XiHan.Framework.Authorization.Abac;
 
 /// <summary>
@@ -95,7 +97,7 @@ public class DefaultAbacAttributeCollector : IAbacAttributeCollector
 
         TrySetAttribute(attributes, "resource_type", resource.GetType().Name);
 
-        if (TryResolveHttpContext(resource, out var httpContext))
+        if (AuthorizationResourceHttpContext.TryResolve(resource, out var httpContext))
         {
             foreach (var routeValue in httpContext.Request.RouteValues)
             {
@@ -151,7 +153,7 @@ public class DefaultAbacAttributeCollector : IAbacAttributeCollector
         TrySetAttribute(attributes, "utc_hour", now.Hour);
         TrySetAttribute(attributes, "day_of_week", now.DayOfWeek.ToString());
 
-        if (!TryResolveHttpContext(resource, out var httpContext))
+        if (!AuthorizationResourceHttpContext.TryResolve(resource, out var httpContext))
         {
             return;
         }
@@ -160,28 +162,6 @@ public class DefaultAbacAttributeCollector : IAbacAttributeCollector
         TrySetAttribute(attributes, "request_path", httpContext.Request.Path.Value);
         TrySetAttribute(attributes, "request_method", httpContext.Request.Method);
         TrySetAttribute(attributes, "user_agent", httpContext.Request.Headers.UserAgent.ToString());
-    }
-
-    private static bool TryResolveHttpContext(object? resource, out HttpContext httpContext)
-    {
-        httpContext = default!;
-        switch (resource)
-        {
-            case HttpContext directHttpContext:
-                httpContext = directHttpContext;
-                return true;
-            case null:
-                return false;
-        }
-
-        var property = resource.GetType().GetProperty("HttpContext", BindingFlags.Public | BindingFlags.Instance);
-        if (property?.GetValue(resource) is HttpContext resolvedHttpContext)
-        {
-            httpContext = resolvedHttpContext;
-            return true;
-        }
-
-        return false;
     }
 
     private static string ResolveClaimValue(ClaimsPrincipal principal, IEnumerable<string> claimTypes)
