@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Plugins.OutOfProcess.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <!-- 只保证示例插件先构建，不引用其程序集：测试以其输出目录作为插件目录启动进程 -->
+    <ProjectReference Include="../../samples/EchoPlugin/EchoPlugin.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "插件 '{id}' 未被授予权限 '{permission}'。",
+  "plugins.callback.messaging_unavailable": "宿主没有消息发布器，插件 '{id}' 无法发布消息。",
+  "plugins.callback.session_invalid": "插件会话令牌缺失或无效。",
+  "plugins.handshake.invalid": "插件 '{id}' 握手失败：{reason}",
+  "plugins.handshake.mismatch": "插件 '{id}' 的握手响应与清单不一致：{reason}",
+  "plugins.process.already_loaded": "插件 '{id}' 已加载。",
+  "plugins.process.crashed": "插件 '{id}' 异常退出，退出码 {exitCode}。",
+  "plugins.process.entry_required": "插件清单 '{id}' 必须声明 'entry'（相对插件目录的可执行文件）。",
+  "plugins.process.executable_missing": "插件可执行文件 '{path}' 不存在。",
+  "plugins.process.failed": "插件 '{id}' 在 {phase} 阶段失败：{reason}",
+  "plugins.process.manifest_invalid": "插件目录 '{directory}' 里的清单不合法：{reason}",
+  "plugins.process.not_loaded": "插件 '{id}' 未加载。",
+  "plugins.process.not_out_of_process": "清单 '{id}' 描述的不是进程外插件（kind={kind}，isolation={isolation}）。",
+  "plugins.process.permissions_not_granted": "插件 '{id}' 声明的权限未被授予：{permissions}。",
+  "plugins.process.timeout": "插件 '{id}' 在 {phase} 阶段超时。",
+  "plugins.process.unavailable": "插件 '{id}' 不可用（状态：{state}）。"
+}

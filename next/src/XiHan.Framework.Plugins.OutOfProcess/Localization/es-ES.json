@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "Al plugin '{id}' no se le ha concedido el permiso '{permission}'.",
+  "plugins.callback.messaging_unavailable": "El host no tiene un publicador de mensajes; el plugin '{id}' no puede publicar.",
+  "plugins.callback.session_invalid": "El token de sesión del plugin falta o no es válido.",
+  "plugins.handshake.invalid": "El plugin '{id}' falló en el handshake: {reason}",
+  "plugins.handshake.mismatch": "El handshake del plugin '{id}' no coincide con su manifiesto: {reason}",
+  "plugins.process.already_loaded": "El plugin '{id}' ya está cargado.",
+  "plugins.process.crashed": "El plugin '{id}' terminó inesperadamente con el código {exitCode}.",
+  "plugins.process.entry_required": "El manifiesto del plugin '{id}' debe declarar 'entry' (el ejecutable relativo al directorio del plugin).",
+  "plugins.process.executable_missing": "El ejecutable del plugin '{path}' no existe.",
+  "plugins.process.failed": "El plugin '{id}' falló durante {phase}: {reason}",
+  "plugins.process.manifest_invalid": "El manifiesto del directorio de plugin '{directory}' no es válido: {reason}",
+  "plugins.process.not_loaded": "El plugin '{id}' no está cargado.",
+  "plugins.process.not_out_of_process": "El manifiesto '{id}' no describe un plugin fuera de proceso (kind={kind}, isolation={isolation}).",
+  "plugins.process.permissions_not_granted": "Los permisos declarados por el plugin '{id}' no se han concedido: {permissions}.",
+  "plugins.process.timeout": "El plugin '{id}' agotó el tiempo durante {phase}.",
+  "plugins.process.unavailable": "El plugin '{id}' no está disponible (estado: {state})."
+}

@@ -91,7 +91,32 @@ public sealed partial class App : IDisposable
     /// <summary>
     /// 应用聚合状态。
     /// </summary>
-    public LifecycleState State => Aggregate(_model.Features.Select(static f => f.State).ToList(), _model.Options.FailurePolicy);
+    public LifecycleState State => Degrade(Aggregate(_model.Features.Select(static f => f.State).ToList(), _model.Options.FailurePolicy), Contributions);
+
+    /// <summary>
+    /// 各 <see cref="IHealthContributor"/> 的条目状态；贡献者抛出的异常不传播，记为该贡献者整体 Failed。
+    /// </summary>
+    public IReadOnlyList<ContributorStatus> Contributions
+    {
+        get
+        {
+            var contributions = new List<ContributorStatus>();
+            foreach (var contributor in _services.GetServices<IHealthContributor>())
+            {
+                try
+                {
+                    contributions.AddRange(contributor.Check());
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    // 健康采集不能因为某个贡献者出错而失败：把异常本身记成一条 Failed 条目
+                    contributions.Add(new ContributorStatus(contributor.GetType().FullName ?? contributor.GetType().Name, LifecycleState.Failed, Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, exception is FrameworkException framework ? framework.ToError() : null)));
+                }
+            }
+
+            return contributions;
+        }
+    }
 
     /// <summary>
     /// 健康快照。
@@ -99,10 +124,19 @@ public sealed partial class App : IDisposable
     public HealthSnapshot Health()
     {
         var features = Features;
-        var state = State;
+        var contributions = Contributions;
+        var state = Degrade(Aggregate(features.Select(static f => f.State).ToList(), _model.Options.FailurePolicy), contributions);
         var started = features.All(static f => f.State is >= LifecycleState.Started);
-        return new HealthSnapshot(started, state.IsServing(), state != LifecycleState.Failed, state, features);
+        return new HealthSnapshot(started, state.IsServing(), state != LifecycleState.Failed, state, features, contributions);
     }
+
+    /// <summary>
+    /// 贡献条目只把 Ready 压成 Degraded：条目 Degraded / Failed 表示应用仍在服务但有部件不健康，不改变其他聚合状态。
+    /// </summary>
+    private static LifecycleState Degrade(LifecycleState state, IReadOnlyList<ContributorStatus> contributions)
+        => state == LifecycleState.Ready && contributions.Any(static c => c.State is LifecycleState.Degraded or LifecycleState.Failed)
+            ? LifecycleState.Degraded
+            : state;
 
     /// <summary>
     /// 已构建的管道委托；首次访问时构建。

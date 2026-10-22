@@ -1,0 +1,135 @@
+#nullable enable
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HealthPrefix = "plugins." -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.MessagingPermission = "capability:messaging.queue" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PipelinePermission = "capability:kernel.pipeline" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PluginScheme = "Plugin" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ConfigurationSection = "XiHan:Plugins:OutOfProcess" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Capability = "plugins.out-of-process" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.HandshakeLinePrefix = "xihan-plugin/1" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.NamedPipe = "npipe" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Tcp = "tcp" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Unix = "unix" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.AlreadyLoaded = "PLUGINS_CONFLICT_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.CallbackDenied = "PLUGINS_DENIED_002" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.Crashed = "PLUGINS_UNEXPECTED_002" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.HandshakeMismatch = "PLUGINS_VALIDATION_004" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.InvalidHandshake = "PLUGINS_VALIDATION_003" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.InvalidSource = "PLUGINS_VALIDATION_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.NotFound = "PLUGINS_NOTFOUND_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.PermissionDenied = "PLUGINS_DENIED_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.Timeout = "PLUGINS_TIMEOUT_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.Unavailable = "PLUGINS_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginErrors.Unexpected = "PLUGINS_UNEXPECTED_001" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.AlreadyLoaded = "plugins.process.already_loaded" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.CallbackDenied = "plugins.callback.denied" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.CatalogName = "plugins.out-of-process" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.EntryRequired = "plugins.process.entry_required" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ExecutableMissing = "plugins.process.executable_missing" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.HandshakeInvalid = "plugins.handshake.invalid" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.HandshakeMismatch = "plugins.handshake.mismatch" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ManifestInvalid = "plugins.process.manifest_invalid" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.MessagingUnavailable = "plugins.callback.messaging_unavailable" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.NotLoaded = "plugins.process.not_loaded" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.NotOutOfProcess = "plugins.process.not_out_of_process" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.PermissionsNotGranted = "plugins.process.permissions_not_granted" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ProcessCrashed = "plugins.process.crashed" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ProcessFailed = "plugins.process.failed" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ProcessTimeout = "plugins.process.timeout" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.ProcessUnavailable = "plugins.process.unavailable" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginMessages.SessionInvalid = "plugins.callback.session_invalid" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.ErrorCodeTrailer = "xihan-error-code" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.HostAddressVariable = "XIHAN_PLUGIN_HOST_ADDRESS" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.InstanceVariable = "XIHAN_PLUGIN_INSTANCE" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.LocaleVariable = "XIHAN_PLUGIN_LOCALE" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.PrimitivesVariable = "XIHAN_PLUGIN_PRIMITIVES" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.ProtocolVersionsVariable = "XIHAN_PLUGIN_PROTOCOL_VERSIONS" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.SessionMetadataKey = "xihan-plugin-session" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.SessionVariable = "XIHAN_PLUGIN_SESSION" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.Version = 1 -> uint
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GetHashCode() -> int
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ToString() -> string!
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.GetHashCode() -> int
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ToString() -> string!
+override XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.GetHashCode() -> int
+override XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.ToString() -> string!
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions!
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.operator !=(XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? left, XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.operator ==(XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? left, XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.TryParse(string? text, out XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? endpoint) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.TryParseHandshakeLine(string? line, out XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? endpoint) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.PluginMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.Negotiate(System.Collections.Generic.IEnumerable<uint>! hostVersions, System.Collections.Generic.IEnumerable<uint>! pluginVersions) -> XiHan.Framework.Primitives.Maybe<uint>
+static XiHan.Framework.Plugins.OutOfProcess.PluginProtocol.SupportedVersions.get -> System.Collections.Generic.IReadOnlyList<uint>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Describe(string! manifestId) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus?
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HostEndpoint.get -> XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.OutOfProcessPluginHost(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeSpan stopGrace, string! defaultLocale = "en-US") -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.<Clone>$() -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Directories.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Directories.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Equals(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? other) -> bool
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Grants.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Grants.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GrantsFor(string! manifestId) -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HandshakeTimeout.get -> System.TimeSpan
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HandshakeTimeout.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HealthFailures.get -> int
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HealthFailures.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HealthInterval.get -> System.TimeSpan
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.HealthInterval.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.OutOfProcessPluginOptions() -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ResolveWorkDirectory() -> string!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.RestartLimit.get -> int
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.RestartLimit.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.RestartWindow.get -> System.TimeSpan
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.RestartWindow.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StartTimeout.get -> System.TimeSpan
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StartTimeout.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StopGrace.get -> System.TimeSpan?
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StopGrace.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.get -> string?
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.OutOfProcessPluginsFeature() -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.<Clone>$() -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Deconstruct(out XiHan.Framework.Kernel.Plugins.PluginStatus! Status, out int? ProcessId, out uint? ProtocolVersion, out int Restarts, out bool Lazy) -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Equals(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? other) -> bool
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Lazy.get -> bool
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Lazy.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.OutOfProcessPluginStatus(XiHan.Framework.Kernel.Plugins.PluginStatus! Status, int? ProcessId, uint? ProtocolVersion, int Restarts, bool Lazy) -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProcessId.get -> int?
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProcessId.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProtocolVersion.get -> uint?
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProtocolVersion.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Restarts.get -> int
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Restarts.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Status.get -> XiHan.Framework.Kernel.Plugins.PluginStatus!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Status.init -> void
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.<Clone>$() -> XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint!
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Address.get -> string!
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Equals(XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint? other) -> bool
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.Network.get -> string!
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.PluginEndpoint(string! network, string! address) -> void
+XiHan.Framework.Plugins.OutOfProcess.PluginEndpoint.ToHandshakeLine() -> string!
+XiHan.Framework.Plugins.OutOfProcess.PluginErrors
+XiHan.Framework.Plugins.OutOfProcess.PluginMessages
+XiHan.Framework.Plugins.OutOfProcess.PluginProtocol

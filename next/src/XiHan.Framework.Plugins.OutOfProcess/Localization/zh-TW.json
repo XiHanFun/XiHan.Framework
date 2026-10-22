@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "外掛 '{id}' 未被授予權限 '{permission}'。",
+  "plugins.callback.messaging_unavailable": "主機沒有訊息發佈器，外掛 '{id}' 無法發佈訊息。",
+  "plugins.callback.session_invalid": "外掛工作階段權杖缺失或無效。",
+  "plugins.handshake.invalid": "外掛 '{id}' 交握失敗：{reason}",
+  "plugins.handshake.mismatch": "外掛 '{id}' 的交握回應與清單不一致：{reason}",
+  "plugins.process.already_loaded": "外掛 '{id}' 已載入。",
+  "plugins.process.crashed": "外掛 '{id}' 異常結束，結束碼 {exitCode}。",
+  "plugins.process.entry_required": "外掛清單 '{id}' 必須宣告 'entry'（相對外掛目錄的可執行檔）。",
+  "plugins.process.executable_missing": "外掛可執行檔 '{path}' 不存在。",
+  "plugins.process.failed": "外掛 '{id}' 在 {phase} 階段失敗：{reason}",
+  "plugins.process.manifest_invalid": "外掛目錄 '{directory}' 裡的清單不合法：{reason}",
+  "plugins.process.not_loaded": "外掛 '{id}' 未載入。",
+  "plugins.process.not_out_of_process": "清單 '{id}' 描述的不是處理序外外掛（kind={kind}，isolation={isolation}）。",
+  "plugins.process.permissions_not_granted": "外掛 '{id}' 宣告的權限未被授予：{permissions}。",
+  "plugins.process.timeout": "外掛 '{id}' 在 {phase} 階段逾時。",
+  "plugins.process.unavailable": "外掛 '{id}' 無法使用（狀態：{state}）。"
+}

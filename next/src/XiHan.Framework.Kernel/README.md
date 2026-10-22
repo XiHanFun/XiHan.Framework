@@ -4,7 +4,7 @@
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`AddXiHan()` |
+| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`IHealthContributor`（额外健康条目，如插件；条目 Degraded / Failed 让应用 Degraded 但不退出）、`AddXiHan()` |
 | `Capabilities` | `[Capability]`、`CapabilityResolver`、`ResolvedGraph`、`ResolvedNode` |
 | `Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`PipelineStage`（原语层）、`Placement`、内置中间件 `ObserveMiddleware`、`DeadlineMiddleware` |
 | `Diagnostics` | `ActivitySource` / `Meter` 桥、`IAuditSink` |

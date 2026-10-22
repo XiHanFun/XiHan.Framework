@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>EchoPlugin</RootNamespace>
+    <AssemblyName>EchoPlugin</AssemblyName>
+    <!-- 插件以目录形式分发：可执行文件 + xihan.manifest.json；只依赖 protobuf 与 gRPC，不引用任何 XiHan 包 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.AspNetCore.Server" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 协议桩由规范里的同一份 .proto 生成（RFC-0017） -->
+    <Protobuf Include="../../spec/plugin/plugin.proto" ProtoRoot="../../spec/plugin" GrpcServices="Both" Access="Internal" Link="Protocol/plugin.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="xihan.manifest.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

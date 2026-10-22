@@ -1,0 +1,18 @@
+{
+  "plugins.callback.denied": "Dem Plugin '{id}' wurde die Berechtigung '{permission}' nicht erteilt.",
+  "plugins.callback.messaging_unavailable": "Der Host hat keinen Nachrichten-Publisher; Plugin '{id}' kann nicht veröffentlichen.",
+  "plugins.callback.session_invalid": "Das Sitzungstoken des Plugins fehlt oder ist ungültig.",
+  "plugins.handshake.invalid": "Der Handshake des Plugins '{id}' ist fehlgeschlagen: {reason}",
+  "plugins.handshake.mismatch": "Der Handshake des Plugins '{id}' stimmt nicht mit seinem Manifest überein: {reason}",
+  "plugins.process.already_loaded": "Plugin '{id}' ist bereits geladen.",
+  "plugins.process.crashed": "Plugin '{id}' wurde unerwartet mit Code {exitCode} beendet.",
+  "plugins.process.entry_required": "Das Plugin-Manifest '{id}' muss 'entry' (die ausführbare Datei relativ zum Plugin-Verzeichnis) deklarieren.",
+  "plugins.process.executable_missing": "Die ausführbare Plugin-Datei '{path}' existiert nicht.",
+  "plugins.process.failed": "Plugin '{id}' ist während {phase} fehlgeschlagen: {reason}",
+  "plugins.process.manifest_invalid": "Das Manifest im Plugin-Verzeichnis '{directory}' ist ungültig: {reason}",
+  "plugins.process.not_loaded": "Plugin '{id}' ist nicht geladen.",
+  "plugins.process.not_out_of_process": "Manifest '{id}' beschreibt kein Out-of-Process-Plugin (kind={kind}, isolation={isolation}).",
+  "plugins.process.permissions_not_granted": "Vom Plugin '{id}' deklarierte Berechtigungen wurden nicht erteilt: {permissions}.",
+  "plugins.process.timeout": "Plugin '{id}' hat während {phase} das Zeitlimit überschritten.",
+  "plugins.process.unavailable": "Plugin '{id}' ist nicht verfügbar (Zustand: {state})."
+}

@@ -49,6 +49,7 @@
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
+    <Project Path="src/XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
   </Folder>
   <Folder Name="/6.Profiles/">
     <Project Path="src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
@@ -80,6 +81,7 @@
     <Project Path="test/XiHan.Framework.Hosting.AspNetCore.Tests/XiHan.Framework.Hosting.AspNetCore.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Testing.Tests/XiHan.Framework.Testing.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Plugins.InProcess.Tests/XiHan.Framework.Plugins.InProcess.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Plugins.OutOfProcess.Tests/XiHan.Framework.Plugins.OutOfProcess.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Analyzers.Tests/XiHan.Framework.Kernel.Analyzers.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Domain.Tests/XiHan.Framework.Domain.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.Abstractions.Tests/XiHan.Framework.Persistence.Abstractions.Tests.csproj" />
@@ -123,6 +125,7 @@
     <Project Path="samples/SimpleCli/SimpleCli.csproj" />
     <Project Path="samples/KubernetesApp/KubernetesApp.csproj" />
     <Project Path="samples/SamplePlugin/SamplePlugin.csproj" />
+    <Project Path="samples/EchoPlugin/EchoPlugin.csproj" />
   </Folder>
   <Folder Name="/9.Solution Items/">
     <File Path=".editorconfig" />
