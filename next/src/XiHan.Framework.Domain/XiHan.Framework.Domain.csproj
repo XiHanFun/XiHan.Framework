@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Domain</PackageId>
+    <RootNamespace>XiHan.Framework.Domain</RootNamespace>
+    <Description>XiHan Framework 领域契约（Ring 2）：实体协议、值对象、领域事件、规约。纯契约与零依赖的组合器，无基类层级。</Description>
+    <PackageTags>xihan;framework;domain;ddd</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,59 @@
+#nullable enable
+const XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.ConfigurationSection = "XiHan:Persistence:InMemory" -> string!
+override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.ToString() -> string!
+static XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
+static XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.operator !=(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions? left, XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions? right) -> bool
+static XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.operator ==(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions? left, XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions? right) -> bool
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.InMemoryPersistenceFeature() -> void
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.Equals(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions? other) -> bool
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.InMemoryPersistenceOptions() -> void
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.MaxEntitiesPerType.get -> int
+XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.MaxEntitiesPerType.init -> void
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.InMemoryRepository(XiHan.Framework.Persistence.InMemory.InMemoryStore! store, XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork! unitOfWork, System.TimeProvider! timeProvider) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.InMemory.InMemoryStore
+XiHan.Framework.Persistence.InMemory.InMemoryStore.Clear() -> void
+XiHan.Framework.Persistence.InMemory.InMemoryStore.InMemoryStore(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions! options) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryStore.Options.get -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
+XiHan.Framework.Persistence.InMemory.InMemoryStore.Table<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity!, TKey>!
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Apply(System.Collections.Generic.IReadOnlyDictionary<TKey, TEntity!>! upserts, System.Collections.Generic.IReadOnlySet<TKey>! removals) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Capacity.get -> int
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Count.get -> int
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Find(TKey id) -> XiHan.Framework.Primitives.Maybe<TEntity!>
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.InMemoryTable(int capacity) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Snapshot() -> System.Collections.Generic.IReadOnlyList<TEntity!>!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.Changes<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity!, TKey>!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.InMemoryUnitOfWork(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.Apply(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.HasChanges.get -> bool
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IsReadOnly.get -> bool
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Apply(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.HasChanges.get -> bool
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Lookup(TKey id) -> (bool Found, bool Removed, TEntity? Entity)
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Overlay(System.Collections.Generic.IEnumerable<TEntity!>! snapshot) -> System.Collections.Generic.IEnumerable<TEntity!>!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.PendingChanges() -> void
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Remove(TKey id) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Upsert(TEntity! entity) -> void
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.TenantId.get -> string?

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.InProcess</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.InProcess</RootNamespace>
+    <Description>XiHan Framework 进程内插件宿主（Ring 5）：用可收集的 AssemblyLoadContext 加载、启动、停止、卸载插件。需要运行期反射，不支持 Native AOT。</Description>
+    <PackageTags>xihan;framework;plugins;in-process</PackageTags>
+    <!-- 整个框架里唯一允许反射的包：插件按清单中的类型名实例化 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

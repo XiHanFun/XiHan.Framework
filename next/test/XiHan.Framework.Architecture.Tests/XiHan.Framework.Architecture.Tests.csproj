@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Architecture.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 架构测试必须引用全部正式包：EverySourceProject_IsReferencedByArchitectureTests 会强制这一点 -->
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Conformance/XiHan.Framework.MultiTenancy.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+  </ItemGroup>
+</Project>

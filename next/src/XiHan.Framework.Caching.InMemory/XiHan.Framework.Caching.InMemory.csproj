@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Caching.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Caching.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存缓存（默认实现）：有界 LRU、绝对与滑动过期、原子的不存在才写与比较删；同时充当单进程的共享缓存。</Description>
+    <PackageTags>xihan;framework;caching;in-memory;lru</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

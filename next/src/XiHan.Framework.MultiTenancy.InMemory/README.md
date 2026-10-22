@@ -1,0 +1,31 @@
+# XiHan.Framework.MultiTenancy.InMemory
+
+内存租户存储。清单 `role: default`，提供 `multitenancy.context@1`。
+
+```json
+{
+  "XiHan": {
+    "MultiTenancy": {
+      "RequireTenant": false,
+      "Tenants": {
+        "acme": { "DisplayName": "Acme", "IsEnabled": true, "Properties": { "db": "Host=acme" } },
+        "beta": { "IsEnabled": false }
+      }
+    }
+  }
+}
+```
+
+## 语义
+
+- 启动时从 `XiHan:MultiTenancy:Tenants` 装载；运行时可用 `InMemoryTenantStore.Set` / `Remove` 增删，上限 `XiHan:MultiTenancy:InMemory:MaxTenants`（默认 1000），超出返回 `MULTITENANCY_UNAVAILABLE_001`。
+- 注册解析器顺序：`ClaimTenantResolver`（已认证主体的 `tenant` 声明）→ `BaggageTenantResolver`（`xihan.tenant`）。
+- 在 Tenant 阶段加入 `TenantResolutionMiddleware`。
+
+## 依赖方向
+
+依赖 `XiHan.Framework.MultiTenancy.Abstractions`。
+
+## 状态
+
+P2：可用，通过 `MultiTenancy.Conformance` 套件。

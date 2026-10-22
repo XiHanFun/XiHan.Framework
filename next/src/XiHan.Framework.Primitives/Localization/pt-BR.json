@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "O manifesto '{id}' declara o mesmo nome de vinculação mais de uma vez em 'bindings'.",
+  "primitives.manifest.duplicate_provides": "O manifesto '{id}' declara o mesmo identificador de capacidade mais de uma vez em 'provides'.",
+  "primitives.manifest.duplicate_requires": "O manifesto '{id}' declara o mesmo identificador de capacidade mais de uma vez em 'requires'.",
+  "primitives.manifest.isolation_not_allowed": "O manifesto '{id}' não é um plugin e não deve declarar 'isolation' nem 'permissions'.",
+  "primitives.manifest.isolation_required": "O manifesto do plugin '{id}' deve declarar 'isolation'.",
+  "primitives.result.uninitialized": "O resultado não foi inicializado: um valor padrão não é um resultado válido."
+}

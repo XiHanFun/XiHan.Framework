@@ -1,0 +1,8 @@
+{
+  "primitives.manifest.duplicate_bindings": "マニフェスト '{id}' は 'bindings' で同じバインディング名を複数回宣言しています。",
+  "primitives.manifest.duplicate_provides": "マニフェスト '{id}' は 'provides' で同じケイパビリティ ID を複数回宣言しています。",
+  "primitives.manifest.duplicate_requires": "マニフェスト '{id}' は 'requires' で同じケイパビリティ ID を複数回宣言しています。",
+  "primitives.manifest.isolation_not_allowed": "マニフェスト '{id}' はプラグインではないため、'isolation' や 'permissions' を宣言できません。",
+  "primitives.manifest.isolation_required": "プラグインマニフェスト '{id}' には 'isolation' の宣言が必要です。",
+  "primitives.result.uninitialized": "結果が初期化されていません: 既定値は有効な結果ではありません。"
+}

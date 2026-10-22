@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>SimpleApp</RootNamespace>
+    <!-- 最小 API 的端点委托在编译期生成，去掉反射绑定，保证 Native AOT 可发布 -->
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Standard 组合：内核、宿主与五个子系统的内存默认实现 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 应用自己的消息模板译文，与框架包同一格式：一种语言一个文件 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

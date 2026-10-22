@@ -1,0 +1,27 @@
+#nullable enable
+const XiHan.Framework.Plugins.InProcess.PluginErrors.AlreadyLoaded = "PLUGINS_CONFLICT_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.InvalidEntry = "PLUGINS_VALIDATION_002" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.InvalidSource = "PLUGINS_VALIDATION_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.LoadFailed = "PLUGINS_UNEXPECTED_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.NotFound = "PLUGINS_NOTFOUND_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginErrors.PermissionDenied = "PLUGINS_DENIED_001" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.AlreadyLoaded = "plugins.plugin.already_loaded" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.AssemblyMissing = "plugins.assembly.missing" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.EntryManifestMismatch = "plugins.entry.manifest_mismatch" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.EntryNotFound = "plugins.entry.not_found" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.EntryNotPlugin = "plugins.entry.not_plugin" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.EntryRequired = "plugins.manifest.entry_required" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.LoadFailed = "plugins.plugin.load_failed" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.ManifestInvalid = "plugins.manifest.invalid" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.NotInProcess = "plugins.manifest.not_in_process" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.NotLoaded = "plugins.plugin.not_loaded" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.PermissionsNotGranted = "plugins.permission.not_granted" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.StopFailed = "plugins.plugin.stop_failed" -> string!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.InProcessPluginHost(Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
+XiHan.Framework.Plugins.InProcess.InProcessPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Plugins.InProcess.PluginErrors
+XiHan.Framework.Plugins.InProcess.PluginMessages

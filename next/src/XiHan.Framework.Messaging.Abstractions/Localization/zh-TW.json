@@ -1,0 +1,12 @@
+{
+  "messaging.envelope.attributes_required": "'id'、'source' 和 'type' 屬性是必要的。",
+  "messaging.envelope.invalid": "信封不合法：{reason}",
+  "messaging.envelope.invalid_base64": "'data_base64' 屬性不是合法的 Base64。",
+  "messaging.envelope.invalid_extension": "擴充屬性名稱 '{name}' 不合法。",
+  "messaging.envelope.invalid_json": "文件不是合法的 CloudEvents JSON：{reason}",
+  "messaging.envelope.invalid_time": "'time' 屬性 '{time}' 不是 RFC 3339 時間戳記。",
+  "messaging.envelope.spec_version": "'specversion' 屬性必須是 '{specVersion}'。",
+  "messaging.handler.failed": "訊息處理器擲回了未處理的例外：{reason}",
+  "messaging.queue.full": "主題 '{topic}' 的記憶體佇列已滿（容量 {capacity}）。",
+  "messaging.topic.invalid": "主題 '{topic}' 不合法。"
+}

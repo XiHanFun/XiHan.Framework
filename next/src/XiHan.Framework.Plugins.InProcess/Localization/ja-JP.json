@@ -1,0 +1,14 @@
+{
+  "plugins.assembly.missing": "プラグインアセンブリ '{path}' が存在しません。",
+  "plugins.entry.manifest_mismatch": "エントリ型のマニフェスト ID '{actual}' がマニフェストファイルの ID '{expected}' と一致しません。",
+  "plugins.entry.not_found": "プラグインアセンブリ '{package}' にエントリ型 '{entry}' が見つかりません。",
+  "plugins.entry.not_plugin": "エントリ型 '{entry}' は 'IPlugin' を実装していません。",
+  "plugins.manifest.entry_required": "プラグインマニフェスト '{id}' には 'package'（アセンブリ名）と 'entry'（エントリ型）の両方の宣言が必要です。",
+  "plugins.manifest.invalid": "プラグインディレクトリ '{directory}' のマニフェストが不正です: {reason}",
+  "plugins.manifest.not_in_process": "マニフェスト '{id}' はインプロセスプラグインを記述していません (kind={kind}, isolation={isolation})。",
+  "plugins.permission.not_granted": "プラグイン '{id}' が宣言した権限は許可されていません: {permissions}。",
+  "plugins.plugin.already_loaded": "プラグイン '{id}' は既に読み込まれています。",
+  "plugins.plugin.load_failed": "プラグイン '{id}' の読み込みに失敗しました: {reason}",
+  "plugins.plugin.not_loaded": "プラグイン '{id}' は読み込まれていません。",
+  "plugins.plugin.stop_failed": "プラグイン '{id}' の停止に失敗しました: {reason}"
+}

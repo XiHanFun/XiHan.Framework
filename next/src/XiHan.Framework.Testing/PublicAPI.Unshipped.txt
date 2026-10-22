@@ -1,0 +1,25 @@
+#nullable enable
+static XiHan.Framework.Testing.TestHost.StartAsync(System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
+static XiHan.Framework.Testing.TestInvocationContext.Create(System.IServiceProvider? services = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Testing.TestManifests.Create(string! id, System.Collections.Generic.IEnumerable<string!>? provides = null, System.Collections.Generic.IEnumerable<string!>? requires = null, XiHan.Framework.Primitives.Manifests.ManifestRole role = XiHan.Framework.Primitives.Manifests.ManifestRole.Provider, XiHan.Framework.Primitives.Manifests.ManifestKind kind = XiHan.Framework.Primitives.Manifests.ManifestKind.Capability, System.Collections.Generic.IEnumerable<XiHan.Framework.Primitives.Manifests.Binding!>? bindings = null) -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Testing.StubFeature
+XiHan.Framework.Testing.StubFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Testing.StubFeature.Events.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Testing.StubFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Testing.StubFeature.OnConfigure.get -> System.Action<XiHan.Framework.Kernel.Hosting.FeatureContext!>?
+XiHan.Framework.Testing.StubFeature.OnConfigure.init -> void
+XiHan.Framework.Testing.StubFeature.OnStart.get -> System.Func<System.IServiceProvider!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>?
+XiHan.Framework.Testing.StubFeature.OnStart.init -> void
+XiHan.Framework.Testing.StubFeature.OnStop.get -> System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>?
+XiHan.Framework.Testing.StubFeature.OnStop.init -> void
+XiHan.Framework.Testing.StubFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Testing.StubFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Testing.StubFeature.StubFeature(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> void
+XiHan.Framework.Testing.TestHost
+XiHan.Framework.Testing.TestHost.App.get -> XiHan.Framework.Kernel.Hosting.App!
+XiHan.Framework.Testing.TestHost.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
+XiHan.Framework.Testing.TestHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Testing.TestHost.InvokeAsync(XiHan.Framework.Kernel.Pipeline.PipelineStep! handler, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Testing.TestHost.Services.get -> System.IServiceProvider!
+XiHan.Framework.Testing.TestInvocationContext
+XiHan.Framework.Testing.TestManifests
