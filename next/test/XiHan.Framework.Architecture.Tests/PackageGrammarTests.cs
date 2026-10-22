@@ -20,7 +20,7 @@ public sealed class PackageGrammarTests
     [InlineData("XiHan.Framework.Messaging.RabbitMQ", 3)]
     [InlineData("XiHan.Framework.ObjectStorage.S3", 3)]
     [InlineData("XiHan.Framework.Hosting.AspNetCore", 4)]
-    [InlineData("XiHan.Framework.Protocols.Mcp", 4)]
+    [InlineData("XiHan.Framework.Protocols.Mcp", 5)]
     [InlineData("XiHan.Framework.Plugins.OutOfProcess", 5)]
     [InlineData("XiHan.Framework.Profiles.Full", 6)]
     [InlineData("XiHan.Framework.Testing", 7)]

@@ -1,0 +1,44 @@
+#nullable enable
+const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Http = "protocols.http" -> string!
+const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Version = 1 -> int
+const XiHan.Framework.Protocols.Http.HttpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Http" -> string!
+override XiHan.Framework.Protocols.Http.HttpProtocolOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Http.HttpProtocolOptions.GetHashCode() -> int
+override XiHan.Framework.Protocols.Http.HttpProtocolOptions.ToString() -> string!
+override XiHan.Framework.Protocols.Http.HttpRoute.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Http.HttpRoute.GetHashCode() -> int
+override XiHan.Framework.Protocols.Http.HttpRoute.ToString() -> string!
+static readonly XiHan.Framework.Protocols.Http.HttpRoute.Methods -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Protocols.Http.HttpProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
+static XiHan.Framework.Protocols.Http.HttpProtocolOptions.operator !=(XiHan.Framework.Protocols.Http.HttpProtocolOptions? left, XiHan.Framework.Protocols.Http.HttpProtocolOptions? right) -> bool
+static XiHan.Framework.Protocols.Http.HttpProtocolOptions.operator ==(XiHan.Framework.Protocols.Http.HttpProtocolOptions? left, XiHan.Framework.Protocols.Http.HttpProtocolOptions? right) -> bool
+static XiHan.Framework.Protocols.Http.HttpRoute.operator !=(XiHan.Framework.Protocols.Http.HttpRoute? left, XiHan.Framework.Protocols.Http.HttpRoute? right) -> bool
+static XiHan.Framework.Protocols.Http.HttpRoute.operator ==(XiHan.Framework.Protocols.Http.HttpRoute? left, XiHan.Framework.Protocols.Http.HttpRoute? right) -> bool
+static XiHan.Framework.Protocols.Http.HttpRoute.Parse(string! text) -> XiHan.Framework.Protocols.Http.HttpRoute!
+static XiHan.Framework.Protocols.Http.HttpRouteConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Http.HttpRoute!
+static XiHan.Framework.Protocols.Http.HttpRouteConvention.SuccessStatusCode(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> int
+static XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> int
+static XiHan.Framework.Protocols.Http.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, string! operationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
+XiHan.Framework.Protocols.Http.HttpProtocolCapabilities
+XiHan.Framework.Protocols.Http.HttpProtocolFeature
+XiHan.Framework.Protocols.Http.HttpProtocolFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Protocols.Http.HttpProtocolFeature.HttpProtocolFeature() -> void
+XiHan.Framework.Protocols.Http.HttpProtocolFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Protocols.Http.HttpProtocolOptions
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.Equals(XiHan.Framework.Protocols.Http.HttpProtocolOptions? other) -> bool
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.HttpProtocolOptions() -> void
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.RouteFor(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Http.HttpRoute!
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.get -> string!
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.init -> void
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Protocols.Http.HttpRoute!>!
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.init -> void
+XiHan.Framework.Protocols.Http.HttpRoute
+XiHan.Framework.Protocols.Http.HttpRoute.<Clone>$() -> XiHan.Framework.Protocols.Http.HttpRoute!
+XiHan.Framework.Protocols.Http.HttpRoute.Equals(XiHan.Framework.Protocols.Http.HttpRoute? other) -> bool
+XiHan.Framework.Protocols.Http.HttpRoute.HttpRoute(string! method, string! template) -> void
+XiHan.Framework.Protocols.Http.HttpRoute.Method.get -> string!
+XiHan.Framework.Protocols.Http.HttpRoute.Template.get -> string!
+XiHan.Framework.Protocols.Http.HttpRouteConvention
+XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions
+XiHan.Framework.Protocols.Http.OperationRequestBinder

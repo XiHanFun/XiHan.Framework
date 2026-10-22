@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Protocols.Http</PackageId>
+    <RootNamespace>XiHan.Framework.Protocols.Http</RootNamespace>
+    <Description>XiHan Framework HTTP 协议适配器（Ring 5）：按操作 ID 推导路由（可显式覆盖），把路由值、查询串与 JSON 请求体绑定为 XGI 请求，在 ASP.NET Core 宿主的内核管道内执行操作，失败结果用 RFC 9457 Problem Details 回写。</Description>
+    <PackageTags>xihan;framework;protocols;http;rest</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+  </ItemGroup>
+</Project>

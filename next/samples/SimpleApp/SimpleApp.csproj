@@ -8,6 +8,8 @@
   <ItemGroup>
     <!-- Standard 组合：内核、宿主与五个子系统的内存默认实现 -->
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
+    <!-- 操作契约经 HTTP 暴露：orders.create → POST /orders，orders.list → GET /orders -->
+    <ProjectReference Include="../../src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
   </ItemGroup>
 
   <ItemGroup>
