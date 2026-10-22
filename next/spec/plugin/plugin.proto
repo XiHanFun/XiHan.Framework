@@ -7,7 +7,7 @@
 // 业务载荷与 Schema 一律是 UTF-8 JSON（XGI 的规范编码，RFC-0011），协议不重复定义业务消息；
 // 清单、配置与错误细节也以 JSON 文本携带，各语言 SDK 只需 protobuf 与 JSON 两种编解码。
 // 启动方式、握手行、版本协商与会话令牌见 handshake.md；状态机、健康、重启与激活见 lifecycle.md；
-// 调用、流式、事件投递、回调与错误映射见 invocation.md。
+// 调用、流式、事件投递、回调与错误映射见 invocation.md；Wasm 载体（导出函数 + 线性内存，JSON 编码）见 wasm.md。
 
 syntax = "proto3";
 
@@ -360,6 +360,43 @@ message PublishRequest {
 message PublishResponse {
   // 逐项结果。
   repeated Status results = 1;
+}
+
+// ---------------------------------------------------------------------------
+// 中间件钩子（仅 wasm 隔离使用，RFC-0018；进程外插件不贡献中间件）
+// ---------------------------------------------------------------------------
+
+// 宿主 → 插件：一次调用进入下游之前（before）或之后（after）。
+message MiddlewareRequest {
+  // 清单 `contributes.pipeline` 里的中间件名。
+  string middleware = 1;
+  // 阶段：`ingress`、`observe`、`resilience`、`authenticate`、`tenant`、`authorize`、`validate`、`idempotency`、`transaction`、`egress`。
+  string stage = 2;
+  // `before` 或 `after`。
+  string phase = 3;
+  // 上下文：追踪、截止时间、已登记 Baggage。
+  InvocationMetadata metadata = 4;
+  // 操作 ID；非操作调用为空。
+  string operation = 5;
+  // `after`：下游结果；`before`：空。
+  Status outcome = 6;
+}
+
+// 插件 → 宿主。
+message MiddlewareResponse {
+  // 只在 `before` 有效；`after` 忽略。
+  MiddlewareAction action = 1;
+  // `SHORT_CIRCUIT` 时的调用结果；必须是失败。
+  Status outcome = 2;
+  // 追加或改写的已登记 Baggage（`xihan.principal` 不可改写）；只在 `before` 有效。
+  map<string, string> baggage = 3;
+}
+
+// 中间件动作。
+enum MiddlewareAction {
+  MIDDLEWARE_ACTION_UNSPECIFIED = 0;
+  MIDDLEWARE_ACTION_CONTINUE = 1;
+  MIDDLEWARE_ACTION_SHORT_CIRCUIT = 2;
 }
 
 // ---------------------------------------------------------------------------
