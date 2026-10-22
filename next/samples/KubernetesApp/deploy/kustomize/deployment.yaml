@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-app
+  labels:
+    app.kubernetes.io/name: kubernetes-app
+    app.kubernetes.io/version: 5.0.0-preview.1
+    xihan.profile: full
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubernetes-app
+        app.kubernetes.io/version: 5.0.0-preview.1
+        xihan.profile: full
+    spec:
+      serviceAccountName: kubernetes-app
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 8081
+          env:
+            - name: XiHan__Kernel__StopTimeoutSeconds
+              value: "25"
+            - name: XIHAN_CONFIG_PATH
+              value: /etc/xihan
+            - name: DOTNET_USE_POLLING_FILE_WATCHER
+              value: "1"
+            - name: XiHan__Scheduling__Kubernetes__Lease
+              value: kubernetes-app-scheduler
+            - name: XIHAN_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+          startupProbe:
+            httpGet:
+              path: /health/startup
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /etc/xihan
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: kubernetes-app-config

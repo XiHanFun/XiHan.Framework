@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>KubernetesApp</RootNamespace>
+    <!-- 最小 API 的端点委托在编译期生成，去掉反射绑定，保证 Native AOT 可发布 -->
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <!-- Configure<T>(IConfiguration) 的绑定代码在编译期生成，IOptionsMonitor 在 AOT 下照常重载 -->
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- deploy/ 是 xihan pack 生成的部署产物（含 Aspire 的 .cs 片段），不是本项目的源码或内容 -->
+    <Compile Remove="deploy/**" />
+    <Content Remove="deploy/**" />
+    <None Include="deploy/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Full 组合：Standard + 对象存储、调度、审计 + OpenTelemetry + 四种协议适配器 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Profiles.Full/XiHan.Framework.Profiles.Full.csproj" />
+    <!-- 在 Pod 里用 Lease 做领导选举；本地运行时不装配，退回进程内选举 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Kubernetes/XiHan.Framework.Scheduling.Kubernetes.csproj" />
+  </ItemGroup>
+</Project>

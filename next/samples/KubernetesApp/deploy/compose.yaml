@@ -1,0 +1,17 @@
+# 由 xihan pack 生成：本地联调用，绑定的依赖以容器提供。
+name: kubernetes-app
+services:
+  app:
+    build:
+      context: ../../..
+      dockerfile: samples/KubernetesApp/deploy/Dockerfile
+    image: ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    stop_grace_period: 25s
+    healthcheck:
+      test: ["CMD", "dotnet", "--version"]
+      interval: 10s
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
