@@ -54,3 +54,4 @@ spec/
 | [0015](rfcs/0015-auditing.md) | 审计 | 已采纳（参考实现 `Auditing.Abstractions`、`Auditing.InMemory`，套件 `Auditing.Conformance`） |
 | [0016](rfcs/0016-packaging.md) | 应用清单与打包 | 已采纳（参考实现 `Cli` 的 `xihan pack`；规范 `packaging/`） |
 | [0017](rfcs/0017-plugin-protocol.md) | 进程外插件协议 `xihan.plugin.v1` | 已采纳（规范 `plugin/`；参考实现 `Plugins.OutOfProcess`，套件 `Plugins.Conformance`） |
+| [0018](rfcs/0018-wasm-plugins.md) | Wasm 插件 ABI（Experimental）：同一套消息经导出函数 + 线性内存 | 草案 |
