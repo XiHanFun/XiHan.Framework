@@ -11,7 +11,7 @@ spec/
 ├─ manifest/       # 规范性：xihan.manifest.json 的 JSON Schema
 ├─ primitives/     # P1 起：RFC-0001 采纳后的规范性文本
 ├─ pipeline/       # P1 起：RFC-0004 采纳后的规范性文本
-├─ plugin/         # 规范性：进程外插件协议 plugin.proto 与握手、生命周期、调用文本
+├─ plugin/         # 规范性：插件协议 plugin.proto 与握手、生命周期、调用文本；Wasm 载体 wasm.md
 ├─ protocol/       # P3 起：HTTP / gRPC / MCP / CloudEvents / 命令行 映射
 ├─ packaging/      # P3 起：应用清单 xihan.app.json 与 xihan pack 的产物映射
 └─ conformance/    # P1 起：数据驱动向量与运行器
@@ -54,4 +54,4 @@ spec/
 | [0015](rfcs/0015-auditing.md) | 审计 | 已采纳（参考实现 `Auditing.Abstractions`、`Auditing.InMemory`，套件 `Auditing.Conformance`） |
 | [0016](rfcs/0016-packaging.md) | 应用清单与打包 | 已采纳（参考实现 `Cli` 的 `xihan pack`；规范 `packaging/`） |
 | [0017](rfcs/0017-plugin-protocol.md) | 进程外插件协议 `xihan.plugin.v1` | 已采纳（规范 `plugin/`；参考实现 `Plugins.OutOfProcess`，套件 `Plugins.Conformance`） |
-| [0018](rfcs/0018-wasm-plugins.md) | Wasm 插件 ABI（Experimental）：同一套消息经导出函数 + 线性内存 | 草案 |
+| [0018](rfcs/0018-wasm-plugins.md) | Wasm 插件 ABI（Experimental）：同一套消息经导出函数 + 线性内存 | 已采纳（规范 `plugin/wasm.md`；参考实现 `Plugins.Wasm`，套件 `Plugins.Conformance`） |

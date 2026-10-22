@@ -1,6 +1,6 @@
 # RFC-0018 Wasm 插件 ABI（Experimental）
 
-> 状态：草案 | 日期：2026-10-23 | 对应 ADR：0006（范围）；采纳后另立 ADR-0009（ABI 形态） | 参考实现：`XiHan.Framework.Plugins.Wasm`（P4-03，待实现） | 规范性文本（采纳后并入）：`spec/plugin/wasm.md`、`spec/plugin/plugin.proto`（中间件消息）、`spec/conformance/vectors/plugin/wasm-exports.json`
+> 状态：已采纳 | 日期：2026-10-23 | 对应 ADR：0006（范围）、0009（ABI 形态） | 参考实现：`XiHan.Framework.Plugins.Wasm`（P4-03） | 规范性文本：`spec/plugin/wasm.md`、`spec/plugin/plugin.proto`（中间件消息）、`spec/conformance/vectors/plugin/wasm-exports.json`
 
 ## 摘要
 
@@ -60,7 +60,7 @@ Wasm 插件是 `xihan.plugin.v1` 的第二种载体：**同一套消息（`plugi
 - 导入函数的响应由宿主经 `xihan_alloc` 写进客体内存并返回 `(ptr << 32) | len`（宿主函数回调客体导出是允许的，同一实例内重入）。
 - 权限未授予不陷阱：返回 `Status.error = PLUGINS_DENIED_002`，与 gRPC 回调的 `PermissionDenied` 对应。
 - 回调在当前调用的截止时间内完成；嵌套深度上限 8，超过返回 `PLUGINS_UNAVAILABLE_002`。
-- WASI preview 1 由宿主提供：时钟、随机数；stdout / stderr 逐行转日志（规则同 `invocation.md` §6）；stdin 为空；无参数；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`（没有会话令牌与宿主地址，它们在 Wasm 里没有意义）。
+- WASI preview 1 由宿主提供：时钟、随机数；stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`（宿主不逐行转发，日志应走 `xihan.log`）；stdin 为空；无参数；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`（没有会话令牌与宿主地址，它们在 Wasm 里没有意义）。
 - 文件系统：清单 `fs.read:<客体路径>` / `fs.write:<客体路径>` 权限各预开放一个目录（只读 / 可写），宿主侧真实目录由宿主配置映射（`XiHan:Plugins:Wasm:Mounts:<清单 ID>:<客体路径>`），未映射视为未授予。
 - 网络：ABI v1 不提供套接字；`net.outbound:` 权限宿主永不授予，声明了即加载失败（`PLUGINS_DENIED_001`）。
 
@@ -127,7 +127,7 @@ enum MiddlewareAction {
 
 - 向量 `conformance/vectors/plugin/wasm-exports.json`：必需 / 可选导出的名字与签名、导入表、ABI 版本。
 - 套件 `WasmPluginConformance`（`Plugins.Conformance` 新增抽象类）：以模块文件为输入，核对导出表、`xihan_abi_version`、握手一致性、生命周期、未知操作返回 `KERNEL_NOTFOUND_001` 失败状态（Wasm 没有 gRPC `Unimplemented`，统一为 `Status.error`）、声明的操作都返回 `status`、中间件两阶段调用与短路、陷阱后可重建。
-- 参考客体：`samples/EchoWasmPlugin`，以 WAT 文本手写（本仓库不要求 Wasm 工具链），实现 `echoes.create` 与一个 `observe` 阶段的中间件；`Plugins.Wasm.Tests` 以它验证宿主。
+- 参考客体：`samples/EchoWasmPlugin`，Rust（`wasm32-wasip1`，cdylib）实现 `echoes.create` / `echoes.relay` / `echoes.trap` / `echoes.spin` / `events.list`、订阅 `echo.events` 与一个 `observe` 阶段的中间件；构建产物 `plugin/echo.wasm` 随仓库提交，测试与一致性套件直接加载它，仓库 CI 不要求 Rust 工具链。
 
 ## 与 .NET 的映射（P4-03）
 

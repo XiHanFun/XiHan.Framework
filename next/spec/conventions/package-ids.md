@@ -6,7 +6,7 @@
 PackageId  = "XiHan.Framework." Segment
 Segment    = "Primitives" | "Kernel" [ "." KernelTool ] | "Domain" | "Testing" | "Cli"
            | Subsystem "." Role
-           | "Hosting." Host | "Protocols." Protocol | "Plugins." ( Isolation | "Conformance" ) | "Profiles." Profile
+           | "Hosting." Host | "Protocols." Protocol | "Plugins." ( Isolation | "Protocol" | "Conformance" ) | "Profiles." Profile
            | "Compat." Major
 Subsystem  = 术语表中除结构词以外的领域词
 Role       = "Abstractions" | "Conformance" | "Generators" | Mechanism | Technology
@@ -37,7 +37,7 @@ Major      = "V" 数字
 | 0 | `Primitives` |
 | 1 | `Kernel` |
 | 2 | `Domain`、`<领域>.Abstractions` |
-| 3 | `<领域>.<机制或技术>` |
+| 3 | `<领域>.<机制或技术>`、`Plugins.Protocol`（插件协议的 .NET 类型与映射，各隔离级别的宿主共用） |
 | 4 | `Hosting.*`、`Protocols.*` |
 | 5 | `Plugins.*` |
 | 6 | `Profiles.*` |

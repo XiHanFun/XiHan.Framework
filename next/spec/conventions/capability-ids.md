@@ -28,6 +28,7 @@ VersionRange   = 整数接口版本或 ^ 范围（"1"、"^1"）
 | `kernel.security` | 安全原语 |
 | `kernel.plugins` | 插件宿主抽象 |
 | `plugins.out-of-process` | 进程外插件宿主（RFC-0017） |
+| `plugins.wasm` | Wasm 插件宿主（RFC-0018，Experimental） |
 | `domain.model` | 实体协议、值对象、领域事件、规约 |
 | `persistence.relational` / `persistence.document` | 仓储、工作单元、迁移 |
 | `caching.local` / `caching.distributed` | 缓存与分布式锁 |
