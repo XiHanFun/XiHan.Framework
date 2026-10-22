@@ -56,4 +56,22 @@ public static class KernelMessages
 
     /// <summary>应用未处于服务状态。参数：<c>state</c>。</summary>
     public const string NotServing = "kernel.hosting.not_serving";
+
+    /// <summary>操作未登记。参数：<c>id</c>。</summary>
+    public const string UnknownOperation = "kernel.operation.unknown";
+
+    /// <summary>操作载荷不合法。参数：<c>id</c>、<c>reason</c>。</summary>
+    public const string InvalidOperationPayload = "kernel.operation.invalid_payload";
+
+    /// <summary>类型化调用的类型与登记不符。参数：<c>id</c>、<c>expected</c>、<c>actual</c>。</summary>
+    public const string OperationTypeMismatch = "kernel.operation.type_mismatch";
+
+    /// <summary>操作 ID 重复登记。参数：<c>id</c>、<c>owner</c>。</summary>
+    public const string DuplicateOperation = "kernel.operation.duplicate";
+
+    /// <summary>操作登记表已满。参数：<c>capacity</c>。</summary>
+    public const string OperationRegistryFull = "kernel.operation.registry_full";
+
+    /// <summary>操作成功结束却没有产生响应对象。参数：<c>id</c>。</summary>
+    public const string OperationNoResponse = "kernel.operation.no_response";
 }

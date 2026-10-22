@@ -12,6 +12,12 @@
   "kernel.manifest.file_missing": "マニフェストファイル '{path}' が存在しません。",
   "kernel.manifest.invalid": "マニフェストが不正です: {reason}",
   "kernel.manifest.invalid_json": "マニフェストは有効な JSON ではありません: {reason}",
+  "kernel.operation.duplicate": "操作 '{id}' は既に '{owner}' によって登録されています。",
+  "kernel.operation.invalid_payload": "操作 '{id}' のペイロードが不正です: {reason}",
+  "kernel.operation.no_response": "操作 '{id}' は完了しましたが、応答を生成しませんでした。",
+  "kernel.operation.registry_full": "操作レジストリは容量上限 {capacity} に達しました。",
+  "kernel.operation.type_mismatch": "操作 '{id}' は '{expected}' を処理しますが、'{actual}' が渡されました。",
+  "kernel.operation.unknown": "操作 '{id}' は登録されていません。",
   "kernel.permission.duplicate": "権限コード '{code}' は既に登録されています。",
   "kernel.permission.registry_full": "権限レジストリは容量上限 {capacity} に達しました。"
 }

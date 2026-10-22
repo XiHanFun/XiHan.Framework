@@ -40,6 +40,11 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `KERNEL_UNEXPECTED_001` | 调用期间发生未处理异常 |
 | `KERNEL_SECURITY_001` | 权限码重复 |
 | `KERNEL_SECURITY_002` | 权限注册表已满 |
+| `KERNEL_NOTFOUND_001` | 操作未登记 |
+| `KERNEL_VALIDATION_001` | 操作载荷不合法（非 JSON、null 或类型不匹配） |
+| `KERNEL_VALIDATION_002` | 类型化调用的请求或响应类型与登记不符 |
+| `KERNEL_OPERATION_001` | 操作 ID 重复登记 |
+| `KERNEL_OPERATION_002` | 操作登记表已满 |
 | `PLUGINS_VALIDATION_001` | 插件清单、种类或隔离级别不合法 |
 | `PLUGINS_VALIDATION_002` | 插件入口类型未实现 IPlugin，或实例清单与文件清单不一致 |
 | `PLUGINS_NOTFOUND_001` | 插件清单文件、程序集或入口类型不存在 |

@@ -22,7 +22,7 @@ next/
 | 包 | 环 | 内容 |
 | --- | --- | --- |
 | `XiHan.Framework.Primitives` | 0 | 原语与契约，只增不改 |
-| `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象 |
+| `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象、操作契约与 XGI 调用器 |
 | `XiHan.Framework.Domain` | 2 | 实体协议、值对象、领域事件缓冲、规约；纯契约 |
 | `XiHan.Framework.Localization.Abstractions` | 2 | 区域名、内置 10 种区域（默认 `en-US`）、消息目录（每种语言一个文件）、显式区域的本地化接口；消息键、模板与 `key.L()` 在原语层 |
 | `XiHan.Framework.Persistence.Abstractions` | 2 | 仓储、工作单元、查询、标识生成、Transaction 阶段中间件、实体登记 |
@@ -96,4 +96,4 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 
 ## 阶段
 
-P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统已完成：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）、`Caching`（抽象、内存默认实现、Redis Provider、一致性套件、幂等中间件，RFC-0006）、`MultiTenancy`（抽象、内存默认实现、一致性套件、Tenant 阶段中间件，RFC-0007）、`Security`（抽象、内存默认实现、JWT Provider、一致性套件、Authenticate / Authorize 阶段中间件，RFC-0008）、`Messaging`（抽象、内存默认实现、RabbitMQ Provider、一致性套件、CloudEvents 信封、发件箱，RFC-0009）、`Localization`（原语层消息键、模板、`key.L()` 与 `MessageScope`；抽象与内存默认实现；默认 `en-US` 与内置 10 种区域、每包每种语言一个文件、宿主 `Accept-Language` 协商与 Problem Details 本地化，RFC-0010）、`Profiles.Minimal` / `Profiles.Standard` 与 Standard 组合示例。退出条件已满足：全部默认实现与 Provider 通过一致性套件（Redis、RabbitMQ、SQLite 在真实服务上验证），Standard 示例零外部基础设施运行，换 Provider 只改配置与包引用。下一阶段 P3：操作契约、协议适配器（HTTP / gRPC / MCP / CloudEvents）、`Kernel.Generators`、`Cli`、OpenID Connect。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。
+P1 内核已完成：原语层、内核、ASP.NET Core 宿主、进程内插件宿主、测试基座、分析器、示例与基准；`Kernel.Generators` 与 `Cli` 顺延到 P3 随操作契约一起实现。P2 子系统已完成：`Domain` 与 `Persistence`（抽象、内存默认实现、EF Core Provider、一致性套件，RFC-0005）、`Caching`（抽象、内存默认实现、Redis Provider、一致性套件、幂等中间件，RFC-0006）、`MultiTenancy`（抽象、内存默认实现、一致性套件、Tenant 阶段中间件，RFC-0007）、`Security`（抽象、内存默认实现、JWT Provider、一致性套件、Authenticate / Authorize 阶段中间件，RFC-0008）、`Messaging`（抽象、内存默认实现、RabbitMQ Provider、一致性套件、CloudEvents 信封、发件箱，RFC-0009）、`Localization`（原语层消息键、模板、`key.L()` 与 `MessageScope`；抽象与内存默认实现；默认 `en-US` 与内置 10 种区域、每包每种语言一个文件、宿主 `Accept-Language` 协商与 Problem Details 本地化，RFC-0010）、`Profiles.Minimal` / `Profiles.Standard` 与 Standard 组合示例。退出条件已满足：全部默认实现与 Provider 通过一致性套件（Redis、RabbitMQ、SQLite 在真实服务上验证），Standard 示例零外部基础设施运行，换 Provider 只改配置与包引用。P3 进行中：P3-01 操作契约与 XGI 已完成（RFC-0011：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationRegistry`、`IOperationInvoker`，Authorize 阶段按契约判定，宿主端点元数据携带操作描述）；接下来是 `Protocols.Http`（操作 ID 推导路由）、`Kernel.Generators`、gRPC / MCP / CloudEvents 适配器、`Hosting.CommandLine`、`Cli`、OpenID Connect。各阶段退出条件见 [`nextdocs/architecture/05-开发计划.md`](../nextdocs/architecture/05-开发计划.md)。

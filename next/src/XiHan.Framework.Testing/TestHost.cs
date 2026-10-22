@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
@@ -105,6 +106,37 @@ public sealed class TestHost : IAsyncDisposable
         await using var scope = _provider.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, deadline: deadline, baggage: baggage);
         return await App.InvokeAsync(context, handler).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 以 XGI 消息调用操作，经完整管道；每次调用一个独立作用域。
+    /// </summary>
+    public async ValueTask<OperationResponse> InvokeOperationRawAsync(
+        OperationRequest request,
+        IReadOnlyDictionary<string, string>? baggage = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await using var scope = _provider.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+        return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, request).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 类型化调用操作，经完整管道；每次调用一个独立作用域。
+    /// </summary>
+    public async ValueTask<Result<TResponse>> InvokeOperationAsync<TRequest, TResponse>(
+        string operationId,
+        TRequest request,
+        IReadOnlyDictionary<string, string>? baggage = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(operationId);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await using var scope = _provider.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+        return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<TRequest, TResponse>(context, operationId, request).ConfigureAwait(false);
     }
 
     /// <summary>
