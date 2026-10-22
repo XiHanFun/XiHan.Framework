@@ -53,6 +53,7 @@ public sealed class AppManifestReaderTests
               "name": "Orders-",
               "project": "Missing.csproj",
               "profile": "huge",
+              "build": { "context": "nowhere" },
               "ports": { "http": 70000, "grpc": 70000 },
               "bindings": { "Db": { "type": "mystery" } },
               "config": { "mountPath": "etc", "files": ["a/b.json"] },
@@ -69,7 +70,7 @@ public sealed class AppManifestReaderTests
 
         Assert.Equal(CliErrors.ManifestInvalid, failure.Error?.Code);
         var reason = (string)failure.Error!.Details!["reason"]!;
-        foreach (var expected in new[] { "name 'Orders-'", "project 'Missing.csproj'", "profile 'huge'", "ports.http", "ports.grpc", "binding name 'Db'", "unknown type 'mystery'", "config.mountPath", "config.files entry 'a/b.json'", "probes:", "shutdown.graceSeconds", "resources.limits.cpu 'lots'", "replicas", "scaling:", "leader.lease 'Lease'", "environment key '1BAD'" })
+        foreach (var expected in new[] { "name 'Orders-'", "project 'Missing.csproj'", "profile 'huge'", "build.context 'nowhere'", "ports.http", "ports.grpc", "binding name 'Db'", "unknown type 'mystery'", "config.mountPath", "config.files entry 'a/b.json'", "probes:", "shutdown.graceSeconds", "resources.limits.cpu 'lots'", "replicas", "scaling:", "leader.lease 'Lease'", "environment key '1BAD'" })
         {
             Assert.Contains(expected, reason, StringComparison.Ordinal);
         }

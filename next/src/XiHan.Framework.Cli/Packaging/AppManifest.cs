@@ -24,6 +24,11 @@ internal sealed record AppManifest
     public string Profile { get; set; } = "standard";
 
     /// <summary>
+    /// 镜像构建。
+    /// </summary>
+    public BuildSettings Build { get; set; } = new();
+
+    /// <summary>
     /// 镜像。
     /// </summary>
     public ImageSettings Image { get; set; } = new();
