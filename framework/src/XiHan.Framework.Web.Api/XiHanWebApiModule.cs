@@ -18,6 +18,7 @@ using XiHan.Framework.Web.Api.CircuitBreaking;
 using XiHan.Framework.Web.Api.Extensions.DependencyInjection;
 using XiHan.Framework.Web.Api.Middlewares;
 using XiHan.Framework.Web.Api.RateLimiting;
+using XiHan.Framework.Web.Api.Security;
 using XiHan.Framework.Web.Api.Session;
 using XiHan.Framework.Web.Core.Session;
 using XiHan.Framework.Web.Core;
@@ -49,13 +50,9 @@ public class XiHanWebApiModule : XiHanModule
 
         // 反向代理（nginx/网关）转发头还原：依据 X-Forwarded-Proto/Host/For 还原真实 scheme/host/client IP。
         // 否则后端只见反代到 Kestrel 的 http://127.0.0.1，会导致 OAuth 回调等据请求生成的绝对地址 scheme/host 错误。
-        // 默认仅信任本机回环代理（同机 nginx → 127.0.0.1）；反代在其它主机时，应用侧可追加 KnownProxies/KnownNetworks。
-        services.Configure<ForwardedHeadersOptions>(options =>
-        {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
-                | ForwardedHeaders.XForwardedProto
-                | ForwardedHeaders.XForwardedHost;
-        });
+        // 只采信受信代理带来的转发头：缺省只信本机回环，反代在其它主机时在 XiHan:Web:Api:ForwardedHeaders 里追加。
+        services.Configure<XiHanForwardedHeadersOptions>(config.GetSection(XiHanForwardedHeadersOptions.SectionName));
+        services.AddSingleton<IConfigureOptions<ForwardedHeadersOptions>, XiHanForwardedHeadersConfigurator>();
 
         services.AddXiHanWebApi(config);
         services.AddXiHanRateLimiting(config);
