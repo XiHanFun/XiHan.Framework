@@ -36,6 +36,10 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
     /// <summary>
     /// 先按权限编码做实时权限检查，再按 ABAC 策略编码收集属性并评估，两者均通过才判定授权成功
     /// </summary>
+    /// <remarks>
+    /// 权限检查走带请求上下文的 <see cref="IPermissionChecker.CheckAsync"/>，检查器可按请求求值附加条件；
+    /// 不通过时记下 <see cref="PermissionAuthorizationFailureReason"/>，写 403 时据此带出原因。
+    /// </remarks>
     /// <param name="context">授权处理上下文</param>
     /// <param name="requirement">混合权限要求</param>
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, HybridPermissionRequirement requirement)
@@ -50,8 +54,14 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
         {
             // 一律以实时检查器（授权快照）为准，含超管（其快照含通配 *）；不再信任登录时冻结在 token 里的权限声明，
             // 确保授权/撤销、用户禁用、会话注销均即时生效（实时检查器自身负责通配与会话/用户有效性判定）。
-            if (!await _permissionChecker.IsGrantedAsync(userId, requirement.PermissionCode))
+            var check = await _permissionChecker.CheckAsync(
+                new PermissionCheckContext(userId, requirement.PermissionCode, context.User, context.Resource));
+            if (!check.IsGranted)
             {
+                context.Fail(new PermissionAuthorizationFailureReason(
+                    this,
+                    check.FailureCode ?? PermissionFailureCodes.NotGranted,
+                    check.FailureMessage ?? PermissionCheckResult.NotGranted.FailureMessage!));
                 return;
             }
         }
@@ -83,7 +93,10 @@ public class HybridPermissionAuthorizationHandler : AuthorizationHandler<HybridP
         if (evaluation.IsAllowed)
         {
             context.Succeed(requirement);
+            return;
         }
+
+        context.Fail(new PermissionAuthorizationFailureReason(this, PermissionFailureCodes.AbacDenied, "当前条件下不允许此操作"));
     }
 
     private static string ResolveUserId(ClaimsPrincipal principal)

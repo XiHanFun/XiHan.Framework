@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Core.Extensions.DependencyInjection;
 using XiHan.Framework.Security.Claims;
 using XiHan.Framework.Web.Core.Clients;
@@ -44,6 +45,8 @@ public static class XiHanWebCoreServiceCollectionExtensions
         services.AddObjectAccessor<IApplicationBuilder>();
         services.AddHttpContextAccessor();
         services.Configure<XiHanClientInfoOptions>(configuration.GetSection(XiHanClientInfoOptions.SectionName));
+        // IP 归属地：登录地址与访问策略的地区条件共用一份离线库
+        services.TryAddSingleton<IIpRegionResolver, Ip2RegionResolver>();
         services.AddSingleton<IClientInfoProvider, HttpContextClientInfoProvider>();
         // 使用 HttpContext.User 作为当前主体，使 ICurrentUser 在 Web 请求中可用
         services.AddScoped<ICurrentPrincipalAccessor, HttpContextCurrentPrincipalAccessor>();

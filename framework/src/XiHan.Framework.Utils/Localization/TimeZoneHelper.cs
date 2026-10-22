@@ -1,6 +1,7 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace XiHan.Framework.Utils.Localization;
@@ -22,11 +23,34 @@ public static class TimeZoneHelper
     /// <summary>
     /// 获取时区信息
     /// </summary>
-    /// <param name="timeZoneId">时区唯一标识</param>
-    /// <returns>时区信息</returns>
+    /// <param name="timeZoneId">时区唯一标识：IANA ID（含旧别名）或 Windows ID，解析规则见 <see cref="TryGetTimeZone"/></param>
+    /// <returns>时区信息，其 ID 可能与传入的标识不同</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="timeZoneId"/> 为 null</exception>
+    /// <exception cref="TimeZoneNotFoundException">当前系统找不到该时区，也找不到与它等价的时区</exception>
     public static TimeZoneInfo GetTimeZone(string timeZoneId)
     {
-        return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        ArgumentNullException.ThrowIfNull(timeZoneId);
+
+        return TryGetTimeZone(timeZoneId, out var timeZone)
+            ? timeZone
+            : throw new TimeZoneNotFoundException($"当前系统找不到时区“{timeZoneId}”，也找不到与它等价的时区。");
+    }
+
+    /// <summary>
+    /// 尝试获取时区信息
+    /// </summary>
+    /// <param name="timeZoneId">时区唯一标识：IANA ID（含旧别名）或 Windows ID；前后空白会被忽略</param>
+    /// <param name="timeZone">成功时返回当前系统已安装的时区，其 ID 可能与传入的标识不同</param>
+    /// <returns>找到该时区或与它等价的时区时返回 true；标识为空或找不到时返回 false</returns>
+    /// <remarks>
+    /// 依次尝试：按标识直接查找；IANA ID 与 Windows ID 互转后再查找；
+    /// 非 Windows 系统上仍找不到时，在系统时区目录里取与它属于同一个 Windows 时区、ID 按序数排在最前的时区。
+    /// 最后一步针对新版 tzdata 不再带 Asia/Calcutta、America/Indianapolis 这类旧别名的系统；
+    /// 同一个 Windows 时区下的时区现行规则一致，当前时间的换算结果与 Windows 节点相同。
+    /// </remarks>
+    public static bool TryGetTimeZone(string? timeZoneId, [NotNullWhen(true)] out TimeZoneInfo? timeZone)
+    {
+        return TimeZoneIdResolver.Shared.TryResolve(timeZoneId, out timeZone);
     }
 
     /// <summary>
@@ -76,19 +100,11 @@ public static class TimeZoneHelper
     /// <summary>
     /// 检查时区是否存在
     /// </summary>
-    /// <param name="timeZoneId">时区唯一标识</param>
-    /// <returns>是否存在</returns>
+    /// <param name="timeZoneId">时区唯一标识：IANA ID（含旧别名）或 Windows ID，解析规则见 <see cref="TryGetTimeZone"/></param>
+    /// <returns>当前系统有该时区或与它等价的时区时返回 true</returns>
     public static bool IsTimeZoneExists(string timeZoneId)
     {
-        try
-        {
-            TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        return TryGetTimeZone(timeZoneId, out _);
     }
 
     /// <summary>

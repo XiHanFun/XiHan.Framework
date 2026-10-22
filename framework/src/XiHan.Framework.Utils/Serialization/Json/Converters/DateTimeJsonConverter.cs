@@ -4,13 +4,16 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XiHan.Framework.Utils.Localization;
 
 namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 
 /// <summary>
 /// DateTimeJsonConverter
-/// <para>可选用户时区换算：构造时传入 timeZoneResolver（返回 IANA 时区，如 Asia/Shanghai），
+/// <para>可选用户时区换算：构造时传入 timeZoneResolver（返回 IANA 时区，如 Asia/Shanghai；旧别名与 Windows ID 同样接受），
 /// 序列化时把存储的 UTC 时间换算为该时区后输出；解析器为空或返回空时回退 isUtc 行为。
+/// 返回的时区在当前系统找不到、也找不到等价时区时不换算，按 UTC 输出带 +00:00 的 ISO 8601，
+/// 客户端仍按正确的瞬间解析，不会差一个时区偏移。
 /// 时区来源由调用方注入（如 Web 层按请求头解析），本转换器不依赖 HTTP，保持 Utils 纯净。</para>
 /// </summary>
 public class DateTimeJsonConverter : JsonConverter<DateTime>
@@ -94,29 +97,18 @@ public class DateTimeJsonConverter : JsonConverter<DateTime>
         var timeZoneId = timeZoneResolver?.Invoke();
         if (!string.IsNullOrWhiteSpace(timeZoneId))
         {
-            return ConvertToUserTime(value, timeZoneId).ToString(dateFormatString, CultureInfo.InvariantCulture);
+            // 存储约定为 UTC；显式标记 Kind 以满足 ConvertTimeFromUtc 的入参要求
+            var utc = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            if (TimeZoneHelper.TryGetTimeZone(timeZoneId, out var timeZoneInfo))
+            {
+                return TimeZoneInfo.ConvertTimeFromUtc(utc, timeZoneInfo).ToString(dateFormatString, CultureInfo.InvariantCulture);
+            }
+
+            // 指定的时区解析不了：不能按无偏移墙钟原样输出，否则客户端会把 UTC 当本地时间显示
+            return new DateTimeOffset(utc).ToString(DateTimeOffsetJsonConverter.UnresolvedTimeZoneFormat, CultureInfo.InvariantCulture);
         }
 
         return (isUtc ? value.ToUniversalTime() : value).ToString(dateFormatString, CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// 将存储的 UTC 时间按 IANA 时区换算为用户本地时间；时区非法时回退原值。
-    /// </summary>
-    private static DateTime ConvertToUserTime(DateTime value, string timeZoneId)
-    {
-        try
-        {
-            // IANA 标识；net10 + ICU 在 Linux/Windows 均可解析
-            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-            // 存储约定为 UTC；显式标记 Kind 以满足 ConvertTimeFromUtc 的入参要求
-            var utc = DateTime.SpecifyKind(value, DateTimeKind.Utc);
-            return TimeZoneInfo.ConvertTimeFromUtc(utc, timeZoneInfo);
-        }
-        catch
-        {
-            return value;
-        }
     }
 }
 
