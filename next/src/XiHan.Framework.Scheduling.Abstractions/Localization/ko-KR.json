@@ -1,0 +1,7 @@
+{
+  "scheduling.job.failed": "작업 '{name}'에서 처리되지 않은 예외가 발생했습니다: {reason}",
+  "scheduling.job.not_found": "작업 '{name}'이(가) 등록되지 않았습니다.",
+  "scheduling.job.running": "작업 '{name}'이(가) 이미 실행 중이며 동시 실행을 허용하지 않습니다.",
+  "scheduling.lease.held": "'{resource}'의 리더 임대를 다른 보유자가 보유하고 있습니다.",
+  "scheduling.scheduler.unavailable": "작업 스케줄러가 실행 중이 아닙니다."
+}

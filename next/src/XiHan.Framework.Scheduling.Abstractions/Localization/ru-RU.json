@@ -1,0 +1,7 @@
+{
+  "scheduling.job.failed": "Задание '{name}' выбросило необработанное исключение: {reason}",
+  "scheduling.job.not_found": "Задание '{name}' не зарегистрировано.",
+  "scheduling.job.running": "Задание '{name}' уже выполняется и не допускает параллельных запусков.",
+  "scheduling.lease.held": "Аренда лидера для '{resource}' удерживается другим владельцем.",
+  "scheduling.scheduler.unavailable": "Планировщик заданий не запущен."
+}

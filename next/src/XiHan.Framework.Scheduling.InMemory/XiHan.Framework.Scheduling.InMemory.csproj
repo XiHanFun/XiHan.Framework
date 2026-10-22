@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Scheduling.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Scheduling.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存调度（默认实现）：单进程轮询调度器按间隔或 cron 运行作业、手动触发与状态，进程内租约式领导选举。</Description>
+    <PackageTags>xihan;framework;scheduling;in-memory;cron;leader-election</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
