@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "이름으로 인사합니다. 횟수를 지정할 수 있습니다.",
+  "samples.greet.times_invalid": "인사 횟수는 1에서 10 사이여야 하지만 {times}이(가) 지정되었습니다."
+}

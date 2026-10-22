@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -13,7 +14,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的能力包入口：提供 <c>protocols.mcp@1</c>，注册选项、消息目录与 <see cref="McpServer"/>；端点由应用在路由阶段调用 <c>MapXiHanMcp()</c> 映射。
+/// MCP 协议适配器的能力包入口：提供 <c>protocols.mcp@1</c>，注册选项、消息目录、<see cref="McpServer"/> 与命令行宿主的 <c>mcp</c> 命令（stdio 传输）；HTTP 端点由应用在路由阶段调用 <c>MapXiHanMcp()</c> 映射。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class McpProtocolFeature : IFeature
@@ -40,6 +41,8 @@ public sealed class McpProtocolFeature : IFeature
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(McpMessages.Catalog);
         context.Services.AddSingleton(McpProtocolOptions.FromConfiguration(context.Configuration));
+        // 命令行宿主存在时 `mcp` 命令以 stdio 提供同一个服务端；Web 宿主里这条注册没有消费者
+        context.Services.AddXiHanCommand<McpStdioCommand>();
         // 服务端在首次解析时建 tool 表：那时全部特性已装配、登记表已定型；服务端名默认取宿主的应用名
         context.Services.AddSingleton(static services =>
         {

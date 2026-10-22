@@ -38,5 +38,6 @@
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.CloudEvents/XiHan.Framework.Protocols.CloudEvents.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,112 @@
+#nullable enable
+const XiHan.Framework.Hosting.CommandLine.CommandLineErrors.CommandUnknown = "HOSTING_NOTFOUND_002" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineErrors.OperationNotExposed = "HOSTING_NOTFOUND_001" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineErrors.UsageInvalid = "HOSTING_VALIDATION_001" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Cancelled = 8 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Conflict = 5 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Denied = 4 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.NotFound = 3 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Success = 0 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Timeout = 7 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Unavailable = 6 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Unexpected = 1 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Usage = 64 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.Validation = 2 -> int
+const XiHan.Framework.Hosting.CommandLine.CommandLineInvocation.AuthorizationVariable = "XIHAN_AUTHORIZATION" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.CatalogName = "hosting.commandline" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.Commands = "hosting.commandline.commands" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.CommandUnknown = "hosting.commandline.command_unknown" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.GraphDescription = "hosting.commandline.graph_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.HelpDescription = "hosting.commandline.help_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeAuthorizationInvalid = "hosting.commandline.invoke_authorization_invalid" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeDataMissing = "hosting.commandline.invoke_data_missing" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeDescription = "hosting.commandline.invoke_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeOperationMissing = "hosting.commandline.invoke_operation_missing" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeTimeoutInvalid = "hosting.commandline.invoke_timeout_invalid" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationNotExposed = "hosting.commandline.operation_not_exposed" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationsDescription = "hosting.commandline.operations_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationShorthand = "hosting.commandline.operation_shorthand" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.PipelineDescription = "hosting.commandline.pipeline_description" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.Usage = "hosting.commandline.usage" -> string!
+override XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Equals(object? obj) -> bool
+override XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.GetHashCode() -> int
+override XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.ToString() -> string!
+static readonly XiHan.Framework.Hosting.CommandLine.CommandLineInvocation.ReservedOptions -> System.Collections.Generic.IReadOnlySet<string!>!
+static XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes.For(XiHan.Framework.Primitives.Error! error) -> int
+static XiHan.Framework.Hosting.CommandLine.CommandLineFailure.WriteAsync(System.IO.TextWriter! error, XiHan.Framework.Primitives.Error! failure, System.IServiceProvider! services, XiHan.Framework.Primitives.InvocationContext? context, int? exitCode = null) -> System.Threading.Tasks.Task<int>!
+static XiHan.Framework.Hosting.CommandLine.CommandLineHelp.WriteAsync(System.IO.TextWriter! writer, System.Collections.Generic.IEnumerable<XiHan.Framework.Hosting.CommandLine.ICommand!>! commands) -> System.Threading.Tasks.Task!
+static XiHan.Framework.Hosting.CommandLine.CommandLineHostExtensions.RunXiHanCommandLineAsync(this Microsoft.Extensions.Hosting.IHost! host, System.Collections.Generic.IReadOnlyList<string!>! args, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+static XiHan.Framework.Hosting.CommandLine.CommandLineInvocation.Create(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.InvocationContext!>
+static XiHan.Framework.Hosting.CommandLine.CommandLineMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Hosting.CommandLine.CommandLineParser.Parse(System.Collections.Generic.IReadOnlyList<string!>! args) -> XiHan.Framework.Hosting.CommandLine.ParsedCommandLine!
+static XiHan.Framework.Hosting.CommandLine.CommandLineServiceCollectionExtensions.AddXiHanCommand<TCommand>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Hosting.CommandLine.CommandLineServiceCollectionExtensions.AddXiHanCommandLine(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.operator !=(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? left, XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? right) -> bool
+static XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.operator ==(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? left, XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? right) -> bool
+XiHan.Framework.Hosting.CommandLine.CommandContext
+XiHan.Framework.Hosting.CommandLine.CommandContext.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Hosting.CommandLine.CommandContext.CancellationToken.get -> System.Threading.CancellationToken
+XiHan.Framework.Hosting.CommandLine.CommandContext.CommandContext(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine! commandLine, System.IServiceProvider! services, System.IO.TextWriter! output, System.IO.TextWriter! error, System.Threading.CancellationToken cancellationToken) -> void
+XiHan.Framework.Hosting.CommandLine.CommandContext.CommandLine.get -> XiHan.Framework.Hosting.CommandLine.ParsedCommandLine!
+XiHan.Framework.Hosting.CommandLine.CommandContext.Error.get -> System.IO.TextWriter!
+XiHan.Framework.Hosting.CommandLine.CommandContext.HasOption(string! name) -> bool
+XiHan.Framework.Hosting.CommandLine.CommandContext.Option(string! name) -> XiHan.Framework.Primitives.Maybe<string!>
+XiHan.Framework.Hosting.CommandLine.CommandContext.Output.get -> System.IO.TextWriter!
+XiHan.Framework.Hosting.CommandLine.CommandContext.Services.get -> System.IServiceProvider!
+XiHan.Framework.Hosting.CommandLine.CommandLineErrors
+XiHan.Framework.Hosting.CommandLine.CommandLineExitCodes
+XiHan.Framework.Hosting.CommandLine.CommandLineFailure
+XiHan.Framework.Hosting.CommandLine.CommandLineHelp
+XiHan.Framework.Hosting.CommandLine.CommandLineHostExtensions
+XiHan.Framework.Hosting.CommandLine.CommandLineInvocation
+XiHan.Framework.Hosting.CommandLine.CommandLineMessages
+XiHan.Framework.Hosting.CommandLine.CommandLineParser
+XiHan.Framework.Hosting.CommandLine.CommandLineRunner
+XiHan.Framework.Hosting.CommandLine.CommandLineRunner.CommandLineRunner(System.IServiceProvider! services, System.Collections.Generic.IEnumerable<XiHan.Framework.Hosting.CommandLine.ICommand!>! commands) -> void
+XiHan.Framework.Hosting.CommandLine.CommandLineRunner.Commands.get -> System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Hosting.CommandLine.ICommand!>!
+XiHan.Framework.Hosting.CommandLine.CommandLineRunner.RunAsync(System.Collections.Generic.IReadOnlyList<string!>! args, System.IO.TextWriter! output, System.IO.TextWriter! error, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.CommandLineServiceCollectionExtensions
+XiHan.Framework.Hosting.CommandLine.GraphCommand
+XiHan.Framework.Hosting.CommandLine.GraphCommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.GraphCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.GraphCommand.GraphCommand() -> void
+XiHan.Framework.Hosting.CommandLine.GraphCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.HelpCommand
+XiHan.Framework.Hosting.CommandLine.HelpCommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.HelpCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.HelpCommand.HelpCommand() -> void
+XiHan.Framework.Hosting.CommandLine.HelpCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.ICommand
+XiHan.Framework.Hosting.CommandLine.ICommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.ICommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.ICommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.InvokeCommand
+XiHan.Framework.Hosting.CommandLine.InvokeCommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.InvokeCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.InvokeCommand.InvokeCommand() -> void
+XiHan.Framework.Hosting.CommandLine.InvokeCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.OperationsCommand
+XiHan.Framework.Hosting.CommandLine.OperationsCommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.OperationsCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.OperationsCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.OperationsCommand.OperationsCommand() -> void
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.<Clone>$() -> XiHan.Framework.Hosting.CommandLine.ParsedCommandLine!
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Arguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Arguments.init -> void
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Command.get -> string?
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Command.init -> void
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Deconstruct(out string? Command, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! Options) -> void
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Equals(XiHan.Framework.Hosting.CommandLine.ParsedCommandLine? other) -> bool
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.HasOption(string! name) -> bool
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Option(string! name) -> XiHan.Framework.Primitives.Maybe<string!>
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Options.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.Options.init -> void
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.OptionValues(string! name) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Hosting.CommandLine.ParsedCommandLine.ParsedCommandLine(string? Command, System.Collections.Generic.IReadOnlyList<string!>! Arguments, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! Options) -> void
+XiHan.Framework.Hosting.CommandLine.PipelineCommand
+XiHan.Framework.Hosting.CommandLine.PipelineCommand.DescriptionKey.get -> string!
+XiHan.Framework.Hosting.CommandLine.PipelineCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Hosting.CommandLine.PipelineCommand.Name.get -> string!
+XiHan.Framework.Hosting.CommandLine.PipelineCommand.PipelineCommand() -> void

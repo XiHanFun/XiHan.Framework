@@ -11,6 +11,7 @@ const XiHan.Framework.Protocols.Mcp.McpMessages.CatalogName = "protocols.mcp" ->
 const XiHan.Framework.Protocols.Mcp.McpMessages.MessageInvalid = "protocols.mcp.message_invalid" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.MessageNotJson = "protocols.mcp.message_not_json" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.MethodUnknown = "protocols.mcp.method_unknown" -> string!
+const XiHan.Framework.Protocols.Mcp.McpMessages.StdioDescription = "protocols.mcp.stdio_description" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.ToolUnknown = "protocols.mcp.tool_unknown" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.VersionUnsupported = "protocols.mcp.version_unsupported" -> string!
 const XiHan.Framework.Protocols.Mcp.McpProtocolCapabilities.Mcp = "protocols.mcp" -> string!
@@ -40,6 +41,7 @@ static XiHan.Framework.Protocols.Mcp.McpProtocolOptions.operator ==(XiHan.Framew
 static XiHan.Framework.Protocols.Mcp.McpReply.operator !=(XiHan.Framework.Protocols.Mcp.McpReply? left, XiHan.Framework.Protocols.Mcp.McpReply? right) -> bool
 static XiHan.Framework.Protocols.Mcp.McpReply.operator ==(XiHan.Framework.Protocols.Mcp.McpReply? left, XiHan.Framework.Protocols.Mcp.McpReply? right) -> bool
 static XiHan.Framework.Protocols.Mcp.McpServer.UnsupportedVersionReply(string! version) -> System.ReadOnlyMemory<byte>
+static XiHan.Framework.Protocols.Mcp.McpStdioTransport.RunAsync(XiHan.Framework.Protocols.Mcp.McpServer! server, System.IServiceProvider! services, System.IO.TextReader! input, System.IO.TextWriter! output, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 static XiHan.Framework.Protocols.Mcp.McpTool.Create(string! name, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Protocols.Mcp.McpTool!
 static XiHan.Framework.Protocols.Mcp.McpTool.operator !=(XiHan.Framework.Protocols.Mcp.McpTool? left, XiHan.Framework.Protocols.Mcp.McpTool? right) -> bool
 static XiHan.Framework.Protocols.Mcp.McpTool.operator ==(XiHan.Framework.Protocols.Mcp.McpTool? left, XiHan.Framework.Protocols.Mcp.McpTool? right) -> bool
@@ -85,6 +87,12 @@ XiHan.Framework.Protocols.Mcp.McpServer.HandleAsync(System.ReadOnlyMemory<byte> 
 XiHan.Framework.Protocols.Mcp.McpServer.McpServer(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Kernel.Operations.IOperationInvoker! invoker, XiHan.Framework.Protocols.Mcp.McpProtocolOptions! options, string! serverName, XiHan.Framework.Localization.Abstractions.IMessageLocalizer? localizer) -> void
 XiHan.Framework.Protocols.Mcp.McpServer.ServerName.get -> string!
 XiHan.Framework.Protocols.Mcp.McpServer.Tools.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Mcp.McpTool!>!
+XiHan.Framework.Protocols.Mcp.McpStdioCommand
+XiHan.Framework.Protocols.Mcp.McpStdioCommand.DescriptionKey.get -> string!
+XiHan.Framework.Protocols.Mcp.McpStdioCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Protocols.Mcp.McpStdioCommand.McpStdioCommand() -> void
+XiHan.Framework.Protocols.Mcp.McpStdioCommand.Name.get -> string!
+XiHan.Framework.Protocols.Mcp.McpStdioTransport
 XiHan.Framework.Protocols.Mcp.McpTool
 XiHan.Framework.Protocols.Mcp.McpTool.<Clone>$() -> XiHan.Framework.Protocols.Mcp.McpTool!
 XiHan.Framework.Protocols.Mcp.McpTool.Annotations.get -> XiHan.Framework.Protocols.Mcp.McpToolAnnotations!

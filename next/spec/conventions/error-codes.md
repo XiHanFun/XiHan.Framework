@@ -97,6 +97,9 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PROTOCOLS_NOTFOUND_004` | CloudEvents：主题没有配置出站 Webhook |
 | `PROTOCOLS_UNAVAILABLE_001` | CloudEvents：Webhook 返回非 2xx |
 | `PROTOCOLS_UNAVAILABLE_002` | CloudEvents：Webhook 无法连接 |
+| `HOSTING_VALIDATION_001` | 命令行：用法不合法（选项值、载荷或数据文件有误） |
+| `HOSTING_NOTFOUND_001` | 命令行：操作未登记或未暴露给命令行 |
+| `HOSTING_NOTFOUND_002` | 命令行：命令不存在 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

@@ -19,4 +19,6 @@ Verb        = 小写动词（create、get、list、update、delete、cancel、..
 | `delete` | `DELETE /{resource}/{id}` | `{Resource}.Delete` | `{resource}_delete` |
 | 其他 | `POST /{resource}/{id}:{verb}` | `{Resource}.{Verb}` | `{resource}_{verb}` |
 
+命令行：`<resource> <verb> [--field value ...]`，即 `invoke <resource>.<verb>`（`protocol/commandline.md`）。
+
 一份契约一份 Schema；HTTP 错误用 RFC 9457 Problem Details。

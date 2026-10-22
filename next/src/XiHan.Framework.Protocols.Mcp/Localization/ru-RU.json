@@ -3,6 +3,7 @@
   "protocols.mcp.message_invalid": "Сообщение не является корректным запросом JSON-RPC 2.0.",
   "protocols.mcp.message_not_json": "Тело запроса не является корректным JSON.",
   "protocols.mcp.method_unknown": "Метод '{method}' не поддерживается.",
+  "protocols.mcp.stdio_description": "Предоставляет MCP через stdio: одно сообщение JSON-RPC на строку в stdin и stdout, журналы в stderr.",
   "protocols.mcp.tool_unknown": "Инструмент '{tool}' не зарегистрирован.",
   "protocols.mcp.version_unsupported": "Версия протокола MCP '{version}' не поддерживается; этот сервер поддерживает {supported}."
 }
