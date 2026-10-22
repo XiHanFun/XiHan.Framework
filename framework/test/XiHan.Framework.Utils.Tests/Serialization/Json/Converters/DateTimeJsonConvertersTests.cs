@@ -34,6 +34,11 @@ public class DateTimeJsonConvertersTests
     });
 
     /// <summary>
+    /// 探测运行环境能否在 IANA ID 与 Windows ID 之间互转，探测一次后缓存
+    /// </summary>
+    private static readonly Lazy<bool> IcuMappingAvailable = new(() => TimeZoneInfo.TryConvertIanaIdToWindowsId("Asia/Shanghai", out _));
+
+    /// <summary>
     /// 用给定转换器构造一个干净的序列化选项
     /// </summary>
     /// <remarks>
@@ -194,14 +199,51 @@ public class DateTimeJsonConvertersTests
     }
 
     /// <summary>
-    /// 时区标识非法时回退为原值而不是抛异常
+    /// 指定的时区解析不了时不换算，按 UTC 输出带偏移的 ISO 8601，而不是无偏移的 UTC 墙钟
+    /// </summary>
+    /// <remarks>原实现吞掉异常后按原值输出 yyyy-MM-dd HH:mm:ss，客户端当本地时间显示，静默差一个时区偏移。</remarks>
+    [Fact]
+    public void DateTimeConverter_WhenTimeZoneUnresolvable_WritesUtcWithOffset()
+    {
+        var options = CreateOptions(
+            new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false, () => "不存在的时区"),
+            new DateTimeNullableConverter("yyyy-MM-dd HH:mm:ss", false, () => "不存在的时区"));
+
+        Assert.Equal("\"2024-05-06T00:00:00+00:00\"", JsonSerializer.Serialize(new DateTime(2024, 5, 6), options));
+        Assert.Equal("\"2024-05-06T00:00:00+00:00\"", JsonSerializer.Serialize<DateTime?>(new DateTime(2024, 5, 6), options));
+    }
+
+    /// <summary>
+    /// 旧 IANA 别名与 Windows ID 和规范 ID 换算结果一致
+    /// </summary>
+    /// <remarks>新版 tzdata 的 Linux 上目录里没有 Asia/Calcutta，原实现解析失败后按 UTC 墙钟原样输出。</remarks>
+    [Theory]
+    [InlineData("Asia/Kolkata")]
+    [InlineData("Asia/Calcutta")]
+    [InlineData("India Standard Time")]
+    public void DateTimeConverter_WithLegacyAliasOrWindowsId_ConvertsToUserTime(string timeZoneId)
+    {
+        Assert.SkipUnless(IanaTimeZoneAvailable.Value && IcuMappingAvailable.Value, "当前运行环境无法解析 IANA 时区或没有 ICU 时区映射，跳过该组验证。");
+
+        var options = CreateOptions(new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false, () => timeZoneId));
+
+        Assert.Equal("\"2024-05-06 05:30:00\"", JsonSerializer.Serialize(new DateTime(2024, 5, 6), options));
+    }
+
+    /// <summary>
+    /// 默认值换算到负偏移时区不抛异常，落在可表示范围的下界
     /// </summary>
     [Fact]
-    public void DateTimeConverter_WhenTimeZoneInvalid_FallsBackToRawValue()
+    public void DateTimeConverters_WithMinValueInNegativeOffsetZone_ClampToMinValue()
     {
-        var options = CreateOptions(new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false, () => "不存在的时区"));
+        Assert.SkipUnless(IanaTimeZoneAvailable.Value, "当前运行环境无法解析 IANA 时区标识（Asia/Shanghai），跳过该组验证。");
 
-        Assert.Equal("\"2024-05-06 00:00:00\"", JsonSerializer.Serialize(new DateTime(2024, 5, 6), options));
+        var options = CreateOptions(
+            new DateTimeJsonConverter("yyyy-MM-dd HH:mm:ss", false, () => "America/New_York"),
+            new DateTimeOffsetJsonConverter("yyyy-MM-ddTHH:mm:sszzz", false, () => "America/New_York"));
+
+        Assert.Equal("\"0001-01-01 00:00:00\"", JsonSerializer.Serialize(DateTime.MinValue, options));
+        Assert.Equal("\"0001-01-01 00:00:00\"", JsonSerializer.Serialize(DateTimeOffset.MinValue, options));
     }
 
     /// <summary>
@@ -303,6 +345,37 @@ public class DateTimeJsonConvertersTests
         var json = JsonSerializer.Serialize(new DateTimeOffset(2024, 5, 6, 0, 0, 0, TimeSpan.Zero), options);
 
         Assert.Equal("\"2024-05-06T00:00:00+00:00\"", json);
+    }
+
+    /// <summary>
+    /// 时区解析不了时按 UTC 输出带偏移的 ISO 8601，不用构造时不带偏移的格式
+    /// </summary>
+    [Fact]
+    public void DateTimeOffsetConverter_WhenTimeZoneUnresolvable_IgnoresCustomFormatAndWritesUtc()
+    {
+        var options = CreateOptions(
+            new DateTimeOffsetJsonConverter("yyyy-MM-dd HH:mm", false, () => "不存在的时区"),
+            new DateTimeOffsetNullableConverter("yyyy-MM-dd HH:mm", false, () => "不存在的时区"));
+        var value = new DateTimeOffset(2024, 5, 6, 8, 0, 0, TimeSpan.FromHours(8));
+
+        Assert.Equal("\"2024-05-06T00:00:00+00:00\"", JsonSerializer.Serialize(value, options));
+        Assert.Equal("\"2024-05-06T00:00:00+00:00\"", JsonSerializer.Serialize<DateTimeOffset?>(value, options));
+    }
+
+    /// <summary>
+    /// DateTimeOffset 的旧 IANA 别名与 Windows ID 和规范 ID 换算结果一致
+    /// </summary>
+    [Theory]
+    [InlineData("Asia/Kolkata")]
+    [InlineData("Asia/Calcutta")]
+    [InlineData("India Standard Time")]
+    public void DateTimeOffsetConverter_WithLegacyAliasOrWindowsId_WritesWallClock(string timeZoneId)
+    {
+        Assert.SkipUnless(IanaTimeZoneAvailable.Value && IcuMappingAvailable.Value, "当前运行环境无法解析 IANA 时区或没有 ICU 时区映射，跳过该组验证。");
+
+        var options = CreateOptions(new DateTimeOffsetJsonConverter("yyyy-MM-ddTHH:mm:sszzz", false, () => timeZoneId));
+
+        Assert.Equal("\"2024-05-06 05:30:00\"", JsonSerializer.Serialize(new DateTimeOffset(2024, 5, 6, 0, 0, 0, TimeSpan.Zero), options));
     }
 
     /// <summary>
