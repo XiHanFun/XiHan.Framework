@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Protocols.CloudEvents</PackageId>
+    <RootNamespace>XiHan.Framework.Protocols.CloudEvents</RootNamespace>
+    <Description>XiHan Framework CloudEvents 协议适配器（Ring 5）：CloudEvents 1.0 的 HTTP 协议绑定。入站端点接收 binary / structured / batch 三种内容模式的事件，按类型映射到主题后经内核管道派发给消息处理器或发布到消息代理；出站 Webhook 发布者把消息子系统的信封以 CloudEvents 推送到配置的 HTTP 端点。</Description>
+    <PackageTags>xihan;framework;protocols;cloudevents;webhook;messaging</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

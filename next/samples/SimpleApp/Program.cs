@@ -10,6 +10,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Standard;
+using XiHan.Framework.Protocols.CloudEvents;
 using XiHan.Framework.Protocols.Grpc;
 using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Mcp;
@@ -26,6 +27,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<McpProtocolFeature>()
     .UseFeature<GrpcProtocolFeature>()
+    .UseFeature<CloudEventsProtocolFeature>()
     .UseFeature<OutboxFeature>()
     .UseFeature<GreetingFeature>()
     .UseFeature<OrdersFeature>());
@@ -45,6 +47,7 @@ app.MapXiHanOpenApi();   // 从登记表与生成的 Schema 发布 /openapi.json
 app.MapXiHanMcp();       // POST /mcp：同一份契约作为 MCP tool（orders_create / orders_list），描述取自消息目录
 app.MapXiHanGrpc();      // gRPC：Orders/Create、Orders/List（appsettings 里 5001 端口 h2c），protobuf 由 Schema 推出
 app.MapXiHanProto();     // GET /operations.proto：从同一份 Schema 生成的 .proto
+app.MapXiHanCloudEvents();   // POST /events：外部 CloudEvent（orders.placed → 主题 orders）经管道交给 OrderPlacedHandler
 
 app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
 app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count));

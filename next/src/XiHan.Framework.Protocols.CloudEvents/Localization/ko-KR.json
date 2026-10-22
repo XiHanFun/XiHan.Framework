@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "요청이 CloudEvent가 아닙니다: 콘텐츠 유형 '{contentType}'은(는) CloudEvents 구조화 형식도 배치 형식도 아니며 'ce-specversion' 헤더도 없습니다.",
+  "protocols.cloudevents.no_subscriber": "토픽 '{topic}'을(를) 구독하는 핸들러가 없습니다.",
+  "protocols.cloudevents.topic_unresolved": "이벤트 유형 '{type}'에 토픽이 구성되지 않았고 유형 자체도 유효한 토픽이 아닙니다.",
+  "protocols.cloudevents.webhook_failed": "토픽 '{topic}'의 웹훅이 HTTP {status}을(를) 반환했습니다.",
+  "protocols.cloudevents.webhook_missing": "토픽 '{topic}'에 웹훅이 구성되지 않았습니다.",
+  "protocols.cloudevents.webhook_unreachable": "토픽 '{topic}'의 웹훅에 연결할 수 없습니다: {reason}"
+}

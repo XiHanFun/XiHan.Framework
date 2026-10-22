@@ -21,6 +21,8 @@ CloudEvents 1.0：`id`、`source`、`type` 必填；`time`、`subject`、`dataco
 
 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；死信主题为主题加 `DeadLetterSuffix`（默认 `.dlq`）。
 
+信封在 HTTP 上的 CloudEvents 协议绑定（binary / structured / batch 入站，binary / structured 出站 Webhook）由 `Protocols.CloudEvents` 提供，见 `protocol/cloudevents.md`。
+
 ## 投递
 
 1. 应用用 `AddMessageHandler<THandler>(topic)` 订阅；处理器是作用域服务。

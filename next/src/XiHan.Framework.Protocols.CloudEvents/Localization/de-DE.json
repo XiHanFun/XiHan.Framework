@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "Die Anfrage ist kein CloudEvent: Der Inhaltstyp '{contentType}' ist weder das strukturierte noch das Batch-Format von CloudEvents, und es gibt keinen 'ce-specversion'-Header.",
+  "protocols.cloudevents.no_subscriber": "Kein Handler hat das Thema '{topic}' abonniert.",
+  "protocols.cloudevents.topic_unresolved": "Für den Ereignistyp '{type}' ist kein Thema konfiguriert, und der Typ selbst ist kein gültiges Thema.",
+  "protocols.cloudevents.webhook_failed": "Der Webhook für das Thema '{topic}' hat mit HTTP {status} geantwortet.",
+  "protocols.cloudevents.webhook_missing": "Für das Thema '{topic}' ist kein Webhook konfiguriert.",
+  "protocols.cloudevents.webhook_unreachable": "Der Webhook für das Thema '{topic}' ist nicht erreichbar: {reason}"
+}

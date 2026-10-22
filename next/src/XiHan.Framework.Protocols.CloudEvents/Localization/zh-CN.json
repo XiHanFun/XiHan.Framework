@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "请求不是 CloudEvent：内容类型 '{contentType}' 既不是 CloudEvents 的结构化格式也不是批量格式，也没有 'ce-specversion' 头。",
+  "protocols.cloudevents.no_subscriber": "没有处理器订阅主题 '{topic}'。",
+  "protocols.cloudevents.topic_unresolved": "事件类型 '{type}' 没有配置主题，类型本身也不是合法的主题。",
+  "protocols.cloudevents.webhook_failed": "主题 '{topic}' 的 Webhook 返回了 HTTP {status}。",
+  "protocols.cloudevents.webhook_missing": "主题 '{topic}' 没有配置 Webhook。",
+  "protocols.cloudevents.webhook_unreachable": "无法连接主题 '{topic}' 的 Webhook：{reason}"
+}

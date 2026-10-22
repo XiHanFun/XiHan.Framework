@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "La requête n'est pas un CloudEvent : le type de contenu '{contentType}' n'est ni le format structuré ni le format par lots de CloudEvents, et il n'y a pas d'en-tête 'ce-specversion'.",
+  "protocols.cloudevents.no_subscriber": "Aucun gestionnaire n'est abonné au sujet '{topic}'.",
+  "protocols.cloudevents.topic_unresolved": "Aucun sujet n'est configuré pour le type d'événement '{type}' et le type lui-même n'est pas un sujet valide.",
+  "protocols.cloudevents.webhook_failed": "Le webhook du sujet '{topic}' a répondu HTTP {status}.",
+  "protocols.cloudevents.webhook_missing": "Aucun webhook n'est configuré pour le sujet '{topic}'.",
+  "protocols.cloudevents.webhook_unreachable": "Le webhook du sujet '{topic}' est injoignable : {reason}"
+}
