@@ -1,0 +1,68 @@
+#nullable enable
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.SchemeName = "Bearer" -> string!
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ConfigurationSection = "XiHan:Security:OpenIdConnect" -> string!
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.DiscoveryPath = ".well-known/openid-configuration" -> string!
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Equals(object? obj) -> bool
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.GetHashCode() -> int
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.ToString() -> string!
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.GetHashCode() -> int
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ToString() -> string!
+static readonly XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.FailureRetryDelay -> System.TimeSpan
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions!
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.OpenIdConnectAuthenticationHandler(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache! metadata) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.Scheme.get -> string!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.<Clone>$() -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Deconstruct(out string! Issuer, out System.Uri! JwksUri, out System.Collections.Generic.IReadOnlyList<Microsoft.IdentityModel.Tokens.SecurityKey!>! SigningKeys, out System.DateTimeOffset RetrievedAt) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Equals(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? other) -> bool
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Issuer.get -> string!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Issuer.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.JwksUri.get -> System.Uri!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.JwksUri.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.OpenIdConnectMetadata(string! Issuer, System.Uri! JwksUri, System.Collections.Generic.IReadOnlyList<Microsoft.IdentityModel.Tokens.SecurityKey!>! SigningKeys, System.DateTimeOffset RetrievedAt) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.RetrievedAt.get -> System.DateTimeOffset
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.RetrievedAt.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.SigningKeys.get -> System.Collections.Generic.IReadOnlyList<Microsoft.IdentityModel.Tokens.SecurityKey!>!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.SigningKeys.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.Current.get -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata?
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.Dispose() -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.GetAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.OpenIdConnectMetadataCache(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, System.Net.Http.HttpClient! http, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.RefreshAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.<Clone>$() -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Audience.get -> string?
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Audience.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Authority.get -> string!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Authority.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.BackchannelTimeout.get -> System.TimeSpan
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.BackchannelTimeout.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ClockSkew.get -> System.TimeSpan
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ClockSkew.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Equals(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? other) -> bool
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Issuer.get -> string?
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Issuer.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.MetadataAddress.get -> string?
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.MetadataAddress.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.MinimumRefreshInterval.get -> System.TimeSpan
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.MinimumRefreshInterval.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.NameClaim.get -> string!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.NameClaim.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.OpenIdConnectOptions() -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RefreshInterval.get -> System.TimeSpan
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RefreshInterval.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RequireHttpsMetadata.get -> bool
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RequireHttpsMetadata.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ResolveMetadataAddress() -> System.Uri!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.OpenIdConnectSecurityFeature() -> void

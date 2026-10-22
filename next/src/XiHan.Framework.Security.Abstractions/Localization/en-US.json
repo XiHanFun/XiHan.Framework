@@ -3,6 +3,7 @@
   "security.authentication.required": "This invocation requires authentication.",
   "security.authentication.unsupported_scheme": "Authentication scheme '{scheme}' is not supported.",
   "security.grant_store.capacity_exceeded": "The in-memory grant store has reached its capacity of {capacity}.",
+  "security.issuer.unavailable": "The OpenID Connect metadata of issuer '{authority}' could not be retrieved.",
   "security.permission.missing": "Permission '{permission}' is missing.",
   "security.policy.not_found": "Policy '{policy}' does not exist.",
   "security.principal_store.capacity_exceeded": "The in-memory principal store has reached its capacity of {capacity}.",

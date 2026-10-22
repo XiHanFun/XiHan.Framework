@@ -3,6 +3,7 @@
   "security.authentication.required": "Для этого вызова требуется аутентификация.",
   "security.authentication.unsupported_scheme": "Схема аутентификации '{scheme}' не поддерживается.",
   "security.grant_store.capacity_exceeded": "Хранилище разрешений в памяти достигло предела ёмкости {capacity}.",
+  "security.issuer.unavailable": "Не удалось получить метаданные OpenID Connect издателя '{authority}'.",
   "security.permission.missing": "Отсутствует разрешение '{permission}'.",
   "security.policy.not_found": "Политика '{policy}' не существует.",
   "security.principal_store.capacity_exceeded": "Хранилище субъектов в памяти достигло предела ёмкости {capacity}.",
