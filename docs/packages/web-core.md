@@ -42,7 +42,7 @@ public class MyModule : XiHanModule { }
 - **托管环境接入**：模块前置阶段把 ASP.NET Core 环境名写入 `IXiHanHostEnvironment`。若 DI 中缺 `IWebHostEnvironment`，`GetHostingEnvironment()` 回退到 `EmptyHostingEnvironment`（默认 `Development`）。
 - **HttpContext 与当前主体**：注册 `IHttpContextAccessor`；`HttpContextCurrentPrincipalAccessor` 以 `HttpContext.User` 为当前主体（无请求时回退空 `ClaimsPrincipal`），从而让框架 `ICurrentUser` 在 Web 请求中生效。
 - **客户端信息识别**：`IClientInfoProvider.GetCurrent()` 从当前请求解析出 `ClientInfo`（IP / 归属地 / 原始 UA / 浏览器 / 系统 / 设备）。
-- **真实 IP 解析**：优先取 `X-Forwarded-For` 第一跳，其次 `X-Real-IP`，回退 `Connection.RemoteIpAddress`；对 IPv4-mapped-IPv6 做规范化（`MapToIPv4`）。
+- **客户端 IP**：只取 `Connection.RemoteIpAddress`，对 IPv4-mapped-IPv6 做规范化（`MapToIPv4`）；不直接读 `X-Forwarded-For`、`X-Real-IP` 等请求头（客户端能任意伪造）。部署在反向代理后面时，由 Web.Api 的转发头中间件按受信代理还原这个地址。
 - **IP 归属地定位**：回环 IP 记为「本机」、内网 IP 记为「局域网」；仅公网 IP 才经 `IIpRegionResolver` 查 `ip2region`（`IP2Region.Net`）离线库。IPv4、IPv6 各用一个 xdb，首次用到时整库载入内存；库文件按候选路径自动探测，缺库时该地址族静默跳过、不报错。登录地址与应用的访问策略（地区条件）共用这一份库。
 - **UA 解析**：基于 `UAParser` 解析 User-Agent 得到浏览器 / 系统 / 设备名；桌面浏览器 `Device.Family` 常为 `Other`，会归一化为 `PC`。
 - **Claims 转换（可选）**：`XiHanClaimsTransformation` 支持把标准 OIDC 声明（`sub`/`role`/`email`/`name` 等）映射为框架 `XiHanClaimTypes`；通过 `services.TransformXiHanClaims()` 显式注册后才生效。
@@ -144,7 +144,7 @@ public override void ConfigureServices(ServiceConfigurationContext context)
 ## 注意事项与最佳实践
 
 - **归属地依赖离线库**：`ip2region.xdb` 需随应用部署（默认放 `IpDatabases/`）。缺库不会报错，但 `ClientInfo.Location` 对公网 IP 为 `null`。
-- **真实 IP 依赖转发头还原**：X-Forwarded-For 由上层 Web.Api 的 `UseForwardedHeaders` 在管线最前还原；反向代理需正确透传该头，否则解析到的是反代地址。
+- **真实 IP 依赖受信代理配置**：`X-Forwarded-For` 由上层 Web.Api 的 `UseForwardedHeaders` 在管线最前还原，且只采信受信代理（缺省本机回环，其余在 `XiHan:Web:Api:ForwardedHeaders` 配置）；反代不在本机又没配置时，解析到的是反代地址。
 - **`ICurrentUser` 生效前提**：本包只桥接 `HttpContext.User`；用户主体的真实内容由认证中间件（JWT）填充，须在 Web.Api 中启用认证。
 - **声明转换不默认启用**：`XiHanClaimsTransformation` 只有显式调用 `TransformXiHanClaims()` 才注册；未调用时不做任何声明映射。
 
