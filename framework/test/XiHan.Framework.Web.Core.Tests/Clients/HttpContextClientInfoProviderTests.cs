@@ -17,9 +17,10 @@ namespace XiHan.Framework.Web.Core.Tests.Clients;
 /// </summary>
 /// <remarks>
 /// 这个提供器是审计日志里 IP、归属地、设备信息的唯一来源，取值口径出错会污染全部审计数据，
-/// 因此重点覆盖三条：多级代理下取哪一跳、代理头缺失/全空白时的回退次序、异常 UA 不能把整次采集打挂。
+/// 因此重点覆盖三条：只认连接地址、不信任何客户端能伪造的转发头，IPv4 映射地址的规范化，异常 UA 不能把整次采集打挂。
+/// 部署在反向代理后面时，连接地址由转发头中间件按受信代理还原（见 Web.Api 的受信代理配置）。
 /// 全部用例用 <see cref="DefaultHttpContext"/> 直接造请求上下文，不起真实管道。
-/// 归属地部分刻意把内容根指向一个不存在的目录，让 ip2region 的三个候选路径统统落空，
+/// 归属地部分刻意把内容根指向一个不存在的目录，让 ip2region 的候选路径统统落空，
 /// 这样"公网 IP 的归属地"结果稳定为 null，用例不依赖仓库里是否放了 xdb 数据文件。
 /// </remarks>
 public class HttpContextClientInfoProviderTests
@@ -42,7 +43,7 @@ public class HttpContextClientInfoProviderTests
     [Fact]
     public void GetCurrent_WithoutHttpContext_ReturnsEmptyInfo()
     {
-        using var provider = CreateProvider(null);
+        var provider = CreateProvider(null);
 
         var info = provider.GetCurrent();
 
@@ -56,12 +57,12 @@ public class HttpContextClientInfoProviderTests
     }
 
     /// <summary>
-    /// 既无代理头也无连接地址时，IP 与归属地都是空，不能兜出空串
+    /// 没有连接地址时，IP 与归属地都是空，不能兜出空串
     /// </summary>
     [Fact]
     public void GetCurrent_WithoutAnyAddressSource_ReturnsNullIpAndLocation()
     {
-        using var provider = CreateProvider(new DefaultHttpContext());
+        var provider = CreateProvider(new DefaultHttpContext());
 
         var info = provider.GetCurrent();
 
@@ -70,57 +71,37 @@ public class HttpContextClientInfoProviderTests
     }
 
     /// <summary>
-    /// 多级代理时取 X-Forwarded-For 的第一跳，并对空白项、IPv4 映射地址做规范化
-    /// </summary>
-    /// <param name="headerValue">X-Forwarded-For 头原文</param>
-    /// <param name="expected">期望解析出的 IP</param>
-    [Theory]
-    [InlineData("203.0.113.7", "203.0.113.7")]
-    [InlineData("203.0.113.7, 198.51.100.5, 70.41.3.18", "203.0.113.7")]
-    [InlineData("  203.0.113.7  ,198.51.100.5", "203.0.113.7")]
-    [InlineData(" , 203.0.113.7", "203.0.113.7")]
-    [InlineData("::ffff:203.0.113.7", "203.0.113.7")]
-    public void GetCurrent_WithForwardedFor_TakesFirstHop(string headerValue, string expected)
-    {
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = headerValue;
-        httpContext.Request.Headers["X-Real-IP"] = "198.51.100.222";
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.9");
-
-        using var provider = CreateProvider(httpContext);
-
-        Assert.Equal(expected, provider.GetCurrent().IpAddress);
-    }
-
-    /// <summary>
-    /// X-Forwarded-For 全空白时跳过它，退到 X-Real-IP
+    /// 客户端能随意填的 X-Forwarded-For、X-Real-IP 一律不看，只认连接地址
     /// </summary>
     /// <param name="forwardedFor">X-Forwarded-For 头原文</param>
+    /// <param name="realIp">X-Real-IP 头原文</param>
     [Theory]
-    [InlineData("   ")]
-    [InlineData(" , , ")]
-    public void GetCurrent_WhenForwardedForIsBlank_FallsBackToRealIp(string forwardedFor)
+    [InlineData("203.0.113.7", "198.51.100.222")]
+    [InlineData("203.0.113.7, 198.51.100.5, 70.41.3.18", "")]
+    [InlineData("", "198.51.100.9")]
+    [InlineData("::ffff:203.0.113.7", "203.0.113.8")]
+    public void GetCurrent_IgnoresForwardingHeaders(string forwardedFor, string realIp)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers["X-Forwarded-For"] = forwardedFor;
-        httpContext.Request.Headers["X-Real-IP"] = " 198.51.100.9 ";
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.9");
+        httpContext.Request.Headers["X-Real-IP"] = realIp;
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("70.41.3.18");
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
-        Assert.Equal("198.51.100.9", provider.GetCurrent().IpAddress);
+        Assert.Equal("70.41.3.18", provider.GetCurrent().IpAddress);
     }
 
     /// <summary>
-    /// 两个代理头都缺失时退到连接的远端地址
+    /// 取连接的远端地址
     /// </summary>
     [Fact]
-    public void GetCurrent_WithoutProxyHeaders_FallsBackToRemoteIpAddress()
+    public void GetCurrent_UsesRemoteIpAddress()
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.20");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("203.0.113.20", provider.GetCurrent().IpAddress);
     }
@@ -134,40 +115,23 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("::ffff:203.0.113.20");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         Assert.Equal("203.0.113.20", provider.GetCurrent().IpAddress);
     }
 
     /// <summary>
-    /// 三个来源同时存在时的优先级：X-Forwarded-For 高于 X-Real-IP 高于连接地址
+    /// IPv6 连接地址按标准文本记录
     /// </summary>
     [Fact]
-    public void GetCurrent_WithAllAddressSources_PrefersForwardedFor()
+    public void GetCurrent_WithIPv6RemoteAddress_KeepsIPv6()
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.7";
-        httpContext.Request.Headers["X-Real-IP"] = "198.51.100.9";
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("70.41.3.18");
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("2001:0db8:0000:0000:0000:0000:0000:0007");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
-        Assert.Equal("203.0.113.7", provider.GetCurrent().IpAddress);
-    }
-
-    /// <summary>
-    /// X-Real-IP 高于连接地址
-    /// </summary>
-    [Fact]
-    public void GetCurrent_WithRealIpAndRemote_PrefersRealIp()
-    {
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Real-IP"] = "198.51.100.9";
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("70.41.3.18");
-
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
-
-        Assert.Equal("198.51.100.9", provider.GetCurrent().IpAddress);
+        Assert.Equal("2001:db8::7", provider.GetCurrent().IpAddress);
     }
 
     /// <summary>
@@ -186,9 +150,9 @@ public class HttpContextClientInfoProviderTests
     public void GetCurrent_ForReservedIp_ResolvesLocationWithoutDatabase(string ipAddress, string expectedLocation)
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = ipAddress;
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse(ipAddress);
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal(expectedLocation, provider.GetCurrent().Location);
     }
@@ -209,9 +173,9 @@ public class HttpContextClientInfoProviderTests
     public void GetCurrent_ForPublicIp_IsNotClassifiedAsPrivate(string ipAddress)
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = ipAddress;
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse(ipAddress);
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         var info = provider.GetCurrent();
 
@@ -226,9 +190,9 @@ public class HttpContextClientInfoProviderTests
     public void GetCurrent_WhenIpDatabaseMissing_DegradesToNullLocation()
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.20";
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.20");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions
         {
             EnableIpRegion = true,
             Ip2RegionDbPath = "IpDatabases/definitely-missing-ip2region.xdb"
@@ -249,7 +213,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = DesktopChromeUserAgent;
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -274,7 +238,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = "XiHanTestAgent";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -296,7 +260,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = userAgent;
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var info = provider.GetCurrent();
 
@@ -315,7 +279,7 @@ public class HttpContextClientInfoProviderTests
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers.UserAgent = "   XiHanTestAgent   ";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         Assert.Equal("XiHanTestAgent", provider.GetCurrent().UserAgent);
     }
@@ -330,10 +294,10 @@ public class HttpContextClientInfoProviderTests
     public async Task GetCurrent_UnderConcurrency_StaysConsistent()
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.30";
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.30");
         httpContext.Request.Headers.UserAgent = "XiHanTestAgent";
 
-        using var provider = CreateProvider(httpContext);
+        var provider = CreateProvider(httpContext);
 
         var results = await Task.WhenAll(Enumerable.Range(0, 32)
             .Select(_ => Task.Run(provider.GetCurrent, TestContext.Current.CancellationToken)));
@@ -355,32 +319,15 @@ public class HttpContextClientInfoProviderTests
     public void GetCurrent_CalledTwice_ReturnsIndependentInstances()
     {
         var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.30";
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.30");
 
-        using var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
+        var provider = CreateProvider(httpContext, new XiHanClientInfoOptions { EnableIpRegion = false });
 
         var first = provider.GetCurrent();
         var second = provider.GetCurrent();
 
         Assert.NotSame(first, second);
         Assert.Equal(first.IpAddress, second.IpAddress);
-    }
-
-    /// <summary>
-    /// 从未创建过查询器时释放不报错，且允许重复释放
-    /// </summary>
-    [Fact]
-    public void Dispose_WithoutSearcher_IsSafeAndIdempotent()
-    {
-        var provider = CreateProvider(new DefaultHttpContext());
-
-        var exception = Record.Exception(() =>
-        {
-            provider.Dispose();
-            provider.Dispose();
-        });
-
-        Assert.Null(exception);
     }
 
     /// <summary>
@@ -401,8 +348,9 @@ public class HttpContextClientInfoProviderTests
 
         return new HttpContextClientInfoProvider(
             new FakeHttpContextAccessor { HttpContext = httpContext },
-            hostingEnvironment,
-            new OptionsWrapper<XiHanClientInfoOptions>(options ?? new XiHanClientInfoOptions()),
-            NullLogger<HttpContextClientInfoProvider>.Instance);
+            new Ip2RegionResolver(
+                hostingEnvironment,
+                new OptionsWrapper<XiHanClientInfoOptions>(options ?? new XiHanClientInfoOptions()),
+                NullLogger<Ip2RegionResolver>.Instance));
     }
 }

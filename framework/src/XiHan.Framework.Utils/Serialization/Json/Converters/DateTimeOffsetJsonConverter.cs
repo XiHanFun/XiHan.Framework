@@ -1,20 +1,29 @@
 // Copyright (c) 2021-Present XiHanFun and contributors.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XiHan.Framework.Utils.Localization;
 
 namespace XiHan.Framework.Utils.Serialization.Json.Converters;
 
 /// <summary>
 /// DateTimeOffsetJsonConverter
-/// <para>可选用户时区换算：构造时传入 timeZoneResolver（返回 IANA 时区，如 Asia/Shanghai），
+/// <para>可选用户时区换算：构造时传入 timeZoneResolver（返回 IANA 时区，如 Asia/Shanghai；旧别名与 Windows ID 同样接受），
 /// 序列化时把值换算为该时区并输出“无偏移墙钟”字符串（yyyy-MM-dd HH:mm:ss，与 DateTime 一致，
 /// 便于前端按本地直接显示）；解析器为空或返回空时回退默认 ISO-8601 带偏移行为。
+/// 返回的时区在当前系统找不到、也找不到等价时区时不换算，按 UTC 输出带 +00:00 的 ISO 8601（不随构造时的格式），
+/// 与 <see cref="DateTimeJsonConverter"/> 一致。
 /// 时区来源由调用方注入（如 Web 层按请求头解析），本转换器不依赖 HTTP。</para>
 /// </summary>
 public class DateTimeOffsetJsonConverter : JsonConverter<DateTimeOffset>
 {
+    /// <summary>
+    /// 指定的用户时区解析不了时的输出格式（ISO 8601 带偏移，日期时间类转换器共用）
+    /// </summary>
+    internal const string UnresolvedTimeZoneFormat = "yyyy-MM-ddTHH:mm:sszzz";
+
     /// <summary>
     /// 用户时区换算后的输出格式（无偏移墙钟，与 DateTimeJsonConverter 一致）
     /// </summary>
@@ -94,17 +103,14 @@ public class DateTimeOffsetJsonConverter : JsonConverter<DateTimeOffset>
         var timeZoneId = timeZoneResolver?.Invoke();
         if (!string.IsNullOrWhiteSpace(timeZoneId))
         {
-            try
+            if (TimeZoneHelper.TryGetTimeZone(timeZoneId, out var timeZoneInfo))
             {
-                // IANA 标识；net10 + ICU 在 Linux/Windows 均可解析
-                var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
                 // 换算到用户时区后，输出无偏移墙钟（前端 dayjs 直接按本地显示，避免再被浏览器时区二次偏移）
                 return TimeZoneInfo.ConvertTime(value, timeZoneInfo).ToString(UserTimeZoneFormat);
             }
-            catch
-            {
-                // 时区标识非法等异常下回退默认行为
-            }
+
+            // 指定的时区解析不了：固定输出 UTC 带偏移，不用构造时的格式，免得它不带偏移让客户端错当本地时间
+            return value.ToUniversalTime().ToString(UnresolvedTimeZoneFormat, CultureInfo.InvariantCulture);
         }
 
         return (isUtc ? value.ToUniversalTime() : value).ToString(dateFormatString);
