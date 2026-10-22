@@ -1,0 +1,3 @@
+{
+  "localization.translation.not_found": "数据库里没有翻译 '{key}'（{locale}）。"
+}

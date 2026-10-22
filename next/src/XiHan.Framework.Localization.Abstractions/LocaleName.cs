@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Primitives;
 
@@ -68,6 +69,22 @@ public static partial class LocaleName
         ArgumentNullException.ThrowIfNull(locale);
         var separator = locale.IndexOf('-', StringComparison.Ordinal);
         return (separator < 0 ? locale : locale[..separator]).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// 区域对应的文化；运行时不认识的区域（或不变全球化模式）用不变文化。
+    /// </summary>
+    public static CultureInfo CultureOf(string locale)
+    {
+        ArgumentNullException.ThrowIfNull(locale);
+        try
+        {
+            return CultureInfo.GetCultureInfo(locale);
+        }
+        catch (CultureNotFoundException)
+        {
+            return CultureInfo.InvariantCulture;
+        }
     }
 
     /// <summary>

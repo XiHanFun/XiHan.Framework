@@ -46,6 +46,8 @@
     <Project Path="src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -101,6 +103,7 @@
     <Project Path="test/XiHan.Framework.Configuration.Abstractions.Tests/XiHan.Framework.Configuration.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Abstractions.Tests/XiHan.Framework.Auditing.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Localization.Database.Tests/XiHan.Framework.Localization.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">

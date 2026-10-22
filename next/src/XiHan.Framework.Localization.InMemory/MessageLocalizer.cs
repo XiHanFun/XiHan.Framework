@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 
@@ -50,7 +49,7 @@ public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
         ArgumentNullException.ThrowIfNull(key);
         // 没有模板，或模板的占位符缺值，都算解析失败，由调用方退回键与参数的描述，绝不输出半截文案
         if (TryFind(key, locale ?? Options.DefaultLocale, out var template, out var resolvedLocale)
-            && MessageTemplate.TryFormat(template, arguments, CultureOf(resolvedLocale), out text))
+            && MessageTemplate.TryFormat(template, arguments, LocaleName.CultureOf(resolvedLocale), out text))
         {
             return true;
         }
@@ -65,7 +64,7 @@ public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(locale);
         return TryFind(key, locale, out var template, out var resolvedLocale)
-            && MessageTemplate.TryFormat(template, arguments, CultureOf(resolvedLocale), out var text)
+            && MessageTemplate.TryFormat(template, arguments, LocaleName.CultureOf(resolvedLocale), out var text)
             ? Maybe.Some(new LocalizedText(text, resolvedLocale))
             : default;
     }
@@ -105,7 +104,7 @@ public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
     /// </summary>
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {
-        foreach (var candidate in FallbackChain(locale))
+        foreach (var candidate in Options.FallbackChain(locale))
         {
             foreach (var catalog in _catalogs)
             {
@@ -121,53 +120,5 @@ public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
         template = string.Empty;
         resolvedLocale = string.Empty;
         return false;
-    }
-
-    /// <summary>
-    /// 回退链：请求的区域（规范化）→ 启用列表里同语言的其他区域 → 默认区域 → 源语言；去重并保持顺序。
-    /// </summary>
-    private IEnumerable<string> FallbackChain(string locale)
-    {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var requested = LocaleName.IsValid(locale) ? LocaleName.Normalize(locale) : Options.DefaultLocale;
-        if (seen.Add(requested))
-        {
-            yield return requested;
-        }
-
-        var language = LocaleName.LanguageOf(requested);
-        foreach (var enabled in Options.Locales)
-        {
-            if (string.Equals(LocaleName.LanguageOf(enabled), language, StringComparison.Ordinal) && seen.Add(enabled))
-            {
-                yield return enabled;
-            }
-        }
-
-        if (seen.Add(Options.DefaultLocale))
-        {
-            yield return Options.DefaultLocale;
-        }
-
-        // 源语言是代码与语言文件的基准，永远是最后一道回退
-        if (seen.Add(SupportedLocales.Default))
-        {
-            yield return SupportedLocales.Default;
-        }
-    }
-
-    /// <summary>
-    /// 区域对应的文化；运行时不认识的区域（或不变全球化模式）用不变文化。
-    /// </summary>
-    private static CultureInfo CultureOf(string locale)
-    {
-        try
-        {
-            return CultureInfo.GetCultureInfo(locale);
-        }
-        catch (CultureNotFoundException)
-        {
-            return CultureInfo.InvariantCulture;
-        }
     }
 }

@@ -45,6 +45,43 @@ public sealed record LocalizationOptions
     } = SupportedLocales.All;
 
     /// <summary>
+    /// 回退链：请求的区域（规范化，非法时取默认区域）→ 启用列表里同语言的其他区域 → 默认区域 → 源语言；去重并保持顺序。
+    /// </summary>
+    public IReadOnlyList<string> FallbackChain(string locale)
+    {
+        ArgumentNullException.ThrowIfNull(locale);
+        var chain = new List<string>(4);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var requested = LocaleName.IsValid(locale) ? LocaleName.Normalize(locale) : DefaultLocale;
+        if (seen.Add(requested))
+        {
+            chain.Add(requested);
+        }
+
+        var language = LocaleName.LanguageOf(requested);
+        foreach (var enabled in Locales)
+        {
+            if (string.Equals(LocaleName.LanguageOf(enabled), language, StringComparison.Ordinal) && seen.Add(enabled))
+            {
+                chain.Add(enabled);
+            }
+        }
+
+        if (seen.Add(DefaultLocale))
+        {
+            chain.Add(DefaultLocale);
+        }
+
+        // 源语言是代码与语言文件的基准，永远是最后一道回退
+        if (seen.Add(SupportedLocales.Default))
+        {
+            chain.Add(SupportedLocales.Default);
+        }
+
+        return chain;
+    }
+
+    /// <summary>
     /// 从配置读取：<c>DefaultLocale</c>、<c>Locales</c>（逗号分隔）。默认区域必须在启用列表里。
     /// </summary>
     public static LocalizationOptions FromConfiguration(IConfiguration configuration)

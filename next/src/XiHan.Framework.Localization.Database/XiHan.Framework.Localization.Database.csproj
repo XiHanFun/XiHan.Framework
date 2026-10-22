@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Localization.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Localization.Database</RootNamespace>
+    <Description>XiHan Framework 数据库本地化 Provider：翻译以实体经仓储读写，启动后加载并按周期刷新，数据库里的翻译优先于嵌入的语言文件。</Description>
+    <PackageTags>xihan;framework;localization;database;translations</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -19,4 +19,7 @@ public static class LocalizationErrors
 
     /// <summary>同名消息目录重复注册。</summary>
     public const string DuplicateCatalog = "LOCALIZATION_CONFLICT_001";
+
+    /// <summary>数据库里没有这条翻译（<c>Localization.Database</c>）。</summary>
+    public const string TranslationNotFound = "LOCALIZATION_NOTFOUND_001";
 }

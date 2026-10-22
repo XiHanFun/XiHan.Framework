@@ -1,0 +1,3 @@
+{
+  "localization.translation.not_found": "데이터베이스에 '{key}'의 '{locale}' 번역이 없습니다."
+}
