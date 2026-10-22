@@ -48,6 +48,7 @@
     <Project Path="src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
+    <Project Path="src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
   </Folder>
   <Folder Name="/5.Plugins/">
     <Project Path="src/XiHan.Framework.Plugins.InProcess/XiHan.Framework.Plugins.InProcess.csproj" />
@@ -104,6 +105,7 @@
     <Project Path="test/XiHan.Framework.Auditing.Abstractions.Tests/XiHan.Framework.Auditing.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Database.Tests/XiHan.Framework.Localization.Database.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Observability.OpenTelemetry.Tests/XiHan.Framework.Observability.OpenTelemetry.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">

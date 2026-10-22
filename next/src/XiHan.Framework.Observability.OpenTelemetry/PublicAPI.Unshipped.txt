@@ -1,0 +1,51 @@
+#nullable enable
+const XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities.Export = "observability.export" -> string!
+const XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities.Version = 1 -> int
+const XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults.OtlpEndpointVariable = "OTEL_EXPORTER_OTLP_ENDPOINT" -> string!
+const XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ConfigurationSection = "XiHan:Observability:OpenTelemetry" -> string!
+override XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.GetHashCode() -> int
+override XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ToString() -> string!
+static XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults.Meters.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults.Sources.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions!
+static XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.operator !=(XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions? left, XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions? right) -> bool
+static XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.operator ==(XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions? left, XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions? right) -> bool
+XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature.OpenTelemetryObservabilityFeature() -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.<Clone>$() -> XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions!
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Console.get -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Console.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Equals(XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions? other) -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ExportsOtlp.get -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Logging.get -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Logging.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Meters.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Meters.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Metrics.get -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Metrics.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.OpenTelemetryOptions() -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Otlp.get -> bool?
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Otlp.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.OtlpEndpoint.get -> System.Uri?
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.OtlpEndpoint.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.OtlpProtocol.get -> XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.OtlpProtocol.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.SamplingRatio.get -> double
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.SamplingRatio.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ServiceName.get -> string!
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ServiceName.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ServiceVersion.get -> string?
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ServiceVersion.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Sources.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Sources.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Tracing.get -> bool
+XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Tracing.init -> void
+XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
+XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol.Grpc = 0 -> XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
+XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol.HttpProtobuf = 1 -> XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
