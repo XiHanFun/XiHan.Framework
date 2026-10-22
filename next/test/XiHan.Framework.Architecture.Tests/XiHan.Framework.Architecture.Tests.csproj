@@ -36,5 +36,6 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
   </ItemGroup>
 </Project>

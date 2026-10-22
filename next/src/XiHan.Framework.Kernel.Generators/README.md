@@ -26,4 +26,4 @@ public void Configure(FeatureContext context) => context.AddGeneratedOperations(
 
 ## 状态
 
-P3：操作登记与 JSON Schema 可用，`Protocols.Http` 的 OpenAPI 与 `Protocols.Mcp` 的 tool 描述都从这份 Schema 产出；`.proto` 随 gRPC 适配器补充；`[Capability]` 清单生成顺延。
+P3：操作登记与 JSON Schema 可用，`Protocols.Http` 的 OpenAPI、`Protocols.Mcp` 的 tool 描述与 `Protocols.Grpc` 的 protobuf 描述及 `.proto` 都从这份 Schema 产出；`[Capability]` 清单生成顺延。

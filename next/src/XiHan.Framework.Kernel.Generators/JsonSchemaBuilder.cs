@@ -107,7 +107,9 @@ internal sealed class JsonSchemaBuilder
                 }
                 else
                 {
+                    // 枚举按整数，格式取底层类型：协议适配器据此选 32 / 64 位
                     Type(json, "integer", nullable);
+                    json.String("format", enumType.EnumUnderlyingType?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64 ? "int64" : "int32");
                 }
 
                 break;

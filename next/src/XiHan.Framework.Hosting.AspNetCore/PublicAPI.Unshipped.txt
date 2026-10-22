@@ -1,5 +1,6 @@
 #nullable enable
 const XiHan.Framework.Hosting.AspNetCore.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
+const XiHan.Framework.Hosting.AspNetCore.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
 override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.ToString() -> string!

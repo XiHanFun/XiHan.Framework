@@ -35,6 +35,11 @@
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
   </ItemGroup>
 
+  <!-- Ring 5 协议适配器引用的第三方库 -->
+  <ItemGroup Label="Protocol">
+    <PackageVersion Include="Grpc.AspNetCore.Server" Version="2.84.0" />
+  </ItemGroup>
+
   <!-- 一致性套件只引用 xunit 的核心与断言包，不引元包 xunit.v3，避免被当作可执行测试项目 -->
   <ItemGroup Label="Conformance">
     <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.2" />
@@ -57,6 +62,7 @@
 
   <ItemGroup Label="测试">
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
+    <PackageVersion Include="Grpc.Net.Client" Version="2.84.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />

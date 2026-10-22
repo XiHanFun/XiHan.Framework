@@ -85,6 +85,12 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `PROTOCOLS_NOTFOUND_001` | MCP：JSON-RPC 方法不受支持 |
 | `PROTOCOLS_NOTFOUND_002` | MCP：tool 未登记 |
 | `PROTOCOLS_CONFLICT_001` | MCP：两个操作得到同一个 tool 名（启动失败） |
+| `PROTOCOLS_VALIDATION_005` | gRPC：请求不是合法的 protobuf 消息或与 Schema 不符 |
+| `PROTOCOLS_VALIDATION_006` | gRPC：暴露给 gRPC 的操作没有 Schema，或 Schema 无法映射为 protobuf（启动失败） |
+| `PROTOCOLS_VALIDATION_007` | gRPC：推导或配置的服务 / 方法名不合法（启动失败） |
+| `PROTOCOLS_CONFLICT_002` | gRPC：两个操作得到同一个服务 / 方法名（启动失败） |
+| `PROTOCOLS_CONFLICT_003` | gRPC：同名 protobuf 消息在不同操作里形状不同（启动失败） |
+| `PROTOCOLS_UNEXPECTED_001` | gRPC：操作的响应无法按 Schema 编码为 protobuf |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

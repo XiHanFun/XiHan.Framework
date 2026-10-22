@@ -33,7 +33,7 @@ OperationRequest  = Id (操作 ID) + Payload (请求类型的 UTF-8 JSON；空�
 OperationResponse = Outcome (Result) + Payload (成功时响应类型的 UTF-8 JSON；失败为空)
 ```
 
-JSON 是 XGI 的规范编码；gRPC 等二进制协议在适配器里转换，或走类型化入口避免中间编码。
+JSON 是 XGI 的规范编码；gRPC 等二进制协议在适配器里转换（`Protocols.Grpc` 以 `OperationSchema` 为 protobuf 描述，在线格式与 JSON 之间转换，`.proto` 由同一份描述生成；见 `protocol/grpc.md`），或走类型化入口避免中间编码。
 
 ## 调用器
 
