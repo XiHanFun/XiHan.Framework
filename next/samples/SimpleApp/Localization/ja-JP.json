@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "名前と金額を指定して注文します。orders.write 権限が必要です。",
+  "orders.list.description": "現在のテナントの注文を作成順に一覧します。orders.read 権限が必要です。",
   "samples.resource.missing": "サンプルリソースが存在しません。"
 }

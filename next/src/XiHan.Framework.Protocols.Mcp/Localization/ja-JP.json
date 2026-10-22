@@ -1,0 +1,8 @@
+{
+  "protocols.mcp.arguments_invalid": "ツール '{tool}' の引数は JSON オブジェクトでなければなりません。",
+  "protocols.mcp.message_invalid": "メッセージは有効な JSON-RPC 2.0 リクエストではありません。",
+  "protocols.mcp.message_not_json": "リクエスト本文は有効な JSON ではありません。",
+  "protocols.mcp.method_unknown": "メソッド '{method}' はサポートされていません。",
+  "protocols.mcp.tool_unknown": "ツール '{tool}' は登録されていません。",
+  "protocols.mcp.version_unsupported": "MCP プロトコルバージョン '{version}' はサポートされていません。このサーバーは {supported} をサポートします。"
+}

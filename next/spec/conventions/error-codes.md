@@ -78,6 +78,13 @@ Sequence  = 三位数字，域内唯一，一经发布不复用
 | `SECURITY_DENIED_004` | 缺少权限 |
 | `SECURITY_VALIDATION_001` | 不支持的认证方案或凭据格式不合法 |
 | `SECURITY_NOTFOUND_001` | 策略不存在或权限码未登记 |
+| `PROTOCOLS_VALIDATION_001` | MCP：消息不是合法的 JSON 或不是合法的 JSON-RPC 2.0 请求 |
+| `PROTOCOLS_VALIDATION_002` | MCP：协议版本不受支持 |
+| `PROTOCOLS_VALIDATION_003` | MCP：tool 参数不是 JSON 对象 |
+| `PROTOCOLS_VALIDATION_004` | MCP：推导或配置的 tool 名不合法（启动失败） |
+| `PROTOCOLS_NOTFOUND_001` | MCP：JSON-RPC 方法不受支持 |
+| `PROTOCOLS_NOTFOUND_002` | MCP：tool 未登记 |
+| `PROTOCOLS_CONFLICT_001` | MCP：两个操作得到同一个 tool 名（启动失败） |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达 |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |

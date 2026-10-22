@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "Gibt eine Bestellung mit Name und Betrag auf; erfordert die Berechtigung orders.write.",
+  "orders.list.description": "Listet die Bestellungen des aktuellen Mandanten in Erstellungsreihenfolge auf; erfordert die Berechtigung orders.read.",
   "samples.resource.missing": "Die Beispielressource existiert nicht."
 }

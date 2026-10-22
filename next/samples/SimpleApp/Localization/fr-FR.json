@@ -1,3 +1,5 @@
 {
+  "orders.create.description": "Passe une commande avec un nom et un montant ; nécessite la permission orders.write.",
+  "orders.list.description": "Liste les commandes du locataire courant par ordre de création ; nécessite la permission orders.read.",
   "samples.resource.missing": "La ressource d'exemple n'existe pas."
 }

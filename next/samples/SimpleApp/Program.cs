@@ -11,6 +11,7 @@ using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Http;
+using XiHan.Framework.Protocols.Mcp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.T
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HttpProtocolFeature>()
+    .UseFeature<McpProtocolFeature>()
     .UseFeature<OutboxFeature>()
     .UseFeature<GreetingFeature>()
     .UseFeature<OrdersFeature>());
@@ -38,6 +40,7 @@ app.MapXiHanHealth();
 // 操作契约经 HTTP 暴露：orders.create → POST /orders（201），orders.list → GET /orders；授权按契约里的权限码判定
 app.MapXiHanOperations();
 app.MapXiHanOpenApi();   // 从登记表与生成的 Schema 发布 /openapi.json
+app.MapXiHanMcp();       // POST /mcp：同一份契约作为 MCP tool（orders_create / orders_list），描述取自消息目录
 
 app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
 app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count));
