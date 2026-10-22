@@ -50,4 +50,22 @@ public interface IPermissionChecker
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>是否存在</returns>
     Task<bool> PermissionExistsAsync(string permissionName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 带请求上下文的权限判定（授权处理器调用）
+    /// </summary>
+    /// <remarks>
+    /// 缺省实现转调 <see cref="IsGrantedAsync"/>，不看上下文；需要按请求求值附加条件的实现覆写它，
+    /// 并用 <see cref="PermissionCheckResult.ConditionNotMet"/> 区分「条件不满足」与「没有授予」。
+    /// </remarks>
+    /// <param name="context">判定输入</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>判定结果</returns>
+    async Task<PermissionCheckResult> CheckAsync(PermissionCheckContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return await IsGrantedAsync(context.UserId, context.PermissionCode, cancellationToken)
+            ? PermissionCheckResult.Granted
+            : PermissionCheckResult.NotGranted;
+    }
 }

@@ -54,7 +54,7 @@ xihan.hybrid:p={URL编码的权限码};a={URL编码的ABAC策略码}
 **判定顺序（`HybridPermissionAuthorizationHandler`）**：
 
 1. 从主体声明解析 userId（`NameIdentifier` / `sub` / `userid` / `user_id`）；解析不到直接不通过。
-2. 若有权限码 → `IPermissionChecker.IsGrantedAsync` 实时校验（超管的通配 `*` 也由检查器的快照负责）；不通过则终止。
+2. 若有权限码 → `IPermissionChecker.CheckAsync(PermissionCheckContext)` 实时校验（超管的通配 `*` 也由检查器的快照负责）。上下文带主体、权限码与授权资源（端点授权时是 `HttpContext`），检查器可据此按请求求值附加条件。缺省实现转调 `IsGrantedAsync`。不通过则记下 `PermissionAuthorizationFailureReason`（原因码见 `PermissionFailureCodes`：没有授予、条件不满足、ABAC 不通过）并终止；Web.Api 据此把 403 写成带说明的统一信封。
 3. 若无 ABAC 策略码 → 直接 `Succeed`。
 4. 若有 ABAC 策略码 → `IAbacAttributeCollector` 收集主体/资源/环境属性 → `IAbacEvaluator.EvaluateAsync` 评估 → 允许才 `Succeed`。
 
@@ -82,7 +82,8 @@ xihan.hybrid:p={URL编码的权限码};a={URL编码的ABAC策略码}
 
 | 类型 | 关键方法 / 字段 |
 | --- | --- |
-| `IPermissionChecker` | `Task<bool> IsGrantedAsync(userId, permissionName, ct)`、`IsAnyGrantedAsync(userId, List<string>, ct)`、`IsAllGrantedAsync(...)`、`Task<List<string>> GetGrantedPermissionsAsync(userId, ct)`、`Task<bool> PermissionExistsAsync(name, ct)` |
+| `IPermissionChecker` | `Task<bool> IsGrantedAsync(userId, permissionName, ct)`、`IsAnyGrantedAsync(userId, List<string>, ct)`、`IsAllGrantedAsync(...)`、`Task<List<string>> GetGrantedPermissionsAsync(userId, ct)`、`Task<bool> PermissionExistsAsync(name, ct)`；`Task<PermissionCheckResult> CheckAsync(PermissionCheckContext, ct)`（授权处理器调用，缺省转调 `IsGrantedAsync`，需要按请求求值条件的实现覆写） |
+| `PermissionCheckContext` / `PermissionCheckResult` | 输入：`UserId`、`PermissionCode`、`Principal`、`Resource`、解析出的 `HttpContext`；结果：`IsGranted`、`FailureCode`、`FailureMessage`，静态 `Granted` / `NotGranted` / `ConditionNotMet` |
 | `IPermissionStore` | 用户/角色权限读取、授予/撤销、`GetAllPermissionsAsync`、`GetPermissionByNameAsync` |
 | `PermissionDefinition` | `Name`（唯一）、`DisplayName`、`Description`、`ParentName`、`Tag`、`IsEnabled`、`Order`、`Properties` |
 | `IRoleStore` | `GetUserRolesAsync`、`IsInRoleAsync`、`AddUserToRoleAsync` / `RemoveUserFromRoleAsync`、`GetAllRolesAsync`、`GetRoleByName/IdAsync`、`Create/Update/DeleteRoleAsync`、`GetUsersInRoleAsync` |
@@ -117,7 +118,8 @@ xihan.hybrid:p={URL编码的权限码};a={URL编码的ABAC策略码}
 | `AbacAuthorizeAttribute` | `[AbacAuthorize("abac策略码")]`——仅 ABAC，不校验 RBAC 权限码 |
 | `HybridPermissionRequirement` | `PermissionCode`、`AbacPolicyCode`（实现 ASP.NET Core `IAuthorizationRequirement`） |
 | `HybridPermissionPolicyProvider` | 拦截 `xihan.hybrid:` 前缀策略名，动态构建策略；其余回落默认提供器 |
-| `HybridPermissionAuthorizationHandler` | 混合判定处理器（先权限码实时校验，再 ABAC 评估） |
+| `HybridPermissionAuthorizationHandler` | 混合判定处理器（先权限码实时校验，再 ABAC 评估）；不通过时 `Fail` 并附 `PermissionAuthorizationFailureReason` |
+| `PermissionAuthorizationFailureReason` | ASP.NET Core `AuthorizationFailureReason` 的子类，多一个原因码 `Code` |
 
 ## 默认 ABAC 策略词汇
 
