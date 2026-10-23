@@ -30,7 +30,7 @@
 
 | 4.x 用法 | 命中 | 5.0 去处 | 手段 | 阻塞 |
 | --- | --- | --- | --- | --- |
-| `XiHanModule` + `[DependsOn]`（9 个模块，Core 依赖 38 个框架模块） | 9 / 9 | 特性 + 清单 `requires` | `Compat.V4`（P5-01）过渡，`xihan migrate v4` 生成特性 | 低 |
+| `XiHanModule` + `[DependsOn]`（9 个模块，Core 依赖 38 个框架模块） | 9 / 9 | 特性 + 清单 `requires` | `xihan migrate v4` 生成特性骨架（运行期垫片已取消，ADR-0014） | 低 |
 | `[DynamicApi]` + `IApplicationService` / `ApplicationServiceBase` + 各模块的 `XxxApplicationService` 基类 | 165 / 154 / 38 | 操作契约 `[Operation]`（一方法一操作），HTTP / MCP 由契约推出 | 代码修复：每个公开方法拆成操作类，请求 / 响应 DTO 复用（P5-02） | 中：Saas 有 55 个 AppService + 99 个 QueryService + 72 个 Service，方法数以数百计 |
 | 实体基类 `BasicAppFullAuditedEntity` 44、`BasicAppCreationEntity` 33、`BasicAppAggregateRoot` 11、`BasicAppEntity` 3，接口 `IStrictMultiTenantEntity` 57、`ITraceableEntity` 8、`ISplitTableEntity` 10 | 166 | `Domain` 的接口协议组合（`IEntity<TKey>`、审计 / 软删除 / 租户接口） | 代码修复；BasicApp 的基类本身可以保留为应用层基类，只换它们实现的框架接口 | 低 |
 | `[UnitOfWork]` 287、`IUnitOfWorkManager` 32 | 319 | Transaction 阶段中间件（每个操作默认一个工作单元） | 删特性；手动开启的 32 处改为显式工作单元 API | 低 |
@@ -74,8 +74,8 @@
 
 ## 3. 对 P5 的影响
 
-1. **`Persistence.SqlSugar` 是前置条件**，不是可选项：没有它 BasicApp 的 Saas 模块一行都跑不起来。顺序改为 P5-03 → P5-01（Compat.V4）→ P5-02（migrate）→ P5-04。
-2. **Workflow 与 AI 是硬阻塞**，需要拍板：A）提前实现 `Workflow.*`、`AI.*`（各自至少一个 L 级任务，GA 推迟）；B）P5-04 分两批——第一批 Saas、CodeGeneration、Printing、Chat 四个模块跑在 5.0（Chat 的 SignalR 直接用 ASP.NET Core），第二批 Workflow、AI 随 5.1 的子系统一起迁，期间经 `Compat.V4` 过渡或保持在 4.x 维护线。建议 B，并把 7.2 的退出条件改成"BasicApp 核心模块全量跑在 5.0；Workflow、AI 模块有明确的 5.1 迁移计划"。
+1. **`Persistence.SqlSugar` 是前置条件**，不是可选项：没有它 BasicApp 的 Saas 模块一行都跑不起来。顺序改为 P5-03 → P5-02（migrate）→ P5-04（第一步是模块骨架改特性；Compat.V4 取消，ADR-0014）。
+2. **Workflow 与 AI 是硬阻塞**，需要拍板：A）提前实现 `Workflow.*`、`AI.*`（各自至少一个 L 级任务，GA 推迟）；B）P5-04 分两批——第一批 Saas、CodeGeneration、Printing、Chat 四个模块跑在 5.0（Chat 的 SignalR 直接用 ASP.NET Core），第二批 Workflow、AI 随 5.1 的子系统一起迁，期间保持在 4.x 维护线。建议 B，并把 7.2 的退出条件改成"BasicApp 核心模块全量跑在 5.0；Workflow、AI 模块有明确的 5.1 迁移计划"。
 3. **新增 P5 条目**（都是 M 以下）：租户分库（`multitenancy.sharding`）；`IDistributedCache` 到 `ICacheStore` 的适配器；4.x 本地化资源到 `Localization/<区域>.json` 的转换器（并入 `xihan migrate v4`）；`ObjectStorage.S3`；按生产配置决定是否补 `Messaging.Kafka`。
 4. **明确不进框架、需要 BasicApp 自己承接的**：SignalR Hub、网关转发、模板引擎、版本升级编排、Bot 渠道、请求签名 / 加密中间件、国内 OAuth 扫码登录。迁移指南（P5-07）要逐项给替代写法；Bot 与升级编排可以考虑孵化区包。
 5. **代码修复器的范围**（P5-02）按命中数排优先级：`[DynamicApi]` → 操作契约（165 处，方法级拆分是最大工作量）、`[PermissionAuthorize]` → 契约权限（501）、`[UnitOfWork]` 删除（287）、实体基类接口替换（166）、`ICurrentTenant` / `ICurrentUser` 替换（255）、DI 约定接口（19）、`IClock`（14）、本地事件处理器签名（19）。
