@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
 /// 按实体协议配置 SqlSugar 的实体映射，实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>：
-/// <c>Id</c> 是主键（不自增），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列。
+/// <c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列。
 /// 由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -52,11 +52,10 @@ public static class SqlSugarConventions
             return;
         }
 
-        // 标识由应用（IIdGenerator）生成，不交给数据库自增
+        // Id 是主键；是否自增沿用实体自己的 [SugarColumn(IsIdentity)]（默认不自增，标识由 IIdGenerator 生成），迁移来的自增表不被改掉
         if (string.Equals(property.Name, nameof(IEntity<>.Id), StringComparison.Ordinal))
         {
             column.IsPrimarykey = true;
-            column.IsIdentity = false;
         }
 
         // 并发戳由 PersistenceConventions.NewStamp 生成，是 32 位十六进制，长度与之对齐
