@@ -222,6 +222,9 @@ public sealed class AppBuilder
         Services.AddSingleton(permissions);
         Services.AddSingleton(operations);
         Services.TryAddSingleton<IOperationInvoker, OperationInvoker>();
+        // 当前调用的上下文访问器按作用域注册；宿主与测试基座一次调用一个作用域
+        Services.TryAddScoped<InvocationAccessor>();
+        Services.TryAddScoped<IInvocationAccessor>(static sp => sp.GetRequiredService<InvocationAccessor>());
         Services.AddSingleton(options);
         Services.AddSingleton(graph);
         Services.AddSingleton(new AppModel(graph, runtimes, Pipeline, options, bindings));

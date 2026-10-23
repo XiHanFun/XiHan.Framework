@@ -191,6 +191,10 @@ public sealed partial class App : IDisposable
         // 处理器通过上下文传给终点而不是闭包捕获：管道委托只构建一次，对所有调用共享。
         context.Set(_handlerKey, handler);
 
+        // 调用链深处不传上下文的服务经 IInvocationAccessor 取当前上下文：进入管道前设置，离开时恢复上一层（同一作用域内的嵌套调用）
+        var accessor = context.Services.GetService<InvocationAccessor>();
+        using var current = accessor is null ? default : accessor.Enter(context);
+
         // 整个调用链里 key.L() 按调用方区域解析：解析器取自本次调用的服务作用域（没有装配本地化时沿用进程默认），区域取自 Baggage
         using var messages = MessageScope.Use(
             context.Services.GetService<IMessageResolver>(),

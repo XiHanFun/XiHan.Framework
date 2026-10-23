@@ -477,6 +477,8 @@ XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.Name.get -> string!
 XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware
 XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware.DeadlineMiddleware(System.TimeProvider! timeProvider) -> void
 XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Kernel.Pipeline.IInvocationAccessor
+XiHan.Framework.Kernel.Pipeline.IInvocationAccessor.Current.get -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
 XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions
 XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware
 XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
