@@ -99,7 +99,6 @@ internal static class V4EntityBases
             """,
         ["events"] = """
             /// <summary>{events}</summary>
-            [SugarColumn(IsIgnore = true)]
             private readonly DomainEventBuffer _events = new();
 
             /// <inheritdoc />

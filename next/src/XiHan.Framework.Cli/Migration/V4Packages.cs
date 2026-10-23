@@ -122,7 +122,12 @@ internal static class V4Packages
     }
 
     /// <summary>
-    /// 命名空间是否属于 5.0 正式包（等于包 ID，或在其下一层）。
+    /// 5.0 里没有子命名空间的包：4.x 同名包的子命名空间（<c>Domain.Shared</c>、<c>Domain.Entities</c>）都是旧的。
+    /// </summary>
+    private static readonly string[] _flatPackages = ["Domain"];
+
+    /// <summary>
+    /// 命名空间是否属于 5.0 正式包（等于包 ID，或在其子命名空间里；没有子命名空间的包只认等于）。
     /// </summary>
     public static bool IsNextNamespace(string ns)
     {
@@ -133,6 +138,10 @@ internal static class V4Packages
 
         // 逐级去掉末段：XiHan.Framework.Kernel.Security.Claims → Kernel.Security → Kernel
         var rest = ns[Prefix.Length..];
+        if (_flatPackages.Any(package => rest.StartsWith(package + ".", StringComparison.Ordinal)))
+        {
+            return false;
+        }
         while (rest.Length > 0)
         {
             if (NextPackages.Contains(rest))
