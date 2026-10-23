@@ -121,13 +121,37 @@ internal static class V4OperationsGenerator
         builder.Append(newLine).Append("namespace ").Append(project.Name).Append(".Operations;").Append(newLine).Append(newLine);
         AppendSummary(builder, string.Empty, newLine);
         builder.Append("[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, NumberHandling = JsonNumberHandling.AllowReadingFromString)]").Append(newLine);
-        foreach (var type in project.Types)
+        foreach (var type in project.Types.Select(TypeOfOperand).Distinct(StringComparer.Ordinal).OrderBy(static type => type, StringComparer.Ordinal))
         {
             builder.Append("[JsonSerializable(typeof(").Append(type).Append("))]").Append(newLine);
         }
 
         builder.Append("internal sealed partial class ").Append(Stem(project.Name)).Append("OperationsJsonContext : JsonSerializerContext;").Append(newLine);
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 可空值类型（<c>typeof(int?)</c> 合法，<c>typeof(Dto?)</c> 不合法）。
+    /// </summary>
+    private static readonly HashSet<string> _valueTypes = new(StringComparer.Ordinal)
+    {
+        "bool", "byte", "sbyte", "char", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "decimal", "nint", "nuint",
+        "Guid", "DateTime", "DateTimeOffset", "TimeSpan", "DateOnly", "TimeOnly", "Int32", "Int64", "Boolean", "Decimal", "Double", "Single",
+    };
+
+    /// <summary>
+    /// <c>typeof</c> 的操作数：引用类型去掉末尾的可空标注（语法级分不清值类型，只对常见值类型保留 <c>?</c>）。
+    /// </summary>
+    public static string TypeOfOperand(string type)
+    {
+        var trimmed = type.Trim();
+        if (!trimmed.EndsWith('?'))
+        {
+            return trimmed;
+        }
+
+        var inner = trimmed[..^1].Trim();
+        return _valueTypes.Contains(inner) || inner.StartsWith("System.", StringComparison.Ordinal) && _valueTypes.Contains(inner["System.".Length..]) ? trimmed : inner;
     }
 
     /// <summary>

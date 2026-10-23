@@ -37,65 +37,65 @@ internal static class V4EntityBases
         ["id"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
-            public TKey Id { get; set; } = default!;
+            public virtual TKey Id { get; set; } = default!;
             """,
         ["identity"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = true, ColumnDescription = "主键")]
-            public TKey Id { get; set; } = default!;
+            public virtual TKey Id { get; set; } = default!;
             """,
         ["stamp"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Row_Version", Length = 32, ColumnDescription = "版本控制标识，用于处理并发")]
-            public string ConcurrencyStamp { get; set; } = string.Empty;
+            public virtual string ConcurrencyStamp { get; set; } = string.Empty;
             """,
         ["creation"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Created_Time", IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
-            public DateTimeOffset CreatedAt { get; set; }
+            public virtual DateTimeOffset CreatedAt { get; set; }
 
             /// <summary>{created_id}</summary>
             [SugarColumn(ColumnName = "Created_Id", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
-            public TKey? CreatedId { get; set; }
+            public virtual TKey? CreatedId { get; set; }
 
             /// <summary>{created_by}</summary>
             [SugarColumn(ColumnName = "Created_By", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
-            public string? CreatedBy { get; set; }
+            public virtual string? CreatedBy { get; set; }
             """,
         ["modification"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Modified_Time", IsNullable = true, ColumnDescription = "修改时间")]
-            public DateTimeOffset? ModifiedAt { get; set; }
+            public virtual DateTimeOffset? ModifiedAt { get; set; }
 
             /// <summary>{modified_id}</summary>
             [SugarColumn(ColumnName = "Modified_Id", IsNullable = true, ColumnDescription = "修改者唯一标识")]
-            public TKey? ModifiedId { get; set; }
+            public virtual TKey? ModifiedId { get; set; }
 
             /// <summary>{modified_by}</summary>
             [SugarColumn(ColumnName = "Modified_By", IsNullable = true, ColumnDescription = "修改人")]
-            public string? ModifiedBy { get; set; }
+            public virtual string? ModifiedBy { get; set; }
             """,
         ["deletion"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Is_Deleted", IsNullable = false, ColumnDescription = "软删除标记")]
-            public bool IsDeleted { get; set; }
+            public virtual bool IsDeleted { get; set; }
 
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Deleted_Time", IsNullable = true, ColumnDescription = "删除时间")]
-            public DateTimeOffset? DeletedAt { get; set; }
+            public virtual DateTimeOffset? DeletedAt { get; set; }
 
             /// <summary>{deleted_id}</summary>
             [SugarColumn(ColumnName = "Deleted_Id", IsNullable = true, ColumnDescription = "删除者唯一标识")]
-            public TKey? DeletedId { get; set; }
+            public virtual TKey? DeletedId { get; set; }
 
             /// <summary>{deleted_by}</summary>
             [SugarColumn(ColumnName = "Deleted_By", IsNullable = true, ColumnDescription = "删除者")]
-            public string? DeletedBy { get; set; }
+            public virtual string? DeletedBy { get; set; }
             """,
         ["tenant"] = """
             /// <inheritdoc />
             [SugarColumn(ColumnName = "Tenant_Id", IsOnlyIgnoreUpdate = true, ColumnDescription = "租户ID")]
-            public string TenantId { get; set; } = string.Empty;
+            public virtual string TenantId { get; set; } = string.Empty;
             """,
         ["events"] = """
             /// <summary>{events}</summary>

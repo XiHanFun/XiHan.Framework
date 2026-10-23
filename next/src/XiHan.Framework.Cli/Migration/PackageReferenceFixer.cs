@@ -37,7 +37,8 @@ internal sealed partial class PackageReferenceFixer : V4Fixer
             var project = package.Success ? Match.Empty : ProjectReference().Match(line);
             var id = package.Success ? package.Groups["id"].Value : project.Success ? project.Groups["id"].Value : null;
             var targets = id is null ? null : V4Packages.Map(id);
-            if (id is null || targets is null)
+            // 指向 5.0 项目的 ProjectReference（源码模式）不动：映射结果就是自己
+            if (id is null || targets is null || (project.Success && targets.Count == 1 && string.Equals(targets[0], id, StringComparison.OrdinalIgnoreCase)))
             {
                 Append(builder, line, index, lines.Length);
                 continue;

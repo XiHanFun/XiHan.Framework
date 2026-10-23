@@ -87,7 +87,8 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
 
             session.Changed(fixer.Id, file, LineOf(node));
             visited = visited.WithType(SyntaxFactory.ParseTypeName(nullable ? "string?" : "string").WithTriviaFrom(visited.Type));
-            if (!nullable && visited.Initializer is null && visited.ExpressionBody is null && visited.AccessorList is not null)
+            // 接口成员不能有初始化器
+            if (!nullable && visited.Initializer is null && visited.ExpressionBody is null && visited.AccessorList is not null && node.Parent is not InterfaceDeclarationSyntax)
             {
                 var trailing = visited.AccessorList.GetTrailingTrivia();
                 visited = visited
@@ -170,6 +171,8 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     {
                         session.Changed(fixer.Id, file, LineOf(node));
                         types.Add(baseType.WithType(SyntaxFactory.ParseTypeName(replacement).WithTriviaFrom(baseType.Type)));
+                        // 换成的 5.0 接口在 Domain 里
+                        Usings.Add("XiHan.Framework.Domain");
                     }
 
                     continue;
@@ -227,6 +230,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     {
                         session.Changed(fixer.Id, file, LineOf(original));
                         types.Add(baseType.WithType(SyntaxFactory.ParseTypeName(replacement).WithTriviaFrom(baseType.Type)));
+                        Usings.Add("XiHan.Framework.Domain");
                     }
 
                     continue;
