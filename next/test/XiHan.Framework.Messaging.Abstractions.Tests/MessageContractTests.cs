@@ -41,6 +41,13 @@ public sealed class MessageContractTests
         }
 
         /// <inheritdoc />
+        public ValueTask<IReadOnlyList<Result>> PublishManyAsync(string topic, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
+        {
+            Published.AddRange(envelopes.Select(envelope => (topic, envelope)));
+            return ValueTask.FromResult<IReadOnlyList<Result>>([.. envelopes.Select(static _ => Result.Success())]);
+        }
+
+        /// <inheritdoc />
         public Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
 
         /// <inheritdoc />

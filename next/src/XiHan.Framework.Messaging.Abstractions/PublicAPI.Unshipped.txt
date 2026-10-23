@@ -63,15 +63,18 @@ XiHan.Framework.Messaging.Abstractions.CloudEventsFormat
 XiHan.Framework.Messaging.Abstractions.DirectPublisher
 XiHan.Framework.Messaging.Abstractions.DirectPublisher.DirectPublisher(XiHan.Framework.Messaging.Abstractions.IMessageBroker! broker) -> void
 XiHan.Framework.Messaging.Abstractions.DirectPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.DirectPublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.Abstractions.EnvelopeExtensions
 XiHan.Framework.Messaging.Abstractions.IMessageBroker
 XiHan.Framework.Messaging.Abstractions.IMessageBroker.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.IMessageBroker.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.Abstractions.IMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<string!>! topics, XiHan.Framework.Messaging.Abstractions.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.IMessageBroker.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.IMessageHandler
 XiHan.Framework.Messaging.Abstractions.IMessageHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.IMessagePublisher
 XiHan.Framework.Messaging.Abstractions.IMessagePublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.IMessagePublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.Abstractions.MessageDelivery
 XiHan.Framework.Messaging.Abstractions.MessageDelivery.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.MessageDelivery!
 XiHan.Framework.Messaging.Abstractions.MessageDelivery.Attempt.get -> int
@@ -168,4 +171,5 @@ XiHan.Framework.Messaging.Abstractions.OutboxOptions.PollInterval.init -> void
 XiHan.Framework.Messaging.Abstractions.OutboxPublisher
 XiHan.Framework.Messaging.Abstractions.OutboxPublisher.OutboxPublisher(XiHan.Framework.Persistence.Abstractions.IUnitOfWork! unitOfWork, XiHan.Framework.Persistence.Abstractions.IRepository<XiHan.Framework.Messaging.Abstractions.OutboxMessage!, System.Guid>! outbox, XiHan.Framework.Persistence.Abstractions.IIdGenerator<System.Guid>! ids, XiHan.Framework.Messaging.Abstractions.IMessageBroker! broker, System.TimeProvider! timeProvider) -> void
 XiHan.Framework.Messaging.Abstractions.OutboxPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.OutboxPublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.Abstractions.TopicName

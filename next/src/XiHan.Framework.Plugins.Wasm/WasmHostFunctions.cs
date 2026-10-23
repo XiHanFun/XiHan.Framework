@@ -14,6 +14,7 @@ using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using Error = XiHan.Framework.Primitives.Error;
+using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 
 namespace XiHan.Framework.Plugins.Wasm;
 
@@ -159,7 +160,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 发布的核心：权限、宿主容器、逐项发布。
+    /// 发布的核心：权限、宿主容器、按主题分组批量发布。
     /// </summary>
     private void PublishCore(PublishRequest request, PublishResponse response)
     {
@@ -178,29 +179,15 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         using var flow = Pump.EnterCallback();
         using var scope = host.Services?.CreateScope();
         var publisher = scope?.ServiceProvider.GetService<IMessagePublisher>();
-        foreach (var envelope in request.Envelopes)
+        // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填
+        var statuses = new ProtoStatus[request.Envelopes.Count];
+        var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", manifest.Id))) : null);
+        foreach (var (topic, indexes, messages) in batches)
         {
-            if (publisher is null)
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", manifest.Id)))));
-                continue;
-            }
-
-            if (!TopicName.IsValid(envelope.Topic))
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", envelope.Topic)))));
-                continue;
-            }
-
-            var converted = PluginEnvelopeMapper.FromProto(envelope);
-            if (!converted.TryGetValue(out var message))
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(converted.Error!));
-                continue;
-            }
-
-            response.Results.Add(PluginErrorMapper.ToStatus(Pump.Wait(publisher.PublishAsync(envelope.Topic, message, CancellationToken.None).AsTask())));
+            PluginPublishBatches.Scatter(statuses, indexes, Pump.Wait(publisher!.PublishManyAsync(topic, messages, CancellationToken.None).AsTask()));
         }
+
+        response.Results.AddRange(statuses);
     }
 
     /// <summary>

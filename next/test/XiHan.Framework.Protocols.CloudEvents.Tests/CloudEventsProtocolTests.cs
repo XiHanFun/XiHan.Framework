@@ -201,6 +201,37 @@ public sealed class CloudEventsProtocolTests
     }
 
     [Fact]
+    public async Task Outbound_PublishMany_PostsOneBatchRequest()
+    {
+        var (app, _, _, outbound) = await StartAsync(("XiHan:Protocols:CloudEvents:Webhooks:orders", "https://hooks.test/orders"));
+        await using var host = app;
+        var publisher = app.Services.GetRequiredService<CloudEventsWebhookPublisher>();
+        var first = new MessageEnvelope { Id = "evt-1", Source = "/orders", Type = "orders.placed", Data = "{\"id\":1}"u8.ToArray() };
+        var second = new MessageEnvelope { Id = "evt-2", Source = "/orders", Type = "orders.placed", Data = "{\"id\":2}"u8.ToArray() };
+
+        // 多条：一次 POST、batch 内容模式、数组顺序同入参，一个响应对整批生效
+        var results = await publisher.PublishManyAsync("orders", [first, second], CancellationToken.None);
+        Assert.Equal(2, results.Count);
+        Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
+        var captured = Assert.Single(outbound.Requests);
+        Assert.StartsWith(CloudEventsHttpBinding.BatchContentType, captured.Headers["Content-Type"], StringComparison.Ordinal);
+        using (var document = JsonDocument.Parse(captured.Body))
+        {
+            var events = document.RootElement.EnumerateArray().Select(static e => CloudEventsFormat.Decode(Encoding.UTF8.GetBytes(e.GetRawText())).ValueOrThrow()).ToList();
+            Assert.Equal(2, events.Count);
+            EnvelopeAssert.Same(first, events[0]);
+            EnvelopeAssert.Same(second, events[1]);
+        }
+
+        // 空集合不发请求；没有配置的主题每一项都是 NOTFOUND；非 2xx 时整批同一失败
+        Assert.Empty(await publisher.PublishManyAsync("orders", [], CancellationToken.None));
+        Assert.Single(outbound.Requests);
+        Assert.All(await publisher.PublishManyAsync("idle", [first, second], CancellationToken.None), static r => Assert.Equal(CloudEventsErrors.WebhookMissing, r.Error?.Code));
+        outbound.Status = HttpStatusCode.BadGateway;
+        Assert.All(await publisher.PublishManyAsync("orders", [first, second], CancellationToken.None), static r => Assert.Equal(CloudEventsErrors.WebhookFailed, r.Error?.Code));
+    }
+
+    [Fact]
     public void Options_ValidateAndParse()
     {
         Assert.Throws<ArgumentException>(static () => new CloudEventsProtocolOptions { Outbound = CloudEventsContentMode.Batch });

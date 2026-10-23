@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions;
 
 /// <summary>
-/// 发件箱投递循环：按创建时间取未投递的消息，发布到代理，成功记投递时间，失败记次数与原因；每轮一个工作单元。
+/// 发件箱投递循环：按创建时间取未投递的消息，按主题分组批量发布到代理，成功记投递时间，失败记次数与原因，最后批量更新；每轮一个工作单元。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class OutboxDispatcher(IServiceProvider services, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
@@ -56,34 +56,10 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
         // 一轮一个工作单元：投递结果与消息状态一起提交，中途异常则整轮回滚
         await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, cancellationToken).ConfigureAwait(false);
 
-        var dispatched = 0;
         try
         {
             var pending = await outbox.ListAsync(EntityQuery.All<OutboxMessage>().Where(_pending).OrderBy(static m => m.CreatedAt).Page(0, _options.BatchSize), cancellationToken).ConfigureAwait(false);
-            foreach (var message in pending)
-            {
-                var decoded = CloudEventsFormat.Decode(message.Payload);
-                var published = decoded.TryGetValue(out var envelope)
-                    ? await _broker.PublishAsync(message.Topic, envelope, cancellationToken).ConfigureAwait(false)
-                    : decoded.ToResult();
-
-                // 解码失败与发布失败都算一次尝试；失败不标记已投递，下一轮会再取到，只有成功才写投递时间
-                message.Attempts++;
-                if (published.IsSuccess)
-                {
-                    message.DispatchedAt = _timeProvider.GetUtcNow();
-                    message.LastError = null;
-                    dispatched++;
-                }
-                else
-                {
-                    message.LastError = published.Error?.ToString();
-                    LogDispatchFailed(_logger, message.Id, message.Topic, message.Attempts, published.Error?.Code ?? "?");
-                }
-
-                (await outbox.UpdateAsync(message, cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
-            }
-
+            var dispatched = pending.Count == 0 ? 0 : await DispatchAsync(pending, outbox, cancellationToken).ConfigureAwait(false);
             (await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
             return dispatched;
         }
@@ -129,6 +105,72 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// 投递一批：解码每条消息，解码成功的按主题分组、各组一次批量发布（组内保持创建顺序），再把全部消息的尝试次数与结果一次批量更新。
+    /// </summary>
+    private async Task<int> DispatchAsync(IReadOnlyList<OutboxMessage> pending, IRepository<OutboxMessage, Guid> outbox, CancellationToken cancellationToken)
+    {
+        var outcomes = new Result[pending.Count];
+        var groups = new Dictionary<string, (List<int> Indexes, List<MessageEnvelope> Envelopes)>(StringComparer.Ordinal);
+        var topics = new List<string>();
+        for (var index = 0; index < pending.Count; index++)
+        {
+            var decoded = CloudEventsFormat.Decode(pending[index].Payload);
+            if (!decoded.TryGetValue(out var envelope))
+            {
+                outcomes[index] = decoded.ToResult();
+                continue;
+            }
+
+            if (!groups.TryGetValue(pending[index].Topic, out var group))
+            {
+                group = ([], []);
+                groups[pending[index].Topic] = group;
+                topics.Add(pending[index].Topic);
+            }
+
+            group.Indexes.Add(index);
+            group.Envelopes.Add(envelope);
+        }
+
+        foreach (var topic in topics)
+        {
+            var (indexes, envelopes) = groups[topic];
+            var published = await _broker.PublishManyAsync(topic, envelopes, cancellationToken).ConfigureAwait(false);
+            for (var position = 0; position < indexes.Count; position++)
+            {
+                outcomes[indexes[position]] = published[position];
+            }
+        }
+
+        // 解码失败与发布失败都算一次尝试；失败不标记已投递，下一轮会再取到，只有成功才写投递时间
+        var dispatched = 0;
+        var now = _timeProvider.GetUtcNow();
+        for (var index = 0; index < pending.Count; index++)
+        {
+            var message = pending[index];
+            message.Attempts++;
+            if (outcomes[index].IsSuccess)
+            {
+                message.DispatchedAt = now;
+                message.LastError = null;
+                dispatched++;
+            }
+            else
+            {
+                message.LastError = outcomes[index].Error?.ToString();
+                LogDispatchFailed(_logger, message.Id, message.Topic, message.Attempts, outcomes[index].Error?.Code ?? "?");
+            }
+        }
+
+        foreach (var updated in await outbox.UpdateRangeAsync(pending, cancellationToken).ConfigureAwait(false))
+        {
+            updated.ThrowIfFailure();
+        }
+
+        return dispatched;
     }
 
     /// <summary>
