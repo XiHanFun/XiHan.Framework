@@ -19,7 +19,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 语义
 
-- 工作单元在首次写入时开启数据库事务（只读调用不开事务，SQLite 这类单写者数据库上读写调用能并存）；仓储的每次写入立即 `SaveChanges`（同一事务内读己之写），提交即提交事务，回滚丢弃一切。
+- 工作单元在首次写入时开启数据库事务（只读调用不开事务，SQLite 这类单写者数据库上读写调用能并存）；仓储的每次写入立即 `SaveChanges`（同一事务内读己之写），批量写入是一次 `IN` 查询取回目标行、逐项校验后一次 `AddRange` / 跟踪加一次 `SaveChanges`，提交即提交事务，回滚丢弃一切。
 - 软删除与租户过滤在仓储查询里显式施加（`EF.Property`），不用全局查询过滤器，`Find` 与 LINQ 行为一致。
 - 更新游离实体时先比对并发戳，不符返回 `PERSISTENCE_CONFLICT_001`；跟踪实体由 EF 的并发令牌保护。
 - 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。

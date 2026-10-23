@@ -14,7 +14,7 @@ using Xunit;
 namespace XiHan.Framework.Persistence.Conformance;
 
 /// <summary>
-/// <c>persistence.relational@1</c> Provider 的一致性套件。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
+/// <c>persistence.relational@1</c> Provider 的一致性套件（含批量用例）。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
 /// 每个用例都以 <see cref="TestHost"/> 走完整管道：工作单元由 Transaction 阶段的中间件开启、提交或回滚。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -319,16 +319,9 @@ public abstract class RepositoryConformance
     public async Task List_AppliesFilterOrderingAndPaging_CountIgnoresPaging()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        (await RunAsync(host, async context =>
-        {
-            var repository = Repository<ConformanceOrder, Guid>(context);
-            for (var amount = 1; amount <= 5; amount++)
-            {
-                (await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = $"o{amount}", Amount = amount }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
-            }
-
-            return Result.Success();
-        }).ConfigureAwait(false)).ThrowIfFailure();
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [.. Enumerable.Range(1, 5).Select(static amount => new ConformanceOrder { Id = Guid.CreateVersion7(), Name = $"o{amount}", Amount = amount })],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
 
         // Amount >= 2 命中 o2..o5，降序后跳过 1 条取 2 条得到 o4、o3；计数仍是全部命中的 4 条
         var query = EntityQuery.All<ConformanceOrder>()
@@ -376,6 +369,167 @@ public abstract class RepositoryConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var generator = host.Services.GetRequiredService<IIdGenerator<Guid>>();
         Assert.Equal(7, generator.NewId().Version);
+    }
+
+    /// <summary>
+    /// 用例 14：批量新增一次写入、读己之写，结果与入参一一对应；批内重复与跨工作单元的重复标识按项报告，其余项照常落库；
+    /// 按标识集合查找只返回存在的，顺序按入参、重复只一次。
+    /// </summary>
+    [Fact]
+    public async Task AddRange_ReportsPerItem_AndFindManyKeepsInputOrder()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var first = Guid.CreateVersion7();
+        var second = Guid.CreateVersion7();
+        var existing = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = existing, Name = "existing" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+
+        IReadOnlyList<Result> results = [];
+        IReadOnlyList<ConformanceOrder> inside = [];
+        var outcome = await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            // 第三项与第一项同标识（批内重复），第四项与已提交的行同标识（跨工作单元重复）
+            results = await repository.AddRangeAsync(
+            [
+                new ConformanceOrder { Id = first, Name = "a", Amount = 1 },
+                new ConformanceOrder { Id = second, Name = "b", Amount = 2 },
+                new ConformanceOrder { Id = first, Name = "a-again" },
+                new ConformanceOrder { Id = existing, Name = "existing-again" },
+            ], context.CancellationToken).ConfigureAwait(false);
+            inside = await repository.FindManyAsync([second, Guid.CreateVersion7(), first, second], context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(outcome.IsSuccess, outcome.ToString());
+        Assert.Equal([true, true, false, false], results.Select(static r => r.IsSuccess));
+        Assert.Equal(PersistenceErrors.Duplicate, results[2].Error?.Code);
+        Assert.Equal(PersistenceErrors.Duplicate, results[3].Error?.Code);
+        Assert.Equal(["b", "a"], inside.Select(static o => o.Name));
+
+        var committed = await FindManyAsync<ConformanceOrder, Guid>(host, [first, second, existing]).ConfigureAwait(false);
+        Assert.Equal(["a", "b", "existing"], committed.Select(static o => o.Name));
+        Assert.All(committed, order =>
+        {
+            Assert.Equal(Clock.GetUtcNow(), order.CreatedAt);
+            Assert.False(string.IsNullOrEmpty(order.ConcurrencyStamp));
+        });
+    }
+
+    /// <summary>
+    /// 用例 15：批量更新一次写入：写入修改时间并刷新并发戳；并发戳过期的游离实例返回 <see cref="PersistenceErrors.Concurrency"/>、不存在的返回 NotFound，其余项照常生效。
+    /// </summary>
+    [Fact]
+    public async Task UpdateRange_RefreshesStamps_AndReportsStaleOrMissingPerItem()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var first = Guid.CreateVersion7();
+        var second = Guid.CreateVersion7();
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync([new ConformanceOrder { Id = first, Name = "a" }, new ConformanceOrder { Id = second, Name = "b" }], context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+        var stamps = (await FindManyAsync<ConformanceOrder, Guid>(host, [first, second]).ConfigureAwait(false)).Select(static o => o.ConcurrencyStamp).ToList();
+        Clock.Advance(TimeSpan.FromHours(1));
+
+        IReadOnlyList<Result> results = [];
+        var outcome = await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var found = await repository.FindManyAsync([first], context.CancellationToken).ConfigureAwait(false);
+            found[0].Name = "a2";
+            // 第二项是并发戳已过期的游离实例，第三项不存在
+            results = await repository.UpdateRangeAsync(
+            [
+                found[0],
+                new ConformanceOrder { Id = second, Name = "stale", ConcurrencyStamp = "stale", CreatedAt = Epoch },
+                new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "ghost" },
+            ], context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(outcome.IsSuccess, outcome.ToString());
+        Assert.True(results[0].IsSuccess, results[0].ToString());
+        Assert.Equal(PersistenceErrors.Concurrency, results[1].Error?.Code);
+        Assert.Equal(PersistenceErrors.NotFound, results[2].Error?.Code);
+
+        var current = await FindManyAsync<ConformanceOrder, Guid>(host, [first, second]).ConfigureAwait(false);
+        Assert.Equal("a2", current[0].Name);
+        Assert.Equal(Clock.GetUtcNow(), current[0].ModifiedAt);
+        Assert.NotEqual(stamps[0], current[0].ConcurrencyStamp);
+        Assert.Equal("b", current[1].Name);
+        Assert.Equal(stamps[1], current[1].ConcurrencyStamp);
+    }
+
+    /// <summary>
+    /// 用例 16：批量删除一次写入：软删除实体打标隐藏、普通实体物理删除；批内同一实体第二次与不存在的实体按项返回 NotFound，其余项照常生效。
+    /// </summary>
+    [Fact]
+    public async Task RemoveRange_SoftDeletesOrDeletes_AndReportsMissingPerItem()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var first = Guid.CreateVersion7();
+        var second = Guid.CreateVersion7();
+        (await RunAsync(host, async context =>
+        {
+            var orders = await Repository<ConformanceOrder, Guid>(context).AddRangeAsync([new ConformanceOrder { Id = first }, new ConformanceOrder { Id = second }], context.CancellationToken).ConfigureAwait(false);
+            var items = await Repository<ConformanceItem, int>(context).AddRangeAsync([new ConformanceItem { Id = 1, Label = "one" }, new ConformanceItem { Id = 2, Label = "two" }], context.CancellationToken).ConfigureAwait(false);
+            return Fold([.. orders, .. items]);
+        }).ConfigureAwait(false)).ThrowIfFailure();
+        Clock.Advance(TimeSpan.FromMinutes(1));
+
+        IReadOnlyList<Result> orderResults = [];
+        IReadOnlyList<Result> itemResults = [];
+        var outcome = await RunAsync(host, async context =>
+        {
+            var orders = Repository<ConformanceOrder, Guid>(context);
+            var found = await orders.FindManyAsync([first, second], context.CancellationToken).ConfigureAwait(false);
+            // 第三项与第一项是同一实体，第四项不存在
+            orderResults = await orders.RemoveRangeAsync([found[0], found[1], found[0], new ConformanceOrder { Id = Guid.CreateVersion7() }], context.CancellationToken).ConfigureAwait(false);
+            var items = Repository<ConformanceItem, int>(context);
+            itemResults = await items.RemoveRangeAsync(await items.FindManyAsync([1, 2], context.CancellationToken).ConfigureAwait(false), context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(outcome.IsSuccess, outcome.ToString());
+        Assert.Equal([true, true, false, false], orderResults.Select(static r => r.IsSuccess));
+        Assert.Equal(PersistenceErrors.NotFound, orderResults[2].Error?.Code);
+        Assert.Equal(PersistenceErrors.NotFound, orderResults[3].Error?.Code);
+        Assert.All(itemResults, static r => Assert.True(r.IsSuccess, r.ToString()));
+
+        Assert.Empty(await FindManyAsync<ConformanceOrder, Guid>(host, [first, second]).ConfigureAwait(false));
+        var tombstones = await ListAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>() with { IncludeDeleted = true }).ConfigureAwait(false);
+        Assert.Equal(2, tombstones.Count);
+        Assert.All(tombstones, tombstone =>
+        {
+            Assert.True(tombstone.IsDeleted);
+            Assert.Equal(Clock.GetUtcNow(), tombstone.DeletedAt);
+        });
+        Assert.Equal(0, await CountAsync<ConformanceItem, int>(host, EntityQuery.All<ConformanceItem>() with { IncludeDeleted = true }).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 17：空集合不触后端、返回空列表；在 Transaction 阶段之外使用批量方法同样抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
+    /// </summary>
+    [Fact]
+    public async Task BatchMethods_EmptyInputReturnsEmpty_AndRequireUnitOfWork()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var outcome = await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            Assert.Empty(await repository.FindManyAsync([], context.CancellationToken).ConfigureAwait(false));
+            Assert.Empty(await repository.AddRangeAsync([], context.CancellationToken).ConfigureAwait(false));
+            Assert.Empty(await repository.UpdateRangeAsync([], context.CancellationToken).ConfigureAwait(false));
+            Assert.Empty(await repository.RemoveRangeAsync([], context.CancellationToken).ConfigureAwait(false));
+            return Result.Success();
+        }).ConfigureAwait(false);
+        Assert.True(outcome.IsSuccess, outcome.ToString());
+
+        // 直接从作用域解析仓储而不经过管道：工作单元从未开始
+        await using var scope = host.Services.CreateAsyncScope();
+        var detached = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
+        var read = await Assert.ThrowsAsync<FrameworkException>(() => detached.FindManyAsync([Guid.CreateVersion7()], CancellationToken.None)).ConfigureAwait(false);
+        var write = await Assert.ThrowsAsync<FrameworkException>(() => detached.AddRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7() }], CancellationToken.None)).ConfigureAwait(false);
+        Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, read.Code);
+        Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, write.Code);
     }
 
     /// <summary>
@@ -435,6 +589,39 @@ public abstract class RepositoryConformance
             return Result.Success();
         }, tenantId).ConfigureAwait(false)).ThrowIfFailure();
         return found;
+    }
+
+    /// <summary>
+    /// 在新调用内按标识集合查找。
+    /// </summary>
+    protected static async Task<IReadOnlyList<TEntity>> FindManyAsync<TEntity, TKey>(TestHost host, IReadOnlyList<TKey> ids, string? tenantId = null)
+        where TEntity : class, IEntity<TKey>
+        where TKey : notnull, IEquatable<TKey>
+    {
+        IReadOnlyList<TEntity> found = [];
+        (await RunAsync(host, async context =>
+        {
+            found = await Repository<TEntity, TKey>(context).FindManyAsync(ids, context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }, tenantId).ConfigureAwait(false)).ThrowIfFailure();
+        return found;
+    }
+
+    /// <summary>
+    /// 把逐项结果折成一个：第一个失败，否则成功。
+    /// </summary>
+    protected static Result Fold(IReadOnlyList<Result> results)
+    {
+        ArgumentNullException.ThrowIfNull(results);
+        foreach (var result in results)
+        {
+            if (result.IsFailure)
+            {
+                return result;
+            }
+        }
+
+        return Result.Success();
     }
 
     /// <summary>

@@ -71,11 +71,15 @@ XiHan.Framework.Persistence.Abstractions.IIdGenerator<TKey>
 XiHan.Framework.Persistence.Abstractions.IIdGenerator<TKey>.NewId() -> TKey
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
+XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar
 XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 XiHan.Framework.Persistence.Abstractions.IUnitOfWork
