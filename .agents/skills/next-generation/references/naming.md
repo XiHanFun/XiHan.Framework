@@ -5,7 +5,7 @@
 ## 包 ID
 
 ```text
-XiHan.Framework.Primitives | Kernel[.Analyzers|.Generators] | Domain | Testing | Cli | Compat.V<n>
+XiHan.Framework.Primitives | Kernel[.Analyzers|.Generators] | Domain | Testing | Cli
 XiHan.Framework.<子系统>.<Abstractions|Conformance|Generators|机制|技术>
 XiHan.Framework.Hosting.<AspNetCore|CommandLine>
 XiHan.Framework.Protocols.<Http|Grpc|Mcp|CloudEvents>

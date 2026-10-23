@@ -13,7 +13,7 @@ internal static class Vocabulary
     /// </summary>
     public static readonly IReadOnlySet<string> StructuralWords = new HashSet<string>(StringComparer.Ordinal)
     {
-        "Primitives", "Kernel", "Domain", "Hosting", "Protocols", "Plugins", "Profiles", "Testing", "Cli", "Compat",
+        "Primitives", "Kernel", "Domain", "Hosting", "Protocols", "Plugins", "Profiles", "Testing", "Cli",
     };
 
     /// <summary>

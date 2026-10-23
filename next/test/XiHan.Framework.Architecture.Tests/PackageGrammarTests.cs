@@ -26,7 +26,6 @@ public sealed class PackageGrammarTests
     [InlineData("XiHan.Framework.Profiles.Full", 6)]
     [InlineData("XiHan.Framework.Testing", 7)]
     [InlineData("XiHan.Framework.Cli", 7)]
-    [InlineData("XiHan.Framework.Compat.V4", 7)]
     public void TryValidate_AcceptsWellFormedIds(string packageId, int expectedRing)
     {
         var ok = PackageGrammar.TryValidate(packageId, Vocabulary.SubsystemWords, out var reason);
@@ -59,7 +58,7 @@ public sealed class PackageGrammarTests
     [InlineData("XiHan.Framework.Hosting.Worker")]
     [InlineData("XiHan.Framework.Kernel.Hosting")]
     [InlineData("XiHan.Framework.Persistence.EntityFrameworkCore.SqlServer")]
-    [InlineData("XiHan.Framework.Compat.Legacy")]
+    [InlineData("XiHan.Framework.Compat.V4")]
     [InlineData("XiHan.Persistence.Abstractions")]
     public void TryValidate_RejectsIllFormedIds(string packageId)
     {
