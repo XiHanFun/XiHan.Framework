@@ -113,9 +113,11 @@ public sealed class DatabaseLocalizationTests
             ], context.CancellationToken);
         })).IsSuccess);
 
-        // 不显式重载，周期刷新自己装载；上限 2 只装前两条
+        // 不显式重载，周期刷新自己装载；上限 2 只装两条（按 Id 顺序，同一毫秒内生成的 Id 顺序不定，所以不断言是哪两条）
         await WaitUntilAsync(() => localizer.TranslationCount == 2);
-        Assert.Equal("一", localizer.Find("orders.order.not_found", "zh-CN").ValueOrThrow());
+        var loaded = new[] { ("zh-CN", "一"), ("zh-TW", "二"), ("ja-JP", "三") }
+            .Count(pair => localizer.Find("orders.order.not_found", pair.Item1).TryGetValue(out var template) && template == pair.Item2);
+        Assert.Equal(2, loaded);
     }
 
     [Fact]
