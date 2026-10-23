@@ -53,7 +53,7 @@ public static class SqlSugarConventions
         }
 
         // 标识由应用（IIdGenerator）生成，不交给数据库自增
-        if (string.Equals(property.Name, nameof(IEntity<int>.Id), StringComparison.Ordinal))
+        if (string.Equals(property.Name, nameof(IEntity<>.Id), StringComparison.Ordinal))
         {
             column.IsPrimarykey = true;
             column.IsIdentity = false;
