@@ -19,6 +19,13 @@ internal abstract class V4Fixer
     public abstract bool Handles(MigrationFile file);
 
     /// <summary>
+    /// 第一遍：在改写任何文件之前看一遍原文，收集跨文件事实（如基类上的特性）；默认什么都不做。
+    /// </summary>
+    public virtual void Scan(MigrationFile file, string text, MigrationSession session)
+    {
+    }
+
+    /// <summary>
     /// 施加改写，返回新文本；没有改动时返回原文本的同一实例。
     /// </summary>
     public abstract string Apply(MigrationFile file, string text, MigrationSession session);

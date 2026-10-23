@@ -107,6 +107,21 @@ public static class CliMessages
     /// <summary>V4-03 标记：调用生成的注册方法。参数：<c>method</c>。</summary>
     public const string MigrateMarkerRegisterServices = "cli.migrate.marker.register_services";
 
+    /// <summary>V4-06 标记：在特性里登记生成的操作。</summary>
+    public const string MigrateMarkerAddOperations = "cli.migrate.marker.add_operations";
+
+    /// <summary>V4-06 标记：同一资源内动词重复。参数：<c>verb</c>。</summary>
+    public const string MigrateMarkerDuplicateVerb = "cli.migrate.marker.duplicate_verb";
+
+    /// <summary>V4-06 标记：方法没法变成操作。参数：<c>name</c>。</summary>
+    public const string MigrateMarkerUnsupportedOperation = "cli.migrate.marker.unsupported_operation";
+
+    /// <summary>V4-06 标记：用到了 <c>ApplicationServiceBase</c> 的成员。</summary>
+    public const string MigrateMarkerServiceBaseMember = "cli.migrate.marker.service_base_member";
+
+    /// <summary>V4-06 标记：多个权限只取了第一个。</summary>
+    public const string MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified";
+
     /// <summary>V4-02 展开属性的文档：创建者标识。</summary>
     public const string MigrateEntityCreatedId = "cli.migrate.entity.created_id";
 

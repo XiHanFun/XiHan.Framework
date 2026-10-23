@@ -68,6 +68,18 @@ internal sealed class MigrationFixture : IDisposable
             }
 
             """);
+        File.WriteAllText(Path.Combine(Project, "Services", "OrderAppService.cs"), """
+            using XiHan.Framework.Application.Attributes;
+
+            namespace Shop.Orders.Services;
+
+            [DynamicApi]
+            public sealed class OrderAppService
+            {
+                public Task<int> CountAsync(CancellationToken cancellationToken) => Task.FromResult(1);
+            }
+
+            """);
         File.WriteAllText(Skipped, SkippedSource);
     }
 

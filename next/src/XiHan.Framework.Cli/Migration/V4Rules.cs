@@ -18,6 +18,7 @@ internal static class V4Rules
         new DependencyMarkerFixer(),
         new ClockFixer(),
         new UnitOfWorkFixer(),
+        new DynamicApiFixer(),
         new PackageReferenceFixer(),
         new LegacyUsingFixer(),
     ];

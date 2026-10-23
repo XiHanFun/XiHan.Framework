@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 一次 <c>xihan migrate v4</c> 的编排：枚举文件、按顺序施加规则、回写、生成注册文件、改名、汇总报告。
+/// 一次 <c>xihan migrate v4</c> 的编排：枚举文件、第一遍扫描、按顺序施加规则、回写、写生成文件、改名、汇总报告。
 /// </summary>
 /// <param name="path">目录、<c>.csproj</c> 或 <c>.slnx</c>；文件取其所在目录。</param>
 /// <param name="fixers">要执行的规则，按顺序。</param>
@@ -25,6 +25,11 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
     private static readonly UTF8Encoding _utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>
+    /// 操作契约的源生成器包。
+    /// </summary>
+    private const string GeneratorsPackage = "XiHan.Framework.Kernel.Generators";
+
+    /// <summary>
     /// 执行。
     /// </summary>
     public MigrationReport Run(CancellationToken cancellationToken)
@@ -33,6 +38,9 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
         var session = new MigrationSession();
         var projectDirectories = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var newLines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // 第一遍：读入并扫描（跨文件事实），文本留在内存里给第二遍用
+        var sources = new List<(MigrationFile File, string Text, bool Bom)>();
         foreach (var file in Enumerate(root).OrderBy(static file => file, StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -48,18 +56,32 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             }
 
             var migrationFile = new MigrationFile(file, relative, projectDirectory, newLine);
-            var current = text;
+            sources.Add((migrationFile, text, bom));
             foreach (var fixer in fixers)
             {
                 if (fixer.Handles(migrationFile))
                 {
-                    current = fixer.Apply(migrationFile, current, session);
+                    fixer.Scan(migrationFile, text, session);
+                }
+            }
+        }
+
+        // 第二遍：按规则顺序改写
+        foreach (var (file, text, bom) in sources)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var current = text;
+            foreach (var fixer in fixers)
+            {
+                if (fixer.Handles(file))
+                {
+                    current = fixer.Apply(file, current, session);
                 }
             }
 
             if (!ReferenceEquals(current, text) && !string.Equals(current, text, StringComparison.Ordinal) && !dryRun)
             {
-                File.WriteAllBytes(file, bom ? [.. Encoding.UTF8.Preamble, .. _utf8.GetBytes(current)] : _utf8.GetBytes(current));
+                File.WriteAllBytes(file.Path, bom ? [.. Encoding.UTF8.Preamble, .. _utf8.GetBytes(current)] : _utf8.GetBytes(current));
             }
         }
 
@@ -73,9 +95,34 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             var message = CliMessages.MigrateMarkerRegisterServices.L(("method", "Add" + className));
             session.Marked("V4-03", generated, 1, message);
             session.Changed("V4-03", generated, 0);
+            session.GeneratedFiles[target] = V4ServicesGenerator.Generate(project, className, registrations, Markers.Line("V4-03", message), newLine);
+        }
+
+        // V4-06：空响应、序列化上下文，以及项目文件里的生成器引用
+        V4OperationsGenerator.Complete(session, root);
+        foreach (var (projectDirectory, project) in session.OperationProjects.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
+        {
+            var csproj = Directory.EnumerateFiles(projectDirectory, "*.csproj").OrderBy(static name => name, StringComparer.Ordinal).First();
+            var text = File.ReadAllText(csproj);
+            if (text.Contains(GeneratorsPackage, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var file = new MigrationFile(csproj, Path.GetRelativePath(root, csproj).Replace('\\', '/'), projectDirectory, project.NewLine);
+            session.Changed("V4-06", file, text.Count(static c => c == '\n') + 1);
             if (!dryRun)
             {
-                File.WriteAllText(target, V4ServicesGenerator.Generate(project, className, registrations, Markers.Line("V4-03", message), newLine), _utf8);
+                File.WriteAllText(csproj, WithGeneratorReference(text, project.NewLine), _utf8);
+            }
+        }
+
+        foreach (var (target, content) in session.GeneratedFiles.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
+        {
+            if (!dryRun)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.WriteAllText(target, content, _utf8);
             }
         }
 
@@ -97,6 +144,42 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             .ToList();
         var markers = session.Findings.Where(static finding => finding.IsMarker).Select(static finding => new MigrationMarkerReport(finding.Rule, finding.File, finding.Line, finding.Message)).ToList();
         return new MigrationReport("v4", root.Replace('\\', '/'), dryRun, rules, markers);
+    }
+
+    /// <summary>
+    /// 在 <c>&lt;/Project&gt;</c> 前加一个引用操作源生成器的 ItemGroup，缩进沿用文件里第一个 ItemGroup / PropertyGroup。
+    /// </summary>
+    private static string WithGeneratorReference(string text, string newLine)
+    {
+        var close = text.LastIndexOf("</Project>", StringComparison.Ordinal);
+        if (close < 0)
+        {
+            return text;
+        }
+
+        var indent = "  ";
+        foreach (var line in text.Split('\n'))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("<ItemGroup", StringComparison.Ordinal) || trimmed.StartsWith("<PropertyGroup", StringComparison.Ordinal))
+            {
+                indent = line[..(line.Length - trimmed.Length)].TrimEnd('\r');
+                break;
+            }
+        }
+
+        var builder = new StringBuilder();
+        builder.Append(text, 0, close);
+        if (!text[..close].EndsWith(newLine + newLine, StringComparison.Ordinal))
+        {
+            builder.Append(newLine);
+        }
+
+        builder.Append(indent).Append("<ItemGroup>").Append(newLine);
+        builder.Append(indent).Append(indent).Append("<PackageReference Include=\"").Append(GeneratorsPackage).Append("\" Version=\"").Append(FrameworkInfo.Version).Append("\" PrivateAssets=\"all\" />").Append(newLine);
+        builder.Append(indent).Append("</ItemGroup>").Append(newLine).Append(newLine);
+        builder.Append(text, close, text.Length - close);
+        return builder.ToString();
     }
 
     /// <summary>
