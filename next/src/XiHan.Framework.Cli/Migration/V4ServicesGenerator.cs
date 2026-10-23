@@ -31,8 +31,14 @@ internal static class V4ServicesGenerator
         builder.Append(marker).Append(newLine);
         builder.Append("// ").Append(CliMessages.MigrateGenerated.L()).Append(newLine).Append(newLine);
         builder.Append("using Microsoft.Extensions.DependencyInjection;").Append(newLine);
-        // 实现类所在的命名空间按字典序引入；与项目命名空间相同的也引入，生成的文件不依赖它在哪个目录
-        foreach (var ns in registrations.Select(static registration => registration.Namespace).Where(static ns => ns.Length > 0).Distinct(StringComparer.Ordinal).OrderBy(static ns => ns, StringComparer.Ordinal))
+        // 实现类所在的命名空间按字典序引入；与项目命名空间相同的也引入，生成的文件不依赖它在哪个目录；有消息处理器时引入 AddMessageHandler 所在的命名空间
+        var namespaces = registrations.Select(static registration => registration.Namespace).Where(static ns => ns.Length > 0);
+        if (registrations.Any(static registration => registration.Topics is { Count: > 0 }))
+        {
+            namespaces = namespaces.Append("XiHan.Framework.Messaging.Abstractions");
+        }
+
+        foreach (var ns in namespaces.Distinct(StringComparer.Ordinal).OrderBy(static ns => ns, StringComparer.Ordinal))
         {
             builder.Append("using ").Append(ns).Append(';').Append(newLine);
         }
@@ -44,6 +50,17 @@ internal static class V4ServicesGenerator
         builder.Append("    public static IServiceCollection Add").Append(className).Append("(this IServiceCollection services)").Append(newLine).Append("    {").Append(newLine);
         foreach (var registration in registrations.OrderBy(static registration => registration.Namespace, StringComparer.Ordinal).ThenBy(static registration => registration.Implementation, StringComparer.Ordinal))
         {
+            // 消息处理器：按主题登记（AddMessageHandler 自己按作用域注册处理器）
+            if (registration.Topics is { Count: > 0 })
+            {
+                foreach (var topic in registration.Topics)
+                {
+                    builder.Append("        services.AddMessageHandler<").Append(registration.Implementation).Append(">(").Append(topic).Append(");").Append(newLine);
+                }
+
+                continue;
+            }
+
             if (registration.Services.Count == 0)
             {
                 builder.Append("        services.Add").Append(registration.Lifetime).Append('<').Append(registration.Implementation).Append(">();").Append(newLine);

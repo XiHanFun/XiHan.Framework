@@ -125,6 +125,15 @@ public static class CliMessages
     /// <summary>V4-07 标记：<c>ICurrentTenant.Change</c> 没有对应物。</summary>
     public const string MigrateMarkerTenantChange = "cli.migrate.marker.tenant_change";
 
+    /// <summary>V4-08 标记：事件用反射序列化，提醒改用序列化上下文。</summary>
+    public const string MigrateMarkerEventJson = "cli.migrate.marker.event_json";
+
+    /// <summary>V4-08 标记：推不出事件类型。参数：<c>name</c>。</summary>
+    public const string MigrateMarkerEventTopicUnresolved = "cli.migrate.marker.event_topic_unresolved";
+
+    /// <summary>V4-08 标记：<c>ILocalEventBus.Subscribe</c> 没有对应物。</summary>
+    public const string MigrateMarkerEventSubscribe = "cli.migrate.marker.event_subscribe";
+
     /// <summary>V4-02 展开属性的文档：创建者标识。</summary>
     public const string MigrateEntityCreatedId = "cli.migrate.entity.created_id";
 
