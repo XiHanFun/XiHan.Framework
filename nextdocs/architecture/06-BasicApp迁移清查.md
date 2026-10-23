@@ -100,3 +100,5 @@ AGENTS.md 的"批量优先"要求仓储、缓存等对集合的操作提供原�
 | `MultiTenancy`、`Security`、`Auditing`、`Configuration` | 按标识的集合操作较少；`ISecretStore` 已是批量只读 | 审查时逐个核对，缺的补齐 |
 
 这项列为 P5 的前置工作（API 审查 P5-05 的一部分，但要在 `Persistence.SqlSugar` 与 BasicApp 迁移之前做完，否则迁移出来的代码会把 4.x 的循环单条写法带进来）：先改 RFC-0005 / 0006 / 0009，再改抽象与全部实现、一致性套件、Go SDK 的 `caching` 包与远程 Provider 操作集，最后检查框架内部与示例没有在循环里调单条方法。
+
+**2026-10-23 已完成（P5-00，ADR-0012）**，与上表的差异：批量发布命名为 `PublishManyAsync(topic, envelopes)`（与 `Range` / `Many` 命名一致，架构门禁按名字区分单条与批量）；不提供按查询条件的批量更新 / 删除（绕过审计、并发戳与软删除协议，留给 Provider 专属包）；Redis 批量写入用批次里的逐键 `SET`（`MSET` 带不了各自的过期），批量删除也用批次以拿到逐键结果；EF Core 批量写入是一次 `IN` 查询取回目标行、逐项校验后一次 `SaveChanges`，`ExecuteUpdate` / `ExecuteDelete` 随上一条不进抽象。`Persistence.SqlSugar`（P5-03）按同一约定用 `Insertable(list)` / `Updateable(list)` / `Deleteable(list)` 实现。
