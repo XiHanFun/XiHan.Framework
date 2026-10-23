@@ -20,6 +20,7 @@ internal static class V4Rules
         new UnitOfWorkFixer(),
         new DynamicApiFixer(),
         new CurrentContextFixer(),
+        new LocalEventFixer(),
         new PackageReferenceFixer(),
         new LegacyUsingFixer(),
     ];

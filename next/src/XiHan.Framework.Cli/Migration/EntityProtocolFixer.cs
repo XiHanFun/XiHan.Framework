@@ -46,19 +46,6 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
     }
 
     /// <summary>
-    /// 重排基类列表：第一项沿用原来的前导 trivia，其余前面一个空格，最后一项沿用原来的尾随 trivia。
-    /// </summary>
-    private static BaseListSyntax Rebuild(BaseListSyntax original, IReadOnlyList<BaseTypeSyntax> types)
-    {
-        var first = original.Types[0];
-        var last = original.Types[^1];
-        var normalized = types.Select((type, index) => type
-            .WithLeadingTrivia(index == 0 ? first.GetLeadingTrivia() : SyntaxFactory.TriviaList(SyntaxFactory.Space))
-            .WithTrailingTrivia(index == types.Count - 1 ? last.GetTrailingTrivia() : SyntaxFactory.TriviaList()));
-        return original.WithTypes(SyntaxFactory.SeparatedList(normalized));
-    }
-
-    /// <summary>
     /// 逐节点改写。
     /// </summary>
     private sealed class Rewriter(EntityProtocolFixer fixer, MigrationFile file, MigrationSession session) : CSharpSyntaxRewriter
@@ -130,7 +117,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                 return visited;
             }
 
-            visited = visited.WithBaseList(Rebuild(visited.BaseList, types.DistinctBy(static type => type.Type.ToString(), StringComparer.Ordinal).ToList()));
+            visited = visited.WithBaseList(RebuildBaseList(visited.BaseList, types.DistinctBy(static type => type.Type.ToString(), StringComparer.Ordinal).ToList()));
             return Mark(visited, node, messages);
         }
 
@@ -196,7 +183,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                 return visited;
             }
 
-            visited = visited.WithBaseList(Rebuild(visited.BaseList, types.DistinctBy(static type => type.Type.ToString(), StringComparer.Ordinal).ToList()));
+            visited = visited.WithBaseList(RebuildBaseList(visited.BaseList, types.DistinctBy(static type => type.Type.ToString(), StringComparer.Ordinal).ToList()));
             if (expanded)
             {
                 Usings.Add("SqlSugar");

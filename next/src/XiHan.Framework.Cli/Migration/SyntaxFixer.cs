@@ -157,6 +157,19 @@ internal abstract class SyntaxFixer : V4Fixer
     }
 
     /// <summary>
+    /// 重排基类列表：第一项沿用原来的前导 trivia，其余前面一个空格，最后一项沿用原来的尾随 trivia。
+    /// </summary>
+    protected static BaseListSyntax RebuildBaseList(BaseListSyntax original, IReadOnlyList<BaseTypeSyntax> types)
+    {
+        var first = original.Types[0];
+        var last = original.Types[^1];
+        var normalized = types.Select((type, index) => type
+            .WithLeadingTrivia(index == 0 ? first.GetLeadingTrivia() : SyntaxFactory.TriviaList(SyntaxFactory.Space))
+            .WithTrailingTrivia(index == types.Count - 1 ? last.GetTrailingTrivia() : SyntaxFactory.TriviaList()));
+        return original.WithTypes(SyntaxFactory.SeparatedList(normalized));
+    }
+
+    /// <summary>
     /// 从基类列表删除名字满足 <paramref name="remove"/> 的类型（连同其后的逗号，保留其余分隔符的空格）；列表空了就连冒号一起删掉，把列表的尾随 trivia 还给前一个 token。
     /// </summary>
     protected static TDeclaration RemoveBaseTypes<TDeclaration>(TDeclaration node, Func<string, bool> remove)

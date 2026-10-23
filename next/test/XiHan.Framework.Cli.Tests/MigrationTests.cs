@@ -661,6 +661,149 @@ public sealed class MigrationTests
         }
     }
 
+    [Fact]
+    public void LocalEvent_RewritesHandlers_Publishers_AndRegistersByTopic()
+    {
+        const string source = """
+            using Microsoft.Extensions.Logging;
+            using Shop.Events;
+            using XiHan.Framework.EventBus.Abstractions.Local;
+
+            namespace Shop.Handlers;
+
+            /// <summary>
+            /// 登录事件处理器
+            /// </summary>
+            public sealed class LoginEventHandler(ILogger<LoginEventHandler> logger) : ILocalEventHandler<LoginSucceededDomainEvent>, ILocalEventHandler<LoginFailedDomainEvent>
+            {
+                public async Task HandleEventAsync(LoginSucceededDomainEvent eventData)
+                {
+                    await Task.Yield();
+                    logger.LogInformation("ok {User}", eventData.UserId);
+                }
+
+                public Task HandleEventAsync(LoginFailedDomainEvent eventData) => Task.CompletedTask;
+            }
+
+            public sealed class LoginService(ILocalEventBus localEventBus)
+            {
+                public async Task RecordAsync(string user, CancellationToken cancellationToken)
+                {
+                    await localEventBus.PublishAsync(new LoginSucceededDomainEvent(user));
+                    var failure = new LoginFailedDomainEvent(user);
+                    await localEventBus.PublishAsync(failure);
+                }
+            }
+
+            """;
+        var generated = CliMessages.MigrateGenerated.L();
+        var json = Markers.Line("V4-08", CliMessages.MigrateMarkerEventJson.L());
+        var expected = $$"""
+            using Microsoft.Extensions.Logging;
+            using Shop.Events;
+            using System.Text.Json;
+            using XiHan.Framework.EventBus.Abstractions.Local;
+            using XiHan.Framework.Messaging.Abstractions;
+            using XiHan.Framework.Primitives;
+
+            namespace Shop.Handlers;
+
+            /// <summary>
+            /// 登录事件处理器
+            /// </summary>
+            public sealed class LoginEventHandler(ILogger<LoginEventHandler> logger) : IMessageHandler
+            {
+                /// <summary>{{generated}}</summary>
+                public const string LoginSucceededTopic = "login-succeeded";
+
+                /// <summary>{{generated}}</summary>
+                public const string LoginFailedTopic = "login-failed";
+
+                /// <inheritdoc />
+                public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+                {
+                    {{json}}
+                    switch (delivery.Topic)
+                    {
+                        case LoginSucceededTopic:
+                            await HandleEventAsync(JsonSerializer.Deserialize<LoginSucceededDomainEvent>(delivery.Envelope.Data.Span)!).ConfigureAwait(false);
+                            return Result.Success();
+                        case LoginFailedTopic:
+                            await HandleEventAsync(JsonSerializer.Deserialize<LoginFailedDomainEvent>(delivery.Envelope.Data.Span)!).ConfigureAwait(false);
+                            return Result.Success();
+                        default:
+                            return Result.Success();
+                    }
+                }
+
+                public async Task HandleEventAsync(LoginSucceededDomainEvent eventData)
+                {
+                    await Task.Yield();
+                    logger.LogInformation("ok {User}", eventData.UserId);
+                }
+
+                public Task HandleEventAsync(LoginFailedDomainEvent eventData) => Task.CompletedTask;
+            }
+
+            public sealed class LoginService(IMessagePublisher localEventBus)
+            {
+                public async Task RecordAsync(string user, CancellationToken cancellationToken)
+                {
+                    {{json}}
+                    await localEventBus.PublishAsync("login-succeeded", new MessageEnvelope { Id = Guid.NewGuid().ToString("N"), Source = "/shop", Type = "login-succeeded", Time = DateTimeOffset.UtcNow, Data = JsonSerializer.SerializeToUtf8Bytes(new LoginSucceededDomainEvent(user)) }, cancellationToken);
+                    var failure = new LoginFailedDomainEvent(user);
+                    {{json}}
+                    await localEventBus.PublishAsync("login-failed", new MessageEnvelope { Id = Guid.NewGuid().ToString("N"), Source = "/shop", Type = "login-failed", Time = DateTimeOffset.UtcNow, Data = JsonSerializer.SerializeToUtf8Bytes(failure) }, cancellationToken);
+                }
+            }
+
+            """;
+
+        using var project = new TempProject("Shop");
+        var (text, session) = Apply(new LocalEventFixer(), source, "Shop/Handlers/LoginEventHandler.cs", project.Directory);
+
+        Assert.Equal(Lf(expected), text);
+        Assert.Equal(3, session.Findings.Count(static finding => finding.IsMarker));
+        var registration = Assert.Single(session.Registrations[project.Directory]);
+        Assert.Equal(["LoginEventHandler.LoginSucceededTopic", "LoginEventHandler.LoginFailedTopic"], registration.Topics);
+        var services = V4ServicesGenerator.Generate("Shop", "ShopV4Services", session.Registrations[project.Directory], "// marker", "\n");
+        Assert.Contains("using XiHan.Framework.Messaging.Abstractions;\n", services, StringComparison.Ordinal);
+        Assert.Contains("        services.AddMessageHandler<LoginEventHandler>(LoginEventHandler.LoginSucceededTopic);\n        services.AddMessageHandler<LoginEventHandler>(LoginEventHandler.LoginFailedTopic);\n", services, StringComparison.Ordinal);
+
+        var (again, second) = Apply(new LocalEventFixer(), text, "Shop/Handlers/LoginEventHandler.cs", project.Directory);
+        Assert.Equal(text, again);
+        Assert.Empty(second.Findings);
+    }
+
+    /// <summary>
+    /// 临时目录下的一个空项目（只有 .csproj），给需要项目目录的规则用。
+    /// </summary>
+    private sealed class TempProject : IDisposable
+    {
+        /// <summary>
+        /// 临时根目录。
+        /// </summary>
+        private readonly string _root = Path.Combine(Path.GetTempPath(), "xihan-project-" + Guid.NewGuid().ToString("N"));
+
+        /// <summary>
+        /// 项目目录。
+        /// </summary>
+        public string Directory { get; }
+
+        /// <summary>
+        /// 创建 <c>&lt;临时根&gt;/&lt;name&gt;/&lt;name&gt;.csproj</c>。
+        /// </summary>
+        public TempProject(string name)
+        {
+            Directory = Path.Combine(_root, name);
+            System.IO.Directory.CreateDirectory(Directory);
+            File.WriteAllText(Path.Combine(Directory, name + ".csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />\n");
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => System.IO.Directory.Delete(_root, recursive: true);
+    }
+
     [Theory]
     [InlineData("CreateAccessPolicyAsync", "AccessPolicy", "create")]
     [InlineData("UpdateAccessPolicyStatusAsync", "AccessPolicy", "update-status")]
