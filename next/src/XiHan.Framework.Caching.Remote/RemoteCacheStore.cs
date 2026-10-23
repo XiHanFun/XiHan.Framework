@@ -14,6 +14,7 @@ namespace XiHan.Framework.Caching.Remote;
 /// <summary>
 /// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）：每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；
 /// 插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。
+/// 批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议。
 /// </summary>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCacheStore : ICacheStore
@@ -56,10 +57,51 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>> GetManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        var response = await ExecuteAsync(RemoteCacheOperations.GetMany, new RemoteCacheOperations.KeysRequest(Names(keys)), RemoteCacheJsonContext.Default.KeysRequest, RemoteCacheJsonContext.Default.GetManyResponse, cancellationToken).ConfigureAwait(false);
+        var values = Sized(response.Values, keys.Count, RemoteCacheOperations.GetMany);
+        var results = new Maybe<ReadOnlyMemory<byte>>[keys.Count];
+        for (var index = 0; index < keys.Count; index++)
+        {
+            results[index] = values[index] is { } value ? Maybe.Some<ReadOnlyMemory<byte>>(Decode(value, RemoteCacheOperations.GetMany)) : default;
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
     public async ValueTask SetAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         await ExecuteAsync(RemoteCacheOperations.Set, Write(key, value, options.Validated()), RemoteCacheJsonContext.Default.SetRequest, RemoteCacheJsonContext.Default.EmptyResponse, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask SetManyAsync(IReadOnlyList<CacheEntry> entries, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        // 先在 .NET 侧校验并编码全部项：任一项不合法在触及插件前就失败
+        var items = new RemoteCacheOperations.SetRequest[entries.Count];
+        for (var index = 0; index < entries.Count; index++)
+        {
+            var entry = entries[index];
+            ArgumentNullException.ThrowIfNull(entry);
+            items[index] = Write(entry.Key, entry.Value, entry.Options.Validated());
+        }
+
+        if (items.Length == 0)
+        {
+            return;
+        }
+
+        await ExecuteAsync(RemoteCacheOperations.SetMany, new RemoteCacheOperations.SetManyRequest(items), RemoteCacheJsonContext.Default.SetManyRequest, RemoteCacheJsonContext.Default.EmptyResponse, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -75,6 +117,19 @@ public sealed class RemoteCacheStore : ICacheStore
     {
         var response = await ExecuteAsync(RemoteCacheOperations.Remove, new RemoteCacheOperations.KeyRequest(key.Value), RemoteCacheJsonContext.Default.KeyRequest, RemoteCacheJsonContext.Default.RemovedResponse, cancellationToken).ConfigureAwait(false);
         return response.Removed;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        if (keys.Count == 0)
+        {
+            return [];
+        }
+
+        var response = await ExecuteAsync(RemoteCacheOperations.RemoveMany, new RemoteCacheOperations.KeysRequest(Names(keys)), RemoteCacheJsonContext.Default.KeysRequest, RemoteCacheJsonContext.Default.RemovedManyResponse, cancellationToken).ConfigureAwait(false);
+        return Sized(response.Removed, keys.Count, RemoteCacheOperations.RemoveMany);
     }
 
     /// <inheritdoc />
@@ -94,6 +149,28 @@ public sealed class RemoteCacheStore : ICacheStore
             Convert.ToBase64String(value.Span),
             options.TimeToLive is { } ttl ? Milliseconds(ttl) : null,
             options.SlidingExpiration is { } sliding ? Milliseconds(sliding) : null);
+
+    /// <summary>
+    /// 取键的字符串形式。
+    /// </summary>
+    private static string[] Names(IReadOnlyList<CacheKey> keys)
+    {
+        var names = new string[keys.Count];
+        for (var index = 0; index < keys.Count; index++)
+        {
+            names[index] = keys[index].Value;
+        }
+
+        return names;
+    }
+
+    /// <summary>
+    /// 校验批量响应的数组：缺失或长度与请求不符视为插件违反协议。
+    /// </summary>
+    private static IReadOnlyList<T> Sized<T>(IReadOnlyList<T>? values, int expected, string operation)
+        => values is not null && values.Count == expected
+            ? values
+            : throw new FrameworkException(CachingErrors.StoreUnavailable, $"The remote cache operation '{operation}' returned {values?.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "no"} values for {expected} keys.");
 
     /// <summary>
     /// 过期时间换算成至少 1 的毫秒整数（向上取整，亚毫秒的过期不会被截成 0）。

@@ -6,7 +6,7 @@ using XiHan.Framework.Caching.Abstractions;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 有界 LRU 表：所有操作在一把锁内完成，过期在访问时清理，满时淘汰最久未访问的条目。
+/// 有界 LRU 表：所有操作在一把锁内完成，过期在访问时清理，满时淘汰最久未访问的条目；批量方法一次加锁逐项处理。
 /// </summary>
 internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTimeToLive, TimeProvider timeProvider)
     where TValue : class
@@ -47,23 +47,25 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     {
         lock (_gate)
         {
-            var node = Live(key);
-            if (node is null)
-            {
-                return null;
-            }
-
-            // 滑动过期：每次命中都把到期时刻推后一个窗口
-            if (node.Value.Sliding is { } sliding)
-            {
-                node.Value.ExpiresAt = timeProvider.GetUtcNow() + sliding;
-            }
-
-            // 移到链表头部表示最近使用
-            _recency.Remove(node);
-            _recency.AddFirst(node);
-            return node.Value.Value;
+            return Read(key);
         }
+    }
+
+    /// <summary>
+    /// 批量读取：一次加锁逐键读取，语义同 <see cref="Get"/>；结果与键顺序一一对应。
+    /// </summary>
+    public TValue?[] GetMany(IReadOnlyList<string> keys)
+    {
+        var values = new TValue?[keys.Count];
+        lock (_gate)
+        {
+            for (var index = 0; index < keys.Count; index++)
+            {
+                values[index] = Read(keys[index]);
+            }
+        }
+
+        return values;
     }
 
     /// <summary>
@@ -74,6 +76,20 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
         lock (_gate)
         {
             Write(key, value, options);
+        }
+    }
+
+    /// <summary>
+    /// 批量写入：一次加锁逐项写入，同一键出现多次后者覆盖。
+    /// </summary>
+    public void SetMany(IReadOnlyList<(string Key, TValue Value, CacheEntryOptions Options)> entries)
+    {
+        lock (_gate)
+        {
+            foreach (var (key, value, options) in entries)
+            {
+                Write(key, value, options);
+            }
         }
     }
 
@@ -101,16 +117,25 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     {
         lock (_gate)
         {
-            // 已过期的条目视为不存在，比较删也不会匹配到它
-            var node = Live(key);
-            if (node is null || (condition is not null && !condition(node.Value.Value)))
-            {
-                return false;
-            }
-
-            Evict(node);
-            return true;
+            return Delete(key, condition);
         }
+    }
+
+    /// <summary>
+    /// 批量删除：一次加锁逐键删除；结果与键顺序一一对应，同一键出现多次第二次为 <see langword="false"/>。
+    /// </summary>
+    public bool[] RemoveMany(IReadOnlyList<string> keys)
+    {
+        var results = new bool[keys.Count];
+        lock (_gate)
+        {
+            for (var index = 0; index < keys.Count; index++)
+            {
+                results[index] = Delete(keys[index], null);
+            }
+        }
+
+        return results;
     }
 
     /// <summary>
@@ -123,6 +148,45 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
             _index.Clear();
             _recency.Clear();
         }
+    }
+
+    /// <summary>
+    /// 读取未过期的值，命中时刷新最近使用顺序并延长滑动过期。须在锁内调用。
+    /// </summary>
+    private TValue? Read(string key)
+    {
+        var node = Live(key);
+        if (node is null)
+        {
+            return null;
+        }
+
+        // 滑动过期：每次命中都把到期时刻推后一个窗口
+        if (node.Value.Sliding is { } sliding)
+        {
+            node.Value.ExpiresAt = timeProvider.GetUtcNow() + sliding;
+        }
+
+        // 移到链表头部表示最近使用
+        _recency.Remove(node);
+        _recency.AddFirst(node);
+        return node.Value.Value;
+    }
+
+    /// <summary>
+    /// 删除未过期的条目，给定条件时只在当前值满足条件才删除。须在锁内调用。
+    /// </summary>
+    private bool Delete(string key, Func<TValue, bool>? condition)
+    {
+        // 已过期的条目视为不存在，比较删也不会匹配到它
+        var node = Live(key);
+        if (node is null || (condition is not null && !condition(node.Value.Value)))
+        {
+            return false;
+        }
+
+        Evict(node);
+        return true;
     }
 
     /// <summary>

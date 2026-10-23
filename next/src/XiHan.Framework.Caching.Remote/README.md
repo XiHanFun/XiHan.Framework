@@ -1,6 +1,6 @@
 # XiHan.Framework.Caching.Remote
 
-`caching.distributed@1` 的远程 Provider 适配器（Ring 3，RFC-0019，**Experimental**）：存储由任意语言写的进程外插件承担，插件只需实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove`（`spec/provider/caching-distributed.md`），本包把它接成 `ISharedCache`、`IDistributedLock` 与幂等中间件，和 `Caching.Redis` 一样参与能力求解。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包与 `examples/cache`，示例插件见 `samples/CacheGoPlugin`。
+`caching.distributed@1` 的远程 Provider 适配器（Ring 3，RFC-0019，**Experimental**）：存储由任意语言写的进程外插件承担，插件只需实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove / get-many / set-many / remove-many`（`spec/provider/caching-distributed.md`），本包把它接成 `ISharedCache`、`IDistributedLock` 与幂等中间件，和 `Caching.Redis` 一样参与能力求解。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包与 `examples/cache`，示例插件见 `samples/CacheGoPlugin`。
 
 ```csharp
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeature>().UseFeature<RemoteCachingFeature>());
@@ -29,4 +29,4 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 
 ## 状态
 
-Experimental：操作集只定义了 RFC-0006 的五个原子操作，没有批量操作；其他子系统的远程 Provider 操作集随各自的示例补充。
+Experimental：操作集覆盖 RFC-0006 的五个原子操作与三个批量操作；其他子系统的远程 Provider 操作集随各自的示例补充。
