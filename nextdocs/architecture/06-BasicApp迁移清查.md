@@ -84,3 +84,19 @@
 ## 4. 引用了但没用的 4.x 包
 
 `Castle`、`Http`、`Serialization`、`Threading`、`Settings`、`Script`、`SearchEngines`、`ObjectMapping`、`Logging`、`DistributedIds`（配置节有、代码无命中）、`Validation`（只有 DataAnnotations）、`VirtualFileSystem`（2 处）、`Observability`（配置节）、`Web.Grpc`（引用、无使用）、`Web.Mcp`（引用、无使用）。清理 `XiHanBasicAppCoreModule` 的 `DependsOn` 就能去掉这 15 个引用，迁移前先做，减少噪音。
+
+## 5. 批量优先：5.0 抽象的现状与缺口
+
+AGENTS.md 的"批量优先"要求仓储、缓存等对集合的操作提供原生批量方法，不在调用方循环单条。5.0 各抽象的现状（2026-10-23）：
+
+| 抽象 | 现状 | 缺口与要求 |
+| --- | --- | --- |
+| `ObjectStorage.Abstractions` `IBlobStore` | 已批量优先：`PutAsync(uploads)`、`DeleteAsync(keys)` 逐项结果 | 无 |
+| `Scheduling.Abstractions` `IJobScheduler` | 已批量优先：`TriggerAsync(names)` 逐项结果 | 无 |
+| `Localization.Database` `MessageTranslationStore` | 已批量增改删 | 无 |
+| `Persistence.Abstractions` `IRepository<TEntity, TKey>` | 只有单条 `AddAsync` / `UpdateAsync` / `RemoveAsync`；EF Core 实现没有 `AddRange` / `ExecuteUpdate` / `ExecuteDelete` | **要补** `AddRangeAsync` / `UpdateRangeAsync` / `RemoveRangeAsync`（以及按查询批量删除 / 更新），逐项结果或汇总错误、空集合与重复项语义、取消时机写进 RFC-0005；EF Core 用 `AddRange` + `ExecuteUpdateAsync` / `ExecuteDeleteAsync`，SqlSugar 用 `Insertable(list)` / `Updateable(list)` / `Deleteable` 批量；InMemory 原生批量；套件 `Persistence.Conformance` 加批量用例；单条改为批量的特例 |
+| `Caching.Abstractions` `ICacheStore` / `ICache` / `ISharedCache` | 只有单键 `Get` / `Set` / `TryAdd` / `Remove` / `TryRemove` | **要补** `GetManyAsync(keys)` / `SetManyAsync(entries)` / `RemoveManyAsync(keys)`，Redis 用 `MGET` / `MSET` / 管道，InMemory 原生，`SerializingCache` 对应泛型批量；RFC-0006 与 `CacheStoreConformance` 同步；远程 Provider 操作集加 `cache-entries.get-many` / `set-many` / `remove-many`（RFC-0019 的未决项顺势定下），Go SDK `caching.Store` 同步 |
+| `Messaging.Abstractions` `IMessagePublisher` | 只有单条 `PublishAsync(topic, envelope)`；插件协议的 `Host.Publish` 倒是批量的 | **要补** `PublishAsync(topic, envelopes)` 逐项结果，RabbitMQ 用发布确认的批量，发件箱批量入库；RFC-0009 与 `Messaging.Conformance` 同步 |
+| `MultiTenancy`、`Security`、`Auditing`、`Configuration` | 按标识的集合操作较少；`ISecretStore` 已是批量只读 | 审查时逐个核对，缺的补齐 |
+
+这项列为 P5 的前置工作（API 审查 P5-05 的一部分，但要在 `Persistence.SqlSugar` 与 BasicApp 迁移之前做完，否则迁移出来的代码会把 4.x 的循环单条写法带进来）：先改 RFC-0005 / 0006 / 0009，再改抽象与全部实现、一致性套件、Go SDK 的 `caching` 包与远程 Provider 操作集，最后检查框架内部与示例没有在循环里调单条方法。
