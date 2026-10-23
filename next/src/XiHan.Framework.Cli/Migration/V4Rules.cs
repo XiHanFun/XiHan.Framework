@@ -21,6 +21,7 @@ internal static class V4Rules
         new DynamicApiFixer(),
         new CurrentContextFixer(),
         new LocalEventFixer(),
+        new LocalizationResourceFixer(),
         new PackageReferenceFixer(),
         new LegacyUsingFixer(),
     ];

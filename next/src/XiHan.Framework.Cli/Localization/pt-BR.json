@@ -25,6 +25,7 @@
   "cli.migrate.marker.event_json": "O evento é serializado com System.Text.Json baseado em reflexão; registre o tipo do evento em um JsonSerializerContext e passe seu JsonTypeInfo para AOT.",
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe não tem equivalente em 5.0; registre o manipulador com AddMessageHandler<THandler>(topic) no Configure da funcionalidade.",
   "cli.migrate.marker.event_topic_unresolved": "Não foi possível determinar o tipo de evento por trás de '{name}'; defina o tópico manualmente.",
+  "cli.migrate.marker.localization_catalog": "Carregue o catálogo incorporado com MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<um tipo deste assembly>)) e adicione-o à funcionalidade de localização; as chaves são {domain}.<recurso>.<chave>.",
   "cli.migrate.marker.manual_registration": "{name} não pôde ser registrado automaticamente (genérico, abstrato ou fora de um projeto); registre manualmente.",
   "cli.migrate.marker.modules_dropped": "Módulos 4.x sem capacidade 5.0 removidos: {modules}.",
   "cli.migrate.marker.permission_simplified": "Apenas a primeira expressão de permissão virou a permissão do contrato; as demais foram descartadas.",

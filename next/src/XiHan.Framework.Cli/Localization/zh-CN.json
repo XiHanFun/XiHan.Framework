@@ -25,6 +25,7 @@
   "cli.migrate.marker.event_json": "事件用基于反射的 System.Text.Json 序列化；把事件类型登记进 JsonSerializerContext 并传它的 JsonTypeInfo 才能 AOT。",
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe 没有 5.0 对应物；在特性的 Configure 里用 AddMessageHandler<THandler>(topic) 登记处理器。",
   "cli.migrate.marker.event_topic_unresolved": "推不出 '{name}' 的事件类型；请手工填主题。",
+  "cli.migrate.marker.localization_catalog": "用 MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<本程序集里的类型>)) 加载嵌入目录并加进本地化特性；键为 {domain}.<资源>.<键>。",
   "cli.migrate.marker.manual_registration": "{name} 没法自动注册（泛型、抽象或不在项目里）；请手工注册。",
   "cli.migrate.marker.modules_dropped": "已删除没有 5.0 能力的 4.x 模块：{modules}。",
   "cli.migrate.marker.permission_simplified": "只有第一个权限表达式成为契约权限；其余已丢弃。",

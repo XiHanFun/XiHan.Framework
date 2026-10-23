@@ -25,6 +25,7 @@
   "cli.migrate.marker.event_json": "Событие сериализуется через System.Text.Json на основе отражения; зарегистрируйте тип события в JsonSerializerContext и передайте его JsonTypeInfo для AOT.",
   "cli.migrate.marker.event_subscribe": "У ILocalEventBus.Subscribe нет аналога в 5.0; зарегистрируйте обработчик через AddMessageHandler<THandler>(topic) в Configure функции.",
   "cli.migrate.marker.event_topic_unresolved": "Не удалось определить тип события за '{name}'; задайте тему вручную.",
+  "cli.migrate.marker.localization_catalog": "Загрузите встроенный каталог через MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<тип из этой сборки>)) и добавьте его в функцию локализации; ключи имеют вид {domain}.<ресурс>.<ключ>.",
   "cli.migrate.marker.manual_registration": "{name} не удалось зарегистрировать автоматически (обобщённый, абстрактный или вне проекта); зарегистрируйте вручную.",
   "cli.migrate.marker.modules_dropped": "Удалены модули 4.x без возможности 5.0: {modules}.",
   "cli.migrate.marker.permission_simplified": "Только первое выражение разрешения стало разрешением контракта; остальные отброшены.",

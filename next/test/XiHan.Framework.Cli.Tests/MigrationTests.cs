@@ -775,6 +775,48 @@ public sealed class MigrationTests
         Assert.Empty(second.Findings);
     }
 
+    [Fact]
+    public void LocalizationResource_MergesPerCulture_DeletesSources_AndEmbeds()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-localization-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "Shop.Web");
+        var localization = Path.Combine(project, "Localization");
+        Directory.CreateDirectory(localization);
+        try
+        {
+            File.WriteAllText(Path.Combine(project, "Shop.Web.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n  </PropertyGroup>\n</Project>\n");
+            File.WriteAllText(Path.Combine(localization, "ApiResponse.en-US.json"), "{\n  \"resource\": \"ApiResponse\",\n  \"culture\": \"en-US\",\n  \"texts\": {\n    \"NotModified\": \"Not modified\",\n    \"Created\": \"Created {0}\"\n  }\n}\n");
+            File.WriteAllText(Path.Combine(localization, "ApiResponse.zh-CN.json"), "{ \"resource\": \"ApiResponse\", \"culture\": \"zh-CN\", \"texts\": { \"NotModified\": \"未修改\", \"Created\": \"已创建 {0}\" } }");
+            File.WriteAllText(Path.Combine(localization, "Validation.en-US.json"), "{ \"resource\": \"Validation\", \"culture\": \"en-US\", \"texts\": { \"Required\": \"{0} is required\" } }");
+
+            var first = new V4Migration(root, [new LocalizationResourceFixer()], dryRun: false).Run(CancellationToken.None);
+
+            Assert.Equal("{\n  \"web.apiresponse.created\": \"Created {0}\",\n  \"web.apiresponse.not_modified\": \"Not modified\",\n  \"web.validation.required\": \"{0} is required\"\n}\n", Lf(File.ReadAllText(Path.Combine(localization, "en-US.json"))));
+            Assert.Equal("{\n  \"web.apiresponse.created\": \"已创建 {0}\",\n  \"web.apiresponse.not_modified\": \"未修改\"\n}\n", Lf(File.ReadAllText(Path.Combine(localization, "zh-CN.json"))));
+            Assert.Equal(["en-US.json", "zh-CN.json"], Directory.GetFiles(localization).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+            var csproj = File.ReadAllText(Path.Combine(project, "Shop.Web.csproj"));
+            Assert.Contains("<EmbeddedResource Include=\"Localization/*.json\" LogicalName=\"Localization/%(Filename)%(Extension)\" />", csproj, StringComparison.Ordinal);
+            Assert.Contains("<!-- " + Markers.Text("V4-09", CliMessages.MigrateMarkerLocalizationCatalog.L(("domain", "web"))) + " -->", csproj, StringComparison.Ordinal);
+            var rule = Assert.Single(first.Rules);
+            Assert.Equal(("V4-09", 6, 1), (rule.Id, rule.Changed, rule.Markers));
+
+            var second = new V4Migration(root, [new LocalizationResourceFixer()], dryRun: false).Run(CancellationToken.None);
+            Assert.All(second.Rules, static rule => Assert.Equal((0, 0), (rule.Changed, rule.Markers)));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("NotModified", "not_modified")]
+    [InlineData("HTTPError", "httperror")]
+    [InlineData("Key With Spaces", "key_with_spaces")]
+    [InlineData("404NotFound", "k_404_not_found")]
+    [InlineData("", "text")]
+    public void Snake_FollowsKeyGrammar(string key, string expected) => Assert.Equal(expected, V4LocalizationGenerator.Snake(key));
+
     /// <summary>
     /// 临时目录下的一个空项目（只有 .csproj），给需要项目目录的规则用。
     /// </summary>

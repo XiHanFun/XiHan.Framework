@@ -23,9 +23,14 @@ internal static class Markers
         => node.GetLeadingTrivia().Any(trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && trivia.ToString() == Line(rule, message));
 
     /// <summary>
-    /// 标记行文本。
+    /// 标记正文（不带注释前缀；XML 注释里用）。
     /// </summary>
-    public static string Line(string rule, string message) => $"// {Prefix}({rule}): {message}";
+    public static string Text(string rule, string message) => $"{Prefix}({rule}): {message}";
+
+    /// <summary>
+    /// 标记行文本（C# 单行注释）。
+    /// </summary>
+    public static string Line(string rule, string message) => "// " + Text(rule, message);
 
     /// <summary>
     /// 在节点前插入标记；已有同规则同文案的标记时原样返回。
