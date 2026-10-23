@@ -21,6 +21,7 @@
   <Folder Name="/3.Providers/">
     <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
+    <Project Path="src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />
     <Project Path="src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
     <Project Path="src/XiHan.Framework.Caching.Remote/XiHan.Framework.Caching.Remote.csproj" />
@@ -92,6 +93,7 @@
     <Project Path="test/XiHan.Framework.Persistence.Abstractions.Tests/XiHan.Framework.Persistence.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.InMemory.Tests/XiHan.Framework.Persistence.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.EntityFrameworkCore.Tests/XiHan.Framework.Persistence.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Abstractions.Tests/XiHan.Framework.Caching.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.InMemory.Tests/XiHan.Framework.Caching.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Redis.Tests/XiHan.Framework.Caching.Redis.Tests.csproj" />
