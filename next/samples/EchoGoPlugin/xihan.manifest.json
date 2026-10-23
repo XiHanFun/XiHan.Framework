@@ -1,0 +1,19 @@
+{
+  "$schema": "https://spec.xihanfun.com/manifest/v1.json",
+  "id": "xihan.samples.echo-go",
+  "package": "github.com/xihanfun/framework-sdk-go/examples/echo",
+  "version": "0.1.0",
+  "primitives": "1",
+  "stability": "experimental",
+  "kind": "plugin",
+  "isolation": "out-of-process",
+  "requires": [ { "id": "kernel.plugins", "version": "1" } ],
+  "contributes": {
+    "operations": [ "echoes.create", "echoes.relay", "echoes.crash", "events.list" ],
+    "config": { "section": "XiHan:Echo" },
+    "health": [ "echo" ]
+  },
+  "permissions": [ "capability:kernel.pipeline" ],
+  "activation": [ "onStartup" ],
+  "entry": "echo-go"
+}
