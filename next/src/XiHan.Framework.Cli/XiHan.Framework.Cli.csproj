@@ -15,6 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
     <ProjectReference Include="../XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <!-- migrate v4 做语法级重写：只用语法树，不加载 MSBuild 工作区 -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <ItemGroup>

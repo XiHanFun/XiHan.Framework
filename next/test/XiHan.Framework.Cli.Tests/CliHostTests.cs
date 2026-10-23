@@ -8,8 +8,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Tests;
 
 /// <summary>
-/// 工具的命令分派：pack 端到端、失败的退出码与 stderr、转发命令、help 与 version。
+/// 工具的命令分派：pack 端到端、失败的退出码与 stderr、转发命令、help 与 version、migrate 的入参校验与试运行。
+/// 与 <see cref="MigrationTests"/> 同一集合：执行命令会设置进程级的默认消息作用域，标记文案不能在两组测试之间变。
 /// </summary>
+[Collection("Cli")]
 public sealed class CliHostTests
 {
     /// <summary>
@@ -110,7 +112,7 @@ public sealed class CliHostTests
     {
         var (help, helpOutput, _) = await RunAsync(null, "help", "--locale", "en-US");
         Assert.Equal(CommandLineExitCodes.Success, help);
-        foreach (var command in new[] { "pack", "graph", "pipeline", "operations", "invoke", "version", "help" })
+        foreach (var command in new[] { "pack", "migrate", "graph", "pipeline", "operations", "invoke", "version", "help" })
         {
             Assert.Contains(command, helpOutput, StringComparison.Ordinal);
         }
@@ -124,5 +126,35 @@ public sealed class CliHostTests
         var (none, _, noneError) = await RunAsync(null);
         Assert.Equal(CommandLineExitCodes.Usage, none);
         Assert.Contains("pack", noneError, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Migrate_ValidatesInput_PrintsTable_AndDryRunWritesReportOnly()
+    {
+        using var fixture = new MigrationFixture();
+
+        var (badVersion, _, badVersionError) = await RunAsync(null, "migrate", "v3", "--path", fixture.Root);
+        Assert.Equal(CommandLineExitCodes.Usage, badVersion);
+        Assert.Equal(CliErrors.MigrateVersionUnknown, CodeOf(badVersionError));
+
+        var (missing, _, missingError) = await RunAsync(null, "migrate", "v4", "--path", Path.Combine(fixture.Root, "nowhere"));
+        Assert.Equal(CommandLineExitCodes.NotFound, missing);
+        Assert.Equal(CliErrors.MigratePathNotFound, CodeOf(missingError));
+
+        var (badFixer, _, badFixerError) = await RunAsync(null, "migrate", "v4", "--path", fixture.Root, "--fixers", "V4-01,V4-99");
+        Assert.Equal(CommandLineExitCodes.Usage, badFixer);
+        Assert.Equal(CliErrors.MigrateFixerUnknown, CodeOf(badFixerError));
+
+        var reportPath = Path.Combine(fixture.Root, "report.json");
+        var (dryRun, output, _) = await RunAsync(null, "migrate", "v4", "--path", fixture.Project, "--dry-run", "--report", reportPath, "--locale", "en-US");
+        Assert.Equal(CommandLineExitCodes.Success, dryRun);
+        Assert.Contains("Rule", output, StringComparison.Ordinal);
+        Assert.Contains("V4-01", output, StringComparison.Ordinal);
+        Assert.Contains("Dry run", output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(fixture.Project, "XiHanShopOrdersModule.cs")));
+        using var report = JsonDocument.Parse(File.ReadAllText(reportPath));
+        Assert.Equal("v4", report.RootElement.GetProperty("version").GetString());
+        Assert.True(report.RootElement.GetProperty("dryRun").GetBoolean());
+        Assert.Equal("V4-01", report.RootElement.GetProperty("rules")[0].GetProperty("id").GetString());
     }
 }
