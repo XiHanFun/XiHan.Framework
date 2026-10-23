@@ -21,6 +21,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Remote/XiHan.Framework.Caching.Remote.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />

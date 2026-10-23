@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "Der Cache-Schlüssel '{key}' ist ungültig: Er darf nicht leer sein, keine Leer- oder Steuerzeichen enthalten und höchstens 512 Zeichen lang sein.",
+  "caching.remote.options_invalid": "Die Optionen des Cache-Eintrags sind ungültig: {reason}.",
+  "caching.remote.store_unavailable": "Der Cache-Speicher ist nicht verfügbar: {reason}.",
+  "caching.remote.capacity_reached": "Der Cache-Speicher ist voll ({capacity} Einträge)."
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://spec.xihanfun.com/manifest/v1.json",
+  "id": "xihan.samples.cache-go",
+  "package": "github.com/xihanfun/framework-sdk-go/examples/cache",
+  "version": "0.1.0",
+  "primitives": "1",
+  "stability": "experimental",
+  "kind": "plugin",
+  "isolation": "out-of-process",
+  "requires": [ { "id": "kernel.plugins", "version": "1" } ],
+  "contributes": {
+    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove" ],
+    "config": { "section": "XiHan:Cache" },
+    "health": [ "cache" ]
+  },
+  "activation": [ "onStartup" ],
+  "entry": "cache-go"
+}

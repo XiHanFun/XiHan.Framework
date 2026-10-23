@@ -2,7 +2,7 @@ module echogoplugin
 
 go 1.26
 
-require github.com/xihanfun/framework-sdk-go v0.0.0-20261023002905-c5a2cf563200
+require github.com/xihanfun/framework-sdk-go v0.0.0-20261023010744-77abe7d0d88a
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect

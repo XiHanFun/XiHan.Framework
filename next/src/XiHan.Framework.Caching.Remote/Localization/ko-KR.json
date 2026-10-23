@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "캐시 키 '{key}'이(가) 잘못되었습니다. 비어 있지 않고 공백이나 제어 문자를 포함하지 않으며 512자 이하여야 합니다.",
+  "caching.remote.options_invalid": "캐시 항목 옵션이 잘못되었습니다: {reason}.",
+  "caching.remote.store_unavailable": "캐시 저장소를 사용할 수 없습니다: {reason}.",
+  "caching.remote.capacity_reached": "캐시 저장소가 가득 찼습니다({capacity}개 항목)."
+}

@@ -23,6 +23,7 @@
     <Project Path="src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
     <Project Path="src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <Project Path="src/XiHan.Framework.Caching.Remote/XiHan.Framework.Caching.Remote.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
@@ -94,6 +95,7 @@
     <Project Path="test/XiHan.Framework.Caching.Abstractions.Tests/XiHan.Framework.Caching.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.InMemory.Tests/XiHan.Framework.Caching.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Caching.Redis.Tests/XiHan.Framework.Caching.Redis.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Caching.Remote.Tests/XiHan.Framework.Caching.Remote.Tests.csproj" />
     <Project Path="test/XiHan.Framework.MultiTenancy.Abstractions.Tests/XiHan.Framework.MultiTenancy.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.MultiTenancy.InMemory.Tests/XiHan.Framework.MultiTenancy.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Abstractions.Tests/XiHan.Framework.Security.Abstractions.Tests.csproj" />

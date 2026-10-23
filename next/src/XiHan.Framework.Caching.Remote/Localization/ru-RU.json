@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "Ключ кэша '{key}' недопустим: он не должен быть пустым, не должен содержать пробелы или управляющие символы и не должен превышать 512 символов.",
+  "caching.remote.options_invalid": "Параметры записи кэша недопустимы: {reason}.",
+  "caching.remote.store_unavailable": "Хранилище кэша недоступно: {reason}.",
+  "caching.remote.capacity_reached": "Хранилище кэша заполнено ({capacity} записей)."
+}
