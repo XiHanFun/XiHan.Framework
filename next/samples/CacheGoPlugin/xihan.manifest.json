@@ -9,7 +9,7 @@
   "isolation": "out-of-process",
   "requires": [ { "id": "kernel.plugins", "version": "1" } ],
   "contributes": {
-    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove" ],
+    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove", "cache-entries.get-many", "cache-entries.set-many", "cache-entries.remove-many" ],
     "config": { "section": "XiHan:Cache" },
     "health": [ "cache" ]
   },

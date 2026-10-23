@@ -65,7 +65,7 @@ public sealed class RemoteCachingTests
     {
         var catalog = RemoteCachingMessages.Catalog;
         Assert.Equal(RemoteCachingMessages.CatalogName, catalog.Name);
-        Assert.Equal(5, RemoteCacheOperations.All.Count);
+        Assert.Equal(8, RemoteCacheOperations.All.Count);
         Assert.All(RemoteCacheOperations.All, static id => Assert.StartsWith("cache-entries.", id, StringComparison.Ordinal));
     }
 }

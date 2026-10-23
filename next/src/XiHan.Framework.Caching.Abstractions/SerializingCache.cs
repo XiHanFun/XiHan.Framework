@@ -27,6 +27,20 @@ public sealed class SerializingCache(ICacheStore store, ICacheSerializer seriali
     }
 
     /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Maybe<T>>> GetManyAsync<T>(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        var data = await Store.GetManyAsync(keys, cancellationToken).ConfigureAwait(false);
+        var results = new Maybe<T>[data.Count];
+        for (var index = 0; index < data.Count; index++)
+        {
+            results[index] = data[index].TryGetValue(out var bytes) ? Maybe.Some(_serializer.Deserialize<T>(bytes)) : default;
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
     public ValueTask SetAsync<T>(CacheKey key, T value, CacheEntryOptions options, CancellationToken cancellationToken)
         where T : notnull
     {
@@ -36,7 +50,28 @@ public sealed class SerializingCache(ICacheStore store, ICacheSerializer seriali
     }
 
     /// <inheritdoc />
+    public ValueTask SetManyAsync<T>(IReadOnlyList<KeyValuePair<CacheKey, T>> entries, CacheEntryOptions options, CancellationToken cancellationToken)
+        where T : notnull
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(options);
+        // 先把全部值序列化好再一次交给存储：任一值为空在触及存储前就失败
+        var validated = options.Validated();
+        var encoded = new CacheEntry[entries.Count];
+        for (var index = 0; index < entries.Count; index++)
+        {
+            ArgumentNullException.ThrowIfNull(entries[index].Value);
+            encoded[index] = new CacheEntry(entries[index].Key, _serializer.Serialize(entries[index].Value), validated);
+        }
+
+        return Store.SetManyAsync(encoded, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken) => Store.RemoveAsync(key, cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken) => Store.RemoveManyAsync(keys, cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask<T> GetOrCreateAsync<T>(CacheKey key, Func<CancellationToken, ValueTask<T>> factory, CacheEntryOptions options, CancellationToken cancellationToken)

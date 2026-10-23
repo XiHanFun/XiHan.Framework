@@ -9,7 +9,7 @@ using Xunit;
 namespace XiHan.Framework.Caching.Conformance;
 
 /// <summary>
-/// <see cref="ICacheStore"/> 的一致性套件。继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// <see cref="ICacheStore"/> 的一致性套件（含批量用例）。继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class CacheStoreConformance
@@ -210,6 +210,94 @@ public abstract class CacheStoreConformance
             Assert.True((await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).HasValue, "After expiry, the lock should be acquirable by others.");
             Assert.False(await second.ReleaseAsync(CancellationToken.None).ConfigureAwait(false), "After expiry, the token no longer matches and release should fail.");
         }
+    }
+
+    /// <summary>
+    /// 用例 11：批量写入后批量读取：结果与键顺序一一对应、未命中为无值；同一键在一批里出现多次后者覆盖。
+    /// </summary>
+    [Fact]
+    public async Task SetMany_ThenGetMany_KeepsOrder_AndLastWriteWins()
+    {
+        var store = CreateStore();
+        var first = Key();
+        var second = Key();
+
+        await store.SetManyAsync(
+        [
+            new CacheEntry(first, Bytes("1")),
+            new CacheEntry(second, Bytes("2"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(1))),
+            new CacheEntry(first, Bytes("1b")),
+        ], CancellationToken.None).ConfigureAwait(false);
+
+        var hits = await store.GetManyAsync([second, Key(), first, second], CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(4, hits.Count);
+        Assert.Equal("2", Text(hits[0]));
+        Assert.False(hits[1].HasValue);
+        Assert.Equal("1b", Text(hits[2]));
+        Assert.Equal("2", Text(hits[3]));
+        Assert.Equal("1b", Text(await store.GetAsync(first, CancellationToken.None).ConfigureAwait(false)));
+    }
+
+    /// <summary>
+    /// 用例 12：批量删除逐键报告是否存在，同一键出现多次第二次为假；之后批量读取都未命中。
+    /// </summary>
+    [Fact]
+    public async Task RemoveMany_ReportsPerKey()
+    {
+        var store = CreateStore();
+        var first = Key();
+        var second = Key();
+        await store.SetManyAsync([new CacheEntry(first, Bytes("1")), new CacheEntry(second, Bytes("2"))], CancellationToken.None).ConfigureAwait(false);
+
+        var removed = await store.RemoveManyAsync([first, first, second, Key()], CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal([true, false, true, false], removed);
+        Assert.All(await store.GetManyAsync([first, second], CancellationToken.None).ConfigureAwait(false), static hit => Assert.False(hit.HasValue));
+    }
+
+    /// <summary>
+    /// 用例 13：空集合返回空结果，不触后端也不抛出。
+    /// </summary>
+    [Fact]
+    public async Task BatchMethods_EmptyInput_ReturnEmpty()
+    {
+        var store = CreateStore();
+
+        await store.SetManyAsync([], CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Empty(await store.GetManyAsync([], CancellationToken.None).ConfigureAwait(false));
+        Assert.Empty(await store.RemoveManyAsync([], CancellationToken.None).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 14：批量写入的每项各自过期：短存活的到期后读不到、长存活的仍在；批量读取同样延长滑动过期。
+    /// </summary>
+    [Fact]
+    public async Task SetMany_HonoursPerEntryExpiration_AndGetManyExtendsSliding()
+    {
+        var store = CreateStore();
+        var shortLived = Key();
+        var longLived = Key();
+        var sliding = Key();
+        var timeToLive = TimeSpan.FromMilliseconds(400);
+        // 滑动窗口取首次读取时刻的两倍：首次批量读取落在窗口中点，第二次读取落在原始窗口之外、延长后的窗口之内
+        var window = 2 * (timeToLive + ExpirationGrace);
+        await store.SetManyAsync(
+        [
+            new CacheEntry(shortLived, Bytes("s"), CacheEntryOptions.Expires(timeToLive)),
+            new CacheEntry(longLived, Bytes("l"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(30))),
+            new CacheEntry(sliding, Bytes("w"), CacheEntryOptions.Sliding(window)),
+        ], CancellationToken.None).ConfigureAwait(false);
+
+        await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
+        var hits = await store.GetManyAsync([shortLived, longLived, sliding], CancellationToken.None).ConfigureAwait(false);
+        Assert.False(hits[0].HasValue);
+        Assert.Equal("l", Text(hits[1]));
+        Assert.Equal("w", Text(hits[2]));
+
+        // 第二次读取发生在原始窗口之外：只有上面的批量读取延长过到期时刻才仍然命中
+        await Task.Delay(window / 2 + ExpirationGrace / 2).ConfigureAwait(false);
+        Assert.True((await store.GetManyAsync([sliding], CancellationToken.None).ConfigureAwait(false))[0].HasValue, "Batch reads should extend the sliding expiration.");
     }
 
     /// <summary>

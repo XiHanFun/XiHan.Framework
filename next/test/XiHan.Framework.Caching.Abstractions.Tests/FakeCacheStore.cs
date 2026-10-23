@@ -74,6 +74,50 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
+    /// 记录 <c>getmany:</c> 并逐键读取。
+    /// </summary>
+    public ValueTask<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>> GetManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    {
+        Operations.Add("getmany:" + string.Join(",", keys.Select(static k => k.Value)));
+        var results = new Maybe<ReadOnlyMemory<byte>>[keys.Count];
+        for (var index = 0; index < keys.Count; index++)
+        {
+            results[index] = _entries.TryGetValue(keys[index].Value, out var value) ? Maybe.Some(new ReadOnlyMemory<byte>(value)) : default;
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>>(results);
+    }
+
+    /// <summary>
+    /// 记录 <c>setmany:</c> 并逐项写入；忽略过期选项。
+    /// </summary>
+    public ValueTask SetManyAsync(IReadOnlyList<CacheEntry> entries, CancellationToken cancellationToken)
+    {
+        Operations.Add("setmany:" + string.Join(",", entries.Select(static e => e.Key.Value)));
+        foreach (var entry in entries)
+        {
+            _entries[entry.Key.Value] = entry.Value.ToArray();
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// 记录 <c>removemany:</c> 并逐键删除。
+    /// </summary>
+    public ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    {
+        Operations.Add("removemany:" + string.Join(",", keys.Select(static k => k.Value)));
+        var results = new bool[keys.Count];
+        for (var index = 0; index < keys.Count; index++)
+        {
+            results[index] = _entries.TryRemove(keys[index].Value, out _);
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<bool>>(results);
+    }
+
+    /// <summary>
     /// 记录 <c>cad:</c>，当前值与期望值相同时才删除。
     /// </summary>
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)

@@ -31,8 +31,23 @@ internal sealed class PrefixedCacheStore(ICacheStore inner) : ICacheStore
     /// <inheritdoc />
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken) => inner.TryRemoveAsync(Prefix(key), expectedValue, cancellationToken);
 
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>> GetManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken) => inner.GetManyAsync(Prefix(keys), cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask SetManyAsync(IReadOnlyList<CacheEntry> entries, CancellationToken cancellationToken)
+        => inner.SetManyAsync([.. entries.Select(e => new CacheEntry(Prefix(e.Key), e.Value, e.Options))], cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken) => inner.RemoveManyAsync(Prefix(keys), cancellationToken);
+
     /// <summary>
     /// 加前缀。
     /// </summary>
     private CacheKey Prefix(CacheKey key) => new(_prefix + key.Value);
+
+    /// <summary>
+    /// 给每个键加前缀。
+    /// </summary>
+    private CacheKey[] Prefix(IReadOnlyList<CacheKey> keys) => [.. keys.Select(Prefix)];
 }
