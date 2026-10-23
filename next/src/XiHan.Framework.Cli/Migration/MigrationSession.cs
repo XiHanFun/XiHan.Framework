@@ -24,6 +24,21 @@ internal sealed class MigrationSession
     public Dictionary<string, string> Renames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// 第一遍扫描到的服务类目录（V4-06 判断 <c>[DynamicApi]</c> / <c>[Authorize]</c> 是否经基类继承）。
+    /// </summary>
+    public V4ServiceCatalog Services { get; } = new();
+
+    /// <summary>
+    /// 要写出的生成文件：绝对路径 → 文本（V4-06 的操作类、请求记录、空响应与序列化上下文）。
+    /// </summary>
+    public Dictionary<string, string> GeneratedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// V4-06 按项目目录汇总的操作生成信息。
+    /// </summary>
+    public Dictionary<string, V4OperationProject> OperationProjects { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// 记一次改动。
     /// </summary>
     public void Changed(string rule, MigrationFile file, int line) => Findings.Add(new MigrationFinding(rule, file.RelativePath, line, string.Empty, IsMarker: false));

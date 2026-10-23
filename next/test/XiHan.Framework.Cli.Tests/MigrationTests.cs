@@ -398,6 +398,232 @@ public sealed class MigrationTests
     }
 
     [Fact]
+    public void DynamicApi_GeneratesDelegatingOperations_AndStripsServices()
+    {
+        const string baseSource = """
+            using Microsoft.AspNetCore.Authorization;
+            using XiHan.Framework.Application.Attributes;
+            using XiHan.Framework.Application.Services;
+
+            namespace Shop.Application;
+
+            [Authorize]
+            [DynamicApi(Group = "Shop", GroupName = "商城")]
+            public abstract class ShopApplicationService : ApplicationServiceBase
+            {
+            }
+
+            """;
+        const string serviceSource = """
+            using Microsoft.AspNetCore.Authorization;
+            using Microsoft.AspNetCore.Mvc;
+            using Shop.Application.Dtos;
+            using Shop.Domain.Permissions;
+            using XiHan.Framework.Authorization.AspNetCore;
+
+            namespace Shop.Application.Orders;
+
+            /// <summary>
+            /// 订单服务
+            /// </summary>
+            [DynamicApi(Tag = "订单")]
+            public sealed class OrderAppService : ShopApplicationService, IOrderAppService
+            {
+                private readonly IOrderRepository _orders;
+
+                public OrderAppService(IOrderRepository orders)
+                {
+                    _orders = orders;
+                }
+
+                [HttpPost]
+                [PermissionAuthorize(ShopPermissionCodes.Order.Create)]
+                public async Task<OrderDetailDto> CreateOrderAsync(OrderCreateDto input, CancellationToken cancellationToken = default)
+                {
+                    Logger.LogInformation("create");
+                    return await _orders.CreateAsync(input, cancellationToken);
+                }
+
+                public Task<OrderDetailDto> GetOrderAsync(long id, CancellationToken cancellationToken = default) => _orders.GetAsync(id, cancellationToken);
+
+                public Task<PagedResult<OrderListDto>> GetOrderPageAsync(OrderPageQueryDto query, CancellationToken cancellationToken = default) => _orders.PageAsync(query, cancellationToken);
+
+                [PermissionAuthorize(ShopPermissionCodes.Order.Status)]
+                public Task UpdateOrderStatusAsync(OrderStatusUpdateDto input, CancellationToken cancellationToken = default) => _orders.StatusAsync(input, cancellationToken);
+
+                [AllowAnonymous]
+                public int Count() => _orders.Count;
+
+                public Task<FileContentResult> ExportAsync(CancellationToken cancellationToken = default) => _orders.ExportAsync(cancellationToken);
+
+                private Task HelperAsync() => Task.CompletedTask;
+            }
+
+            """;
+        var expectedService = $$"""
+            using Microsoft.AspNetCore.Authorization;
+            using Microsoft.AspNetCore.Mvc;
+            using Shop.Application.Dtos;
+            using Shop.Domain.Permissions;
+            using XiHan.Framework.Authorization.AspNetCore;
+
+            namespace Shop.Application.Orders;
+
+            /// <summary>
+            /// 订单服务
+            /// </summary>
+            public sealed class OrderAppService : ShopApplicationService, IOrderAppService
+            {
+                private readonly IOrderRepository _orders;
+
+                public OrderAppService(IOrderRepository orders)
+                {
+                    _orders = orders;
+                }
+
+                public async Task<OrderDetailDto> CreateOrderAsync(OrderCreateDto input, CancellationToken cancellationToken = default)
+                {
+                    {{Markers.Line("V4-06", CliMessages.MigrateMarkerServiceBaseMember.L())}}
+                    Logger.LogInformation("create");
+                    return await _orders.CreateAsync(input, cancellationToken);
+                }
+
+                public Task<OrderDetailDto> GetOrderAsync(long id, CancellationToken cancellationToken = default) => _orders.GetAsync(id, cancellationToken);
+
+                public Task<PagedResult<OrderListDto>> GetOrderPageAsync(OrderPageQueryDto query, CancellationToken cancellationToken = default) => _orders.PageAsync(query, cancellationToken);
+
+                public Task UpdateOrderStatusAsync(OrderStatusUpdateDto input, CancellationToken cancellationToken = default) => _orders.StatusAsync(input, cancellationToken);
+
+                public int Count() => _orders.Count;
+
+                {{Markers.Line("V4-06", CliMessages.MigrateMarkerUnsupportedOperation.L(("name", "ExportAsync")))}}
+                public Task<FileContentResult> ExportAsync(CancellationToken cancellationToken = default) => _orders.ExportAsync(cancellationToken);
+
+                private Task HelperAsync() => Task.CompletedTask;
+            }
+
+            """;
+        var header = CliMessages.MigrateGenerated.L();
+        var expectedCreate = $$"""
+            // {{header}}
+
+            using Microsoft.AspNetCore.Authorization;
+            using Microsoft.AspNetCore.Mvc;
+            using Shop.Application.Dtos;
+            using Shop.Application.Orders;
+            using Shop.Domain.Permissions;
+            using Shop.Operations;
+            using XiHan.Framework.Kernel;
+            using XiHan.Framework.Kernel.Operations;
+            using XiHan.Framework.Primitives;
+
+            namespace Shop.Operations.Order;
+
+            /// <summary>
+            /// {{header}}
+            /// </summary>
+            [Operation("order.create", Permission = ShopPermissionCodes.Order.Create)]
+            public sealed class CreateOrderOperation(IOrderAppService service) : IOperation<OrderCreateDto, OrderDetailDto>
+            {
+                /// <inheritdoc />
+                public async ValueTask<Result<OrderDetailDto>> HandleAsync(OrderCreateDto request, InvocationContext context)
+                    => await service.CreateOrderAsync(request, context.CancellationToken).ConfigureAwait(false);
+            }
+
+            """;
+        var expectedGet = $$"""
+            [Operation("order.get", Policy = "authenticated")]
+            public sealed class GetOrderOperation(IOrderAppService service) : IOperation<GetOrderRequest, OrderDetailDto>
+            {
+                /// <inheritdoc />
+                public async ValueTask<Result<OrderDetailDto>> HandleAsync(GetOrderRequest request, InvocationContext context)
+                    => await service.GetOrderAsync(request.Id, context.CancellationToken).ConfigureAwait(false);
+            }
+
+            /// <summary>
+            /// {{header}}
+            /// </summary>
+            public sealed record GetOrderRequest(long Id);
+
+            """;
+
+        var root = Path.Combine(Path.GetTempPath(), "xihan-operations-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "Shop");
+        Directory.CreateDirectory(project);
+        File.WriteAllText(Path.Combine(project, "Shop.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        try
+        {
+            var session = new MigrationSession();
+            var fixer = new DynamicApiFixer();
+            var baseFile = new MigrationFile(Path.Combine(project, "Application", "ShopApplicationService.cs"), "Shop/Application/ShopApplicationService.cs", project, "\n");
+            var serviceFile = new MigrationFile(Path.Combine(project, "Application", "Orders", "OrderAppService.cs"), "Shop/Application/Orders/OrderAppService.cs", project, "\n");
+            fixer.Scan(baseFile, Lf(baseSource), session);
+            fixer.Scan(serviceFile, Lf(serviceSource), session);
+
+            var baseText = Lf(fixer.Apply(baseFile, Lf(baseSource), session));
+            var serviceText = Lf(fixer.Apply(serviceFile, Lf(serviceSource), session));
+            V4OperationsGenerator.Complete(session, root);
+
+            Assert.Equal("using Microsoft.AspNetCore.Authorization;\nusing XiHan.Framework.Application.Attributes;\nusing XiHan.Framework.Application.Services;\n\nnamespace Shop.Application;\n\npublic abstract class ShopApplicationService\n{\n}\n", baseText);
+            Assert.Equal(Lf(expectedService), serviceText);
+
+            string Generated(params string[] segments) => Lf(session.GeneratedFiles[Path.Combine([project, "Operations", .. segments])]);
+            Assert.Equal(Lf(expectedCreate), Generated("Order", "CreateOrderOperation.cs"));
+            Assert.EndsWith(Lf(expectedGet), Generated("Order", "GetOrderOperation.cs"), StringComparison.Ordinal);
+            Assert.Contains("[Operation(\"order.list\", Policy = \"authenticated\")]\npublic sealed class GetOrderPageOperation(IOrderAppService service) : IOperation<OrderPageQueryDto, PagedResult<OrderListDto>>", Generated("Order", "GetOrderPageOperation.cs"), StringComparison.Ordinal);
+            var status = Generated("Order", "UpdateOrderStatusOperation.cs");
+            Assert.Contains("[Operation(\"order.update-status\", Permission = ShopPermissionCodes.Order.Status)]", status, StringComparison.Ordinal);
+            Assert.Contains("IOperation<OrderStatusUpdateDto, EmptyResponse>\n{\n    /// <inheritdoc />\n    public async ValueTask<Result<EmptyResponse>> HandleAsync(OrderStatusUpdateDto request, InvocationContext context)\n    {\n        await service.UpdateOrderStatusAsync(request, context.CancellationToken).ConfigureAwait(false);\n        return EmptyResponse.Instance;\n    }\n}\n", status, StringComparison.Ordinal);
+            var count = Generated("Order", "CountOperation.cs");
+            Assert.Contains("[Operation(\"order.count\")]\npublic sealed class CountOperation(IOrderAppService service) : IOperation<CountRequest, int>", count, StringComparison.Ordinal);
+            Assert.Contains("    public ValueTask<Result<int>> HandleAsync(CountRequest request, InvocationContext context)\n        => new(Result.Success(service.Count()));\n", count, StringComparison.Ordinal);
+            Assert.EndsWith("public sealed record CountRequest();\n", count, StringComparison.Ordinal);
+            Assert.False(session.GeneratedFiles.ContainsKey(Path.Combine(project, "Operations", "Order", "ExportOperation.cs")));
+
+            Assert.Contains("public static EmptyResponse Instance { get; } = new();", Generated("EmptyResponse.cs"), StringComparison.Ordinal);
+            var context = Generated("ShopOperationsJsonContext.cs");
+            Assert.StartsWith(Markers.Line("V4-06", CliMessages.MigrateMarkerAddOperations.L()) + "\n", context, StringComparison.Ordinal);
+            Assert.Contains("using Shop.Operations.Order;\n", context, StringComparison.Ordinal);
+            foreach (var type in new[] { "CountRequest", "EmptyResponse", "GetOrderRequest", "OrderCreateDto", "OrderDetailDto", "OrderPageQueryDto", "OrderStatusUpdateDto", "PagedResult<OrderListDto>", "int" })
+            {
+                Assert.Contains($"[JsonSerializable(typeof({type}))]\n", context, StringComparison.Ordinal);
+            }
+
+            Assert.EndsWith("internal sealed partial class ShopOperationsJsonContext : JsonSerializerContext;\n", context, StringComparison.Ordinal);
+            var registration = Assert.Single(session.Registrations[project]);
+            Assert.Equal(("Shop.Application.Orders", "OrderAppService", "Scoped", "IOrderAppService"), (registration.Namespace, registration.Implementation, registration.Lifetime, string.Join(",", registration.Services)));
+            Assert.Equal(3, session.Findings.Count(static finding => finding.IsMarker));
+
+            // 再跑一遍：特性已删、目录里不再是动态 API，零改动
+            var second = new MigrationSession();
+            fixer.Scan(baseFile, baseText, second);
+            fixer.Scan(serviceFile, serviceText, second);
+            Assert.Equal(baseText, fixer.Apply(baseFile, baseText, second));
+            Assert.Equal(serviceText, fixer.Apply(serviceFile, serviceText, second));
+            Assert.Empty(second.Findings);
+            Assert.Empty(second.GeneratedFiles);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("CreateAccessPolicyAsync", "AccessPolicy", "create")]
+    [InlineData("UpdateAccessPolicyStatusAsync", "AccessPolicy", "update-status")]
+    [InlineData("GetAccessPolicyPageAsync", "AccessPolicy", "list")]
+    [InlineData("GetAsync", "User", "get")]
+    [InlineData("GetUserListAsync", "User", "list")]
+    [InlineData("GetMenuTreeAsync", "Role", "get-menu-tree")]
+    [InlineData("QueryAsync", "Log", "list")]
+    [InlineData("RemoveAsync", "Log", "delete")]
+    [InlineData("ResetPasswordAsync", "User", "reset-password")]
+    [InlineData("Export", "User", "export")]
+    public void Verb_FollowsPrefixTable(string method, string resource, string expected)
+        => Assert.Equal(expected, V4Operations.Verb(method, V4Operations.Words(resource)));
+
+    [Fact]
     public void Clock_RewritesTypeAndMembers()
     {
         const string source = """
@@ -580,11 +806,18 @@ public sealed class MigrationTests
         Assert.True(File.Exists(Path.Combine(fixture.Project, "ShopOrdersFeature.cs")));
         Assert.False(File.Exists(Path.Combine(fixture.Project, "XiHanShopOrdersModule.cs")));
         Assert.Contains("public sealed class ShopOrdersFeature : IFeature", File.ReadAllText(Path.Combine(fixture.Project, "ShopOrdersFeature.cs")), StringComparison.Ordinal);
-        Assert.Contains("services.AddTransient<IOrderService, OrderService>();", File.ReadAllText(Path.Combine(fixture.Project, "OrdersV4Services.cs")), StringComparison.Ordinal);
-        Assert.Contains("XiHan.Framework.Kernel", File.ReadAllText(Path.Combine(fixture.Project, "Shop.Orders.csproj")), StringComparison.Ordinal);
+        var services = File.ReadAllText(Path.Combine(fixture.Project, "OrdersV4Services.cs"));
+        Assert.Contains("services.AddTransient<IOrderService, OrderService>();", services, StringComparison.Ordinal);
+        Assert.Contains("services.AddScoped<OrderAppService>();", services, StringComparison.Ordinal);
+        var csproj = File.ReadAllText(Path.Combine(fixture.Project, "Shop.Orders.csproj"));
+        Assert.Contains("XiHan.Framework.Kernel\"", csproj, StringComparison.Ordinal);
+        Assert.Contains("<PackageReference Include=\"XiHan.Framework.Kernel.Generators\" Version=\"" + FrameworkInfo.Version + "\" PrivateAssets=\"all\" />", csproj, StringComparison.Ordinal);
+        Assert.Contains("[Operation(\"order.count\")]", File.ReadAllText(Path.Combine(fixture.Project, "Operations", "Order", "CountOperation.cs")), StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(fixture.Project, "Operations", "OrdersOperationsJsonContext.cs")));
+        Assert.DoesNotContain("[DynamicApi]", File.ReadAllText(Path.Combine(fixture.Project, "Services", "OrderAppService.cs")), StringComparison.Ordinal);
         Assert.Equal(MigrationFixture.SkippedSource, File.ReadAllText(fixture.Skipped));
         Assert.Contains(first.Markers, static marker => marker is { Rule: "V4-03", File: "Shop.Orders/OrdersV4Services.cs", Line: 1 });
-        Assert.All(first.Rules.Where(static rule => rule.Id is "V4-01" or "V4-03" or "V4-10"), static rule => Assert.True(rule.Changed > 0, rule.Id));
+        Assert.All(first.Rules.Where(static rule => rule.Id is "V4-01" or "V4-03" or "V4-06" or "V4-10"), static rule => Assert.True(rule.Changed > 0, rule.Id));
 
         // 再跑一遍：零改动、零标记
         var second = new V4Migration(fixture.Root, V4Rules.All, dryRun: false).Run(CancellationToken.None);

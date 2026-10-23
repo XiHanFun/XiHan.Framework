@@ -84,7 +84,8 @@ internal sealed class DependencyMarkerFixer : SyntaxFixer
 
             session.Changed(fixer.Id, file, line);
             visited = RemoveAttributes(visited, static name => name is "Dependency" or "ExposeServices", out _);
-            return RemoveBaseTypes(visited, markers.Select(static m => SimpleName(m.Type)).ToHashSet(StringComparer.Ordinal));
+            var names = markers.Select(static m => SimpleName(m.Type)).ToHashSet(StringComparer.Ordinal);
+            return RemoveBaseTypes(visited, names.Contains);
         }
 
         /// <summary>
@@ -104,51 +105,6 @@ internal sealed class DependencyMarkerFixer : SyntaxFixer
 
             lifetime = string.Empty;
             return false;
-        }
-
-        /// <summary>
-        /// 从基类列表删除给定名字的类型（连同其后的逗号，保留其余分隔符的空格）；列表空了就连冒号一起删掉，把列表的尾随 trivia 还给前一个 token。
-        /// </summary>
-        private static ClassDeclarationSyntax RemoveBaseTypes(ClassDeclarationSyntax node, HashSet<string> names)
-        {
-            var items = node.BaseList!.Types.GetWithSeparators();
-            var kept = new List<SyntaxNodeOrToken>();
-            for (var index = 0; index < items.Count; index += 2)
-            {
-                var type = (BaseTypeSyntax)items[index].AsNode()!;
-                var separator = index + 1 < items.Count ? items[index + 1] : default;
-                if (names.Contains(SimpleName(type.Type)))
-                {
-                    continue;
-                }
-
-                kept.Add(type);
-                if (separator.IsToken)
-                {
-                    kept.Add(separator);
-                }
-            }
-
-            // 最后一个被删掉时，前一个逗号也多余；原列表的尾随 trivia 还给新的最后一个类型
-            if (kept.Count > 0 && kept[^1].IsToken)
-            {
-                kept.RemoveAt(kept.Count - 1);
-                var last = (BaseTypeSyntax)kept[^1].AsNode()!;
-                kept[^1] = last.WithTrailingTrivia(node.BaseList.GetTrailingTrivia());
-            }
-
-            if (kept.Count > 0)
-            {
-                return node.WithBaseList(node.BaseList.WithTypes(SyntaxFactory.SeparatedList<BaseTypeSyntax>(kept)));
-            }
-
-            var annotation = new SyntaxAnnotation();
-            var before = node.BaseList.GetFirstToken().GetPreviousToken();
-            var annotated = node.ReplaceToken(before, before.WithAdditionalAnnotations(annotation));
-            var trailing = annotated.BaseList!.GetTrailingTrivia();
-            var stripped = annotated.WithBaseList(null);
-            var token = stripped.GetAnnotatedTokens(annotation).Single();
-            return stripped.ReplaceToken(token, token.WithTrailingTrivia(trailing));
         }
     }
 }

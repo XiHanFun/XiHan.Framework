@@ -157,6 +157,64 @@ internal abstract class SyntaxFixer : V4Fixer
     }
 
     /// <summary>
+    /// 从基类列表删除名字满足 <paramref name="remove"/> 的类型（连同其后的逗号，保留其余分隔符的空格）；列表空了就连冒号一起删掉，把列表的尾随 trivia 还给前一个 token。
+    /// </summary>
+    protected static TDeclaration RemoveBaseTypes<TDeclaration>(TDeclaration node, Func<string, bool> remove)
+        where TDeclaration : TypeDeclarationSyntax
+    {
+        if (node.BaseList is null)
+        {
+            return node;
+        }
+
+        var items = node.BaseList.Types.GetWithSeparators();
+        var kept = new List<SyntaxNodeOrToken>();
+        var removed = 0;
+        for (var index = 0; index < items.Count; index += 2)
+        {
+            var type = (BaseTypeSyntax)items[index].AsNode()!;
+            var separator = index + 1 < items.Count ? items[index + 1] : default;
+            if (remove(SimpleName(type.Type)))
+            {
+                removed++;
+                continue;
+            }
+
+            kept.Add(type);
+            if (separator.IsToken)
+            {
+                kept.Add(separator);
+            }
+        }
+
+        if (removed == 0)
+        {
+            return node;
+        }
+
+        // 最后一个被删掉时，前一个逗号也多余；原列表的尾随 trivia 还给新的最后一个类型
+        if (kept.Count > 0 && kept[^1].IsToken)
+        {
+            kept.RemoveAt(kept.Count - 1);
+            var last = (BaseTypeSyntax)kept[^1].AsNode()!;
+            kept[^1] = last.WithTrailingTrivia(node.BaseList.GetTrailingTrivia());
+        }
+
+        if (kept.Count > 0)
+        {
+            return (TDeclaration)node.WithBaseList(node.BaseList.WithTypes(SyntaxFactory.SeparatedList<BaseTypeSyntax>(kept)));
+        }
+
+        var annotation = new SyntaxAnnotation();
+        var before = node.BaseList.GetFirstToken().GetPreviousToken();
+        var annotated = node.ReplaceToken(before, before.WithAdditionalAnnotations(annotation));
+        var trailing = annotated.BaseList!.GetTrailingTrivia();
+        var stripped = (TDeclaration)annotated.WithBaseList(null);
+        var token = stripped.GetAnnotatedTokens(annotation).Single();
+        return stripped.ReplaceToken(token, token.WithTrailingTrivia(trailing));
+    }
+
+    /// <summary>
     /// 去掉前导 trivia 末尾的缩进空白：转交给后一个元素时，由后者自己的缩进负责。
     /// </summary>
     private static SyntaxTriviaList WithoutTrailingIndent(SyntaxTriviaList trivia)
