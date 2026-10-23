@@ -1,0 +1,121 @@
+#nullable enable
+const XiHan.Framework.Caching.Remote.RemoteCacheOperations.Get = "cache-entries.get" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCacheOperations.Remove = "cache-entries.remove" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCacheOperations.Set = "cache-entries.set" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryAdd = "cache-entries.try-add" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemove = "cache-entries.try-remove" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingMessages.CapacityReached = "caching.remote.capacity_reached" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingMessages.CatalogName = "caching.remote" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingMessages.InvalidKey = "caching.remote.key_invalid" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingMessages.InvalidOptions = "caching.remote.options_invalid" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingMessages.StoreUnavailable = "caching.remote.store_unavailable" -> string!
+const XiHan.Framework.Caching.Remote.RemoteCachingOptions.ConfigurationSection = "XiHan:Caching:Remote" -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.ToString() -> string!
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Equals(object? obj) -> bool
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.GetHashCode() -> int
+override XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.ToString() -> string!
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.operator !=(XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.operator ==(XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest? left, XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest? right) -> bool
+static XiHan.Framework.Caching.Remote.RemoteCachingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
+static XiHan.Framework.Caching.Remote.RemoteCachingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Caching.Remote.RemoteCachingOptions!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.Added.get -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.Added.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.AddedResponse(bool Added) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.Deconstruct(out bool Added) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.AddedResponse? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.EmptyResponse() -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.EmptyResponse? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.Deconstruct(out string? Value) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.GetResponse(string? Value) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.Value.get -> string?
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.GetResponse.Value.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.Deconstruct(out string! Key) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.Key.get -> string!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.Key.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.KeyRequest.KeyRequest(string! Key) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.Deconstruct(out bool Removed) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.Removed.get -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.Removed.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.RemovedResponse.RemovedResponse(bool Removed) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Deconstruct(out string! Key, out string! Value, out long? TtlMs, out long? SlidingMs) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Key.get -> string!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Key.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.SetRequest(string! Key, string! Value, long? TtlMs, long? SlidingMs) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.SlidingMs.get -> long?
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.SlidingMs.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.TtlMs.get -> long?
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.TtlMs.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Value.get -> string!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.SetRequest.Value.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.<Clone>$() -> XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Deconstruct(out string! Key, out string! Expected) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Equals(XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest? other) -> bool
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Expected.get -> string!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Expected.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Key.get -> string!
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.Key.init -> void
+XiHan.Framework.Caching.Remote.RemoteCacheOperations.TryRemoveRequest.TryRemoveRequest(string! Key, string! Expected) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheStore
+XiHan.Framework.Caching.Remote.RemoteCacheStore.GetAsync(XiHan.Framework.Caching.Abstractions.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>>
+XiHan.Framework.Caching.Remote.RemoteCacheStore.RemoteCacheStore(System.IServiceProvider! services, XiHan.Framework.Caching.Remote.RemoteCachingOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.Caching.Remote.RemoteCacheStore.RemoveAsync(XiHan.Framework.Caching.Abstractions.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Caching.Remote.RemoteCacheStore.SetAsync(XiHan.Framework.Caching.Abstractions.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Caching.Remote.RemoteCacheStore.TryAddAsync(XiHan.Framework.Caching.Abstractions.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Caching.Remote.RemoteCacheStore.TryRemoveAsync(XiHan.Framework.Caching.Abstractions.CacheKey key, System.ReadOnlyMemory<byte> expectedValue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Caching.Remote.RemoteCachingFeature
+XiHan.Framework.Caching.Remote.RemoteCachingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Caching.Remote.RemoteCachingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Caching.Remote.RemoteCachingFeature.RemoteCachingFeature() -> void
+XiHan.Framework.Caching.Remote.RemoteCachingMessages
+XiHan.Framework.Caching.Remote.RemoteCachingOptions
+XiHan.Framework.Caching.Remote.RemoteCachingOptions.RemoteCachingOptions() -> void
+XiHan.Framework.Caching.Remote.RemoteCachingOptions.Timeout.get -> System.TimeSpan
+XiHan.Framework.Caching.Remote.RemoteCachingOptions.Timeout.init -> void

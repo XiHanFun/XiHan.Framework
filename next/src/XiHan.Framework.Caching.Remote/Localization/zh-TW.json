@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "快取鍵「{key}」不合法：必須非空、不含空白與控制字元、不超過 512 個字元。",
+  "caching.remote.options_invalid": "快取條目選項不合法：{reason}。",
+  "caching.remote.store_unavailable": "快取存放區無法使用：{reason}。",
+  "caching.remote.capacity_reached": "快取存放區已滿（{capacity} 個條目）。"
+}

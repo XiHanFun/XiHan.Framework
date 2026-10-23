@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "The cache key '{key}' is invalid: it must be non-empty, contain no whitespace or control characters, and be at most 512 characters long.",
+  "caching.remote.options_invalid": "The cache entry options are invalid: {reason}.",
+  "caching.remote.store_unavailable": "The cache store is unavailable: {reason}.",
+  "caching.remote.capacity_reached": "The cache store is full ({capacity} entries)."
+}

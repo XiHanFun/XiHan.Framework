@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Caching.Remote</PackageId>
+    <RootNamespace>XiHan.Framework.Caching.Remote</RootNamespace>
+    <Description>XiHan Framework 缓存的远程 Provider 适配器（RFC-0019）：caching.distributed 由任意语言写的进程外插件经固定操作集 cache-entries.* 提供，本包把它接成共享缓存、分布式锁与幂等去重。</Description>
+    <PackageTags>xihan;framework;caching;plugins;remote-provider;distributed-lock</PackageTags>
+    <!-- 与 Caching.Redis 一样，没有注册源生成序列化器时退回反射版 ICacheSerializer -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 插件侧错误的译文：一种语言一个文件（RFC-0010） -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
