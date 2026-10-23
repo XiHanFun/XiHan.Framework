@@ -231,27 +231,27 @@ public sealed class MigrationTests
             {
                 /// <inheritdoc />
                 [SugarColumn(ColumnName = "Basic_Id", IsPrimaryKey = true, IsIdentity = false, ColumnDescription = "主键")]
-                public long Id { get; set; } = default!;
+                public virtual long Id { get; set; } = default!;
 
                 /// <inheritdoc />
                 [SugarColumn(ColumnName = "Row_Version", Length = 32, ColumnDescription = "版本控制标识，用于处理并发")]
-                public string ConcurrencyStamp { get; set; } = string.Empty;
+                public virtual string ConcurrencyStamp { get; set; } = string.Empty;
 
                 /// <inheritdoc />
                 [SugarColumn(ColumnName = "Created_Time", IsNullable = false, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建时间")]
-                public DateTimeOffset CreatedAt { get; set; }
+                public virtual DateTimeOffset CreatedAt { get; set; }
 
                 /// <summary>{{CliMessages.MigrateEntityCreatedId.L()}}</summary>
                 [SugarColumn(ColumnName = "Created_Id", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建者唯一标识")]
-                public long? CreatedId { get; set; }
+                public virtual long? CreatedId { get; set; }
 
                 /// <summary>{{CliMessages.MigrateEntityCreatedBy.L()}}</summary>
                 [SugarColumn(ColumnName = "Created_By", IsNullable = true, IsOnlyIgnoreUpdate = true, ColumnDescription = "创建人")]
-                public string? CreatedBy { get; set; }
+                public virtual string? CreatedBy { get; set; }
 
                 /// <inheritdoc />
                 [SugarColumn(ColumnName = "Tenant_Id", IsOnlyIgnoreUpdate = true, ColumnDescription = "租户ID")]
-                public string TenantId { get; set; } = string.Empty;
+                public virtual string TenantId { get; set; } = string.Empty;
 
                 protected ShopEntity(long basicId)
                 {
