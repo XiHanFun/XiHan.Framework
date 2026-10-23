@@ -134,6 +134,9 @@ public static class CliMessages
     /// <summary>V4-08 标记：<c>ILocalEventBus.Subscribe</c> 没有对应物。</summary>
     public const string MigrateMarkerEventSubscribe = "cli.migrate.marker.event_subscribe";
 
+    /// <summary>V4-09 标记：装配嵌入的消息目录。参数：<c>domain</c>。</summary>
+    public const string MigrateMarkerLocalizationCatalog = "cli.migrate.marker.localization_catalog";
+
     /// <summary>V4-02 展开属性的文档：创建者标识。</summary>
     public const string MigrateEntityCreatedId = "cli.migrate.entity.created_id";
 

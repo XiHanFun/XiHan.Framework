@@ -119,7 +119,29 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             session.Changed("V4-06", file, text.Count(static c => c == '\n') + 1);
             if (!dryRun)
             {
-                File.WriteAllText(csproj, WithGeneratorReference(text, project.NewLine), _utf8);
+                File.WriteAllText(csproj, WithItemGroup(text, project.NewLine, $"<PackageReference Include=\"{GeneratorsPackage}\" Version=\"{FrameworkInfo.Version}\" PrivateAssets=\"all\" />"), _utf8);
+            }
+        }
+
+        // V4-09：项目文件补嵌入资源项，第一行是装配目录的提醒
+        foreach (var projectDirectory in session.LocalizationResources.Keys.OrderBy(static key => key, StringComparer.Ordinal))
+        {
+            var csproj = Directory.EnumerateFiles(projectDirectory, "*.csproj").OrderBy(static name => name, StringComparer.Ordinal).First();
+            var text = File.ReadAllText(csproj);
+            if (text.Contains("LogicalName=\"Localization/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var newLine = session.ProjectNewLine(projectDirectory);
+            var file = new MigrationFile(csproj, Path.GetRelativePath(root, csproj).Replace('\\', '/'), projectDirectory, newLine);
+            var message = CliMessages.MigrateMarkerLocalizationCatalog.L(("domain", V4LocalizationGenerator.Domain(V4ServicesGenerator.Names(projectDirectory).Project)));
+            var line = text.Count(static c => c == '\n') + 1;
+            session.Marked("V4-09", file, line, message);
+            session.Changed("V4-09", file, line);
+            if (!dryRun)
+            {
+                File.WriteAllText(csproj, WithItemGroup(text, newLine, "<!-- " + Markers.Text("V4-09", message) + " -->", "<EmbeddedResource Include=\"Localization/*.json\" LogicalName=\"Localization/%(Filename)%(Extension)\" />"), _utf8);
             }
         }
 
@@ -129,6 +151,15 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 File.WriteAllText(target, content, _utf8);
+            }
+        }
+
+        // 已转换的 4.x 文件：生成文件同路径的不删（原文件就是目标文件时已被覆盖）
+        foreach (var target in session.Deletions.Where(target => !session.GeneratedFiles.ContainsKey(target)).OrderBy(static target => target, StringComparer.Ordinal))
+        {
+            if (!dryRun && File.Exists(target))
+            {
+                File.Delete(target);
             }
         }
 
@@ -153,9 +184,9 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
     }
 
     /// <summary>
-    /// 在 <c>&lt;/Project&gt;</c> 前加一个引用操作源生成器的 ItemGroup，缩进沿用文件里第一个 ItemGroup / PropertyGroup。
+    /// 在 <c>&lt;/Project&gt;</c> 前加一个 ItemGroup（每行一项），缩进沿用文件里第一个 ItemGroup / PropertyGroup。
     /// </summary>
-    private static string WithGeneratorReference(string text, string newLine)
+    private static string WithItemGroup(string text, string newLine, params string[] items)
     {
         var close = text.LastIndexOf("</Project>", StringComparison.Ordinal);
         if (close < 0)
@@ -182,21 +213,27 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
         }
 
         builder.Append(indent).Append("<ItemGroup>").Append(newLine);
-        builder.Append(indent).Append(indent).Append("<PackageReference Include=\"").Append(GeneratorsPackage).Append("\" Version=\"").Append(FrameworkInfo.Version).Append("\" PrivateAssets=\"all\" />").Append(newLine);
+        foreach (var item in items)
+        {
+            builder.Append(indent).Append(indent).Append(item).Append(newLine);
+        }
+
         builder.Append(indent).Append("</ItemGroup>").Append(newLine).Append(newLine);
         builder.Append(text, close, text.Length - close);
         return builder.ToString();
     }
 
     /// <summary>
-    /// 递归枚举 <c>*.cs</c> 与 <c>*.csproj</c>，跳过 bin / obj / .git 与生成文件。
+    /// 递归枚举 <c>*.cs</c>、<c>*.csproj</c> 与 <c>Localization/*.json</c>，跳过 bin / obj / .git 与生成文件。
     /// </summary>
     private static IEnumerable<string> Enumerate(string directory)
     {
+        var localization = string.Equals(Path.GetFileName(directory), "Localization", StringComparison.OrdinalIgnoreCase);
         foreach (var file in Directory.EnumerateFiles(directory))
         {
             var name = Path.GetFileName(file);
             if (name.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+                || (localization && name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 || (name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase)))
             {
                 yield return file;

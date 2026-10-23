@@ -54,6 +54,16 @@ internal sealed class MigrationSession
     public Dictionary<string, string> CurrentContextProviders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// V4-09 从 4.x 资源文件收集的文案：项目目录 → 区域 → (平铺键 → 模板)。
+    /// </summary>
+    public Dictionary<string, Dictionary<string, SortedDictionary<string, string>>> LocalizationResources { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 运行结束时要删除的文件（已转换的 4.x 资源文件）；与生成文件同路径的不删。
+    /// </summary>
+    public HashSet<string> Deletions { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// 迁移根目录（第一遍扫描时由编排器设置）；生成文件的相对路径据此计算。
     /// </summary>
     public string Root { get; set; } = string.Empty;

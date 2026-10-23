@@ -25,6 +25,7 @@
   "cli.migrate.marker.event_json": "イベントはリフレクションベースの System.Text.Json でシリアル化されています。AOT のためにイベント型を JsonSerializerContext に登録し、その JsonTypeInfo を渡してください。",
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe には 5.0 の対応物がありません。機能の Configure で AddMessageHandler<THandler>(topic) によりハンドラーを登録してください。",
   "cli.migrate.marker.event_topic_unresolved": "'{name}' のイベント型を特定できませんでした。トピックを手動で設定してください。",
+  "cli.migrate.marker.localization_catalog": "MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<このアセンブリ内の型>)) で埋め込みカタログを読み込み、ローカライズ機能に追加してください。キーは {domain}.<リソース>.<キー> です。",
   "cli.migrate.marker.manual_registration": "{name} は自動登録できません（ジェネリック、抽象、またはプロジェクト外）。手動で登録してください。",
   "cli.migrate.marker.modules_dropped": "5.0 の能力に対応しない 4.x モジュールを削除しました：{modules}。",
   "cli.migrate.marker.permission_simplified": "最初の権限式のみが契約の権限になりました。残りは破棄されました。",
