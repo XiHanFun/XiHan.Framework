@@ -19,7 +19,7 @@ internal static class EntityExpressions
         where TKey : notnull, IEquatable<TKey>
     {
         var entity = Expression.Parameter(typeof(TEntity), "entity");
-        return Expression.Lambda<Func<TEntity, bool>>(Expression.Equal(Expression.Property(entity, nameof(IEntity<int>.Id)), Expression.Constant(id, typeof(TKey))), entity);
+        return Expression.Lambda<Func<TEntity, bool>>(Expression.Equal(Expression.Property(entity, nameof(IEntity<>.Id)), Expression.Constant(id, typeof(TKey))), entity);
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ internal static class EntityExpressions
         where TKey : notnull, IEquatable<TKey>
     {
         var entity = Expression.Parameter(typeof(TEntity), "entity");
-        return Expression.Lambda<Func<TEntity, TKey>>(Expression.Property(entity, nameof(IEntity<int>.Id)), entity);
+        return Expression.Lambda<Func<TEntity, TKey>>(Expression.Property(entity, nameof(IEntity<>.Id)), entity);
     }
 
     /// <summary>
