@@ -57,6 +57,13 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: 安装 Go
+        # Plugins.OutOfProcess.Tests 在运行时构建 samples/EchoGoPlugin（Go 插件端到端）；没有 go 会跳过
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: next/samples/EchoGoPlugin/go.mod
+          cache-dependency-path: next/samples/EchoGoPlugin/go.sum
+
       - name: 还原
         # NU1903/NU1904 在 next/Directory.Build.props 中升级为错误，高危漏洞在此中断
         run: dotnet restore next/XiHan.Framework.Next.slnx
