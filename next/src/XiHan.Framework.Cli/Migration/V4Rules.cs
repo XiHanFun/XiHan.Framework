@@ -19,6 +19,7 @@ internal static class V4Rules
         new ClockFixer(),
         new UnitOfWorkFixer(),
         new DynamicApiFixer(),
+        new CurrentContextFixer(),
         new PackageReferenceFixer(),
         new LegacyUsingFixer(),
     ];

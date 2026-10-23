@@ -26,6 +26,13 @@ internal abstract class V4Fixer
     }
 
     /// <summary>
+    /// 扫描完全部文件、改写任何文件之前调用一次：按跨文件事实做决定（如生成到哪个项目）；默认什么都不做。
+    /// </summary>
+    public virtual void Prepare(MigrationSession session)
+    {
+    }
+
+    /// <summary>
     /// 施加改写，返回新文本；没有改动时返回原文本的同一实例。
     /// </summary>
     public abstract string Apply(MigrationFile file, string text, MigrationSession session);

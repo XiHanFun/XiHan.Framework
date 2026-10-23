@@ -35,9 +35,9 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
     public MigrationReport Run(CancellationToken cancellationToken)
     {
         var root = Path.GetFullPath(Directory.Exists(path) ? path : Path.GetDirectoryName(path)!);
-        var session = new MigrationSession();
+        var session = new MigrationSession { Root = root };
         var projectDirectories = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        var newLines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var newLines = session.ProjectNewLines;
 
         // 第一遍：读入并扫描（跨文件事实），文本留在内存里给第二遍用
         var sources = new List<(MigrationFile File, string Text, bool Bom)>();
@@ -64,6 +64,12 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
                     fixer.Scan(migrationFile, text, session);
                 }
             }
+        }
+
+        // 扫描完再做跨文件决定
+        foreach (var fixer in fixers)
+        {
+            fixer.Prepare(session);
         }
 
         // 第二遍：按规则顺序改写

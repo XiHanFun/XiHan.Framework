@@ -122,6 +122,9 @@ public static class CliMessages
     /// <summary>V4-06 标记：多个权限只取了第一个。</summary>
     public const string MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified";
 
+    /// <summary>V4-07 标记：<c>ICurrentTenant.Change</c> 没有对应物。</summary>
+    public const string MigrateMarkerTenantChange = "cli.migrate.marker.tenant_change";
+
     /// <summary>V4-02 展开属性的文档：创建者标识。</summary>
     public const string MigrateEntityCreatedId = "cli.migrate.entity.created_id";
 

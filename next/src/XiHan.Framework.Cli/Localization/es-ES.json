@@ -28,6 +28,7 @@
   "cli.migrate.marker.register_services": "Llame a {method}() desde Configure de la característica.",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider venían de ApplicationServiceBase; inyecte ILogger<T> o el servicio necesario por el constructor.",
   "cli.migrate.marker.shutdown_context": "StopAsync no recibe contexto; resuelva lo necesario en StartAsync y guárdelo en un campo.",
+  "cli.migrate.marker.tenant_change": "ICurrentTenant.Change no tiene equivalente en 5.0: el inquilino sigue el baggage de la invocación; inicie una nueva invocación con el baggage del inquilino (App.CreateContext).",
   "cli.migrate.marker.tenant_id_type": "TenantId pasó a ser una cadena; cambie el tipo de la columna Tenant_Id y las comparaciones numéricas.",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager no tiene equivalente en 5.0: cada operación recibe una unidad de trabajo por defecto; inyecte el IUnitOfWork de ámbito para controlarla explícitamente.",
   "cli.migrate.marker.unsupported_operation": "{name} no pudo convertirse en operación (genérico, parámetros ref/out, flujos o tipos de ASP.NET); expóngalo a mano.",

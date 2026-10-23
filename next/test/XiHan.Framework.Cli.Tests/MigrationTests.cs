@@ -609,6 +609,58 @@ public sealed class MigrationTests
         }
     }
 
+    [Fact]
+    public void CurrentContext_GeneratesWrappersInLowestProject_AddsUsings_AndMarksChange()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-current-" + Guid.NewGuid().ToString("N"));
+        var core = Path.Combine(root, "Shop.Core");
+        var orders = Path.Combine(root, "Shop.Orders");
+        Directory.CreateDirectory(Path.Combine(core, "Services"));
+        Directory.CreateDirectory(Path.Combine(orders, "Services"));
+        try
+        {
+            File.WriteAllText(Path.Combine(core, "Shop.Core.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />\n");
+            File.WriteAllText(Path.Combine(orders, "Shop.Orders.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    <ProjectReference Include=\"..\\Shop.Core\\Shop.Core.csproj\" />\n  </ItemGroup>\n</Project>\n");
+            File.WriteAllText(Path.Combine(core, "Services", "Auditor.cs"), "using XiHan.Framework.Security.Users;\n\nnamespace Shop.Core.Services;\n\npublic sealed class Auditor(ICurrentUser currentUser)\n{\n    public string? Actor => currentUser.UserName;\n}\n");
+            File.WriteAllText(Path.Combine(orders, "Services", "OrderService.cs"), "using XiHan.Framework.MultiTenancy.Abstractions;\nusing XiHan.Framework.Security.Users;\n\nnamespace Shop.Orders.Services;\n\npublic sealed class OrderService(ICurrentTenant currentTenant, ICurrentUser currentUser)\n{\n    public void Run(string tenantId)\n    {\n        using var scope = currentTenant.Change(tenantId);\n        _ = currentUser.UserId;\n    }\n}\n");
+
+            var first = new V4Migration(root, [new CurrentContextFixer()], dryRun: false).Run(CancellationToken.None);
+
+            // 提供者是引用链最底层的使用项目 Shop.Core；Shop.Orders 不生成
+            foreach (var name in V4CurrentContextGenerator.FileNames)
+            {
+                Assert.True(File.Exists(Path.Combine(core, "Security", name)), name);
+            }
+
+            Assert.False(Directory.Exists(Path.Combine(orders, "Security")));
+            var currentUser = Lf(File.ReadAllText(Path.Combine(core, "Security", "CurrentUser.cs")));
+            Assert.Contains("namespace Shop.Core.Security;\n", currentUser, StringComparison.Ordinal);
+            Assert.Contains("public sealed class CurrentUser(IInvocationAccessor accessor) : ICurrentUser", currentUser, StringComparison.Ordinal);
+            Assert.Contains("public string? TenantId => Security.Tenant?.Id ?? Find(TenantIdClaim);", currentUser, StringComparison.Ordinal);
+            Assert.Contains("string? UserId { get; }", File.ReadAllText(Path.Combine(core, "Security", "ICurrentUser.cs")), StringComparison.Ordinal);
+            Assert.Contains("IDisposable Change(string? id, string? name = null);", File.ReadAllText(Path.Combine(core, "Security", "ICurrentTenant.cs")), StringComparison.Ordinal);
+            Assert.Contains("throw new NotSupportedException(", File.ReadAllText(Path.Combine(core, "Security", "CurrentTenant.cs")), StringComparison.Ordinal);
+
+            Assert.StartsWith("using Shop.Core.Security;\nusing XiHan.Framework.Security.Users;\n", Lf(File.ReadAllText(Path.Combine(core, "Services", "Auditor.cs"))), StringComparison.Ordinal);
+            var orderService = Lf(File.ReadAllText(Path.Combine(orders, "Services", "OrderService.cs")));
+            Assert.StartsWith("using Shop.Core.Security;\nusing XiHan.Framework.MultiTenancy.Abstractions;\n", orderService, StringComparison.Ordinal);
+            Assert.Contains($"        {Markers.Line("V4-07", CliMessages.MigrateMarkerTenantChange.L())}\n        using var scope = currentTenant.Change(tenantId);\n", orderService, StringComparison.Ordinal);
+            var services = File.ReadAllText(Path.Combine(core, "CoreV4Services.cs"));
+            Assert.Contains("services.AddScoped<ICurrentTenant, CurrentTenant>();", services, StringComparison.Ordinal);
+            Assert.Contains("services.AddScoped<ICurrentUser, CurrentUser>();", services, StringComparison.Ordinal);
+            var rule = Assert.Single(first.Rules);
+            Assert.Equal(("V4-07", 1), (rule.Id, rule.Markers));
+            Assert.Contains("Shop.Core/Security/CurrentUser.cs", rule.Files);
+
+            var second = new V4Migration(root, [new CurrentContextFixer()], dryRun: false).Run(CancellationToken.None);
+            Assert.All(second.Rules, static rule => Assert.Equal((0, 0), (rule.Changed, rule.Markers)));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("CreateAccessPolicyAsync", "AccessPolicy", "create")]
     [InlineData("UpdateAccessPolicyStatusAsync", "AccessPolicy", "update-status")]

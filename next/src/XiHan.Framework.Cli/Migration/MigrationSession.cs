@@ -39,6 +39,41 @@ internal sealed class MigrationSession
     public Dictionary<string, V4OperationProject> OperationProjects { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// 项目引用图：项目目录 → 它 <c>ProjectReference</c> 的项目目录（第一遍从 .csproj 读出）。
+    /// </summary>
+    public Dictionary<string, HashSet<string>> ProjectReferences { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 用到 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 的项目目录（V4-07）。
+    /// </summary>
+    public HashSet<string> CurrentContextUsers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// V4-07 的决定：使用项目 → 提供生成的 <c>CurrentUser</c> / <c>CurrentTenant</c> 的项目目录。
+    /// </summary>
+    public Dictionary<string, string> CurrentContextProviders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 迁移根目录（第一遍扫描时由编排器设置）；生成文件的相对路径据此计算。
+    /// </summary>
+    public string Root { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 各项目目录的换行符（取项目里第一个扫描到的文件）。
+    /// </summary>
+    public Dictionary<string, string> ProjectNewLines { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 项目的换行符；没记录过用环境默认。
+    /// </summary>
+    public string ProjectNewLine(string projectDirectory) => ProjectNewLines.GetValueOrDefault(projectDirectory, Environment.NewLine);
+
+    /// <summary>
+    /// 相对根目录的报告路径（<c>/</c> 分隔）。
+    /// </summary>
+    public string RelativePath(string absolutePath) => System.IO.Path.GetRelativePath(Root, absolutePath).Replace('\\', '/');
+
+    /// <summary>
     /// 记一次改动。
     /// </summary>
     public void Changed(string rule, MigrationFile file, int line) => Findings.Add(new MigrationFinding(rule, file.RelativePath, line, string.Empty, IsMarker: false));
