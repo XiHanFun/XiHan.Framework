@@ -18,7 +18,7 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任�
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel` 与 `XiHan.Framework.Domain`。被 `Persistence.InMemory`、`Persistence.EntityFrameworkCore` 等实现包引用。
+依赖 `XiHan.Framework.Kernel` 与 `XiHan.Framework.Domain`。被 `Persistence.InMemory`、`Persistence.EntityFrameworkCore`、`Persistence.SqlSugar` 等实现包引用。
 
 ## 状态
 

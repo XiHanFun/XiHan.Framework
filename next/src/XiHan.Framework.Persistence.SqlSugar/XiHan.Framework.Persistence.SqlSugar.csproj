@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Persistence.SqlSugar</PackageId>
+    <RootNamespace>XiHan.Framework.Persistence.SqlSugar</RootNamespace>
+    <Description>XiHan Framework 持久化的 SqlSugar Provider：以应用自有的 ISqlSugarClient 实现仓储与事务型工作单元，按实体协议配置主键、并发戳、租户与软删除，批量写入用 SqlSugar 原生批量。</Description>
+    <PackageTags>xihan;framework;persistence;sqlsugar</PackageTags>
+    <!-- SqlSugar 的实体映射与表达式翻译基于运行时反射，不满足 AOT 分析器 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SqlSugarCore" />
+  </ItemGroup>
+</Project>

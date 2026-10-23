@@ -16,6 +16,7 @@ public sealed class PackageGrammarTests
     [InlineData("XiHan.Framework.Persistence.Abstractions", 2)]
     [InlineData("XiHan.Framework.Persistence.InMemory", 3)]
     [InlineData("XiHan.Framework.Persistence.EntityFrameworkCore", 3)]
+    [InlineData("XiHan.Framework.Persistence.SqlSugar", 3)]
     [InlineData("XiHan.Framework.Persistence.Conformance", 7)]
     [InlineData("XiHan.Framework.Messaging.RabbitMQ", 3)]
     [InlineData("XiHan.Framework.ObjectStorage.S3", 3)]
