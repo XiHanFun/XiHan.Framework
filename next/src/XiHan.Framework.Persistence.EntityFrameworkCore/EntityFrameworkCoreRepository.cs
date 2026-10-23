@@ -10,6 +10,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
 /// EF Core 仓储：读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。
+/// 批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -43,6 +44,30 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         // DbSet.FindAsync 先查变更跟踪器再查数据库，天然读己之写；可见性在内存里判定，与查询路径的过滤保持一致
         var entity = await Set.FindAsync([id], cancellationToken).ConfigureAwait(false);
         return entity is not null && IsVisible(entity, includeDeleted: false) ? Maybe.Some(entity) : default;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TEntity>> FindManyAsync(IReadOnlyList<TKey> ids, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        _ = Context;
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var distinct = Distinct(ids);
+        var rows = await LoadAsync(distinct, cancellationToken).ConfigureAwait(false);
+        var found = new List<TEntity>(distinct.Count);
+        foreach (var id in distinct)
+        {
+            if (rows.TryGetValue(id, out var entity) && IsVisible(entity, includeDeleted: false))
+            {
+                found.Add(entity);
+            }
+        }
+
+        return found;
     }
 
     /// <inheritdoc />
@@ -81,7 +106,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         // 已存在的行（含已软删除、其他租户）都与新键冲突
         if (await Set.FindAsync([entity.Id], cancellationToken).ConfigureAwait(false) is not null)
         {
-            return Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
+            return Duplicate(entity.Id);
         }
 
         var applied = PersistenceConventions.ApplyOnAdd(entity, _unitOfWork.TenantId, _timeProvider.GetUtcNow());
@@ -94,6 +119,63 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         Set.Add(entity);
         await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Result>> AddRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        _ = Context;
+        if (entities.Count == 0)
+        {
+            return [];
+        }
+
+        if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
+        {
+            return Repeat(rejected, entities.Count);
+        }
+
+        // 一次 IN 查询拿到库里已存在的标识（含已软删除、其他租户）；之后每个通过校验的项把标识加进同一集合，批内重复就能被看见
+        var taken = (await LoadAsync(Distinct(entities.Select(static e => e.Id)), cancellationToken).ConfigureAwait(false)).Keys.ToHashSet();
+        var now = _timeProvider.GetUtcNow();
+        var results = new Result[entities.Count];
+        var pending = new List<int>(entities.Count);
+        for (var index = 0; index < entities.Count; index++)
+        {
+            var entity = entities[index];
+            ArgumentNullException.ThrowIfNull(entity);
+            if (taken.Contains(entity.Id))
+            {
+                results[index] = Duplicate(entity.Id);
+                continue;
+            }
+
+            var applied = PersistenceConventions.ApplyOnAdd(entity, _unitOfWork.TenantId, now);
+            if (applied.IsFailure)
+            {
+                results[index] = applied;
+                continue;
+            }
+
+            taken.Add(entity.Id);
+            pending.Add(index);
+        }
+
+        if (pending.Count == 0)
+        {
+            return results;
+        }
+
+        // 通过校验的项一次写入：写入阶段的失败对这些项统一报告
+        Set.AddRange(pending.Select(index => entities[index]));
+        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var index in pending)
+        {
+            results[index] = saved;
+        }
+
+        return results;
     }
 
     /// <inheritdoc />
@@ -111,20 +193,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             return NotFound(entity.Id);
         }
 
-        // 传入的是跟踪实例时直接改它；否则按游离实体处理
-        if (!ReferenceEquals(existing, entity))
+        if (Stage(existing, entity, _timeProvider.GetUtcNow()) is { } conflict)
         {
-            // 游离实体：先比对并发戳，再把值复制到跟踪实例
-            if (existing is IHasConcurrencyStamp current && entity is IHasConcurrencyStamp incoming
-                && !string.Equals(current.ConcurrencyStamp, incoming.ConcurrencyStamp, StringComparison.Ordinal))
-            {
-                return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.StaleStamp, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
-            }
-
-            Context.Entry(existing).CurrentValues.SetValues(entity);
+            return conflict;
         }
 
-        PersistenceConventions.ApplyOnUpdate(existing, _timeProvider.GetUtcNow());
         var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
         // 审计字段写在跟踪实例上，保存成功后同步回调用方的游离实例，让它拿到新的修改时间与并发戳
         if (saved.IsSuccess && !ReferenceEquals(existing, entity))
@@ -133,6 +206,64 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         return saved;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Result>> UpdateRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        _ = Context;
+        if (entities.Count == 0)
+        {
+            return [];
+        }
+
+        if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
+        {
+            return Repeat(rejected, entities.Count);
+        }
+
+        // 一次 IN 查询把目标行装进跟踪器（已跟踪的按标识解析为同一实例），之后逐项比对并发戳、复制值、刷新审计字段
+        var rows = await LoadAsync(Distinct(entities.Select(static e => e.Id)), cancellationToken).ConfigureAwait(false);
+        var now = _timeProvider.GetUtcNow();
+        var results = new Result[entities.Count];
+        var pending = new List<(int Index, TEntity Existing)>(entities.Count);
+        for (var index = 0; index < entities.Count; index++)
+        {
+            var entity = entities[index];
+            ArgumentNullException.ThrowIfNull(entity);
+            if (!rows.TryGetValue(entity.Id, out var existing) || !IsVisible(existing, includeDeleted: false))
+            {
+                results[index] = NotFound(entity.Id);
+                continue;
+            }
+
+            // 前一项已刷新跟踪实例的并发戳：同一标识的第二个游离实例在这里因戳过期而冲突
+            if (Stage(existing, entity, now) is { } conflict)
+            {
+                results[index] = conflict;
+                continue;
+            }
+
+            pending.Add((index, existing));
+        }
+
+        if (pending.Count == 0)
+        {
+            return results;
+        }
+
+        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var (index, existing) in pending)
+        {
+            results[index] = saved;
+            if (saved.IsSuccess && !ReferenceEquals(existing, entities[index]))
+            {
+                CopyAuditBack(existing, entities[index]);
+            }
+        }
+
+        return results;
     }
 
     /// <inheritdoc />
@@ -150,12 +281,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             return NotFound(entity.Id);
         }
 
-        // 软删除只在跟踪实例上打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除
-        if (!PersistenceConventions.TrySoftDelete(existing, _timeProvider.GetUtcNow()))
-        {
-            Set.Remove(existing);
-        }
-
+        StageRemoval(existing, _timeProvider.GetUtcNow());
         var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
         if (saved.IsSuccess && !ReferenceEquals(existing, entity))
         {
@@ -163,6 +289,59 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         return saved;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Result>> RemoveRangeAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        _ = Context;
+        if (entities.Count == 0)
+        {
+            return [];
+        }
+
+        if (await PrepareWriteAsync(cancellationToken).ConfigureAwait(false) is { } rejected)
+        {
+            return Repeat(rejected, entities.Count);
+        }
+
+        var rows = await LoadAsync(Distinct(entities.Select(static e => e.Id)), cancellationToken).ConfigureAwait(false);
+        var now = _timeProvider.GetUtcNow();
+        var results = new Result[entities.Count];
+        var pending = new List<(int Index, TEntity Existing)>(entities.Count);
+        // 软删除打标后跟踪实例立即不可见；物理删除的实例仍可见，用已删除集合让同一实体第二次成为 NotFound
+        var removed = new HashSet<TKey>();
+        for (var index = 0; index < entities.Count; index++)
+        {
+            var entity = entities[index];
+            ArgumentNullException.ThrowIfNull(entity);
+            if (!rows.TryGetValue(entity.Id, out var existing) || !IsVisible(existing, includeDeleted: false) || !removed.Add(entity.Id))
+            {
+                results[index] = NotFound(entity.Id);
+                continue;
+            }
+
+            StageRemoval(existing, now);
+            pending.Add((index, existing));
+        }
+
+        if (pending.Count == 0)
+        {
+            return results;
+        }
+
+        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var (index, existing) in pending)
+        {
+            results[index] = saved;
+            if (saved.IsSuccess && !ReferenceEquals(existing, entities[index]))
+            {
+                CopyAuditBack(existing, entities[index]);
+            }
+        }
+
+        return results;
     }
 
     /// <summary>
@@ -181,6 +360,81 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 构造实体不存在的错误。
     /// </summary>
     private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, PersistenceMessages.NotFound, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
+
+    /// <summary>
+    /// 构造标识重复的错误。
+    /// </summary>
+    private static Error Duplicate(TKey id) => Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
+
+    /// <summary>
+    /// 同一结果重复给每一项（写入前置条件不满足时整批同一错误）。
+    /// </summary>
+    private static Result[] Repeat(Result result, int count)
+    {
+        var results = new Result[count];
+        Array.Fill(results, result);
+        return results;
+    }
+
+    /// <summary>
+    /// 去重并保持首次出现的顺序。
+    /// </summary>
+    private static List<TKey> Distinct(IEnumerable<TKey> ids)
+    {
+        var seen = new HashSet<TKey>();
+        var distinct = new List<TKey>();
+        foreach (var id in ids)
+        {
+            ArgumentNullException.ThrowIfNull(id);
+            if (seen.Add(id))
+            {
+                distinct.Add(id);
+            }
+        }
+
+        return distinct;
+    }
+
+    /// <summary>
+    /// 一次 <c>IN</c> 查询取回这些标识对应的行（不做可见性过滤，与 <see cref="FindAsync"/> 一样在内存里判定），按标识索引；已跟踪的行由 EF 解析为同一实例。
+    /// </summary>
+    private async Task<Dictionary<TKey, TEntity>> LoadAsync(List<TKey> ids, CancellationToken cancellationToken)
+    {
+        // 用 EF.Property 按名字访问主键列，表达式树里不需要把 TEntity 转成接口；标识列表作为参数翻译成 IN
+        var rows = await Set.Where(e => ids.Contains(EF.Property<TKey>(e, nameof(IEntity<TKey>.Id)))).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return rows.ToDictionary(static e => e.Id);
+    }
+
+    /// <summary>
+    /// 在跟踪实例上准备一次更新：传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例；最后刷新审计字段。
+    /// </summary>
+    private Error? Stage(TEntity existing, TEntity entity, DateTimeOffset now)
+    {
+        if (!ReferenceEquals(existing, entity))
+        {
+            if (existing is IHasConcurrencyStamp current && entity is IHasConcurrencyStamp incoming
+                && !string.Equals(current.ConcurrencyStamp, incoming.ConcurrencyStamp, StringComparison.Ordinal))
+            {
+                return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.StaleStamp, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
+            }
+
+            Context.Entry(existing).CurrentValues.SetValues(entity);
+        }
+
+        PersistenceConventions.ApplyOnUpdate(existing, now);
+        return null;
+    }
+
+    /// <summary>
+    /// 在跟踪实例上准备一次删除：软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
+    /// </summary>
+    private void StageRemoval(TEntity existing, DateTimeOffset now)
+    {
+        if (!PersistenceConventions.TrySoftDelete(existing, now))
+        {
+            Set.Remove(existing);
+        }
+    }
 
     /// <summary>
     /// 把跟踪实例上由协议写入的修改时间、并发戳与软删除标记复制到调用方的游离实例。
