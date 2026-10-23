@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Buffers;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
@@ -12,7 +13,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.CloudEvents;
 
 /// <summary>
-/// CloudEvents 1.0 的 HTTP 协议绑定：读请求（binary / structured / batch）成信封，把信封写进出站请求（binary / structured）。
+/// CloudEvents 1.0 的 HTTP 协议绑定：读请求（binary / structured / batch）成信封，把信封写进出站请求（单条 binary / structured，多条 batch）。
 /// binary 模式的头值按规范百分号编码非可打印 ASCII 字符；structured 与 batch 复用 <see cref="CloudEventsFormat"/> 的结构化 JSON。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -90,7 +91,32 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 把信封写进出站请求：binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；batch 不用于出站。
+    /// 把多个信封以 batch 模式写进出站请求：<c>application/cloudevents-batch+json</c>，请求体是结构化 JSON 事件的数组，顺序同入参。
+    /// </summary>
+    public static void WriteBatch(IReadOnlyList<MessageEnvelope> envelopes, HttpRequestMessage request)
+    {
+        ArgumentNullException.ThrowIfNull(envelopes);
+        ArgumentNullException.ThrowIfNull(request);
+        var buffer = new ArrayBufferWriter<byte>();
+        buffer.Write("["u8);
+        for (var index = 0; index < envelopes.Count; index++)
+        {
+            ArgumentNullException.ThrowIfNull(envelopes[index]);
+            if (index > 0)
+            {
+                buffer.Write(","u8);
+            }
+
+            buffer.Write(CloudEventsFormat.Encode(envelopes[index]));
+        }
+
+        buffer.Write("]"u8);
+        request.Content = new ByteArrayContent(buffer.WrittenSpan.ToArray());
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue(BatchContentType);
+    }
+
+    /// <summary>
+    /// 把一个信封写进出站请求：binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>。
     /// </summary>
     public static void Write(MessageEnvelope envelope, HttpRequestMessage request, CloudEventsContentMode mode)
     {
@@ -126,7 +152,7 @@ public static class CloudEventsHttpBinding
                 request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse(envelope.DataContentType);
                 break;
             default:
-                throw new ArgumentException("Batch mode is only used for inbound events.", nameof(mode));
+                throw new ArgumentException("Batch mode is only used for inbound events and WriteBatch.", nameof(mode));
         }
     }
 

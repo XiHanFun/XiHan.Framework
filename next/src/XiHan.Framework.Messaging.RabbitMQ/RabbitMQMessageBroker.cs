@@ -12,7 +12,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.RabbitMQ;
 
 /// <summary>
-/// 基于 RabbitMQ.Client 的代理：每主题一个持久队列，手动确认，失败重新发布到队尾或死信队列。
+/// 基于 RabbitMQ.Client 的代理：每主题一个持久队列，手动确认，失败重新发布到队尾或死信队列。批量发布在同一通道上连续发布、一次持锁、一次声明队列。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDisposable
@@ -118,6 +118,55 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         TopicName.Validate(topic);
         await PublishAsync(QueueOf(topic), envelope, attempt: 1, cancellationToken).ConfigureAwait(false);
         return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Result>> PublishManyAsync(string topic, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(envelopes);
+        TopicName.Validate(topic);
+        if (envelopes.Count == 0)
+        {
+            return [];
+        }
+
+        // 先把全部信封编码好：任一信封为空在触及代理前就失败
+        var bodies = new (byte[] Body, string Id)[envelopes.Count];
+        for (var index = 0; index < envelopes.Count; index++)
+        {
+            ArgumentNullException.ThrowIfNull(envelopes[index]);
+            bodies[index] = (CloudEventsFormat.Encode(envelopes[index]), envelopes[index].Id);
+        }
+
+        var queue = QueueOf(topic);
+        if (_publishChannel is null)
+        {
+            await ConnectAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await _publishGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // 同一通道上连续发布：一次持锁、一次声明队列，每条写出后立即写下一条，代理按到达顺序入队；
+            // 客户端或网络异常让整批抛出，不伪装成部分成功
+            await DeclareAsync(_publishChannel!, queue, cancellationToken).ConfigureAwait(false);
+            foreach (var (body, id) in bodies)
+            {
+                await _publishChannel!.BasicPublishAsync(string.Empty, queue, mandatory: false, Properties(attempt: 1, id), body, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception) when (exception is RabbitMQClientException or IOException)
+        {
+            throw Unavailable($"Failed to publish to queue '{queue}'", exception);
+        }
+        finally
+        {
+            _publishGate.Release();
+        }
+
+        var results = new Result[envelopes.Count];
+        Array.Fill(results, Result.Success());
+        return results;
     }
 
     /// <inheritdoc />
@@ -273,14 +322,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         try
         {
             await DeclareAsync(_publishChannel!, queue, cancellationToken).ConfigureAwait(false);
-            var properties = new BasicProperties
-            {
-                ContentType = CloudEventsFormat.ContentType,
-                DeliveryMode = DeliveryModes.Persistent,
-                MessageId = messageId,
-                Headers = new Dictionary<string, object?>(StringComparer.Ordinal) { [AttemptHeader] = attempt },
-            };
-            await _publishChannel!.BasicPublishAsync(string.Empty, queue, mandatory: false, properties, body, cancellationToken).ConfigureAwait(false);
+            await _publishChannel!.BasicPublishAsync(string.Empty, queue, mandatory: false, Properties(attempt, messageId), body, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is RabbitMQClientException or IOException)
         {
@@ -291,6 +333,17 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             _publishGate.Release();
         }
     }
+
+    /// <summary>
+    /// 消息属性：持久化投递、CloudEvents 内容类型、消息 ID 与尝试次数头。
+    /// </summary>
+    private static BasicProperties Properties(int attempt, string? messageId) => new()
+    {
+        ContentType = CloudEventsFormat.ContentType,
+        DeliveryMode = DeliveryModes.Persistent,
+        MessageId = messageId,
+        Headers = new Dictionary<string, object?>(StringComparer.Ordinal) { [AttemptHeader] = attempt },
+    };
 
     /// <summary>
     /// 声明持久、非独占、不自动删除的队列；同一队列只声明一次。

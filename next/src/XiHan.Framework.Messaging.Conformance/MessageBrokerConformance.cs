@@ -12,7 +12,7 @@ using Xunit;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// <c>messaging.queue@1</c> Provider 的一致性套件。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
+/// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class MessageBrokerConformance
@@ -96,7 +96,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 3：同一主题按发布顺序投递。
+    /// 用例 3：同一主题按发布顺序投递；一次批量发布多条同样保持入参顺序。
     /// </summary>
     [Fact]
     public async Task Publish_PreservesOrder_WithinTopic()
@@ -104,10 +104,15 @@ public abstract class MessageBrokerConformance
         var log = new DeliveryLog();
         await using var host = await StartAsync(log).ConfigureAwait(false);
         var ids = Enumerable.Range(0, 20).Select(static i => $"seq-{i:D2}").ToList();
-        foreach (var id in ids)
+        // 前十条逐条发布，后十条一次批量发布：两种方式在同一主题内都保持顺序
+        foreach (var id in ids.Take(10))
         {
             (await PublishAsync(host, OrdersTopic, Envelope(id, "orders.seq")).ConfigureAwait(false)).ThrowIfFailure();
         }
+
+        var batched = await PublishManyAsync(host, OrdersTopic, [.. ids.Skip(10).Select(static id => Envelope(id, "orders.seq"))]).ConfigureAwait(false);
+        Assert.Equal(10, batched.Count);
+        Assert.All(batched, static r => Assert.True(r.IsSuccess, r.ToString()));
 
         var received = await log.WaitAsync(static r => r.Delivery.Envelope.Id.StartsWith("seq-", StringComparison.Ordinal), ids.Count, DeliveryTimeout).ConfigureAwait(false);
 
@@ -204,6 +209,28 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
+    /// 用例 9：批量发布逐项结果与入参一一对应并全部投递；空集合返回空列表；主题不合法时每一项都被发布者拒绝，不到达代理。
+    /// </summary>
+    [Fact]
+    public async Task PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll()
+    {
+        var log = new DeliveryLog();
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+
+        var results = await PublishManyAsync(host, OrdersTopic, [Envelope("many-1", "orders.many"), Envelope("many-2", "orders.many")]).ConfigureAwait(false);
+        Assert.Equal(2, results.Count);
+        Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
+        var received = await log.WaitAsync(static r => r.Delivery.Envelope.Id.StartsWith("many-", StringComparison.Ordinal), 2, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal(["many-1", "many-2"], received.Select(static r => r.Delivery.Envelope.Id));
+
+        Assert.Empty(await PublishManyAsync(host, OrdersTopic, []).ConfigureAwait(false));
+
+        var rejected = await PublishManyAsync(host, "Not A Topic", [Envelope("x-1", "orders.x"), Envelope("x-2", "orders.x")]).ConfigureAwait(false);
+        Assert.Equal(2, rejected.Count);
+        Assert.All(rejected, static r => Assert.Equal(MessagingErrors.InvalidTopic, r.Error?.Code));
+    }
+
+    /// <summary>
     /// 装配并启动宿主：被测特性、两个主题的记录处理器、套件配置（最多投递 2 次）。
     /// </summary>
     protected Task<TestHost> StartAsync(DeliveryLog log)
@@ -230,6 +257,16 @@ public abstract class MessageBrokerConformance
         ArgumentNullException.ThrowIfNull(host);
         await using var scope = host.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<IMessagePublisher>().PublishAsync(topic, envelope, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 在新作用域内批量发布。
+    /// </summary>
+    protected static async Task<IReadOnlyList<Result>> PublishManyAsync(TestHost host, string topic, IReadOnlyList<MessageEnvelope> envelopes)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        await using var scope = host.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IMessagePublisher>().PublishManyAsync(topic, envelopes, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>

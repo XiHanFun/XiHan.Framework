@@ -57,7 +57,11 @@ public sealed class InMemoryMessagingTests
 
         // 未订阅的主题没有消费者，用它验证容量
         Assert.True((await broker.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
-        Assert.True((await broker.PublishAsync("idle", Envelope("2"), CancellationToken.None)).IsSuccess);
+        // 批量发布容量不足时整批 QueueFull，不写入半批
+        var overflow = await broker.PublishManyAsync("idle", [Envelope("2"), Envelope("3")], CancellationToken.None);
+        Assert.All(overflow, static r => Assert.Equal(MessagingErrors.QueueFull, r.Error?.Code));
+        Assert.Equal(1, broker.QueuedCount("idle"));
+        Assert.All(await broker.PublishManyAsync("idle", [Envelope("2")], CancellationToken.None), static r => Assert.True(r.IsSuccess));
         var full = await broker.PublishAsync("idle", Envelope("3"), CancellationToken.None);
         Assert.Equal(MessagingErrors.QueueFull, full.Error?.Code);
         Assert.Equal(2, broker.QueuedCount("idle"));

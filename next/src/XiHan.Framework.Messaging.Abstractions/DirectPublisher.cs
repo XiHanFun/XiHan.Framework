@@ -22,6 +22,35 @@ public sealed class DirectPublisher(IMessageBroker broker) : IMessagePublisher
         ArgumentNullException.ThrowIfNull(envelope);
         return TopicName.IsValid(topic)
             ? _broker.PublishAsync(topic, envelope, cancellationToken)
-            : ValueTask.FromResult<Result>(Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", topic))));
+            : ValueTask.FromResult<Result>(InvalidTopic(topic));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<Result>> PublishManyAsync(string topic, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(envelopes);
+        if (!TopicName.IsValid(topic))
+        {
+            return ValueTask.FromResult(Repeat(InvalidTopic(topic), envelopes.Count));
+        }
+
+        return envelopes.Count == 0
+            ? ValueTask.FromResult<IReadOnlyList<Result>>([])
+            : _broker.PublishManyAsync(topic, envelopes, cancellationToken);
+    }
+
+    /// <summary>
+    /// 构造主题不合法的错误。
+    /// </summary>
+    internal static Error InvalidTopic(string topic) => Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", topic)));
+
+    /// <summary>
+    /// 同一结果重复给每一项（主题不合法时整批同一错误）。
+    /// </summary>
+    internal static IReadOnlyList<Result> Repeat(Result result, int count)
+    {
+        var results = new Result[count];
+        Array.Fill(results, result);
+        return results;
     }
 }

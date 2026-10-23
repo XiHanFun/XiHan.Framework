@@ -11,6 +11,7 @@ using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using Error = XiHan.Framework.Primitives.Error;
+using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
 
@@ -49,31 +50,17 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
 
         await using var scope = host.Root.CreateAsyncScope();
         var publisher = scope.ServiceProvider.GetService<IMessagePublisher>();
-        var response = new PublishResponse();
-        foreach (var envelope in request.Envelopes)
+        // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填，与请求的信封一一对应
+        var statuses = new ProtoStatus[request.Envelopes.Count];
+        var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", runtime.Manifest.Id))) : null);
+        foreach (var (topic, indexes, messages) in batches)
         {
-            if (publisher is null)
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", runtime.Manifest.Id)))));
-                continue;
-            }
-
-            if (!TopicName.IsValid(envelope.Topic))
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", envelope.Topic)))));
-                continue;
-            }
-
-            var converted = PluginEnvelopeMapper.FromProto(envelope);
-            if (!converted.TryGetValue(out var message))
-            {
-                response.Results.Add(PluginErrorMapper.ToStatus(converted.Error!));
-                continue;
-            }
-
-            response.Results.Add(PluginErrorMapper.ToStatus(await publisher.PublishAsync(envelope.Topic, message, context.CancellationToken).ConfigureAwait(false)));
+            var results = await publisher!.PublishManyAsync(topic, messages, context.CancellationToken).ConfigureAwait(false);
+            PluginPublishBatches.Scatter(statuses, indexes, results);
         }
 
+        var response = new PublishResponse();
+        response.Results.AddRange(statuses);
         return response;
     }
 
