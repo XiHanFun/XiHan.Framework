@@ -78,13 +78,7 @@ internal static partial class PackageGrammar
 
         var role = segments[1];
 
-        // Compat 与固定后缀的结构词先于一般子系统规则判定，它们的角色段是封闭集合。
-        if (head == "Compat")
-        {
-            reason = "The role segment of Compat must be 'V' followed by a major version number.";
-            return CompatRole().IsMatch(role);
-        }
-
+        // 固定后缀的结构词先于一般子系统规则判定，它们的角色段是封闭集合。
         if (_fixedSuffixes.TryGetValue(head, out var allowed))
         {
             reason = $"The role segments allowed for '{head}' are: {string.Join(", ", allowed)}.";
@@ -133,7 +127,7 @@ internal static partial class PackageGrammar
             "Plugins" when role == "Conformance" => 7,
             "Protocols" or "Plugins" => 5,
             "Profiles" => 6,
-            "Testing" or "Cli" or "Compat" => 7,
+            "Testing" or "Cli" => 7,
             _ => role is "Abstractions" ? 2 : role is "Conformance" or "Generators" ? 7 : 3,
         };
     }
@@ -149,10 +143,4 @@ internal static partial class PackageGrammar
     /// </summary>
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex RoleSegment();
-
-    /// <summary>
-    /// Compat 角色段的正则：<c>V</c> 加不以零开头的大版本号。
-    /// </summary>
-    [GeneratedRegex("^V[1-9][0-9]*$")]
-    private static partial Regex CompatRole();
 }
