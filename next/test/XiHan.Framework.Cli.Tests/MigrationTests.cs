@@ -1007,6 +1007,8 @@ public sealed class MigrationTests
             using XiHan.Framework.Kernel.Hosting;
             using XiHan.Framework.Kernel.Security.Claims;
             using XiHan.Framework.Web.Core.Extensions;
+            using XiHan.Framework.Domain;
+            using XiHan.Framework.Domain.Shared;
             using XiHan.Framework.Persistence.SqlSugar;
 
             namespace Shop;
@@ -1017,6 +1019,7 @@ public sealed class MigrationTests
             using Shop.Core;
             using XiHan.Framework.Kernel.Hosting;
             using XiHan.Framework.Kernel.Security.Claims;
+            using XiHan.Framework.Domain;
             using XiHan.Framework.Persistence.SqlSugar;
 
             namespace Shop;
@@ -1026,7 +1029,7 @@ public sealed class MigrationTests
         var (text, session) = Apply(new LegacyUsingFixer(), source);
 
         Assert.Equal(Lf(expected), text);
-        Assert.Equal(2, session.Findings.Count);
+        Assert.Equal(3, session.Findings.Count);
         Assert.Empty(Apply(new LegacyUsingFixer(), text).Session.Findings);
     }
 
