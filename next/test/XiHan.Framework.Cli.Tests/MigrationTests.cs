@@ -398,6 +398,113 @@ public sealed class MigrationTests
     }
 
     [Fact]
+    public void DependencyMarker_RegistersClassesInheritingMarkersFromBases_WithSelfAndDefaultInterfaces()
+    {
+        const string repositories = """
+            using XiHan.Framework.Core.DependencyInjection;
+            using XiHan.Framework.Data.SqlSugar.Repository;
+
+            namespace Shop.Infrastructure.Repositories;
+
+            /// <summary>
+            /// 聚合根仓储基类
+            /// </summary>
+            public abstract class ShopAggregateRepository<TAggregateRoot>(ISqlSugarClientResolver clientResolver)
+                : SqlSugarAggregateRepository<TAggregateRoot, long>(clientResolver), IShopAggregateRepository<TAggregateRoot>, IScopedDependency
+                where TAggregateRoot : class, new();
+
+            public sealed class RoleRepository(ISqlSugarClientResolver clientResolver) : ShopAggregateRepository<SysRole>(clientResolver), IRoleRepository;
+
+            """;
+        const string services = """
+            using XiHan.Framework.Application.Attributes;
+            using XiHan.Framework.Application.Services;
+            using XiHan.Framework.Domain.Services;
+
+            namespace Shop.Application;
+
+            public abstract class ShopApplicationService : ApplicationServiceBase;
+
+            public sealed class ReportService : ShopApplicationService, IReportService, IDisposable
+            {
+            }
+
+            [DynamicApi]
+            public sealed class UserAppService : ShopApplicationService, IUserAppService
+            {
+            }
+
+            public sealed class OrderManager : DomainService, IOrderManager, IHandler<SysOrder>
+            {
+            }
+
+            public sealed class Plain : IPlain
+            {
+            }
+
+            """;
+        const string expectedRepositories = """
+            using XiHan.Framework.Core.DependencyInjection;
+            using XiHan.Framework.Data.SqlSugar.Repository;
+
+            namespace Shop.Infrastructure.Repositories;
+
+            /// <summary>
+            /// 聚合根仓储基类
+            /// </summary>
+            public abstract class ShopAggregateRepository<TAggregateRoot>(ISqlSugarClientResolver clientResolver)
+                : SqlSugarAggregateRepository<TAggregateRoot, long>(clientResolver), IShopAggregateRepository<TAggregateRoot>
+                where TAggregateRoot : class, new();
+
+            public sealed class RoleRepository(ISqlSugarClientResolver clientResolver) : ShopAggregateRepository<SysRole>(clientResolver), IRoleRepository;
+
+            """;
+        var project = Path.Combine(Path.GetTempPath(), "Shop");
+        var repositoriesFile = new MigrationFile(Path.Combine(project, "Infrastructure", "Repositories", "Repositories.cs"), "Shop/Infrastructure/Repositories/Repositories.cs", project, "\n");
+        var servicesFile = new MigrationFile(Path.Combine(project, "Application", "Services.cs"), "Shop/Application/Services.cs", project, "\n");
+        var session = new MigrationSession();
+        var fixer = new DependencyMarkerFixer();
+        var dynamicApi = new DynamicApiFixer();
+        foreach (var (file, text) in new[] { (repositoriesFile, repositories), (servicesFile, services) })
+        {
+            fixer.Scan(file, Lf(text), session);
+            dynamicApi.Scan(file, Lf(text), session);
+        }
+
+        fixer.Prepare(session);
+        var repositoriesText = Lf(fixer.Apply(repositoriesFile, Lf(repositories), session));
+        var servicesText = Lf(fixer.Apply(servicesFile, Lf(services), session));
+
+        // 抽象基类只去掉标记、不留标记；具体派生类按继承到的存期登记：类本身 + 类名以「接口名去 I」结尾的接口（基类上带类型参数的接口、IDisposable 与不匹配的接口不算）；
+        // 动态 API 服务类由 V4-06 登记；没有任何存期来源的类不登记
+        Assert.Equal(Lf(expectedRepositories), repositoriesText);
+        Assert.Equal(Lf(services), servicesText);
+        Assert.DoesNotContain(session.Findings, static finding => finding.IsMarker);
+        var registrations = Assert.Single(session.Registrations).Value;
+        Assert.Equal(
+            [("OrderManager", "Transient", "IOrderManager", true), ("ReportService", "Transient", "IReportService", true), ("RoleRepository", "Scoped", "IRoleRepository", true)],
+            registrations.Select(static r => (r.Implementation, r.Lifetime, string.Join(",", r.Services), r.IncludeSelf)));
+
+        var generated = Lf(V4ServicesGenerator.Generate("Shop", "ShopV4Services", registrations, "// marker", "\n"));
+        Assert.Contains("using Microsoft.Extensions.DependencyInjection;\nusing Microsoft.Extensions.DependencyInjection.Extensions;\nusing Shop.Application;\nusing Shop.Infrastructure.Repositories;\n", generated, StringComparison.Ordinal);
+        Assert.Contains(
+            "        services.TryAddTransient<OrderManager>();\n        services.TryAddTransient<IOrderManager>(static sp => sp.GetRequiredService<OrderManager>());\n" +
+            "        services.TryAddTransient<ReportService>();\n        services.TryAddTransient<IReportService>(static sp => sp.GetRequiredService<ReportService>());\n" +
+            "        services.TryAddScoped<RoleRepository>();\n        services.TryAddScoped<IRoleRepository>(static sp => sp.GetRequiredService<RoleRepository>());\n        return services;\n",
+            generated,
+            StringComparison.Ordinal);
+
+        // 再跑一遍：标记已去掉，零改动
+        var second = new MigrationSession();
+        fixer.Scan(repositoriesFile, repositoriesText, second);
+        fixer.Scan(servicesFile, servicesText, second);
+        fixer.Prepare(second);
+        Assert.Equal(repositoriesText, Lf(fixer.Apply(repositoriesFile, repositoriesText, second)));
+        Assert.Equal(servicesText, Lf(fixer.Apply(servicesFile, servicesText, second)));
+        Assert.Empty(second.Findings);
+    }
+
+    [Fact]
     public void DynamicApi_GeneratesDelegatingOperations_AndStripsServices()
     {
         const string baseSource = """

@@ -91,7 +91,7 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             }
         }
 
-        // V4-03：每个项目一个注册文件；第一行留调用提醒
+        // V4-03：每个项目一个注册文件；第一行留调用提醒。内容与已有文件相同（再跑一遍，4.x 框架基类仍在基类列表里）时不算改动
         foreach (var (projectDirectory, registrations) in session.Registrations.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
         {
             var (project, className) = V4ServicesGenerator.Names(projectDirectory);
@@ -99,9 +99,15 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             var newLine = newLines.GetValueOrDefault(projectDirectory, Environment.NewLine);
             var generated = new MigrationFile(target, Path.GetRelativePath(root, target).Replace('\\', '/'), projectDirectory, newLine);
             var message = CliMessages.MigrateMarkerRegisterServices.L(("method", "Add" + className));
+            var content = V4ServicesGenerator.Generate(project, className, registrations, Markers.Line("V4-03", message), newLine);
+            if (File.Exists(target) && string.Equals(File.ReadAllText(target), content, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             session.Marked("V4-03", generated, 1, message);
             session.Changed("V4-03", generated, 0);
-            session.GeneratedFiles[target] = V4ServicesGenerator.Generate(project, className, registrations, Markers.Line("V4-03", message), newLine);
+            session.GeneratedFiles[target] = content;
         }
 
         // V4-06：空响应、序列化上下文，以及项目文件里的生成器引用

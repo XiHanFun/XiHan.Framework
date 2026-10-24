@@ -26,7 +26,7 @@
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe hat in 5.0 kein Gegenstück; den Handler in Configure des Features mit AddMessageHandler<THandler>(topic) registrieren.",
   "cli.migrate.marker.event_topic_unresolved": "Der Ereignistyp hinter '{name}' konnte nicht bestimmt werden; das Thema von Hand setzen.",
   "cli.migrate.marker.localization_catalog": "Den eingebetteten Katalog mit MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<ein Typ dieser Assembly>)) laden und der Lokalisierungsfunktion hinzufügen; die Schlüssel lauten {domain}.<Ressource>.<Schlüssel>.",
-  "cli.migrate.marker.manual_registration": "{name} konnte nicht automatisch registriert werden (generisch, abstrakt oder außerhalb eines Projekts); von Hand registrieren.",
+  "cli.migrate.marker.manual_registration": "{name} konnte nicht automatisch registriert werden (generisch oder außerhalb eines Projekts); von Hand registrieren.",
   "cli.migrate.marker.modules_dropped": "4.x-Module ohne 5.0-Fähigkeit entfernt: {modules}.",
   "cli.migrate.marker.permission_simplified": "Nur der erste Berechtigungsausdruck wurde zur Vertragsberechtigung; die übrigen wurden verworfen.",
   "cli.migrate.marker.register_services": "{method}() aus Configure des Features aufrufen.",

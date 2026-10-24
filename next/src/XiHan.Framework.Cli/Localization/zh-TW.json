@@ -26,7 +26,7 @@
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe 沒有 5.0 對應物；在特性的 Configure 裡用 AddMessageHandler<THandler>(topic) 登記處理器。",
   "cli.migrate.marker.event_topic_unresolved": "推不出 '{name}' 的事件型別；請手動填主題。",
   "cli.migrate.marker.localization_catalog": "用 MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<本組件裡的型別>)) 載入嵌入目錄並加進本地化特性；鍵為 {domain}.<資源>.<鍵>。",
-  "cli.migrate.marker.manual_registration": "{name} 無法自動註冊（泛型、抽象或不在專案裡）；請手動註冊。",
+  "cli.migrate.marker.manual_registration": "{name} 無法自動註冊（泛型或不在專案裡）；請手動註冊。",
   "cli.migrate.marker.modules_dropped": "已刪除沒有 5.0 能力的 4.x 模組：{modules}。",
   "cli.migrate.marker.permission_simplified": "只有第一個權限運算式成為契約權限；其餘已捨棄。",
   "cli.migrate.marker.register_services": "在特性的 Configure 裡呼叫 {method}()。",

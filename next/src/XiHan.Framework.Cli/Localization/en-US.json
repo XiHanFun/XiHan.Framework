@@ -26,7 +26,7 @@
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe has no 5.0 counterpart; register the handler with AddMessageHandler<THandler>(topic) in the feature's Configure.",
   "cli.migrate.marker.event_topic_unresolved": "The event type behind '{name}' could not be determined; set the topic by hand.",
   "cli.migrate.marker.localization_catalog": "Load the embedded catalog with MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<a type in this assembly>)) and add it to the localization feature; keys are {domain}.<resource>.<key>.",
-  "cli.migrate.marker.manual_registration": "{name} could not be registered automatically (generic, abstract or outside a project); register it by hand.",
+  "cli.migrate.marker.manual_registration": "{name} could not be registered automatically (generic or outside a project); register it by hand.",
   "cli.migrate.marker.modules_dropped": "Removed 4.x modules without a 5.0 capability: {modules}.",
   "cli.migrate.marker.permission_simplified": "Only the first permission expression became the contract permission; the others were dropped.",
   "cli.migrate.marker.register_services": "Call {method}() from the feature's Configure.",

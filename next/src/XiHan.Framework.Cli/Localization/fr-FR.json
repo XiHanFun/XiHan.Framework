@@ -26,7 +26,7 @@
   "cli.migrate.marker.event_subscribe": "ILocalEventBus.Subscribe n'a pas d'équivalent en 5.0 ; enregistrez le gestionnaire avec AddMessageHandler<THandler>(topic) dans Configure de la fonctionnalité.",
   "cli.migrate.marker.event_topic_unresolved": "Le type d'événement derrière '{name}' n'a pas pu être déterminé ; définissez le sujet à la main.",
   "cli.migrate.marker.localization_catalog": "Chargez le catalogue incorporé avec MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<un type de cet assembly>)) et ajoutez-le à la fonctionnalité de localisation ; les clés sont {domain}.<ressource>.<clé>.",
-  "cli.migrate.marker.manual_registration": "{name} n'a pas pu être enregistré automatiquement (générique, abstrait ou hors projet) ; enregistrez-le à la main.",
+  "cli.migrate.marker.manual_registration": "{name} n'a pas pu être enregistré automatiquement (générique ou hors projet) ; enregistrez-le à la main.",
   "cli.migrate.marker.modules_dropped": "Modules 4.x sans capacité 5.0 supprimés : {modules}.",
   "cli.migrate.marker.permission_simplified": "Seule la première expression de permission est devenue la permission du contrat ; les autres ont été abandonnées.",
   "cli.migrate.marker.register_services": "Appelez {method}() depuis Configure de la fonctionnalité.",

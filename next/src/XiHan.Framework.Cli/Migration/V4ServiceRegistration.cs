@@ -11,4 +11,5 @@ namespace XiHan.Framework.Cli.Migration;
 /// <param name="Lifetime">存期：<c>Transient</c>、<c>Scoped</c> 或 <c>Singleton</c>。</param>
 /// <param name="Services">暴露的服务接口名；为空时注册自身。</param>
 /// <param name="Topics">消息处理器订阅的主题表达式（V4-08）；非空时以 <c>AddMessageHandler&lt;T&gt;(topic)</c> 登记，不再按存期注册。</param>
-internal sealed record V4ServiceRegistration(string Namespace, string Implementation, string Lifetime, IReadOnlyList<string> Services, IReadOnlyList<string>? Topics = null);
+/// <param name="IncludeSelf">沿基类链继承到存期的类（V4-03）：以 <c>TryAdd</c> 注册类本身，每个接口转发到类本身（同一存期内同一实例，与 4.x 约定注册一致）。</param>
+internal sealed record V4ServiceRegistration(string Namespace, string Implementation, string Lifetime, IReadOnlyList<string> Services, IReadOnlyList<string>? Topics = null, bool IncludeSelf = false);

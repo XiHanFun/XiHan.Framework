@@ -31,8 +31,13 @@ internal static class V4ServicesGenerator
         builder.Append(marker).Append(newLine);
         builder.Append("// ").Append(CliMessages.MigrateGenerated.L()).Append(newLine).Append(newLine);
         builder.Append("using Microsoft.Extensions.DependencyInjection;").Append(newLine);
-        // 实现类所在的命名空间按字典序引入；与项目命名空间相同的也引入，生成的文件不依赖它在哪个目录；有消息处理器时引入 AddMessageHandler 所在的命名空间
+        // 实现类所在的命名空间按字典序引入；与项目命名空间相同的也引入，生成的文件不依赖它在哪个目录；有消息处理器时引入 AddMessageHandler 所在的命名空间，有继承存期的类时引入 TryAdd 所在的命名空间
         var namespaces = registrations.Select(static registration => registration.Namespace).Where(static ns => ns.Length > 0);
+        if (registrations.Any(static registration => registration.IncludeSelf))
+        {
+            namespaces = namespaces.Append("Microsoft.Extensions.DependencyInjection.Extensions");
+        }
+
         if (registrations.Any(static registration => registration.Topics is { Count: > 0 }))
         {
             namespaces = namespaces.Append("XiHan.Framework.Messaging.Abstractions");
@@ -56,6 +61,18 @@ internal static class V4ServicesGenerator
                 foreach (var topic in registration.Topics)
                 {
                     builder.Append("        services.AddMessageHandler<").Append(registration.Implementation).Append(">(").Append(topic).Append(");").Append(newLine);
+                }
+
+                continue;
+            }
+
+            // 沿基类链继承存期的类：TryAdd 类本身，接口转发到类本身（4.x 约定注册在同一存期内给出同一实例；显式注册在别处时以显式为准）
+            if (registration.IncludeSelf)
+            {
+                builder.Append("        services.TryAdd").Append(registration.Lifetime).Append('<').Append(registration.Implementation).Append(">();").Append(newLine);
+                foreach (var service in registration.Services)
+                {
+                    builder.Append("        services.TryAdd").Append(registration.Lifetime).Append('<').Append(service).Append(">(static sp => sp.GetRequiredService<").Append(registration.Implementation).Append(">());").Append(newLine);
                 }
 
                 continue;
