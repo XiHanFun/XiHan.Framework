@@ -34,6 +34,7 @@
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider 來自 ApplicationServiceBase；改為建構函式注入 ILogger<T> 或所需服務。",
   "cli.migrate.marker.shutdown_context": "StopAsync 沒有上下文；需要的服務在 StartAsync 裡解析並存到欄位。",
   "cli.migrate.marker.tenant_id_type": "TenantId 改為字串；把 Tenant_Id 欄型別與按數字比較的地方一起改掉。",
+  "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor 給單例消費方從目前呼叫的服務範圍讀 IUnitOfWorkManager.Current；IUnitOfWorkManager / IUnitOfWork 沒有 5.0 對應物，請把 using 指向應用自己承接的工作單元管理器（範圍、AsyncLocal 維護目前值），或直接讀它的環境值。",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager 沒有 5.0 對應物：每個操作預設一個工作單元，需要明確控制時注入作用域的 IUnitOfWork。",
   "cli.migrate.marker.unsupported_operation": "{name} 無法變成操作（泛型、ref/out 參數、串流或 ASP.NET 型別）；請手動公開。",
   "cli.migrate.path_not_found": "路徑 '{path}' 不存在。",

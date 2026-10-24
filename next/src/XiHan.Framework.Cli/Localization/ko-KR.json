@@ -34,6 +34,7 @@
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider는 ApplicationServiceBase에서 왔습니다. ILogger<T> 또는 필요한 서비스를 생성자로 주입하세요.",
   "cli.migrate.marker.shutdown_context": "StopAsync는 컨텍스트를 받지 않습니다. 필요한 것은 StartAsync에서 해결해 필드에 보관하세요.",
   "cli.migrate.marker.tenant_id_type": "TenantId가 문자열로 바뀌었습니다. Tenant_Id 열 형식과 숫자로 비교하던 부분을 변경하세요.",
+  "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor는 싱글톤 소비자를 위해 현재 호출의 서비스 범위에서 IUnitOfWorkManager.Current를 읽습니다. IUnitOfWorkManager / IUnitOfWork에는 5.0 대응물이 없으므로 using을 애플리케이션 자체의 작업 단위 관리자(범위, AsyncLocal로 현재 값 유지)로 향하게 하거나 그 환경 값을 직접 읽으세요.",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager에는 5.0 대응물이 없습니다. 각 작업은 기본적으로 하나의 작업 단위를 가지며, 명시적으로 제어하려면 범위가 지정된 IUnitOfWork를 주입하세요.",
   "cli.migrate.marker.unsupported_operation": "{name}은(는) 작업이 될 수 없습니다(제네릭, ref/out 매개 변수, 스트림 또는 ASP.NET 형식). 직접 노출하세요.",
   "cli.migrate.path_not_found": "경로 '{path}'이(가) 없습니다.",
