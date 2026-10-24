@@ -27,6 +27,7 @@
   "cli.migrate.marker.event_topic_unresolved": "推不出 '{name}' 的事件类型；请手工填主题。",
   "cli.migrate.marker.localization_catalog": "用 MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<本程序集里的类型>)) 加载嵌入目录并加进本地化特性；键为 {domain}.<资源>.<键>。",
   "cli.migrate.marker.manual_registration": "{name} 没法自动注册（泛型或不在项目里）；请手工注册。",
+  "cli.migrate.marker.module_registrations": "已删除的 4.x 模块 {module} 曾在 ConfigureServices 里注册这些服务；应用仍在用的请在 Configure 里补回：{registrations}",
   "cli.migrate.marker.modules_dropped": "已删除没有 5.0 能力的 4.x 模块：{modules}。",
   "cli.migrate.marker.permission_simplified": "只有第一个权限表达式成为契约权限；其余已丢弃。",
   "cli.migrate.marker.register_services": "在特性的 Configure 里调用 {method}()。",

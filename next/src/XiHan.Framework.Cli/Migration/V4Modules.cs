@@ -97,6 +97,75 @@ internal static class V4Modules
     };
 
     /// <summary>
+    /// 4.x 框架模块 → 它的 <c>ConfigureServices</c> 注册的服务（按 <c>framework/src</c> 各模块的扩展方法整理）。删除模块时这些注册随之丢失，
+    /// 承接代码仍依赖的要在特性的 <c>Configure</c> 里补回；表里没有的模块（<c>XiHanUowModule</c>、<c>XiHanCastleModule</c> 等）没有应用会消费的注册。
+    /// </summary>
+    private static readonly Dictionary<string, V4ModuleRegistration[]> _registrations = new(StringComparer.Ordinal)
+    {
+        ["XiHanWebCoreModule"] = [new("AddXiHanWebCore", true, ["IHttpContextAccessor", "XiHanClientInfoOptions", "IIpRegionResolver", "IClientInfoProvider", "ICurrentPrincipalAccessor", "IClaimsTransformation"])],
+        ["XiHanWebApiModule"] =
+        [
+            new("AddXiHanWebApi", true, ["IRequestContextAccessor", "ITraceIdProvider", "IOpenApiSecurityClientStore", "ISessionStateGate", "XiHanSessionStateMiddleware", "XiHanRequestAccessMiddleware", "AddCors", "AddXiHanWebApiAuth", "AddXiHanWebApiLogging", "AddXiHanWebApiMvc"]),
+            new("AddXiHanRateLimiting", true, ["XiHanRateLimitingOptions"]),
+            new("AddXiHanCircuitBreaking", true, ["XiHanCircuitBreakingOptions"]),
+            new(null, false, ["XiHanForwardedHeadersOptions"]),
+        ],
+        ["XiHanWebRealTimeModule"] = [new("AddXiHanSignalRWithJson", true, ["AddSignalR", "IConnectionManager", "IUserIdProvider", "IXiHanUserIdProvider"])],
+        ["XiHanDistributedIdsModule"] = [new("AddXiHanDistributedIds", true, ["SnowflakeIdOptions", "SequentialGuidOptions", "NanoIdOptions", "SqidsOptions", "IdGeneratorFactory.CreateSnowflakeIdGenerator", "IdGeneratorFactory.CreateSequentialGuidGenerator"])],
+        ["XiHanUpgradeModule"] = [new("AddXiHanUpgrade", true, ["XiHanUpgradeOptions", "IUpgradeScriptProvider", "IUpgradeVersionStore", "IUpgradeLockProvider", "IUpgradeTenantProvider", "IUpgradeMigrationExecutor", "IUpgradeStatusService", "IUpgradeEngine", "IUpgradeCoordinator", "IUpgradeMaintenanceModeManager", "IUpgradeFileUpdater"])],
+        ["XiHanCachingModule"] = [new("AddXiHanCaching", true, ["IMemoryCache", "IDistributedCache (AddDistributedMemoryCache / AddStackExchangeRedisCache by XiHan:Caching:Redis:IsEnabled)", "XiHanRedisCacheOptions", "IDistributedCacheKeyNormalizer", "IDistributedCacheSerializer", "IDistributedCache<>", "IDistributedCache<,>", "HybridCache", "IHybridCache<>", "IHybridCache<,>", "IDistributedLock", "IRedisDelayQueue<> (DefaultDelayQueue<> / RedisDelayQueue<>)"])],
+        ["XiHanSecurityModule"] = [new("AddXiHanSecurityServices", true, ["PasswordHasherOptions", "PasswordPolicyOptions", "IPasswordHasher", "IPasswordPolicyService", "IPasswordHistoryStore"])],
+        ["XiHanAuthenticationModule"] = [new("AddXiHanAuthentication", true, ["IAuthenticationService", "IUserStore", "IJwtTokenService", "IOneTimeCodeService", "IOtpService", "IRefreshTokenStore", "AddXiHanOAuth"])],
+        ["XiHanAuthorizationModule"] = [new("AddXiHanAuthorization", true, ["IAuthorizationService", "IPermissionChecker", "IPermissionStore", "IPolicyEvaluator", "IPolicyStore", "IRoleStore", "IAbacEvaluator", "IAbacAttributeCollector", "IAuthorizationPolicyProvider", "IConditionAttributeRegistry"])],
+        ["XiHanMultiTenancyModule"] = [new("AddXiHanMultiTenancy", true, ["ICurrentTenantAccessor", "ITenantStore", "ITenantFeatureChecker"])],
+        ["XiHanLocalizationModule"] = [new("AddXiHanLocalization", true, ["AddLocalization", "XiHanLocalizationOptions", "IEnumLocalizationService", "JsonLocalizationResourceStore", "ResourceManagerStringLocalizerFactory"])],
+        ["XiHanDataModule"] = [new("AddXiHanDataSqlSugar", true, ["ISqlSugarClientResolver", "ISqlSugarTenantConnectionResolver", "IModuleDataSourceConnectionResolver", "IDbInitializer", "IDatabaseMetadataProvider", "IDataSeederSelector", "IDbEntityTypeProvider", "IDynamicConnectionRegistrar", "IEntityModuleDataSourceResolver", "SqlSugarSlaveHealthCheckService"])],
+        ["XiHanEventBusModule"] = [new("AddXiHanEventBus", true, ["ILocalEventBus", "IDistributedEventBus", "IEventHandlerInvoker", "IUnitOfWorkEventPublisher"])],
+        ["XiHanTasksModule"] =
+        [
+            new("AddXiHanBackgroundJobs", true, ["IBackgroundJobManager", "IBackgroundJobExecuter", "IBackgroundJobStore", "IBackgroundJobSerializer", "BackgroundJobWorker"]),
+            new("AddXiHanTasks", true, ["XiHanJobOptions", "IJobScheduler", "IJobStore", "IJobExecutor", "IJobLockProvider", "IJobEventPublisher", "JobMetricsProvider", "JobHostedService"]),
+        ],
+        ["XiHanAuditingModule"] = [new("AddXiHanAuditing", true, ["IAccessLogPipeline", "IApiLogPipeline", "IExceptionLogPipeline", "ILoginLogPipeline", "IOperationLogPipeline", "IAccessLogWriter", "*LogQueueWorker"])],
+        ["XiHanObjectStorageModule"] = [new("AddXiHanObjectStorage", true, ["IFileStorageProviderManager", "IFileStorageRouter"])],
+        ["XiHanObservabilityModule"] = [new("AddXiHanObservability", true, ["AddOpenTelemetry", "AddHealthChecks", "IDiagnosticsService", "IMetricsCollector", "IPerformanceMonitor"])],
+        ["XiHanLoggingModule"] = [new("AddXiHanLogging", true, ["AddXiHanSerilog", "IXiHanLoggerFactory", "IXiHanLogger", "IStructuredLogger", "IPerformanceLogger", "ILogContext"])],
+        ["XiHanSettingsModule"] = [new("AddXiHanSettings", true, ["ISettingManager", "ISettingDefinitionManager", "ISettingStore", "ISettingValueProvider"])],
+        ["XiHanHttpModule"] = [new("AddXiHanHttpModule", true, ["IProxyValidator", "IProxyPoolManager", "IAdvancedHttpService"])],
+        ["XiHanThreadingModule"] = [new("AddXiHanThreading", false, ["ICancellationTokenProvider", "IAmbientDataContext"])],
+        ["XiHanTimingModule"] = [new("AddXiHanTiming", false, ["XiHanClockOptions", "IClock", "ITimezoneProvider", "ICurrentTimezoneProvider"])],
+        ["XiHanObjectMappingModule"] = [new("AddXiHanMapster", false, ["IMapper"])],
+        ["XiHanTemplatingModule"] = [new("AddXiHanTemplating", false, ["ITemplateEngineRegistry", "ITemplateService", "ITemplateContextAccessor", "ITemplateContextFactory", "ITemplateInheritanceManager", "ITemplatePartialManager"])],
+        ["XiHanMessagingModule"] = [new("AddXiHanMessaging", false, ["IMessageDispatcher"])],
+        ["XiHanBotModule"] = [new("AddXiHanBot", false, ["XiHanBotOptions", "BotProviderManager", "BotDispatcher"])],
+        ["XiHanAIModule"] = [new("AddXiHanAI", false, ["XiHanAiOptions", "AiGuardrailOptions", "IAiChatClientResolver", "IAiEmbeddingGeneratorResolver", "IAiProviderConfigStore"]), new("AddXiHanRAG", false, [])],
+        ["XiHanVirtualFileSystemModule"] = [new("AddXiHanVirtualFileSystem", true, ["VirtualFileSystemOptions", "IVirtualFileSystem", "IFileVersioningService"])],
+        ["XiHanWorkflowModule"] = [new("AddXiHanWorkflow", true, ["IWorkflowEngine", "IWorkflowDefinitionManager", "IWorkflowDefinitionStore", "IWorkflowInstanceStore", "IWorkflowBookmarkStore", "IWorkflowActivityRegistry", "IWorkflowExpressionEvaluator", "IWorkflowEventPublisher", "IWorkflowAssigneeResolver", "WorkflowTimerWorker"])],
+        ["XiHanWebGatewayModule"] = [new("AddGrayRouting", false, ["IGrayRuleEngine", "IGrayMatcher"])],
+        ["XiHanTrafficModule"] = [new("AddGrayRouting", false, ["IGrayRuleEngine", "IGrayMatcher"])],
+        ["XiHanSearchEnginesModule"] = [new(null, false, ["ISearchEngine (DefaultSearchEngine)"])],
+    };
+
+    /// <summary>
+    /// 4.x 框架模块在 <c>ConfigureServices</c> 里做的注册；没有应用会消费的注册时为空。<c>XiHanBot&lt;平台&gt;Module</c> 对应 <c>AddXiHanBot&lt;平台&gt;()</c>。
+    /// </summary>
+    public static IReadOnlyList<V4ModuleRegistration> Registrations(string module)
+    {
+        if (_registrations.TryGetValue(module, out var registrations))
+        {
+            return registrations;
+        }
+
+        if (module.StartsWith("XiHanBot", StringComparison.Ordinal) && module.EndsWith("Module", StringComparison.Ordinal) && module.Length > "XiHanBotModule".Length)
+        {
+            var platform = module["XiHanBot".Length..^"Module".Length];
+            return [new V4ModuleRegistration("AddXiHanBot" + platform, false, [])];
+        }
+
+        return [];
+    }
+
+    /// <summary>
     /// 查 4.x 框架模块：返回 <see langword="true"/> 时 <paramref name="capability"/> 为能力 ID 或空（无对应能力）；返回 <see langword="false"/> 表示不是框架模块。
     /// </summary>
     public static bool TryGetCapability(string module, out string? capability)

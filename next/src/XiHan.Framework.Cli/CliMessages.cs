@@ -92,6 +92,9 @@ public static class CliMessages
     /// <summary>V4-01 标记：删除了无能力的 4.x 模块。参数：<c>modules</c>。</summary>
     public const string MigrateMarkerModulesDropped = "cli.migrate.marker.modules_dropped";
 
+    /// <summary>V4-01 标记：被删 4.x 模块在 <c>ConfigureServices</c> 里做过的注册，承接时按需补回。参数：<c>module</c>、<c>registrations</c>。</summary>
+    public const string MigrateMarkerModuleRegistrations = "cli.migrate.marker.module_registrations";
+
     /// <summary>V4-02 标记：并发戳列类型。</summary>
     public const string MigrateMarkerConcurrencyStampColumn = "cli.migrate.marker.concurrency_stamp_column";
 

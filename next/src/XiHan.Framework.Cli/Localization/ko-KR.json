@@ -27,6 +27,7 @@
   "cli.migrate.marker.event_topic_unresolved": "'{name}'의 이벤트 형식을 알아낼 수 없습니다. 토픽을 직접 지정하세요.",
   "cli.migrate.marker.localization_catalog": "MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<이 어셈블리의 형식>))으로 포함된 카탈로그를 읽어 지역화 기능에 추가하세요. 키는 {domain}.<리소스>.<키>입니다.",
   "cli.migrate.marker.manual_registration": "{name}은(는) 자동 등록할 수 없습니다(제네릭 또는 프로젝트 밖). 직접 등록하세요.",
+  "cli.migrate.marker.module_registrations": "제거한 4.x 모듈 {module}은(는) ConfigureServices에서 다음 서비스를 등록했습니다. 애플리케이션이 아직 쓰는 것은 Configure에서 다시 등록하세요: {registrations}",
   "cli.migrate.marker.modules_dropped": "5.0 능력이 없는 4.x 모듈을 제거했습니다: {modules}.",
   "cli.migrate.marker.permission_simplified": "첫 번째 권한 식만 계약 권한이 되었고 나머지는 버려졌습니다.",
   "cli.migrate.marker.register_services": "기능의 Configure에서 {method}()를 호출하세요.",
