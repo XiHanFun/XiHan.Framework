@@ -5,13 +5,12 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
 /// V4-07：不改 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 的调用点。每条项目引用链最底层的使用项目生成同名应用接口与读 <c>IInvocationAccessor.Current</c> 的实现（<c>Security/</c> 目录，命名空间 <c>&lt;项目&gt;.Security</c>），
-/// 使用文件补 <c>using</c>；<c>ICurrentTenant.Change(...)</c> 的语句留标记。项目文件只在第一遍读引用图，不改写。
+/// 使用文件补 <c>using</c>；生成的 <c>CurrentTenant.Change(...)</c> 用 AsyncLocal 覆盖栈实现，调用点不动。项目文件只在第一遍读引用图，不改写。
 /// </summary>
 internal sealed partial class CurrentContextFixer : SyntaxFixer
 {
@@ -117,16 +116,15 @@ internal sealed partial class CurrentContextFixer : SyntaxFixer
             return root;
         }
 
-        // 先在原树上留标记（行号取原文件），再补 using
-        var rewritten = (CompilationUnitSyntax)new ChangeRewriter(this, file, session).Visit(root);
+        // 只补 using：生成的 CurrentTenant 自带 Change（AsyncLocal 覆盖栈），调用点不用改
         var ns = V4ServicesGenerator.Names(provider).Project + ".Security";
         if (root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>().Any(declaration => declaration.Name.ToString() == ns))
         {
-            return rewritten;
+            return root;
         }
 
-        var withUsing = WithUsings(rewritten, [ns], file.NewLine);
-        if (!ReferenceEquals(withUsing, rewritten))
+        var withUsing = WithUsings(root, [ns], file.NewLine);
+        if (!ReferenceEquals(withUsing, root))
         {
             session.Changed(Id, file, 1);
         }
@@ -172,49 +170,4 @@ internal sealed partial class CurrentContextFixer : SyntaxFixer
     /// </summary>
     [GeneratedRegex("<ProjectReference\\s+Include=\"(?<path>[^\"]+)\"")]
     private static partial Regex ProjectReference();
-
-    /// <summary>
-    /// 对 <c>…CurrentTenant….Change(…)</c> 所在的语句留标记。
-    /// </summary>
-    private sealed class ChangeRewriter(CurrentContextFixer fixer, MigrationFile file, MigrationSession session) : CSharpSyntaxRewriter
-    {
-        /// <inheritdoc />
-        public override SyntaxNode? VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
-            => ChangesTenant(node) ? Mark(node, node) : base.VisitLocalDeclarationStatement(node);
-
-        /// <inheritdoc />
-        public override SyntaxNode? VisitExpressionStatement(ExpressionStatementSyntax node)
-            => ChangesTenant(node) ? Mark(node, node) : base.VisitExpressionStatement(node);
-
-        /// <inheritdoc />
-        public override SyntaxNode? VisitUsingStatement(UsingStatementSyntax node)
-        {
-            var visited = (UsingStatementSyntax)base.VisitUsingStatement(node)!;
-            return node.Expression is not null && ChangesTenant(node.Expression) ? Mark(visited, node) : visited;
-        }
-
-        /// <summary>
-        /// 节点里是否有接收者名含 CurrentTenant 的 <c>Change</c> 调用。
-        /// </summary>
-        private static bool ChangesTenant(SyntaxNode node)
-            => node.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().Any(static invocation =>
-                invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Change" } access
-                && access.Expression.ToString().Contains("CurrentTenant", StringComparison.OrdinalIgnoreCase));
-
-        /// <summary>
-        /// 在改写后的节点前留标记，行号取原节点。
-        /// </summary>
-        private TNode Mark<TNode>(TNode node, SyntaxNode original)
-            where TNode : SyntaxNode
-        {
-            var message = CliMessages.MigrateMarkerTenantChange.L();
-            if (Markers.Has(node, fixer.Id, message))
-            {
-                return node;
-            }
-
-            session.Marked(fixer.Id, file, LineOf(original), message);
-            return Markers.With(node, fixer.Id, message, file.NewLine);
-        }
-    }
 }

@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// V4-07 生成的源码：应用自己的 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 与读 <c>IInvocationAccessor.Current</c> 的实现，成员与 4.x 同名、标识改为字符串。
+/// V4-07 生成的源码：应用自己的 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 与读 <c>IInvocationAccessor.Current</c> 的实现，成员与 4.x 同名；租户标识为字符串，<c>UserId</c> 仍是 <c>long?</c>（另给 <c>Subject</c>），<c>CurrentTenant.Change</c> 可用。
 /// </summary>
 internal static class V4CurrentContextGenerator
 {
@@ -84,7 +84,7 @@ internal static class V4CurrentContextGenerator
     }
 
     /// <summary>
-    /// <c>ICurrentUser</c>：与 4.x 同名成员，<c>UserId</c> / <c>TenantId</c> 为字符串。
+    /// <c>ICurrentUser</c>：与 4.x 同名成员，<c>UserId</c> 仍是 <c>long?</c>（5.0 主体 ID 解析成数字），<c>Subject</c> 是主体 ID 原文，<c>TenantId</c> 为字符串。
     /// </summary>
     private static string CurrentUserInterface(string ns, string newLine)
     {
@@ -94,7 +94,8 @@ internal static class V4CurrentContextGenerator
         var members = new[]
         {
             "bool IsAuthenticated { get; }",
-            "string? UserId { get; }",
+            "long? UserId { get; }",
+            "string? Subject { get; }",
             "string? UserName { get; }",
             "string? Name { get; }",
             "string? SurName { get; }",
@@ -119,11 +120,11 @@ internal static class V4CurrentContextGenerator
     }
 
     /// <summary>
-    /// <c>CurrentUser</c>：读当前调用的 <c>SecurityContext</c>，主体 ID 作 <c>UserId</c>，其余按标准 ClaimTypes 与 4.x 默认声明名取。
+    /// <c>CurrentUser</c>：读当前调用的 <c>SecurityContext</c>，主体 ID 作 <c>Subject</c> 并解析成 <c>long? UserId</c>，其余按标准 ClaimTypes 与 4.x 默认声明名取。
     /// </summary>
     private static string CurrentUser(string ns, string newLine)
     {
-        var builder = Header(ns, newLine, "System.Security.Claims", "XiHan.Framework.Kernel.Pipeline", "XiHan.Framework.Kernel.Security");
+        var builder = Header(ns, newLine, "System.Globalization", "System.Security.Claims", "XiHan.Framework.Kernel.Pipeline", "XiHan.Framework.Kernel.Security");
         Summary(builder, string.Empty, newLine);
         builder.Append("public sealed class CurrentUser(IInvocationAccessor accessor) : ICurrentUser").Append(newLine).Append('{').Append(newLine);
         builder.Append("    private const string EmailVerifiedClaim = \"email_verified\";").Append(newLine);
@@ -133,7 +134,8 @@ internal static class V4CurrentContextGenerator
         builder.Append("    private SecurityContext Security => accessor.Current.TryGetValue(out var context) ? context.GetSecurity() : SecurityContext.Anonymous;").Append(newLine).Append(newLine);
         builder.Append("    private Principal Principal => Security.Principal;").Append(newLine);
         Implementation(builder, "public bool IsAuthenticated => Principal.IsAuthenticated;", newLine);
-        Implementation(builder, "public string? UserId => Principal.IsAuthenticated ? Principal.Id : null;", newLine);
+        Implementation(builder, "public long? UserId => long.TryParse(Subject, NumberStyles.None, CultureInfo.InvariantCulture, out var userId) ? userId : null;", newLine);
+        Implementation(builder, "public string? Subject => Principal.IsAuthenticated ? Principal.Id : null;", newLine);
         Implementation(builder, "public string? UserName => Find(ClaimTypes.Name);", newLine);
         Implementation(builder, "public string? Name => Find(ClaimTypes.GivenName);", newLine);
         Implementation(builder, "public string? SurName => Find(ClaimTypes.Surname);", newLine);
@@ -170,18 +172,43 @@ internal static class V4CurrentContextGenerator
     }
 
     /// <summary>
-    /// <c>CurrentTenant</c>：读当前调用的租户；租户随调用的 Baggage 走，<c>Change</c> 不支持。
+    /// <c>CurrentTenant</c>：默认读当前调用的租户；<c>Change</c> 用 AsyncLocal 覆盖栈在当前执行流里显式切换（压栈、释放弹栈），覆盖调用携带的租户。
     /// </summary>
     private static string CurrentTenant(string ns, string newLine)
     {
         var builder = Header(ns, newLine, "XiHan.Framework.Kernel.Pipeline", "XiHan.Framework.Kernel.Security");
         Summary(builder, string.Empty, newLine);
         builder.Append("public sealed class CurrentTenant(IInvocationAccessor accessor) : ICurrentTenant").Append(newLine).Append('{').Append(newLine);
-        builder.Append("    private TenantContext? Tenant => accessor.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant : null;").Append(newLine);
-        Implementation(builder, "public bool IsAvailable => Tenant is not null;", newLine);
-        Implementation(builder, "public string? Id => Tenant?.Id;", newLine);
-        Implementation(builder, "public string? Name => Tenant?.DisplayName;", newLine);
-        Implementation(builder, "public IDisposable Change(string? id, string? name = null) => throw new NotSupportedException(\"The tenant follows the invocation's baggage and cannot be changed inside a call; start a new invocation with the tenant baggage instead.\");", newLine);
+        builder.Append("    private static readonly AsyncLocal<Override?> _override = new();").Append(newLine).Append(newLine);
+        builder.Append("    private TenantContext? Invoked => accessor.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant : null;").Append(newLine);
+        Implementation(builder, "public bool IsAvailable => Id is not null;", newLine);
+        Implementation(builder, "public string? Id => _override.Value is { } current ? current.Id : Invoked?.Id;", newLine);
+        Implementation(builder, "public string? Name => _override.Value is { } current ? current.Name : Invoked?.DisplayName;", newLine);
+        builder.Append(newLine);
+        builder.Append("    /// <inheritdoc />").Append(newLine);
+        builder.Append("    public IDisposable Change(string? id, string? name = null)").Append(newLine);
+        builder.Append("    {").Append(newLine);
+        builder.Append("        var parent = _override.Value;").Append(newLine);
+        builder.Append("        _override.Value = new Override(string.IsNullOrWhiteSpace(id) ? null : id.Trim(), name, parent);").Append(newLine);
+        builder.Append("        return new Restore(parent);").Append(newLine);
+        builder.Append("    }").Append(newLine).Append(newLine);
+        Summary(builder, "    ", newLine);
+        builder.Append("    private sealed record Override(string? Id, string? Name, Override? Parent);").Append(newLine).Append(newLine);
+        Summary(builder, "    ", newLine);
+        builder.Append("    private sealed class Restore(Override? parent) : IDisposable").Append(newLine);
+        builder.Append("    {").Append(newLine);
+        builder.Append("        private bool _disposed;").Append(newLine).Append(newLine);
+        builder.Append("        /// <inheritdoc />").Append(newLine);
+        builder.Append("        public void Dispose()").Append(newLine);
+        builder.Append("        {").Append(newLine);
+        builder.Append("            if (_disposed)").Append(newLine);
+        builder.Append("            {").Append(newLine);
+        builder.Append("                return;").Append(newLine);
+        builder.Append("            }").Append(newLine).Append(newLine);
+        builder.Append("            _disposed = true;").Append(newLine);
+        builder.Append("            _override.Value = parent;").Append(newLine);
+        builder.Append("        }").Append(newLine);
+        builder.Append("    }").Append(newLine);
         builder.Append('}').Append(newLine);
         return builder.ToString();
     }

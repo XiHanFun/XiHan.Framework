@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 const XiHan.Framework.Cli.CliMessages.CatalogName = "cli" -> string!
 const XiHan.Framework.Cli.CliMessages.DotnetUnavailable = "cli.dotnet.unavailable" -> string!
 const XiHan.Framework.Cli.CliMessages.GraphDescription = "cli.graph.description" -> string!
@@ -33,7 +33,6 @@ const XiHan.Framework.Cli.CliMessages.MigrateMarkerPermissionSimplified = "cli.m
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerRegisterServices = "cli.migrate.marker.register_services" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerServiceBaseMember = "cli.migrate.marker.service_base_member" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerShutdownContext = "cli.migrate.marker.shutdown_context" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerTenantChange = "cli.migrate.marker.tenant_change" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerTenantIdType = "cli.migrate.marker.tenant_id_type" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnitOfWorkManager = "cli.migrate.marker.unit_of_work_manager" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnsupportedOperation = "cli.migrate.marker.unsupported_operation" -> string!

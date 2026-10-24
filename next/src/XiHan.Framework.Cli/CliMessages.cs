@@ -122,9 +122,6 @@ public static class CliMessages
     /// <summary>V4-06 标记：多个权限只取了第一个。</summary>
     public const string MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified";
 
-    /// <summary>V4-07 标记：<c>ICurrentTenant.Change</c> 没有对应物。</summary>
-    public const string MigrateMarkerTenantChange = "cli.migrate.marker.tenant_change";
-
     /// <summary>V4-08 标记：事件用反射序列化，提醒改用序列化上下文。</summary>
     public const string MigrateMarkerEventJson = "cli.migrate.marker.event_json";
 

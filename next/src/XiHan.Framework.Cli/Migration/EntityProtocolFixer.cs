@@ -68,6 +68,36 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
         }
 
         /// <inheritdoc />
+        public override SyntaxNode? VisitParameter(ParameterSyntax node)
+        {
+            var visited = (ParameterSyntax)base.VisitParameter(node)!;
+            return TryRename(visited.Identifier, node, out var identifier) ? visited.WithIdentifier(identifier) : visited;
+        }
+
+        /// <inheritdoc />
+        public override SyntaxNode? VisitVariableDeclarator(VariableDeclaratorSyntax node)
+        {
+            var visited = (VariableDeclaratorSyntax)base.VisitVariableDeclarator(node)!;
+            return TryRename(visited.Identifier, node, out var identifier) ? visited.WithIdentifier(identifier) : visited;
+        }
+
+        /// <summary>
+        /// 声明标识符（记录位置参数、参数、字段与局部变量）按改名表改名；只有属性与标识符用法不够，记录参数等声明也要跟着改。
+        /// </summary>
+        private bool TryRename(SyntaxToken identifier, SyntaxNode original, out SyntaxToken renamed)
+        {
+            renamed = identifier;
+            if (!V4EntityBases.Renames.TryGetValue(identifier.ValueText, out var name))
+            {
+                return false;
+            }
+
+            session.Changed(fixer.Id, file, LineOf(original));
+            renamed = SyntaxFactory.Identifier(identifier.LeadingTrivia, name, identifier.TrailingTrivia);
+            return true;
+        }
+
+        /// <inheritdoc />
         public override SyntaxNode? VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
             var visited = (PropertyDeclarationSyntax)base.VisitPropertyDeclaration(node)!;

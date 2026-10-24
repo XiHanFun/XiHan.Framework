@@ -105,7 +105,7 @@ internal static class V4OperationsGenerator
     }
 
     /// <summary>
-    /// 序列化上下文：camelCase、不区分大小写、允许从字符串读数字，登记全部请求与响应类型。
+    /// 序列化上下文：camelCase、不区分大小写、允许从字符串读数字，登记全部请求与响应类型；生成的类型写全限定名，简单名重复的加 <c>TypeInfoPropertyName</c>。
     /// </summary>
     private static string JsonContext(V4OperationProject project, string marker)
     {
@@ -121,9 +121,19 @@ internal static class V4OperationsGenerator
         builder.Append(newLine).Append("namespace ").Append(project.Name).Append(".Operations;").Append(newLine).Append(newLine);
         AppendSummary(builder, string.Empty, newLine);
         builder.Append("[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, NumberHandling = JsonNumberHandling.AllowReadingFromString)]").Append(newLine);
-        foreach (var type in project.Types.Select(TypeOfOperand).Distinct(StringComparer.Ordinal).OrderBy(static type => type, StringComparer.Ordinal))
+        var operands = project.Types.Select(TypeOfOperand).Distinct(StringComparer.Ordinal).OrderBy(static type => type, StringComparer.Ordinal).ToList();
+        // 不同资源各自生成的同名请求记录（DeleteRequest …）：源生成上下文的属性名按简单名推导会撞车，重名的显式给属性名
+        var duplicates = operands.GroupBy(SimpleNameOf, StringComparer.Ordinal).Where(static group => group.Count() > 1).Select(static group => group.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var type in operands)
         {
-            builder.Append("[JsonSerializable(typeof(").Append(type).Append("))]").Append(newLine);
+            builder.Append("[JsonSerializable(typeof(").Append(type).Append(')');
+            var simple = SimpleNameOf(type);
+            if (duplicates.Contains(simple) && ResourceSegmentOf(type) is { } resource && simple.All(static c => char.IsLetterOrDigit(c) || c == '_'))
+            {
+                builder.Append(", TypeInfoPropertyName = \"").Append(resource).Append(simple).Append('"');
+            }
+
+            builder.Append(")]").Append(newLine);
         }
 
         builder.Append("internal sealed partial class ").Append(Stem(project.Name)).Append("OperationsJsonContext : JsonSerializerContext;").Append(newLine);
@@ -152,6 +162,33 @@ internal static class V4OperationsGenerator
 
         var inner = trimmed[..^1].Trim();
         return _valueTypes.Contains(inner) || inner.StartsWith("System.", StringComparison.Ordinal) && _valueTypes.Contains(inner["System.".Length..]) ? trimmed : inner;
+    }
+
+    /// <summary>
+    /// 类型源码去掉命名空间前缀后的简单名（泛型实参原样保留）。
+    /// </summary>
+    private static string SimpleNameOf(string type)
+    {
+        var head = type.Split('<')[0];
+        var lastDot = head.LastIndexOf('.');
+        return lastDot < 0 ? type : type[(lastDot + 1)..];
+    }
+
+    /// <summary>
+    /// 全限定名的最后一个命名空间段（<c>Shop.Operations.Order.DeleteRequest</c> → <c>Order</c>）；没有命名空间前缀为空。
+    /// </summary>
+    private static string? ResourceSegmentOf(string type)
+    {
+        var head = type.Split('<')[0];
+        var lastDot = head.LastIndexOf('.');
+        if (lastDot <= 0)
+        {
+            return null;
+        }
+
+        var ns = head[..lastDot];
+        var previous = ns.LastIndexOf('.');
+        return previous < 0 ? ns : ns[(previous + 1)..];
     }
 
     /// <summary>
