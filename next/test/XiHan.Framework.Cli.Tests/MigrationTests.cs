@@ -852,6 +852,11 @@ public sealed class MigrationTests
             Assert.Contains("public sealed class CurrentUser(IInvocationAccessor accessor) : ICurrentUser", currentUser, StringComparison.Ordinal);
             // 后台任务以指定用户身份执行（PrincipalAmbient.Override）时优先读覆盖主体
             Assert.Contains("private Principal Principal => PrincipalAmbient.Current is { } ambient ? PrincipalConversion.FromClaimsPrincipal(ambient) : Security.Principal;", currentUser, StringComparison.Ordinal);
+            // 4.x 用 JwtSecurityTokenHandler 签发：角色与用户名在令牌里是短名 role / unique_name，5.0 不做入站映射，长短名都认
+            Assert.Contains("public string[] Roles => [.. Principal.ClaimValues(ClaimTypes.Role).Concat(Principal.ClaimValues(RoleShortClaim)).Distinct(StringComparer.Ordinal)];", currentUser, StringComparison.Ordinal);
+            Assert.Contains("public bool IsInRole(string roleName) => Principal.HasClaim(ClaimTypes.Role, roleName) || Principal.HasClaim(RoleShortClaim, roleName);", currentUser, StringComparison.Ordinal);
+            Assert.Contains("public string? UserName => Find(ClaimTypes.Name) ?? Find(UniqueNameShortClaim);", currentUser, StringComparison.Ordinal);
+            Assert.Contains("private const string RoleShortClaim = \"role\";\n    private const string UniqueNameShortClaim = \"unique_name\";\n", currentUser, StringComparison.Ordinal);
             var principalAccessor = Lf(File.ReadAllText(Path.Combine(core, "Security", "CurrentPrincipalAccessor.cs")));
             Assert.Contains("public sealed class CurrentPrincipalAccessor(IInvocationAccessor accessor) : ICurrentPrincipalAccessor", principalAccessor, StringComparison.Ordinal);
             Assert.Contains("    public ClaimsPrincipal Principal => PrincipalAmbient.Current\n        ?? PrincipalConversion.ToClaimsPrincipal(accessor.Current.TryGetValue(out var context) ? context.GetSecurity().Principal : XiHan.Framework.Kernel.Security.Principal.Anonymous);\n", principalAccessor, StringComparison.Ordinal);
