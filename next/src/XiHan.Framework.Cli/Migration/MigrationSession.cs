@@ -49,6 +49,11 @@ internal sealed class MigrationSession
     public Dictionary<string, bool> ServiceExtensions { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 含模块类或特性类（<c>XiHanModule</c> / <c>IFeature</c> / <c>IHostedFeature</c>）的文件，按项目目录分组（V4-01 第一遍记录；运行结束时往特性的 <c>Configure</c> 里插 <c>Add&lt;项目末段&gt;V4Services()</c> 调用）。
+    /// </summary>
+    public Dictionary<string, List<string>> FeatureFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// 用到 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 的项目目录（V4-07）。
     /// </summary>
     public HashSet<string> CurrentContextUsers { get; } = new(StringComparer.OrdinalIgnoreCase);

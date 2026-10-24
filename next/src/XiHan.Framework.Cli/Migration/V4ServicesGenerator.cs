@@ -22,13 +22,17 @@ internal static class V4ServicesGenerator
     }
 
     /// <summary>
-    /// 生成文件内容；第一行是提醒调用的标记。
+    /// 生成文件内容；<paramref name="marker"/> 非空时第一行是提醒调用的标记（特性的 <c>Configure</c> 里已插入调用时不要）。
     /// </summary>
-    public static string Generate(string project, string className, IReadOnlyList<V4ServiceRegistration> registrations, string marker, string newLine)
+    public static string Generate(string project, string className, IReadOnlyList<V4ServiceRegistration> registrations, string? marker, string newLine)
     {
         ArgumentNullException.ThrowIfNull(registrations);
         var builder = new StringBuilder();
-        builder.Append(marker).Append(newLine);
+        if (marker is not null)
+        {
+            builder.Append(marker).Append(newLine);
+        }
+
         builder.Append("// ").Append(CliMessages.MigrateGenerated.L()).Append(newLine).Append(newLine);
         builder.Append("using Microsoft.Extensions.DependencyInjection;").Append(newLine);
         // 实现类所在的命名空间按字典序引入；与项目命名空间相同的也引入，生成的文件不依赖它在哪个目录；有消息处理器时引入 AddMessageHandler 所在的命名空间，有继承存期的类时引入 TryAdd 所在的命名空间
