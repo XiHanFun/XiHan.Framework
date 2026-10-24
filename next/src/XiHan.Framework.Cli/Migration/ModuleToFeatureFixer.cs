@@ -39,6 +39,29 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
     public override string Id => "V4-01";
 
     /// <inheritdoc />
+    public override void Scan(MigrationFile file, string text, MigrationSession session)
+    {
+        // 范围内的 IServiceCollection 扩展方法：应用已承接的 4.x 模块注册（AddXiHanDistributedIds 等）可以直接生成调用
+        var root = CSharpSyntaxTree.ParseText(text, path: file.Path).GetCompilationUnitRoot();
+        foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+        {
+            if (!method.Modifiers.Any(SyntaxKind.StaticKeyword) || method.ParameterList.Parameters.Count == 0)
+            {
+                continue;
+            }
+
+            var first = method.ParameterList.Parameters[0];
+            if (!first.Modifiers.Any(SyntaxKind.ThisKeyword) || first.Type is null || SimpleName(first.Type) != "IServiceCollection")
+            {
+                continue;
+            }
+
+            var configuration = method.ParameterList.Parameters.Skip(1).Any(static parameter => parameter.Type is not null && SimpleName(parameter.Type) == "IConfiguration");
+            session.ServiceExtensions[method.Identifier.ValueText] = session.ServiceExtensions.GetValueOrDefault(method.Identifier.ValueText) || configuration;
+        }
+    }
+
+    /// <inheritdoc />
     protected override CompilationUnitSyntax Rewrite(CompilationUnitSyntax root, MigrationFile file, MigrationSession session)
     {
         var modules = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Where(IsModule).ToList();
@@ -117,9 +140,10 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
         var newLine = file.NewLine;
         session.Changed(Id, file, LineOf(module));
 
-        // [DependsOn]：框架模块映射成能力，无能力的记下来，应用模块直接删
+        // [DependsOn]：框架模块映射成能力，无能力的记下来，应用模块直接删；被删的框架模块按出现顺序记下来，补它们丢失的注册
         var requires = new List<string> { V4Modules.Hosting };
         var dropped = new List<string>();
+        var frameworkModules = new List<string>();
         foreach (var attribute in module.AttributeLists.SelectMany(static list => list.Attributes).Where(static attribute => AttributeName(attribute) == "DependsOn"))
         {
             session.Changed(Id, file, LineOf(attribute));
@@ -129,6 +153,11 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
                 if (!V4Modules.TryGetCapability(name, out var capability))
                 {
                     continue;
+                }
+
+                if (!frameworkModules.Contains(name))
+                {
+                    frameworkModules.Add(name);
                 }
 
                 if (capability is null)
@@ -159,7 +188,7 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
         var hosted = startBodies.Any(static body => body.Count > 0) || stopBodies.Any(static body => body.Count > 0);
         var generated = new StringBuilder();
         generated.Append(ManifestText(newName, ns, requires, indent, newLine, usings));
-        generated.Append(newLine).Append(MethodText(indent, newLine, "public void Configure(FeatureContext context)", configureBodies, null));
+        generated.Append(newLine).Append(MethodText(indent, newLine, "public void Configure(FeatureContext context)", configureBodies, null, ModuleRegistrations(frameworkModules, configure, module, file, session)));
         if (hosted)
         {
             var startAsync = start.Any(IsAsync);
@@ -275,9 +304,67 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
     }
 
     /// <summary>
-    /// 方法源码：各钩子体按顺序拼接，之间空一行；<paramref name="tail"/> 是末尾补的语句。
+    /// 被删的 4.x 框架模块在 <c>ConfigureServices</c> 里做过的注册（§4.1）：应用已有同名承接扩展方法、且原钩子体里还没调用的直接生成调用；
+    /// 原钩子体里已调用的不再提；其余按模块各留一条带清单的标记，让人按承接代码的实际依赖补回。返回要追加在 <c>Configure</c> 末尾的行。
     /// </summary>
-    private static string MethodText(string indent, string newLine, string signature, IEnumerable<List<StatementSyntax>> bodies, string? tail)
+    private List<string> ModuleRegistrations(IReadOnlyList<string> frameworkModules, IReadOnlyList<MethodDeclarationSyntax> configureHooks, ClassDeclarationSyntax module, MigrationFile file, MigrationSession session)
+    {
+        var invoked = configureHooks
+            .SelectMany(static hook => hook.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            .Select(static invocation => invocation.Expression switch
+            {
+                MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText,
+                GenericNameSyntax generic => generic.Identifier.ValueText,
+                IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
+                _ => string.Empty,
+            })
+            .ToHashSet(StringComparer.Ordinal);
+        var calls = new List<string>();
+        var markers = new List<string>();
+        foreach (var moduleName in frameworkModules)
+        {
+            var remaining = new List<string>();
+            foreach (var registration in V4Modules.Registrations(moduleName))
+            {
+                if (registration.Method is not null && invoked.Contains(registration.Method))
+                {
+                    continue;
+                }
+
+                if (registration.Method is not null && session.ServiceExtensions.TryGetValue(registration.Method, out var configuration))
+                {
+                    var call = $"context.Services.{registration.Method}({(configuration && registration.Configuration ? "context.Configuration" : string.Empty)});";
+                    if (!calls.Contains(call))
+                    {
+                        calls.Add(call);
+                    }
+
+                    continue;
+                }
+
+                remaining.Add(registration.ToString());
+            }
+
+            if (remaining.Count > 0)
+            {
+                var message = CliMessages.MigrateMarkerModuleRegistrations.L(("module", moduleName), ("registrations", string.Join("; ", remaining)));
+                session.Marked(Id, file, LineOf(module), message);
+                markers.Add(Markers.Line(Id, message));
+            }
+        }
+
+        foreach (var call in calls)
+        {
+            session.Changed(Id, file, LineOf(module));
+        }
+
+        return [.. calls, .. markers];
+    }
+
+    /// <summary>
+    /// 方法源码：各钩子体按顺序拼接，之间空一行；<paramref name="tail"/> 是末尾补的语句；<paramref name="trailing"/> 是再往后追加的行（生成的承接调用与标记），与前面的内容空一行。
+    /// </summary>
+    private static string MethodText(string indent, string newLine, string signature, IEnumerable<List<StatementSyntax>> bodies, string? tail, IReadOnlyList<string>? trailing = null)
     {
         var builder = new StringBuilder();
         builder.Append(indent).Append("/// <inheritdoc />").Append(newLine);
@@ -307,7 +394,21 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
                 builder.Append(newLine);
             }
 
+            first = false;
             builder.Append(indent).Append("    ").Append(tail).Append(newLine);
+        }
+
+        if (trailing is { Count: > 0 })
+        {
+            if (!first)
+            {
+                builder.Append(newLine);
+            }
+
+            foreach (var line in trailing)
+            {
+                builder.Append(indent).Append("    ").Append(line).Append(newLine);
+            }
         }
 
         builder.Append(indent).Append('}').Append(newLine);

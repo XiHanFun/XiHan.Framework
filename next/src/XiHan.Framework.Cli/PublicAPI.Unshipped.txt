@@ -28,6 +28,7 @@ const XiHan.Framework.Cli.CliMessages.MigrateMarkerEventSubscribe = "cli.migrate
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerEventTopicUnresolved = "cli.migrate.marker.event_topic_unresolved" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerLocalizationCatalog = "cli.migrate.marker.localization_catalog" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerManualRegistration = "cli.migrate.marker.manual_registration" -> string!
+const XiHan.Framework.Cli.CliMessages.MigrateMarkerModuleRegistrations = "cli.migrate.marker.module_registrations" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerModulesDropped = "cli.migrate.marker.modules_dropped" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerRegisterServices = "cli.migrate.marker.register_services" -> string!

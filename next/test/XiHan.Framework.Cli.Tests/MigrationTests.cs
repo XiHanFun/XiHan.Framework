@@ -121,6 +121,10 @@ public sealed class MigrationTests
                     var services = context.Services;
                     var configuration = context.Configuration;
                     services.AddOrders(configuration);
+
+                    {{ModuleRegistrationsMarker("XiHanDataModule")}}
+                    {{ModuleRegistrationsMarker("XiHanCachingModule")}}
+                    {{ModuleRegistrationsMarker("XiHanHttpModule")}}
                 }
 
                 /// <inheritdoc />
@@ -152,8 +156,9 @@ public sealed class MigrationTests
 
         var (text, session) = Apply(new ModuleToFeatureFixer(), source, "Orders/XiHanShopOrdersModule.cs");
 
+        // 三个被删框架模块各留一条丢失注册的清单标记（无承接方法可调用），加上无能力模块、应用构建器、关闭上下文三条
         Assert.Equal(Lf(expected), text);
-        Assert.Equal(3, session.Findings.Count(static finding => finding.IsMarker));
+        Assert.Equal(6, session.Findings.Count(static finding => finding.IsMarker));
         var rename = Assert.Single(session.Renames);
         Assert.EndsWith("XiHanShopOrdersModule.cs", rename.Key, StringComparison.Ordinal);
         Assert.EndsWith(Path.Combine("Orders", "ShopOrdersFeature.cs"), rename.Value, StringComparison.Ordinal);
@@ -162,6 +167,106 @@ public sealed class MigrationTests
         var (again, second) = Apply(new ModuleToFeatureFixer(), text);
         Assert.Equal(text, again);
         Assert.Empty(second.Findings);
+    }
+
+    /// <summary>
+    /// 被删 4.x 模块丢失注册的清单标记（§4.1 的全部注册项）。
+    /// </summary>
+    private static string ModuleRegistrationsMarker(string module, params string[] excluded)
+        => Markers.Line("V4-01", CliMessages.MigrateMarkerModuleRegistrations.L(
+            ("module", module),
+            ("registrations", string.Join("; ", V4Modules.Registrations(module).Where(registration => registration.Method is null || !excluded.Contains(registration.Method)).Select(static registration => registration.ToString())))));
+
+    [Fact]
+    public void ModuleToFeature_ListsDroppedModuleRegistrations_AndCallsCarriedOverExtensions()
+    {
+        const string extensions = """
+            using Microsoft.Extensions.Configuration;
+            using Microsoft.Extensions.DependencyInjection;
+
+            namespace Shop.Core;
+
+            public static class CoreServiceCollectionExtensions
+            {
+                public static IServiceCollection AddXiHanDistributedIds(this IServiceCollection services, IConfiguration configuration) => services;
+
+                public static IServiceCollection AddXiHanTiming(this IServiceCollection services) => services;
+
+                public static IServiceCollection AddXiHanTemplating(this IServiceCollection services) => services;
+            }
+
+            """;
+        const string source = """
+            namespace Shop.Core;
+
+            [DependsOn(typeof(XiHanWebCoreModule), typeof(XiHanDistributedIdsModule), typeof(XiHanTimingModule), typeof(XiHanTemplatingModule), typeof(XiHanCastleModule))]
+            public class XiHanShopCoreModule : XiHanModule
+            {
+                public override void ConfigureServices(ServiceConfigurationContext context)
+                {
+                    context.Services.AddXiHanTemplating();
+                }
+            }
+
+            """;
+        var expected = $$"""
+            using XiHan.Framework.Kernel;
+            using XiHan.Framework.Kernel.Hosting;
+            using XiHan.Framework.Persistence.Abstractions;
+            using XiHan.Framework.Primitives;
+            using XiHan.Framework.Primitives.Manifests;
+            using XiHan.Framework.Protocols.Http;
+
+            namespace Shop.Core;
+
+            {{Markers.Line("V4-01", CliMessages.MigrateMarkerModulesDropped.L(("modules", "XiHanTimingModule, XiHanTemplatingModule, XiHanCastleModule")))}}
+            public sealed class ShopCoreFeature : IFeature
+            {
+                /// <inheritdoc />
+                public Manifest Manifest { get; } = new()
+                {
+                    Id = "xihan.shop.core",
+                    Package = "Shop.Core",
+                    Version = "1.0.0",
+                    Primitives = 1,
+                    Stability = Stability.Stable,
+                    Kind = ManifestKind.Capability,
+                    Requires =
+                    [
+                        new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+                        new CapabilityRequirement(HttpProtocolCapabilities.Http, HttpProtocolCapabilities.Version),
+                        new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
+                    ],
+                    Entry = typeof(ShopCoreFeature).FullName,
+                };
+
+                /// <inheritdoc />
+                public void Configure(FeatureContext context)
+                {
+                    context.Services.AddXiHanTemplating();
+
+                    context.Services.AddXiHanDistributedIds(context.Configuration);
+                    context.Services.AddXiHanTiming();
+                    {{ModuleRegistrationsMarker("XiHanWebCoreModule")}}
+                }
+            }
+
+            """;
+        var session = new MigrationSession();
+        var fixer = new ModuleToFeatureFixer();
+        var extensionsFile = new MigrationFile(Path.Combine(Path.GetTempPath(), "Shop.Core", "CoreServiceCollectionExtensions.cs"), "Shop.Core/CoreServiceCollectionExtensions.cs", null, "\n");
+        var moduleFile = new MigrationFile(Path.Combine(Path.GetTempPath(), "Shop.Core", "XiHanShopCoreModule.cs"), "Shop.Core/XiHanShopCoreModule.cs", null, "\n");
+        fixer.Scan(extensionsFile, Lf(extensions), session);
+        fixer.Scan(moduleFile, Lf(source), session);
+
+        var text = Lf(fixer.Apply(moduleFile, Lf(source), session));
+
+        // 应用已承接的扩展方法直接生成调用（有 IConfiguration 参数才传配置）；原钩子体已调用的不再提；没有承接方法的模块留带清单的标记；Castle 没有应用会消费的注册
+        Assert.Equal(Lf(expected), text);
+        Assert.Equal(2, session.Findings.Count(static finding => finding.IsMarker));
+        Assert.Equal(["AddXiHanDistributedIds", "AddXiHanTemplating", "AddXiHanTiming"], session.ServiceExtensions.Keys.Order(StringComparer.Ordinal));
+        Assert.True(session.ServiceExtensions["AddXiHanDistributedIds"]);
+        Assert.False(session.ServiceExtensions["AddXiHanTiming"]);
     }
 
     [Fact]

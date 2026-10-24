@@ -27,6 +27,7 @@
   "cli.migrate.marker.event_topic_unresolved": "Não foi possível determinar o tipo de evento por trás de '{name}'; defina o tópico manualmente.",
   "cli.migrate.marker.localization_catalog": "Carregue o catálogo incorporado com MessageCatalog.FromEmbeddedResources(\"{domain}\", typeof(<um tipo deste assembly>)) e adicione-o à funcionalidade de localização; as chaves são {domain}.<recurso>.<chave>.",
   "cli.migrate.marker.manual_registration": "{name} não pôde ser registrado automaticamente (genérico ou fora de um projeto); registre manualmente.",
+  "cli.migrate.marker.module_registrations": "O módulo 4.x removido {module} registrava estes serviços em ConfigureServices; registre novamente em Configure os que a aplicação ainda usa: {registrations}",
   "cli.migrate.marker.modules_dropped": "Módulos 4.x sem capacidade 5.0 removidos: {modules}.",
   "cli.migrate.marker.permission_simplified": "Apenas a primeira expressão de permissão virou a permissão do contrato; as demais foram descartadas.",
   "cli.migrate.marker.register_services": "Chame {method}() a partir do Configure da funcionalidade.",

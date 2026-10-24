@@ -44,6 +44,11 @@ internal sealed class MigrationSession
     public Dictionary<string, HashSet<string>> ProjectReferences { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// 迁移范围内声明的 <c>IServiceCollection</c> 扩展方法：方法名 → 是否有 <c>IConfiguration</c> 参数（V4-01 据此直接生成被删模块注册的承接调用）。
+    /// </summary>
+    public Dictionary<string, bool> ServiceExtensions { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 用到 <c>ICurrentUser</c> / <c>ICurrentTenant</c> 的项目目录（V4-07）。
     /// </summary>
     public HashSet<string> CurrentContextUsers { get; } = new(StringComparer.OrdinalIgnoreCase);
