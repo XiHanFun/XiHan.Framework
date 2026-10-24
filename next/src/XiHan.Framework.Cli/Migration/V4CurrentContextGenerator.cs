@@ -125,7 +125,8 @@ internal static class V4CurrentContextGenerator
     }
 
     /// <summary>
-    /// <c>CurrentUser</c>：优先读 <c>PrincipalAmbient</c> 覆盖的主体（后台任务以指定用户身份执行），否则读当前调用的 <c>SecurityContext</c>；主体 ID 作 <c>Subject</c> 并解析成 <c>long? UserId</c>，其余按标准 ClaimTypes 与 4.x 默认声明名取。
+    /// <c>CurrentUser</c>：优先读 <c>PrincipalAmbient</c> 覆盖的主体（后台任务以指定用户身份执行），否则读当前调用的 <c>SecurityContext</c>；主体 ID 作 <c>Subject</c> 并解析成 <c>long? UserId</c>，其余按标准 ClaimTypes 与 4.x 默认声明名取；
+    /// 4.x 用 <c>JwtSecurityTokenHandler</c> 签发，出站把 <c>ClaimTypes.Role</c> / <c>ClaimTypes.Name</c> 写成短名 <c>role</c> / <c>unique_name</c>，5.0 不做入站映射，角色与用户名长短名都认。
     /// </summary>
     private static string CurrentUser(string ns, string newLine)
     {
@@ -135,13 +136,15 @@ internal static class V4CurrentContextGenerator
         builder.Append("    private const string EmailVerifiedClaim = \"email_verified\";").Append(newLine);
         builder.Append("    private const string PhoneNumberClaim = \"phone_number\";").Append(newLine);
         builder.Append("    private const string PhoneNumberVerifiedClaim = \"phone_number_verified\";").Append(newLine);
-        builder.Append("    private const string TenantIdClaim = \"tenantid\";").Append(newLine).Append(newLine);
+        builder.Append("    private const string TenantIdClaim = \"tenantid\";").Append(newLine);
+        builder.Append("    private const string RoleShortClaim = \"role\";").Append(newLine);
+        builder.Append("    private const string UniqueNameShortClaim = \"unique_name\";").Append(newLine).Append(newLine);
         builder.Append("    private SecurityContext Security => accessor.Current.TryGetValue(out var context) ? context.GetSecurity() : SecurityContext.Anonymous;").Append(newLine).Append(newLine);
         builder.Append("    private Principal Principal => PrincipalAmbient.Current is { } ambient ? PrincipalConversion.FromClaimsPrincipal(ambient) : Security.Principal;").Append(newLine);
         Implementation(builder, "public bool IsAuthenticated => Principal.IsAuthenticated;", newLine);
         Implementation(builder, "public long? UserId => long.TryParse(Subject, NumberStyles.None, CultureInfo.InvariantCulture, out var userId) ? userId : null;", newLine);
         Implementation(builder, "public string? Subject => Principal.IsAuthenticated ? Principal.Id : null;", newLine);
-        Implementation(builder, "public string? UserName => Find(ClaimTypes.Name);", newLine);
+        Implementation(builder, "public string? UserName => Find(ClaimTypes.Name) ?? Find(UniqueNameShortClaim);", newLine);
         Implementation(builder, "public string? Name => Find(ClaimTypes.GivenName);", newLine);
         Implementation(builder, "public string? SurName => Find(ClaimTypes.Surname);", newLine);
         Implementation(builder, "public string? PhoneNumber => Find(PhoneNumberClaim);", newLine);
@@ -149,11 +152,11 @@ internal static class V4CurrentContextGenerator
         Implementation(builder, "public string? Email => Find(ClaimTypes.Email);", newLine);
         Implementation(builder, "public bool EmailVerified => string.Equals(Find(EmailVerifiedClaim), \"true\", StringComparison.OrdinalIgnoreCase);", newLine);
         Implementation(builder, "public string? TenantId => Security.Tenant?.Id ?? Find(TenantIdClaim);", newLine);
-        Implementation(builder, "public string[] Roles => [.. Principal.ClaimValues(ClaimTypes.Role).Distinct(StringComparer.Ordinal)];", newLine);
+        Implementation(builder, "public string[] Roles => [.. Principal.ClaimValues(ClaimTypes.Role).Concat(Principal.ClaimValues(RoleShortClaim)).Distinct(StringComparer.Ordinal)];", newLine);
         Implementation(builder, "public Claim? FindClaim(string claimType) => GetAllClaims().FirstOrDefault(claim => claim.Type == claimType);", newLine);
         Implementation(builder, "public Claim[] FindClaims(string claimType) => [.. GetAllClaims().Where(claim => claim.Type == claimType)];", newLine);
         Implementation(builder, "public Claim[] GetAllClaims() => [.. Principal.Claims.Select(claim => new Claim(claim.Key, claim.Value))];", newLine);
-        Implementation(builder, "public bool IsInRole(string roleName) => Principal.HasClaim(ClaimTypes.Role, roleName);", newLine);
+        Implementation(builder, "public bool IsInRole(string roleName) => Principal.HasClaim(ClaimTypes.Role, roleName) || Principal.HasClaim(RoleShortClaim, roleName);", newLine);
         builder.Append(newLine);
         builder.Append("    private string? Find(string claimType) => Principal.ClaimValues(claimType).FirstOrDefault();").Append(newLine);
         builder.Append('}').Append(newLine);
