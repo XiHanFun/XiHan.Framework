@@ -32,7 +32,6 @@
   "cli.migrate.marker.register_services": "在特性的 Configure 裡呼叫 {method}()。",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider 來自 ApplicationServiceBase；改為建構函式注入 ILogger<T> 或所需服務。",
   "cli.migrate.marker.shutdown_context": "StopAsync 沒有上下文；需要的服務在 StartAsync 裡解析並存到欄位。",
-  "cli.migrate.marker.tenant_change": "ICurrentTenant.Change 沒有 5.0 對應物：租戶隨呼叫的 Baggage 走；改為帶租戶 Baggage 發起新呼叫（App.CreateContext）。",
   "cli.migrate.marker.tenant_id_type": "TenantId 改為字串；把 Tenant_Id 欄型別與按數字比較的地方一起改掉。",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager 沒有 5.0 對應物：每個操作預設一個工作單元，需要明確控制時注入作用域的 IUnitOfWork。",
   "cli.migrate.marker.unsupported_operation": "{name} 無法變成操作（泛型、ref/out 參數、串流或 ASP.NET 型別）；請手動公開。",

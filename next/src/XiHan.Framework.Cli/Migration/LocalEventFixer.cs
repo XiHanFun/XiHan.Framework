@@ -29,15 +29,28 @@ internal sealed class LocalEventFixer : SyntaxFixer
         var handlers = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Where(static declaration => EventTypes(declaration).Count > 0).ToHashSet();
         var usesBus = root.DescendantNodes().OfType<IdentifierNameSyntax>().Any(static name => name.Identifier.ValueText == "ILocalEventBus")
             || root.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(static invocation => IsBusCall(invocation, out _));
-        if (handlers.Count == 0 && !usesBus)
+        var raises = root.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(static invocation => AggregateEventCall(invocation) is not null);
+        if (handlers.Count == 0 && !usesBus && !raises)
         {
             return root;
         }
 
         var rewriter = new Rewriter(this, file, session, handlers);
         var result = (CompilationUnitSyntax)rewriter.Visit(root);
-        return rewriter.Changed ? WithUsings(result, _usings, file.NewLine) : result;
+        return rewriter.NeedsUsings ? WithUsings(result, _usings, file.NewLine) : result;
     }
+
+    /// <summary>
+    /// 聚合根里 4.x 的 <c>AddLocalEvent(...)</c> / <c>AddDistributedEvent(...)</c>（接收者是 this 或省略）→ 方法名标识符；不是则为空。
+    /// 不依赖同文件里有聚合根声明：partial 类的另一个文件也要改。
+    /// </summary>
+    private static SimpleNameSyntax? AggregateEventCall(InvocationExpressionSyntax invocation)
+        => invocation.Expression switch
+        {
+            IdentifierNameSyntax { Identifier.ValueText: "AddLocalEvent" or "AddDistributedEvent" } name => name,
+            MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax, Name: { Identifier.ValueText: "AddLocalEvent" or "AddDistributedEvent" } name } => name,
+            _ => null,
+        };
 
     /// <summary>
     /// 类实现的 <c>ILocalEventHandler&lt;T&gt;</c> 的事件类型（源码写法）。
@@ -126,6 +139,11 @@ internal sealed class LocalEventFixer : SyntaxFixer
         /// </summary>
         public bool Changed { get; private set; }
 
+        /// <summary>
+        /// 是否改了处理器或总线调用（这些改写用到消息与 JSON 的命名空间；只改 <c>Raise</c> 不补 using）。
+        /// </summary>
+        public bool NeedsUsings { get; private set; }
+
         /// <inheritdoc />
         public override SyntaxNode? VisitIdentifierName(IdentifierNameSyntax node)
         {
@@ -135,6 +153,7 @@ internal sealed class LocalEventFixer : SyntaxFixer
             }
 
             Changed = true;
+            NeedsUsings = true;
             session.Changed(fixer.Id, file, LineOf(node));
             return node.WithIdentifier(SyntaxFactory.Identifier(node.Identifier.LeadingTrivia, "IMessagePublisher", node.Identifier.TrailingTrivia));
         }
@@ -151,6 +170,7 @@ internal sealed class LocalEventFixer : SyntaxFixer
             var events = EventTypes(node);
             var className = node.Identifier.ValueText;
             Changed = true;
+            NeedsUsings = true;
             session.Changed(fixer.Id, file, LineOf(node));
 
             // 基类：去掉全部 ILocalEventHandler<T>，加一个 IMessageHandler
@@ -230,6 +250,19 @@ internal sealed class LocalEventFixer : SyntaxFixer
         public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             var visited = (InvocationExpressionSyntax)base.VisitInvocationExpression(node)!;
+            if (AggregateEventCall(node) is { } eventCall)
+            {
+                // 聚合根缓冲领域事件：4.x 分本地/分布式两个方法，5.0 只有 Raise
+                Changed = true;
+                session.Changed(fixer.Id, file, LineOf(node));
+                var raise = SyntaxFactory.IdentifierName(SyntaxFactory.Identifier(eventCall.Identifier.LeadingTrivia, "Raise", eventCall.Identifier.TrailingTrivia));
+                return visited.Expression switch
+                {
+                    MemberAccessExpressionSyntax access => visited.WithExpression(access.WithName(raise)),
+                    _ => visited.WithExpression(raise),
+                };
+            }
+
             if (!IsBusCall(node, out var method))
             {
                 return visited;
@@ -271,6 +304,7 @@ internal sealed class LocalEventFixer : SyntaxFixer
             var data = visited.ArgumentList.Arguments[0].Expression.ToString();
             var text = $"(\"{topic}\", new MessageEnvelope {{ Id = Guid.NewGuid().ToString(\"N\"), Source = \"{Source()}\", Type = \"{topic}\", Time = DateTimeOffset.UtcNow, Data = JsonSerializer.SerializeToUtf8Bytes({data}) }}, {token})";
             Changed = true;
+            NeedsUsings = true;
             session.Changed(fixer.Id, file, LineOf(node));
             Pend(anchor, CliMessages.MigrateMarkerEventJson.L());
             return visited.WithArgumentList(SyntaxFactory.ParseArgumentList(text).WithTriviaFrom(visited.ArgumentList));

@@ -583,8 +583,9 @@ public sealed class MigrationTests
             Assert.Contains("public static EmptyResponse Instance { get; } = new();", Generated("EmptyResponse.cs"), StringComparison.Ordinal);
             var context = Generated("ShopOperationsJsonContext.cs");
             Assert.StartsWith(Markers.Line("V4-06", CliMessages.MigrateMarkerAddOperations.L()) + "\n", context, StringComparison.Ordinal);
-            Assert.Contains("using Shop.Operations.Order;\n", context, StringComparison.Ordinal);
-            foreach (var type in new[] { "CountRequest", "EmptyResponse", "GetOrderRequest", "OrderCreateDto", "OrderDetailDto", "OrderPageQueryDto", "OrderStatusUpdateDto", "PagedResult<OrderListDto>", "int" })
+            // 生成的类型写全限定名，不靠资源子命名空间的 using 解析（不同资源的同名记录会歧义）
+            Assert.DoesNotContain("using Shop.Operations.Order;\n", context, StringComparison.Ordinal);
+            foreach (var type in new[] { "Shop.Operations.Order.CountRequest", "Shop.Operations.EmptyResponse", "Shop.Operations.Order.GetOrderRequest", "OrderCreateDto", "OrderDetailDto", "OrderPageQueryDto", "OrderStatusUpdateDto", "PagedResult<OrderListDto>", "int" })
             {
                 Assert.Contains($"[JsonSerializable(typeof({type}))]\n", context, StringComparison.Ordinal);
             }
@@ -637,19 +638,31 @@ public sealed class MigrationTests
             Assert.Contains("namespace Shop.Core.Security;\n", currentUser, StringComparison.Ordinal);
             Assert.Contains("public sealed class CurrentUser(IInvocationAccessor accessor) : ICurrentUser", currentUser, StringComparison.Ordinal);
             Assert.Contains("public string? TenantId => Security.Tenant?.Id ?? Find(TenantIdClaim);", currentUser, StringComparison.Ordinal);
-            Assert.Contains("string? UserId { get; }", File.ReadAllText(Path.Combine(core, "Security", "ICurrentUser.cs")), StringComparison.Ordinal);
+            // 主体 ID 原文给 Subject，UserId 仍是 long?（应用按数字主键使用）
+            Assert.Contains("public string? Subject => Principal.IsAuthenticated ? Principal.Id : null;", currentUser, StringComparison.Ordinal);
+            Assert.Contains("public long? UserId => long.TryParse(Subject, NumberStyles.None, CultureInfo.InvariantCulture, out var userId) ? userId : null;", currentUser, StringComparison.Ordinal);
+            var currentUserInterface = File.ReadAllText(Path.Combine(core, "Security", "ICurrentUser.cs"));
+            Assert.Contains("long? UserId { get; }", currentUserInterface, StringComparison.Ordinal);
+            Assert.Contains("string? Subject { get; }", currentUserInterface, StringComparison.Ordinal);
             Assert.Contains("IDisposable Change(string? id, string? name = null);", File.ReadAllText(Path.Combine(core, "Security", "ICurrentTenant.cs")), StringComparison.Ordinal);
-            Assert.Contains("throw new NotSupportedException(", File.ReadAllText(Path.Combine(core, "Security", "CurrentTenant.cs")), StringComparison.Ordinal);
+            // Change 用 AsyncLocal 覆盖栈实现，不再抛 NotSupportedException
+            var currentTenant = Lf(File.ReadAllText(Path.Combine(core, "Security", "CurrentTenant.cs")));
+            Assert.DoesNotContain("NotSupportedException", currentTenant, StringComparison.Ordinal);
+            Assert.Contains("private static readonly AsyncLocal<Override?> _override = new();", currentTenant, StringComparison.Ordinal);
+            Assert.Contains("public string? Id => _override.Value is { } current ? current.Id : Invoked?.Id;", currentTenant, StringComparison.Ordinal);
+            Assert.Contains("        _override.Value = new Override(string.IsNullOrWhiteSpace(id) ? null : id.Trim(), name, parent);\n        return new Restore(parent);\n", currentTenant, StringComparison.Ordinal);
 
             Assert.StartsWith("using Shop.Core.Security;\nusing XiHan.Framework.Security.Users;\n", Lf(File.ReadAllText(Path.Combine(core, "Services", "Auditor.cs"))), StringComparison.Ordinal);
             var orderService = Lf(File.ReadAllText(Path.Combine(orders, "Services", "OrderService.cs")));
             Assert.StartsWith("using Shop.Core.Security;\nusing XiHan.Framework.MultiTenancy.Abstractions;\n", orderService, StringComparison.Ordinal);
-            Assert.Contains($"        {Markers.Line("V4-07", CliMessages.MigrateMarkerTenantChange.L())}\n        using var scope = currentTenant.Change(tenantId);\n", orderService, StringComparison.Ordinal);
+            // Change 的调用点原样保留，不留标记
+            Assert.Contains("    {\n        using var scope = currentTenant.Change(tenantId);\n", orderService, StringComparison.Ordinal);
+            Assert.DoesNotContain("xihan-migrate", orderService, StringComparison.Ordinal);
             var services = File.ReadAllText(Path.Combine(core, "CoreV4Services.cs"));
             Assert.Contains("services.AddScoped<ICurrentTenant, CurrentTenant>();", services, StringComparison.Ordinal);
             Assert.Contains("services.AddScoped<ICurrentUser, CurrentUser>();", services, StringComparison.Ordinal);
             var rule = Assert.Single(first.Rules);
-            Assert.Equal(("V4-07", 1), (rule.Id, rule.Markers));
+            Assert.Equal(("V4-07", 0), (rule.Id, rule.Markers));
             Assert.Contains("Shop.Core/Security/CurrentUser.cs", rule.Files);
 
             var second = new V4Migration(root, [new CurrentContextFixer()], dryRun: false).Run(CancellationToken.None);
@@ -771,6 +784,166 @@ public sealed class MigrationTests
         Assert.Contains("        services.AddMessageHandler<LoginEventHandler>(LoginEventHandler.LoginSucceededTopic);\n        services.AddMessageHandler<LoginEventHandler>(LoginEventHandler.LoginFailedTopic);\n", services, StringComparison.Ordinal);
 
         var (again, second) = Apply(new LocalEventFixer(), text, "Shop/Handlers/LoginEventHandler.cs", project.Directory);
+        Assert.Equal(text, again);
+        Assert.Empty(second.Findings);
+    }
+
+    [Fact]
+    public void EntityProtocol_RenamesDeclarationIdentifiers()
+    {
+        const string source = """
+            namespace Shop.Commands;
+
+            public sealed record OrderUpdateCommand(long BasicId, long RowVersion, DateTimeOffset CreatedTime);
+
+            public static class OrderQueries
+            {
+                public static long Pick(OrderUpdateCommand command)
+                {
+                    var BasicId = command.BasicId;
+                    return BasicId;
+                }
+            }
+
+            """;
+        const string expected = """
+            namespace Shop.Commands;
+
+            public sealed record OrderUpdateCommand(long Id, long ConcurrencyStamp, DateTimeOffset CreatedAt);
+
+            public static class OrderQueries
+            {
+                public static long Pick(OrderUpdateCommand command)
+                {
+                    var Id = command.Id;
+                    return Id;
+                }
+            }
+
+            """;
+
+        var (text, session) = Apply(new EntityProtocolFixer(), source);
+
+        // 记录位置参数、局部变量与标识符用法一并改名，不留标记
+        Assert.Equal(Lf(expected), text);
+        Assert.NotEmpty(session.Findings);
+        Assert.DoesNotContain(session.Findings, static finding => finding.IsMarker);
+
+        var (again, second) = Apply(new EntityProtocolFixer(), text);
+        Assert.Equal(text, again);
+        Assert.Empty(second.Findings);
+    }
+
+    [Fact]
+    public void DynamicApi_WrapsInterfaceReturns_AndQualifiesDuplicateRequestRecords()
+    {
+        const string orderSource = """
+            using Shop.Application.Dtos;
+            using XiHan.Framework.Application.Attributes;
+
+            namespace Shop.Application.Orders;
+
+            [DynamicApi]
+            public sealed class OrderAppService
+            {
+                public Task<IReadOnlyList<OrderListDto>> GetOrdersAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<OrderListDto>>([]);
+
+                public Task DeleteAsync(long id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            }
+
+            """;
+        const string userSource = """
+            using XiHan.Framework.Application.Attributes;
+
+            namespace Shop.Application.Users;
+
+            [DynamicApi]
+            public sealed class UserAppService
+            {
+                public Task DeleteAsync(long id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            }
+
+            """;
+
+        var root = Path.Combine(Path.GetTempPath(), "xihan-operations-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "Shop");
+        Directory.CreateDirectory(project);
+        File.WriteAllText(Path.Combine(project, "Shop.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        try
+        {
+            var session = new MigrationSession();
+            var fixer = new DynamicApiFixer();
+            var orderFile = new MigrationFile(Path.Combine(project, "Application", "Orders", "OrderAppService.cs"), "Shop/Application/Orders/OrderAppService.cs", project, "\n");
+            var userFile = new MigrationFile(Path.Combine(project, "Application", "Users", "UserAppService.cs"), "Shop/Application/Users/UserAppService.cs", project, "\n");
+            fixer.Scan(orderFile, Lf(orderSource), session);
+            fixer.Scan(userFile, Lf(userSource), session);
+            fixer.Apply(orderFile, Lf(orderSource), session);
+            fixer.Apply(userFile, Lf(userSource), session);
+            V4OperationsGenerator.Complete(session, root);
+
+            string Generated(params string[] segments) => Lf(session.GeneratedFiles[Path.Combine([project, "Operations", .. segments])]);
+
+            // 接口类型的返回值没有到 Result<T> 的用户定义转换：显式包 Result.Success
+            Assert.Contains("    public async ValueTask<Result<IReadOnlyList<OrderListDto>>> HandleAsync(GetOrdersRequest request, InvocationContext context)\n        => Result.Success(await service.GetOrdersAsync(context.CancellationToken).ConfigureAwait(false));\n", Generated("Order", "GetOrdersOperation.cs"), StringComparison.Ordinal);
+            Assert.Contains("public sealed record DeleteRequest(long Id);", Generated("Order", "DeleteOperation.cs"), StringComparison.Ordinal);
+            Assert.Contains("public sealed record DeleteRequest(long Id);", Generated("User", "DeleteOperation.cs"), StringComparison.Ordinal);
+
+            // 序列化上下文：生成的类型写全限定名，同名记录加 TypeInfoPropertyName，不加资源子命名空间 using
+            var context = Generated("ShopOperationsJsonContext.cs");
+            Assert.DoesNotContain("using Shop.Operations.Order;", context, StringComparison.Ordinal);
+            Assert.DoesNotContain("using Shop.Operations.User;", context, StringComparison.Ordinal);
+            Assert.Contains("using Shop.Application.Dtos;\n", context, StringComparison.Ordinal);
+            Assert.Contains("[JsonSerializable(typeof(Shop.Operations.Order.DeleteRequest), TypeInfoPropertyName = \"OrderDeleteRequest\")]\n", context, StringComparison.Ordinal);
+            Assert.Contains("[JsonSerializable(typeof(Shop.Operations.User.DeleteRequest), TypeInfoPropertyName = \"UserDeleteRequest\")]\n", context, StringComparison.Ordinal);
+            Assert.Contains("[JsonSerializable(typeof(Shop.Operations.Order.GetOrdersRequest))]\n", context, StringComparison.Ordinal);
+            Assert.Contains("[JsonSerializable(typeof(Shop.Operations.EmptyResponse))]\n", context, StringComparison.Ordinal);
+            Assert.Contains("[JsonSerializable(typeof(IReadOnlyList<OrderListDto>))]\n", context, StringComparison.Ordinal);
+            Assert.DoesNotContain("TypeInfoPropertyName = \"OrderGetOrdersRequest\"", context, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LocalEvent_RenamesAggregateEventCalls_InAnyFile()
+    {
+        const string source = """
+            namespace Shop.Entities;
+
+            public sealed partial class Order
+            {
+                public void Close(string reason)
+                {
+                    AddLocalEvent(new OrderClosedDomainEvent(Id, reason));
+                    this.AddDistributedEvent(new OrderClosedDomainEvent(Id, reason));
+                }
+            }
+
+            """;
+        const string expected = """
+            namespace Shop.Entities;
+
+            public sealed partial class Order
+            {
+                public void Close(string reason)
+                {
+                    Raise(new OrderClosedDomainEvent(Id, reason));
+                    this.Raise(new OrderClosedDomainEvent(Id, reason));
+                }
+            }
+
+            """;
+
+        var (text, session) = Apply(new LocalEventFixer(), source);
+
+        // partial 类的另一个文件里也改；只改名，不补消息相关的 using，不留标记
+        Assert.Equal(Lf(expected), text);
+        Assert.Equal(2, session.Findings.Count);
+        Assert.DoesNotContain(session.Findings, static finding => finding.IsMarker);
+
+        var (again, second) = Apply(new LocalEventFixer(), text);
         Assert.Equal(text, again);
         Assert.Empty(second.Findings);
     }

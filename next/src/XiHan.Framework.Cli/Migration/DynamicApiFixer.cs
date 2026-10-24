@@ -93,6 +93,15 @@ internal sealed class DynamicApiFixer : SyntaxFixer
     private static TypeSyntax Unqualified(TypeSyntax type) => type is QualifiedNameSyntax qualified ? Unqualified(qualified.Right) : type;
 
     /// <summary>
+    /// 类型源码的简单名是否像接口（<c>I</c> + 大写字母开头，如 <c>IReadOnlyList&lt;T&gt;</c>）。
+    /// </summary>
+    private static bool IsInterfaceLike(string type)
+    {
+        var name = SimpleName(SyntaxFactory.ParseTypeName(type));
+        return name.Length > 1 && name[0] == 'I' && char.IsUpper(name[1]);
+    }
+
+    /// <summary>
     /// 返回类型 → (响应类型源码或空, 方法形态)。
     /// </summary>
     private static (string? Response, MethodShape Shape) Response(TypeSyntax returnType)
@@ -281,6 +290,8 @@ internal sealed class DynamicApiFixer : SyntaxFixer
             var newLine = file.NewLine;
             var handler = shape switch
             {
+                // 接口类型（IReadOnlyList<T> 等）没有到 Result<T> 的用户定义转换，要显式包一层
+                MethodShape.AsyncResult when IsInterfaceLike(responseType) => $"    public async ValueTask<Result<{responseType}>> HandleAsync({requestType} request, InvocationContext context){newLine}        => Result.Success(await {call}.ConfigureAwait(false));{newLine}",
                 MethodShape.AsyncResult => $"    public async ValueTask<Result<{responseType}>> HandleAsync({requestType} request, InvocationContext context){newLine}        => await {call}.ConfigureAwait(false);{newLine}",
                 MethodShape.AsyncVoid => $"    public async ValueTask<Result<EmptyResponse>> HandleAsync({requestType} request, InvocationContext context){newLine}    {{{newLine}        await {call}.ConfigureAwait(false);{newLine}        return EmptyResponse.Instance;{newLine}    }}{newLine}",
                 MethodShape.SyncResult => $"    public ValueTask<Result<{responseType}>> HandleAsync({requestType} request, InvocationContext context){newLine}        => new(Result.Success({call}));{newLine}",
@@ -291,10 +302,10 @@ internal sealed class DynamicApiFixer : SyntaxFixer
             session.GeneratedFiles[path] = V4OperationsGenerator.Operation(project, resourcePascal, usings, operationId, permission, policy, operationClass, serviceType, requestType, responseType, handler, requestRecord);
             session.Changed(Id, file, LineOf(method));
             session.Changed(Id, file.Sibling(path), 0);
-            project.Types.Add(requestType);
-            project.Types.Add(responseType);
+            // 序列化上下文里生成的类型写全限定名：不同资源同名的请求记录（DeleteRequest …）用简单名会歧义或漏登记
+            project.Types.Add(requestRecord is null ? requestType : $"{projectName}.Operations.{resourcePascal}.{requestType}");
+            project.Types.Add(response is null ? $"{projectName}.Operations.EmptyResponse" : responseType);
             project.Usings.UnionWith(usings);
-            project.Usings.Add($"{projectName}.Operations.{resourcePascal}");
         }
 
         // 原服务类按作用域登记（操作类注入它）
