@@ -72,7 +72,8 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
             fixer.Prepare(session);
         }
 
-        // 第二遍：按规则顺序改写
+        // 第二遍：按规则顺序改写；结果先留在内存里，生成注册文件时还要往特性里插调用
+        var results = new List<(MigrationFile File, string Text, string Current, bool Bom)>();
         foreach (var (file, text, bom) in sources)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -85,29 +86,61 @@ internal sealed class V4Migration(string path, IReadOnlyList<V4Fixer> fixers, bo
                 }
             }
 
-            if (!ReferenceEquals(current, text) && !string.Equals(current, text, StringComparison.Ordinal) && !dryRun)
-            {
-                File.WriteAllBytes(file.Path, bom ? [.. Encoding.UTF8.Preamble, .. _utf8.GetBytes(current)] : _utf8.GetBytes(current));
-            }
+            results.Add((file, text, current, bom));
         }
 
-        // V4-03：每个项目一个注册文件；第一行留调用提醒。内容与已有文件相同（再跑一遍，4.x 框架基类仍在基类列表里）时不算改动
+        // V4-03：每个项目一个注册文件；同项目的特性（V4-01 刚转出来的或已经是特性的）Configure 开头插 Add<末段>V4Services() 调用，插不进去（项目里没有特性）才在文件第一行留调用提醒。
+        // 内容与已有文件相同（再跑一遍，4.x 框架基类仍在基类列表里）时不算改动
         foreach (var (projectDirectory, registrations) in session.Registrations.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
         {
             var (project, className) = V4ServicesGenerator.Names(projectDirectory);
             var target = Path.Combine(projectDirectory, className + ".cs");
             var newLine = newLines.GetValueOrDefault(projectDirectory, Environment.NewLine);
             var generated = new MigrationFile(target, Path.GetRelativePath(root, target).Replace('\\', '/'), projectDirectory, newLine);
+            var called = false;
+            foreach (var featureFile in session.FeatureFiles.GetValueOrDefault(projectDirectory) ?? [])
+            {
+                var index = results.FindIndex(result => string.Equals(result.File.Path, featureFile, StringComparison.OrdinalIgnoreCase));
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                var result = results[index];
+                if (ModuleToFeatureFixer.TryAddServicesCall(result.Current, result.File.Path, project, className, result.File.NewLine, out var withCall, out var line))
+                {
+                    session.Changed("V4-01", result.File, line);
+                    results[index] = result with { Current = withCall };
+                    called = true;
+                }
+                else if (withCall.Contains("Add" + className, StringComparison.Ordinal))
+                {
+                    called = true;
+                }
+            }
+
             var message = CliMessages.MigrateMarkerRegisterServices.L(("method", "Add" + className));
-            var content = V4ServicesGenerator.Generate(project, className, registrations, Markers.Line("V4-03", message), newLine);
+            var content = V4ServicesGenerator.Generate(project, className, registrations, called ? null : Markers.Line("V4-03", message), newLine);
             if (File.Exists(target) && string.Equals(File.ReadAllText(target), content, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            session.Marked("V4-03", generated, 1, message);
+            if (!called)
+            {
+                session.Marked("V4-03", generated, 1, message);
+            }
+
             session.Changed("V4-03", generated, 0);
             session.GeneratedFiles[target] = content;
+        }
+
+        foreach (var (file, text, current, bom) in results)
+        {
+            if (!ReferenceEquals(current, text) && !string.Equals(current, text, StringComparison.Ordinal) && !dryRun)
+            {
+                File.WriteAllBytes(file.Path, bom ? [.. Encoding.UTF8.Preamble, .. _utf8.GetBytes(current)] : _utf8.GetBytes(current));
+            }
         }
 
         // V4-06：空响应、序列化上下文，以及项目文件里的生成器引用

@@ -1430,8 +1430,12 @@ public sealed class MigrationTests
         Assert.Equal(V4Rules.Ids, first.Rules.Select(static rule => rule.Id));
         Assert.True(File.Exists(Path.Combine(fixture.Project, "ShopOrdersFeature.cs")));
         Assert.False(File.Exists(Path.Combine(fixture.Project, "XiHanShopOrdersModule.cs")));
-        Assert.Contains("public sealed class ShopOrdersFeature : IFeature", File.ReadAllText(Path.Combine(fixture.Project, "ShopOrdersFeature.cs")), StringComparison.Ordinal);
-        var services = File.ReadAllText(Path.Combine(fixture.Project, "OrdersV4Services.cs"));
+        var feature = Lf(File.ReadAllText(Path.Combine(fixture.Project, "ShopOrdersFeature.cs")));
+        Assert.Contains("public sealed class ShopOrdersFeature : IFeature", feature, StringComparison.Ordinal);
+        // 生成的注册方法由同项目特性的 Configure 开头调用；文件第一行就不再留调用提醒
+        Assert.Contains("    public void Configure(FeatureContext context)\n    {\n        context.Services.AddOrdersV4Services();\n        context.Services.AddOrders();\n", feature, StringComparison.Ordinal);
+        var services = Lf(File.ReadAllText(Path.Combine(fixture.Project, "OrdersV4Services.cs")));
+        Assert.StartsWith("// " + CliMessages.MigrateGenerated.L() + "\n", services, StringComparison.Ordinal);
         Assert.Contains("services.AddTransient<IOrderService, OrderService>();", services, StringComparison.Ordinal);
         Assert.Contains("services.AddScoped<OrderAppService>();", services, StringComparison.Ordinal);
         var csproj = File.ReadAllText(Path.Combine(fixture.Project, "Shop.Orders.csproj"));
@@ -1441,13 +1445,67 @@ public sealed class MigrationTests
         Assert.True(File.Exists(Path.Combine(fixture.Project, "Operations", "OrdersOperationsJsonContext.cs")));
         Assert.DoesNotContain("[DynamicApi]", File.ReadAllText(Path.Combine(fixture.Project, "Services", "OrderAppService.cs")), StringComparison.Ordinal);
         Assert.Equal(MigrationFixture.SkippedSource, File.ReadAllText(fixture.Skipped));
-        Assert.Contains(first.Markers, static marker => marker is { Rule: "V4-03", File: "Shop.Orders/OrdersV4Services.cs", Line: 1 });
+        Assert.DoesNotContain(first.Markers, static marker => marker.Rule == "V4-03");
         Assert.All(first.Rules.Where(static rule => rule.Id is "V4-01" or "V4-03" or "V4-06" or "V4-10"), static rule => Assert.True(rule.Changed > 0, rule.Id));
 
         // 再跑一遍：零改动、零标记
         var second = new V4Migration(fixture.Root, V4Rules.All, dryRun: false).Run(CancellationToken.None);
         Assert.All(second.Rules, static rule => Assert.Equal((0, 0), (rule.Changed, rule.Markers)));
         Assert.Empty(second.Markers);
+    }
+
+    [Fact]
+    public void ModuleToFeature_AddsServicesCallToExistingFeatureConfigure_Once()
+    {
+        const string feature = """
+            using Microsoft.Extensions.DependencyInjection;
+            using XiHan.Framework.Kernel;
+
+            namespace Shop.Hosting;
+
+            public sealed class OrdersFeature : IFeature
+            {
+                public void Configure(FeatureContext context)
+                {
+                    var services = context.Services;
+                    services.AddOrders();
+                }
+            }
+
+            """;
+        const string expected = """
+            using Microsoft.Extensions.DependencyInjection;
+            using Shop.Orders;
+            using XiHan.Framework.Kernel;
+
+            namespace Shop.Hosting;
+
+            public sealed class OrdersFeature : IFeature
+            {
+                public void Configure(FeatureContext context)
+                {
+                    context.Services.AddOrdersV4Services();
+                    var services = context.Services;
+                    services.AddOrders();
+                }
+            }
+
+            """;
+
+        // 已经是特性的类（再跑一遍或手工迁移过）也插；命名空间不在项目之下时补 using
+        Assert.True(ModuleToFeatureFixer.TryAddServicesCall(Lf(feature), "OrdersFeature.cs", "Shop.Orders", "OrdersV4Services", "\n", out var inserted, out var line));
+        Assert.Equal(Lf(expected), Lf(inserted));
+        Assert.Equal(10, line);
+
+        // 已有调用（不论接收者写法）不重复
+        Assert.False(ModuleToFeatureFixer.TryAddServicesCall(inserted, "OrdersFeature.cs", "Shop.Orders", "OrdersV4Services", "\n", out var again, out _));
+        Assert.Equal(inserted, again);
+        Assert.False(ModuleToFeatureFixer.TryAddServicesCall(Lf(feature).Replace("services.AddOrders();", "services.AddOrdersV4Services();", StringComparison.Ordinal), "OrdersFeature.cs", "Shop.Orders", "OrdersV4Services", "\n", out _, out _));
+
+        // 表达式体改成块
+        const string expressionBodied = "namespace Shop.Orders;\n\npublic sealed class OrdersFeature : IHostedFeature\n{\n    public void Configure(FeatureContext context) => context.Services.AddOrders();\n}\n";
+        Assert.True(ModuleToFeatureFixer.TryAddServicesCall(expressionBodied, "OrdersFeature.cs", "Shop.Orders", "OrdersV4Services", "\n", out var block, out _));
+        Assert.Equal("namespace Shop.Orders;\n\npublic sealed class OrdersFeature : IHostedFeature\n{\n    public void Configure(FeatureContext context)\n    {\n        context.Services.AddOrdersV4Services();\n        context.Services.AddOrders();\n    }\n}\n", Lf(block));
     }
 
     [Fact]

@@ -41,8 +41,20 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
     /// <inheritdoc />
     public override void Scan(MigrationFile file, string text, MigrationSession session)
     {
-        // 范围内的 IServiceCollection 扩展方法：应用已承接的 4.x 模块注册（AddXiHanDistributedIds 等）可以直接生成调用
         var root = CSharpSyntaxTree.ParseText(text, path: file.Path).GetCompilationUnitRoot();
+        // 模块类与已经是特性的类所在的文件：运行结束时把 V4Services 的调用插进它们的 Configure
+        if (file.ProjectDirectory is not null && root.DescendantNodes().OfType<ClassDeclarationSyntax>().Any(static declaration => IsModule(declaration) || IsFeature(declaration)))
+        {
+            if (!session.FeatureFiles.TryGetValue(file.ProjectDirectory, out var files))
+            {
+                files = [];
+                session.FeatureFiles[file.ProjectDirectory] = files;
+            }
+
+            files.Add(file.Path);
+        }
+
+        // 范围内的 IServiceCollection 扩展方法：应用已承接的 4.x 模块注册（AddXiHanDistributedIds 等）可以直接生成调用
         foreach (var method in root.DescendantNodes().OfType<MethodDeclarationSyntax>())
         {
             if (!method.Modifiers.Any(SyntaxKind.StaticKeyword) || method.ParameterList.Parameters.Count == 0)
@@ -77,9 +89,79 @@ internal sealed class ModuleToFeatureFixer : SyntaxFixer
     }
 
     /// <summary>
+    /// 把 <c>&lt;参数&gt;.Services.Add&lt;className&gt;();</c> 插到文件里特性类 <c>Configure(FeatureContext …)</c> 的开头：方法里已有对 <c>Add&lt;className&gt;</c> 的调用则原样返回；
+    /// 文件的命名空间不在 <paramref name="project"/> 之下时补 <c>using</c>。返回是否改动，<paramref name="line"/> 是插入位置的行号。
+    /// </summary>
+    public static bool TryAddServicesCall(string text, string path, string project, string className, string newLine, out string result, out int line)
+    {
+        result = text;
+        line = 0;
+        var root = CSharpSyntaxTree.ParseText(text, path: path).GetCompilationUnitRoot();
+        var method = root.DescendantNodes().OfType<ClassDeclarationSyntax>().Where(IsFeature)
+            .SelectMany(static declaration => declaration.Members.OfType<MethodDeclarationSyntax>())
+            .FirstOrDefault(static method => method.Identifier.ValueText == "Configure" && method.ParameterList.Parameters.Count == 1 && method.ParameterList.Parameters[0].Type is { } type && SimpleName(type) == "FeatureContext");
+        var target = "Add" + className;
+        if (method is null || method.DescendantNodes().OfType<InvocationExpressionSyntax>().Any(invocation => invocation.Expression switch
+            {
+                MemberAccessExpressionSyntax access => access.Name.Identifier.ValueText == target,
+                IdentifierNameSyntax identifier => identifier.Identifier.ValueText == target,
+                _ => false,
+            }))
+        {
+            return false;
+        }
+
+        var original = method;
+        var parameter = method.ParameterList.Parameters[0].Identifier.ValueText;
+        var indent = IndentOf(method);
+        var body = method.Body;
+        if (body is null)
+        {
+            if (method.ExpressionBody is null)
+            {
+                return false;
+            }
+
+            // 表达式体：改成块，原表达式变成第二条语句
+            var statement = SyntaxFactory.ExpressionStatement(method.ExpressionBody.Expression.WithoutTrivia())
+                .WithLeadingTrivia(SyntaxFactory.Whitespace(indent + "    "))
+                .WithTrailingTrivia(SyntaxFactory.EndOfLine(newLine));
+            body = SyntaxFactory.Block(
+                SyntaxFactory.Token(SyntaxKind.OpenBraceToken).WithLeadingTrivia(SyntaxFactory.Whitespace(indent)).WithTrailingTrivia(SyntaxFactory.EndOfLine(newLine)),
+                SyntaxFactory.List<StatementSyntax>([statement]),
+                SyntaxFactory.Token(SyntaxKind.CloseBraceToken).WithLeadingTrivia(SyntaxFactory.Whitespace(indent)).WithTrailingTrivia(method.SemicolonToken.TrailingTrivia));
+            method = method.WithExpressionBody(null).WithSemicolonToken(default).WithParameterList(method.ParameterList.WithTrailingTrivia(SyntaxFactory.EndOfLine(newLine)));
+        }
+
+        var first = body.Statements.FirstOrDefault();
+        var statementIndent = first is not null ? IndentOf(first) : indent + "    ";
+        var call = SyntaxFactory.ParseStatement($"{parameter}.Services.{target}();")
+            .WithLeadingTrivia(SyntaxFactory.Whitespace(statementIndent))
+            .WithTrailingTrivia(SyntaxFactory.EndOfLine(newLine));
+        line = first is not null ? LineOf(first) : LineOf(original) + 2;
+        var updated = method.WithBody(body.WithStatements(body.Statements.Insert(0, call)));
+        var rewritten = root.ReplaceNode(original, updated);
+        // 特性类通常与 V4Services 同命名空间（项目根）；在别的命名空间里时补 using
+        var covered = rewritten.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>().Select(static declaration => declaration.Name.ToString())
+            .Any(ns => ns == project || ns.StartsWith(project + ".", StringComparison.Ordinal));
+        if (!covered)
+        {
+            rewritten = WithUsings(rewritten, [project], newLine);
+        }
+
+        result = rewritten.ToFullString();
+        return true;
+    }
+
+    /// <summary>
     /// 是否 4.x 模块类。
     /// </summary>
     private static bool IsModule(ClassDeclarationSyntax node) => node.BaseList?.Types.Any(static type => SimpleName(type.Type) == "XiHanModule") == true;
+
+    /// <summary>
+    /// 是否 5.0 特性类。
+    /// </summary>
+    private static bool IsFeature(ClassDeclarationSyntax node) => node.BaseList?.Types.Any(static type => SimpleName(type.Type) is "IFeature" or "IHostedFeature") == true;
 
     /// <summary>
     /// 特性类名：去掉 <c>XiHan</c> 前缀，<c>Module</c> 换 <c>Feature</c>。
