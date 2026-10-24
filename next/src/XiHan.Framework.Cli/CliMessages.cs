@@ -80,6 +80,9 @@ public static class CliMessages
     /// <summary>V4-05 标记：工作单元管理器。</summary>
     public const string MigrateMarkerUnitOfWorkManager = "cli.migrate.marker.unit_of_work_manager";
 
+    /// <summary>V4-05 标记：生成的当前工作单元访问器要指向应用自己承接的 <c>IUnitOfWorkManager</c> / <c>IUnitOfWork</c>。</summary>
+    public const string MigrateMarkerUnitOfWorkAccessor = "cli.migrate.marker.unit_of_work_accessor";
+
     /// <summary>V4-01 标记：应用构建器。</summary>
     public const string MigrateMarkerApplicationBuilder = "cli.migrate.marker.application_builder";
 

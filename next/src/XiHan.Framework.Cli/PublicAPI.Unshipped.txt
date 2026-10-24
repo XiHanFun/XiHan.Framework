@@ -35,6 +35,7 @@ const XiHan.Framework.Cli.CliMessages.MigrateMarkerRegisterServices = "cli.migra
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerServiceBaseMember = "cli.migrate.marker.service_base_member" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerShutdownContext = "cli.migrate.marker.shutdown_context" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerTenantIdType = "cli.migrate.marker.tenant_id_type" -> string!
+const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnitOfWorkAccessor = "cli.migrate.marker.unit_of_work_accessor" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnitOfWorkManager = "cli.migrate.marker.unit_of_work_manager" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnsupportedOperation = "cli.migrate.marker.unsupported_operation" -> string!
 const XiHan.Framework.Cli.CliMessages.MigratePathNotFound = "cli.migrate.path_not_found" -> string!

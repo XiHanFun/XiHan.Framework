@@ -34,6 +34,7 @@
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider came from ApplicationServiceBase; inject ILogger<T> or the needed service through the constructor.",
   "cli.migrate.marker.shutdown_context": "StopAsync receives no context; resolve what you need in StartAsync and keep it in a field.",
   "cli.migrate.marker.tenant_id_type": "TenantId became a string; change the Tenant_Id column type and the comparisons that used numbers.",
+  "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor reads IUnitOfWorkManager.Current from the current invocation's service scope for singleton consumers; IUnitOfWorkManager / IUnitOfWork have no 5.0 counterpart, so point the usings at the application's own unit-of-work manager (scoped, AsyncLocal-backed) or read its ambient value directly.",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager has no 5.0 counterpart: each operation gets one unit of work; inject the scoped IUnitOfWork for explicit control.",
   "cli.migrate.marker.unsupported_operation": "{name} could not become an operation (generic, ref/out parameters, streams or ASP.NET types); expose it by hand.",
   "cli.migrate.path_not_found": "Path '{path}' does not exist.",

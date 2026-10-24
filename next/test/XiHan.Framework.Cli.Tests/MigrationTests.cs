@@ -836,6 +836,7 @@ public sealed class MigrationTests
             File.WriteAllText(Path.Combine(orders, "Shop.Orders.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    <ProjectReference Include=\"..\\Shop.Core\\Shop.Core.csproj\" />\n  </ItemGroup>\n</Project>\n");
             File.WriteAllText(Path.Combine(core, "Services", "Auditor.cs"), "using XiHan.Framework.Security.Users;\n\nnamespace Shop.Core.Services;\n\npublic sealed class Auditor(ICurrentUser currentUser)\n{\n    public string? Actor => currentUser.UserName;\n}\n");
             File.WriteAllText(Path.Combine(orders, "Services", "OrderService.cs"), "using XiHan.Framework.MultiTenancy.Abstractions;\nusing XiHan.Framework.Security.Users;\n\nnamespace Shop.Orders.Services;\n\npublic sealed class OrderService(ICurrentTenant currentTenant, ICurrentUser currentUser)\n{\n    public void Run(string tenantId)\n    {\n        using var scope = currentTenant.Change(tenantId);\n        _ = currentUser.UserId;\n    }\n}\n");
+            File.WriteAllText(Path.Combine(orders, "Services", "Exporter.cs"), "using System.Security.Claims;\nusing XiHan.Framework.Security.Claims;\n\nnamespace Shop.Orders.Services;\n\npublic sealed class Exporter(ICurrentPrincipalAccessor principalAccessor)\n{\n    public void RunAs(ClaimsPrincipal principal)\n    {\n        using var scope = principalAccessor.Change(principal);\n    }\n}\n");
 
             var first = new V4Migration(root, [new CurrentContextFixer()], dryRun: false).Run(CancellationToken.None);
 
@@ -849,6 +850,21 @@ public sealed class MigrationTests
             var currentUser = Lf(File.ReadAllText(Path.Combine(core, "Security", "CurrentUser.cs")));
             Assert.Contains("namespace Shop.Core.Security;\n", currentUser, StringComparison.Ordinal);
             Assert.Contains("public sealed class CurrentUser(IInvocationAccessor accessor) : ICurrentUser", currentUser, StringComparison.Ordinal);
+            // 后台任务以指定用户身份执行（PrincipalAmbient.Override）时优先读覆盖主体
+            Assert.Contains("private Principal Principal => PrincipalAmbient.Current is { } ambient ? PrincipalConversion.FromClaimsPrincipal(ambient) : Security.Principal;", currentUser, StringComparison.Ordinal);
+            var principalAccessor = Lf(File.ReadAllText(Path.Combine(core, "Security", "CurrentPrincipalAccessor.cs")));
+            Assert.Contains("public sealed class CurrentPrincipalAccessor(IInvocationAccessor accessor) : ICurrentPrincipalAccessor", principalAccessor, StringComparison.Ordinal);
+            Assert.Contains("    public ClaimsPrincipal Principal => PrincipalAmbient.Current\n        ?? PrincipalConversion.ToClaimsPrincipal(accessor.Current.TryGetValue(out var context) ? context.GetSecurity().Principal : XiHan.Framework.Kernel.Security.Principal.Anonymous);\n", principalAccessor, StringComparison.Ordinal);
+            Assert.Contains("public IDisposable Change(ClaimsPrincipal principal) => PrincipalAmbient.Override(principal);", principalAccessor, StringComparison.Ordinal);
+            Assert.Contains("IDisposable Change(ClaimsPrincipal principal);", File.ReadAllText(Path.Combine(core, "Security", "ICurrentPrincipalAccessor.cs")), StringComparison.Ordinal);
+            var ambient = Lf(File.ReadAllText(Path.Combine(core, "Security", "PrincipalAmbient.cs")));
+            Assert.Contains("private static readonly AsyncLocal<ClaimsPrincipal?> _override = new();", ambient, StringComparison.Ordinal);
+            Assert.Contains("    public static IDisposable Override(ClaimsPrincipal principal)\n    {\n        ArgumentNullException.ThrowIfNull(principal);\n        var previous = _override.Value;\n        _override.Value = principal;\n        return new Restore(previous);\n    }\n", ambient, StringComparison.Ordinal);
+            var conversion = Lf(File.ReadAllText(Path.Combine(core, "Security", "PrincipalConversion.cs")));
+            Assert.Contains("public static ClaimsPrincipal ToClaimsPrincipal(Principal principal)", conversion, StringComparison.Ordinal);
+            Assert.Contains("var id = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? principal.FindFirst(SubjectClaim)?.Value ?? principal.FindFirst(NameIdShortClaim)?.Value;", conversion, StringComparison.Ordinal);
+            // ICurrentPrincipalAccessor 的使用文件同样补 using
+            Assert.StartsWith("using Shop.Core.Security;\nusing System.Security.Claims;\n", Lf(File.ReadAllText(Path.Combine(orders, "Services", "Exporter.cs"))), StringComparison.Ordinal);
             Assert.Contains("public string? TenantId => Security.Tenant?.Id ?? Find(TenantIdClaim);", currentUser, StringComparison.Ordinal);
             // 主体 ID 原文给 Subject，UserId 仍是 long?（应用按数字主键使用）
             Assert.Contains("public string? Subject => Principal.IsAuthenticated ? Principal.Id : null;", currentUser, StringComparison.Ordinal);
@@ -873,6 +889,7 @@ public sealed class MigrationTests
             var services = File.ReadAllText(Path.Combine(core, "CoreV4Services.cs"));
             Assert.Contains("services.AddScoped<ICurrentTenant, CurrentTenant>();", services, StringComparison.Ordinal);
             Assert.Contains("services.AddScoped<ICurrentUser, CurrentUser>();", services, StringComparison.Ordinal);
+            Assert.Contains("services.AddScoped<ICurrentPrincipalAccessor, CurrentPrincipalAccessor>();", services, StringComparison.Ordinal);
             var rule = Assert.Single(first.Rules);
             Assert.Equal(("V4-07", 0), (rule.Id, rule.Markers));
             Assert.Contains("Shop.Core/Security/CurrentUser.cs", rule.Files);
@@ -1340,6 +1357,153 @@ public sealed class MigrationTests
         Assert.Equal(2, session.Findings.Count(static finding => !finding.IsMarker));
         Assert.Equal(2, session.Findings.Count(static finding => finding.IsMarker));
         Assert.Empty(Apply(new UnitOfWorkFixer(), text).Session.Findings);
+    }
+
+    [Fact]
+    public void UnitOfWork_SingletonConsumers_InjectGeneratedCurrentUnitOfWorkAccessor()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-uow-" + Guid.NewGuid().ToString("N"));
+        var core = Path.Combine(root, "Shop.Core");
+        var orders = Path.Combine(root, "Shop.Orders");
+        Directory.CreateDirectory(Path.Combine(core, "Data"));
+        Directory.CreateDirectory(Path.Combine(core, "Caching"));
+        Directory.CreateDirectory(Path.Combine(orders, "Messaging"));
+        try
+        {
+            File.WriteAllText(Path.Combine(core, "Shop.Core.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\" />\n");
+            File.WriteAllText(Path.Combine(orders, "Shop.Orders.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    <ProjectReference Include=\"..\\Shop.Core\\Shop.Core.csproj\" />\n  </ItemGroup>\n</Project>\n");
+            // 应用已承接的 4.x 工作单元管理器接口：生成的访问器直接用它的命名空间
+            File.WriteAllText(Path.Combine(core, "Data", "IUnitOfWorkManager.cs"), "namespace Shop.Core.Data;\n\npublic interface IUnitOfWorkManager\n{\n    IUnitOfWork? Current { get; }\n}\n");
+            File.WriteAllText(Path.Combine(core, "Caching", "CoreCache.cs"), "using Microsoft.Extensions.DependencyInjection;\nusing XiHan.Framework.Uow;\n\nnamespace Shop.Core.Caching;\n\npublic sealed class CoreCache(IUnitOfWorkManager unitOfWorkManager)\n{\n    public bool Pending => unitOfWorkManager.Current is not null;\n}\n\npublic static class CoreServiceCollectionExtensions\n{\n    public static IServiceCollection AddCoreCache(this IServiceCollection services) => services.AddSingleton<CoreCache>();\n}\n");
+            File.WriteAllText(Path.Combine(orders, "Messaging", "Outbox.cs"), """
+                using Microsoft.Extensions.DependencyInjection;
+                using Microsoft.Extensions.DependencyInjection.Extensions;
+                using XiHan.Framework.Uow;
+
+                namespace Shop.Orders.Messaging;
+
+                public sealed class Outbox
+                {
+                    private readonly XiHan.Framework.Uow.IUnitOfWorkManager _unitOfWorkManager;
+
+                    public Outbox(IUnitOfWorkManager unitOfWorkManager)
+                    {
+                        _unitOfWorkManager = unitOfWorkManager;
+                    }
+
+                    public void Enqueue() => _ = _unitOfWorkManager.Current;
+                }
+
+                public sealed class Sweeper(IUnitOfWorkManager unitOfWorkManager) : IBackgroundWorker
+                {
+                    public void Sweep() => _ = unitOfWorkManager.Current;
+                }
+
+                public sealed class Rebuilder(IUnitOfWorkManager unitOfWorkManager) : IBackgroundWorker
+                {
+                    public void Rebuild()
+                    {
+                        using var uow = unitOfWorkManager.Begin();
+                    }
+                }
+
+                [UnitOfWork]
+                public sealed class OrderService(IUnitOfWorkManager unitOfWorkManager)
+                {
+                    public void Place() => _ = unitOfWorkManager.Current;
+                }
+
+                public static class OrdersServiceCollectionExtensions
+                {
+                    public static IServiceCollection AddOrders(this IServiceCollection services)
+                    {
+                        services.TryAddSingleton<Outbox>();
+                        services.AddScoped<OrderService>();
+                        return services;
+                    }
+                }
+
+                """);
+            var unitOfWorkManager = Markers.Line("V4-05", CliMessages.MigrateMarkerUnitOfWorkManager.L());
+            var expectedOutbox = $$"""
+                using Microsoft.Extensions.DependencyInjection;
+                using Microsoft.Extensions.DependencyInjection.Extensions;
+                using Shop.Core.Data;
+                using XiHan.Framework.Uow;
+
+                namespace Shop.Orders.Messaging;
+
+                public sealed class Outbox
+                {
+                    private readonly ICurrentUnitOfWorkAccessor _unitOfWorkManager;
+
+                    public Outbox(ICurrentUnitOfWorkAccessor unitOfWorkManager)
+                    {
+                        _unitOfWorkManager = unitOfWorkManager;
+                    }
+
+                    public void Enqueue() => _ = _unitOfWorkManager.Current;
+                }
+
+                public sealed class Sweeper(ICurrentUnitOfWorkAccessor unitOfWorkManager) : IBackgroundWorker
+                {
+                    public void Sweep() => _ = unitOfWorkManager.Current;
+                }
+
+                public sealed class Rebuilder(IUnitOfWorkManager unitOfWorkManager) : IBackgroundWorker
+                {
+                    public void Rebuild()
+                    {
+                        {{unitOfWorkManager}}
+                        using var uow = unitOfWorkManager.Begin();
+                    }
+                }
+
+                public sealed class OrderService(IUnitOfWorkManager unitOfWorkManager)
+                {
+                    public void Place() => _ = unitOfWorkManager.Current;
+                }
+
+                public static class OrdersServiceCollectionExtensions
+                {
+                    public static IServiceCollection AddOrders(this IServiceCollection services)
+                    {
+                        services.TryAddSingleton<Outbox>();
+                        services.AddScoped<OrderService>();
+                        return services;
+                    }
+                }
+
+                """;
+
+            var first = new V4Migration(root, [new DependencyMarkerFixer(), new UnitOfWorkFixer()], dryRun: false).Run(CancellationToken.None);
+
+            // 只读 Current 的单例消费方（显式 TryAddSingleton / AddSingleton 或经 IBackgroundWorker 继承单例存期）改注入访问器并补 using；调用 Begin 的单例与非单例消费方维持原样（Begin 留标记）
+            Assert.Equal(Lf(expectedOutbox), Lf(File.ReadAllText(Path.Combine(orders, "Messaging", "Outbox.cs"))));
+            var coreCache = Lf(File.ReadAllText(Path.Combine(core, "Caching", "CoreCache.cs")));
+            Assert.Contains("using Shop.Core.Data;\n", coreCache, StringComparison.Ordinal);
+            Assert.Contains("public sealed class CoreCache(ICurrentUnitOfWorkAccessor unitOfWorkManager)", coreCache, StringComparison.Ordinal);
+            // 访问器生成在消费项目引用链最底层的 Shop.Core 的 Data 目录，与承接的 IUnitOfWorkManager 同命名空间
+            Assert.False(Directory.Exists(Path.Combine(orders, "Data")));
+            var accessorMarker = Markers.Line("V4-05", CliMessages.MigrateMarkerUnitOfWorkAccessor.L());
+            Assert.StartsWith(accessorMarker + "\n", Lf(File.ReadAllText(Path.Combine(core, "Data", "ICurrentUnitOfWorkAccessor.cs"))), StringComparison.Ordinal);
+            Assert.Contains("public interface ICurrentUnitOfWorkAccessor\n{\n", Lf(File.ReadAllText(Path.Combine(core, "Data", "ICurrentUnitOfWorkAccessor.cs"))), StringComparison.Ordinal);
+            Assert.Contains("    IUnitOfWork? Current { get; }\n", Lf(File.ReadAllText(Path.Combine(core, "Data", "ICurrentUnitOfWorkAccessor.cs"))), StringComparison.Ordinal);
+            var accessor = Lf(File.ReadAllText(Path.Combine(core, "Data", "CurrentUnitOfWorkAccessor.cs")));
+            Assert.StartsWith(accessorMarker + "\n", accessor, StringComparison.Ordinal);
+            Assert.Contains("using Microsoft.Extensions.DependencyInjection;\nusing XiHan.Framework.Kernel.Pipeline;\n\nnamespace Shop.Core.Data;\n", accessor, StringComparison.Ordinal);
+            Assert.Contains("public sealed class CurrentUnitOfWorkAccessor(IInvocationAccessor accessor) : ICurrentUnitOfWorkAccessor\n{\n    /// <inheritdoc />\n    public IUnitOfWork? Current => accessor.Current.TryGetValue(out var context) ? context.Services.GetService<IUnitOfWorkManager>()?.Current : null;\n}\n", accessor, StringComparison.Ordinal);
+            Assert.Contains("services.AddSingleton<ICurrentUnitOfWorkAccessor, CurrentUnitOfWorkAccessor>();", File.ReadAllText(Path.Combine(core, "CoreV4Services.cs")), StringComparison.Ordinal);
+            Assert.Equal(3, first.Markers.Count(static marker => marker.Rule == "V4-05"));
+            Assert.Equal(2, first.Markers.Count(marker => marker.Rule == "V4-05" && marker.Message == CliMessages.MigrateMarkerUnitOfWorkAccessor.L()));
+
+            var second = new V4Migration(root, [new DependencyMarkerFixer(), new UnitOfWorkFixer()], dryRun: false).Run(CancellationToken.None);
+            Assert.All(second.Rules, static rule => Assert.Equal((0, 0), (rule.Changed, rule.Markers)));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
