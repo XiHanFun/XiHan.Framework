@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "Не удалось определить сегмент данных арендатора '{tenantId}': {reason}",
   "multitenancy.store.capacity_exceeded": "Хранилище арендаторов в памяти достигло предела ёмкости {capacity}.",
   "multitenancy.tenant.disabled": "Арендатор '{tenantId}' отключён.",
   "multitenancy.tenant.invalid_id": "Недопустимый идентификатор арендатора '{tenantId}'.",

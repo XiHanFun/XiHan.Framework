@@ -6,6 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

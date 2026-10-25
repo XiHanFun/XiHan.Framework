@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "The data shard of tenant '{tenantId}' could not be resolved: {reason}",
   "multitenancy.store.capacity_exceeded": "The in-memory tenant store has reached its capacity of {capacity}.",
   "multitenancy.tenant.disabled": "Tenant '{tenantId}' is disabled.",
   "multitenancy.tenant.invalid_id": "Tenant ID '{tenantId}' is invalid.",

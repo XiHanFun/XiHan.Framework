@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 
@@ -78,6 +79,23 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         }
 
         context.SetTenant(tenant);
+
+        // 装配了分片能力才解析分片：解析失败是基础设施故障，不降级为共库，直接失败
+        if (context.Services.GetService<ITenantShardResolver>() is { } shards)
+        {
+            var resolved = await shards.ResolveAsync(tenant.Id, context.CancellationToken).ConfigureAwait(false);
+            if (!resolved.TryGetValue(out var shard))
+            {
+                context.SetOutcome(resolved.Error!);
+                return;
+            }
+
+            if (shard.TryGetValue(out var value))
+            {
+                context.SetTenantShard(value);
+            }
+        }
+
         await nextStep(context).ConfigureAwait(false);
     }
 

@@ -8,6 +8,8 @@ using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -29,6 +31,11 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     /// 连接绑定名：<c>db</c>，类型 <c>connection:relational</c>，可选。
     /// </summary>
     public const string ConnectionBinding = "db";
+
+    /// <summary>
+    /// 连接绑定的类型。
+    /// </summary>
+    private const string ConnectionBindingType = "connection:relational";
 
     /// <summary>
     /// 应用提供的 DbContext 配置回调；在每次构建 DbContext 选项时调用。
@@ -60,8 +67,12 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         Kind = ManifestKind.Provider,
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(PersistenceCapabilities.Relational, PersistenceCapabilities.Version)],
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "connection:relational", required: false)],
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(MultiTenancyCapabilities.Sharding, MultiTenancyCapabilities.Version, optional: true),
+        ],
+        Bindings = [new Binding(ConnectionBinding, ConnectionBindingType, required: false)],
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
@@ -82,7 +93,12 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         var binding = context.TryGetBinding(ConnectionBinding);
 
         context.Services.AddSingleton(_options);
-        context.Services.AddDbContext<TContext>(options => _configure(binding, options));
+        // 选项按作用域构建：带租户分片的调用把分片连接作为绑定交给回调，其余用应用默认连接
+        context.Services.AddDbContext<TContext>((sp, options) =>
+        {
+            var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
+            _configure(shard.HasValue ? shard : binding, options);
+        });
         // 工作单元只依赖基类 DbContext，把应用的 TContext 转发为作用域内的同一实例，避免产生第二个上下文
         context.Services.TryAddScoped<DbContext>(static sp => sp.GetRequiredService<TContext>());
         context.Services.TryAddScoped<EntityFrameworkCoreUnitOfWork>();

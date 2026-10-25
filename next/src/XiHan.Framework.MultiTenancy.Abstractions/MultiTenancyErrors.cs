@@ -25,4 +25,7 @@ public static class MultiTenancyErrors
 
     /// <summary>租户存储容量已满。</summary>
     public const string CapacityExceeded = "MULTITENANCY_UNAVAILABLE_001";
+
+    /// <summary>租户分片无法解析（租户存储不可达）。</summary>
+    public const string ShardUnavailable = "MULTITENANCY_UNAVAILABLE_002";
 }

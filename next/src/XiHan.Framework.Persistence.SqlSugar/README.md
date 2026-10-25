@@ -28,12 +28,13 @@ builder.AddXiHan(x => x.UseFeature(new SqlSugarPersistenceFeature()));
 - 实体类型没有 `new()` 约束，写入经 SqlSugar 的 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject` 入口，语义与泛型构建器相同。
 - 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
+- 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，带分片的调用在作用域内按分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）另建连接配置并创建客户端（约定同样施加），其余调用共用应用默认连接；只对由特性创建客户端的方式生效，应用自己注册客户端时自行按 `context.GetTenantShard()` 处理。分片库的表结构由应用管理，`InitTables` 只作用于默认连接。
 - `XiHan:Persistence:SqlSugar:InitTables=true` 时启动按已登记的实体 `CodeFirst.InitTables` 建表，只用于开发与测试；生产由应用管理表结构。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它们绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 
 ## 依赖方向
 
-依赖 `Persistence.Abstractions` 与 `SqlSugarCore`（自带各数据库驱动）。应用从 `SqlSugarCore` 换成 `SqlSugarCoreNoDrive` + 单个驱动时须整体替换，两者不能并存。
+依赖 `Persistence.Abstractions`、`MultiTenancy.Abstractions`（分片绑定，能力可选）与 `SqlSugarCore`（自带各数据库驱动）。应用从 `SqlSugarCore` 换成 `SqlSugarCoreNoDrive` + 单个驱动时须整体替换，两者不能并存。
 
 ## 状态
 

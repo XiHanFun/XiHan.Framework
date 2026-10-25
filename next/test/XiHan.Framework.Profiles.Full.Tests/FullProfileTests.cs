@@ -32,7 +32,7 @@ public sealed class FullProfileTests
         ["xihan.localization.inmemory"] = ["localization.resources"],
         ["xihan.persistence.inmemory"] = ["persistence.relational"],
         ["xihan.caching.inmemory"] = ["caching.distributed", "caching.local"],
-        ["xihan.multitenancy.inmemory"] = ["multitenancy.context"],
+        ["xihan.multitenancy.inmemory"] = ["multitenancy.context", "multitenancy.sharding"],
         ["xihan.security.inmemory"] = ["security.authentication", "security.authorization"],
         ["xihan.messaging.inmemory"] = ["messaging.queue"],
         ["xihan.objectstorage.filesystem"] = ["objectstorage.blob"],

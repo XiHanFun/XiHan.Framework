@@ -10,6 +10,8 @@ XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.Equals(XiHan.Frame
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.MultiTenancyOptions() -> void
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.RequireTenant.get -> bool
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.RequireTenant.init -> void
+XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ShardCacheSize.get -> int
+XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ShardCacheSize.init -> void
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.TenantClaim.get -> string!
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.TenantClaim.init -> void
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ValidateAgainstStore.get -> bool
@@ -25,6 +27,25 @@ XiHan.Framework.MultiTenancy.Abstractions.Resolution.ITenantResolver.ResolveAsyn
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware.TenantResolutionMiddleware(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions! options) -> void
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver.Invalidate(string? tenantId = null) -> void
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver.ResolveAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>>>
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.<Clone>$() -> XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.ConnectionString.get -> string!
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.Equals(XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard? other) -> bool
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.Properties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.Provider.get -> string?
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.TenantId.get -> string!
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.TenantShard(string! tenantId, string! connectionString, string? provider = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? properties = null) -> void
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardBinding
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardInvocationExtensions
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.CachedCount.get -> int
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.Invalidate(string? tenantId = null) -> void
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.ResolveAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>>>
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.TenantStoreShardResolver(XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore! store, XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions! options) -> void
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore.FindAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>>
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore.ListAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>!>
@@ -49,17 +70,27 @@ const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.Disabled = "M
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.InvalidTenantId = "MULTITENANCY_VALIDATION_001" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.MissingTenant = "MULTITENANCY_VALIDATION_002" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.NotFound = "MULTITENANCY_NOTFOUND_001" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyErrors.ShardUnavailable = "MULTITENANCY_UNAVAILABLE_002" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.CapacityExceeded = "multitenancy.store.capacity_exceeded" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.CatalogName = "multitenancy" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.InvalidTenantId = "multitenancy.tenant.invalid_id" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.ShardUnavailable = "multitenancy.shard.unavailable" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantDisabled = "multitenancy.tenant.disabled" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantNotFound = "multitenancy.tenant.not_found" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.TenantRequired = "multitenancy.tenant.required" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ConfigurationSection = "XiHan:MultiTenancy" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.ConnectionString = "ConnectionString" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.DatabaseProvider = "DatabaseProvider" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.PropertyPrefix = "Shard." -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.ProviderProperty = "provider" -> string!
+const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.TenantProperty = "tenant" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantIdentifier.MaxLength = 64 -> int
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.Equals(object? obj) -> bool
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.GetHashCode() -> int
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ToString() -> string!
+override XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.Equals(object? obj) -> bool
+override XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.GetHashCode() -> int
+override XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.ToString() -> string!
 override XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo.Equals(object? obj) -> bool
 override XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo.GetHashCode() -> int
 override XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo.ToString() -> string!
@@ -67,6 +98,12 @@ static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyMessages.Catalog.ge
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions!
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.operator !=(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? right) -> bool
 static XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.operator ==(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions? right) -> bool
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.operator !=(XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard? left, XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard? right) -> bool
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.operator ==(XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard? left, XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard? right) -> bool
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardBinding.Resolve(System.IServiceProvider! scopedServices, string! bindingName, string! bindingType, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> fallback) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardInvocationExtensions.GetTenantShard(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardInvocationExtensions.SetTenantShard(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard! shard) -> void
+static XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.FromProperties(XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo! tenant) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>
 static XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantIdentifier.IsValid(string? tenantId) -> bool
 static XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantIdentifier.Validate(string! tenantId) -> string!
 static XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo.operator !=(XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo? left, XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo? right) -> bool

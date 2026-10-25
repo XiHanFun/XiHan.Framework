@@ -8,6 +8,8 @@ using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -28,6 +30,11 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 连接绑定名：<c>db</c>，类型 <c>connection:relational</c>，可选。
     /// </summary>
     public const string ConnectionBinding = "db";
+
+    /// <summary>
+    /// 连接绑定的类型。
+    /// </summary>
+    private const string ConnectionBindingType = "connection:relational";
 
     /// <summary>
     /// 应用提供的连接配置回调；为 <see langword="null"/> 表示客户端由应用自己注册。
@@ -71,8 +78,12 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         Kind = ManifestKind.Provider,
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(PersistenceCapabilities.Relational, PersistenceCapabilities.Version)],
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "connection:relational", required: false)],
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(MultiTenancyCapabilities.Sharding, MultiTenancyCapabilities.Version, optional: true),
+        ],
+        Bindings = [new Binding(ConnectionBinding, ConnectionBindingType, required: false)],
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
@@ -91,14 +102,17 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         _options = SqlSugarPersistenceOptions.FromConfiguration(context.Configuration);
         context.Services.AddSingleton(_options);
 
-        if (_configure is not null)
+        if (_configure is { } configure)
         {
             // 绑定可选：缺失时把 Maybe 原样交给回调，由应用决定回退到何种连接。
-            // 一份连接配置供所有作用域的客户端共用：约定要在第一个客户端创建前登记到配置上
-            var config = new ConnectionConfig { IsAutoCloseConnection = true };
-            _configure(context.TryGetBinding(ConnectionBinding), config);
-            SqlSugarConventions.Apply(config);
-            context.Services.AddScoped<ISqlSugarClient>(_ => new SqlSugarClient(config));
+            // 应用默认连接的配置只建一份供所有作用域共用；带租户分片的调用在作用域内按分片绑定另建配置，约定同样施加
+            var binding = context.TryGetBinding(ConnectionBinding);
+            var shared = CreateConfig(configure, binding);
+            context.Services.AddScoped<ISqlSugarClient>(sp =>
+            {
+                var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
+                return new SqlSugarClient(shard.HasValue ? CreateConfig(configure, shard) : shared);
+            });
         }
 
         context.Services.TryAddScoped<SqlSugarUnitOfWork>();
@@ -125,6 +139,16 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
 
     /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// 按绑定创建连接配置：应用回调设置数据库类型与连接串，然后施加协议约定。
+    /// </summary>
+    private static ConnectionConfig CreateConfig(Action<Maybe<BindingValue>, ConnectionConfig> configure, Maybe<BindingValue> binding)
+    {
+        var config = new ConnectionConfig { IsAutoCloseConnection = true };
+        configure(binding, config);
+        return SqlSugarConventions.Apply(config);
+    }
 
     /// <inheritdoc />
     public void Register<TEntity, TKey>(IServiceCollection services)

@@ -38,6 +38,15 @@ public sealed record MultiTenancyOptions
     public bool ValidateAgainstStore { get; init; } = true;
 
     /// <summary>
+    /// <see cref="Sharding.TenantStoreShardResolver"/> 的缓存容量（租户数）；默认 10000，满时整体清空。
+    /// </summary>
+    public int ShardCacheSize
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The shard cache size must be at least 1.");
+    } = 10_000;
+
+    /// <summary>
     /// 承载租户 ID 的声明类型；默认 <c>tenant</c>。
     /// </summary>
     public string TenantClaim
