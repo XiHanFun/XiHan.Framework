@@ -12,5 +12,6 @@ namespace XiHan.Framework.Protocols.Http.Tests;
 [JsonSerializable(typeof(OrderRequest))]
 [JsonSerializable(typeof(OrderReportRequest))]
 [JsonSerializable(typeof(OrderFilterRequest))]
+[JsonSerializable(typeof(OrderSearchRequest))]
 [JsonSerializable(typeof(OrderReply))]
 internal sealed partial class OrdersJsonContext : JsonSerializerContext;

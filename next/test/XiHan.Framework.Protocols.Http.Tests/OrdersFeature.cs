@@ -17,7 +17,7 @@ internal sealed class OrdersFeature : IFeature
     /// <summary>
     /// 暴露给 HTTP 且非内部的操作 ID。
     /// </summary>
-    public static readonly string[] HttpOperations = ["order-filters.delete", "order-filters.list", "orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
+    public static readonly string[] HttpOperations = ["order-filters.delete", "order-filters.list", "order-searches.list", "orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -55,6 +55,9 @@ internal sealed class OrdersFeature : IFeature
         {
             context.AddOperation<OrderFilterOperation, OrderFilterRequest, OrderFilterRequest>(new OperationContract(id, expose: Expose.Http), OrdersJsonContext.Default.OrderFilterRequest, OrdersJsonContext.Default.OrderFilterRequest);
         }
+
+        // 分页请求带嵌套对象：list 推导为 POST /order-searches:list
+        context.AddOperation<OrderSearchOperation, OrderSearchRequest, OrderSearchRequest>(new OperationContract("order-searches.list", expose: Expose.Http), OrdersJsonContext.Default.OrderSearchRequest, OrdersJsonContext.Default.OrderSearchRequest);
 
         Add(context, new OperationContract("orders.secret", expose: Expose.Mcp));
         Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
