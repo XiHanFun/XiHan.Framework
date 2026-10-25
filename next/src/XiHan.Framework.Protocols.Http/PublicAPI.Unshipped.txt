@@ -1,4 +1,5 @@
 #nullable enable
+const XiHan.Framework.Protocols.Http.HttpErrors.DuplicateRoute = "PROTOCOLS_CONFLICT_002" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Http = "protocols.http" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Http.HttpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Http" -> string!
@@ -25,6 +26,7 @@ static XiHan.Framework.Protocols.Http.OpenApiDocumentBuilder.Build(XiHan.Framewo
 static XiHan.Framework.Protocols.Http.OpenApiEndpointRouteBuilderExtensions.MapXiHanOpenApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/openapi.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> int
 static XiHan.Framework.Protocols.Http.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, string! operationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
+XiHan.Framework.Protocols.Http.HttpErrors
 XiHan.Framework.Protocols.Http.HttpProtocolCapabilities
 XiHan.Framework.Protocols.Http.HttpProtocolFeature
 XiHan.Framework.Protocols.Http.HttpProtocolFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void

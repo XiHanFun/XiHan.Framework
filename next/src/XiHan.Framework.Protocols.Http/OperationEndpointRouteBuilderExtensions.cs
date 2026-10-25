@@ -29,6 +29,8 @@ public static class OperationEndpointRouteBuilderExtensions
         var registry = endpoints.ServiceProvider.GetRequiredService<OperationRegistry>();
         var options = endpoints.ServiceProvider.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions();
         var count = 0;
+        // 同一方法 + 模板只能有一个操作：无 id 的 get 与 list 都是 GET /{resource}，这种冲突在启动时报出来而不是留给路由匹配时的 500
+        var mapped = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var descriptor in registry.ExposedTo(Expose.Http))
         {
             // 内部稳定性的操作只供进程内调用，不对外发布
@@ -38,6 +40,12 @@ public static class OperationEndpointRouteBuilderExtensions
             }
 
             var route = options.RouteFor(descriptor);
+            var key = route.ToString();
+            if (!mapped.TryAdd(key, descriptor.Id))
+            {
+                throw new FrameworkException(HttpErrors.DuplicateRoute, $"Operations '{mapped[key]}' and '{descriptor.Id}' derive the same HTTP route '{key}'. Override one of them via 'XiHan:Protocols:Http:Routes'.");
+            }
+
             endpoints
                 .MapMethods(route.Template, [route.Method], httpContext => HandleAsync(httpContext, descriptor))
                 .WithMetadata(descriptor)
