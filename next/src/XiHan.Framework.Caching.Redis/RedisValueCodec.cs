@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Buffers.Binary;
-using StackExchange.Redis;
 
 namespace XiHan.Framework.Caching.Redis;
 

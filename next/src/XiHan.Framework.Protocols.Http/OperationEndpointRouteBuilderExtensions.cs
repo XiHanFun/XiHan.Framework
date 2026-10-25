@@ -66,7 +66,7 @@ public static class OperationEndpointRouteBuilderExtensions
             throw new FrameworkException(KernelErrors.InvalidAppState, "Operation endpoints require UseXiHan() to run before routing; the invocation context is missing.");
         }
 
-        var payload = await OperationRequestBinder.BindAsync(httpContext, descriptor.Id, context.CancellationToken).ConfigureAwait(false);
+        var payload = await OperationRequestBinder.BindAsync(httpContext, descriptor, context.CancellationToken).ConfigureAwait(false);
         if (!payload.TryGetValue(out var bytes))
         {
             context.SetOutcome(payload.Error!);

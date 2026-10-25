@@ -110,6 +110,33 @@ public sealed class HttpProtocolTests
     }
 
     [Fact]
+    public async Task QueryAndRouteValues_BindByPropertyType()
+    {
+        var (app, client, _) = await StartAsync();
+        await using var host = app;
+
+        // 布尔、数值枚举、长整数数组（单值）与整数都按属性类型写入；查询串的属性名不分大小写
+        var listed = await client.GetAsync("/order-filters?Active=true&state=1&ids=5&page=2");
+        Assert.Equal(HttpStatusCode.OK, listed.StatusCode);
+        var filter = JsonSerializer.Deserialize(await listed.Content.ReadAsByteArrayAsync(), OrdersJsonContext.Default.OrderFilterRequest)!;
+        Assert.True(filter.Active);
+        Assert.Equal(OrderState.Closed, filter.State);
+        Assert.Equal([5L], filter.Ids ?? []);
+        Assert.Equal(2, filter.Page);
+
+        // DELETE 不读请求体：路由里的 id 写成长整数，查询串的布尔与多值数组照样绑定
+        var deleted = await client.DeleteAsync("/order-filters/9007199254740993?active=false&ids=1&ids=2");
+        Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
+        var removal = JsonSerializer.Deserialize(await deleted.Content.ReadAsByteArrayAsync(), OrdersJsonContext.Default.OrderFilterRequest)!;
+        Assert.Equal(9007199254740993L, removal.Id);
+        Assert.False(removal.Active);
+        Assert.Equal([1L, 2L], removal.Ids ?? []);
+
+        // 解析不了的值按字符串写入，由反序列化报出载荷不合法
+        Assert.Equal("KERNEL_VALIDATION_001", await CodeOf(await client.GetAsync("/order-filters?active=maybe")));
+    }
+
+    [Fact]
     public void DuplicateRoutes_FailAtMapping()
     {
         var builder = WebApplication.CreateBuilder();
