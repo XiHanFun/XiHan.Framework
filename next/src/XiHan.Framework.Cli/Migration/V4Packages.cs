@@ -81,7 +81,7 @@ internal static class V4Packages
         "Security.Abstractions", "Security.InMemory", "Security.Jwt", "Security.OpenIdConnect", "Security.Conformance",
         "Messaging.Abstractions", "Messaging.InMemory", "Messaging.RabbitMQ", "Messaging.Conformance",
         "Localization.Abstractions", "Localization.InMemory", "Localization.Database", "Localization.Conformance",
-        "ObjectStorage.Abstractions", "ObjectStorage.FileSystem", "ObjectStorage.Conformance",
+        "ObjectStorage.Abstractions", "ObjectStorage.FileSystem", "ObjectStorage.S3", "ObjectStorage.Conformance",
         "Scheduling.Abstractions", "Scheduling.InMemory", "Scheduling.Kubernetes", "Scheduling.Conformance",
         "Configuration.Abstractions", "Configuration.Conformance",
         "Auditing.Abstractions", "Auditing.InMemory", "Auditing.Conformance",

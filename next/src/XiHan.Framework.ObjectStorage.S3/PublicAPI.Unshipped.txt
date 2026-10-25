@@ -1,0 +1,39 @@
+#nullable enable
+XiHan.Framework.ObjectStorage.S3.S3BlobStore
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.DeleteAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult!>!>
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.GetAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContent!>>
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.HeadAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>>
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.ListAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage!>>
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.PutAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload!>! uploads, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutResult!>!>
+XiHan.Framework.ObjectStorage.S3.S3BlobStore.S3BlobStore(Amazon.S3.IAmazonS3! client, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.S3ObjectStorageFeature() -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.<Clone>$() -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.AccessKey.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.AccessKey.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.EnsureBuckets.get -> bool
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.EnsureBuckets.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? other) -> bool
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ForcePathStyle.get -> bool
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ForcePathStyle.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.get -> string!
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.S3ObjectStorageOptions() -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.init -> void
+const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConnectionBinding = "objectstorage" -> string!
+const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConfigurationSection = "XiHan:ObjectStorage:S3" -> string!
+override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(object? obj) -> bool
+override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.GetHashCode() -> int
+override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ToString() -> string!
+static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.CreateClient(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions! options) -> Amazon.S3.AmazonS3Client!
+static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding = default(XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>)) -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
+static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.operator !=(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? left, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? right) -> bool
+static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.operator ==(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? left, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? right) -> bool

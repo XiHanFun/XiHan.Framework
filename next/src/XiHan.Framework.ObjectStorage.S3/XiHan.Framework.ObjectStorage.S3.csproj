@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.ObjectStorage.S3</PackageId>
+    <RootNamespace>XiHan.Framework.ObjectStorage.S3</RootNamespace>
+    <Description>XiHan Framework 对象存储的 S3 Provider：容器即桶，经 AWS SDK 访问 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS 等），条件写入实现不覆盖，批量删除一次请求。</Description>
+    <PackageTags>xihan;framework;objectstorage;s3;minio;oss;blob</PackageTags>
+    <!-- AWS SDK 的请求编组基于运行时反射，不满足 AOT 分析器 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.ObjectStorage.Abstractions/XiHan.Framework.ObjectStorage.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+</Project>

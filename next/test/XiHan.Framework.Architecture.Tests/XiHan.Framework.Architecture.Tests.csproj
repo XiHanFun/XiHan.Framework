@@ -47,6 +47,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Abstractions/XiHan.Framework.ObjectStorage.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.FileSystem/XiHan.Framework.ObjectStorage.FileSystem.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.S3/XiHan.Framework.ObjectStorage.S3.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Conformance/XiHan.Framework.ObjectStorage.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.InMemory/XiHan.Framework.Scheduling.InMemory.csproj" />
