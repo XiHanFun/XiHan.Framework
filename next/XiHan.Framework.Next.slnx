@@ -17,6 +17,7 @@
     <Project Path="src/XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
   </Folder>
   <Folder Name="/3.Providers/">
     <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
@@ -121,6 +122,7 @@
     <Project Path="test/XiHan.Framework.Configuration.Abstractions.Tests/XiHan.Framework.Configuration.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Abstractions.Tests/XiHan.Framework.Auditing.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Database.Tests/XiHan.Framework.Localization.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Observability.OpenTelemetry.Tests/XiHan.Framework.Observability.OpenTelemetry.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Profiles.Full.Tests/XiHan.Framework.Profiles.Full.Tests.csproj" />
