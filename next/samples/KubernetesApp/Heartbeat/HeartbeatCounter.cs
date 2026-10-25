@@ -1,7 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-namespace KubernetesApp;
+namespace KubernetesApp.Heartbeat;
 
 /// <summary>
 /// 心跳作业的运行计数。

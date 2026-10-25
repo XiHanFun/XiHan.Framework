@@ -1,7 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 订单端点的响应，也是 <c>orders.placed</c> 消息的正文。

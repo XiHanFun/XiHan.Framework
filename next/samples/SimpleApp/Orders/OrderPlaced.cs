@@ -3,7 +3,7 @@
 
 using XiHan.Framework.Domain.Events;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 订单已下单的领域事件。

@@ -6,7 +6,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
-namespace SimpleApp;
+namespace SimpleApp.Greetings;
 
 /// <summary>
 /// 示例能力包：注册一个计数服务，并在 Observe 阶段贡献一个计数中间件。

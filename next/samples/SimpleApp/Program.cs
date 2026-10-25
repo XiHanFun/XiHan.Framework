@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using SimpleApp;
+using SimpleApp.Greetings;
+using SimpleApp.Orders;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Hosting;

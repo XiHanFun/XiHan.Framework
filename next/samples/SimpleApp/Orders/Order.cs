@@ -4,7 +4,7 @@
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Events;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 订单：多租户、带创建时间、软删除的聚合根。持久化子系统按协议自动维护这些字段。

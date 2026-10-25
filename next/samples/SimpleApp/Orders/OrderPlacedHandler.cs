@@ -4,7 +4,7 @@
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Primitives;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 订单事件处理器：消息经完整管道派发，这里能看到租户等上下文。

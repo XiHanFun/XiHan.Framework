@@ -4,7 +4,7 @@
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
-namespace KubernetesApp;
+namespace KubernetesApp.Heartbeat;
 
 /// <summary>
 /// 每 10 秒一次的心跳作业；<c>LeaderOnly</c>（默认）让它只在持有租约的 Pod 上按计划运行。

@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 当前租户的订单列表。

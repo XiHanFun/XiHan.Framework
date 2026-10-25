@@ -9,7 +9,7 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 下单操作：ApiKey 认证 → 主体声明解析租户 → 按契约判定 <c>orders.write</c> 权限 → 工作单元内写订单并经发件箱发消息。

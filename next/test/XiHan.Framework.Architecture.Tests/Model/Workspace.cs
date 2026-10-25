@@ -47,6 +47,16 @@ internal static class Workspace
     public static IReadOnlyList<SourceProject> TestProjects { get; } = LoadProjects(TestRoot);
 
     /// <summary>
+    /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序；目录与子命名空间规则对它们同样生效。
+    /// </summary>
+    public static IReadOnlyList<SourceProject> SampleProjects { get; } = LoadProjects(Path.Combine(Root, "samples")).Concat(LoadProjects(Path.Combine(Root, "benchmarks"))).ToList();
+
+    /// <summary>
+    /// 正式包、测试、示例与基准：命名空间门禁检查的全部项目。
+    /// </summary>
+    public static IEnumerable<SourceProject> AllProjects => SourceProjects.Concat(TestProjects).Concat(SampleProjects);
+
+    /// <summary>
     /// 枚举目录下的全部 C# 源文件，跳过构建输出。
     /// </summary>
     public static IEnumerable<string> SourceFiles(string directory) =>
