@@ -1264,6 +1264,9 @@ public sealed class MigrationTests
     [InlineData("RemoveAsync", "Log", "delete")]
     [InlineData("ResetPasswordAsync", "User", "reset-password")]
     [InlineData("Export", "User", "export")]
+    [InlineData("CreateOAuthBindTicketAsync", "Auth", "create-o-auth-bind-ticket")]
+    [InlineData("UpdateOAuthAppStatusAsync", "OAuthApp", "update-status")]
+    [InlineData("RevokeAuthTokenAsync", "Auth", "revoke-token")]
     public void Verb_FollowsPrefixTable(string method, string resource, string expected)
         => Assert.Equal(expected, V4Operations.Verb(method, V4Operations.Words(resource)));
 
