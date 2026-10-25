@@ -25,7 +25,7 @@ static XiHan.Framework.Protocols.Http.HttpRouteConvention.SuccessStatusCode(XiHa
 static XiHan.Framework.Protocols.Http.OpenApiDocumentBuilder.Build(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! options, string! title, string! version) -> byte[]!
 static XiHan.Framework.Protocols.Http.OpenApiEndpointRouteBuilderExtensions.MapXiHanOpenApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/openapi.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Protocols.Http.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> int
-static XiHan.Framework.Protocols.Http.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, string! operationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
+static XiHan.Framework.Protocols.Http.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 XiHan.Framework.Protocols.Http.HttpErrors
 XiHan.Framework.Protocols.Http.HttpProtocolCapabilities
 XiHan.Framework.Protocols.Http.HttpProtocolFeature

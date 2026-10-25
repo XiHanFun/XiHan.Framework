@@ -17,7 +17,7 @@ internal sealed class OrdersFeature : IFeature
     /// <summary>
     /// 暴露给 HTTP 且非内部的操作 ID。
     /// </summary>
-    public static readonly string[] HttpOperations = ["orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
+    public static readonly string[] HttpOperations = ["order-filters.delete", "order-filters.list", "orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -42,7 +42,7 @@ internal sealed class OrdersFeature : IFeature
     /// <inheritdoc />
     public void Configure(FeatureContext context)
     {
-        foreach (var id in HttpOperations.Where(static id => id != "orders.report"))
+        foreach (var id in HttpOperations.Where(static id => id.StartsWith("orders.", StringComparison.Ordinal) && id != "orders.report"))
         {
             // get 与 create 带 Schema，其余不带：OpenAPI 两种情况都要能发布
             Add(context, new OperationContract(id, expose: Expose.Http), id is "orders.get" or "orders.create" ? OrderSchema : null);
@@ -50,6 +50,12 @@ internal sealed class OrdersFeature : IFeature
 
         // 请求不含 id 的自定义动词：按约定走集合级路由 POST /orders:report
         context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract("orders.report", expose: Expose.Http), OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
+        // 类型化绑定：GET /order-filters 与 DELETE /order-filters/{id}，字段只能从路由值与查询串来
+        foreach (var id in new[] { "order-filters.list", "order-filters.delete" })
+        {
+            context.AddOperation<OrderFilterOperation, OrderFilterRequest, OrderFilterRequest>(new OperationContract(id, expose: Expose.Http), OrdersJsonContext.Default.OrderFilterRequest, OrdersJsonContext.Default.OrderFilterRequest);
+        }
+
         Add(context, new OperationContract("orders.secret", expose: Expose.Mcp));
         Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
     }
