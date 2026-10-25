@@ -113,8 +113,11 @@ XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.StopAsync(Syste
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Messaging.Abstractions.Publishing.IMessageReplayer
+XiHan.Framework.Messaging.Abstractions.Publishing.IMessageReplayer.ReplayAsync(string! topic, System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat.ContentType = "application/cloudevents+json" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.Correlation = "xihancorrelation" -> string!
+const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.PartitionKey = "xihankey" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.Tenant = "xihantenant" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.TraceParent = "traceparent" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.SpecVersion = "1.0" -> string!
@@ -127,6 +130,7 @@ const XiHan.Framework.Messaging.Abstractions.MessagingErrors.HandlerFailed = "ME
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidEnvelope = "MESSAGING_VALIDATION_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidTopic = "MESSAGING_VALIDATION_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.QueueFull = "MESSAGING_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.BrokerUnavailable = "messaging.broker.unavailable" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.CatalogName = "messaging" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeAttributesRequired = "messaging.envelope.attributes_required" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalid = "messaging.envelope.invalid" -> string!

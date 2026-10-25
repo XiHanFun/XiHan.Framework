@@ -1,4 +1,5 @@
 {
+  "messaging.broker.unavailable": "Брокер сообщений недоступен: {reason}",
   "messaging.envelope.attributes_required": "Атрибуты 'id', 'source' и 'type' обязательны.",
   "messaging.envelope.invalid": "Конверт недопустим: {reason}",
   "messaging.envelope.invalid_base64": "Атрибут 'data_base64' не является корректным Base64.",

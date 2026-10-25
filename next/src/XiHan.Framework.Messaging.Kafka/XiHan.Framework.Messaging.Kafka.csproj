@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.Kafka</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.Kafka</RootNamespace>
+    <Description>XiHan Framework 消息的 Kafka Provider：提供队列与流能力，幂等生产者、按消费组提交位点、分区键有序、按时刻重放、重试与死信主题，基于 Confluent.Kafka。</Description>
+    <PackageTags>xihan;framework;messaging;kafka;stream</PackageTags>
+    <!-- librdkafka 是本机库，Confluent.Kafka 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" />
+  </ItemGroup>
+</Project>

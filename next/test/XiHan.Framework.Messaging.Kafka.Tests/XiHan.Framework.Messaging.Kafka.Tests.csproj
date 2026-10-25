@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Messaging.Kafka.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Kafka/XiHan.Framework.Messaging.Kafka.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+  </ItemGroup>
+</Project>
