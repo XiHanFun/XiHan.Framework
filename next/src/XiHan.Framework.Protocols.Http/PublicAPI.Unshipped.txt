@@ -17,10 +17,12 @@ static XiHan.Framework.Protocols.Http.HttpProtocolOptions.operator ==(XiHan.Fram
 static XiHan.Framework.Protocols.Http.HttpRoute.operator !=(XiHan.Framework.Protocols.Http.HttpRoute? left, XiHan.Framework.Protocols.Http.HttpRoute? right) -> bool
 static XiHan.Framework.Protocols.Http.HttpRoute.operator ==(XiHan.Framework.Protocols.Http.HttpRoute? left, XiHan.Framework.Protocols.Http.HttpRoute? right) -> bool
 static XiHan.Framework.Protocols.Http.HttpRoute.Parse(string! text) -> XiHan.Framework.Protocols.Http.HttpRoute!
-static XiHan.Framework.Protocols.Http.HttpRouteConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract, bool hasIdentifier) -> XiHan.Framework.Protocols.Http.HttpRoute!
+static XiHan.Framework.Protocols.Http.HttpRouteConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract, bool hasIdentifier, bool hasNestedFields = false) -> XiHan.Framework.Protocols.Http.HttpRoute!
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.Derive(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Protocols.Http.HttpRoute!
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.HasIdentifier(System.Text.Json.Serialization.Metadata.JsonTypeInfo! requestInfo) -> bool
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.HasIdentifier(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> bool
+static XiHan.Framework.Protocols.Http.HttpRouteConvention.HasNestedFields(System.Text.Json.Serialization.Metadata.JsonTypeInfo! requestInfo) -> bool
+static XiHan.Framework.Protocols.Http.HttpRouteConvention.HasNestedFields(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> bool
 static XiHan.Framework.Protocols.Http.HttpRouteConvention.SuccessStatusCode(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> int
 static XiHan.Framework.Protocols.Http.OpenApiDocumentBuilder.Build(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! options, string! title, string! version) -> byte[]!
 static XiHan.Framework.Protocols.Http.OpenApiEndpointRouteBuilderExtensions.MapXiHanOpenApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/openapi.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!

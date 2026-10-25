@@ -87,6 +87,12 @@ public sealed class HttpProtocolTests
         // 自定义动词：请求含 id 走实例级，不含走集合级
         Assert.Equal("POST /orders/{id}:cancel", HttpRouteConvention.Derive(new OperationContract("orders.cancel"), hasIdentifier: true).ToString());
         Assert.Equal("POST /orders:export", HttpRouteConvention.Derive(new OperationContract("orders.export"), hasIdentifier: false).ToString());
+        // GET / DELETE 不读请求体：请求带嵌套对象时 get / list / delete 改用 POST 自定义动词，create / update 不受影响
+        Assert.Equal("POST /orders:list", HttpRouteConvention.Derive(new OperationContract("orders.list"), hasIdentifier: true, hasNestedFields: true).ToString());
+        Assert.Equal("POST /orders/{id}:get", HttpRouteConvention.Derive(new OperationContract("orders.get"), hasIdentifier: true, hasNestedFields: true).ToString());
+        Assert.Equal("POST /orders:delete", HttpRouteConvention.Derive(new OperationContract("orders.delete"), hasIdentifier: false, hasNestedFields: true).ToString());
+        Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update"), hasIdentifier: true, hasNestedFields: true).ToString());
+        Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: false, hasNestedFields: true).ToString());
         Assert.Equal(201, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.create")));
         Assert.Equal(200, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.get")));
     }
@@ -132,6 +138,13 @@ public sealed class HttpProtocolTests
         Assert.False(removal.Active);
         Assert.Equal([1L, 2L], removal.Ids ?? []);
 
+        // 分页请求（嵌套对象）的 list 走 POST /order-searches:list，整个请求对象作请求体
+        var searched = await client.PostAsync("/order-searches:list", Json("""{"page":{"index":2,"size":10},"keyword":"a"}"""));
+        Assert.Equal(HttpStatusCode.OK, searched.StatusCode);
+        var search = JsonSerializer.Deserialize(await searched.Content.ReadAsByteArrayAsync(), OrdersJsonContext.Default.OrderSearchRequest)!;
+        Assert.Equal((2, 10, "a"), (search.Page!.Index, search.Page.Size, search.Keyword));
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/order-searches")).StatusCode);
+
         // 解析不了的值按字符串写入，由反序列化报出载荷不合法
         Assert.Equal("KERNEL_VALIDATION_001", await CodeOf(await client.GetAsync("/order-filters?active=maybe")));
     }
@@ -162,6 +175,12 @@ public sealed class HttpProtocolTests
         Assert.False(HttpRouteConvention.HasIdentifier(new SchemaOnlyDescriptor("orders.report", new OperationSchema("""{"type":"object","properties":{"name":{"type":"string"}}}""", """{"type":"object"}"""))));
         Assert.False(HttpRouteConvention.HasIdentifier(new SchemaOnlyDescriptor("orders.report", schema: null)));
         Assert.Equal("POST /orders:report", HttpRouteConvention.Derive(new SchemaOnlyDescriptor("orders.report", schema: null)).ToString());
+        // 嵌套字段：序列化元数据判对象与对象集合，标量集合不算；插件代理看 Schema 的 $ref / object
+        Assert.False(HttpRouteConvention.HasNestedFields(Describe("orders.list")));
+        Assert.True(HttpRouteConvention.HasNestedFields(OrdersJsonContext.Default.OrderSearchRequest));
+        Assert.True(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"page":{"$ref":"#/$defs/Page"}}}""", """{"type":"object"}"""))));
+        Assert.True(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"lines":{"type":"array","items":{"type":["object","null"]}}}}""", """{"type":"object"}"""))));
+        Assert.False(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"tags":{"type":"array","items":{"type":"string"}}}}""", """{"type":"object"}"""))));
 
         var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));
         await using var host = app;
