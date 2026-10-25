@@ -10,9 +10,9 @@ namespace XiHan.Framework.Protocols.Http;
 
 /// <summary>
 /// 操作 ID 到路由的默认推导（<c>spec/conventions/operation-ids.md</c>）：
-/// <c>create</c> → <c>POST /{resource}</c>，<c>get</c> → <c>GET /{resource}/{id}</c>，<c>list</c> → <c>GET /{resource}</c>，
-/// <c>update</c> → <c>PUT /{resource}/{id}</c>，<c>delete</c> → <c>DELETE /{resource}/{id}</c>；
-/// 其他动词按请求是否声明 <c>id</c> 属性分实例级 <c>POST /{resource}/{id}:{verb}</c> 与集合级 <c>POST /{resource}:{verb}</c>（ADR-0015）。
+/// <c>create</c> → <c>POST /{resource}</c>，<c>list</c> → <c>GET /{resource}</c>；请求声明了 <c>id</c> 属性时
+/// <c>get</c> → <c>GET /{resource}/{id}</c>，<c>update</c> → <c>PUT /{resource}/{id}</c>，<c>delete</c> → <c>DELETE /{resource}/{id}</c>，其他动词 → <c>POST /{resource}/{id}:{verb}</c>；
+/// 没有 <c>id</c> 时去掉 <c>/{id}</c> 段，落在集合（或单例资源）上：<c>GET /{resource}</c>、<c>PUT /{resource}</c>、<c>DELETE /{resource}</c>、<c>POST /{resource}:{verb}</c>（ADR-0015）。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class HttpRouteConvention
@@ -35,21 +35,21 @@ public static class HttpRouteConvention
     /// 按约定推导路由。
     /// </summary>
     /// <param name="contract">契约。</param>
-    /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；只影响自定义动词，标准动词的形态固定。</param>
+    /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；有则路由带 <c>/{id}</c> 段，没有则落在集合（或单例资源）上。</param>
     public static HttpRoute Derive(OperationContract contract, bool hasIdentifier)
     {
         ArgumentNullException.ThrowIfNull(contract);
         var resource = contract.Resource;
+        // 请求带标识是对某个实例的动作，路径带 /{id}；不带标识是对集合（或单例资源，如 profile）的动作，去掉这一段（Google AIP 的两种形态）
+        var target = hasIdentifier ? $"/{resource}/{{id}}" : $"/{resource}";
         return contract.Verb switch
         {
             "create" => new HttpRoute("POST", $"/{resource}"),
-            "get" => new HttpRoute("GET", $"/{resource}/{{id}}"),
             "list" => new HttpRoute("GET", $"/{resource}"),
-            "update" => new HttpRoute("PUT", $"/{resource}/{{id}}"),
-            "delete" => new HttpRoute("DELETE", $"/{resource}/{{id}}"),
-            // 自定义动词：请求带标识是对某个实例的动作，否则是对集合的动作（Google AIP 自定义方法的两种形态）
-            var verb when hasIdentifier => new HttpRoute("POST", $"/{resource}/{{id}}:{verb}"),
-            var verb => new HttpRoute("POST", $"/{resource}:{verb}"),
+            "get" => new HttpRoute("GET", target),
+            "update" => new HttpRoute("PUT", target),
+            "delete" => new HttpRoute("DELETE", target),
+            var verb => new HttpRoute("POST", $"{target}:{verb}"),
         };
     }
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Protocols.Http.Tests;
 
@@ -77,9 +78,12 @@ public sealed class HttpProtocolTests
         Assert.Equal("GET /order-lines", HttpRouteConvention.Derive(new OperationContract("order-lines.list"), hasIdentifier: false).ToString());
         Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update"), hasIdentifier: true).ToString());
         Assert.Equal("DELETE /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.delete"), hasIdentifier: true).ToString());
-        // 标准动词的形态与请求形状无关
-        Assert.Equal("GET /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.get"), hasIdentifier: false).ToString());
+        // create / list 恒为集合级；get / update / delete 的请求没有 id 时落在集合（或单例资源）上
         Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: true).ToString());
+        Assert.Equal("GET /orders", HttpRouteConvention.Derive(new OperationContract("orders.list"), hasIdentifier: true).ToString());
+        Assert.Equal("GET /profile", HttpRouteConvention.Derive(new OperationContract("profile.get"), hasIdentifier: false).ToString());
+        Assert.Equal("PUT /profile", HttpRouteConvention.Derive(new OperationContract("profile.update"), hasIdentifier: false).ToString());
+        Assert.Equal("DELETE /cache", HttpRouteConvention.Derive(new OperationContract("cache.delete"), hasIdentifier: false).ToString());
         // 自定义动词：请求含 id 走实例级，不含走集合级
         Assert.Equal("POST /orders/{id}:cancel", HttpRouteConvention.Derive(new OperationContract("orders.cancel"), hasIdentifier: true).ToString());
         Assert.Equal("POST /orders:export", HttpRouteConvention.Derive(new OperationContract("orders.export"), hasIdentifier: false).ToString());
@@ -103,6 +107,20 @@ public sealed class HttpProtocolTests
         var options = new HttpProtocolOptions { RoutePrefix = "/api", Routes = new Dictionary<string, HttpRoute> { ["orders.export"] = route } };
         Assert.Equal("POST /api/orders:export", options.RouteFor(Describe("orders.export")).ToString());
         Assert.Equal("GET /api/orders/{id}", options.RouteFor(Describe("orders.get")).ToString());
+    }
+
+    [Fact]
+    public void DuplicateRoutes_FailAtMapping()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.AddXiHan(static xihan => xihan.UseFeature<HttpProtocolFeature>().UseFeature<ThingsFeature>());
+        var app = builder.Build();
+
+        // things.list 与无 id 的 things.get 都推导为 GET /things：映射时报冲突而不是留给路由匹配
+        var exception = Assert.Throws<FrameworkException>(() => app.MapXiHanOperations());
+        Assert.Equal(HttpErrors.DuplicateRoute, exception.Code);
+        Assert.Contains("GET /things", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
