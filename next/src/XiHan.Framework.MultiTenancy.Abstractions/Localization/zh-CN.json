@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "无法解析租户 '{tenantId}' 的数据分片：{reason}",
   "multitenancy.store.capacity_exceeded": "内存租户存储已达到容量上限 {capacity}。",
   "multitenancy.tenant.disabled": "租户 '{tenantId}' 已禁用。",
   "multitenancy.tenant.invalid_id": "租户 ID '{tenantId}' 不合法。",

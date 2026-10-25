@@ -24,11 +24,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 更新游离实体时先比对并发戳，不符返回 `PERSISTENCE_CONFLICT_001`；跟踪实体由 EF 的并发令牌保护。
 - 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
+- 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，DbContext 选项按作用域构建，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给配置回调，其余调用用应用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。
 - `XiHan:Persistence:EntityFrameworkCore:EnsureCreated=true` 时启动即建表，只用于开发与测试；生产用迁移。
 
 ## 依赖方向
 
-依赖 `Persistence.Abstractions` 与 `Microsoft.EntityFrameworkCore`。数据库驱动包（Sqlite、Npgsql、SqlServer）由应用引用。
+依赖 `Persistence.Abstractions`、`MultiTenancy.Abstractions`（分片绑定，能力可选）与 `Microsoft.EntityFrameworkCore`。数据库驱动包（Sqlite、Npgsql、SqlServer）由应用引用。
 
 ## 状态
 

@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "Der Datenshard des Mandanten '{tenantId}' konnte nicht ermittelt werden: {reason}",
   "multitenancy.store.capacity_exceeded": "Der In-Memory-Mandantenspeicher hat seine Kapazität von {capacity} erreicht.",
   "multitenancy.tenant.disabled": "Der Mandant '{tenantId}' ist deaktiviert.",
   "multitenancy.tenant.invalid_id": "Die Mandanten-ID '{tenantId}' ist ungültig.",

@@ -14,7 +14,7 @@ public static class MultiTenancyCapabilities
     /// <summary>租户上下文：解析、校验与存储。</summary>
     public const string Context = "multitenancy.context";
 
-    /// <summary>租户分片（预留）。</summary>
+    /// <summary>租户分片：按租户选择数据连接。</summary>
     public const string Sharding = "multitenancy.sharding";
 
     /// <summary>当前接口版本。</summary>

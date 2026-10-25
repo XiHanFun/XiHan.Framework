@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "O fragmento de dados do locatário '{tenantId}' não pôde ser resolvido: {reason}",
   "multitenancy.store.capacity_exceeded": "O armazenamento de locatários em memória atingiu sua capacidade de {capacity}.",
   "multitenancy.tenant.disabled": "O locatário '{tenantId}' está desativado.",
   "multitenancy.tenant.invalid_id": "O identificador de locatário '{tenantId}' não é válido.",

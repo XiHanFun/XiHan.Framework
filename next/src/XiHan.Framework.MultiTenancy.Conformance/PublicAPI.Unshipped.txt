@@ -1,10 +1,18 @@
 #nullable enable
+XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance
+XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_IsStable_AcrossInvalidate() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_ReturnsNone_ForSharedAndUnknownTenants() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_ReturnsShard_ForShardedTenant() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.TenantShardResolverConformance() -> void
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_IsCaseSensitive() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_PreservesDisabledFlag_AndMissingDisplayName() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_ReturnsSeededTenant_AndNoneForMissing() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.List_ReturnsAllTenants() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.TenantStoreConformance() -> void
+abstract XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.CreateResolverAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver!>
 abstract XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.CreateStoreAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore!>
+static XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Sharded.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
+static XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Shared.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
 static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Acme.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
 static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Dormant.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!

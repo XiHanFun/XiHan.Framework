@@ -1,4 +1,5 @@
 {
+  "multitenancy.shard.unavailable": "テナント '{tenantId}' のデータ シャードを解決できませんでした: {reason}",
   "multitenancy.store.capacity_exceeded": "インメモリテナントストアは容量上限 {capacity} に達しました。",
   "multitenancy.tenant.disabled": "テナント '{tenantId}' は無効化されています。",
   "multitenancy.tenant.invalid_id": "テナント ID '{tenantId}' が不正です。",

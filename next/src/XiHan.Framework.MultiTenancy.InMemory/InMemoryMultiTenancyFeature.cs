@@ -8,6 +8,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Resolution;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -30,7 +31,11 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         Stability = Stability.Preview,
         Kind = ManifestKind.Provider,
         Role = ManifestRole.Default,
-        Provides = [new CapabilityDeclaration(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version)],
+        Provides =
+        [
+            new CapabilityDeclaration(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version),
+            new CapabilityDeclaration(MultiTenancyCapabilities.Sharding, MultiTenancyCapabilities.Version),
+        ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         Contributes = new Contributions
         {
@@ -55,5 +60,10 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
         context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
         context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);
+        // 分片能力被选中时，从租户属性推出分片；应用自己的分片 Provider 顶替本包时这里不注册
+        if (context.Node.IsSelectedFor(MultiTenancyCapabilities.Sharding))
+        {
+            context.Services.TryAddSingleton<ITenantShardResolver, TenantStoreShardResolver>();
+        }
     }
 }

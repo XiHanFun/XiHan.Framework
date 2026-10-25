@@ -32,6 +32,9 @@ public static class MultiTenancyMessages
     /// <summary>租户存储容量已满。参数：<c>capacity</c>。</summary>
     public const string CapacityExceeded = "multitenancy.store.capacity_exceeded";
 
+    /// <summary>租户分片无法解析。参数：<c>tenantId</c>、<c>reason</c>。</summary>
+    public const string ShardUnavailable = "multitenancy.shard.unavailable";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>
