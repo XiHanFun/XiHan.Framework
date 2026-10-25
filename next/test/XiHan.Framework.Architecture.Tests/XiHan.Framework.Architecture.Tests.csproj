@@ -61,6 +61,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Conformance/XiHan.Framework.Workflow.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.AI.OpenAI/XiHan.Framework.AI.OpenAI.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.AI.VectorData/XiHan.Framework.AI.VectorData.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.AI.Conformance/XiHan.Framework.AI.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.Conformance/XiHan.Framework.Plugins.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />

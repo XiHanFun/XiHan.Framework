@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.AI.OpenAI</PackageId>
+    <RootNamespace>XiHan.Framework.AI.OpenAI</RootNamespace>
+    <Description>XiHan Framework AI 的 OpenAI 兼容 Provider：按配置创建聊天客户端与嵌入生成器，工具调用在客户端循环里自动执行，基于 Microsoft.Extensions.AI.OpenAI。</Description>
+    <PackageTags>xihan;framework;ai;openai;chat;embedding</PackageTags>
+    <!-- OpenAI SDK 未声明 AOT 兼容；Native AOT 场景另行验证 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.Auditing.InMemory;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.FileSystem;
@@ -34,6 +35,7 @@ public static class FullProfile
             .UseFeature<InMemorySchedulingFeature>()
             .UseFeature<InMemoryAuditingFeature>()
             .UseFeature<InMemoryWorkflowFeature>()
+            .UseFeature<AIToolsFeature>()
             .UseFeature<OpenTelemetryObservabilityFeature>()
             .UseFeature<HttpProtocolFeature>()
             .UseFeature<GrpcProtocolFeature>()
