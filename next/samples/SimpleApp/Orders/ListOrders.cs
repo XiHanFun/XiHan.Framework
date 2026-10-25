@@ -6,7 +6,7 @@ using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 列出当前租户订单的操作；多租户过滤由持久化子系统按上下文里的租户自动施加。HTTP 上是 <c>GET /orders</c>。

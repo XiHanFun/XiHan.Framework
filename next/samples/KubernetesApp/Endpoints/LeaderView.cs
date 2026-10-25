@@ -1,7 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-namespace KubernetesApp;
+namespace KubernetesApp.Endpoints;
 
 /// <summary>
 /// 领导选举状态。

@@ -4,7 +4,7 @@
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
-namespace SimpleApp;
+namespace SimpleApp.Greetings;
 
 /// <summary>
 /// 计数中间件：每次调用经过 Observe 阶段时把计数加一，然后放行。

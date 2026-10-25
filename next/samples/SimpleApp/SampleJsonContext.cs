@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Serialization;
+using SimpleApp.Greetings;
+using SimpleApp.Orders;
 
 namespace SimpleApp;
 

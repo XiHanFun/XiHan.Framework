@@ -81,9 +81,9 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
-        foreach (var project in Workspace.SourceProjects.Concat(Workspace.TestProjects))
+        foreach (var project in Workspace.AllProjects)
         {
-            foreach (var file in Workspace.SourceFiles(project.Directory))
+            foreach (var file in Workspace.SourceFiles(project.Directory).Where(static f => !f.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase)))
             {
                 // 目录即子命名空间：包根目录的文件在包命名空间，一级子目录的文件在同名子命名空间，不允许更深的目录。
                 var relative = Path.GetRelativePath(project.Directory, file).Replace('\\', '/');
@@ -119,9 +119,9 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
-        foreach (var project in Workspace.SourceProjects.Concat(Workspace.TestProjects))
+        foreach (var project in Workspace.AllProjects)
         {
-            foreach (var file in Workspace.SourceFiles(project.Directory))
+            foreach (var file in Workspace.SourceFiles(project.Directory).Where(static f => !f.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase)))
             {
                 foreach (Match match in TopLevelNamespaceDeclaration().Matches(File.ReadAllText(file)))
                 {

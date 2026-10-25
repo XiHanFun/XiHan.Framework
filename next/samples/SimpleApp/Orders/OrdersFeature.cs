@@ -11,7 +11,7 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
 
-namespace SimpleApp;
+namespace SimpleApp.Orders;
 
 /// <summary>
 /// 订单能力包：按能力 ID 声明依赖，登记实体、权限与消息订阅。换 Provider 不改这里。

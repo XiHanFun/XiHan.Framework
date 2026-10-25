@@ -3,6 +3,8 @@
 
 using KubernetesApp;
 using Microsoft.Extensions.Options;
+using KubernetesApp.Endpoints;
+using KubernetesApp.Heartbeat;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Profiles.Full;
