@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Caching.Hybrid</PackageId>
+    <RootNamespace>XiHan.Framework.Caching.Hybrid</RootNamespace>
+    <Description>XiHan Framework 缓存的两级 Provider：进程内对象缓存（有界 LRU）在前、被选中的共享缓存在后，读穿透回填、写与删先远后近，L1 存活时间有上限。</Description>
+    <PackageTags>xihan;framework;caching;hybrid;two-tier</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
