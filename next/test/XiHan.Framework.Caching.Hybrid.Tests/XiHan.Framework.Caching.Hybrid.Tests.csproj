@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Caching.Hybrid.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Hybrid/XiHan.Framework.Caching.Hybrid.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+</Project>
