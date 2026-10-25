@@ -27,6 +27,11 @@ public enum Expose
     /// <summary>命令行（<c>Hosting.CommandLine</c>）。</summary>
     CommandLine = 8,
 
+    /// <summary>
+    /// 成为 <c>ai.tools@1</c> 目录里的模型工具（RFC-0022）。
+    /// </summary>
+    Ai = 16,
+
     /// <summary>全部协议。</summary>
-    All = Http | Grpc | Mcp | CommandLine,
+    All = Http | Grpc | Mcp | CommandLine | Ai,
 }

@@ -100,7 +100,8 @@ public sealed class OperationGenerator : IIncrementalGenerator
         }
 
         var stability = 0;
-        var expose = 15;
+        // Expose.All：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）
+        var expose = 31;
         string? policy = null;
         string? permission = null;
         foreach (var argument in attribute.NamedArguments)

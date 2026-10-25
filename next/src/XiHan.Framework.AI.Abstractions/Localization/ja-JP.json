@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "要求はガードレール '{guardrail}' によりブロックされました: {reason}",
+  "ai.guardrail.failed": "ガードレール '{guardrail}' の検査に失敗しました: {reason}",
+  "ai.guardrail.injection": "メッセージはプロンプト インジェクションの疑いがあります。",
+  "ai.guardrail.keyword": "メッセージに禁止キーワード '{keyword}' が含まれています。",
+  "ai.knowledge.capacity": "ナレッジ コレクション '{collection}' は満杯です (上限 {limit})。",
+  "ai.knowledge.dimensions": "埋め込みは {actual} 次元ですが、ナレッジ ストアは {expected} 次元で構成されています。",
+  "ai.knowledge.unavailable": "ナレッジ ストアは利用できません: {reason}",
+  "ai.model.timeout": "AI プロバイダー '{provider}' の呼び出しがタイムアウトしました。",
+  "ai.model.unavailable": "AI プロバイダー '{provider}' は利用できません: {reason}",
+  "ai.prompt.argument_missing": "プロンプト テンプレート '{name}' には引数 '{argument}' が必要です。",
+  "ai.prompt.not_found": "プロンプト テンプレート '{name}' は存在しません。",
+  "ai.provider.invalid": "AI プロバイダー '{name}' の構成が不正です: {reason}",
+  "ai.provider.kind_unknown": "AI プロバイダー '{name}' の種類 '{kind}' にはファクトリが登録されていません。",
+  "ai.provider.not_found": "AI プロバイダー '{name}' は構成されていません。",
+  "ai.request.invalid": "AI 要求が不正です: {reason}",
+  "ai.tool.argument_invalid": "AI ツール '{name}' の引数 '{argument}' をシリアライズできません。",
+  "ai.tool.duplicate": "AI ツール名 '{name}' が '{first}' と '{second}' の両方で使われています。",
+  "ai.tool.not_found": "AI ツール '{name}' は存在しません。"
+}

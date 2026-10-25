@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "요청이 가드레일 '{guardrail}'에 의해 차단되었습니다: {reason}",
+  "ai.guardrail.failed": "가드레일 '{guardrail}' 검사에 실패했습니다: {reason}",
+  "ai.guardrail.injection": "메시지가 프롬프트 주입으로 의심됩니다.",
+  "ai.guardrail.keyword": "메시지에 금지된 키워드 '{keyword}'이(가) 포함되어 있습니다.",
+  "ai.knowledge.capacity": "지식 컬렉션 '{collection}'이(가) 가득 찼습니다(한도 {limit}).",
+  "ai.knowledge.dimensions": "임베딩은 {actual}차원이지만 지식 저장소는 {expected}차원으로 구성되어 있습니다.",
+  "ai.knowledge.unavailable": "지식 저장소를 사용할 수 없습니다: {reason}",
+  "ai.model.timeout": "AI 공급자 '{provider}' 호출이 시간 초과되었습니다.",
+  "ai.model.unavailable": "AI 공급자 '{provider}'을(를) 사용할 수 없습니다: {reason}",
+  "ai.prompt.argument_missing": "프롬프트 템플릿 '{name}'에 인수 '{argument}'이(가) 필요합니다.",
+  "ai.prompt.not_found": "프롬프트 템플릿 '{name}'이(가) 없습니다.",
+  "ai.provider.invalid": "AI 공급자 '{name}'의 구성이 잘못되었습니다: {reason}",
+  "ai.provider.kind_unknown": "AI 공급자 '{name}'의 종류 '{kind}'에 등록된 팩터리가 없습니다.",
+  "ai.provider.not_found": "AI 공급자 '{name}'이(가) 구성되지 않았습니다.",
+  "ai.request.invalid": "AI 요청이 잘못되었습니다: {reason}",
+  "ai.tool.argument_invalid": "AI 도구 '{name}'의 인수 '{argument}'을(를) 직렬화할 수 없습니다.",
+  "ai.tool.duplicate": "AI 도구 이름 '{name}'이(가) '{first}'과(와) '{second}'에 모두 사용되었습니다.",
+  "ai.tool.not_found": "AI 도구 '{name}'이(가) 없습니다."
+}

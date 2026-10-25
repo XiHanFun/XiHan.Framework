@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "La solicitud fue bloqueada por la barrera '{guardrail}': {reason}",
+  "ai.guardrail.failed": "La barrera '{guardrail}' falló: {reason}",
+  "ai.guardrail.injection": "El mensaje parece una inyección de prompt.",
+  "ai.guardrail.keyword": "El mensaje contiene la palabra bloqueada '{keyword}'.",
+  "ai.knowledge.capacity": "La colección de conocimiento '{collection}' está llena (límite {limit}).",
+  "ai.knowledge.dimensions": "La incrustación tiene {actual} dimensiones, pero el almacén de conocimiento está configurado para {expected}.",
+  "ai.knowledge.unavailable": "El almacén de conocimiento no está disponible: {reason}",
+  "ai.model.timeout": "La llamada al proveedor de IA '{provider}' agotó el tiempo de espera.",
+  "ai.model.unavailable": "El proveedor de IA '{provider}' no está disponible: {reason}",
+  "ai.prompt.argument_missing": "La plantilla de prompt '{name}' necesita el argumento '{argument}'.",
+  "ai.prompt.not_found": "La plantilla de prompt '{name}' no existe.",
+  "ai.provider.invalid": "El proveedor de IA '{name}' está mal configurado: {reason}",
+  "ai.provider.kind_unknown": "El proveedor de IA '{name}' es del tipo '{kind}', que no tiene fábrica registrada.",
+  "ai.provider.not_found": "El proveedor de IA '{name}' no está configurado.",
+  "ai.request.invalid": "La solicitud de IA no es válida: {reason}",
+  "ai.tool.argument_invalid": "El argumento '{argument}' de la herramienta de IA '{name}' no se puede serializar.",
+  "ai.tool.duplicate": "El nombre de herramienta de IA '{name}' se usa tanto en '{first}' como en '{second}'.",
+  "ai.tool.not_found": "La herramienta de IA '{name}' no existe."
+}

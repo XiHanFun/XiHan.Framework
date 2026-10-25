@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "請求被護欄 '{guardrail}' 攔截：{reason}",
+  "ai.guardrail.failed": "護欄 '{guardrail}' 檢查失敗：{reason}",
+  "ai.guardrail.injection": "訊息疑似提示注入。",
+  "ai.guardrail.keyword": "訊息包含被禁止的關鍵詞 '{keyword}'。",
+  "ai.knowledge.capacity": "知識庫集合 '{collection}' 已滿（上限 {limit}）。",
+  "ai.knowledge.dimensions": "嵌入是 {actual} 維，而知識庫設定為 {expected} 維。",
+  "ai.knowledge.unavailable": "知識庫儲存無法使用：{reason}",
+  "ai.model.timeout": "呼叫 AI Provider '{provider}' 逾時。",
+  "ai.model.unavailable": "AI Provider '{provider}' 無法使用：{reason}",
+  "ai.prompt.argument_missing": "提示詞範本 '{name}' 缺少參數 '{argument}'。",
+  "ai.prompt.not_found": "提示詞範本 '{name}' 不存在。",
+  "ai.provider.invalid": "AI Provider '{name}' 設定不合法：{reason}",
+  "ai.provider.kind_unknown": "AI Provider '{name}' 的種類 '{kind}' 沒有登記工廠。",
+  "ai.provider.not_found": "AI Provider '{name}' 未設定。",
+  "ai.request.invalid": "AI 請求不合法：{reason}",
+  "ai.tool.argument_invalid": "AI 工具 '{name}' 的參數 '{argument}' 無法序列化。",
+  "ai.tool.duplicate": "AI 工具名稱 '{name}' 同時用於 '{first}' 與 '{second}'。",
+  "ai.tool.not_found": "AI 工具 '{name}' 不存在。"
+}

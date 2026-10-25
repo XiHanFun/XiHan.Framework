@@ -18,6 +18,7 @@
     <Project Path="src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
   </Folder>
   <Folder Name="/3.Providers/">
     <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
@@ -77,6 +78,7 @@
     <Project Path="src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Conformance/XiHan.Framework.Workflow.Conformance.csproj" />
+    <Project Path="src/XiHan.Framework.AI.Conformance/XiHan.Framework.AI.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Plugins.Conformance/XiHan.Framework.Plugins.Conformance.csproj" />
     <Project Path="src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
     <Project Path="src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
@@ -126,6 +128,7 @@
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.InMemory.Tests/XiHan.Framework.Workflow.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.AI.Abstractions.Tests/XiHan.Framework.AI.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Database.Tests/XiHan.Framework.Localization.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Observability.OpenTelemetry.Tests/XiHan.Framework.Observability.OpenTelemetry.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Profiles.Full.Tests/XiHan.Framework.Profiles.Full.Tests.csproj" />

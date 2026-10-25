@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "Запрос заблокирован ограничителем '{guardrail}': {reason}",
+  "ai.guardrail.failed": "Ограничитель '{guardrail}' завершился ошибкой: {reason}",
+  "ai.guardrail.injection": "Сообщение похоже на инъекцию подсказки.",
+  "ai.guardrail.keyword": "Сообщение содержит запрещённое ключевое слово '{keyword}'.",
+  "ai.knowledge.capacity": "Коллекция знаний '{collection}' заполнена (лимит {limit}).",
+  "ai.knowledge.dimensions": "Размерность эмбеддинга {actual}, а хранилище знаний настроено на {expected}.",
+  "ai.knowledge.unavailable": "Хранилище знаний недоступно: {reason}",
+  "ai.model.timeout": "Время ожидания вызова поставщика ИИ '{provider}' истекло.",
+  "ai.model.unavailable": "Поставщик ИИ '{provider}' недоступен: {reason}",
+  "ai.prompt.argument_missing": "Шаблону подсказки '{name}' нужен аргумент '{argument}'.",
+  "ai.prompt.not_found": "Шаблон подсказки '{name}' не существует.",
+  "ai.provider.invalid": "Поставщик ИИ '{name}' настроен неверно: {reason}",
+  "ai.provider.kind_unknown": "Поставщик ИИ '{name}' имеет вид '{kind}', для которого не зарегистрирована фабрика.",
+  "ai.provider.not_found": "Поставщик ИИ '{name}' не настроен.",
+  "ai.request.invalid": "Запрос к ИИ недопустим: {reason}",
+  "ai.tool.argument_invalid": "Аргумент '{argument}' инструмента ИИ '{name}' не удаётся сериализовать.",
+  "ai.tool.duplicate": "Имя инструмента ИИ '{name}' используется и в '{first}', и в '{second}'.",
+  "ai.tool.not_found": "Инструмент ИИ '{name}' не существует."
+}

@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "La requête a été bloquée par le garde-fou '{guardrail}' : {reason}",
+  "ai.guardrail.failed": "Le garde-fou '{guardrail}' a échoué : {reason}",
+  "ai.guardrail.injection": "Le message ressemble à une injection de prompt.",
+  "ai.guardrail.keyword": "Le message contient le mot-clé interdit '{keyword}'.",
+  "ai.knowledge.capacity": "La collection de connaissances '{collection}' est pleine (limite {limit}).",
+  "ai.knowledge.dimensions": "L'incorporation a {actual} dimensions, mais le magasin de connaissances est configuré pour {expected}.",
+  "ai.knowledge.unavailable": "Le magasin de connaissances est indisponible : {reason}",
+  "ai.model.timeout": "L'appel au fournisseur d'IA '{provider}' a expiré.",
+  "ai.model.unavailable": "Le fournisseur d'IA '{provider}' est indisponible : {reason}",
+  "ai.prompt.argument_missing": "Le modèle de prompt '{name}' nécessite l'argument '{argument}'.",
+  "ai.prompt.not_found": "Le modèle de prompt '{name}' n'existe pas.",
+  "ai.provider.invalid": "Le fournisseur d'IA '{name}' est mal configuré : {reason}",
+  "ai.provider.kind_unknown": "Le fournisseur d'IA '{name}' est de type '{kind}', qui n'a aucune fabrique enregistrée.",
+  "ai.provider.not_found": "Le fournisseur d'IA '{name}' n'est pas configuré.",
+  "ai.request.invalid": "La requête d'IA est invalide : {reason}",
+  "ai.tool.argument_invalid": "L'argument '{argument}' de l'outil d'IA '{name}' ne peut pas être sérialisé.",
+  "ai.tool.duplicate": "Le nom d'outil d'IA '{name}' est utilisé à la fois par '{first}' et '{second}'.",
+  "ai.tool.not_found": "L'outil d'IA '{name}' n'existe pas."
+}

@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "请求被护栏 '{guardrail}' 拦截：{reason}",
+  "ai.guardrail.failed": "护栏 '{guardrail}' 检查失败：{reason}",
+  "ai.guardrail.injection": "消息疑似提示注入。",
+  "ai.guardrail.keyword": "消息包含被禁止的关键词 '{keyword}'。",
+  "ai.knowledge.capacity": "知识库集合 '{collection}' 已满（上限 {limit}）。",
+  "ai.knowledge.dimensions": "嵌入是 {actual} 维，而知识库配置为 {expected} 维。",
+  "ai.knowledge.unavailable": "知识库存储不可用：{reason}",
+  "ai.model.timeout": "调用 AI Provider '{provider}' 超时。",
+  "ai.model.unavailable": "AI Provider '{provider}' 不可用：{reason}",
+  "ai.prompt.argument_missing": "提示词模板 '{name}' 缺少参数 '{argument}'。",
+  "ai.prompt.not_found": "提示词模板 '{name}' 不存在。",
+  "ai.provider.invalid": "AI Provider '{name}' 配置不合法：{reason}",
+  "ai.provider.kind_unknown": "AI Provider '{name}' 的种类 '{kind}' 没有登记工厂。",
+  "ai.provider.not_found": "AI Provider '{name}' 未配置。",
+  "ai.request.invalid": "AI 请求不合法：{reason}",
+  "ai.tool.argument_invalid": "AI 工具 '{name}' 的参数 '{argument}' 无法序列化。",
+  "ai.tool.duplicate": "AI 工具名 '{name}' 同时用于 '{first}' 与 '{second}'。",
+  "ai.tool.not_found": "AI 工具 '{name}' 不存在。"
+}

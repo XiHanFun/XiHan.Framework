@@ -132,6 +132,7 @@ internal static class HandshakeValidator
                 "grpc" => Expose.Grpc,
                 "mcp" => Expose.Mcp,
                 "commandline" => Expose.CommandLine,
+                "ai" => Expose.Ai,
                 _ => Expose.None,
             };
         }

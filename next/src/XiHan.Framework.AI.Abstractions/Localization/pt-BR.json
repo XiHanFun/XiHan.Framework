@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "A solicitação foi bloqueada pela proteção '{guardrail}': {reason}",
+  "ai.guardrail.failed": "A proteção '{guardrail}' falhou: {reason}",
+  "ai.guardrail.injection": "A mensagem parece uma injeção de prompt.",
+  "ai.guardrail.keyword": "A mensagem contém a palavra bloqueada '{keyword}'.",
+  "ai.knowledge.capacity": "A coleção de conhecimento '{collection}' está cheia (limite {limit}).",
+  "ai.knowledge.dimensions": "O embedding tem {actual} dimensões, mas o repositório de conhecimento está configurado para {expected}.",
+  "ai.knowledge.unavailable": "O repositório de conhecimento está indisponível: {reason}",
+  "ai.model.timeout": "A chamada ao provedor de IA '{provider}' expirou.",
+  "ai.model.unavailable": "O provedor de IA '{provider}' está indisponível: {reason}",
+  "ai.prompt.argument_missing": "O modelo de prompt '{name}' precisa do argumento '{argument}'.",
+  "ai.prompt.not_found": "O modelo de prompt '{name}' não existe.",
+  "ai.provider.invalid": "O provedor de IA '{name}' está configurado incorretamente: {reason}",
+  "ai.provider.kind_unknown": "O provedor de IA '{name}' é do tipo '{kind}', que não tem fábrica registrada.",
+  "ai.provider.not_found": "O provedor de IA '{name}' não está configurado.",
+  "ai.request.invalid": "A solicitação de IA é inválida: {reason}",
+  "ai.tool.argument_invalid": "O argumento '{argument}' da ferramenta de IA '{name}' não pode ser serializado.",
+  "ai.tool.duplicate": "O nome da ferramenta de IA '{name}' é usado tanto por '{first}' quanto por '{second}'.",
+  "ai.tool.not_found": "A ferramenta de IA '{name}' não existe."
+}

@@ -397,7 +397,8 @@ XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
 XiHan.Framework.Kernel.KernelMessages
 XiHan.Framework.Kernel.Operations.Expose
-XiHan.Framework.Kernel.Operations.Expose.All = XiHan.Framework.Kernel.Operations.Expose.Http | XiHan.Framework.Kernel.Operations.Expose.Grpc | XiHan.Framework.Kernel.Operations.Expose.Mcp | XiHan.Framework.Kernel.Operations.Expose.CommandLine -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.Ai = 16 -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.Expose.All = XiHan.Framework.Kernel.Operations.Expose.Http | XiHan.Framework.Kernel.Operations.Expose.Grpc | XiHan.Framework.Kernel.Operations.Expose.Mcp | XiHan.Framework.Kernel.Operations.Expose.CommandLine | XiHan.Framework.Kernel.Operations.Expose.Ai -> XiHan.Framework.Kernel.Operations.Expose
 XiHan.Framework.Kernel.Operations.Expose.CommandLine = 8 -> XiHan.Framework.Kernel.Operations.Expose
 XiHan.Framework.Kernel.Operations.Expose.Grpc = 2 -> XiHan.Framework.Kernel.Operations.Expose
 XiHan.Framework.Kernel.Operations.Expose.Http = 1 -> XiHan.Framework.Kernel.Operations.Expose
