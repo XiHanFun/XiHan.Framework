@@ -37,7 +37,7 @@ public static class OperationEndpointRouteBuilderExtensions
                 continue;
             }
 
-            var route = options.RouteFor(descriptor.Contract);
+            var route = options.RouteFor(descriptor);
             endpoints
                 .MapMethods(route.Template, [route.Method], httpContext => HandleAsync(httpContext, descriptor))
                 .WithMetadata(descriptor)

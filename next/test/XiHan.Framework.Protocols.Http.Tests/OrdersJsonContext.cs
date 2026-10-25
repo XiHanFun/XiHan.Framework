@@ -10,5 +10,6 @@ namespace XiHan.Framework.Protocols.Http.Tests;
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
 [JsonSerializable(typeof(OrderRequest))]
+[JsonSerializable(typeof(OrderReportRequest))]
 [JsonSerializable(typeof(OrderReply))]
 internal sealed partial class OrdersJsonContext : JsonSerializerContext;

@@ -12,7 +12,7 @@ app.MapXiHanOpenApi();       // /openapi.json：OpenAPI 3.1，从登记表与 Op
 
 ## 规则
 
-- 路由推导：`create` → `POST /{resource}`，`get` → `GET /{resource}/{id}`，`list` → `GET /{resource}`，`update` → `PUT /{resource}/{id}`，`delete` → `DELETE /{resource}/{id}`，其他动词 → `POST /{resource}/{id}:{verb}`。显式覆盖：`XiHan:Protocols:Http:Routes:<操作 ID>` = `POST /orders:export`；前缀 `XiHan:Protocols:Http:RoutePrefix` = `/api`。
+- 路由推导：`create` → `POST /{resource}`，`get` → `GET /{resource}/{id}`，`list` → `GET /{resource}`，`update` → `PUT /{resource}/{id}`，`delete` → `DELETE /{resource}/{id}`，其他动词按请求是否声明 `id` 属性分实例级 `POST /{resource}/{id}:{verb}` 与集合级 `POST /{resource}:{verb}`（看请求的序列化元数据，不用反射；没有类型化元数据的插件代理看请求 Schema 的 `properties`）。显式覆盖：`XiHan:Protocols:Http:Routes:<操作 ID>` = `POST /orders:export`；前缀 `XiHan:Protocols:Http:RoutePrefix` = `/api`。
 - 绑定：路由值（最优先）、JSON 请求体（POST/PUT/PATCH，必须是对象）、查询串（多值成数组）合并成一个 JSON 对象交给 `IOperationInvoker`；路由值与查询串是字符串，请求类型要从中绑定数字需启用 `NumberHandling = AllowReadingFromString`；属性名按请求类型序列化上下文的命名策略匹配，建议 `PropertyNamingPolicy = CamelCase` 加 `PropertyNameCaseInsensitive = true`（示例的 `SampleJsonContext`）。
 - 响应：成功 `create` 为 201、其余 200，正文是响应类型的 JSON；失败由 `UseXiHan()` 写成 RFC 9457 Problem Details（`detail` 按 `Accept-Language` 本地化）。
 - 授权：Authorize 阶段按契约的权限或策略判定（描述经端点元数据进入上下文）；`Stability.Internal` 的操作不发布；`Expose` 不含 `Http` 的操作不发布。

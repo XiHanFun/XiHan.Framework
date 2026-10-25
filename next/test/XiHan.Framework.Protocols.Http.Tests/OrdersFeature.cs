@@ -10,14 +10,14 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// 登记七个操作 ID 的测试特性：五个标准动词与一个自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部。
+/// 登记测试操作的特性：五个标准动词、一个实例级与一个集合级自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部。
 /// </summary>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>
     /// 暴露给 HTTP 且非内部的操作 ID。
     /// </summary>
-    public static readonly string[] HttpOperations = ["orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.update"];
+    public static readonly string[] HttpOperations = ["orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -42,12 +42,14 @@ internal sealed class OrdersFeature : IFeature
     /// <inheritdoc />
     public void Configure(FeatureContext context)
     {
-        foreach (var id in HttpOperations)
+        foreach (var id in HttpOperations.Where(static id => id != "orders.report"))
         {
             // get 与 create 带 Schema，其余不带：OpenAPI 两种情况都要能发布
             Add(context, new OperationContract(id, expose: Expose.Http), id is "orders.get" or "orders.create" ? OrderSchema : null);
         }
 
+        // 请求不含 id 的自定义动词：按约定走集合级路由 POST /orders:report
+        context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract("orders.report", expose: Expose.Http), OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
         Add(context, new OperationContract("orders.secret", expose: Expose.Mcp));
         Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
     }
