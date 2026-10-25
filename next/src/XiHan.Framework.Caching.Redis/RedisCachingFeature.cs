@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using StackExchange.Redis;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Distributed;
 using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Serialization;
@@ -75,6 +76,7 @@ public sealed class RedisCachingFeature : IHostedFeature
 
         context.Services.TryAddSingleton<ISharedCache>(static sp => new SerializingCache(sp.GetRequiredService<RedisCacheStore>(), sp.GetRequiredService<ICacheSerializer>()));
         context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<RedisCacheStore>()));
+        context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<RedisCacheStore>());
         context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);
     }
 

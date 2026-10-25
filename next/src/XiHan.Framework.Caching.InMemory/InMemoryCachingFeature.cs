@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Distributed;
 using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Kernel;
@@ -70,6 +71,7 @@ public sealed class InMemoryCachingFeature : IFeature
             context.Services.AddSingleton(IdempotencyOptions.FromConfiguration(context.Configuration));
             context.Services.TryAddSingleton<ISharedCache>(static sp => sp.GetRequiredService<InMemoryObjectCache>());
             context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<InMemoryCacheStore>()));
+            context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<InMemoryCacheStore>());
             context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);
         }
     }

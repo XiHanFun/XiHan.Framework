@@ -10,6 +10,7 @@
 | `CacheKey`、`CacheEntryOptions`、`CacheEntry` | 键（非空、无空白与控制字符、≤ 512）、过期（绝对或滑动，二选一）与批量写入的一项 |
 | `IDistributedLock`、`StoreDistributedLock`、`LockHandle` | 建立在"不存在才写 + 比较删"之上的租约锁 |
 | `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，处理中返回冲突，完成后回放结果 |
+| `CacheStoreDistributedCache`、`AddXiHanDistributedCache` | .NET `IDistributedCache` 架在 `ICacheStore` 上：键须满足 `CacheKey` 文法，绝对过期换算成 TTL（与滑动同时给时绝对优先），`Refresh` 是一次读取，同步成员在边界阻塞；提供 `caching.distributed` 的 Provider 被选中时登记，应用自己的登记优先 |
 
 ```csharp
 var cache = context.Services.GetRequiredService<ISharedCache>();
@@ -20,7 +21,7 @@ var profile = await cache.GetOrCreateAsync(new CacheKey($"profile:{id}"), ct => 
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel`。被 `Caching.InMemory`、`Caching.Redis` 引用。
+依赖 `XiHan.Framework.Kernel` 与 `Microsoft.Extensions.Caching.Abstractions`。被 `Caching.InMemory`、`Caching.Redis`、`Caching.Remote` 引用。
 
 ## 状态
 

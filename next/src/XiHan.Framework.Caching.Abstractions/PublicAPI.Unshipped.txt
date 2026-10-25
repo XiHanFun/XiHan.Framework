@@ -22,6 +22,17 @@ XiHan.Framework.Caching.Abstractions.Caches.SerializingCache.Store.get -> XiHan.
 XiHan.Framework.Caching.Abstractions.CachingCapabilities
 XiHan.Framework.Caching.Abstractions.CachingErrors
 XiHan.Framework.Caching.Abstractions.CachingMessages
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.CacheStoreDistributedCache(XiHan.Framework.Caching.Abstractions.Stores.ICacheStore! store, System.TimeProvider! clock) -> void
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.Get(string! key) -> byte[]?
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.GetAsync(string! key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<byte[]?>!
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.Refresh(string! key) -> void
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.RefreshAsync(string! key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.Remove(string! key) -> void
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.RemoveAsync(string! key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.Set(string! key, byte[]! value, Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions! options) -> void
+XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.SetAsync(string! key, byte[]! value, Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions! options, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Abstractions.Distributed.DistributedCacheServiceCollectionExtensions
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware.IdempotencyMiddleware(XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions! options) -> void
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
@@ -129,6 +140,8 @@ override XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions.ToString(
 override XiHan.Framework.Caching.Abstractions.Stores.CacheKey.GetHashCode() -> int
 override XiHan.Framework.Caching.Abstractions.Stores.CacheKey.ToString() -> string!
 static XiHan.Framework.Caching.Abstractions.CachingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
+static XiHan.Framework.Caching.Abstractions.Distributed.CacheStoreDistributedCache.Translate(Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions! options, System.DateTimeOffset now) -> XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions!
+static XiHan.Framework.Caching.Abstractions.Distributed.DistributedCacheServiceCollectionExtensions.AddXiHanDistributedCache(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<System.IServiceProvider!, XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!>! store) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware.WasReplayed(XiHan.Framework.Primitives.InvocationContext! context) -> bool
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions!
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.operator !=(XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions? left, XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions? right) -> bool

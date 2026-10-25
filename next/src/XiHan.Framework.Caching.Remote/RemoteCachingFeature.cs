@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Distributed;
 using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Serialization;
@@ -61,6 +62,7 @@ public sealed class RemoteCachingFeature : IFeature
 
         context.Services.TryAddSingleton<ISharedCache>(static sp => new SerializingCache(sp.GetRequiredService<RemoteCacheStore>(), sp.GetRequiredService<ICacheSerializer>()));
         context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<RemoteCacheStore>()));
+        context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<RemoteCacheStore>());
         context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);
     }
 }
