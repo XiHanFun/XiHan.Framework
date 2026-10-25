@@ -58,6 +58,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Workflow.Conformance/XiHan.Framework.Workflow.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Plugins.Conformance/XiHan.Framework.Plugins.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />

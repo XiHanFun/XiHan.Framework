@@ -37,6 +37,7 @@ public sealed class FullProfileTests
         ["xihan.objectstorage.filesystem"] = ["objectstorage.blob"],
         ["xihan.scheduling.inmemory"] = ["scheduling.jobs", "scheduling.leader"],
         ["xihan.auditing.inmemory"] = ["auditing.trail"],
+        ["xihan.workflow.inmemory"] = ["workflow.execution"],
         ["xihan.observability.opentelemetry"] = ["observability.export"],
         ["xihan.protocols.http"] = ["protocols.http"],
         ["xihan.protocols.grpc"] = ["protocols.grpc"],

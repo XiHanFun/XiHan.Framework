@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Workflow.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Workflow.InMemory</RootNamespace>
+    <Description>XiHan Framework 内存工作流（默认实现）：有界内存的定义、实例与书签存储，进程内实例锁，单进程到期书签轮询。</Description>
+    <PackageTags>xihan;framework;workflow;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

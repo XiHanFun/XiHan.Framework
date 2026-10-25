@@ -12,6 +12,7 @@ using XiHan.Framework.Protocols.Grpc;
 using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Mcp;
 using XiHan.Framework.Scheduling.InMemory;
+using XiHan.Framework.Workflow.InMemory;
 
 namespace XiHan.Framework.Profiles.Full;
 
@@ -32,6 +33,7 @@ public static class FullProfile
             .UseFeature<FileSystemObjectStorageFeature>()
             .UseFeature<InMemorySchedulingFeature>()
             .UseFeature<InMemoryAuditingFeature>()
+            .UseFeature<InMemoryWorkflowFeature>()
             .UseFeature<OpenTelemetryObservabilityFeature>()
             .UseFeature<HttpProtocolFeature>()
             .UseFeature<GrpcProtocolFeature>()
