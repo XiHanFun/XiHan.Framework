@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "원격 구성 네임스페이스 '{namespace}'은(는) 유효한 {format} 문서가 아닙니다: {reason}",
   "configuration.namespace.not_found": "원격 구성 네임스페이스 '{namespace}'이(가) 존재하지 않습니다.",
   "configuration.remote.unavailable": "원격 구성 네임스페이스 '{namespace}'을(를) 사용할 수 없습니다: {reason}",
   "configuration.secret.denied": "비밀 '{name}'에 대한 액세스가 거부되었습니다.",

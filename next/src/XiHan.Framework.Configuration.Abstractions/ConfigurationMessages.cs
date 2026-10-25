@@ -32,6 +32,9 @@ public static class ConfigurationMessages
     /// <summary>密钥库不可达。参数：<c>reason</c>。</summary>
     public const string SecretsUnavailable = "configuration.secrets.unavailable";
 
+    /// <summary>远程配置文档不是声明的格式。参数：<c>namespace</c>、<c>format</c>、<c>reason</c>。</summary>
+    public const string DocumentInvalid = "configuration.document.invalid";
+
     /// <summary>
     /// 本包的消息目录。
     /// </summary>

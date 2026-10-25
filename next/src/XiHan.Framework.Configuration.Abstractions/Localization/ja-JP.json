@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "リモート構成の名前空間 '{namespace}' は有効な {format} ドキュメントではありません: {reason}",
   "configuration.namespace.not_found": "リモート構成の名前空間 '{namespace}' は存在しません。",
   "configuration.remote.unavailable": "リモート構成の名前空間 '{namespace}' は利用できません: {reason}",
   "configuration.secret.denied": "シークレット '{name}' へのアクセスは拒否されました。",

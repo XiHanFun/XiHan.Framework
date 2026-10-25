@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "Пространство имён удалённой конфигурации '{namespace}' не является корректным документом {format}: {reason}",
   "configuration.namespace.not_found": "Пространство имён удалённой конфигурации '{namespace}' не существует.",
   "configuration.remote.unavailable": "Пространство имён удалённой конфигурации '{namespace}' недоступно: {reason}",
   "configuration.secret.denied": "Доступ к секрету '{name}' запрещён.",

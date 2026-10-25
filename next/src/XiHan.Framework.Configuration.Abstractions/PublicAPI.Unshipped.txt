@@ -72,12 +72,14 @@ XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationSource.St
 const XiHan.Framework.Configuration.Abstractions.ConfigurationCapabilities.Remote = "configuration.remote" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationCapabilities.Secrets = "configuration.secrets" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationCapabilities.Version = 1 -> int
+const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.DocumentInvalid = "CONFIGURATION_VALIDATION_001" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.NamespaceNotFound = "CONFIGURATION_NOTFOUND_001" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.RemoteUnavailable = "CONFIGURATION_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.SecretDenied = "CONFIGURATION_DENIED_001" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.SecretNotFound = "CONFIGURATION_NOTFOUND_002" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationErrors.SecretsUnavailable = "CONFIGURATION_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationMessages.CatalogName = "configuration" -> string!
+const XiHan.Framework.Configuration.Abstractions.ConfigurationMessages.DocumentInvalid = "configuration.document.invalid" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationMessages.NamespaceNotFound = "configuration.namespace.not_found" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationMessages.RemoteUnavailable = "configuration.remote.unavailable" -> string!
 const XiHan.Framework.Configuration.Abstractions.ConfigurationMessages.SecretDenied = "configuration.secret.denied" -> string!

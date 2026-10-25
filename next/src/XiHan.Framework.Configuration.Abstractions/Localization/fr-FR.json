@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "L'espace de noms de configuration distante '{namespace}' n'est pas un document {format} valide : {reason}",
   "configuration.namespace.not_found": "L'espace de noms de configuration distante '{namespace}' n'existe pas.",
   "configuration.remote.unavailable": "L'espace de noms de configuration distante '{namespace}' est indisponible : {reason}",
   "configuration.secret.denied": "L'accès au secret '{name}' est refusé.",
