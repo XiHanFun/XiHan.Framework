@@ -1,0 +1,27 @@
+#nullable enable
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.ChunkIndex.get -> int
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.ChunkIndex.set -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.DocumentId.get -> string!
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.DocumentId.set -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Id.get -> string!
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Id.set -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.KnowledgeVectorRecord() -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Metadata.get -> string?
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Metadata.set -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Text.get -> string!
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Text.set -> void
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Vector.get -> System.ReadOnlyMemory<float>
+XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Vector.set -> void
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.VectorDataKnowledgeFeature() -> void
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.DeleteAsync(string! collection, System.Collections.Generic.IReadOnlyList<string!>! documentIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.SearchAsync(string! collection, System.ReadOnlyMemory<float> vector, int top, XiHan.Framework.AI.Abstractions.RetrievalFilter? filter, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.RetrievedChunk!>!>>
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.UpsertAsync(string! collection, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.KnowledgeRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.VectorDataKnowledgeStore(Microsoft.Extensions.VectorData.VectorStore! store, XiHan.Framework.AI.Abstractions.AIOptions! options) -> void
+static XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Definition(int dimensions) -> Microsoft.Extensions.VectorData.VectorStoreCollectionDefinition!
