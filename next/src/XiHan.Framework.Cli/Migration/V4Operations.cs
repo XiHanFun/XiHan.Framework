@@ -111,7 +111,8 @@ internal static partial class V4Operations
     private static string Join(string verb, List<string> rest) => rest.Count == 0 ? verb : verb + "-" + Kebab(rest);
 
     /// <summary>
-    /// 去掉首词之后第一次出现的资源词序列（<c>UpdateAccessPolicyStatus</c> 的 <c>access policy</c>）。
+    /// 去掉首词之后第一次出现的资源词序列（<c>UpdateAccessPolicyStatus</c> 的 <c>access policy</c>）；
+    /// 紧跟在单字母词后面的位置不算（<c>OAuth</c> 拆成 <c>o</c>、<c>auth</c>，<c>auth</c> 资源不能从中截走）。
     /// </summary>
     private static void RemoveResource(List<string> words, IReadOnlyList<string> resource)
     {
@@ -122,6 +123,12 @@ internal static partial class V4Operations
 
         for (var start = 1; start + resource.Count <= words.Count; start++)
         {
+            // 前一个词是首词之外的单字母词时，它来自缩写拆分（OAuth → o + auth），与当前词是一个整体
+            if (start > 1 && words[start - 1].Length == 1)
+            {
+                continue;
+            }
+
             var matches = true;
             for (var offset = 0; offset < resource.Count; offset++)
             {
