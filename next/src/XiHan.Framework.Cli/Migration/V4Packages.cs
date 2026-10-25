@@ -85,6 +85,7 @@ internal static class V4Packages
         "Scheduling.Abstractions", "Scheduling.InMemory", "Scheduling.Kubernetes", "Scheduling.Conformance",
         "Configuration.Abstractions", "Configuration.Conformance",
         "Auditing.Abstractions", "Auditing.InMemory", "Auditing.Conformance",
+        "Workflow.Abstractions", "Workflow.InMemory", "Workflow.Conformance",
         "Observability.OpenTelemetry",
         "Hosting.AspNetCore", "Hosting.CommandLine",
         "Protocols.Http", "Protocols.Grpc", "Protocols.Mcp", "Protocols.CloudEvents",
