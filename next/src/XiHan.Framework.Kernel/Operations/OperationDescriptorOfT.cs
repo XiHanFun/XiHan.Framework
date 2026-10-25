@@ -49,6 +49,12 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     }
 
     /// <inheritdoc />
+    public override JsonTypeInfo RequestInfo => _requestInfo;
+
+    /// <inheritdoc />
+    public override JsonTypeInfo ResponseInfo => _responseInfo;
+
+    /// <inheritdoc />
     public override Result<object> DecodeRequest(ReadOnlyMemory<byte> payload)
     {
         try

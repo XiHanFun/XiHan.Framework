@@ -93,6 +93,8 @@ override XiHan.Framework.Kernel.Operations.OperationDescriptor.ToString() -> str
 override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.DecodeRequest(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
 override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.EncodeResponse(object! response) -> System.ReadOnlyMemory<byte>
 override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext! context, object! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<object!>>
+override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.RequestInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo!
+override XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo!
 override XiHan.Framework.Kernel.Operations.OperationRequest.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Operations.OperationRequest.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationRequest.ToString() -> string!
@@ -207,6 +209,8 @@ static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetSecurity(thi
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetTenant(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.TenantContext? tenant) -> void
 static XiHan.Framework.Kernel.Security.TenantContext.operator !=(XiHan.Framework.Kernel.Security.TenantContext? left, XiHan.Framework.Kernel.Security.TenantContext? right) -> bool
 static XiHan.Framework.Kernel.Security.TenantContext.operator ==(XiHan.Framework.Kernel.Security.TenantContext? left, XiHan.Framework.Kernel.Security.TenantContext? right) -> bool
+virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
+virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Capabilities.CapabilityAttribute
 XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.CapabilityAttribute(string! id) -> void

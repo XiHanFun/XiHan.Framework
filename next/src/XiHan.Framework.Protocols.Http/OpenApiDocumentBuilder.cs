@@ -55,7 +55,7 @@ public static partial class OpenApiDocumentBuilder
             // 同一路径模板下可能有多个方法（GET /orders/{id} 与 PUT /orders/{id}），按模板分组后再按方法写
             var byTemplate = registry.ExposedTo(Expose.Http)
                 .Where(static d => d.Contract.Stability != Stability.Internal)
-                .Select(d => (Descriptor: d, Route: options.RouteFor(d.Contract)))
+                .Select(d => (Descriptor: d, Route: options.RouteFor(d)))
                 .GroupBy(static e => e.Route.Template, StringComparer.Ordinal)
                 .OrderBy(static g => g.Key, StringComparer.Ordinal);
             foreach (var group in byTemplate)

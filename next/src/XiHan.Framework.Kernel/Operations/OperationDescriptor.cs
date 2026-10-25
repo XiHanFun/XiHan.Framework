@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Operations;
@@ -66,6 +67,17 @@ public abstract class OperationDescriptor
     /// 请求与响应的 JSON Schema；没有时协议适配器只能发布无 Schema 的描述。
     /// </summary>
     public OperationSchema? Schema { get; }
+
+    /// <summary>
+    /// 请求类型的序列化元数据：协议适配器据此了解请求形状（如是否声明 <c>id</c>），不经反射；
+    /// 载荷原样搬运、没有类型化元数据的描述（插件代理）为 null，适配器改看 <see cref="Schema"/>。
+    /// </summary>
+    public virtual JsonTypeInfo? RequestInfo => null;
+
+    /// <summary>
+    /// 响应类型的序列化元数据；没有类型化元数据的描述为 null。
+    /// </summary>
+    public virtual JsonTypeInfo? ResponseInfo => null;
 
     /// <summary>
     /// 把 UTF-8 JSON 载荷解码为请求对象；空载荷按 <c>{}</c> 处理；不合法返回 <see cref="KernelErrors.InvalidOperationPayload"/>。

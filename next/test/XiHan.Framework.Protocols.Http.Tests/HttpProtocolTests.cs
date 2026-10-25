@@ -48,6 +48,18 @@ public sealed class HttpProtocolTests
     private static StringContent Json(string json) => new(json, Encoding.UTF8, "application/json");
 
     /// <summary>
+    /// 以订单请求（含 id）描述一个操作。
+    /// </summary>
+    private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(string id)
+        => new OperationDescriptor<OrdersOperation, OrderRequest, OrderReply>(new OperationContract(id), "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+
+    /// <summary>
+    /// 以报表请求（不含 id）描述一个操作。
+    /// </summary>
+    private static OperationDescriptor<OrderReportOperation, OrderReportRequest, OrderReply> DescribeReport(string id)
+        => new OperationDescriptor<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract(id), "xihan.test.orders", OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
+
+    /// <summary>
     /// 读 Problem Details 的错误码。
     /// </summary>
     private static async Task<string> CodeOf(HttpResponseMessage response)
@@ -60,12 +72,17 @@ public sealed class HttpProtocolTests
     [Fact]
     public void Convention_DerivesRoutesFromOperationIds()
     {
-        Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create")).ToString());
-        Assert.Equal("GET /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.get")).ToString());
-        Assert.Equal("GET /order-lines", HttpRouteConvention.Derive(new OperationContract("order-lines.list")).ToString());
-        Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update")).ToString());
-        Assert.Equal("DELETE /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.delete")).ToString());
-        Assert.Equal("POST /orders/{id}:cancel", HttpRouteConvention.Derive(new OperationContract("orders.cancel")).ToString());
+        Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: false).ToString());
+        Assert.Equal("GET /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.get"), hasIdentifier: true).ToString());
+        Assert.Equal("GET /order-lines", HttpRouteConvention.Derive(new OperationContract("order-lines.list"), hasIdentifier: false).ToString());
+        Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update"), hasIdentifier: true).ToString());
+        Assert.Equal("DELETE /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.delete"), hasIdentifier: true).ToString());
+        // 标准动词的形态与请求形状无关
+        Assert.Equal("GET /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.get"), hasIdentifier: false).ToString());
+        Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: true).ToString());
+        // 自定义动词：请求含 id 走实例级，不含走集合级
+        Assert.Equal("POST /orders/{id}:cancel", HttpRouteConvention.Derive(new OperationContract("orders.cancel"), hasIdentifier: true).ToString());
+        Assert.Equal("POST /orders:export", HttpRouteConvention.Derive(new OperationContract("orders.export"), hasIdentifier: false).ToString());
         Assert.Equal(201, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.create")));
         Assert.Equal(200, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.get")));
     }
@@ -84,8 +101,38 @@ public sealed class HttpProtocolTests
         Assert.Throws<ArgumentException>(() => new HttpProtocolOptions { Routes = new Dictionary<string, HttpRoute> { ["Bad"] = route } });
 
         var options = new HttpProtocolOptions { RoutePrefix = "/api", Routes = new Dictionary<string, HttpRoute> { ["orders.export"] = route } };
-        Assert.Equal("POST /api/orders:export", options.RouteFor(new OperationContract("orders.export")).ToString());
-        Assert.Equal("GET /api/orders/{id}", options.RouteFor(new OperationContract("orders.get")).ToString());
+        Assert.Equal("POST /api/orders:export", options.RouteFor(Describe("orders.export")).ToString());
+        Assert.Equal("GET /api/orders/{id}", options.RouteFor(Describe("orders.get")).ToString());
+    }
+
+    [Fact]
+    public async Task CollectionVerb_RoutesWithoutIdentifier()
+    {
+        Assert.True(HttpRouteConvention.HasIdentifier(Describe("orders.cancel")));
+        Assert.False(HttpRouteConvention.HasIdentifier(DescribeReport("orders.report")));
+        Assert.Equal("POST /orders/{id}:cancel", HttpRouteConvention.Derive(Describe("orders.cancel")).ToString());
+        Assert.Equal("POST /orders:report", HttpRouteConvention.Derive(DescribeReport("orders.report")).ToString());
+        // 没有类型化元数据的描述（插件代理）看 Schema：声明了 id 走实例级，否则集合级
+        Assert.True(HttpRouteConvention.HasIdentifier(new SchemaOnlyDescriptor("orders.cancel", OrdersFeature.OrderSchema)));
+        Assert.False(HttpRouteConvention.HasIdentifier(new SchemaOnlyDescriptor("orders.report", new OperationSchema("""{"type":"object","properties":{"name":{"type":"string"}}}""", """{"type":"object"}"""))));
+        Assert.False(HttpRouteConvention.HasIdentifier(new SchemaOnlyDescriptor("orders.report", schema: null)));
+        Assert.Equal("POST /orders:report", HttpRouteConvention.Derive(new SchemaOnlyDescriptor("orders.report", schema: null)).ToString());
+
+        var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));
+        await using var host = app;
+
+        // 请求不含 id 的自定义动词只有集合级路径；实例级路径不存在
+        var reply = await ReplyOf(await client.PostAsync("/api/orders:report?page=3", Json("""{"name":"weekly"}""")));
+        Assert.Equal("orders.report", reply.Operation);
+        Assert.Equal("weekly", reply.Name);
+        Assert.Equal(3, reply.Page);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync("/api/orders/1:report", Json("{}"))).StatusCode);
+
+        // OpenAPI 里集合级动词没有路径参数
+        using var document = JsonDocument.Parse(await (await client.GetAsync("/openapi.json")).Content.ReadAsStringAsync());
+        var report = document.RootElement.GetProperty("paths").GetProperty("/api/orders:report").GetProperty("post");
+        Assert.Equal("orders.report", report.GetProperty("operationId").GetString());
+        Assert.False(report.TryGetProperty("parameters", out var parameters) && parameters.EnumerateArray().Any(static p => p.GetProperty("in").GetString() == "path"));
     }
 
     [Fact]

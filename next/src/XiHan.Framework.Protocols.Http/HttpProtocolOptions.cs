@@ -79,10 +79,10 @@ public sealed record HttpProtocolOptions
     /// <summary>
     /// 操作最终的路由：显式覆盖优先，否则按约定推导；都加上前缀。
     /// </summary>
-    public HttpRoute RouteFor(XiHan.Framework.Kernel.Operations.OperationContract contract)
+    public HttpRoute RouteFor(XiHan.Framework.Kernel.Operations.OperationDescriptor descriptor)
     {
-        ArgumentNullException.ThrowIfNull(contract);
-        var route = Routes.TryGetValue(contract.Id, out var overridden) ? overridden : HttpRouteConvention.Derive(contract);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var route = Routes.TryGetValue(descriptor.Id, out var overridden) ? overridden : HttpRouteConvention.Derive(descriptor);
         return RoutePrefix.Length == 0 ? route : new HttpRoute(route.Method, RoutePrefix + route.Template);
     }
 }
