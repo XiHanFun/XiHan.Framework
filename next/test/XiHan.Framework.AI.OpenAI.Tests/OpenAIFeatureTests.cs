@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Chat;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.AI.OpenAI.Tests;

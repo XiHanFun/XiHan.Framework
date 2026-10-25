@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Architecture.Tests.Model;
 
 namespace XiHan.Framework.Architecture.Tests;
 
@@ -80,7 +81,7 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
-        foreach (var project in Workspace.SourceProjects)
+        foreach (var project in Workspace.SourceProjects.Concat(Workspace.TestProjects))
         {
             foreach (var file in Workspace.SourceFiles(project.Directory))
             {
@@ -99,7 +100,7 @@ public sealed partial class NamingTests
                     continue;
                 }
 
-                foreach (Match match in NamespaceDeclaration().Matches(File.ReadAllText(file)))
+                foreach (Match match in TopLevelNamespaceDeclaration().Matches(File.ReadAllText(file)))
                 {
                     var ns = match.Groups["ns"].Value;
                     if (!string.Equals(ns, expected, StringComparison.Ordinal))
@@ -118,11 +119,11 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
-        foreach (var project in Workspace.SourceProjects)
+        foreach (var project in Workspace.SourceProjects.Concat(Workspace.TestProjects))
         {
             foreach (var file in Workspace.SourceFiles(project.Directory))
             {
-                foreach (Match match in NamespaceDeclaration().Matches(File.ReadAllText(file)))
+                foreach (Match match in TopLevelNamespaceDeclaration().Matches(File.ReadAllText(file)))
                 {
                     // 命名空间要么等于包 ID，要么只多一层 PascalCase 子段。
                     var ns = match.Groups["ns"].Value;
@@ -183,8 +184,8 @@ public sealed partial class NamingTests
     private static partial Regex PascalWord();
 
     /// <summary>
-    /// 匹配文件级或块级 <c>namespace</c> 声明并捕获名称。
+    /// 匹配列首的文件级或块级 <c>namespace</c> 声明并捕获名称；测试里源码片段中缩进的声明不算。
     /// </summary>
-    [GeneratedRegex(@"^\s*namespace\s+(?<ns>[A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline)]
-    private static partial Regex NamespaceDeclaration();
+    [GeneratedRegex(@"^namespace\s+(?<ns>[A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline)]
+    private static partial Regex TopLevelNamespaceDeclaration();
 }

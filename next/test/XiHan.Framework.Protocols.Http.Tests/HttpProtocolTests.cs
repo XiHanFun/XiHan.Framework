@@ -13,6 +13,7 @@ using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.OpenApi;
 using XiHan.Framework.Protocols.Http.Routing;
+using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 namespace XiHan.Framework.Protocols.Http.Tests;
 

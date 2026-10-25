@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Reflection;
+using XiHan.Framework.Architecture.Tests.Model;
 
 namespace XiHan.Framework.Architecture.Tests;
 
