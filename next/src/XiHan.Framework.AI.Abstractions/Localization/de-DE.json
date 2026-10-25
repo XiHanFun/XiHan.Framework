@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "Die Anfrage wurde von der Schutzregel '{guardrail}' blockiert: {reason}",
+  "ai.guardrail.failed": "Die Schutzregel '{guardrail}' ist fehlgeschlagen: {reason}",
+  "ai.guardrail.injection": "Die Nachricht sieht wie eine Prompt-Injektion aus.",
+  "ai.guardrail.keyword": "Die Nachricht enthält das gesperrte Schlüsselwort '{keyword}'.",
+  "ai.knowledge.capacity": "Die Wissenssammlung '{collection}' ist voll (Limit {limit}).",
+  "ai.knowledge.dimensions": "Die Einbettung hat {actual} Dimensionen, der Wissensspeicher ist aber für {expected} konfiguriert.",
+  "ai.knowledge.unavailable": "Der Wissensspeicher ist nicht verfügbar: {reason}",
+  "ai.model.timeout": "Der Aufruf des KI-Providers '{provider}' hat das Zeitlimit überschritten.",
+  "ai.model.unavailable": "Der KI-Provider '{provider}' ist nicht verfügbar: {reason}",
+  "ai.prompt.argument_missing": "Die Prompt-Vorlage '{name}' benötigt das Argument '{argument}'.",
+  "ai.prompt.not_found": "Die Prompt-Vorlage '{name}' existiert nicht.",
+  "ai.provider.invalid": "Der KI-Provider '{name}' ist falsch konfiguriert: {reason}",
+  "ai.provider.kind_unknown": "Der KI-Provider '{name}' hat die Art '{kind}', für die keine Factory registriert ist.",
+  "ai.provider.not_found": "Der KI-Provider '{name}' ist nicht konfiguriert.",
+  "ai.request.invalid": "Die KI-Anfrage ist ungültig: {reason}",
+  "ai.tool.argument_invalid": "Das Argument '{argument}' des KI-Werkzeugs '{name}' kann nicht serialisiert werden.",
+  "ai.tool.duplicate": "Der KI-Werkzeugname '{name}' wird sowohl von '{first}' als auch von '{second}' verwendet.",
+  "ai.tool.not_found": "Das KI-Werkzeug '{name}' existiert nicht."
+}

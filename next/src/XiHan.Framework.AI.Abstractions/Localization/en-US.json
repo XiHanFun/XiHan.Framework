@@ -1,0 +1,20 @@
+{
+  "ai.guardrail.blocked": "The request was blocked by guardrail '{guardrail}': {reason}",
+  "ai.guardrail.failed": "Guardrail '{guardrail}' failed: {reason}",
+  "ai.guardrail.injection": "The message looks like a prompt injection.",
+  "ai.guardrail.keyword": "The message contains the blocked keyword '{keyword}'.",
+  "ai.knowledge.capacity": "The knowledge collection '{collection}' is full (limit {limit}).",
+  "ai.knowledge.dimensions": "The embedding has {actual} dimensions but the knowledge store is configured for {expected}.",
+  "ai.knowledge.unavailable": "The knowledge store is unavailable: {reason}",
+  "ai.model.timeout": "The call to AI provider '{provider}' timed out.",
+  "ai.model.unavailable": "AI provider '{provider}' is unavailable: {reason}",
+  "ai.prompt.argument_missing": "Prompt template '{name}' needs the argument '{argument}'.",
+  "ai.prompt.not_found": "Prompt template '{name}' does not exist.",
+  "ai.provider.invalid": "AI provider '{name}' is misconfigured: {reason}",
+  "ai.provider.kind_unknown": "AI provider '{name}' has kind '{kind}', which has no registered factory.",
+  "ai.provider.not_found": "AI provider '{name}' is not configured.",
+  "ai.request.invalid": "The AI request is invalid: {reason}",
+  "ai.tool.argument_invalid": "Argument '{argument}' of AI tool '{name}' cannot be serialized.",
+  "ai.tool.duplicate": "AI tool name '{name}' is used by both '{first}' and '{second}'.",
+  "ai.tool.not_found": "AI tool '{name}' does not exist."
+}

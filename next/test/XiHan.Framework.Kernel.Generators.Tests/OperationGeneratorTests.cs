@@ -101,7 +101,7 @@ public sealed class OperationGeneratorTests
         Assert.Contains("new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"orders.create\", (global::XiHan.Framework.Primitives.Stability)2, (global::XiHan.Framework.Kernel.Operations.Expose)5, null, @\"orders.write\")", generated, StringComparison.Ordinal);
         Assert.Contains("global::Demo.App.DemoJsonContext.Default.CreateOrderRequest", generated, StringComparison.Ordinal);
         Assert.Contains("global::Demo.App.DemoJsonContext.Default.Order,", generated, StringComparison.Ordinal);
-        Assert.Contains("(global::XiHan.Framework.Kernel.Operations.Expose)15, @\"authenticated\", null)", generated, StringComparison.Ordinal);
+        Assert.Contains("(global::XiHan.Framework.Kernel.Operations.Expose)31, @\"authenticated\", null)", generated, StringComparison.Ordinal);
         Assert.Contains("context.AddCreateOrder();", generated, StringComparison.Ordinal);
         Assert.Contains("context.AddListOrders();", generated, StringComparison.Ordinal);
 
