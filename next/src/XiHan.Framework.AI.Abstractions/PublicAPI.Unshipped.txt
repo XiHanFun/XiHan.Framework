@@ -316,6 +316,7 @@ const XiHan.Framework.AI.Abstractions.AIOptions.ConfigurationSection = "XiHan:AI
 const XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.GuardrailName = "keyword-blocklist" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollection = "knowledge" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.BuiltInTemplate = "Answer the question using only the knowledge snippets below. If they are not enough, say that no supporting evidence was found instead of guessing. Cite snippets by their number, like [1].\n\n# Knowledge snippets\n{context}\n# Question\n{question}" -> string!
+const XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention.MaxLength = 64 -> int
 override XiHan.Framework.AI.Abstractions.AIOptions.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.AIOptions.GetHashCode() -> int
 override XiHan.Framework.AI.Abstractions.AIOptions.ToString() -> string!
