@@ -1,4 +1,5 @@
 {
+  "messaging.broker.unavailable": "O agente de mensagens está indisponível: {reason}",
   "messaging.envelope.attributes_required": "Os atributos 'id', 'source' e 'type' são obrigatórios.",
   "messaging.envelope.invalid": "O envelope não é válido: {reason}",
   "messaging.envelope.invalid_base64": "O atributo 'data_base64' não é um Base64 válido.",

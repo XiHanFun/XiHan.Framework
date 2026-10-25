@@ -1,4 +1,5 @@
 {
+  "messaging.broker.unavailable": "Le courtier de messages est injoignable : {reason}",
   "messaging.envelope.attributes_required": "Les attributs 'id', 'source' et 'type' sont obligatoires.",
   "messaging.envelope.invalid": "L'enveloppe n'est pas valide : {reason}",
   "messaging.envelope.invalid_base64": "L'attribut 'data_base64' n'est pas un Base64 valide.",

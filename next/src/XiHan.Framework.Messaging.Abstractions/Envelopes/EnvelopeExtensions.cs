@@ -21,6 +21,9 @@ public static partial class EnvelopeExtensions
     /// <summary>W3C <c>traceparent</c>（CloudEvents 分布式追踪扩展）。</summary>
     public const string TraceParent = "traceparent";
 
+    /// <summary>分区键：流能力按它选分区，同一主题内同键的消息按发布顺序投递。</summary>
+    public const string PartitionKey = "xihankey";
+
     /// <summary>
     /// 扩展属性名是否合法。
     /// </summary>

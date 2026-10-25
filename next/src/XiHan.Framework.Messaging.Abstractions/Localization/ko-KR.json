@@ -1,4 +1,5 @@
 {
+  "messaging.broker.unavailable": "메시지 브로커에 연결할 수 없습니다: {reason}",
   "messaging.envelope.attributes_required": "'id', 'source', 'type' 특성은 필수입니다.",
   "messaging.envelope.invalid": "봉투가 올바르지 않습니다: {reason}",
   "messaging.envelope.invalid_base64": "'data_base64' 특성이 올바른 Base64가 아닙니다.",

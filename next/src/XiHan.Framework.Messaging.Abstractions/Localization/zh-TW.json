@@ -1,4 +1,5 @@
 {
+  "messaging.broker.unavailable": "訊息代理不可達：{reason}",
   "messaging.envelope.attributes_required": "'id'、'source' 和 'type' 屬性是必要的。",
   "messaging.envelope.invalid": "信封不合法：{reason}",
   "messaging.envelope.invalid_base64": "'data_base64' 屬性不是合法的 Base64。",

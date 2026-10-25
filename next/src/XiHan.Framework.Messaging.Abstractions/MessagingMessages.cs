@@ -47,6 +47,9 @@ public static class MessagingMessages
     /// <summary>处理器抛出未处理异常。参数：<c>reason</c>。</summary>
     public const string HandlerFailed = "messaging.handler.failed";
 
+    /// <summary>消息代理不可达。参数：<c>reason</c>。</summary>
+    public const string BrokerUnavailable = "messaging.broker.unavailable";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>

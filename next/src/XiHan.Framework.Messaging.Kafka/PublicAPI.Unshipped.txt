@@ -1,0 +1,37 @@
+#nullable enable
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.IsConnected.get -> bool
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.KafkaMessageBroker(XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions! options, XiHan.Framework.Messaging.Abstractions.MessagingOptions! messaging, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.ReplayAsync(string! topic, System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<string!>! topics, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Kafka.KafkaMessageBroker.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.KafkaMessagingFeature() -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.BootstrapServers.get -> string!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.BootstrapServers.init -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.Equals(XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions? other) -> bool
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.GroupId.get -> string!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.GroupId.init -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.KafkaMessagingOptions() -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.Properties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.Properties.init -> void
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.TopicPrefix.get -> string!
+XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.TopicPrefix.init -> void
+const XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature.ConnectionBinding = "stream" -> string!
+const XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.ConfigurationSection = "XiHan:Messaging:Kafka" -> string!
+override XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.GetHashCode() -> int
+override XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.ToString() -> string!
+static XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding) -> XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions!
+static XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.operator !=(XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions? left, XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions? right) -> bool
+static XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions.operator ==(XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions? left, XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions? right) -> bool

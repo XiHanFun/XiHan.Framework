@@ -18,6 +18,10 @@ XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.StartAsync(XiHan.
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.TenantCorrelationAndTrace_FlowIntoInvocationContext() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.ThrowingHandler_IsTreatedAsFailure_AndRetried() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Topics_AreIsolated() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageStreamConformance
+XiHan.Framework.Messaging.Conformance.MessageStreamConformance.MessageStreamConformance() -> void
+XiHan.Framework.Messaging.Conformance.MessageStreamConformance.PartitionKey_PreservesOrder_PerKey() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageStreamConformance.Replay_RedeliversMessagesSince() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.<Clone>$() -> XiHan.Framework.Messaging.Conformance.ReceivedMessage!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Baggage.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
