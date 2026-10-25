@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "Remote configuration namespace '{namespace}' is not a valid {format} document: {reason}",
   "configuration.namespace.not_found": "Remote configuration namespace '{namespace}' does not exist.",
   "configuration.remote.unavailable": "Remote configuration namespace '{namespace}' is unavailable: {reason}",
   "configuration.secret.denied": "Access to secret '{name}' is denied.",

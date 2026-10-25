@@ -22,6 +22,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Hybrid/XiHan.Framework.Caching.Hybrid.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Remote/XiHan.Framework.Caching.Remote.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
@@ -35,6 +36,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Kafka/XiHan.Framework.Messaging.Kafka.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Standard/XiHan.Framework.Profiles.Standard.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.Conformance/XiHan.Framework.Messaging.Conformance.csproj" />
@@ -55,6 +57,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Conformance/XiHan.Framework.Scheduling.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Conformance/XiHan.Framework.Configuration.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Configuration.Nacos/XiHan.Framework.Configuration.Nacos.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />

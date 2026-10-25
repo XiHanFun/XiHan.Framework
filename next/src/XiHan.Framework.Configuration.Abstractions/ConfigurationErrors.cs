@@ -25,4 +25,7 @@ public static class ConfigurationErrors
 
     /// <summary>没有读取该密钥的权限。</summary>
     public const string SecretDenied = "CONFIGURATION_DENIED_001";
+
+    /// <summary>远程配置文档不是声明的格式。</summary>
+    public const string DocumentInvalid = "CONFIGURATION_VALIDATION_001";
 }

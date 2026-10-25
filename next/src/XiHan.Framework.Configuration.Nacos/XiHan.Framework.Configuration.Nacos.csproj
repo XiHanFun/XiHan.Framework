@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Configuration.Nacos</PackageId>
+    <RootNamespace>XiHan.Framework.Configuration.Nacos</RootNamespace>
+    <Description>XiHan Framework 远程配置的 Nacos Provider：直接用 Nacos 的 HTTP 配置接口取整份文档并按内容 MD5 长轮询，支持 JSON 与 properties 格式、用户名密码登录与多地址，不依赖 SDK。</Description>
+    <PackageTags>xihan;framework;configuration;nacos;remote-configuration</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,5 @@
 {
+  "configuration.document.invalid": "Der Remote-Konfigurationsnamespace '{namespace}' ist kein gültiges {format}-Dokument: {reason}",
   "configuration.namespace.not_found": "Der Remote-Konfigurationsnamespace '{namespace}' existiert nicht.",
   "configuration.remote.unavailable": "Der Remote-Konfigurationsnamespace '{namespace}' ist nicht verfügbar: {reason}",
   "configuration.secret.denied": "Der Zugriff auf das Geheimnis '{name}' wurde verweigert.",
