@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
+using XiHan.Framework.Configuration.Abstractions.Secrets;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Configuration.Abstractions.Tests;

@@ -8,6 +8,10 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.Conformance;
 using XiHan.Framework.Testing;
 

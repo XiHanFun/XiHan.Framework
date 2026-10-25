@@ -2,11 +2,17 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 using Xunit;

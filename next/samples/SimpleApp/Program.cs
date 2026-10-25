@@ -3,17 +3,24 @@
 
 using SimpleApp;
 using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions;
-using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.CloudEvents;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
 using XiHan.Framework.Protocols.Grpc;
+using XiHan.Framework.Protocols.Grpc.Services;
 using XiHan.Framework.Protocols.Http;
+using XiHan.Framework.Protocols.Http.OpenApi;
+using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Protocols.Mcp;
+using XiHan.Framework.Protocols.Mcp.Transports;
 
 var builder = WebApplication.CreateBuilder(args);
 

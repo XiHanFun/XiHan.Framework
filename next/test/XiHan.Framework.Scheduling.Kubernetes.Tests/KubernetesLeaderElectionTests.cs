@@ -6,7 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.InMemory;
+using XiHan.Framework.Scheduling.Kubernetes.Leases;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;

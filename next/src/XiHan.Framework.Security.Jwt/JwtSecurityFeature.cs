@@ -9,6 +9,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
 
 namespace XiHan.Framework.Security.Jwt;
 

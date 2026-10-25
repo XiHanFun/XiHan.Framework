@@ -7,6 +7,10 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.CloudEvents;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.RabbitMQ;

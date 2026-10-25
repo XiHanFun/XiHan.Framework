@@ -1,21 +1,6 @@
 #nullable enable
-const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.SchemeName = "Bearer" -> string!
-const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ConfigurationSection = "XiHan:Security:OpenIdConnect" -> string!
-const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.DiscoveryPath = ".well-known/openid-configuration" -> string!
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Equals(object? obj) -> bool
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.GetHashCode() -> int
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.ToString() -> string!
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.GetHashCode() -> int
-override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ToString() -> string!
-static readonly XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.FailureRetryDelay -> System.TimeSpan
-static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
-static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
-static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions!
-static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
-static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.OpenIdConnectAuthenticationHandler(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache! metadata) -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata
@@ -66,3 +51,18 @@ XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.OpenIdConnectSecurityFeature() -> void
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.SchemeName = "Bearer" -> string!
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ConfigurationSection = "XiHan:Security:OpenIdConnect" -> string!
+const XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.DiscoveryPath = ".well-known/openid-configuration" -> string!
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.Equals(object? obj) -> bool
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.GetHashCode() -> int
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.ToString() -> string!
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.GetHashCode() -> int
+override XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ToString() -> string!
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions!
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
+static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
+static readonly XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.FailureRetryDelay -> System.TimeSpan

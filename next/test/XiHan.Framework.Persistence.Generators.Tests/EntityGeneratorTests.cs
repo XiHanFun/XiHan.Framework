@@ -5,8 +5,8 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
-using XiHan.Framework.Domain;
-using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.EntityFrameworkCore;
 
 namespace XiHan.Framework.Persistence.Generators.Tests;
@@ -22,7 +22,8 @@ public sealed class EntityGeneratorTests
     private const string Source = """
         using System;
         using System.Collections.Generic;
-        using XiHan.Framework.Domain;
+        using XiHan.Framework.Domain.Entities;
+        using XiHan.Framework.Domain.Events;
 
         namespace Demo.App;
 
@@ -109,8 +110,8 @@ public sealed class EntityGeneratorTests
 
         // 软删除 + 多租户：三个规约；只软删除：一个；无协议：不生成
         Assert.Contains("public static class OrderFilters", generated, StringComparison.Ordinal);
-        Assert.Contains("NotDeleted { get; } = new global::XiHan.Framework.Domain.Specification<global::Demo.App.Order>(static entity => !entity.IsDeleted);", generated, StringComparison.Ordinal);
-        Assert.Contains("ForTenant(string tenantId) => new global::XiHan.Framework.Domain.Specification<global::Demo.App.Order>(entity => entity.TenantId == tenantId);", generated, StringComparison.Ordinal);
+        Assert.Contains("NotDeleted { get; } = new global::XiHan.Framework.Domain.Specifications.Specification<global::Demo.App.Order>(static entity => !entity.IsDeleted);", generated, StringComparison.Ordinal);
+        Assert.Contains("ForTenant(string tenantId) => new global::XiHan.Framework.Domain.Specifications.Specification<global::Demo.App.Order>(entity => entity.TenantId == tenantId);", generated, StringComparison.Ordinal);
         Assert.Contains("ActiveFor(string tenantId) => NotDeleted.And(ForTenant(tenantId));", generated, StringComparison.Ordinal);
         Assert.Contains("public static class TagFilters", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("TagFilters.ForTenant", generated, StringComparison.Ordinal);
@@ -136,7 +137,8 @@ public sealed class EntityGeneratorTests
     {
         var (_, generator, generated) = Run("""
             using System;
-            using XiHan.Framework.Domain;
+            using XiHan.Framework.Domain.Entities;
+            using XiHan.Framework.Domain.Events;
             namespace Demo.App;
             public sealed class Weird : IEntity<int>, IEntity<Guid> { int IEntity<int>.Id => 0; Guid IEntity<Guid>.Id => Guid.Empty; }
             public static class Outer { public sealed class Inner : IEntity<int> { public int Id { get; set; } } }

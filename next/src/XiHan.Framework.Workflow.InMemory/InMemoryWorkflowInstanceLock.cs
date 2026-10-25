@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
+using XiHan.Framework.Workflow.Abstractions.Storage;
 
 namespace XiHan.Framework.Workflow.InMemory;
 

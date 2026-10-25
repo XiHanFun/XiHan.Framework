@@ -3,6 +3,7 @@
 
 using SqlSugar;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.SqlSugar;

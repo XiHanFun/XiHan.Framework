@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions;

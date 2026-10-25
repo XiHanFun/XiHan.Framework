@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using XiHan.Framework.Kernel.Generators.Json;
 using XiHan.Framework.Kernel.Operations;
 
 namespace XiHan.Framework.Kernel.Generators.Tests;

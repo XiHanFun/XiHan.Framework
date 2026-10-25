@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;

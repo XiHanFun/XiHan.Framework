@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.AI;
+using XiHan.Framework.AI.Abstractions.Guardrails;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;
 

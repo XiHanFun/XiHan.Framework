@@ -1,48 +1,5 @@
 #nullable enable
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.NoSubscriber = "PROTOCOLS_NOTFOUND_003" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.TopicUnresolved = "PROTOCOLS_VALIDATION_009" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.UnsupportedContentType = "PROTOCOLS_VALIDATION_008" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookFailed = "PROTOCOLS_UNAVAILABLE_001" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookMissing = "PROTOCOLS_NOTFOUND_004" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookUnreachable = "PROTOCOLS_UNAVAILABLE_002" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.BatchContentType = "application/cloudevents-batch+json" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.HeaderPrefix = "ce-" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.StructuredContentType = "application/cloudevents+json" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.CatalogName = "protocols.cloudevents" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.NoSubscriber = "protocols.cloudevents.no_subscriber" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TopicUnresolved = "protocols.cloudevents.topic_unresolved" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookFailed = "protocols.cloudevents.webhook_failed" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookMissing = "protocols.cloudevents.webhook_missing" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookUnreachable = "protocols.cloudevents.webhook_unreachable" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolCapabilities.CloudEvents = "protocols.cloudevents" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolCapabilities.Version = 1 -> int
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.ConfigurationSection = "XiHan:Protocols:CloudEvents" -> string!
-const XiHan.Framework.Protocols.CloudEvents.CloudEventsWebhookPublisher.HttpClientName = "xihan.protocols.cloudevents" -> string!
-override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.GetHashCode() -> int
-override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.ToString() -> string!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsEndpointRouteBuilderExtensions.MapXiHanCloudEvents(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/events") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.DecodeHeaderValue(string! value) -> string!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.EncodeHeaderValue(string! value) -> string!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.ModeOf(Microsoft.AspNetCore.Http.HttpRequest! request) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode>
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.ReadAsync(Microsoft.AspNetCore.Http.HttpRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>!>>
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.Write(XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Net.Http.HttpRequestMessage! request, XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode mode) -> void
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding.WriteBatch(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Net.Http.HttpRequestMessage! request) -> void
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions!
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator !=(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
-static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator ==(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
-XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode.Batch = 2 -> XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode.Binary = 0 -> XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode.Structured = 1 -> XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors
-XiHan.Framework.Protocols.CloudEvents.CloudEventsHttpBinding
-XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode.Dispatch = 0 -> XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode
-XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode.Publish = 1 -> XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolCapabilities
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolFeature
@@ -53,16 +10,59 @@ XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions!
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.CloudEventsProtocolOptions() -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Equals(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? other) -> bool
-XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.get -> XiHan.Framework.Protocols.CloudEvents.CloudEventsInboundMode
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.init -> void
-XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.get -> XiHan.Framework.Protocols.CloudEvents.CloudEventsContentMode
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.TopicFor(string! type) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Topics.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Topics.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Webhooks.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Uri!>!
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Webhooks.init -> void
-XiHan.Framework.Protocols.CloudEvents.CloudEventsWebhookPublisher
-XiHan.Framework.Protocols.CloudEvents.CloudEventsWebhookPublisher.CloudEventsWebhookPublisher(System.Net.Http.IHttpClientFactory! httpClientFactory, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions! options) -> void
-XiHan.Framework.Protocols.CloudEvents.CloudEventsWebhookPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Protocols.CloudEvents.CloudEventsWebhookPublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode.Batch = 2 -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode.Binary = 0 -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode.Structured = 1 -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsEndpointRouteBuilderExtensions
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode.Dispatch = 0 -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
+XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode.Publish = 1 -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
+XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher
+XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.CloudEventsWebhookPublisher(System.Net.Http.IHttpClientFactory! httpClientFactory, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions! options) -> void
+XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.NoSubscriber = "PROTOCOLS_NOTFOUND_003" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.TopicUnresolved = "PROTOCOLS_VALIDATION_009" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.UnsupportedContentType = "PROTOCOLS_VALIDATION_008" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookFailed = "PROTOCOLS_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookMissing = "PROTOCOLS_NOTFOUND_004" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookUnreachable = "PROTOCOLS_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.CatalogName = "protocols.cloudevents" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.NoSubscriber = "protocols.cloudevents.no_subscriber" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TopicUnresolved = "protocols.cloudevents.topic_unresolved" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookFailed = "protocols.cloudevents.webhook_failed" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookMissing = "protocols.cloudevents.webhook_missing" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookUnreachable = "protocols.cloudevents.webhook_unreachable" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolCapabilities.CloudEvents = "protocols.cloudevents" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolCapabilities.Version = 1 -> int
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.ConfigurationSection = "XiHan:Protocols:CloudEvents" -> string!
+const XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.BatchContentType = "application/cloudevents-batch+json" -> string!
+const XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.HeaderPrefix = "ce-" -> string!
+const XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.StructuredContentType = "application/cloudevents+json" -> string!
+const XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.HttpClientName = "xihan.protocols.cloudevents" -> string!
+override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.GetHashCode() -> int
+override XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.ToString() -> string!
+static XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
+static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions!
+static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator !=(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
+static XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.operator ==(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? left, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? right) -> bool
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsEndpointRouteBuilderExtensions.MapXiHanCloudEvents(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/events") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.DecodeHeaderValue(string! value) -> string!
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.EncodeHeaderValue(string! value) -> string!
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ModeOf(Microsoft.AspNetCore.Http.HttpRequest! request) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode>
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ReadAsync(Microsoft.AspNetCore.Http.HttpRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>!>>
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.Write(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Net.Http.HttpRequestMessage! request, XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode mode) -> void
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.WriteBatch(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Net.Http.HttpRequestMessage! request) -> void

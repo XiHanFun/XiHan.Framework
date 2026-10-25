@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.Http.Routing;
 
 namespace XiHan.Framework.Protocols.Http;
 

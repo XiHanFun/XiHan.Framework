@@ -6,6 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
+using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Definitions;
+using XiHan.Framework.Workflow.Abstractions.Engine;
+using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Storage;
+using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 

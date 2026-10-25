@@ -2,7 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 

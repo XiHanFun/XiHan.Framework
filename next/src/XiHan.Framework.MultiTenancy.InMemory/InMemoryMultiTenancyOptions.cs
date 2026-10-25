@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
-using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.MultiTenancy.InMemory;

@@ -1,15 +1,6 @@
 #nullable enable
-const XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.SchemeName = "Bearer" -> string!
-const XiHan.Framework.Security.Jwt.JwtOptions.ConfigurationSection = "XiHan:Security:Jwt" -> string!
-const XiHan.Framework.Security.Jwt.JwtOptions.MinSecretBytes = 32 -> int
-override XiHan.Framework.Security.Jwt.JwtOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Security.Jwt.JwtOptions.GetHashCode() -> int
-override XiHan.Framework.Security.Jwt.JwtOptions.ToString() -> string!
-static XiHan.Framework.Security.Jwt.JwtOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Jwt.JwtOptions!
-static XiHan.Framework.Security.Jwt.JwtOptions.operator !=(XiHan.Framework.Security.Jwt.JwtOptions? left, XiHan.Framework.Security.Jwt.JwtOptions? right) -> bool
-static XiHan.Framework.Security.Jwt.JwtOptions.operator ==(XiHan.Framework.Security.Jwt.JwtOptions? left, XiHan.Framework.Security.Jwt.JwtOptions? right) -> bool
 XiHan.Framework.Security.Jwt.JwtAuthenticationHandler
-XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.JwtAuthenticationHandler(XiHan.Framework.Security.Jwt.JwtOptions! options) -> void
 XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.Jwt.JwtOptions
@@ -30,3 +21,12 @@ XiHan.Framework.Security.Jwt.JwtSecurityFeature
 XiHan.Framework.Security.Jwt.JwtSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.Jwt.JwtSecurityFeature.JwtSecurityFeature() -> void
 XiHan.Framework.Security.Jwt.JwtSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+const XiHan.Framework.Security.Jwt.JwtAuthenticationHandler.SchemeName = "Bearer" -> string!
+const XiHan.Framework.Security.Jwt.JwtOptions.ConfigurationSection = "XiHan:Security:Jwt" -> string!
+const XiHan.Framework.Security.Jwt.JwtOptions.MinSecretBytes = 32 -> int
+override XiHan.Framework.Security.Jwt.JwtOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Jwt.JwtOptions.GetHashCode() -> int
+override XiHan.Framework.Security.Jwt.JwtOptions.ToString() -> string!
+static XiHan.Framework.Security.Jwt.JwtOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Jwt.JwtOptions!
+static XiHan.Framework.Security.Jwt.JwtOptions.operator !=(XiHan.Framework.Security.Jwt.JwtOptions? left, XiHan.Framework.Security.Jwt.JwtOptions? right) -> bool
+static XiHan.Framework.Security.Jwt.JwtOptions.operator ==(XiHan.Framework.Security.Jwt.JwtOptions? left, XiHan.Framework.Security.Jwt.JwtOptions? right) -> bool

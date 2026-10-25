@@ -1,7 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Configuration.Conformance;
+using XiHan.Framework.Configuration.Abstractions.Remote;
+using XiHan.Framework.Configuration.Conformance.Remote;
 
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 

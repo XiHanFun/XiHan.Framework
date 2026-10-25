@@ -1,4 +1,5 @@
-﻿#nullable enable
+#nullable enable
+XiHan.Framework.Cli.CliMessages
 const XiHan.Framework.Cli.CliMessages.CatalogName = "cli" -> string!
 const XiHan.Framework.Cli.CliMessages.DotnetUnavailable = "cli.dotnet.unavailable" -> string!
 const XiHan.Framework.Cli.CliMessages.GraphDescription = "cli.graph.description" -> string!
@@ -49,5 +50,4 @@ const XiHan.Framework.Cli.CliMessages.PackKindUnknown = "cli.pack.kind_unknown" 
 const XiHan.Framework.Cli.CliMessages.PackWritten = "cli.pack.written" -> string!
 const XiHan.Framework.Cli.CliMessages.PipelineDescription = "cli.pipeline.description" -> string!
 const XiHan.Framework.Cli.CliMessages.VersionDescription = "cli.version.description" -> string!
-static XiHan.Framework.Cli.CliMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
-XiHan.Framework.Cli.CliMessages
+static XiHan.Framework.Cli.CliMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!

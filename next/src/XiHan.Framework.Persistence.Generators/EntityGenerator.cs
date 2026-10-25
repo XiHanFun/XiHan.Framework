@@ -20,22 +20,22 @@ public sealed class EntityGenerator : IIncrementalGenerator
     /// <summary>
     /// <c>IEntity&lt;TKey&gt;</c> 的元数据名。
     /// </summary>
-    private const string EntityInterfaceName = "XiHan.Framework.Domain.IEntity`1";
+    private const string EntityInterfaceName = "XiHan.Framework.Domain.Entities.IEntity`1";
 
     /// <summary>
     /// <c>IEntity&lt;TKey&gt;</c> 原始定义的显示名，供语法阶段快速筛选。
     /// </summary>
-    private const string EntityInterfaceDisplay = "XiHan.Framework.Domain.IEntity<TKey>";
+    private const string EntityInterfaceDisplay = "XiHan.Framework.Domain.Entities.IEntity<TKey>";
 
     /// <summary>
     /// <c>ISoftDeletable</c> 的元数据名。
     /// </summary>
-    private const string SoftDeletableName = "XiHan.Framework.Domain.ISoftDeletable";
+    private const string SoftDeletableName = "XiHan.Framework.Domain.Entities.ISoftDeletable";
 
     /// <summary>
     /// <c>IMultiTenant</c> 的元数据名。
     /// </summary>
-    private const string MultiTenantName = "XiHan.Framework.Domain.IMultiTenant";
+    private const string MultiTenantName = "XiHan.Framework.Domain.Entities.IMultiTenant";
 
     /// <summary>
     /// EF Core <c>ModelBuilder</c> 的元数据名；存在时生成实体登记。
@@ -194,7 +194,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
         builder.AppendLine("        {");
         foreach (var model in models)
         {
-            builder.Append("            global::XiHan.Framework.Persistence.Abstractions.RepositoryServiceCollectionExtensions.AddRepository<").Append(Display(model.Type)).Append(", ").Append(Display(model.KeyType)).AppendLine(">(services);");
+            builder.Append("            global::XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<").Append(Display(model.Type)).Append(", ").Append(Display(model.KeyType)).AppendLine(">(services);");
         }
 
         builder.AppendLine("            return services;");
@@ -236,7 +236,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
     private static void RenderFilters(StringBuilder builder, EntityModel model)
     {
         var type = Display(model.Type);
-        var specification = "global::XiHan.Framework.Domain.Specification<" + type + ">";
+        var specification = "global::XiHan.Framework.Domain.Specifications.Specification<" + type + ">";
         var accessibility = model.Type.DeclaredAccessibility == Accessibility.Public ? "public" : "internal";
         var global = model.Type.ContainingNamespace.IsGlobalNamespace;
         var indent = global ? string.Empty : "    ";

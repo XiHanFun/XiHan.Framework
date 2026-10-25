@@ -4,7 +4,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 namespace XiHan.Framework.Scheduling.Kubernetes;
 

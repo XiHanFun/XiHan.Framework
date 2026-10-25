@@ -7,8 +7,11 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Protocols.Grpc.Methods;
+using XiHan.Framework.Protocols.Grpc.Services;
 
 namespace XiHan.Framework.Protocols.Grpc;
 

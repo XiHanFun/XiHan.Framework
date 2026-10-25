@@ -4,7 +4,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
-using XiHan.Framework.Workflow.Conformance;
+using XiHan.Framework.Workflow.Abstractions.Engine;
+using XiHan.Framework.Workflow.Conformance.Engine;
 
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 

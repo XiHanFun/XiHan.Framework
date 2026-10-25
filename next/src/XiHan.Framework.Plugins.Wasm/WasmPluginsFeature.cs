@@ -10,6 +10,8 @@ using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Plugins.Protocol;
+using XiHan.Framework.Plugins.Protocol.Proxies;
+using XiHan.Framework.Plugins.Wasm.Runtime;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 

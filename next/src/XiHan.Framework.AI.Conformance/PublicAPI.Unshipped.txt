@@ -1,43 +1,43 @@
 #nullable enable
-XiHan.Framework.AI.Conformance.AIProviderConformance
-XiHan.Framework.AI.Conformance.AIProviderConformance.AIProviderConformance() -> void
-XiHan.Framework.AI.Conformance.AIProviderConformance.Catalog_CachesUntilInvalidated_AndRejectsUnknownNames() -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Conformance.AIProviderConformance.Catalog_ResolvesChatAndEmbedding() -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Conformance.AIProviderHost
-XiHan.Framework.AI.Conformance.AIProviderHost.AIProviderHost(System.IServiceProvider! services, string! providerName, int embeddingDimensions, System.IAsyncDisposable! host) -> void
-XiHan.Framework.AI.Conformance.AIProviderHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.AI.Conformance.AIProviderHost.EmbeddingDimensions.get -> int
-XiHan.Framework.AI.Conformance.AIProviderHost.ProviderName.get -> string!
-XiHan.Framework.AI.Conformance.AIProviderHost.Services.get -> System.IServiceProvider!
-XiHan.Framework.AI.Conformance.HashingEmbeddingFeature
-XiHan.Framework.AI.Conformance.HashingEmbeddingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
-XiHan.Framework.AI.Conformance.HashingEmbeddingFeature.HashingEmbeddingFeature() -> void
-XiHan.Framework.AI.Conformance.HashingEmbeddingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.Calls.get -> int
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.Dispose() -> void
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.Embed(string! text) -> float[]!
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.GenerateAsync(System.Collections.Generic.IEnumerable<string!>! values, Microsoft.Extensions.AI.EmbeddingGenerationOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.Extensions.AI.GeneratedEmbeddings<Microsoft.Extensions.AI.Embedding<float>!>!>!
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.GetService(System.Type! serviceType, object? serviceKey = null) -> object?
-XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.HashingEmbeddingGenerator(int dimensions = 64) -> void
-XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory
-XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory.Create(XiHan.Framework.AI.Abstractions.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
-XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory.Created.get -> System.Collections.Generic.List<XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator!>!
-XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory.HashingEmbeddingGeneratorFactory() -> void
-XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory.Kind.get -> string!
-XiHan.Framework.AI.Conformance.KnowledgeStoreConformance
-XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.KnowledgeStoreConformance() -> void
-XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.Search_FiltersByDocumentsAndMetadata() -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.Search_OrdersBySimilarity_AndHonoursTop() -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.Upsert_Replaces_AndDeleteRemovesWholeDocuments_PerCollection() -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Conformance.KnowledgeStoreHost
-XiHan.Framework.AI.Conformance.KnowledgeStoreHost.Dimensions.get -> int
-XiHan.Framework.AI.Conformance.KnowledgeStoreHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.AI.Conformance.KnowledgeStoreHost.KnowledgeStoreHost(XiHan.Framework.AI.Abstractions.IKnowledgeStore! store, int dimensions, System.IAsyncDisposable! host) -> void
-XiHan.Framework.AI.Conformance.KnowledgeStoreHost.Store.get -> XiHan.Framework.AI.Abstractions.IKnowledgeStore!
-abstract XiHan.Framework.AI.Conformance.AIProviderConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.AIProviderHost!>!
-abstract XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.KnowledgeStoreHost!>!
-const XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator.DefaultDimensions = 64 -> int
-const XiHan.Framework.AI.Conformance.HashingEmbeddingGeneratorFactory.KindName = "hashing" -> string!
-static XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.Collection(string! prefix) -> string!
-static XiHan.Framework.AI.Conformance.KnowledgeStoreConformance.Record(XiHan.Framework.AI.Conformance.HashingEmbeddingGenerator! generator, string! documentId, int index, string! text, params (string! Key, string! Value)[]! metadata) -> XiHan.Framework.AI.Abstractions.KnowledgeRecord!
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingFeature
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingFeature.HashingEmbeddingFeature() -> void
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.Calls.get -> int
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.Dispose() -> void
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.Embed(string! text) -> float[]!
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.GenerateAsync(System.Collections.Generic.IEnumerable<string!>! values, Microsoft.Extensions.AI.EmbeddingGenerationOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.Extensions.AI.GeneratedEmbeddings<Microsoft.Extensions.AI.Embedding<float>!>!>!
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.GetService(System.Type! serviceType, object? serviceKey = null) -> object?
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.HashingEmbeddingGenerator(int dimensions = 64) -> void
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.Create(XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.Created.get -> System.Collections.Generic.List<XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator!>!
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.HashingEmbeddingGeneratorFactory() -> void
+XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.Kind.get -> string!
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.KnowledgeStoreConformance() -> void
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Search_FiltersByDocumentsAndMetadata() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Search_OrdersBySimilarity_AndHonoursTop() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Upsert_Replaces_AndDeleteRemovesWholeDocuments_PerCollection() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost.Dimensions.get -> int
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost.KnowledgeStoreHost(XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore! store, int dimensions, System.IAsyncDisposable! host) -> void
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost.Store.get -> XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore!
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.AIProviderConformance() -> void
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_CachesUntilInvalidated_AndRejectsUnknownNames() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_ResolvesChatAndEmbedding() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.AIProviderHost(System.IServiceProvider! services, string! providerName, int embeddingDimensions, System.IAsyncDisposable! host) -> void
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.EmbeddingDimensions.get -> int
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.ProviderName.get -> string!
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.Services.get -> System.IServiceProvider!
+abstract XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost!>!
+abstract XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Providers.AIProviderHost!>!
+const XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.DefaultDimensions = 64 -> int
+const XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.KindName = "hashing" -> string!
+static XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Collection(string! prefix) -> string!
+static XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Record(XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator! generator, string! documentId, int index, string! text, params (string! Key, string! Value)[]! metadata) -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord!

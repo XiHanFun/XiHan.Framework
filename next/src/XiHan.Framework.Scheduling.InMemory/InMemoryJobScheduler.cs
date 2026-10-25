@@ -5,6 +5,10 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 namespace XiHan.Framework.Scheduling.InMemory;
 

@@ -6,6 +6,7 @@ using SimpleCli;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Protocols.Mcp;
 

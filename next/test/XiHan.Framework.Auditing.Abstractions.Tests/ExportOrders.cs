@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 

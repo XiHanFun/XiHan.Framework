@@ -11,6 +11,8 @@ using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.Http.OpenApi;
+using XiHan.Framework.Protocols.Http.Routing;
 
 namespace XiHan.Framework.Protocols.Http.Tests;
 

@@ -4,7 +4,7 @@
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Time.Testing;
-using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Stores;
 
 namespace XiHan.Framework.Caching.InMemory.Tests;
 

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.Grpc.Methods;
 
 namespace XiHan.Framework.Protocols.Grpc;
 

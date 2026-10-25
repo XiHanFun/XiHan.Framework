@@ -10,6 +10,9 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.Abstractions.Authorization;
+using XiHan.Framework.Security.Abstractions.Permissions;
 
 namespace XiHan.Framework.Security.InMemory;
 

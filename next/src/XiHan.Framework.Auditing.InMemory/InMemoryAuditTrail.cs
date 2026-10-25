@@ -4,6 +4,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Primitives;
 

@@ -3,6 +3,7 @@
 
 using StackExchange.Redis;
 using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.Redis;

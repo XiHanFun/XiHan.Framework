@@ -2,8 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging.Abstractions;
-using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.Conformance;
+using XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 

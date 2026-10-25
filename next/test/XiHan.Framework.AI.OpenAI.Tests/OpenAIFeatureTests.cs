@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.AI.OpenAI.Tests;

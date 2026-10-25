@@ -3,6 +3,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 

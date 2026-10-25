@@ -3,8 +3,10 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Time.Testing;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.InMemory.Tests;

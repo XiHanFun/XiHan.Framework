@@ -9,6 +9,8 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 namespace XiHan.Framework.Scheduling.Kubernetes;
 

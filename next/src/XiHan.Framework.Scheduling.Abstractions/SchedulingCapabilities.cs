@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 namespace XiHan.Framework.Scheduling.Abstractions;
 

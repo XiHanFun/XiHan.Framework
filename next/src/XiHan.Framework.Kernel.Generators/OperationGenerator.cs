@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using XiHan.Framework.Kernel.Generators.Json;
 
 namespace XiHan.Framework.Kernel.Generators;
 

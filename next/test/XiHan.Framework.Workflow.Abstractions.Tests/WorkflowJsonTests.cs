@@ -2,6 +2,11 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Nodes;
+using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Definitions;
+using XiHan.Framework.Workflow.Abstractions.Events;
+using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Serialization;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 

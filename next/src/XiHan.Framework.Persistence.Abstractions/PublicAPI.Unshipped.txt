@@ -1,5 +1,83 @@
 #nullable enable
-const XiHan.Framework.Persistence.Abstractions.EntityQuery.DefaultMaxTake = 1000 -> int
+XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator
+XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator.GuidV7IdGenerator(System.TimeProvider! timeProvider) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator.NewId() -> System.Guid
+XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>
+XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>.NewId() -> TKey
+XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities
+XiHan.Framework.Persistence.Abstractions.PersistenceConventions
+XiHan.Framework.Persistence.Abstractions.PersistenceErrors
+XiHan.Framework.Persistence.Abstractions.PersistenceMessages
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.EntityQuery() -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Equals(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Filter.get -> XiHan.Framework.Domain.Specifications.ISpecification<T>?
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Filter.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.IncludeDeleted.get -> bool
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.IncludeDeleted.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.OrderBy(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector, bool descending = false) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Orderings.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>!>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Orderings.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Page(int skip, int take) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Skip.get -> int
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Skip.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.get -> int
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Where(XiHan.Framework.Domain.Specifications.ISpecification<T>! filter) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, out bool Descending) -> void
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Descending.get -> bool
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Descending.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Equals(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<T, object?>!>!
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, bool Descending = false) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar
+XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>() -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar! registrar) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar!>!>!
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.RepositoryRegistrations() -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.IsReadOnly.get -> bool
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.TenantId.get -> string?
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.UnitOfWorkMiddleware() -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Deconstruct(out string? TenantId, out bool IsReadOnly) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? other) -> bool
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.get -> bool
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.init -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.get -> string?
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.init -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.NotStarted = 0 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.RolledBack = 3 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Document = "persistence.document" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Relational = "persistence.relational" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Version = 1 -> int
@@ -20,108 +98,30 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "p
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
-override XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Equals(object? obj) -> bool
-override XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.GetHashCode() -> int
-override XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.ToString() -> string!
-override XiHan.Framework.Persistence.Abstractions.Ordering<T>.Equals(object? obj) -> bool
-override XiHan.Framework.Persistence.Abstractions.Ordering<T>.GetHashCode() -> int
-override XiHan.Framework.Persistence.Abstractions.Ordering<T>.ToString() -> string!
-override XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.GetHashCode() -> int
-override XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.ToString() -> string!
-static XiHan.Framework.Persistence.Abstractions.EntityQuery.All<T>() -> XiHan.Framework.Persistence.Abstractions.EntityQuery<T>!
-static XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.operator !=(XiHan.Framework.Persistence.Abstractions.EntityQuery<T>? left, XiHan.Framework.Persistence.Abstractions.EntityQuery<T>? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.operator ==(XiHan.Framework.Persistence.Abstractions.EntityQuery<T>? left, XiHan.Framework.Persistence.Abstractions.EntityQuery<T>? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.Ordering<T>.operator !=(XiHan.Framework.Persistence.Abstractions.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Ordering<T>? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.Ordering<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Ordering<T>? right) -> bool
+const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
+override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnAdd<TEntity>(TEntity! entity, string? tenantId, System.DateTimeOffset now) -> XiHan.Framework.Primitives.Result
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnUpdate<TEntity>(TEntity! entity, System.DateTimeOffset now) -> void
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.IsDeleted<TEntity>(TEntity! entity) -> bool
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.IsVisibleTo<TEntity>(TEntity! entity, string? tenantId) -> bool
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.NewStamp() -> string!
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.TrySoftDelete<TEntity>(TEntity! entity, System.DateTimeOffset now) -> bool
-static XiHan.Framework.Persistence.Abstractions.PersistenceMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
-static XiHan.Framework.Persistence.Abstractions.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static XiHan.Framework.Persistence.Abstractions.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations!
-static XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.Default.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions!
-static XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.operator !=(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.operator ==(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions? right) -> bool
-XiHan.Framework.Persistence.Abstractions.EntityQuery
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.EntityQuery<T>!
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.EntityQuery() -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Equals(XiHan.Framework.Persistence.Abstractions.EntityQuery<T>? other) -> bool
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Filter.get -> XiHan.Framework.Domain.ISpecification<T>?
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Filter.init -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.IncludeDeleted.get -> bool
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.IncludeDeleted.init -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.OrderBy(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector, bool descending = false) -> XiHan.Framework.Persistence.Abstractions.EntityQuery<T>!
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Orderings.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Ordering<T>!>!
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Orderings.init -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Page(int skip, int take) -> XiHan.Framework.Persistence.Abstractions.EntityQuery<T>!
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Skip.get -> int
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Skip.init -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Take.get -> int
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Take.init -> void
-XiHan.Framework.Persistence.Abstractions.EntityQuery<T>.Where(XiHan.Framework.Domain.ISpecification<T>! filter) -> XiHan.Framework.Persistence.Abstractions.EntityQuery<T>!
-XiHan.Framework.Persistence.Abstractions.GuidV7IdGenerator
-XiHan.Framework.Persistence.Abstractions.GuidV7IdGenerator.GuidV7IdGenerator(System.TimeProvider! timeProvider) -> void
-XiHan.Framework.Persistence.Abstractions.GuidV7IdGenerator.NewId() -> System.Guid
-XiHan.Framework.Persistence.Abstractions.IIdGenerator<TKey>
-XiHan.Framework.Persistence.Abstractions.IIdGenerator<TKey>.NewId() -> TKey
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.Abstractions.IRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar
-XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.IsReadOnly.get -> bool
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.IUnitOfWork.TenantId.get -> string?
-XiHan.Framework.Persistence.Abstractions.Ordering<T>
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Ordering<T>!
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, out bool Descending) -> void
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.Descending.get -> bool
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.Descending.init -> void
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.Equals(XiHan.Framework.Persistence.Abstractions.Ordering<T>? other) -> bool
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<T, object?>!>!
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.KeySelector.init -> void
-XiHan.Framework.Persistence.Abstractions.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, bool Descending = false) -> void
-XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities
-XiHan.Framework.Persistence.Abstractions.PersistenceConventions
-XiHan.Framework.Persistence.Abstractions.PersistenceErrors
-XiHan.Framework.Persistence.Abstractions.PersistenceMessages
-XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations
-XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations.Add<TEntity, TKey>() -> void
-XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar! registrar) -> void
-XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.IRepositoryRegistrar!>!>!
-XiHan.Framework.Persistence.Abstractions.RepositoryRegistrations.RepositoryRegistrations() -> void
-XiHan.Framework.Persistence.Abstractions.RepositoryServiceCollectionExtensions
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkMiddleware
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkMiddleware.UnitOfWorkMiddleware() -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions!
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.Deconstruct(out string? TenantId, out bool IsReadOnly) -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.Equals(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions? other) -> bool
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.IsReadOnly.get -> bool
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.IsReadOnly.init -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.TenantId.get -> string?
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.TenantId.init -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false) -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkState.Active = 1 -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkState.NotStarted = 0 -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.UnitOfWorkState.RolledBack = 3 -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
+static XiHan.Framework.Persistence.Abstractions.PersistenceMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
+static XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.All<T>() -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+static XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations!
+static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Default.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
+static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator !=(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator ==(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool

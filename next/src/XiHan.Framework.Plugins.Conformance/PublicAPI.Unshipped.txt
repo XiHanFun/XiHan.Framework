@@ -1,13 +1,4 @@
 #nullable enable
-abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDirectory.get -> string!
-abstract XiHan.Framework.Plugins.Conformance.WasmPluginConformance.PluginDirectory.get -> string!
-virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
-virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
-virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
-virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ConfigurationJson.get -> string!
-virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
-virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest() -> System.Threading.Tasks.Task!
@@ -26,3 +17,12 @@ XiHan.Framework.Plugins.Conformance.WasmPluginConformance.Lifecycle_ConfigureSta
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance.Middleware_BeforeAndAfter_ReturnValidDecisions() -> void
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance.Module_ExportsFollowTheAbi() -> void
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance.WasmPluginConformance() -> void
+abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDirectory.get -> string!
+abstract XiHan.Framework.Plugins.Conformance.WasmPluginConformance.PluginDirectory.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
+virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ConfigurationJson.get -> string!
+virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
+virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

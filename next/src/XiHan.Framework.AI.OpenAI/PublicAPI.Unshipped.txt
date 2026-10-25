@@ -1,10 +1,10 @@
 #nullable enable
 XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory
-XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory.Create(XiHan.Framework.AI.Abstractions.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IChatClient!>
+XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory.Create(XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IChatClient!>
 XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory.Kind.get -> string!
 XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory.OpenAIChatClientFactory(System.Net.Http.IHttpClientFactory? httpClients = null, Microsoft.Extensions.Logging.ILoggerFactory? loggers = null) -> void
 XiHan.Framework.AI.OpenAI.OpenAIEmbeddingGeneratorFactory
-XiHan.Framework.AI.OpenAI.OpenAIEmbeddingGeneratorFactory.Create(XiHan.Framework.AI.Abstractions.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
+XiHan.Framework.AI.OpenAI.OpenAIEmbeddingGeneratorFactory.Create(XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
 XiHan.Framework.AI.OpenAI.OpenAIEmbeddingGeneratorFactory.Kind.get -> string!
 XiHan.Framework.AI.OpenAI.OpenAIEmbeddingGeneratorFactory.OpenAIEmbeddingGeneratorFactory(System.Net.Http.IHttpClientFactory? httpClients = null) -> void
 XiHan.Framework.AI.OpenAI.OpenAIFeature

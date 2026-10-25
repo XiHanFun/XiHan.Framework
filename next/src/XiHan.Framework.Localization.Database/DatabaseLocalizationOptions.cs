@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Localization.Database;

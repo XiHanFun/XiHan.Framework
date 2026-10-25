@@ -4,7 +4,7 @@
 using System.ClientModel;
 using System.ClientModel.Primitives;
 using OpenAI;
-using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Providers;
 
 namespace XiHan.Framework.AI.OpenAI;
 
