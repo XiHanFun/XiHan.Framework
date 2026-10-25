@@ -4,6 +4,7 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.OpenAI;

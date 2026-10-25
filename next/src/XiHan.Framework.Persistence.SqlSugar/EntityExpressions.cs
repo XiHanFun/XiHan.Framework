@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Linq.Expressions;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
 
 namespace XiHan.Framework.Persistence.SqlSugar;
 

@@ -3,8 +3,10 @@
 
 using System.Text.Json;
 using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Messaging.Abstractions;
-using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
 namespace SimpleApp;

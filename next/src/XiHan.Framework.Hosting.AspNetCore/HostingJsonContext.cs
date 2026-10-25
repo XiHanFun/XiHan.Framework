@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Serialization;
+using XiHan.Framework.Hosting.AspNetCore.Health;
 
 namespace XiHan.Framework.Hosting.AspNetCore;
 

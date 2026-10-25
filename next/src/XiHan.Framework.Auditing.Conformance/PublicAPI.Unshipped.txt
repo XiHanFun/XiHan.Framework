@@ -1,7 +1,4 @@
 #nullable enable
-abstract XiHan.Framework.Auditing.Conformance.AuditTrailConformance.CreateFixtureAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Auditing.Conformance.AuditTrailFixture!>!
-abstract XiHan.Framework.Auditing.Conformance.AuditTrailFixture.Sink.get -> XiHan.Framework.Kernel.Diagnostics.IAuditSink!
-abstract XiHan.Framework.Auditing.Conformance.AuditTrailFixture.Trail.get -> XiHan.Framework.Auditing.Abstractions.IAuditTrail!
 XiHan.Framework.Auditing.Conformance.AuditTrailConformance
 XiHan.Framework.Auditing.Conformance.AuditTrailConformance.AuditTrailConformance() -> void
 XiHan.Framework.Auditing.Conformance.AuditTrailConformance.Query_FiltersIntersect() -> System.Threading.Tasks.Task!
@@ -10,3 +7,6 @@ XiHan.Framework.Auditing.Conformance.AuditTrailConformance.Query_PagesWithContin
 XiHan.Framework.Auditing.Conformance.AuditTrailConformance.Query_ReturnsEventsInWriteOrder_WithAllFields() -> System.Threading.Tasks.Task!
 XiHan.Framework.Auditing.Conformance.AuditTrailFixture
 XiHan.Framework.Auditing.Conformance.AuditTrailFixture.AuditTrailFixture() -> void
+abstract XiHan.Framework.Auditing.Conformance.AuditTrailConformance.CreateFixtureAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Auditing.Conformance.AuditTrailFixture!>!
+abstract XiHan.Framework.Auditing.Conformance.AuditTrailFixture.Sink.get -> XiHan.Framework.Kernel.Diagnostics.IAuditSink!
+abstract XiHan.Framework.Auditing.Conformance.AuditTrailFixture.Trail.get -> XiHan.Framework.Auditing.Abstractions.Trail.IAuditTrail!

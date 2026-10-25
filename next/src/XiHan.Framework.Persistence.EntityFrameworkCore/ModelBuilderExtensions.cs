@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.EntityFrameworkCore;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;

@@ -4,6 +4,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Persistence.InMemory;
 using XiHan.Framework.Primitives;

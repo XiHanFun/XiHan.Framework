@@ -3,8 +3,13 @@
 
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Cli.Commands;
 using XiHan.Framework.Hosting.CommandLine;
+using XiHan.Framework.Hosting.CommandLine.Commands;
+using XiHan.Framework.Hosting.CommandLine.Parsing;
+using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Primitives;
 

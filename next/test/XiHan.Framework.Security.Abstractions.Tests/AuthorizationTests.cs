@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions.Authorization;
+using XiHan.Framework.Security.Abstractions.Permissions;
 
 namespace XiHan.Framework.Security.Abstractions.Tests;
 

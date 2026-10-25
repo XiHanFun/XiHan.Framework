@@ -2,7 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
-using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Locking;
+using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 using Xunit;
 

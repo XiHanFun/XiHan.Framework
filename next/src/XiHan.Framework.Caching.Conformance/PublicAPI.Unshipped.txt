@@ -1,22 +1,22 @@
 #nullable enable
-abstract XiHan.Framework.Caching.Conformance.CacheStoreConformance.CreateStore() -> XiHan.Framework.Caching.Abstractions.ICacheStore!
-static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Bytes(string! text) -> System.ReadOnlyMemory<byte>
-static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Key() -> XiHan.Framework.Caching.Abstractions.CacheKey
-static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Text(XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>> value) -> string!
-virtual XiHan.Framework.Caching.Conformance.CacheStoreConformance.ExpirationGrace.get -> System.TimeSpan
 XiHan.Framework.Caching.Conformance.CacheStoreConformance
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.BatchMethods_EmptyInput_ReturnEmpty() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.CacheStoreConformance() -> void
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.DistributedLock_IsExclusive_ReleasableAndExpiring() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.LargeValue_RoundTrips() -> System.Threading.Tasks.Task!
-XiHan.Framework.Caching.Conformance.CacheStoreConformance.Remove_ReportsExistence() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.RemoveMany_ReportsPerKey() -> System.Threading.Tasks.Task!
-XiHan.Framework.Caching.Conformance.CacheStoreConformance.Set_Overwrites_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
-XiHan.Framework.Caching.Conformance.CacheStoreConformance.Set_ThenGet_RoundTrips_AndMissingIsNone() -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Conformance.CacheStoreConformance.Remove_ReportsExistence() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.SetMany_HonoursPerEntryExpiration_AndGetManyExtendsSliding() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.SetMany_ThenGetMany_KeepsOrder_AndLastWriteWins() -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Conformance.CacheStoreConformance.Set_Overwrites_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Conformance.CacheStoreConformance.Set_ThenGet_RoundTrips_AndMissingIsNone() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.SlidingExpiration_ExtendsOnRead_ThenExpires() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.TimeToLive_ExpiresEntry() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.TryAdd_Concurrent_ExactlyOneWins() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.TryAdd_OnlyFirstWins_UntilRemoved() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.TryRemove_RequiresMatchingValue() -> System.Threading.Tasks.Task!
+abstract XiHan.Framework.Caching.Conformance.CacheStoreConformance.CreateStore() -> XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!
+static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Bytes(string! text) -> System.ReadOnlyMemory<byte>
+static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Key() -> XiHan.Framework.Caching.Abstractions.Stores.CacheKey
+static XiHan.Framework.Caching.Conformance.CacheStoreConformance.Text(XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>> value) -> string!
+virtual XiHan.Framework.Caching.Conformance.CacheStoreConformance.ExpirationGrace.get -> System.TimeSpan

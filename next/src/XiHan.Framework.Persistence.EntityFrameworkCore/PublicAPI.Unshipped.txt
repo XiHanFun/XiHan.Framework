@@ -1,13 +1,4 @@
 #nullable enable
-const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.ConnectionBinding = "db" -> string!
-const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore" -> string!
-override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.GetHashCode() -> int
-override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ToString() -> string!
-static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions!
-static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.operator !=(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? left, XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? right) -> bool
-static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.operator ==(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? left, XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? right) -> bool
-static XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> Microsoft.EntityFrameworkCore.ModelBuilder!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.EntityFrameworkCorePersistenceFeature(System.Action<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>, Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> void
@@ -24,17 +15,17 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOp
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.EntityFrameworkCoreRepository(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork! unitOfWork, System.TimeProvider! timeProvider) -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork
-XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.Context.get -> Microsoft.EntityFrameworkCore.DbContext!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
@@ -42,6 +33,15 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.En
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EntityFrameworkCoreUnitOfWork(Microsoft.EntityFrameworkCore.DbContext! context) -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWorkState
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.TenantId.get -> string?
 XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions
+const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.ConnectionBinding = "db" -> string!
+const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore" -> string!
+override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ToString() -> string!
+static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions!
+static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.operator !=(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? left, XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? right) -> bool
+static XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.operator ==(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? left, XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? right) -> bool
+static XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(this Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> Microsoft.EntityFrameworkCore.ModelBuilder!

@@ -3,6 +3,10 @@
 
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.AI.Abstractions.Guardrails;
+using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.AI.Abstractions.Tools;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;

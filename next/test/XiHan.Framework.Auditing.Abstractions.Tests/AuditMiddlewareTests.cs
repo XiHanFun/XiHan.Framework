@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;

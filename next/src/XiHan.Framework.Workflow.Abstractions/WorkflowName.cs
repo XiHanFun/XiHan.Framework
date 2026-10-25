@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions.Serialization;
 
 namespace XiHan.Framework.Workflow.Abstractions;
 

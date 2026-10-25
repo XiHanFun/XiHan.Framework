@@ -7,6 +7,7 @@ using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Protocols.Grpc.Proto;
 
 namespace XiHan.Framework.Protocols.Grpc.Tests;
 

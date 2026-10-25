@@ -4,9 +4,11 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.AI.Abstractions.Tools;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;

@@ -4,6 +4,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Plugins.Protocol;
+using XiHan.Framework.Plugins.Protocol.Handshake;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 

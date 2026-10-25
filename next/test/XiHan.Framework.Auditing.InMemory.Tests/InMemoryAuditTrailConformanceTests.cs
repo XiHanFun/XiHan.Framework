@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging.Abstractions;
-using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Auditing.Conformance;
 using XiHan.Framework.Kernel.Diagnostics;
 

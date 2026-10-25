@@ -1,18 +1,4 @@
 #nullable enable
-const XiHan.Framework.Plugins.Wasm.WasmPluginHost.HealthPrefix = "plugins." -> string!
-const XiHan.Framework.Plugins.Wasm.WasmPluginOptions.ConfigurationSection = "XiHan:Plugins:Wasm" -> string!
-const XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Capability = "plugins.wasm" -> string!
-override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.GetHashCode() -> int
-override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.ToString() -> string!
-override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Equals(object? obj) -> bool
-override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.GetHashCode() -> int
-override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.ToString() -> string!
-static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Plugins.Wasm.WasmPluginOptions!
-static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.operator !=(XiHan.Framework.Plugins.Wasm.WasmPluginOptions? left, XiHan.Framework.Plugins.Wasm.WasmPluginOptions? right) -> bool
-static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.operator ==(XiHan.Framework.Plugins.Wasm.WasmPluginOptions? left, XiHan.Framework.Plugins.Wasm.WasmPluginOptions? right) -> bool
-static XiHan.Framework.Plugins.Wasm.WasmPluginStatus.operator !=(XiHan.Framework.Plugins.Wasm.WasmPluginStatus? left, XiHan.Framework.Plugins.Wasm.WasmPluginStatus? right) -> bool
-static XiHan.Framework.Plugins.Wasm.WasmPluginStatus.operator ==(XiHan.Framework.Plugins.Wasm.WasmPluginStatus? left, XiHan.Framework.Plugins.Wasm.WasmPluginStatus? right) -> bool
 XiHan.Framework.Plugins.Wasm.WasmPluginHost
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.Describe(string! manifestId) -> XiHan.Framework.Plugins.Wasm.WasmPluginStatus?
@@ -54,12 +40,6 @@ XiHan.Framework.Plugins.Wasm.WasmPluginOptions.StackLimitBytes.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.WasmPluginOptions() -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.WorkDirectory.get -> string?
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.WorkDirectory.init -> void
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.WasmPluginsFeature() -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.<Clone>$() -> XiHan.Framework.Plugins.Wasm.WasmPluginStatus!
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.AbiVersion.get -> uint?
@@ -75,3 +55,23 @@ XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Restarts.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Status.get -> XiHan.Framework.Kernel.Plugins.PluginStatus!
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Status.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.WasmPluginStatus(XiHan.Framework.Kernel.Plugins.PluginStatus! Status, uint? AbiVersion, uint? ProtocolVersion, int Restarts, bool Lazy) -> void
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.WasmPluginsFeature() -> void
+const XiHan.Framework.Plugins.Wasm.WasmPluginHost.HealthPrefix = "plugins." -> string!
+const XiHan.Framework.Plugins.Wasm.WasmPluginOptions.ConfigurationSection = "XiHan:Plugins:Wasm" -> string!
+const XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Capability = "plugins.wasm" -> string!
+override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.GetHashCode() -> int
+override XiHan.Framework.Plugins.Wasm.WasmPluginOptions.ToString() -> string!
+override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.GetHashCode() -> int
+override XiHan.Framework.Plugins.Wasm.WasmPluginStatus.ToString() -> string!
+static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Plugins.Wasm.WasmPluginOptions!
+static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.operator !=(XiHan.Framework.Plugins.Wasm.WasmPluginOptions? left, XiHan.Framework.Plugins.Wasm.WasmPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.Wasm.WasmPluginOptions.operator ==(XiHan.Framework.Plugins.Wasm.WasmPluginOptions? left, XiHan.Framework.Plugins.Wasm.WasmPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.Wasm.WasmPluginStatus.operator !=(XiHan.Framework.Plugins.Wasm.WasmPluginStatus? left, XiHan.Framework.Plugins.Wasm.WasmPluginStatus? right) -> bool
+static XiHan.Framework.Plugins.Wasm.WasmPluginStatus.operator ==(XiHan.Framework.Plugins.Wasm.WasmPluginStatus? left, XiHan.Framework.Plugins.Wasm.WasmPluginStatus? right) -> bool

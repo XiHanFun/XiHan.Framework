@@ -2,7 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.AI.Conformance;
+using XiHan.Framework.AI.Abstractions.Knowledge;
+using XiHan.Framework.AI.Conformance.Embeddings;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;

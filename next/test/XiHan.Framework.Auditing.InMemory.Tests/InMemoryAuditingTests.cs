@@ -4,7 +4,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;

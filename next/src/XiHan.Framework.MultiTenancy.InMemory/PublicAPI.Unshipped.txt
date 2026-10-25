@@ -1,12 +1,4 @@
 #nullable enable
-const XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.ConfigurationSection = "XiHan:MultiTenancy:InMemory" -> string!
-const XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.TenantsSection = "XiHan:MultiTenancy:Tenants" -> string!
-override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Equals(object? obj) -> bool
-override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.GetHashCode() -> int
-override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.ToString() -> string!
-static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions!
-static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.operator !=(XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? right) -> bool
-static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.operator ==(XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? right) -> bool
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyFeature
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyFeature.InMemoryMultiTenancyFeature() -> void
@@ -17,13 +9,21 @@ XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Equals(XiHan.F
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.InMemoryMultiTenancyOptions() -> void
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.MaxTenants.get -> int
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.MaxTenants.init -> void
-XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Tenants.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!>!
+XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Tenants.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>!
 XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Tenants.init -> void
 XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore
 XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.Capacity.get -> int
 XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.Count.get -> int
-XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.FindAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!>>
+XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.FindAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>>
 XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.InMemoryTenantStore(XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions! options) -> void
-XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.ListAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.TenantInfo!>!>
+XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.ListAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>!>
 XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.Remove(string! tenantId) -> bool
-XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.Set(XiHan.Framework.MultiTenancy.Abstractions.TenantInfo! tenant) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.MultiTenancy.InMemory.InMemoryTenantStore.Set(XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo! tenant) -> XiHan.Framework.Primitives.Result
+const XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.ConfigurationSection = "XiHan:MultiTenancy:InMemory" -> string!
+const XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.TenantsSection = "XiHan:MultiTenancy:Tenants" -> string!
+override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.Equals(object? obj) -> bool
+override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.GetHashCode() -> int
+override XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.ToString() -> string!
+static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions!
+static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.operator !=(XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? right) -> bool
+static XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions.operator ==(XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions? right) -> bool

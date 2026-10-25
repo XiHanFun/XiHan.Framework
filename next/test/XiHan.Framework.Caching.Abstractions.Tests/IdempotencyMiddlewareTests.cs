@@ -3,6 +3,10 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Idempotency;
+using XiHan.Framework.Caching.Abstractions.Serialization;
+using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;

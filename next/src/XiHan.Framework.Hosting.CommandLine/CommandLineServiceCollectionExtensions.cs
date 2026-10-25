@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Hosting.CommandLine.Commands;
+using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 

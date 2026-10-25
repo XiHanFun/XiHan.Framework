@@ -3,6 +3,10 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.AI.Abstractions.Guardrails;
+using XiHan.Framework.AI.Abstractions.Knowledge;
+using XiHan.Framework.AI.Abstractions.Prompts;
+using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions;

@@ -1,7 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Primitives;
 

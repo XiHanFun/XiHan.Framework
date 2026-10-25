@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 

@@ -15,11 +15,6 @@ namespace XiHan.Framework.Cli.Migration;
 /// </summary>
 internal sealed class LocalEventFixer : SyntaxFixer
 {
-    /// <summary>
-    /// 改写后要引入的命名空间。
-    /// </summary>
-    private static readonly string[] _usings = ["System.Text.Json", "XiHan.Framework.Messaging.Abstractions", "XiHan.Framework.Primitives"];
-
     /// <inheritdoc />
     public override string Id => "V4-08";
 
@@ -37,7 +32,7 @@ internal sealed class LocalEventFixer : SyntaxFixer
 
         var rewriter = new Rewriter(this, file, session, handlers);
         var result = (CompilationUnitSyntax)rewriter.Visit(root);
-        return rewriter.NeedsUsings ? WithUsings(result, _usings, file.NewLine) : result;
+        return rewriter.Usings.Count > 0 ? WithUsings(result, rewriter.Usings, file.NewLine) : result;
     }
 
     /// <summary>
@@ -140,9 +135,9 @@ internal sealed class LocalEventFixer : SyntaxFixer
         public bool Changed { get; private set; }
 
         /// <summary>
-        /// 是否改了处理器或总线调用（这些改写用到消息与 JSON 的命名空间；只改 <c>Raise</c> 不补 using）。
+        /// 改写用到的命名空间：处理器改写要 <c>Handlers</c>、JSON 与原语层，总线类型要 <c>Publishing</c>，发布调用要 <c>Envelopes</c> 与 JSON；只改 <c>Raise</c> 不补 using。
         /// </summary>
-        public bool NeedsUsings { get; private set; }
+        public HashSet<string> Usings { get; } = new(StringComparer.Ordinal);
 
         /// <inheritdoc />
         public override SyntaxNode? VisitIdentifierName(IdentifierNameSyntax node)
@@ -153,7 +148,7 @@ internal sealed class LocalEventFixer : SyntaxFixer
             }
 
             Changed = true;
-            NeedsUsings = true;
+            Usings.Add("XiHan.Framework.Messaging.Abstractions.Publishing");
             session.Changed(fixer.Id, file, LineOf(node));
             return node.WithIdentifier(SyntaxFactory.Identifier(node.Identifier.LeadingTrivia, "IMessagePublisher", node.Identifier.TrailingTrivia));
         }
@@ -170,7 +165,9 @@ internal sealed class LocalEventFixer : SyntaxFixer
             var events = EventTypes(node);
             var className = node.Identifier.ValueText;
             Changed = true;
-            NeedsUsings = true;
+            Usings.Add("System.Text.Json");
+            Usings.Add("XiHan.Framework.Messaging.Abstractions.Handlers");
+            Usings.Add("XiHan.Framework.Primitives");
             session.Changed(fixer.Id, file, LineOf(node));
 
             // 基类：去掉全部 ILocalEventHandler<T>，加一个 IMessageHandler
@@ -304,7 +301,8 @@ internal sealed class LocalEventFixer : SyntaxFixer
             var data = visited.ArgumentList.Arguments[0].Expression.ToString();
             var text = $"(\"{topic}\", new MessageEnvelope {{ Id = Guid.NewGuid().ToString(\"N\"), Source = \"{Source()}\", Type = \"{topic}\", Time = DateTimeOffset.UtcNow, Data = JsonSerializer.SerializeToUtf8Bytes({data}) }}, {token})";
             Changed = true;
-            NeedsUsings = true;
+            Usings.Add("System.Text.Json");
+            Usings.Add("XiHan.Framework.Messaging.Abstractions.Envelopes");
             session.Changed(fixer.Id, file, LineOf(node));
             Pend(anchor, CliMessages.MigrateMarkerEventJson.L());
             return visited.WithArgumentList(SyntaxFactory.ParseArgumentList(text).WithTriviaFrom(visited.ArgumentList));

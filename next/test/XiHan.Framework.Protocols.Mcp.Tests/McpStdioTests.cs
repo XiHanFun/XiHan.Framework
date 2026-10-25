@@ -6,9 +6,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.CommandLine;
+using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Profiles.Minimal;
+using XiHan.Framework.Protocols.Mcp.Server;
+using XiHan.Framework.Protocols.Mcp.Transports;
 using XiHan.Framework.Security.InMemory;
 
 namespace XiHan.Framework.Protocols.Mcp.Tests;

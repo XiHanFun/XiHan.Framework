@@ -1,81 +1,81 @@
 #nullable enable
-XiHan.Framework.Workflow.Conformance.ConformanceLog
-XiHan.Framework.Workflow.Conformance.ConformanceLog.Compensated.get -> System.Collections.Generic.IReadOnlyList<string!>!
-XiHan.Framework.Workflow.Conformance.ConformanceLog.ConformanceLog() -> void
-XiHan.Framework.Workflow.Conformance.ConformanceLog.Events.get -> System.Collections.Generic.IReadOnlyList<(string! Topic, XiHan.Framework.Workflow.Abstractions.WorkflowEventData! Data)>!
-XiHan.Framework.Workflow.Conformance.ConformanceLog.EventsOf(string! topic) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.WorkflowEventData!>!
-XiHan.Framework.Workflow.Conformance.ConformanceLog.Executed.get -> System.Collections.Generic.IReadOnlyList<(string! InstanceId, string! NodeId, int Attempt)>!
-XiHan.Framework.Workflow.Conformance.ConformanceLog.Outcomes.get -> System.Collections.Generic.IReadOnlyList<string!>!
-XiHan.Framework.Workflow.Conformance.ConformanceLog.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Workflow.Conformance.ConformanceLog.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
-XiHan.Framework.Workflow.Conformance.ConformanceLog.RecordCompensation(string! nodeId) -> void
-XiHan.Framework.Workflow.Conformance.ConformanceLog.RecordExecution(string! instanceId, string! nodeId, int attempt) -> void
-XiHan.Framework.Workflow.Conformance.ConformanceLog.RecordOutcome(string! outcome) -> void
-XiHan.Framework.Workflow.Conformance.RecordActivity
-XiHan.Framework.Workflow.Conformance.RecordActivity.CompensateAsync(XiHan.Framework.Workflow.Abstractions.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Workflow.Conformance.RecordActivity.ExecuteAsync(XiHan.Framework.Workflow.Abstractions.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.ActivityOutcome!>>
-XiHan.Framework.Workflow.Conformance.RecordActivity.RecordActivity(XiHan.Framework.Workflow.Conformance.ConformanceLog! log) -> void
-XiHan.Framework.Workflow.Conformance.RecordingOutcomeHandler
-XiHan.Framework.Workflow.Conformance.RecordingOutcomeHandler.HandleAsync(XiHan.Framework.Workflow.Abstractions.WorkflowOutcomeContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Workflow.Conformance.RecordingOutcomeHandler.RecordingOutcomeHandler(XiHan.Framework.Workflow.Conformance.ConformanceLog! log) -> void
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Control_SuspendResumeCancelTerminate() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Decision_PicksMatchingTransition_OrDefault() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Definitions_Lifecycle_AndOutcomeHandlers() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Delay_AndNodeTimeout_ResumeByPolling() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Signal_ResumesMatchingBookmarks() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.SubWorkflow_AndForEach_RunChildren() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Tenant_IsolatesTasksAndSignals() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.UserTask_AllAndSequential_Policies() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.UserTask_Any_PendingCompleteAndGuards() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.UserTask_TransferAndAddAssignees() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.WorkflowEngineConformance() -> void
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.AddAssigneesAsync(string! taskId, string! actorId, params System.Collections.Generic.IReadOnlyList<string!>! assignees) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.BookmarksAsync(string! instanceId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.WorkflowBookmark!>!>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.CompleteAsync(string! taskId, string! actorId, string! outcome, System.Text.Json.Nodes.JsonObject? variables = null, string? comment = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.WorkflowInstance!>>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.EngineAsync<T>(System.Func<XiHan.Framework.Workflow.Abstractions.IWorkflowEngine!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.InScopeAsync<T>(System.Func<System.IServiceProvider!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.InstanceAsync(string! id) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Workflow.Abstractions.WorkflowInstance!>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.NodeInstancesAsync(string! instanceId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.WorkflowNodeInstance!>!>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.PendingAsync(string! assigneeId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.UserTask!>!>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.PollAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.PublishAsync(XiHan.Framework.Workflow.Abstractions.WorkflowDefinition! definition) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Workflow.Abstractions.WorkflowDefinition!>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.Services.get -> System.IServiceProvider!
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.SignalAsync(string! name, System.Text.Json.Nodes.JsonObject? payload = null, string? correlationId = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.StartAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Text.Json.Nodes.JsonObject? variables = null, string? starterId = null, string? correlationId = null, string? tenantId = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.WorkflowInstance!>>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.TransferAsync(string! taskId, string! actorId, string! target) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.Workflow.Conformance.WorkflowEngineHost.WorkflowEngineHost(System.IServiceProvider! services, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<int>>! poll, System.IAsyncDisposable! host) -> void
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Lock_IsExclusivePerInstance_AndTimesOut() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Stores_KeepSnapshots_NotReferences() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.WorkflowStoreConformance() -> void
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.Bookmarks.get -> XiHan.Framework.Workflow.Abstractions.IWorkflowBookmarkStore!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.Definitions.get -> XiHan.Framework.Workflow.Abstractions.IWorkflowDefinitionStore!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.Instances.get -> XiHan.Framework.Workflow.Abstractions.IWorkflowInstanceStore!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.Lock.get -> XiHan.Framework.Workflow.Abstractions.IWorkflowInstanceLock!
-XiHan.Framework.Workflow.Conformance.WorkflowStoreHost.WorkflowStoreHost(XiHan.Framework.Workflow.Abstractions.IWorkflowDefinitionStore! definitions, XiHan.Framework.Workflow.Abstractions.IWorkflowInstanceStore! instances, XiHan.Framework.Workflow.Abstractions.IWorkflowBookmarkStore! bookmarks, XiHan.Framework.Workflow.Abstractions.IWorkflowInstanceLock! instanceLock, System.IAsyncDisposable! host) -> void
-abstract XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null) -> System.Threading.Tasks.Task<XiHan.Framework.Workflow.Conformance.WorkflowEngineHost!>!
-abstract XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Workflow.Conformance.WorkflowStoreHost!>!
-const XiHan.Framework.Workflow.Conformance.RecordActivity.FailTimesProperty = "FailTimes" -> string!
-const XiHan.Framework.Workflow.Conformance.RecordActivity.LabelProperty = "Label" -> string!
-const XiHan.Framework.Workflow.Conformance.RecordActivity.OutputsProperty = "Outputs" -> string!
-const XiHan.Framework.Workflow.Conformance.RecordActivity.TypeName = "Record" -> string!
-const XiHan.Framework.Workflow.Conformance.RecordingOutcomeHandler.FailingOutcome = "fail" -> string!
-static XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Approval(string! name, XiHan.Framework.Workflow.Abstractions.UserTaskCompletionPolicy policy, params System.Collections.Generic.IReadOnlyList<string!>! assignees) -> XiHan.Framework.Workflow.Abstractions.WorkflowDefinition!
-static XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Workflow.Conformance.ConformanceLog! log) -> void
-static XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Bookmark(string! instanceId, string! nodeInstanceId, string! kind, string? key, System.DateTimeOffset? dueAt, System.DateTimeOffset? createdAt = null) -> XiHan.Framework.Workflow.Abstractions.WorkflowBookmark!
-static XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Definition(string! name, int version, XiHan.Framework.Workflow.Abstractions.WorkflowDefinitionStatus status) -> XiHan.Framework.Workflow.Abstractions.WorkflowDefinition!
-static XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.Instance(string! definitionName, string! id, System.DateTimeOffset? createdAt = null) -> XiHan.Framework.Workflow.Abstractions.WorkflowInstance!
-static XiHan.Framework.Workflow.Conformance.WorkflowStoreConformance.NodeInstance(string! instanceId, string! nodeId, System.DateTimeOffset startedAt) -> XiHan.Framework.Workflow.Abstractions.WorkflowNodeInstance!
-virtual XiHan.Framework.Workflow.Conformance.WorkflowEngineConformance.WaitTimeout.get -> System.TimeSpan
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Compensated.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.ConformanceLog() -> void
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Events.get -> System.Collections.Generic.IReadOnlyList<(string! Topic, XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData! Data)>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.EventsOf(string! topic) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData!>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Executed.get -> System.Collections.Generic.IReadOnlyList<(string! InstanceId, string! NodeId, int Attempt)>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Outcomes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordCompensation(string! nodeId) -> void
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordExecution(string! instanceId, string! nodeId, int attempt) -> void
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordOutcome(string! outcome) -> void
+XiHan.Framework.Workflow.Conformance.Engine.RecordActivity
+XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.CompensateAsync(XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.ExecuteAsync(XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome!>>
+XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.RecordActivity(XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog! log) -> void
+XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler
+XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.HandleAsync(XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.RecordingOutcomeHandler(XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog! log) -> void
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Control_SuspendResumeCancelTerminate() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Decision_PicksMatchingTransition_OrDefault() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definitions_Lifecycle_AndOutcomeHandlers() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Delay_AndNodeTimeout_ResumeByPolling() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Signal_ResumesMatchingBookmarks() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SubWorkflow_AndForEach_RunChildren() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Tenant_IsolatesTasksAndSignals() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.UserTask_AllAndSequential_Policies() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.UserTask_Any_PendingCompleteAndGuards() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.UserTask_TransferAndAddAssignees() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.WorkflowEngineConformance() -> void
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.AddAssigneesAsync(string! taskId, string! actorId, params System.Collections.Generic.IReadOnlyList<string!>! assignees) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.BookmarksAsync(string! instanceId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.CompleteAsync(string! taskId, string! actorId, string! outcome, System.Text.Json.Nodes.JsonObject? variables = null, string? comment = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.EngineAsync<T>(System.Func<XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.InScopeAsync<T>(System.Func<System.IServiceProvider!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.InstanceAsync(string! id) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.NodeInstancesAsync(string! instanceId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>!>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.PendingAsync(string! assigneeId) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.PollAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<int>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.PublishAsync(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.Services.get -> System.IServiceProvider!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.SignalAsync(string! name, System.Text.Json.Nodes.JsonObject? payload = null, string? correlationId = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.StartAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Text.Json.Nodes.JsonObject? variables = null, string? starterId = null, string? correlationId = null, string? tenantId = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.TransferAsync(string! taskId, string! actorId, string! target) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.WorkflowEngineHost(System.IServiceProvider! services, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<int>>! poll, System.IAsyncDisposable! host) -> void
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Lock_IsExclusivePerInstance_AndTimesOut() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Stores_KeepSnapshots_NotReferences() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.WorkflowStoreConformance() -> void
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.Bookmarks.get -> XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.Definitions.get -> XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.Instances.get -> XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowInstanceStore!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.Lock.get -> XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowInstanceLock!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost.WorkflowStoreHost(XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore! definitions, XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowInstanceStore! instances, XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore! bookmarks, XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowInstanceLock! instanceLock, System.IAsyncDisposable! host) -> void
+abstract XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null) -> System.Threading.Tasks.Task<XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost!>!
+abstract XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreHost!>!
+const XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.FailTimesProperty = "FailTimes" -> string!
+const XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.LabelProperty = "Label" -> string!
+const XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.OutputsProperty = "Outputs" -> string!
+const XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.TypeName = "Record" -> string!
+const XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.FailingOutcome = "fail" -> string!
+static XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Approval(string! name, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy policy, params System.Collections.Generic.IReadOnlyList<string!>! assignees) -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
+static XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog! log) -> void
+static XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmark(string! instanceId, string! nodeInstanceId, string! kind, string? key, System.DateTimeOffset? dueAt, System.DateTimeOffset? createdAt = null) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!
+static XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definition(string! name, int version, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus status) -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
+static XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instance(string! definitionName, string! id, System.DateTimeOffset? createdAt = null) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
+static XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.NodeInstance(string! instanceId, string! nodeId, System.DateTimeOffset startedAt) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!
+virtual XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.WaitTimeout.get -> System.TimeSpan

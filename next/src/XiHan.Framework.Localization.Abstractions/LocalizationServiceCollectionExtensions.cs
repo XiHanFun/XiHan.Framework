@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Localization.Abstractions;

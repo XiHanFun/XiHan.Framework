@@ -8,6 +8,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 namespace XiHan.Framework.Protocols.CloudEvents;
 

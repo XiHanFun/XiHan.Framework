@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Plugins.OutOfProcess;
-using XiHan.Framework.Plugins.Protocol;
+using XiHan.Framework.Plugins.OutOfProcess.Processes;
+using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives.Manifests;
 

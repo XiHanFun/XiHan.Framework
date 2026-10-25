@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.CodeAnalysis;
+using XiHan.Framework.Kernel.Generators.Json;
 
 namespace XiHan.Framework.Kernel.Generators;
 

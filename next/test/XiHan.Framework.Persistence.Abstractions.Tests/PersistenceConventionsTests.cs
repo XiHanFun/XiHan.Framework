@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 

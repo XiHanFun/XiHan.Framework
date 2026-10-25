@@ -1,3 +1,3 @@
 #nullable enable
-static XiHan.Framework.Profiles.Minimal.MinimalProfile.UseMinimalProfile(this XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> XiHan.Framework.Kernel.Hosting.AppBuilder!
 XiHan.Framework.Profiles.Minimal.MinimalProfile
+static XiHan.Framework.Profiles.Minimal.MinimalProfile.UseMinimalProfile(this XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> XiHan.Framework.Kernel.Hosting.AppBuilder!

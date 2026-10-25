@@ -1,46 +1,46 @@
 #nullable enable
-const XiHan.Framework.Domain.DomainEventBuffer.DefaultCapacity = 256 -> int
-static XiHan.Framework.Domain.Specification.All<T>() -> XiHan.Framework.Domain.Specification<T>!
-static XiHan.Framework.Domain.Specification.Of<T>(System.Linq.Expressions.Expression<System.Func<T, bool>!>! criteria) -> XiHan.Framework.Domain.Specification<T>!
-XiHan.Framework.Domain.DomainEventBuffer
-XiHan.Framework.Domain.DomainEventBuffer.Add(XiHan.Framework.Domain.IDomainEvent! domainEvent) -> void
-XiHan.Framework.Domain.DomainEventBuffer.Clear() -> void
-XiHan.Framework.Domain.DomainEventBuffer.DomainEventBuffer(int capacity = 256) -> void
-XiHan.Framework.Domain.DomainEventBuffer.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.IDomainEvent!>!
-XiHan.Framework.Domain.IAggregateRoot<TKey>
-XiHan.Framework.Domain.IDomainEvent
-XiHan.Framework.Domain.IDomainEvent.OccurredAt.get -> System.DateTimeOffset
-XiHan.Framework.Domain.IEntity<TKey>
-XiHan.Framework.Domain.IEntity<TKey>.Id.get -> TKey
-XiHan.Framework.Domain.IHasConcurrencyStamp
-XiHan.Framework.Domain.IHasConcurrencyStamp.ConcurrencyStamp.get -> string!
-XiHan.Framework.Domain.IHasConcurrencyStamp.ConcurrencyStamp.set -> void
-XiHan.Framework.Domain.IHasCreationTime
-XiHan.Framework.Domain.IHasCreationTime.CreatedAt.get -> System.DateTimeOffset
-XiHan.Framework.Domain.IHasCreationTime.CreatedAt.set -> void
-XiHan.Framework.Domain.IHasDomainEvents
-XiHan.Framework.Domain.IHasDomainEvents.ClearDomainEvents() -> void
-XiHan.Framework.Domain.IHasDomainEvents.DomainEvents.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.IDomainEvent!>!
-XiHan.Framework.Domain.IHasModificationTime
-XiHan.Framework.Domain.IHasModificationTime.ModifiedAt.get -> System.DateTimeOffset?
-XiHan.Framework.Domain.IHasModificationTime.ModifiedAt.set -> void
-XiHan.Framework.Domain.IMultiTenant
-XiHan.Framework.Domain.IMultiTenant.TenantId.get -> string!
-XiHan.Framework.Domain.IMultiTenant.TenantId.set -> void
-XiHan.Framework.Domain.ISoftDeletable
-XiHan.Framework.Domain.ISoftDeletable.DeletedAt.get -> System.DateTimeOffset?
-XiHan.Framework.Domain.ISoftDeletable.DeletedAt.set -> void
-XiHan.Framework.Domain.ISoftDeletable.IsDeleted.get -> bool
-XiHan.Framework.Domain.ISoftDeletable.IsDeleted.set -> void
-XiHan.Framework.Domain.ISpecification<T>
-XiHan.Framework.Domain.ISpecification<T>.Criteria.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>!
-XiHan.Framework.Domain.ISpecification<T>.IsSatisfiedBy(T candidate) -> bool
-XiHan.Framework.Domain.IValueObject
-XiHan.Framework.Domain.Specification
-XiHan.Framework.Domain.Specification<T>
-XiHan.Framework.Domain.Specification<T>.And(XiHan.Framework.Domain.ISpecification<T>! other) -> XiHan.Framework.Domain.Specification<T>!
-XiHan.Framework.Domain.Specification<T>.Criteria.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>!
-XiHan.Framework.Domain.Specification<T>.IsSatisfiedBy(T candidate) -> bool
-XiHan.Framework.Domain.Specification<T>.Not() -> XiHan.Framework.Domain.Specification<T>!
-XiHan.Framework.Domain.Specification<T>.Or(XiHan.Framework.Domain.ISpecification<T>! other) -> XiHan.Framework.Domain.Specification<T>!
-XiHan.Framework.Domain.Specification<T>.Specification(System.Linq.Expressions.Expression<System.Func<T, bool>!>! criteria) -> void
+XiHan.Framework.Domain.Entities.IAggregateRoot<TKey>
+XiHan.Framework.Domain.Entities.IEntity<TKey>
+XiHan.Framework.Domain.Entities.IEntity<TKey>.Id.get -> TKey
+XiHan.Framework.Domain.Entities.IHasConcurrencyStamp
+XiHan.Framework.Domain.Entities.IHasConcurrencyStamp.ConcurrencyStamp.get -> string!
+XiHan.Framework.Domain.Entities.IHasConcurrencyStamp.ConcurrencyStamp.set -> void
+XiHan.Framework.Domain.Entities.IHasCreationTime
+XiHan.Framework.Domain.Entities.IHasCreationTime.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Domain.Entities.IHasCreationTime.CreatedAt.set -> void
+XiHan.Framework.Domain.Entities.IHasModificationTime
+XiHan.Framework.Domain.Entities.IHasModificationTime.ModifiedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Domain.Entities.IHasModificationTime.ModifiedAt.set -> void
+XiHan.Framework.Domain.Entities.IMultiTenant
+XiHan.Framework.Domain.Entities.IMultiTenant.TenantId.get -> string!
+XiHan.Framework.Domain.Entities.IMultiTenant.TenantId.set -> void
+XiHan.Framework.Domain.Entities.ISoftDeletable
+XiHan.Framework.Domain.Entities.ISoftDeletable.DeletedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Domain.Entities.ISoftDeletable.DeletedAt.set -> void
+XiHan.Framework.Domain.Entities.ISoftDeletable.IsDeleted.get -> bool
+XiHan.Framework.Domain.Entities.ISoftDeletable.IsDeleted.set -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer
+XiHan.Framework.Domain.Events.DomainEventBuffer.Add(XiHan.Framework.Domain.Events.IDomainEvent! domainEvent) -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer.Clear() -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer.DomainEventBuffer(int capacity = 256) -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IDomainEvent!>!
+XiHan.Framework.Domain.Events.IDomainEvent
+XiHan.Framework.Domain.Events.IDomainEvent.OccurredAt.get -> System.DateTimeOffset
+XiHan.Framework.Domain.Events.IHasDomainEvents
+XiHan.Framework.Domain.Events.IHasDomainEvents.ClearDomainEvents() -> void
+XiHan.Framework.Domain.Events.IHasDomainEvents.DomainEvents.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IDomainEvent!>!
+XiHan.Framework.Domain.Specifications.ISpecification<T>
+XiHan.Framework.Domain.Specifications.ISpecification<T>.Criteria.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>!
+XiHan.Framework.Domain.Specifications.ISpecification<T>.IsSatisfiedBy(T candidate) -> bool
+XiHan.Framework.Domain.Specifications.Specification
+XiHan.Framework.Domain.Specifications.Specification<T>
+XiHan.Framework.Domain.Specifications.Specification<T>.And(XiHan.Framework.Domain.Specifications.ISpecification<T>! other) -> XiHan.Framework.Domain.Specifications.Specification<T>!
+XiHan.Framework.Domain.Specifications.Specification<T>.Criteria.get -> System.Linq.Expressions.Expression<System.Func<T, bool>!>!
+XiHan.Framework.Domain.Specifications.Specification<T>.IsSatisfiedBy(T candidate) -> bool
+XiHan.Framework.Domain.Specifications.Specification<T>.Not() -> XiHan.Framework.Domain.Specifications.Specification<T>!
+XiHan.Framework.Domain.Specifications.Specification<T>.Or(XiHan.Framework.Domain.Specifications.ISpecification<T>! other) -> XiHan.Framework.Domain.Specifications.Specification<T>!
+XiHan.Framework.Domain.Specifications.Specification<T>.Specification(System.Linq.Expressions.Expression<System.Func<T, bool>!>! criteria) -> void
+XiHan.Framework.Domain.ValueObjects.IValueObject
+const XiHan.Framework.Domain.Events.DomainEventBuffer.DefaultCapacity = 256 -> int
+static XiHan.Framework.Domain.Specifications.Specification.All<T>() -> XiHan.Framework.Domain.Specifications.Specification<T>!
+static XiHan.Framework.Domain.Specifications.Specification.Of<T>(System.Linq.Expressions.Expression<System.Func<T, bool>!>! criteria) -> XiHan.Framework.Domain.Specifications.Specification<T>!

@@ -325,7 +325,7 @@ public sealed class MigrationTests
         var expected = $$"""
             using SqlSugar;
             using XiHan.Framework.Data.SqlSugar.Entities;
-            using XiHan.Framework.Domain;
+            using XiHan.Framework.Domain.Entities;
 
             namespace Shop.Entities;
 
@@ -950,7 +950,9 @@ public sealed class MigrationTests
             using Shop.Events;
             using System.Text.Json;
             using XiHan.Framework.EventBus.Abstractions.Local;
-            using XiHan.Framework.Messaging.Abstractions;
+            using XiHan.Framework.Messaging.Abstractions.Envelopes;
+            using XiHan.Framework.Messaging.Abstractions.Handlers;
+            using XiHan.Framework.Messaging.Abstractions.Publishing;
             using XiHan.Framework.Primitives;
 
             namespace Shop.Handlers;

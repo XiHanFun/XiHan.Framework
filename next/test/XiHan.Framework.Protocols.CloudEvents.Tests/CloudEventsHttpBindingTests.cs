@@ -4,6 +4,9 @@
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.CloudEvents;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
 
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 

@@ -11,6 +11,8 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.Abstractions.Authorization;
 using XiHan.Framework.Security.InMemory;
 using XiHan.Framework.Testing;
 

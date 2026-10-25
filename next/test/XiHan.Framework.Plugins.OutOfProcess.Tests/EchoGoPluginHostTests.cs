@@ -4,9 +4,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
-using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Messaging.InMemory;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;

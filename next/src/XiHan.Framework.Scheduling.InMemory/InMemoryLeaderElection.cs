@@ -3,6 +3,8 @@
 
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
 
 namespace XiHan.Framework.Scheduling.InMemory;
 

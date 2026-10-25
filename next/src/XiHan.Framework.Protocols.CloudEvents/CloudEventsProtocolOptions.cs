@@ -2,8 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
-using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
 
 namespace XiHan.Framework.Protocols.CloudEvents;
 

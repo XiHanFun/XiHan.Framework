@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions.Tests;

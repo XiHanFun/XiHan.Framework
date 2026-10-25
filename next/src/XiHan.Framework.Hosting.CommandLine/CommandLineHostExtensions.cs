@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Hosting.CommandLine;

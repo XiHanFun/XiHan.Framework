@@ -1,65 +1,32 @@
 #nullable enable
-const XiHan.Framework.Hosting.AspNetCore.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
-const XiHan.Framework.Hosting.AspNetCore.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
-override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Equals(object? obj) -> bool
-override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.GetHashCode() -> int
-override XiHan.Framework.Hosting.AspNetCore.FeatureHealth.ToString() -> string!
-override XiHan.Framework.Hosting.AspNetCore.HealthResponse.Equals(object? obj) -> bool
-override XiHan.Framework.Hosting.AspNetCore.HealthResponse.GetHashCode() -> int
-override XiHan.Framework.Hosting.AspNetCore.HealthResponse.ToString() -> string!
-override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Equals(object? obj) -> bool
-override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
-override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
-static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
-static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanAuthentication<TBuilder>(this TBuilder builder) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator !=(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.FeatureHealth? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.FeatureHealth? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.HealthResponse? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.HealthResponse? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.AcceptedLocales(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> System.Collections.Generic.IReadOnlyList<string!>!
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.IServiceProvider! services) -> XiHan.Framework.Primitives.InvocationContext!
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.InvocationContext!
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.FormatBaggage(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! baggage) -> string!
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.GetXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
-static XiHan.Framework.Hosting.AspNetCore.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-static XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata!
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
-static XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Builder.WebApplicationBuilder! builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> Microsoft.AspNetCore.Builder.WebApplicationBuilder!
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
-XiHan.Framework.Hosting.AspNetCore.EndpointConventionBuilderExtensions
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.FeatureHealth!
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Deconstruct(out string! Id, out string! State, out string? Error) -> void
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Equals(XiHan.Framework.Hosting.AspNetCore.FeatureHealth? other) -> bool
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Error.get -> string?
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Error.init -> void
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.FeatureHealth(string! Id, string! State, string? Error) -> void
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Id.get -> string!
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.Id.init -> void
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.State.get -> string!
-XiHan.Framework.Hosting.AspNetCore.FeatureHealth.State.init -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.HealthResponse!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Contributions.init -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Deconstruct(out string! Status, out string! State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Contributions) -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Equals(XiHan.Framework.Hosting.AspNetCore.HealthResponse? other) -> bool
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Features.init -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.HealthResponse(string! Status, string! State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.FeatureHealth!>! Contributions) -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.State.get -> string!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.State.init -> void
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Status.get -> string!
-XiHan.Framework.Hosting.AspNetCore.HealthResponse.Status.init -> void
-XiHan.Framework.Hosting.AspNetCore.HttpInvocation
-XiHan.Framework.Hosting.AspNetCore.PipelineBypassMetadata
+XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
+XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Deconstruct(out string! Id, out string! State, out string? Error) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? other) -> bool
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.get -> string?
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.FeatureHealth(string! Id, string! State, string? Error) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Id.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Id.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.State.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.State.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse!
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>!
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Contributions.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Deconstruct(out string! Status, out string! State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Contributions) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Equals(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? other) -> bool
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>!
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Features.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.HealthResponse(string! Status, string! State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Contributions) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.State.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.State.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Status.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Status.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Code.get -> string!
@@ -80,3 +47,36 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.TraceId.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.init -> void
 XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions
+const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
+const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
+override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(object? obj) -> bool
+override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.GetHashCode() -> int
+override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.ToString() -> string!
+override XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.GetHashCode() -> int
+override XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.ToString() -> string!
+override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
+override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanAuthentication<TBuilder>(this TBuilder builder) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.AcceptedLocales(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.IServiceProvider! services) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FormatBaggage(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! baggage) -> string!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GetXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!
+static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Builder.WebApplicationBuilder! builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> Microsoft.AspNetCore.Builder.WebApplicationBuilder!

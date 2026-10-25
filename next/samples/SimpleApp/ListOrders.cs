@@ -2,7 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
 namespace SimpleApp;

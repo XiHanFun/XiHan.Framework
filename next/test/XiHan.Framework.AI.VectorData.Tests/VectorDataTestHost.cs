@@ -4,7 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions;
-using XiHan.Framework.AI.Conformance;
+using XiHan.Framework.AI.Conformance.Embeddings;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.VectorData.Tests;

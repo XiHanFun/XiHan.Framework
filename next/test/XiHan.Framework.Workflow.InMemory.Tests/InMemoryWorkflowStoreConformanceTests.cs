@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Workflow.Abstractions;
-using XiHan.Framework.Workflow.Conformance;
+using XiHan.Framework.Workflow.Conformance.Storage;
 
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 

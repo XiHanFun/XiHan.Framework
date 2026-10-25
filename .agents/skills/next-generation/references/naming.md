@@ -21,7 +21,7 @@ XiHan.Framework.Profiles.<Minimal|Standard|Full>
 
 | 形态 | 规则 | 示例 |
 | --- | --- | --- |
-| 命名空间 | 等于包 ID，子命名空间最多一层 | `XiHan.Framework.Kernel.Pipeline` |
+| 命名空间 | 等于包 ID；按功能区最多一层子命名空间，目录与子命名空间同名，包根只放能力 / 错误码 / 消息键 / 选项 / 特性 / 登记扩展（`03-代码规范.md` §1.5） | `XiHan.Framework.Kernel.Pipeline`、`XiHan.Framework.Messaging.Abstractions.Outbox` |
 | 能力 ID | `<领域小写>.<能力>[@版本][?]` | `persistence.relational@^1`、`multitenancy.context@^1?` |
 | 操作 ID | `<resource>.<verb>` | `orders.create` |
 | 错误码 | `<领域大写>_<KIND>_<NNN>` | `PERSISTENCE_CONFLICT_001` |

@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.Mcp.Tools;
 
 namespace XiHan.Framework.Protocols.Mcp;
 

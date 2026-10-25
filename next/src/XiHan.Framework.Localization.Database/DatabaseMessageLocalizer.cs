@@ -3,6 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Locales;
+using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Localization.Database;

@@ -8,6 +8,9 @@ using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.Abstractions.Authorization;
+using XiHan.Framework.Security.Abstractions.Permissions;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.InMemory.Tests;

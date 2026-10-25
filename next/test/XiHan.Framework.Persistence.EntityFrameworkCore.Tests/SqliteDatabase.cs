@@ -5,8 +5,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Persistence.Abstractions;
-using XiHan.Framework.Persistence.Conformance;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;

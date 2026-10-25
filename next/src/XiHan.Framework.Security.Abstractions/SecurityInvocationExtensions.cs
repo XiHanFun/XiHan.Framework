@@ -3,6 +3,8 @@
 
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.Abstractions.Authorization;
 
 namespace XiHan.Framework.Security.Abstractions;
 

@@ -1,4 +1,101 @@
 #nullable enable
+XiHan.Framework.Protocols.Grpc.GrpcErrors
+XiHan.Framework.Protocols.Grpc.GrpcMessages
+XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities
+XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature
+XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.GrpcProtocolFeature() -> void
+XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions!
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Equals(XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? other) -> bool
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.GrpcProtocolOptions() -> void
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.MethodFor(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Methods.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!>!
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Methods.init -> void
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Package.get -> string?
+XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Package.init -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodConvention
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.<Clone>$() -> XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.Equals(XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName? other) -> bool
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.FullServiceName(string? package) -> string!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.GrpcMethodName(string! service, string! method) -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.Method.get -> string!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.PathFor(string? package) -> string!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.Service.get -> string!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.<Clone>$() -> XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Deconstruct(out XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, out XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName! Method, out XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! Request, out XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! Response) -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Descriptor.get -> XiHan.Framework.Kernel.Operations.OperationDescriptor!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Descriptor.init -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Equals(XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation? other) -> bool
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.GrpcOperation(XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName! Method, XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! Request, XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! Response) -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Method.get -> XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Method.init -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Request.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Request.init -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Response.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Response.init -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperationTable
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperationTable.GrpcOperationTable(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions! options) -> void
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperationTable.Operations.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation!>!
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperationTable.Package.get -> string?
+XiHan.Framework.Protocols.Grpc.Methods.GrpcOperationTable.Proto.get -> string!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality.Map = 3 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality.Optional = 1 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality.Repeated = 2 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality.Singular = 0 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoDecoder
+XiHan.Framework.Protocols.Grpc.Proto.ProtoEncoder
+XiHan.Framework.Protocols.Grpc.Proto.ProtoException
+XiHan.Framework.Protocols.Grpc.Proto.ProtoException.ProtoException() -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoException.ProtoException(string! message) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoException.ProtoException(string! message, System.Exception! innerException) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.<Clone>$() -> XiHan.Framework.Protocols.Grpc.Proto.ProtoField!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Cardinality.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Cardinality.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Deconstruct(out int Number, out string! JsonName, out XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType! Value, out XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality Cardinality) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Equals(XiHan.Framework.Protocols.Grpc.Proto.ProtoField? other) -> bool
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.JsonName.get -> string!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.JsonName.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Number.get -> int
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Number.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.ProtoField(int Number, string! JsonName, XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType! Value, XiHan.Framework.Protocols.Grpc.Proto.ProtoCardinality Cardinality) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Value.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Value.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoFileBuilder
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Bool = 2 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Bytes = 1 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Fixed32 = 5 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Fixed64 = 6 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Json = 8 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Message = 9 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Text = 0 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.TextNumber = 7 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Varint32 = 3 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Varint64 = 4 -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.Fields.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.Proto.ProtoField!>!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.Name.get -> string!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.ProtoMessage(string! name) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.TryGetField(int number, out XiHan.Framework.Protocols.Grpc.Proto.ProtoField! field) -> bool
+XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.TryGetField(string! jsonName, out XiHan.Framework.Protocols.Grpc.Proto.ProtoField! field) -> bool
+XiHan.Framework.Protocols.Grpc.Proto.ProtoSchema
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.<Clone>$() -> XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType!
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Deconstruct(out XiHan.Framework.Protocols.Grpc.Proto.ProtoKind Kind, out XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage? Message) -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Equals(XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType? other) -> bool
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.IsPackable.get -> bool
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Kind.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoKind
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Kind.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Message.get -> XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage?
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Message.init -> void
+XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.ProtoValueType(XiHan.Framework.Protocols.Grpc.Proto.ProtoKind Kind, XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage? Message) -> void
+XiHan.Framework.Protocols.Grpc.Services.OperationGrpcEndpointRouteBuilderExtensions
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.DuplicateMethod = "PROTOCOLS_CONFLICT_002" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.InvalidMethodName = "PROTOCOLS_VALIDATION_007" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.MessageConflict = "PROTOCOLS_CONFLICT_003" -> string!
@@ -11,140 +108,43 @@ const XiHan.Framework.Protocols.Grpc.GrpcMessages.ResponseUnencodable = "protoco
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities.Grpc = "protocols.grpc" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.ConfigurationSection = "XiHan:Protocols:Grpc" -> string!
-override XiHan.Framework.Protocols.Grpc.GrpcMethodName.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.Grpc.GrpcMethodName.GetHashCode() -> int
-override XiHan.Framework.Protocols.Grpc.GrpcMethodName.ToString() -> string!
-override XiHan.Framework.Protocols.Grpc.GrpcOperation.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.Grpc.GrpcOperation.GetHashCode() -> int
-override XiHan.Framework.Protocols.Grpc.GrpcOperation.ToString() -> string!
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.GetHashCode() -> int
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.ToString() -> string!
-override XiHan.Framework.Protocols.Grpc.ProtoField.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.Grpc.ProtoField.GetHashCode() -> int
-override XiHan.Framework.Protocols.Grpc.ProtoField.ToString() -> string!
-override XiHan.Framework.Protocols.Grpc.ProtoMessage.ToString() -> string!
-override XiHan.Framework.Protocols.Grpc.ProtoValueType.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.Grpc.ProtoValueType.GetHashCode() -> int
-override XiHan.Framework.Protocols.Grpc.ProtoValueType.ToString() -> string!
-static XiHan.Framework.Protocols.Grpc.GrpcMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.MessageCatalog!
-static XiHan.Framework.Protocols.Grpc.GrpcMethodConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Grpc.GrpcMethodName!
-static XiHan.Framework.Protocols.Grpc.GrpcMethodName.operator !=(XiHan.Framework.Protocols.Grpc.GrpcMethodName? left, XiHan.Framework.Protocols.Grpc.GrpcMethodName? right) -> bool
-static XiHan.Framework.Protocols.Grpc.GrpcMethodName.operator ==(XiHan.Framework.Protocols.Grpc.GrpcMethodName? left, XiHan.Framework.Protocols.Grpc.GrpcMethodName? right) -> bool
-static XiHan.Framework.Protocols.Grpc.GrpcMethodName.Parse(string! text) -> XiHan.Framework.Protocols.Grpc.GrpcMethodName!
-static XiHan.Framework.Protocols.Grpc.GrpcOperation.operator !=(XiHan.Framework.Protocols.Grpc.GrpcOperation? left, XiHan.Framework.Protocols.Grpc.GrpcOperation? right) -> bool
-static XiHan.Framework.Protocols.Grpc.GrpcOperation.operator ==(XiHan.Framework.Protocols.Grpc.GrpcOperation? left, XiHan.Framework.Protocols.Grpc.GrpcOperation? right) -> bool
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.GetHashCode() -> int
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.ToString() -> string!
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.GetHashCode() -> int
+override XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.ToString() -> string!
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoField.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoField.GetHashCode() -> int
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoField.ToString() -> string!
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.ToString() -> string!
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.GetHashCode() -> int
+override XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.ToString() -> string!
+static XiHan.Framework.Protocols.Grpc.GrpcMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions!
 static XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.operator !=(XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? left, XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.operator ==(XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? left, XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? right) -> bool
-static XiHan.Framework.Protocols.Grpc.OperationGrpcEndpointRouteBuilderExtensions.MapXiHanGrpc(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
-static XiHan.Framework.Protocols.Grpc.OperationGrpcEndpointRouteBuilderExtensions.MapXiHanProto(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/operations.proto") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
-static XiHan.Framework.Protocols.Grpc.ProtoDecoder.Decode(XiHan.Framework.Protocols.Grpc.ProtoMessage! message, System.ReadOnlyMemory<byte> input, System.Text.Json.Utf8JsonWriter! writer) -> void
-static XiHan.Framework.Protocols.Grpc.ProtoEncoder.Encode(XiHan.Framework.Protocols.Grpc.ProtoMessage! message, System.Text.Json.JsonElement value, System.Buffers.IBufferWriter<byte>! output) -> void
-static XiHan.Framework.Protocols.Grpc.ProtoField.operator !=(XiHan.Framework.Protocols.Grpc.ProtoField? left, XiHan.Framework.Protocols.Grpc.ProtoField? right) -> bool
-static XiHan.Framework.Protocols.Grpc.ProtoField.operator ==(XiHan.Framework.Protocols.Grpc.ProtoField? left, XiHan.Framework.Protocols.Grpc.ProtoField? right) -> bool
-static XiHan.Framework.Protocols.Grpc.ProtoFileBuilder.Build(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.GrpcOperation!>! operations, string? package) -> string!
-static XiHan.Framework.Protocols.Grpc.ProtoFileBuilder.ProtoFieldName(string! jsonName) -> string!
-static XiHan.Framework.Protocols.Grpc.ProtoFileBuilder.Render(XiHan.Framework.Protocols.Grpc.ProtoMessage! message) -> string!
-static XiHan.Framework.Protocols.Grpc.ProtoSchema.FromJsonSchema(string! schema) -> XiHan.Framework.Protocols.Grpc.ProtoMessage!
-static XiHan.Framework.Protocols.Grpc.ProtoValueType.Of(XiHan.Framework.Protocols.Grpc.ProtoMessage! message) -> XiHan.Framework.Protocols.Grpc.ProtoValueType!
-static XiHan.Framework.Protocols.Grpc.ProtoValueType.operator !=(XiHan.Framework.Protocols.Grpc.ProtoValueType? left, XiHan.Framework.Protocols.Grpc.ProtoValueType? right) -> bool
-static XiHan.Framework.Protocols.Grpc.ProtoValueType.operator ==(XiHan.Framework.Protocols.Grpc.ProtoValueType? left, XiHan.Framework.Protocols.Grpc.ProtoValueType? right) -> bool
-static XiHan.Framework.Protocols.Grpc.ProtoValueType.Scalar(XiHan.Framework.Protocols.Grpc.ProtoKind kind) -> XiHan.Framework.Protocols.Grpc.ProtoValueType!
-XiHan.Framework.Protocols.Grpc.GrpcErrors
-XiHan.Framework.Protocols.Grpc.GrpcMessages
-XiHan.Framework.Protocols.Grpc.GrpcMethodConvention
-XiHan.Framework.Protocols.Grpc.GrpcMethodName
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.<Clone>$() -> XiHan.Framework.Protocols.Grpc.GrpcMethodName!
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.Equals(XiHan.Framework.Protocols.Grpc.GrpcMethodName? other) -> bool
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.FullServiceName(string? package) -> string!
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.GrpcMethodName(string! service, string! method) -> void
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.Method.get -> string!
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.PathFor(string? package) -> string!
-XiHan.Framework.Protocols.Grpc.GrpcMethodName.Service.get -> string!
-XiHan.Framework.Protocols.Grpc.GrpcOperation
-XiHan.Framework.Protocols.Grpc.GrpcOperation.<Clone>$() -> XiHan.Framework.Protocols.Grpc.GrpcOperation!
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Deconstruct(out XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, out XiHan.Framework.Protocols.Grpc.GrpcMethodName! Method, out XiHan.Framework.Protocols.Grpc.ProtoMessage! Request, out XiHan.Framework.Protocols.Grpc.ProtoMessage! Response) -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Descriptor.get -> XiHan.Framework.Kernel.Operations.OperationDescriptor!
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Descriptor.init -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Equals(XiHan.Framework.Protocols.Grpc.GrpcOperation? other) -> bool
-XiHan.Framework.Protocols.Grpc.GrpcOperation.GrpcOperation(XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, XiHan.Framework.Protocols.Grpc.GrpcMethodName! Method, XiHan.Framework.Protocols.Grpc.ProtoMessage! Request, XiHan.Framework.Protocols.Grpc.ProtoMessage! Response) -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Method.get -> XiHan.Framework.Protocols.Grpc.GrpcMethodName!
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Method.init -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Request.get -> XiHan.Framework.Protocols.Grpc.ProtoMessage!
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Request.init -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Response.get -> XiHan.Framework.Protocols.Grpc.ProtoMessage!
-XiHan.Framework.Protocols.Grpc.GrpcOperation.Response.init -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperationTable
-XiHan.Framework.Protocols.Grpc.GrpcOperationTable.GrpcOperationTable(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions! options) -> void
-XiHan.Framework.Protocols.Grpc.GrpcOperationTable.Operations.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.GrpcOperation!>!
-XiHan.Framework.Protocols.Grpc.GrpcOperationTable.Package.get -> string?
-XiHan.Framework.Protocols.Grpc.GrpcOperationTable.Proto.get -> string!
-XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities
-XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature
-XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
-XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.GrpcProtocolFeature() -> void
-XiHan.Framework.Protocols.Grpc.GrpcProtocolFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions!
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Equals(XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions? other) -> bool
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.GrpcProtocolOptions() -> void
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.MethodFor(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Grpc.GrpcMethodName!
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Methods.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Protocols.Grpc.GrpcMethodName!>!
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Methods.init -> void
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Package.get -> string?
-XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Package.init -> void
-XiHan.Framework.Protocols.Grpc.OperationGrpcEndpointRouteBuilderExtensions
-XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoCardinality.Map = 3 -> XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoCardinality.Optional = 1 -> XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoCardinality.Repeated = 2 -> XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoCardinality.Singular = 0 -> XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoDecoder
-XiHan.Framework.Protocols.Grpc.ProtoEncoder
-XiHan.Framework.Protocols.Grpc.ProtoException
-XiHan.Framework.Protocols.Grpc.ProtoException.ProtoException() -> void
-XiHan.Framework.Protocols.Grpc.ProtoException.ProtoException(string! message, System.Exception! innerException) -> void
-XiHan.Framework.Protocols.Grpc.ProtoException.ProtoException(string! message) -> void
-XiHan.Framework.Protocols.Grpc.ProtoField
-XiHan.Framework.Protocols.Grpc.ProtoField.<Clone>$() -> XiHan.Framework.Protocols.Grpc.ProtoField!
-XiHan.Framework.Protocols.Grpc.ProtoField.Cardinality.get -> XiHan.Framework.Protocols.Grpc.ProtoCardinality
-XiHan.Framework.Protocols.Grpc.ProtoField.Cardinality.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoField.Deconstruct(out int Number, out string! JsonName, out XiHan.Framework.Protocols.Grpc.ProtoValueType! Value, out XiHan.Framework.Protocols.Grpc.ProtoCardinality Cardinality) -> void
-XiHan.Framework.Protocols.Grpc.ProtoField.Equals(XiHan.Framework.Protocols.Grpc.ProtoField? other) -> bool
-XiHan.Framework.Protocols.Grpc.ProtoField.JsonName.get -> string!
-XiHan.Framework.Protocols.Grpc.ProtoField.JsonName.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoField.Number.get -> int
-XiHan.Framework.Protocols.Grpc.ProtoField.Number.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoField.ProtoField(int Number, string! JsonName, XiHan.Framework.Protocols.Grpc.ProtoValueType! Value, XiHan.Framework.Protocols.Grpc.ProtoCardinality Cardinality) -> void
-XiHan.Framework.Protocols.Grpc.ProtoField.Value.get -> XiHan.Framework.Protocols.Grpc.ProtoValueType!
-XiHan.Framework.Protocols.Grpc.ProtoField.Value.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoFileBuilder
-XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Bool = 2 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Bytes = 1 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Fixed32 = 5 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Fixed64 = 6 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Json = 8 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Message = 9 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Text = 0 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.TextNumber = 7 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Varint32 = 3 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoKind.Varint64 = 4 -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoMessage
-XiHan.Framework.Protocols.Grpc.ProtoMessage.Fields.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.ProtoField!>!
-XiHan.Framework.Protocols.Grpc.ProtoMessage.Name.get -> string!
-XiHan.Framework.Protocols.Grpc.ProtoMessage.ProtoMessage(string! name) -> void
-XiHan.Framework.Protocols.Grpc.ProtoMessage.TryGetField(int number, out XiHan.Framework.Protocols.Grpc.ProtoField! field) -> bool
-XiHan.Framework.Protocols.Grpc.ProtoMessage.TryGetField(string! jsonName, out XiHan.Framework.Protocols.Grpc.ProtoField! field) -> bool
-XiHan.Framework.Protocols.Grpc.ProtoSchema
-XiHan.Framework.Protocols.Grpc.ProtoValueType
-XiHan.Framework.Protocols.Grpc.ProtoValueType.<Clone>$() -> XiHan.Framework.Protocols.Grpc.ProtoValueType!
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Deconstruct(out XiHan.Framework.Protocols.Grpc.ProtoKind Kind, out XiHan.Framework.Protocols.Grpc.ProtoMessage? Message) -> void
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Equals(XiHan.Framework.Protocols.Grpc.ProtoValueType? other) -> bool
-XiHan.Framework.Protocols.Grpc.ProtoValueType.IsPackable.get -> bool
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Kind.get -> XiHan.Framework.Protocols.Grpc.ProtoKind
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Kind.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Message.get -> XiHan.Framework.Protocols.Grpc.ProtoMessage?
-XiHan.Framework.Protocols.Grpc.ProtoValueType.Message.init -> void
-XiHan.Framework.Protocols.Grpc.ProtoValueType.ProtoValueType(XiHan.Framework.Protocols.Grpc.ProtoKind Kind, XiHan.Framework.Protocols.Grpc.ProtoMessage? Message) -> void
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodConvention.Derive(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.Parse(string! text) -> XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName!
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.operator !=(XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName? left, XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName.operator ==(XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName? left, XiHan.Framework.Protocols.Grpc.Methods.GrpcMethodName? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.operator !=(XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation? left, XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation.operator ==(XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation? left, XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoDecoder.Decode(XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! message, System.ReadOnlyMemory<byte> input, System.Text.Json.Utf8JsonWriter! writer) -> void
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoEncoder.Encode(XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! message, System.Text.Json.JsonElement value, System.Buffers.IBufferWriter<byte>! output) -> void
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoField.operator !=(XiHan.Framework.Protocols.Grpc.Proto.ProtoField? left, XiHan.Framework.Protocols.Grpc.Proto.ProtoField? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoField.operator ==(XiHan.Framework.Protocols.Grpc.Proto.ProtoField? left, XiHan.Framework.Protocols.Grpc.Proto.ProtoField? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoFileBuilder.Build(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.Methods.GrpcOperation!>! operations, string? package) -> string!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoFileBuilder.ProtoFieldName(string! jsonName) -> string!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoFileBuilder.Render(XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! message) -> string!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoSchema.FromJsonSchema(string! schema) -> XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Of(XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage! message) -> XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Scalar(XiHan.Framework.Protocols.Grpc.Proto.ProtoKind kind) -> XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType!
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.operator !=(XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType? left, XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.operator ==(XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType? left, XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType? right) -> bool
+static XiHan.Framework.Protocols.Grpc.Services.OperationGrpcEndpointRouteBuilderExtensions.MapXiHanGrpc(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static XiHan.Framework.Protocols.Grpc.Services.OperationGrpcEndpointRouteBuilderExtensions.MapXiHanProto(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern = "/operations.proto") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!

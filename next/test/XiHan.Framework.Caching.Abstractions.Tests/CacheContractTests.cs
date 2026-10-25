@@ -5,6 +5,11 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Idempotency;
+using XiHan.Framework.Caching.Abstractions.Locking;
+using XiHan.Framework.Caching.Abstractions.Serialization;
+using XiHan.Framework.Caching.Abstractions.Stores;
 
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 

@@ -4,7 +4,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Permissions;
 
 namespace XiHan.Framework.Security.InMemory;
 

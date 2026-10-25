@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions.Resolution;
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 

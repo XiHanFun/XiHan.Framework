@@ -1,26 +1,9 @@
 #nullable enable
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HealthPrefix = "plugins." -> string!
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.MessagingPermission = "capability:messaging.queue" -> string!
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PipelinePermission = "capability:kernel.pipeline" -> string!
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PluginScheme = "Plugin" -> string!
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ConfigurationSection = "XiHan:Plugins:OutOfProcess" -> string!
-const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Capability = "plugins.out-of-process" -> string!
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GetHashCode() -> int
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ToString() -> string!
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Equals(object? obj) -> bool
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.GetHashCode() -> int
-override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ToString() -> string!
-static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions!
-static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
-static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
-static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool
-static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Describe(string! manifestId) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus?
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HostEndpoint.get -> XiHan.Framework.Plugins.Protocol.PluginEndpoint!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HostEndpoint.get -> XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.OutOfProcessPluginHost(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeSpan stopGrace, string! defaultLocale = "en-US") -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
@@ -51,12 +34,6 @@ XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StopGrace.get -> 
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.StopGrace.init -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.get -> string?
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.init -> void
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.OutOfProcessPluginsFeature() -> void
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.<Clone>$() -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Deconstruct(out XiHan.Framework.Kernel.Plugins.PluginStatus! Status, out int? ProcessId, out uint? ProtocolVersion, out int Restarts, out bool Lazy) -> void
@@ -72,3 +49,26 @@ XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Restarts.get -> in
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Restarts.init -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Status.get -> XiHan.Framework.Kernel.Plugins.PluginStatus!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Status.init -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.OutOfProcessPluginsFeature() -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HealthPrefix = "plugins." -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.MessagingPermission = "capability:messaging.queue" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PipelinePermission = "capability:kernel.pipeline" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.PluginScheme = "Plugin" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ConfigurationSection = "XiHan:Plugins:OutOfProcess" -> string!
+const XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginsFeature.Capability = "plugins.out-of-process" -> string!
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.GetHashCode() -> int
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.ToString() -> string!
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Equals(object? obj) -> bool
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.GetHashCode() -> int
+override XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ToString() -> string!
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions!
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator !=(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool
+static XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.operator ==(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? left, XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? right) -> bool

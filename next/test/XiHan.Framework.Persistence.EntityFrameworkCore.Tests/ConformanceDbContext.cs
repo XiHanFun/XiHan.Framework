@@ -2,7 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.EntityFrameworkCore;
-using XiHan.Framework.Persistence.Conformance;
+using XiHan.Framework.Persistence.Conformance.Fixtures;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 

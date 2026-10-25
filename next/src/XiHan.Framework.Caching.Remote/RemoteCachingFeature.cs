@@ -4,6 +4,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Idempotency;
+using XiHan.Framework.Caching.Abstractions.Locking;
+using XiHan.Framework.Caching.Abstractions.Serialization;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;

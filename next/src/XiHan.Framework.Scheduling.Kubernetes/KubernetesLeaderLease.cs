@@ -3,6 +3,9 @@
 
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
+using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 namespace XiHan.Framework.Scheduling.Kubernetes;
 

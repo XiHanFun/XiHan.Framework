@@ -6,6 +6,12 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.AI.Abstractions.Guardrails;
+using XiHan.Framework.AI.Abstractions.Knowledge;
+using XiHan.Framework.AI.Abstractions.Prompts;
+using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.AI.Abstractions.Tools;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 

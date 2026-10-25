@@ -4,7 +4,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Architecture.Tests;
@@ -21,9 +21,9 @@ public sealed partial class LocalizationTests
     private static readonly string[] _literalAllowed =
     [
         "XiHan.Framework.Primitives/FrameworkException.cs",
-        "XiHan.Framework.Caching.Abstractions/IdempotencyRecord.cs",
-        "XiHan.Framework.Workflow.Abstractions/WorkflowFault.cs",
-        "XiHan.Framework.Plugins.Protocol/PluginErrorMapper.cs",
+        "XiHan.Framework.Caching.Abstractions/Idempotency/IdempotencyRecord.cs",
+        "XiHan.Framework.Workflow.Abstractions/Instances/WorkflowFault.cs",
+        "XiHan.Framework.Plugins.Protocol/Mapping/PluginErrorMapper.cs",
     ];
 
     /// <summary>

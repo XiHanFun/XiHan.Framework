@@ -4,6 +4,7 @@
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
 
 namespace XiHan.Framework.Security.InMemory;
 

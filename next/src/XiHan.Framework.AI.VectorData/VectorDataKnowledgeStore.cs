@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text.Json;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.VectorData;

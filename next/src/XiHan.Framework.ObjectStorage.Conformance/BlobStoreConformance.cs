@@ -4,6 +4,9 @@
 using System.Security.Cryptography;
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions;
+using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.ObjectStorage.Abstractions.Listing;
 using XiHan.Framework.Primitives;
 using Xunit;
 

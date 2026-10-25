@@ -7,7 +7,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions;
-using XiHan.Framework.Persistence.Conformance;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 

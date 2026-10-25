@@ -1,24 +1,17 @@
 #nullable enable
-const XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ConfigurationSection = "XiHan:Scheduling:InMemory" -> string!
-override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.GetHashCode() -> int
-override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ToString() -> string!
-static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
-static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.operator !=(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? left, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? right) -> bool
-static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.operator ==(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? left, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? right) -> bool
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Dispose() -> void
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.InMemoryJobScheduler(XiHan.Framework.Scheduling.Abstractions.JobRegistry! registry, XiHan.Framework.Scheduling.Abstractions.JobDispatcher! dispatcher, XiHan.Framework.Scheduling.Abstractions.ILeaderElection! election, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions! options, System.TimeProvider! clock, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.InMemoryJobScheduler(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry! registry, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher! dispatcher, XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection! election, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions! options, System.TimeProvider! clock, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.IsLeader.get -> bool
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.IsRunning.get -> bool
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Status(XiHan.Framework.Scheduling.Abstractions.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.JobStatus!>
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Statuses() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobStatus!>!
+XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Status(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobStatus!>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Statuses() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobStatus!>!
 XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.TriggerAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.JobTriggerResult!>!>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.TriggerAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTriggerResult!>!>
 XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection
 XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection.InMemoryLeaderElection(System.TimeProvider! clock) -> void
-XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.LeaderLease!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease!>>
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.InMemorySchedulingFeature() -> void
@@ -29,9 +22,16 @@ XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? other) -> bool
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.InMemorySchedulingOptions() -> void
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseResource.get -> XiHan.Framework.Scheduling.Abstractions.JobName
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseResource.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseResource.init -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseTimeToLive.get -> System.TimeSpan
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseTimeToLive.init -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.PollInterval.get -> System.TimeSpan
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.PollInterval.init -> void
+const XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ConfigurationSection = "XiHan:Scheduling:InMemory" -> string!
+override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.GetHashCode() -> int
+override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ToString() -> string!
+static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
+static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.operator !=(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? left, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? right) -> bool
+static XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.operator ==(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? left, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? right) -> bool

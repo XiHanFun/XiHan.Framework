@@ -1,28 +1,15 @@
 #nullable enable
-const XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.SchemeName = "ApiKey" -> string!
-const XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ConfigurationSection = "XiHan:Security:InMemory" -> string!
-override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(object? obj) -> bool
-override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.GetHashCode() -> int
-override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ToString() -> string!
-override XiHan.Framework.Security.InMemory.PrincipalRecord.Equals(object? obj) -> bool
-override XiHan.Framework.Security.InMemory.PrincipalRecord.GetHashCode() -> int
-override XiHan.Framework.Security.InMemory.PrincipalRecord.ToString() -> string!
-static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.InMemory.InMemorySecurityOptions!
-static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.operator !=(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? left, XiHan.Framework.Security.InMemory.InMemorySecurityOptions? right) -> bool
-static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.operator ==(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? left, XiHan.Framework.Security.InMemory.InMemorySecurityOptions? right) -> bool
-static XiHan.Framework.Security.InMemory.PrincipalRecord.operator !=(XiHan.Framework.Security.InMemory.PrincipalRecord? left, XiHan.Framework.Security.InMemory.PrincipalRecord? right) -> bool
-static XiHan.Framework.Security.InMemory.PrincipalRecord.operator ==(XiHan.Framework.Security.InMemory.PrincipalRecord? left, XiHan.Framework.Security.InMemory.PrincipalRecord? right) -> bool
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.ApiKeyAuthenticationHandler(XiHan.Framework.Security.InMemory.InMemoryPrincipalStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
-XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Capacity.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Count.get -> int
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>!>
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Grant(XiHan.Framework.Security.Abstractions.PermissionGrant! grant) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>!>
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Grant(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.InMemoryPermissionGrantStore(XiHan.Framework.Security.InMemory.InMemorySecurityOptions! options) -> void
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Revoke(XiHan.Framework.Security.Abstractions.PermissionGrant! grant) -> bool
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Revoke(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> bool
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore.Capacity.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore.Count.get -> int
@@ -37,7 +24,7 @@ XiHan.Framework.Security.InMemory.InMemorySecurityFeature.Manifest.get -> XiHan.
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.<Clone>$() -> XiHan.Framework.Security.InMemory.InMemorySecurityOptions!
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? other) -> bool
-XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Grants.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.PermissionGrant!>!
+XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Grants.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>!
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Grants.init -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.InMemorySecurityOptions() -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.MaxGrants.get -> int
@@ -62,3 +49,16 @@ XiHan.Framework.Security.InMemory.PrincipalRecord.Roles.get -> System.Collection
 XiHan.Framework.Security.InMemory.PrincipalRecord.Roles.init -> void
 XiHan.Framework.Security.InMemory.PrincipalRecord.Tenant.get -> string?
 XiHan.Framework.Security.InMemory.PrincipalRecord.Tenant.init -> void
+const XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.SchemeName = "ApiKey" -> string!
+const XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ConfigurationSection = "XiHan:Security:InMemory" -> string!
+override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.GetHashCode() -> int
+override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ToString() -> string!
+override XiHan.Framework.Security.InMemory.PrincipalRecord.Equals(object? obj) -> bool
+override XiHan.Framework.Security.InMemory.PrincipalRecord.GetHashCode() -> int
+override XiHan.Framework.Security.InMemory.PrincipalRecord.ToString() -> string!
+static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.InMemory.InMemorySecurityOptions!
+static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.operator !=(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? left, XiHan.Framework.Security.InMemory.InMemorySecurityOptions? right) -> bool
+static XiHan.Framework.Security.InMemory.InMemorySecurityOptions.operator ==(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? left, XiHan.Framework.Security.InMemory.InMemorySecurityOptions? right) -> bool
+static XiHan.Framework.Security.InMemory.PrincipalRecord.operator !=(XiHan.Framework.Security.InMemory.PrincipalRecord? left, XiHan.Framework.Security.InMemory.PrincipalRecord? right) -> bool
+static XiHan.Framework.Security.InMemory.PrincipalRecord.operator ==(XiHan.Framework.Security.InMemory.PrincipalRecord? left, XiHan.Framework.Security.InMemory.PrincipalRecord? right) -> bool

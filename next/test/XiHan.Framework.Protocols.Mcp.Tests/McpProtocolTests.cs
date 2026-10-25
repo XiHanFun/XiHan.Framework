@@ -12,8 +12,12 @@ using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
+using XiHan.Framework.Protocols.Mcp.Server;
+using XiHan.Framework.Protocols.Mcp.Tools;
+using XiHan.Framework.Protocols.Mcp.Transports;
 using XiHan.Framework.Security.InMemory;
 
 namespace XiHan.Framework.Protocols.Mcp.Tests;

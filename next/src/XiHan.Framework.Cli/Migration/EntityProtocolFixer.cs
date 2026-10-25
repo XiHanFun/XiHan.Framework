@@ -201,8 +201,8 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     {
                         session.Changed(fixer.Id, file, LineOf(node));
                         types.Add(baseType.WithType(SyntaxFactory.ParseTypeName(replacement).WithTriviaFrom(baseType.Type)));
-                        // 换成的 5.0 接口在 Domain 里
-                        Usings.Add("XiHan.Framework.Domain");
+                        // 换成的 5.0 接口在 Domain.Entities 里
+                        Usings.Add("XiHan.Framework.Domain.Entities");
                     }
 
                     continue;
@@ -220,7 +220,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
             if (expanded)
             {
                 Usings.Add("SqlSugar");
-                Usings.Add("XiHan.Framework.Domain");
+                Usings.Add("XiHan.Framework.Domain.Entities");
                 var members = ParseMembers(generated.ToString(), newLine).ToList();
                 var existing = visited.Members.Select(member => member is ConstructorDeclarationSyntax constructor ? Rebase(constructor, newLine) : member).ToList();
                 if (existing.Count > 0 && !StartsWithBlankLine(existing[0]))
@@ -260,7 +260,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     {
                         session.Changed(fixer.Id, file, LineOf(original));
                         types.Add(baseType.WithType(SyntaxFactory.ParseTypeName(replacement).WithTriviaFrom(baseType.Type)));
-                        Usings.Add("XiHan.Framework.Domain");
+                        Usings.Add("XiHan.Framework.Domain.Entities");
                     }
 
                     continue;

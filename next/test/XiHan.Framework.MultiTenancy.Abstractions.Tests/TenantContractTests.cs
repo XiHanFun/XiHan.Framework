@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 

@@ -11,9 +11,13 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.CloudEvents;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.InMemory;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
+using XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 

@@ -7,14 +7,15 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Auditing.Abstractions;
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Persistence.Abstractions;
-using XiHan.Framework.Protocols.CloudEvents;
-using XiHan.Framework.Protocols.Grpc;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Mcp;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
+using XiHan.Framework.Protocols.Grpc.Services;
+using XiHan.Framework.Protocols.Http.OpenApi;
+using XiHan.Framework.Protocols.Http.Routing;
+using XiHan.Framework.Protocols.Mcp.Transports;
 
 namespace XiHan.Framework.Profiles.Full.Tests;
 

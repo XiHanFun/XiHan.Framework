@@ -3,6 +3,9 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Assignees;
+using XiHan.Framework.Workflow.Abstractions.Definitions;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 

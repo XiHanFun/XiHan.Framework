@@ -76,6 +76,44 @@ public sealed partial class NamingTests
     }
 
     [Fact]
+    public void Namespaces_MatchFolders()
+    {
+        var failures = new List<string>();
+
+        foreach (var project in Workspace.SourceProjects)
+        {
+            foreach (var file in Workspace.SourceFiles(project.Directory))
+            {
+                // 目录即子命名空间：包根目录的文件在包命名空间，一级子目录的文件在同名子命名空间，不允许更深的目录。
+                var relative = Path.GetRelativePath(project.Directory, file).Replace('\\', '/');
+                var segments = relative.Split('/');
+                var expected = segments.Length switch
+                {
+                    1 => project.PackageId,
+                    2 => project.PackageId + "." + segments[0],
+                    _ => null,
+                };
+                if (expected is null)
+                {
+                    failures.Add($"'{Workspace.Relative(file)}': source files may sit at the package root or in exactly one area folder.");
+                    continue;
+                }
+
+                foreach (Match match in NamespaceDeclaration().Matches(File.ReadAllText(file)))
+                {
+                    var ns = match.Groups["ns"].Value;
+                    if (!string.Equals(ns, expected, StringComparison.Ordinal))
+                    {
+                        failures.Add($"'{Workspace.Relative(file)}': namespace '{ns}' must be '{expected}' to match its folder.");
+                    }
+                }
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
     public void Namespaces_EqualPackageIdWithAtMostOneSegment()
     {
         var failures = new List<string>();

@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Reflection;
 using SqlSugar;
-using XiHan.Framework.Domain;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.SqlSugar;

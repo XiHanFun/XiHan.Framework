@@ -3,6 +3,8 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Localization.Abstractions.Locales;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 

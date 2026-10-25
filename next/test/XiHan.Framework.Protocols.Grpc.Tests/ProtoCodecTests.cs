@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Protocols.Grpc.Methods;
+using XiHan.Framework.Protocols.Grpc.Proto;
 
 namespace XiHan.Framework.Protocols.Grpc.Tests;
 
