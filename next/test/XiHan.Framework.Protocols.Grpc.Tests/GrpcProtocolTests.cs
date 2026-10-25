@@ -14,6 +14,7 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Protocols.Grpc.Proto;
 using XiHan.Framework.Protocols.Grpc.Services;
+using XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 using XiHan.Framework.Security.InMemory;
 
 namespace XiHan.Framework.Protocols.Grpc.Tests;

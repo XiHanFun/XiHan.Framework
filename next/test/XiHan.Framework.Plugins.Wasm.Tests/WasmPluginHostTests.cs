@@ -15,6 +15,7 @@ using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Messaging.InMemory;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Wasm.Runtime;
+using XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 

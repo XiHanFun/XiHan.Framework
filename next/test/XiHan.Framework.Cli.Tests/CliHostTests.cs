@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
+using XiHan.Framework.Cli.Tests.Migration;
+using XiHan.Framework.Cli.Tests.Packaging;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Primitives;
 

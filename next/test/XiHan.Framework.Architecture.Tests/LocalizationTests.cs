@@ -4,6 +4,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using XiHan.Framework.Architecture.Tests.Model;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Primitives;
 
