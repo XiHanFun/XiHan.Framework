@@ -29,6 +29,9 @@ public static class SecurityErrors
     /// <summary>策略不存在或权限码未定义。</summary>
     public const string PolicyNotFound = "SECURITY_NOTFOUND_001";
 
+    /// <summary>要撤销的权限授予不存在。</summary>
+    public const string GrantNotFound = "SECURITY_NOTFOUND_002";
+
     /// <summary>身份或授予存储不可达。</summary>
     public const string StoreUnavailable = "SECURITY_UNAVAILABLE_001";
 

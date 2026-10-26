@@ -1,0 +1,61 @@
+#nullable enable
+const XiHan.Framework.Security.Database.DatabaseSecurityOptions.ConfigurationSection = "XiHan:Security:Database" -> string!
+const XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.GlobalTenantId = "" -> string!
+override XiHan.Framework.Security.Database.DatabaseSecurityOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Database.DatabaseSecurityOptions.GetHashCode() -> int
+override XiHan.Framework.Security.Database.DatabaseSecurityOptions.ToString() -> string!
+override XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Database.Grants.PermissionGrantResult.GetHashCode() -> int
+override XiHan.Framework.Security.Database.Grants.PermissionGrantResult.ToString() -> string!
+static XiHan.Framework.Security.Database.DatabaseSecurityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Database.DatabaseSecurityOptions!
+static XiHan.Framework.Security.Database.DatabaseSecurityOptions.operator !=(XiHan.Framework.Security.Database.DatabaseSecurityOptions? left, XiHan.Framework.Security.Database.DatabaseSecurityOptions? right) -> bool
+static XiHan.Framework.Security.Database.DatabaseSecurityOptions.operator ==(XiHan.Framework.Security.Database.DatabaseSecurityOptions? left, XiHan.Framework.Security.Database.DatabaseSecurityOptions? right) -> bool
+static XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.TenantColumnOf(string? tenantId) -> string!
+static XiHan.Framework.Security.Database.Grants.PermissionGrantResult.operator !=(XiHan.Framework.Security.Database.Grants.PermissionGrantResult? left, XiHan.Framework.Security.Database.Grants.PermissionGrantResult? right) -> bool
+static XiHan.Framework.Security.Database.Grants.PermissionGrantResult.operator ==(XiHan.Framework.Security.Database.Grants.PermissionGrantResult? left, XiHan.Framework.Security.Database.Grants.PermissionGrantResult? right) -> bool
+XiHan.Framework.Security.Database.DatabaseSecurityFeature
+XiHan.Framework.Security.Database.DatabaseSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Security.Database.DatabaseSecurityFeature.DatabaseSecurityFeature() -> void
+XiHan.Framework.Security.Database.DatabaseSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Security.Database.DatabaseSecurityOptions
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.<Clone>$() -> XiHan.Framework.Security.Database.DatabaseSecurityOptions!
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.CacheSize.get -> int
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.CacheSize.init -> void
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.CacheTimeToLive.get -> System.TimeSpan?
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.CacheTimeToLive.init -> void
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.DatabaseSecurityOptions() -> void
+XiHan.Framework.Security.Database.DatabaseSecurityOptions.Equals(XiHan.Framework.Security.Database.DatabaseSecurityOptions? other) -> bool
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.CachedEntryCount.get -> int
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.DatabasePermissionGrantStore(System.IServiceProvider! services, XiHan.Framework.Security.Database.DatabaseSecurityOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>!>
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.Invalidate(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject? subject = null) -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.CreatedAt.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.Id.get -> System.Guid
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.Id.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.Permission.get -> string!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.Permission.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.PermissionGrantRecord() -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.SubjectId.get -> string!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.SubjectId.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.SubjectKind.get -> string!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.SubjectKind.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.TenantId.get -> string!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.TenantId.set -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.ToGrant() -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.GrantAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Database.Grants.PermissionGrantResult!>!>
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.ListAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject? subject, string? tenantId, int skip, int take, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Database.Grants.PermissionGrantRecord!>!>!
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.PermissionGrantRecordStore(XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.Security.Database.Grants.PermissionGrantRecord!, System.Guid>! repository, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore! grants) -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.RevokeAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Database.Grants.PermissionGrantResult!>!>
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.<Clone>$() -> XiHan.Framework.Security.Database.Grants.PermissionGrantResult!
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Deconstruct(out XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! Grant, out XiHan.Framework.Primitives.Result Outcome) -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Equals(XiHan.Framework.Security.Database.Grants.PermissionGrantResult? other) -> bool
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Grant.get -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Grant.init -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Outcome.get -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.Outcome.init -> void
+XiHan.Framework.Security.Database.Grants.PermissionGrantResult.PermissionGrantResult(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! Grant, XiHan.Framework.Primitives.Result Outcome) -> void

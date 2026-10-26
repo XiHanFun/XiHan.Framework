@@ -2,6 +2,7 @@
   "security.api_key.invalid": "Недействительный ключ API.",
   "security.authentication.required": "Для этого вызова требуется аутентификация.",
   "security.authentication.unsupported_scheme": "Схема аутентификации '{scheme}' не поддерживается.",
+  "security.grant.not_found": "Предоставление разрешения '{permission}' субъекту '{subject}' в арендаторе '{tenant}' не найдено.",
   "security.grant_store.capacity_exceeded": "Хранилище разрешений в памяти достигло предела ёмкости {capacity}.",
   "security.issuer.unavailable": "Не удалось получить метаданные OpenID Connect издателя '{authority}'.",
   "security.permission.missing": "Отсутствует разрешение '{permission}'.",

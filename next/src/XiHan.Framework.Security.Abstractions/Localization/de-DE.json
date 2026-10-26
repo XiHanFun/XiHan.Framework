@@ -2,6 +2,7 @@
   "security.api_key.invalid": "Der API-Schlüssel ist ungültig.",
   "security.authentication.required": "Dieser Aufruf erfordert eine Authentifizierung.",
   "security.authentication.unsupported_scheme": "Das Authentifizierungsschema '{scheme}' wird nicht unterstützt.",
+  "security.grant.not_found": "Die Zuweisung der Berechtigung '{permission}' an '{subject}' im Mandanten '{tenant}' wurde nicht gefunden.",
   "security.grant_store.capacity_exceeded": "Der In-Memory-Berechtigungsspeicher hat seine Kapazität von {capacity} erreicht.",
   "security.issuer.unavailable": "Die OpenID-Connect-Metadaten des Ausstellers '{authority}' konnten nicht abgerufen werden.",
   "security.permission.missing": "Die Berechtigung '{permission}' fehlt.",

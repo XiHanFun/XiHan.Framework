@@ -29,6 +29,9 @@ public static class SecurityMessages
     /// <summary>缺少权限。参数：<c>permission</c>。</summary>
     public const string PermissionMissing = "security.permission.missing";
 
+    /// <summary>要撤销的权限授予不存在。参数：<c>subject</c>、<c>permission</c>、<c>tenant</c>（全局为 <c>*</c>）。</summary>
+    public const string GrantNotFound = "security.grant.not_found";
+
     /// <summary>API Key 无效。</summary>
     public const string InvalidApiKey = "security.api_key.invalid";
 
