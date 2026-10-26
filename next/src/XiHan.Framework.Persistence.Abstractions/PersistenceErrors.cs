@@ -26,6 +26,9 @@ public static class PersistenceErrors
     /// <summary>工作单元状态不允许该操作。</summary>
     public const string InvalidUnitOfWorkState = "PERSISTENCE_VALIDATION_002";
 
+    /// <summary>工作单元里的聚合有未派发的领域事件，但没有注册领域事件派发器。</summary>
+    public const string EventsUndispatched = "PERSISTENCE_VALIDATION_003";
+
     /// <summary>没有活动的工作单元。</summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";
 

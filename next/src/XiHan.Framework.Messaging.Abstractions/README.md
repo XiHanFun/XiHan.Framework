@@ -10,6 +10,7 @@
 | `IMessageHandler`、`AddMessageHandler<THandler>(topic)`、`MessageSubscriptions` | 按主题订阅处理器 |
 | `MessageDispatcher` | 每条消息在新作用域内构造调用上下文（租户、关联、追踪进入 Baggage）并经完整内核管道执行处理器 |
 | `MessagingRuntime`、`MessagingRegistration` | Provider 共用的装配与启停 |
+| `AddDomainEvent<TEvent>(topic, type, jsonTypeInfo, subject?)`、`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件派发（RFC-0009，ADR-0025）：应用显式登记每种事件到主题与 CloudEvents `type`（序列化元数据源生成，不经反射）；Transaction 阶段提交前把工作单元里聚合的事件映射成信封（`id` UUID v7、`source` `/{topic}`、`time` 为发生时间、`xihantenant`），同一主题一次 `PublishManyAsync`，全部成功后清空缓冲；未登记的事件类型 → `MESSAGING_VALIDATION_003`；装配了发件箱时与业务写入同事务 |
 | `OutboxFeature`、`OutboxMessage`、`OutboxPublisher`、`OutboxDispatcher` | 事务性发件箱：有活动工作单元时先写发件箱表（批量发布一次写入），提交后由后台循环按主题分组批量发布、批量更新状态 |
 
 ```csharp

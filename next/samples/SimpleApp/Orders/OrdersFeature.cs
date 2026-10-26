@@ -47,12 +47,14 @@ public sealed class OrdersFeature : IFeature
     };
 
     /// <summary>
-    /// 登记订单仓储、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限，以及两个操作契约。
+    /// 登记订单仓储、<see cref="OrderPlaced"/> 领域事件的消息映射、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限，以及两个操作契约。
     /// </summary>
     public void Configure(FeatureContext context)
     {
         // 仓储登记由 Persistence.Generators 从实体类生成（Order : IAggregateRoot<Guid>）
         context.Services.AddGeneratedRepositories();
+        // 聚合记录的 OrderPlaced 在工作单元提交前发到 orders 主题（类型 orders.placed，subject 是订单）；装配了发件箱时与订单写入同事务
+        context.Services.AddDomainEvent<OrderPlaced>(Topic, "orders.placed", SampleJsonContext.Default.OrderPlaced, static placed => $"order/{placed.OrderId:N}");
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 

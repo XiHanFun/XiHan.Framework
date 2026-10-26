@@ -1,5 +1,21 @@
 #nullable enable
 XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventDispatcher
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IHasDomainEvents!>! aggregates, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventDispatcher.DomainEventDispatcher(XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry! registry, XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher! publisher, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids) -> void
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.CloudEventType.get -> string!
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.DomainEventRegistration(System.Type! eventType, string! topic, string! cloudEventType, System.Text.Json.Serialization.Metadata.JsonTypeInfo! info, System.Func<XiHan.Framework.Domain.Events.IDomainEvent!, string?>? subject) -> void
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.EventType.get -> System.Type!
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.Info.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo!
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.Subject.get -> System.Func<XiHan.Framework.Domain.Events.IDomainEvent!, string?>?
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.ToEnvelope(XiHan.Framework.Domain.Events.IDomainEvent! domainEvent, System.Guid id, string? tenantId) -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration.Topic.get -> string!
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry.Add(XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration! registration) -> void
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry.Count.get -> int
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry.DomainEventRegistry(int capacity = 10000) -> void
+XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry.Find(System.Type! eventType) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistration!>
 XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
@@ -116,6 +132,7 @@ XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher.PublishManyA
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageReplayer
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageReplayer.ReplayAsync(string! topic, System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.Messaging.Abstractions.CloudEvents.CloudEventsFormat.ContentType = "application/cloudevents+json" -> string!
+const XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.Correlation = "xihancorrelation" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.PartitionKey = "xihankey" -> string!
 const XiHan.Framework.Messaging.Abstractions.Envelopes.EnvelopeExtensions.Tenant = "xihantenant" -> string!
@@ -126,12 +143,15 @@ const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Queue = "mess
 const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Stream = "messaging.stream" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingCapabilities.Version = 1 -> int
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.BrokerUnavailable = "MESSAGING_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.DomainEventRegistration = "MESSAGING_VALIDATION_004" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.DomainEventUnregistered = "MESSAGING_VALIDATION_003" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.HandlerFailed = "MESSAGING_UNEXPECTED_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidEnvelope = "MESSAGING_VALIDATION_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidTopic = "MESSAGING_VALIDATION_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.QueueFull = "MESSAGING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.BrokerUnavailable = "messaging.broker.unavailable" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.CatalogName = "messaging" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.DomainEventUnregistered = "messaging.domain_event.unregistered" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeAttributesRequired = "messaging.envelope.attributes_required" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalid = "messaging.envelope.invalid" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidBase64 = "messaging.envelope.invalid_base64" -> string!
@@ -171,7 +191,9 @@ static XiHan.Framework.Messaging.Abstractions.MessagingOptions.FromConfiguration
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator !=(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator ==(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingRegistration.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
+static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddDomainEvent<TEvent>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, string! type, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TEvent>! info, System.Func<TEvent, string?>? subject = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.GetDomainEventRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.GetMessageSubscriptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions!
 static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions!
 static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.operator !=(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? left, XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? right) -> bool

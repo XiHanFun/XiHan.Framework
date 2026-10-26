@@ -41,6 +41,9 @@ public static class MessagingMessages
     /// <summary>主题不合法。参数：<c>topic</c>。</summary>
     public const string InvalidTopic = "messaging.topic.invalid";
 
+    /// <summary>领域事件类型未登记。参数：<c>event</c>。</summary>
+    public const string DomainEventUnregistered = "messaging.domain_event.unregistered";
+
     /// <summary>内存队列已满。参数：<c>topic</c>、<c>capacity</c>。</summary>
     public const string QueueFull = "messaging.queue.full";
 

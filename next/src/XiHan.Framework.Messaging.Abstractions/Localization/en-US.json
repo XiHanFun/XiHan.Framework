@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "The message broker is unavailable: {reason}",
+  "messaging.domain_event.unregistered": "Domain event '{event}' is not registered; call AddDomainEvent to map it to a topic.",
   "messaging.envelope.attributes_required": "The 'id', 'source', and 'type' attributes are required.",
   "messaging.envelope.invalid": "The envelope is invalid: {reason}",
   "messaging.envelope.invalid_base64": "The 'data_base64' attribute is not valid Base64.",

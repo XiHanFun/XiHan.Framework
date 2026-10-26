@@ -40,6 +40,9 @@ public sealed class UnitOfWorkMiddlewareTests
         public bool IsReadOnly { get; private set; }
 
         /// <inheritdoc />
+        public DomainEventTracker DomainEvents { get; } = new();
+
+        /// <inheritdoc />
         public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
         {
             Calls.Add("begin");

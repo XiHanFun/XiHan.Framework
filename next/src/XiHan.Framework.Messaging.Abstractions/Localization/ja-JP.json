@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "メッセージ ブローカーに到達できません: {reason}",
+  "messaging.domain_event.unregistered": "ドメインイベント '{event}' は登録されていません。AddDomainEvent でトピックに対応付けてください。",
   "messaging.envelope.attributes_required": "'id'、'source'、'type' 属性は必須です。",
   "messaging.envelope.invalid": "エンベロープが不正です: {reason}",
   "messaging.envelope.invalid_base64": "'data_base64' 属性は有効な Base64 ではありません。",

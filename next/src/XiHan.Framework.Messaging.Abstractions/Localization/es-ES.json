@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "El agente de mensajes no está disponible: {reason}",
+  "messaging.domain_event.unregistered": "El evento de dominio '{event}' no está registrado; use AddDomainEvent para asignarlo a un tema.",
   "messaging.envelope.attributes_required": "Los atributos 'id', 'source' y 'type' son obligatorios.",
   "messaging.envelope.invalid": "El sobre no es válido: {reason}",
   "messaging.envelope.invalid_base64": "El atributo 'data_base64' no es Base64 válido.",

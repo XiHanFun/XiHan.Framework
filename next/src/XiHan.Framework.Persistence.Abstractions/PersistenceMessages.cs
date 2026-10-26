@@ -32,6 +32,9 @@ public static class PersistenceMessages
     /// <summary>只读工作单元拒绝写入。</summary>
     public const string ReadOnly = "persistence.unit_of_work.read_only";
 
+    /// <summary>聚合有未派发的领域事件但没有注册派发器。参数：<c>aggregate</c>、<c>count</c>。</summary>
+    public const string EventsUndispatched = "persistence.unit_of_work.events_undispatched";
+
     /// <summary>实体上的乐观并发冲突。参数：<c>entity</c>、<c>reason</c>。</summary>
     public const string ConcurrencyConflict = "persistence.entity.concurrency_conflict";
 

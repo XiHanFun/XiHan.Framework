@@ -186,6 +186,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         }
 
         changes.Upsert(entity);
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 
@@ -209,6 +210,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
 
         PersistenceConventions.ApplyOnUpdate(entity, now);
         changes.Upsert(entity);
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 
@@ -231,6 +233,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
             changes.Remove(entity.Id);
         }
 
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 

@@ -17,6 +17,7 @@ namespace SimpleApp;
 [JsonSerializable(typeof(WhoAmI))]
 [JsonSerializable(typeof(PlaceOrderRequest))]
 [JsonSerializable(typeof(OrderResponse))]
+[JsonSerializable(typeof(OrderPlaced))]
 [JsonSerializable(typeof(ListOrdersRequest))]
 [JsonSerializable(typeof(OrderList))]
 [JsonSerializable(typeof(OrderStatistics))]

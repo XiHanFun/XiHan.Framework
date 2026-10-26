@@ -6,5 +6,6 @@
   "persistence.entity.tenant_required": "A entidade '{entity}' é multilocatário, mas a chamada atual não tem locatário.",
   "persistence.store.capacity_exceeded": "A tabela em memória de '{entity}' atingiu sua capacidade de {capacity}.",
   "persistence.unit_of_work.concurrency_conflict": "Ocorreu um conflito de concorrência otimista durante a confirmação: {reason}",
+  "persistence.unit_of_work.events_undispatched": "'{aggregate}' registrou {count} evento(s) de domínio, mas nenhum despachante de eventos de domínio está registrado.",
   "persistence.unit_of_work.read_only": "Uma unidade de trabalho somente leitura não aceita gravações."
 }

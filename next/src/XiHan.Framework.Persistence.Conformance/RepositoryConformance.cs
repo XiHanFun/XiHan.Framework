@@ -541,7 +541,7 @@ public abstract class RepositoryConformance
     /// <summary>
     /// 装配并启动宿主：被测特性、套件特性、三种套件实体的登记、套件时钟。
     /// </summary>
-    protected Task<TestHost> StartAsync() => TestHost.StartAsync(
+    protected Task<TestHost> StartAsync(Action<IServiceCollection>? extra = null) => TestHost.StartAsync(
         builder =>
         {
             builder.UseFeature(CreateFeature());
@@ -556,6 +556,7 @@ public abstract class RepositoryConformance
             services.AddRepository<ConformanceNote, Guid>();
             services.AddRepository<ConformanceItem, int>();
             ConfigureServices(services);
+            extra?.Invoke(services);
         });
 
     /// <summary>
@@ -586,6 +587,77 @@ public abstract class RepositoryConformance
         Assert.Equal(["a", "b"], (await ListAsync<ConformanceOrder, Guid>(host, query).ConfigureAwait(false)).Select(static o => o.Name));
         Assert.Equal(2, await CountAsync<ConformanceOrder, Guid>(host, query).ConfigureAwait(false));
         Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<ConformanceOrder>().Within(Epoch, Epoch.AddDays(-1)));
+    }
+
+    /// <summary>
+    /// 用例 20：聚合记录的领域事件在提交时交给派发器（新增与更新过的聚合都登记、同一实例一次、带当前租户），派发后缓冲清空；失败的调用回滚，不派发。
+    /// </summary>
+    [Fact]
+    public async Task DomainEvents_AreDispatchedOnCommit_AndCleared()
+    {
+        var dispatcher = new RecordingDomainEventDispatcher();
+        await using var host = await StartAsync(services => services.AddSingleton<IDomainEventDispatcher>(dispatcher)).ConfigureAwait(false);
+        var first = new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "first" };
+        first.Raise(new ConformanceEvent("first-created", Epoch));
+
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            (await repository.AddAsync(first, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            (await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "quiet" }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            // 同一实例新增后再更新只登记一次，两条事件在同一批里按记录顺序
+            first.Raise(new ConformanceEvent("first-renamed", Epoch));
+            first.Name = "renamed";
+            return await repository.UpdateAsync(first, context.CancellationToken).ConfigureAwait(false);
+        }, tenantId: "acme").ConfigureAwait(false)).ThrowIfFailure();
+
+        var batch = Assert.Single(dispatcher.Batches);
+        Assert.Equal(["first-created", "first-renamed"], batch.Events);
+        Assert.Equal("acme", batch.TenantId);
+        Assert.Empty(first.DomainEvents);
+
+        var failed = await RunAsync(host, async context =>
+        {
+            var doomed = new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "doomed" };
+            doomed.Raise(new ConformanceEvent("doomed", Epoch));
+            (await Repository<ConformanceOrder, Guid>(context).AddAsync(doomed, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            return new Error("CONFORMANCE_VALIDATION_001", "conformance.rejected");
+        }).ConfigureAwait(false);
+        Assert.True(failed.IsFailure);
+        Assert.Single(dispatcher.Batches);
+    }
+
+    /// <summary>
+    /// 用例 21：派发器失败即回滚且调用结果是派发器的错误；没有注册派发器却有事件返回 <see cref="PersistenceErrors.EventsUndispatched"/> 并回滚；没有事件的调用不受影响。
+    /// </summary>
+    [Fact]
+    public async Task DomainEvents_DispatchFailureRollsBack_AndMissingDispatcherIsRejected()
+    {
+        var dispatcher = new RecordingDomainEventDispatcher { Failure = new Error("CONFORMANCE_UNAVAILABLE_001", "conformance.dispatch_failed") };
+        await using var failing = await StartAsync(services => services.AddSingleton<IDomainEventDispatcher>(dispatcher)).ConfigureAwait(false);
+        var id = Guid.CreateVersion7();
+
+        var outcome = await RunAsync(failing, async context =>
+        {
+            var order = new ConformanceOrder { Id = id, Name = "order" };
+            order.Raise(new ConformanceEvent("created", Epoch));
+            return await Repository<ConformanceOrder, Guid>(context).AddAsync(order, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        Assert.Equal("CONFORMANCE_UNAVAILABLE_001", outcome.Error?.Code);
+        Assert.Empty(await ListAsync<ConformanceOrder, Guid>(failing, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+
+        await using var bare = await StartAsync().ConfigureAwait(false);
+        var rejected = await RunAsync(bare, async context =>
+        {
+            var order = new ConformanceOrder { Id = id, Name = "order" };
+            order.Raise(new ConformanceEvent("created", Epoch));
+            return await Repository<ConformanceOrder, Guid>(context).AddAsync(order, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        Assert.Equal(PersistenceErrors.EventsUndispatched, rejected.Error?.Code);
+        Assert.Empty(await ListAsync<ConformanceOrder, Guid>(bare, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+
+        (await RunAsync(bare, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "plain" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        Assert.Single(await ListAsync<ConformanceOrder, Guid>(bare, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
     }
 
     /// <summary>

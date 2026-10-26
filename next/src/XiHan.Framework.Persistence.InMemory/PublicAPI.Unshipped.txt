@@ -38,6 +38,7 @@ XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.Changes<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity!, TKey>!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.Apply(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.HasChanges.get -> bool
