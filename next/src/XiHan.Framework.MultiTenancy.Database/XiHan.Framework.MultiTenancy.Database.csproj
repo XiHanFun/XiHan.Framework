@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.MultiTenancy.Database</PackageId>
+    <RootNamespace>XiHan.Framework.MultiTenancy.Database</RootNamespace>
+    <Description>XiHan Framework 数据库租户目录 Provider：租户以实体经 persistence.relational@1 的仓储读写，单例目录直接开工作单元读取并按租户有界缓存，附默认解析器、Tenant 阶段中间件与从租户属性推出的分片解析器。</Description>
+    <PackageTags>xihan;framework;multitenancy;database;tenants</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

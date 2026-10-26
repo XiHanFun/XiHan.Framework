@@ -44,6 +44,7 @@ next/
 | `XiHan.Framework.Caching.Hybrid` | 3 | 两级缓存 Provider：L1 进程内对象 LRU + L2 被选中的共享缓存，读穿透回填、写删先远后近、L1 存活上限 |
 | `XiHan.Framework.Caching.Remote` | 3 | 远程 Provider 适配器（RFC-0019，Experimental）：`caching.distributed` 由实现操作集 `cache-entries.*` 的进程外插件提供（非 AOT） |
 | `XiHan.Framework.MultiTenancy.InMemory` | 3 | 内存租户存储默认实现：从配置装载、有界 |
+| `XiHan.Framework.MultiTenancy.Database` | 3 | 数据库租户目录 Provider：租户以实体经仓储读写，单例目录直接开工作单元读取并按租户有界缓存（带存活时间、写入即失效），分片从租户属性推出 |
 | `XiHan.Framework.Security.InMemory` | 3 | 内存安全默认实现：ApiKey 主体与 RBAC 授予，从配置装载 |
 | `XiHan.Framework.Security.Database` | 3 | 数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（全局授予以空字符串租户列落库），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果 |
 | `XiHan.Framework.Security.Jwt` | 3 | JWT Bearer 认证 Provider（非 AOT） |

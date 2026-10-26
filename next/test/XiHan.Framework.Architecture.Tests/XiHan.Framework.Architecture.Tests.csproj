@@ -27,6 +27,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Caching.Conformance/XiHan.Framework.Caching.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Database/XiHan.Framework.MultiTenancy.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.Conformance/XiHan.Framework.MultiTenancy.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
