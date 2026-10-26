@@ -29,6 +29,7 @@
 | [0023](0023-SqlSugar分表.md) | SqlSugar 分表：仓储按实体的 `[SplitTable]` 自动走分表入口，`EntityQuery<T>.Within` 是 Provider 无关的时间范围提示（只限定扫描的表，不过滤行） | 已采纳 |
 | [0024](0024-Validate阶段契约校验.md) | Validate 阶段契约校验：内核自带 JSON Schema 子集校验器按请求 Schema 拒绝载荷、解码后执行 `IValidatableObject`；DataAnnotations 由生成器折进 Schema；HTTP 宿主进管道前绑定载荷 | 已采纳 |
 | [0025](0025-领域事件派发.md) | 领域事件派发：工作单元登记写过的聚合，Transaction 阶段提交前经 `IDomainEventDispatcher`（Messaging 实现，显式登记事件类型）发成 CloudEvents；发件箱时同事务；没有派发器却有事件即失败 | 已采纳 |
+| [0026](0026-MultiTenancy-Database.md) | `MultiTenancy.Database`：租户目录进数据库，`TenantRecord` 的属性放 JSON 列；单例目录直接开只读工作单元读取（不经管道，避免 Tenant 阶段自指与服务状态限制）并按租户有界缓存（存活时间、写入即失效），作用域的 `TenantRecordStore` 批量写入 | 已采纳 |
 | [0027](0027-Security-Database.md) | `Security.Database`：授予进数据库，`IPermissionGrantStore` 在新作用域直接开只读工作单元读仓储（不经管道），全局授予以空字符串租户列落库保证唯一索引语义一致，授予缓存放存储里（契约不变），`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果，新错误码 `SECURITY_NOTFOUND_002` | 已采纳 |
 | [0029](0029-Resilience阶段.md) | Resilience 阶段：内核内置 `ResilienceMiddleware` 按操作 ID 施加熔断、固定窗口限流与并发上限（BCL `System.Threading.RateLimiting`，熔断自写三态），配置节 `XiHan:Kernel:Resilience` 可按操作覆盖，拒绝以 `KERNEL_UNAVAILABLE_002` – `004` 返回；只算基础设施类失败；不做分桶与自适应 | 已采纳 |
 | [0031](0031-OpenAPI权限扩展.md) | OpenAPI 文档以 `x-xihan-permission` / `x-xihan-policy` 发布操作的授权要求、以 `components.x-xihan-permissions` 发布权限定义（被引用的 ∪ 注册表全部），不占用标准 `security` 字段 | 已采纳 |

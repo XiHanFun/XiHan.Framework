@@ -29,6 +29,7 @@
     <Project Path="src/XiHan.Framework.Caching.Remote/XiHan.Framework.Caching.Remote.csproj" />
     <Project Path="src/XiHan.Framework.Caching.Hybrid/XiHan.Framework.Caching.Hybrid.csproj" />
     <Project Path="src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.MultiTenancy.Database/XiHan.Framework.MultiTenancy.Database.csproj" />
     <Project Path="src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Security.Jwt/XiHan.Framework.Security.Jwt.csproj" />
     <Project Path="src/XiHan.Framework.Security.OpenIdConnect/XiHan.Framework.Security.OpenIdConnect.csproj" />
@@ -115,6 +116,7 @@
     <Project Path="test/XiHan.Framework.Caching.Remote.Tests/XiHan.Framework.Caching.Remote.Tests.csproj" />
     <Project Path="test/XiHan.Framework.MultiTenancy.Abstractions.Tests/XiHan.Framework.MultiTenancy.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.MultiTenancy.InMemory.Tests/XiHan.Framework.MultiTenancy.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.MultiTenancy.Database.Tests/XiHan.Framework.MultiTenancy.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Abstractions.Tests/XiHan.Framework.Security.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.InMemory.Tests/XiHan.Framework.Security.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Security.Jwt.Tests/XiHan.Framework.Security.Jwt.Tests.csproj" />
