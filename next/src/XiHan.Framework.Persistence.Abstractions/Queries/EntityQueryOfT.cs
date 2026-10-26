@@ -48,6 +48,12 @@ public sealed record EntityQuery<T>
     public bool IncludeDeleted { get; init; }
 
     /// <summary>
+    /// 时间范围提示：按时间分表 / 分区的 Provider 据此只扫描范围内的表（SqlSugar 分表按 <c>[SplitField]</c> 列的 UTC 时刻选表）。
+    /// 它不是过滤条件：不分表的实体与不支持范围的 Provider 忽略它，范围之外的行照常返回；要按时间过滤另写规约。<see langword="null"/> 为不限定。
+    /// </summary>
+    public TimeRange? TimeRange { get; init; }
+
+    /// <summary>
     /// 派生带过滤的查询。
     /// </summary>
     public EntityQuery<T> Where(ISpecification<T> filter)
@@ -70,4 +76,9 @@ public sealed record EntityQuery<T>
     /// 派生分页的查询。
     /// </summary>
     public EntityQuery<T> Page(int skip, int take) => this with { Skip = skip, Take = take };
+
+    /// <summary>
+    /// 派生带时间范围提示的查询（两端都含）；只影响分表 / 分区实体扫描的表，不过滤行。
+    /// </summary>
+    public EntityQuery<T> Within(DateTimeOffset from, DateTimeOffset to) => this with { TimeRange = new TimeRange(from, to) };
 }

@@ -143,7 +143,18 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
         foreach (var group in _entityTypes.GroupBy(unitOfWork.ConnectionFor))
         {
-            group.Key.CodeFirst.InitTables([.. group]);
+            // 分表实体走分表的建表入口（按当前周期建第一张表，之后的分表由写入时按需建出），普通实体走常规建表
+            var split = group.Where(static type => type.IsDefined(typeof(SplitTableAttribute), inherit: false)).ToArray();
+            var plain = group.Where(static type => !type.IsDefined(typeof(SplitTableAttribute), inherit: false)).ToArray();
+            if (plain.Length > 0)
+            {
+                group.Key.CodeFirst.InitTables(plain);
+            }
+
+            if (split.Length > 0)
+            {
+                group.Key.CodeFirst.SplitTables().InitTables(split);
+            }
         }
     }
 

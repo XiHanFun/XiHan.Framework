@@ -35,6 +35,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 - 软删除在取回的当前行上打标并整行写回，调用方实例随后拿到修改时间、并发戳与删除标记。
 - `SqlSugarConventions.Apply(config)`：`Id` 为主键（是否自增沿用实体自己的 `[SugarColumn(IsIdentity)]`，默认不自增），`ConcurrencyStamp` 长度 32，`DateTimeOffset` 经转换器按 UTC 时刻往返（SqlSugar 默认按本地时间处理会改变时刻），可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射。约定通过 `ConfigureExternalServices.EntityService` 施加，已有回调先执行。
 - 实体类型没有 `new()` 约束，写入经 SqlSugar 的 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject` 入口，语义与泛型构建器相同。
+- 分表（ADR-0023）：带 SqlSugar `[SplitTable]` 的实体（表名含 `{year}{month}{day}` 占位符、`[SplitField]` 是按 UTC 写入的 `DateTime` 列）自动走分表入口——查询在全部过滤条件之后 `SplitTable(from, to)`（按 `EntityQuery<T>.Within` 的时间范围只扫范围内的表，没有提示扫全部分表），写入按 `[SplitField]` 的值落表（缺少的分表由 SqlSugar 建出），分表字段写入后不要再改；分表实体的写入路径不加行锁，靠并发戳；`InitTables` 对它们走 `CodeFirst.SplitTables()`。`Within` 只是扫描范围提示，不是过滤条件。
 - 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
 - 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，方式一创建的客户端默认连接 `ConfigId` 为 `default`（回调里设置的 `ConfigId` 以特性为准），带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一回调再建一个 `ConfigId = shard` 的连接，两者组成一个客户端：租户实体落分片库，平台目录表（租户、授予、翻译、发件箱等不带租户的实体）仍落默认库，同一调用里一起提交或回滚；其余调用只有默认连接。方式二由应用自己按 `context.GetTenantShard()` 组装连接集合，提供名为 `shard` 的连接即可让默认规则生效。分片库的表结构由应用管理。
@@ -47,4 +48,4 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 
 ## 状态
 
-P5：可用，通过 `Persistence.Conformance` 套件（SQLite）；多库用两个 SQLite 文件验证（平台表落默认库、租户表落分片库、失败一起回滚、`[Tenant]` 显式落点）。
+P5：可用，通过 `Persistence.Conformance` 套件（SQLite）；多库用两个 SQLite 文件验证（平台表落默认库、租户表落分片库、失败一起回滚、`[Tenant]` 显式落点）；分表用按月分表的实体验证（落表、跨表查找、范围提示、更新 / 删除与批量）。

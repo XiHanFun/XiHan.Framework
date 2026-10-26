@@ -53,6 +53,7 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Clock.get -> XiHan
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Exception_RollsBack_AndBecomesUnexpectedOutcome() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.FailureOutcome_RollsBack() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_AppliesFilterOrderingAndPaging_CountIgnoresPaging() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_WithTimeRangeHint_OnUnpartitionedEntity_ReturnsAllRows() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.MultiTenant_RequiresTenant_AndIsolatesTenants() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Provider_RegistersIdGenerator_AndDeclaresCapability() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.RemoveRange_SoftDeletesOrDeletes_AndReportsMissingPerItem() -> System.Threading.Tasks.Task!
