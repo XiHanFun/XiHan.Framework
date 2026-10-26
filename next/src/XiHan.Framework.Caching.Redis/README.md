@@ -1,6 +1,6 @@
 # XiHan.Framework.Caching.Redis
 
-`caching.distributed@1` 的 Redis Provider（Ring 3，`role: provider`）。注册后自动顶替内存实现的共享缓存：`ISharedCache`、`IDistributedLock` 与 Idempotency 阶段中间件由本包提供，`ICache`（进程内）仍由 `Caching.InMemory` 提供。
+`caching.distributed@1` 的 Redis Provider（Ring 3，`role: provider`）。注册后自动顶替内存实现的共享缓存：`ISharedCache`、`ICacheStore`、`IDistributedLock` 与 Idempotency 阶段中间件由本包提供，`ICache`（进程内）仍由 `Caching.InMemory` 提供。
 
 ```csharp
 builder.AddXiHan(x => x.UseFeature<InMemoryCachingFeature>().UseFeature<RedisCachingFeature>());

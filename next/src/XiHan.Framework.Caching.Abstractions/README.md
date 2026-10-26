@@ -4,7 +4,7 @@
 
 | 契约 | 用途 |
 | --- | --- |
-| `ICacheStore` | 字节级存储：读、写、不存在才写、删、比较删，以及批量读 / 写 / 删（`GetManyAsync` / `SetManyAsync` / `RemoveManyAsync`：一次往返，结果与入参顺序一一对应）；Provider 实现它 |
+| `ICacheStore` | 字节级存储：读、写、不存在才写、删、比较删，以及批量读 / 写 / 删（`GetManyAsync` / `SetManyAsync` / `RemoveManyAsync`：一次往返，结果与入参顺序一一对应）；Provider 实现它，被选中提供 `caching.distributed` 的 Provider 把它登记为接口，应用可在这些原语上搭自己的租约与续约 |
 | `ICache` / `ISharedCache` | 类型化门面：`GetAsync<T>`、`SetAsync<T>`、`GetOrCreateAsync<T>` 与批量的 `GetManyAsync<T>`、`SetManyAsync<T>`、`RemoveManyAsync`；`ISharedCache` 是跨进程的那一个 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 共享缓存的值序列化；`JsonCacheSerializer` 要求 `JsonSerializerOptions` 带 `TypeInfoResolver`（源生成上下文），`CreateReflectionBased()` 只用于允许反射的运行时；Provider 按"已注册的 `ICacheSerializer` → 已注册的 `JsonSerializerOptions`"顺序取序列化器 |
 | `CacheKey`、`CacheEntryOptions`、`CacheEntry` | 键（非空、无空白与控制字符、≤ 512）、过期（绝对或滑动，二选一）与批量写入的一项 |

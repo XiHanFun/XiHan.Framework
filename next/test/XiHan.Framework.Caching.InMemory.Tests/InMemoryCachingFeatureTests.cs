@@ -46,6 +46,7 @@ public sealed class InMemoryCachingFeatureTests
         var shared = host.Services.GetRequiredService<ISharedCache>();
         Assert.Same(local.Store, shared.Store);
         Assert.IsType<InMemoryCacheStore>(shared.Store);
+        Assert.Same(shared.Store, host.Services.GetRequiredService<ICacheStore>());
         Assert.NotNull(host.Services.GetService<IDistributedLock>());
         Assert.Contains(nameof(IdempotencyMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
 
@@ -60,6 +61,7 @@ public sealed class InMemoryCachingFeatureTests
 
         Assert.NotNull(host.Services.GetService<ICache>());
         Assert.Null(host.Services.GetService<ISharedCache>());
+        Assert.Null(host.Services.GetService<ICacheStore>());
         Assert.Null(host.Services.GetService<IDistributedLock>());
         Assert.DoesNotContain(nameof(IdempotencyMiddleware), host.App.DescribePipeline(), StringComparison.Ordinal);
         Assert.Equal(["caching.local"], host.App.Graph["xihan.caching.inmemory"].SelectedCapabilities);

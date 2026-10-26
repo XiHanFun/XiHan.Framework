@@ -10,6 +10,7 @@ using XiHan.Framework.Caching.Abstractions.Distributed;
 using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Serialization;
+using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
@@ -75,6 +76,8 @@ public sealed class RedisCachingFeature : IHostedFeature
         }
 
         context.Services.TryAddSingleton<ISharedCache>(static sp => new SerializingCache(sp.GetRequiredService<RedisCacheStore>(), sp.GetRequiredService<ICacheSerializer>()));
+        // 被选中的共享存储也以字节级契约登记：应用在"不存在才写 + 比较删"之上搭自己的租约、续约等机制时按接口取用
+        context.Services.TryAddSingleton<ICacheStore>(static sp => sp.GetRequiredService<RedisCacheStore>());
         context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<RedisCacheStore>()));
         context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<RedisCacheStore>());
         context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);
