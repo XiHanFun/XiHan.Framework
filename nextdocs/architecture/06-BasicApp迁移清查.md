@@ -66,7 +66,7 @@
 | 4.x 用法 | 命中 | 缺口 | 建议 |
 | --- | --- | --- | --- |
 | **SqlSugar**：`ISqlSugarRepository`、`Queryable` / `Insertable` / `Updateable` / `Deleteable`、`SugarTable` / `SugarColumn`、分表、读写分离，PostgreSQL | **1 975 / 326 文件** | 5.0 只有 EF Core；`IRepository<T>` 0 命中，数据层全是 SqlSugar 原生 API | `Persistence.SqlSugar`（P5-03）从"可选"升为**前置必做**：改成 EF Core 等于重写 Saas 的 66 个仓储加 326 个文件，不现实 |
-| **Workflow**：`Workflow.Abstractions` 的 Runtime / Definitions / Stores / Exceptions，`IWorkflowInstanceStore`、`IWorkflowInstanceRepository`、`WorkflowStoreMapper` | **1 237 / 81 文件** | 5.0 没有 `Workflow.*`（计划 5.x P0） | 硬阻塞。两个选项：A）把 `Workflow.*` 提前到 P5；B）BasicApp.Workflow 模块随 5.1 迁，P5 的"全量跑在 5.0"改为"核心模块跑在 5.0"。 |
+| **Workflow**：`Workflow.Abstractions` 的 Runtime / Definitions / Stores / Exceptions，`IWorkflowInstanceStore`、`IWorkflowInstanceRepository`、`WorkflowStoreMapper` | **1 237 / 81 文件** | 5.0 没有 `Workflow.*`（计划 5.x P0） | 硬阻塞。两个选项：A）把 `Workflow.*` 提前到 P5；B）BasicApp.Workflow 模块随 5.1 迁，P5 的"全量跑在 5.0"改为"核心模块跑在 5.0"。（后续：`Workflow.*` 已提前完成，BasicApp.Workflow 于 2026-10-26 接入 5.0，见 05 的 P5-12） |
 | **AI**：`AI.Abstractions`（`IXiHanAiService`、`IAiChatClientResolver`、`IAiSkill`、`Rag`） | 77 / 17 文件 + 模块 6 051 行 | 5.0 没有 `AI.*`（计划 5.x P0） | 硬阻塞，选项同上；5.0 的 AI 子系统基于 `Microsoft.Extensions.AI`，BasicApp.AI 可先直接用 M.E.AI 过渡 |
 | 租户分库：`ITenantConnectionCacheInvalidator`、`Infrastructure/MultiTenancy`、`Tenancy` | 8 + 3 文件 | `multitenancy.sharding` 只有能力 ID，没有实现 | 补 `MultiTenancy.Abstractions` 的分片契约 + SqlSugar / EF Core 的按租户连接；规模 M |
 | 分布式事件 Kafka / Redis（Production 配置） | 引用 | 5.0 只有 `Messaging.RabbitMQ` | 看生产真正用的是哪个：用 Kafka 就补 `Messaging.Kafka`，用 Redis 建议改 RabbitMQ 而不是补 Provider |
