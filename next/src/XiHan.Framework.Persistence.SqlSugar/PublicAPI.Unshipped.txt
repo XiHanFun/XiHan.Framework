@@ -1,4 +1,10 @@
 #nullable enable
+XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector
+XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector.ConnectionFor(System.Type! entityType, SqlSugar.ISqlSugarClient! client) -> SqlSugar.ISqlSugarClient!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector
+XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.ConnectionFor(System.Type! entityType, SqlSugar.ISqlSugarClient! client) -> SqlSugar.ISqlSugarClient!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.SqlSugarConnectionSelector() -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
@@ -30,13 +36,16 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.Client.get -> SqlSugar.ISqlSugarClient!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.ConnectionFor(System.Type! entityType) -> SqlSugar.ISqlSugarClient!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.SqlSugarUnitOfWork(SqlSugar.ISqlSugarClient! client) -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.SqlSugarUnitOfWork(SqlSugar.ISqlSugarClient! client, XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector! selector) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.TenantId.get -> string?
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Default = "default" -> string!
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Shard = "shard" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ConnectionBinding = "db" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ConfigurationSection = "XiHan:Persistence:SqlSugar" -> string!
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(object? obj) -> bool
