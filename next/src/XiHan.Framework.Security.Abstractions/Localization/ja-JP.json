@@ -2,6 +2,7 @@
   "security.api_key.invalid": "API キーが無効です。",
   "security.authentication.required": "この呼び出しには認証が必要です。",
   "security.authentication.unsupported_scheme": "認証スキーム '{scheme}' はサポートされていません。",
+  "security.grant.not_found": "テナント '{tenant}' における '{subject}' への権限 '{permission}' の付与が見つかりません。",
   "security.grant_store.capacity_exceeded": "インメモリ権限付与ストアは容量上限 {capacity} に達しました。",
   "security.issuer.unavailable": "発行者 '{authority}' の OpenID Connect メタデータを取得できませんでした。",
   "security.permission.missing": "権限 '{permission}' がありません。",

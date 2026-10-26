@@ -2,6 +2,7 @@
   "security.api_key.invalid": "API Key 无效。",
   "security.authentication.required": "此调用需要认证。",
   "security.authentication.unsupported_scheme": "不支持认证方案 '{scheme}'。",
+  "security.grant.not_found": "租户 '{tenant}' 中对 '{subject}' 的权限 '{permission}' 授予不存在。",
   "security.grant_store.capacity_exceeded": "内存授予存储已达到容量上限 {capacity}。",
   "security.issuer.unavailable": "无法取得签发者 '{authority}' 的 OpenID Connect 元数据。",
   "security.permission.missing": "缺少权限 '{permission}'。",

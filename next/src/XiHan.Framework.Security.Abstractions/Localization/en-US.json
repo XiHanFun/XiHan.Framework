@@ -2,6 +2,7 @@
   "security.api_key.invalid": "The API key is invalid.",
   "security.authentication.required": "This invocation requires authentication.",
   "security.authentication.unsupported_scheme": "Authentication scheme '{scheme}' is not supported.",
+  "security.grant.not_found": "Grant of '{permission}' to '{subject}' in tenant '{tenant}' was not found.",
   "security.grant_store.capacity_exceeded": "The in-memory grant store has reached its capacity of {capacity}.",
   "security.issuer.unavailable": "The OpenID Connect metadata of issuer '{authority}' could not be retrieved.",
   "security.permission.missing": "Permission '{permission}' is missing.",

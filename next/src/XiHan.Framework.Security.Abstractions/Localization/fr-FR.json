@@ -2,6 +2,7 @@
   "security.api_key.invalid": "La clé d'API n'est pas valide.",
   "security.authentication.required": "Cet appel nécessite une authentification.",
   "security.authentication.unsupported_scheme": "Le schéma d'authentification '{scheme}' n'est pas pris en charge.",
+  "security.grant.not_found": "L'attribution de la permission '{permission}' à '{subject}' dans le locataire '{tenant}' est introuvable.",
   "security.grant_store.capacity_exceeded": "Le magasin d'octrois en mémoire a atteint sa capacité de {capacity}.",
   "security.issuer.unavailable": "Les métadonnées OpenID Connect de l'émetteur '{authority}' n'ont pas pu être récupérées.",
   "security.permission.missing": "La permission '{permission}' est manquante.",

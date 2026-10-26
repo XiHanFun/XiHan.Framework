@@ -2,6 +2,7 @@
   "security.api_key.invalid": "La clave de API no es válida.",
   "security.authentication.required": "Esta llamada requiere autenticación.",
   "security.authentication.unsupported_scheme": "El esquema de autenticación '{scheme}' no es compatible.",
+  "security.grant.not_found": "No se encontró la concesión del permiso '{permission}' a '{subject}' en el inquilino '{tenant}'.",
   "security.grant_store.capacity_exceeded": "El almacén de concesiones en memoria alcanzó su capacidad de {capacity}.",
   "security.issuer.unavailable": "No se pudieron obtener los metadatos de OpenID Connect del emisor '{authority}'.",
   "security.permission.missing": "Falta el permiso '{permission}'.",

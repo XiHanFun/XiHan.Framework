@@ -80,6 +80,7 @@ const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication 
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Version = 1 -> int
 const XiHan.Framework.Security.Abstractions.SecurityErrors.CapacityExceeded = "SECURITY_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.GrantNotFound = "SECURITY_NOTFOUND_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.InvalidCredential = "SECURITY_DENIED_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.IssuerUnavailable = "SECURITY_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.NotAuthenticated = "SECURITY_DENIED_001" -> string!
@@ -90,6 +91,7 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "S
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantNotFound = "security.grant.not_found" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidToken = "security.token.invalid" -> string!

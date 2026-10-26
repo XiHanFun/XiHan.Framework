@@ -45,6 +45,7 @@ next/
 | `XiHan.Framework.Caching.Remote` | 3 | 远程 Provider 适配器（RFC-0019，Experimental）：`caching.distributed` 由实现操作集 `cache-entries.*` 的进程外插件提供（非 AOT） |
 | `XiHan.Framework.MultiTenancy.InMemory` | 3 | 内存租户存储默认实现：从配置装载、有界 |
 | `XiHan.Framework.Security.InMemory` | 3 | 内存安全默认实现：ApiKey 主体与 RBAC 授予，从配置装载 |
+| `XiHan.Framework.Security.Database` | 3 | 数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（全局授予以空字符串租户列落库），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果 |
 | `XiHan.Framework.Security.Jwt` | 3 | JWT Bearer 认证 Provider（非 AOT） |
 | `XiHan.Framework.Security.OpenIdConnect` | 3 | OpenID Connect Bearer 认证 Provider：发现文档 + JWKS，密钥轮换时限速刷新（非 AOT） |
 | `XiHan.Framework.Messaging.InMemory` | 3 | 内存消息代理默认实现：有界通道、顺序投递、重试与死信 |

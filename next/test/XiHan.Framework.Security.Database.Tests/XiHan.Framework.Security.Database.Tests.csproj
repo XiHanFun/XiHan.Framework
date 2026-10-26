@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Security.Database.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Security.Database/XiHan.Framework.Security.Database.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.Conformance/XiHan.Framework.Security.Conformance.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+</Project>

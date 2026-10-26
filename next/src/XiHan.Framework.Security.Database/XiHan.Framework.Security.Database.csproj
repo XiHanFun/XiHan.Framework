@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Security.Database</RootNamespace>
+    <Description>XiHan Framework 数据库授权 Provider：权限授予以实体经 persistence.relational@1 的仓储读写，授予存储带有界 TTL 缓存，附批量授予 / 撤销的存储 API 与 Authorize 阶段中间件。</Description>
+    <PackageTags>xihan;framework;security;database;authorization;rbac;permissions</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
