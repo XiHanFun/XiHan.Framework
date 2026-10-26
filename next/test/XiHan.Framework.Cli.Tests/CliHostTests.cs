@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
+using XiHan.Framework.Cli.Migration;
 using XiHan.Framework.Cli.Tests.Migration;
 using XiHan.Framework.Cli.Tests.Packaging;
 using XiHan.Framework.Hosting.CommandLine;
@@ -10,8 +11,8 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Tests;
 
 /// <summary>
-/// 工具的命令分派：pack 端到端、失败的退出码与 stderr、转发命令、help 与 version、migrate 的入参校验与试运行。
-/// 与 <see cref="MigrationTests"/> 同一集合：执行命令会设置进程级的默认消息作用域，标记文案不能在两组测试之间变。
+/// 工具的命令分派：pack 端到端、失败的退出码与 stderr、转发命令、help 与 version、migrate 的规则集选择、入参校验与试运行。
+/// 与 <see cref="MigrationRunnerTests"/> 同一集合：执行命令会设置进程级的默认消息作用域，文案不能在两组测试之间变。
 /// </summary>
 [Collection("Cli")]
 public sealed class CliHostTests
@@ -19,11 +20,17 @@ public sealed class CliHostTests
     /// <summary>
     /// 执行一条命令行，返回退出码与两路输出。
     /// </summary>
-    private static async Task<(int Exit, string Output, string Error)> RunAsync(RecordingLauncher? launcher, params string[] args)
+    private static Task<(int Exit, string Output, string Error)> RunAsync(RecordingLauncher? launcher, params string[] args)
+        => RunWithRuleSetsAsync(MigrationRuleSets.All, launcher, args);
+
+    /// <summary>
+    /// 以指定的迁移规则集执行一条命令行，返回退出码与两路输出。
+    /// </summary>
+    private static async Task<(int Exit, string Output, string Error)> RunWithRuleSetsAsync(IReadOnlyList<MigrationRuleSet> ruleSets, RecordingLauncher? launcher, params string[] args)
     {
         var output = new StringWriter();
         var error = new StringWriter();
-        var exit = await CliHost.RunAsync(args, output, error, launcher ?? new RecordingLauncher(), CancellationToken.None);
+        var exit = await CliHost.RunAsync(args, output, error, launcher ?? new RecordingLauncher(), ruleSets, CancellationToken.None);
         // 写入器按平台换行；断言统一按 LF
         return (exit, output.ToString().Replace("\r\n", "\n", StringComparison.Ordinal), error.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
     }
@@ -131,32 +138,53 @@ public sealed class CliHostTests
     }
 
     [Fact]
-    public async Task Migrate_ValidatesInput_PrintsTable_AndDryRunWritesReportOnly()
+    public async Task Migrate_WithoutRuleSets_RejectsEveryVersion()
+    {
+        var (exit, _, error) = await RunAsync(null, "migrate", "v4", "--locale", "en-US");
+
+        Assert.Equal(CommandLineExitCodes.Usage, exit);
+        Assert.Equal(CliErrors.MigrateVersionUnknown, CodeOf(error));
+        Assert.Contains("no migration rule sets", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Migrate_ValidatesInput_RunsSelectedRulesInOrder_AndDryRunWritesReportOnly()
     {
         using var fixture = new MigrationFixture();
+        var before = fixture.Snapshot();
 
-        var (badVersion, _, badVersionError) = await RunAsync(null, "migrate", "v3", "--path", fixture.Root);
+        var (badVersion, _, badVersionError) = await RunWithRuleSetsAsync(TestRuleSets.All, null, "migrate", "v3", "--path", fixture.Root, "--locale", "en-US");
         Assert.Equal(CommandLineExitCodes.Usage, badVersion);
         Assert.Equal(CliErrors.MigrateVersionUnknown, CodeOf(badVersionError));
+        Assert.Contains("available: t5", badVersionError, StringComparison.Ordinal);
 
-        var (missing, _, missingError) = await RunAsync(null, "migrate", "v4", "--path", Path.Combine(fixture.Root, "nowhere"));
+        var (missing, _, missingError) = await RunWithRuleSetsAsync(TestRuleSets.All, null, "migrate", "T5", "--path", Path.Combine(fixture.Root, "nowhere"));
         Assert.Equal(CommandLineExitCodes.NotFound, missing);
         Assert.Equal(CliErrors.MigratePathNotFound, CodeOf(missingError));
 
-        var (badFixer, _, badFixerError) = await RunAsync(null, "migrate", "v4", "--path", fixture.Root, "--fixers", "V4-01,V4-99");
+        var (badFixer, _, badFixerError) = await RunWithRuleSetsAsync(TestRuleSets.All, null, "migrate", "t5", "--path", fixture.Root, "--fixers", "T5-01,T5-99");
         Assert.Equal(CommandLineExitCodes.Usage, badFixer);
         Assert.Equal(CliErrors.MigrateFixerUnknown, CodeOf(badFixerError));
 
-        var reportPath = Path.Combine(fixture.Root, "report.json");
-        var (dryRun, output, _) = await RunAsync(null, "migrate", "v4", "--path", fixture.Project, "--dry-run", "--report", reportPath, "--locale", "en-US");
-        Assert.Equal(CommandLineExitCodes.Success, dryRun);
-        Assert.Contains("Rule", output, StringComparison.Ordinal);
-        Assert.Contains("V4-01", output, StringComparison.Ordinal);
-        Assert.Contains("Dry run", output, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(fixture.Project, "XiHanShopOrdersModule.cs")));
-        using var report = JsonDocument.Parse(File.ReadAllText(reportPath));
-        Assert.Equal("v4", report.RootElement.GetProperty("version").GetString());
-        Assert.True(report.RootElement.GetProperty("dryRun").GetBoolean());
-        Assert.Equal("V4-01", report.RootElement.GetProperty("rules")[0].GetProperty("id").GetString());
+        // 子集仍按规则集顺序执行；版本按登记的写法进报告
+        var reportPath = Path.Combine(Path.GetTempPath(), "xihan-migrate-report-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            var (dryRun, output, _) = await RunWithRuleSetsAsync(TestRuleSets.All, null, "migrate", "T5", "--path", Path.Combine(fixture.Project, "Shop.Orders.csproj"), "--fixers", "T5-03,T5-01", "--dry-run", "--report", reportPath, "--locale", "en-US");
+            Assert.Equal(CommandLineExitCodes.Success, dryRun);
+            Assert.Contains("Rule", output, StringComparison.Ordinal);
+            Assert.Contains("Services/OrderService.cs:7  T5-01  " + RenameClockFixer.TimerMessage, output, StringComparison.Ordinal);
+            Assert.Contains("3 files touched, 3 edits, 1 markers left for review.", output, StringComparison.Ordinal);
+            Assert.Contains("Dry run", output, StringComparison.Ordinal);
+            Assert.Equal(before, fixture.Snapshot());
+            using var report = JsonDocument.Parse(File.ReadAllText(reportPath));
+            Assert.Equal("t5", report.RootElement.GetProperty("version").GetString());
+            Assert.True(report.RootElement.GetProperty("dryRun").GetBoolean());
+            Assert.Equal(["T5-01", "T5-03"], report.RootElement.GetProperty("rules").EnumerateArray().Select(static rule => rule.GetProperty("id").GetString()));
+        }
+        finally
+        {
+            File.Delete(reportPath);
+        }
     }
 }
