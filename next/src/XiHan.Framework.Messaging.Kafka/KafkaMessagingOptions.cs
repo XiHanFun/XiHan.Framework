@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -8,7 +9,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Kafka;
 
 /// <summary>
-/// Kafka Provider 的选项。配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（或绑定 <c>stream</c> 的值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
+/// Kafka Provider 的选项。配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（或绑定 <c>stream</c> 的值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
@@ -47,7 +48,16 @@ public sealed record KafkaMessagingOptions
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置与绑定读取：<c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>Properties:*</c>。
+    /// 健康项 <c>messaging.kafka.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 从配置与绑定读取：<c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:*</c>。
     /// </summary>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -64,6 +74,14 @@ public sealed record KafkaMessagingOptions
         if (configuration[$"{ConfigurationSection}:TopicPrefix"] is { } prefix)
         {
             options = options with { TopicPrefix = prefix };
+        }
+
+        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
+        if (probe is not null)
+        {
+            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
         }
 
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);

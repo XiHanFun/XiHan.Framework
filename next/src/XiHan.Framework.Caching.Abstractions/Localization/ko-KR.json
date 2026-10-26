@@ -1,5 +1,6 @@
 {
   "caching.idempotency.in_progress": "같은 멱등성 키의 호출이 아직 진행 중입니다.",
   "caching.idempotency.invalid_key": "멱등성 키가 올바르지 않습니다: 비어 있지 않아야 하며 공백이나 제어 문자를 포함할 수 없습니다.",
-  "caching.idempotency.recently_completed": "같은 멱등성 키의 호출이 방금 완료되었거나 아직 진행 중입니다. 나중에 다시 시도하세요."
+  "caching.idempotency.recently_completed": "같은 멱등성 키의 호출이 방금 완료되었거나 아직 진행 중입니다. 나중에 다시 시도하세요.",
+  "caching.store.capacity_reached": "메모리 내 캐시가 용량 한도 {capacity}개에 도달했습니다."
 }

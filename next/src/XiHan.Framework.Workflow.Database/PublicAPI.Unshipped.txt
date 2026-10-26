@@ -11,6 +11,8 @@ XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.BatchSize.get -> int
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.BatchSize.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.DatabaseWorkflowOptions() -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.Equals(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? other) -> bool
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.get -> string!
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockLease.get -> System.TimeSpan
@@ -156,6 +158,7 @@ XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.ListAsyn
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.NodeInstancesAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>!>>
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>! instances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveNodeInstancesAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>! nodeInstances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+const XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.HealthName = "workflow.database.poller" -> string!
 const XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.ConfigurationSection = "XiHan:Workflow:Database" -> string!
 const XiHan.Framework.Workflow.Database.Polling.PollerLeadership.Resource = "workflow.poller" -> string!
 override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.Equals(object? obj) -> bool

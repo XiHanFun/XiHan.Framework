@@ -60,7 +60,16 @@ public sealed record DatabaseWorkflowOptions
     } = _defaultHolderId;
 
     /// <summary>
-    /// 从配置读取：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>。
+    /// 健康项 <c>workflow.database.poller</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 从配置读取：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </summary>
     public static DatabaseWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -84,6 +93,11 @@ public sealed record DatabaseWorkflowOptions
         if (configuration[$"{ConfigurationSection}:HolderId"] is { } holder && !string.IsNullOrWhiteSpace(holder))
         {
             options = options with { HolderId = holder };
+        }
+
+        if (double.TryParse(configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var probe))
+        {
+            options = options with { HealthProbeInterval = TimeSpan.FromSeconds(probe) };
         }
 
         return options;

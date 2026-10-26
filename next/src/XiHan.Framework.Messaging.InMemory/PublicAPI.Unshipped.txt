@@ -1,5 +1,6 @@
 #nullable enable
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker
+XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.DeadLetters(string! topic) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!>!
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.DeliveredCount(string! topic) -> long
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.Dispose() -> void
@@ -21,6 +22,7 @@ XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(XiHan.Framewo
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.InMemoryMessagingOptions() -> void
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.get -> int
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.init -> void
+const XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature.HealthName = "messaging.inmemory.capacity" -> string!
 const XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.ConfigurationSection = "XiHan:Messaging:InMemory" -> string!
 override XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.GetHashCode() -> int

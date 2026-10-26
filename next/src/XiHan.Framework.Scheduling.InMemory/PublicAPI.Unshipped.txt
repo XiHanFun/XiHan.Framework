@@ -31,12 +31,16 @@ XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.InMemoryScheduling
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor.InMemorySchedulingHealthContributor(XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerEngine? engine) -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? other) -> bool
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.InMemorySchedulingOptions() -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.MaxRuns.get -> int
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.MaxRuns.init -> void
+const XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.HealthName = "scheduling.inmemory.leader" -> string!
 const XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ConfigurationSection = "XiHan:Scheduling:InMemory" -> string!
 override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.GetHashCode() -> int

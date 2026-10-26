@@ -15,6 +15,7 @@ builder.AddXiHan(x => x.UseFeature<InMemoryCachingFeature>().UseFeature<RedisCac
 - 不存在才写用 `SET NX PX`；比较删用 Lua 脚本比较载荷后 `DEL`，原子。
 - 键加前缀 `XiHan:Caching:Redis:KeyPrefix`（默认 `xihan:`）；未指定过期时用 `DefaultTimeToLiveSeconds`（默认 300）。
 - 连接与超时失败抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`。
+- 健康项 `caching.redis.connection`：启动时同步 PING 一次，之后按 `XiHan:Caching:Redis:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果；PING 失败或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 是异常消息），应用仍在服务。
 
 ## 测试
 

@@ -29,6 +29,9 @@ public static class ObjectStorageMessages
     /// <summary>配额超限。参数：<c>limit</c>、<c>requested</c>。</summary>
     public const string QuotaExceeded = "objectstorage.quota.exceeded";
 
+    /// <summary>配额已用尽（健康项）。参数：<c>limit</c>、<c>used</c>。</summary>
+    public const string QuotaReached = "objectstorage.quota.reached";
+
     /// <summary>
     /// 本包的消息目录。
     /// </summary>

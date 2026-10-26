@@ -22,6 +22,11 @@ namespace XiHan.Framework.Scheduling.InMemory;
 public sealed class InMemorySchedulingFeature : IHostedFeature
 {
     /// <summary>
+    /// 健康项名：领导权状态（进程内租约，持有与否都是 Ready；引擎停止为 Stopped）。
+    /// </summary>
+    public const string HealthName = "scheduling.inmemory.leader";
+
+    /// <summary>
     /// 引擎；只在本包被选中提供作业能力时存在。
     /// </summary>
     private JobSchedulerEngine? _engine;
@@ -45,7 +50,7 @@ public sealed class InMemorySchedulingFeature : IHostedFeature
         Contributes = new Contributions
         {
             Config = new ConfigContribution(SchedulerOptions.ConfigurationSection),
-            Health = ["scheduling.inmemory.leader"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemorySchedulingFeature).FullName,
     };
@@ -58,6 +63,8 @@ public sealed class InMemorySchedulingFeature : IHostedFeature
         context.Services.AddSingleton(InMemorySchedulingOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryJobStore>();
         context.Services.AddSingleton<InMemoryLeaderElection>();
+        // 健康项看引擎是否在跑；本包没被选中提供作业能力时没有引擎，取到 null
+        context.Services.AddSingleton<IHealthContributor>(static sp => new InMemorySchedulingHealthContributor(sp.GetService<JobSchedulerEngine>()));
         if (context.Node.IsSelectedFor(SchedulingCapabilities.Leader))
         {
             context.Services.TryAddSingleton<ILeaderElection>(static sp => sp.GetRequiredService<InMemoryLeaderElection>());

@@ -21,6 +21,9 @@ XiHan.Framework.Security.InMemory.InMemorySecurityFeature
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.InMemorySecurityFeature() -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor
+XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor.InMemorySecurityHealthContributor(XiHan.Framework.Security.InMemory.InMemoryPrincipalStore? principals, XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore? grants) -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.<Clone>$() -> XiHan.Framework.Security.InMemory.InMemorySecurityOptions!
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(XiHan.Framework.Security.InMemory.InMemorySecurityOptions? other) -> bool
@@ -50,6 +53,7 @@ XiHan.Framework.Security.InMemory.PrincipalRecord.Roles.init -> void
 XiHan.Framework.Security.InMemory.PrincipalRecord.Tenant.get -> string?
 XiHan.Framework.Security.InMemory.PrincipalRecord.Tenant.init -> void
 const XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.SchemeName = "ApiKey" -> string!
+const XiHan.Framework.Security.InMemory.InMemorySecurityFeature.HealthName = "security.inmemory.capacity" -> string!
 const XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ConfigurationSection = "XiHan:Security:InMemory" -> string!
 override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.GetHashCode() -> int

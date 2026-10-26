@@ -22,10 +22,13 @@ XiHan.Framework.Caching.Redis.RedisCachingOptions.Configuration.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.DefaultTimeToLive.get -> System.TimeSpan
 XiHan.Framework.Caching.Redis.RedisCachingOptions.DefaultTimeToLive.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.Equals(XiHan.Framework.Caching.Redis.RedisCachingOptions? other) -> bool
+XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.get -> string!
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.RedisCachingOptions() -> void
 const XiHan.Framework.Caching.Redis.RedisCachingFeature.ConnectionBinding = "cache" -> string!
+const XiHan.Framework.Caching.Redis.RedisCachingFeature.HealthName = "caching.redis.connection" -> string!
 const XiHan.Framework.Caching.Redis.RedisCachingOptions.ConfigurationSection = "XiHan:Caching:Redis" -> string!
 override XiHan.Framework.Caching.Redis.RedisCachingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Caching.Redis.RedisCachingOptions.GetHashCode() -> int

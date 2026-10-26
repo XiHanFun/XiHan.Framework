@@ -25,4 +25,7 @@ public static class CachingErrors
 
     /// <summary>同一幂等键的调用仍在处理中。</summary>
     public const string IdempotentInProgress = "CACHING_CONFLICT_002";
+
+    /// <summary>内存缓存已达容量上限（健康项 Degraded；LRU 继续淘汰最久未访问的条目）。</summary>
+    public const string CapacityReached = "CACHING_UNAVAILABLE_002";
 }

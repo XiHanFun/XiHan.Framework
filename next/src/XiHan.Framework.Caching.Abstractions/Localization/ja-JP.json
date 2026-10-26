@@ -1,5 +1,6 @@
 {
   "caching.idempotency.in_progress": "同じ冪等キーの呼び出しがまだ処理中です。",
   "caching.idempotency.invalid_key": "冪等キーが不正です: 空ではなく、空白や制御文字を含んではいけません。",
-  "caching.idempotency.recently_completed": "同じ冪等キーの呼び出しが完了直後か、まだ処理中です。後で再試行してください。"
+  "caching.idempotency.recently_completed": "同じ冪等キーの呼び出しが完了直後か、まだ処理中です。後で再試行してください。",
+  "caching.store.capacity_reached": "インメモリキャッシュは容量上限 {capacity} 件に達しました。"
 }

@@ -5,6 +5,7 @@
   "persistence.entity.stale_stamp": "实体 '{entity}'（标识 '{id}'）的并发戳已过期。",
   "persistence.entity.tenant_required": "实体 '{entity}' 是多租户实体，但当前调用没有租户。",
   "persistence.store.capacity_exceeded": "实体 '{entity}' 的内存表已达到容量上限 {capacity}。",
+  "persistence.store.unavailable": "无法连接关系数据库。",
   "persistence.unit_of_work.concurrency_conflict": "提交时发生乐观并发冲突：{reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' 记录了 {count} 个领域事件，但没有注册领域事件派发器。",
   "persistence.unit_of_work.read_only": "只读工作单元不接受写入。"

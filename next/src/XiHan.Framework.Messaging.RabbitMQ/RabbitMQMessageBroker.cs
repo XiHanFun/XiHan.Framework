@@ -94,6 +94,20 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     public bool IsConnected => _connection?.IsOpen == true;
 
     /// <summary>
+    /// 连通性检查（健康项）：连接与发布通道都打开为成功；否则以代理给出的关闭原因（还没建立连接时说明如此）构造 <see cref="MessagingErrors.BrokerUnavailable"/>。
+    /// </summary>
+    public Result CheckConnection()
+    {
+        if (_connection is { IsOpen: true } && _publishChannel is { IsOpen: true })
+        {
+            return Result.Success();
+        }
+
+        var reason = _connection?.CloseReason?.ReplyText ?? _publishChannel?.CloseReason?.ReplyText ?? "The connection has not been established.";
+        return Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", reason)));
+    }
+
+    /// <summary>
     /// 建立连接与发布通道。
     /// </summary>
     public async Task ConnectAsync(CancellationToken cancellationToken)

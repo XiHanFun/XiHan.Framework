@@ -17,7 +17,7 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// 每主题一条有界通道、单消费者顺序投递的内存代理。批量发布一次入队：容量不足整批返回队列已满，不写入半批。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory) : IMessageBroker, IDisposable
+public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
     /// <summary>
     /// 内存代理选项：每主题容量。
@@ -172,6 +172,19 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 主题的死信（投递失败超过上限的消息），按进入顺序。
     /// </summary>
     public IReadOnlyList<MessageDelivery> DeadLetters(string topic) => [.. Queue(topic).DeadLetters];
+
+    /// <inheritdoc />
+    public IReadOnlyList<ContributorStatus> Check()
+    {
+        // 任一主题的队列排满即 Degraded：发布方此刻会收到 QueueFull；按主题名序数顺序取第一个，报告稳定
+        var full = _topics.Where(pair => pair.Value.Channel.Reader.Count >= _options.MaxQueuedMessages).Select(static pair => pair.Key).Order(StringComparer.Ordinal).FirstOrDefault();
+        return
+        [
+            full is null
+                ? new ContributorStatus(InMemoryMessagingFeature.HealthName, LifecycleState.Ready)
+                : new ContributorStatus(InMemoryMessagingFeature.HealthName, LifecycleState.Degraded, QueueFull(full)),
+        ];
+    }
 
     /// <summary>
     /// 取（必要时创建）主题的队列。

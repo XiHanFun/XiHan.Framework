@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
 
@@ -23,19 +24,37 @@ public sealed record SqlSugarPersistenceOptions
     public bool InitTables { get; init; }
 
     /// <summary>
-    /// 从配置读取。
+    /// 健康项 <c>persistence.sqlsugar.database</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </summary>
     public static SqlSugarPersistenceOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var options = new SqlSugarPersistenceOptions();
         var raw = configuration[$"{ConfigurationSection}:InitTables"];
-        if (raw is null)
+        if (raw is not null)
         {
-            return new SqlSugarPersistenceOptions();
+            options = bool.TryParse(raw, out var initTables)
+                ? options with { InitTables = initTables }
+                : throw new ArgumentException($"'{ConfigurationSection}:InitTables' must be 'true' or 'false', but was '{raw}'.");
         }
 
-        return bool.TryParse(raw, out var initTables)
-            ? new SqlSugarPersistenceOptions { InitTables = initTables }
-            : throw new ArgumentException($"'{ConfigurationSection}:InitTables' must be 'true' or 'false', but was '{raw}'.");
+        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
+        if (probe is not null)
+        {
+            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+        }
+
+        return options;
     }
 }

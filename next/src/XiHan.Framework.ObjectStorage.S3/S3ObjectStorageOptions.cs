@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -8,7 +9,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储选项。从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>；
+/// S3 对象存储选项。从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；
 /// 绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -60,6 +61,20 @@ public sealed record S3ObjectStorageOptions
     public bool EnsureBuckets { get; init; }
 
     /// <summary>
+    /// 健康项 <c>objectstorage.s3.connection</c> 探测的桶：有值时对它 HEAD（同时验证凭据对该桶的权限）；为 <see langword="null"/> 时列桶。
+    /// </summary>
+    public string? HealthBucket { get; init; }
+
+    /// <summary>
+    /// 健康项 <c>objectstorage.s3.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
     /// 从配置读取，再用绑定（若有）覆盖。
     /// </summary>
     public static S3ObjectStorageOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
@@ -70,6 +85,7 @@ public sealed record S3ObjectStorageOptions
             ServiceUrl = Text(configuration, "ServiceUrl"),
             AccessKey = Text(configuration, "AccessKey"),
             SecretKey = Text(configuration, "SecretKey"),
+            HealthBucket = Text(configuration, "HealthBucket"),
         };
         if (Text(configuration, "Region") is { } region)
         {
@@ -84,6 +100,13 @@ public sealed record S3ObjectStorageOptions
         if (configuration[$"{ConfigurationSection}:EnsureBuckets"] is { } ensure)
         {
             options = options with { EnsureBuckets = ParseBoolean(ensure, "EnsureBuckets") };
+        }
+
+        if (configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"] is { } probe)
+        {
+            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
         }
 
         // 绑定来自部署环境（Service Binding），优先于应用配置

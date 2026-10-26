@@ -43,7 +43,7 @@ modelBuilder.Entity<TriggerEntity>(static t =>
 
 | 类型 | 用途 |
 | --- | --- |
-| `DatabaseSchedulingFeature` | 登记五个实体的仓储，装配存储、选举与引擎；应用进入服务状态后引擎开始轮询，停止时等进行中的运行结束并释放租约。健康项 `scheduling.database.leader` |
+| `DatabaseSchedulingFeature` | 登记五个实体的仓储，装配存储、选举与引擎；应用进入服务状态后引擎开始轮询，停止时等进行中的运行结束并释放租约。健康项 `scheduling.database.leader`：启动时同步读一次租约行，之后按 `XiHan:Scheduling:Database:HealthProbeIntervalSeconds`（默认 15，`DatabaseSchedulingOptions`）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
 | `Entities.JobEntity` | 作业行：主键是作业名，`Data` 是 JSON 文本，`Source` 存枚举整数值；`ActiveRunId` 的占用与释放靠并发戳 |
 | `Entities.TriggerEntity` | 触发器行：主键是 `作业名/触发器名`，`Schedule` 是 `JobSchedule.ToString()` 的文本，`State` / `MisfirePolicy` / `RunAs` 存枚举整数值；抢占靠并发戳 |
 | `Entities.JobRunEntity` | 运行记录行：`State` / `Trigger` 存枚举整数值，`Sequence` 是首次写入分配的写入序号（替换保留），同刻排序的次关键字——UUID v7 只到毫秒单调 |

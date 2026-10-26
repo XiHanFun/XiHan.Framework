@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "Feature '{id}' failed to start: {reason}",
   "kernel.feature.stop_failed": "Feature '{id}' failed to stop: {reason}",
   "kernel.feature.stop_timeout": "Feature '{id}' timed out while stopping.",
+  "kernel.health.probe_failed": "Health probe '{name}' failed: {reason}",
   "kernel.hosting.not_serving": "The application is in state {state} and is not accepting requests.",
   "kernel.invocation.cancelled": "The invocation was canceled.",
   "kernel.invocation.deadline_before_start": "The invocation exceeded its deadline before it started.",

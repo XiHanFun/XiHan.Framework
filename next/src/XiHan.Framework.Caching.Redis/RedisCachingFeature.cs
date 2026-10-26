@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
@@ -20,7 +21,8 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// Redis 缓存的能力包入口：提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭。
+/// Redis 缓存的能力包入口：提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；
+/// 健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RedisCachingFeature : IHostedFeature
@@ -31,9 +33,19 @@ public sealed class RedisCachingFeature : IHostedFeature
     public const string ConnectionBinding = "cache";
 
     /// <summary>
+    /// 健康项名：Redis 连接是否可用（连接已建立且 PING 有应答）。
+    /// </summary>
+    public const string HealthName = "caching.redis.connection";
+
+    /// <summary>
     /// 启动时取得的连接，停止时关闭；未启动或已停止为 <see langword="null"/>。
     /// </summary>
     private IConnectionMultiplexer? _connection;
+
+    /// <summary>
+    /// 启动时起循环的健康探针，停止时结束它。
+    /// </summary>
+    private PeriodicHealthContributor? _health;
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -52,7 +64,7 @@ public sealed class RedisCachingFeature : IHostedFeature
         {
             Pipeline = [new PipelineContribution(typeof(IdempotencyMiddleware).FullName!, PipelineStage.Idempotency)],
             Config = new ConfigContribution("XiHan:Caching"),
-            Health = ["caching.redis.connection"],
+            Health = [HealthName],
         },
         Entry = typeof(RedisCachingFeature).FullName,
     };
@@ -81,10 +93,13 @@ public sealed class RedisCachingFeature : IHostedFeature
         context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<RedisCacheStore>()));
         context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<RedisCacheStore>());
         context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);
+        // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, ct => ProbeAsync(sp, ct), options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
     }
 
     /// <inheritdoc />
-    public Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
+    public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
         // 解析即建立连接；连不上视为启动失败，不降级运行
@@ -94,12 +109,19 @@ public sealed class RedisCachingFeature : IHostedFeature
             throw new FrameworkException(CachingErrors.StoreUnavailable, "Redis is not connected.");
         }
 
-        return Task.CompletedTask;
+        _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
+        await _health.StartAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task StopAsync(CancellationToken cancellationToken)
     {
+        if (_health is not null)
+        {
+            await _health.StopAsync(cancellationToken).ConfigureAwait(false);
+            _health = null;
+        }
+
         if (_connection is not null)
         {
             await _connection.CloseAsync().ConfigureAwait(false);
@@ -120,5 +142,15 @@ public sealed class RedisCachingFeature : IHostedFeature
         {
             throw new FrameworkException(CachingErrors.StoreUnavailable, $"Failed to connect to Redis: {exception.Message}", exception);
         }
+    }
+
+    /// <summary>
+    /// 连通性探针：对共享连接发一次 PING。连接断开时 PING 抛出连接或超时异常，由探针宿主记成 Degraded 并带异常消息。
+    /// </summary>
+    private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var connection = services.GetRequiredService<IConnectionMultiplexer>();
+        await connection.GetDatabase().PingAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
     }
 }

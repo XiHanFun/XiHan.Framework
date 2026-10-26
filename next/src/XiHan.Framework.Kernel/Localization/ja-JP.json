@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "フィーチャー '{id}' の開始に失敗しました: {reason}",
   "kernel.feature.stop_failed": "フィーチャー '{id}' の停止に失敗しました: {reason}",
   "kernel.feature.stop_timeout": "フィーチャー '{id}' の停止がタイムアウトしました。",
+  "kernel.health.probe_failed": "ヘルスプローブ '{name}' が失敗しました: {reason}",
   "kernel.hosting.not_serving": "アプリケーションは {state} 状態のため、リクエストを受け付けていません。",
   "kernel.invocation.cancelled": "呼び出しはキャンセルされました。",
   "kernel.invocation.deadline_before_start": "呼び出しは開始前に期限を超過しました。",

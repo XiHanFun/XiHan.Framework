@@ -14,6 +14,7 @@ builder.AddXiHan(x => x.UseFeature<RabbitMQMessagingFeature>());
 - 每个订阅主题一个通道与一个消费者，预取 `PrefetchCount`（默认 16），手动确认，单线程派发保证主题内顺序。
 - 处理失败：尝试次数（头 `x-xihan-attempt`）小于 `MaxAttempts` 时重新发布到队尾再确认原消息；否则发布到死信队列 `<queue><DeadLetterSuffix>` 并确认。无法解码的消息直接进死信。
 - 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。
+- 健康项 `messaging.rabbitmq.connection`：启动后按 `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds`（默认 15）在后台检查连接与发布通道是否打开并缓存结果；断开时条目 Degraded（`MESSAGING_UNAVAILABLE_001`，`reason` 是代理给出的关闭原因），应用仍在服务。
 
 ## 测试
 

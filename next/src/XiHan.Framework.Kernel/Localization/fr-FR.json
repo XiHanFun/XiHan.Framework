@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "La fonctionnalité '{id}' n'a pas pu démarrer : {reason}",
   "kernel.feature.stop_failed": "La fonctionnalité '{id}' n'a pas pu s'arrêter : {reason}",
   "kernel.feature.stop_timeout": "La fonctionnalité '{id}' a expiré lors de l'arrêt.",
+  "kernel.health.probe_failed": "La sonde d'état '{name}' a échoué : {reason}",
   "kernel.hosting.not_serving": "L'application est à l'état {state} et n'accepte pas de requêtes.",
   "kernel.invocation.cancelled": "L'appel a été annulé.",
   "kernel.invocation.deadline_before_start": "L'appel a dépassé son échéance avant de commencer.",

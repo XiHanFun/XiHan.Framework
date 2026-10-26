@@ -16,7 +16,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 - 作业、触发器、运行历史与节点都在内存里，读出来的是深拷贝；运行历史最多 `MaxRuns` 条，超出丢弃最旧的已结束记录（全部在运行中时 → `SCHEDULING_UNAVAILABLE_004`）。
 - 存储不跨实例共享：集群唯一的作业（`RunOnEveryInstance = false`）只在持有领导租约的实例上按计划运行；`RunOnEveryInstance` 的作业每个实例各自运行。另有显式 Provider 提供 `scheduling.leader`（如 `Scheduling.Kubernetes`）时，引擎用那个选举。
 - 引擎的语义（misfire、并发阻塞、暂停与恢复、动态登记、取消、历史）见 `Scheduling.Abstractions`；进程重启后运行时登记的作业与历史都丢失，需要持久化换 `Scheduling.Database`。
-- 停止时等待进行中的运行结束并释放租约。健康项 `scheduling.inmemory.leader`。
+- 停止时等待进行中的运行结束并释放租约。健康项 `scheduling.inmemory.leader`（`InMemorySchedulingHealthContributor`，同步计算）：引擎在跑为 Ready（进程内租约持有与否都不影响服务），引擎停止为 Stopped；作业能力被别的 Provider 顶替、没有引擎时也是 Ready。
 
 ## 依赖方向
 

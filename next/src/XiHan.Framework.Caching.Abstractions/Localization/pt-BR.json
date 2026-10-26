@@ -1,5 +1,6 @@
 {
   "caching.idempotency.in_progress": "Uma chamada com a mesma chave de idempotência ainda está em andamento.",
   "caching.idempotency.invalid_key": "A chave de idempotência não é válida: não pode estar vazia nem conter espaços em branco ou caracteres de controle.",
-  "caching.idempotency.recently_completed": "Uma chamada com a mesma chave de idempotência acabou de ser concluída ou ainda está em andamento; tente novamente mais tarde."
+  "caching.idempotency.recently_completed": "Uma chamada com a mesma chave de idempotência acabou de ser concluída ou ainda está em andamento; tente novamente mais tarde.",
+  "caching.store.capacity_reached": "O cache em memória atingiu sua capacidade de {capacity} entradas."
 }

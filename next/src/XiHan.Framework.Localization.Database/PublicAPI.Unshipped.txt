@@ -52,7 +52,9 @@ XiHan.Framework.Localization.Database.Translations.MessageTranslationKey.Key.get
 XiHan.Framework.Localization.Database.Translations.MessageTranslationKey.Locale.get -> string!
 XiHan.Framework.Localization.Database.Translations.MessageTranslationKey.MessageTranslationKey(string! key, string! locale) -> void
 XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader
+XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.Dispose() -> void
+XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.LastError.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.LastLoadedAt.get -> System.DateTimeOffset?
 XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.MessageTranslationLoader(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Localization.Database.DatabaseMessageLocalizer! localizer, XiHan.Framework.Localization.Database.DatabaseLocalizationOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Localization.Database.Translations.MessageTranslationLoader.ReloadAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
@@ -70,6 +72,7 @@ XiHan.Framework.Localization.Database.Translations.MessageTranslationStore.ListA
 XiHan.Framework.Localization.Database.Translations.MessageTranslationStore.MessageTranslationStore(XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.Localization.Database.Translations.MessageTranslation!, System.Guid>! repository, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, System.TimeProvider! clock) -> void
 XiHan.Framework.Localization.Database.Translations.MessageTranslationStore.RemoveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Localization.Database.Translations.MessageTranslationKey!>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Localization.Database.Translations.MessageTranslationResult!>!>
 XiHan.Framework.Localization.Database.Translations.MessageTranslationStore.UpsertAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Localization.Database.Translations.MessageTranslationEntry!>! entries, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Localization.Database.Translations.MessageTranslationResult!>!>
+const XiHan.Framework.Localization.Database.DatabaseLocalizationFeature.HealthName = "localization.database.translations" -> string!
 const XiHan.Framework.Localization.Database.DatabaseLocalizationOptions.ConfigurationSection = "XiHan:Localization:Database" -> string!
 const XiHan.Framework.Localization.Database.LocalizationMessages.CatalogName = "localization.database" -> string!
 const XiHan.Framework.Localization.Database.LocalizationMessages.TranslationNotFound = "localization.translation.not_found" -> string!

@@ -23,6 +23,7 @@ XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.RemoveRan
 XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.InMemory.InMemoryStore
+XiHan.Framework.Persistence.InMemory.InMemoryStore.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Clear() -> void
 XiHan.Framework.Persistence.InMemory.InMemoryStore.InMemoryStore(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions! options) -> void
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Options.get -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
@@ -55,6 +56,7 @@ XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, 
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.TenantId.get -> string?
+const XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.HealthName = "persistence.inmemory.capacity" -> string!
 const XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.ConfigurationSection = "XiHan:Persistence:InMemory" -> string!
 override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.GetHashCode() -> int

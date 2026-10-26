@@ -2,5 +2,6 @@
   "objectstorage.blob.exists": "Объект '{key}' уже существует в контейнере '{container}'.",
   "objectstorage.blob.not_found": "Объект '{key}' не существует в контейнере '{container}'.",
   "objectstorage.quota.exceeded": "Запись {requested} байт превысит квоту объектного хранилища в {limit} байт.",
+  "objectstorage.quota.reached": "Квота объектного хранилища в {limit} байт исчерпана: используется {used} байт.",
   "objectstorage.store.unavailable": "Объектное хранилище недоступно: {reason}"
 }

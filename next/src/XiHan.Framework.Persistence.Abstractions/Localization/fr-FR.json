@@ -5,6 +5,7 @@
   "persistence.entity.stale_stamp": "Le jeton de concurrence de '{entity}' avec l'identifiant '{id}' est obsolète.",
   "persistence.entity.tenant_required": "L'entité '{entity}' est multi-locataire, mais l'appel courant n'a aucun locataire.",
   "persistence.store.capacity_exceeded": "La table en mémoire de '{entity}' a atteint sa capacité de {capacity}.",
+  "persistence.store.unavailable": "La base de données relationnelle est injoignable.",
   "persistence.unit_of_work.concurrency_conflict": "Un conflit de concurrence optimiste s'est produit lors de la validation : {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' a enregistré {count} événement(s) de domaine, mais aucun répartiteur d'événements de domaine n'est enregistré.",
   "persistence.unit_of_work.read_only": "Une unité de travail en lecture seule n'accepte pas les écritures."

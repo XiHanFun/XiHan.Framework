@@ -1,4 +1,7 @@
 #nullable enable
+XiHan.Framework.Caching.InMemory.InMemoryCacheHealthContributor
+XiHan.Framework.Caching.InMemory.InMemoryCacheHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Caching.InMemory.InMemoryCacheHealthContributor.InMemoryCacheHealthContributor(XiHan.Framework.Caching.InMemory.InMemoryCacheStore! store, XiHan.Framework.Caching.InMemory.InMemoryObjectCache! cache, XiHan.Framework.Caching.InMemory.InMemoryCachingOptions! options) -> void
 XiHan.Framework.Caching.InMemory.InMemoryCacheStore
 XiHan.Framework.Caching.InMemory.InMemoryCacheStore.Clear() -> void
 XiHan.Framework.Caching.InMemory.InMemoryCacheStore.Count.get -> int
@@ -34,6 +37,7 @@ XiHan.Framework.Caching.InMemory.InMemoryObjectCache.RemoveManyAsync(System.Coll
 XiHan.Framework.Caching.InMemory.InMemoryObjectCache.SetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, T value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Caching.InMemory.InMemoryObjectCache.SetManyAsync<T>(System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<XiHan.Framework.Caching.Abstractions.Stores.CacheKey, T>>! entries, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Caching.InMemory.InMemoryObjectCache.Store.get -> XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!
+const XiHan.Framework.Caching.InMemory.InMemoryCachingFeature.HealthName = "caching.inmemory.capacity" -> string!
 const XiHan.Framework.Caching.InMemory.InMemoryCachingOptions.ConfigurationSection = "XiHan:Caching:InMemory" -> string!
 override XiHan.Framework.Caching.InMemory.InMemoryCachingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Caching.InMemory.InMemoryCachingOptions.GetHashCode() -> int

@@ -22,6 +22,11 @@ namespace XiHan.Framework.Persistence.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
 {
+    /// <summary>
+    /// 健康项名：各实体的内存表是否都还有余量。
+    /// </summary>
+    public const string HealthName = "persistence.inmemory.capacity";
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {
@@ -38,7 +43,7 @@ public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
             Config = new ConfigContribution("XiHan:Persistence"),
-            Health = ["persistence.inmemory.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemoryPersistenceFeature).FullName,
     };
@@ -53,6 +58,8 @@ public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
         context.Services.AddSingleton(options);
         // 存储是进程内单例，跨作用域共享；工作单元按作用域注册，同一调用内的仓储共享同一个覆盖层
         context.Services.AddSingleton<InMemoryStore>();
+        // 存储自己就是健康项的贡献者：直接看各表的条数与容量
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryStore>());
         context.Services.TryAddScoped<InMemoryUnitOfWork>();
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<InMemoryUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();

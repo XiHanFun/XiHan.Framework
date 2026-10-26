@@ -5,6 +5,7 @@
   "persistence.entity.stale_stamp": "El sello de concurrencia de '{entity}' con el identificador '{id}' está obsoleto.",
   "persistence.entity.tenant_required": "La entidad '{entity}' es multiinquilino, pero la llamada actual no tiene inquilino.",
   "persistence.store.capacity_exceeded": "La tabla en memoria de '{entity}' alcanzó su capacidad de {capacity}.",
+  "persistence.store.unavailable": "No se puede acceder a la base de datos relacional.",
   "persistence.unit_of_work.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista durante la confirmación: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' registró {count} evento(s) de dominio, pero no hay ningún despachador de eventos de dominio registrado.",
   "persistence.unit_of_work.read_only": "Una unidad de trabajo de solo lectura no acepta escrituras."

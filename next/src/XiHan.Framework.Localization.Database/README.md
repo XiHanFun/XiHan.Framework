@@ -22,7 +22,8 @@ await loader.ReloadAsync(ct);
 ## 规则
 
 - `DatabaseMessageLocalizer`：每个回退区域先查数据库快照再查目录，其余语义与内存实现一致（通过 `Localization.Conformance`）。
-- `MessageTranslationLoader`：宿主进入服务状态后经完整管道分页加载（按 ID，每页 1000，最多 `MaxTranslations` 条，超出记警告），整份替换快照；按 `RefreshInterval` 刷新（0 关闭）；失败保留上一份快照。
+- `MessageTranslationLoader`：宿主进入服务状态后经完整管道分页加载（按 ID，每页 1000，最多 `MaxTranslations` 条，超出记警告），整份替换快照；按 `RefreshInterval` 刷新（0 关闭）；失败保留上一份快照并记到 `LastError`。
+- 健康项 `localization.database.translations`（加载器自己实现，以最近一次加载的结果上报，不另起探测循环）：还没加载过为 Started，加载成功为 Ready，最近一次加载失败为 Degraded（错误是那次加载的失败），应用仍在服务。
 - `MessageTranslationStore`（作用域）：`UpsertAsync` / `RemoveAsync` 批量逐项结果（不存在 → `LOCALIZATION_NOTFOUND_001`），`ListAsync` 分页；只能在调用的 Transaction 阶段内使用。
 - 键须符合消息键文法，区域规范化大小写；重复的键与区域在数据库里应由唯一索引约束。
 

@@ -33,4 +33,5 @@
 | [0027](0027-Security-Database.md) | `Security.Database`：授予进数据库，`IPermissionGrantStore` 在新作用域直接开只读工作单元读仓储（不经管道），全局授予以空字符串租户列落库保证唯一索引语义一致，授予缓存放存储里（契约不变），`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果，新错误码 `SECURITY_NOTFOUND_002` | 已采纳 |
 | [0028](0028-Auditing-Database.md) | `Auditing.Database`：审计事件经有界队列后台批量落库（不阻塞调用、满了丢弃并计数、失败不重试），`Sequence` 列作写入顺序与续页令牌，`Error` 按键还原、字面错误仿 `JobRunRecord` 先例用 `Error.Literal`，细节 JSON 手写不经反射 | 已采纳 |
 | [0029](0029-Resilience阶段.md) | Resilience 阶段：内核内置 `ResilienceMiddleware` 按操作 ID 施加熔断、固定窗口限流与并发上限（BCL `System.Threading.RateLimiting`，熔断自写三态），配置节 `XiHan:Kernel:Resilience` 可按操作覆盖，拒绝以 `KERNEL_UNAVAILABLE_002` – `004` 返回；只算基础设施类失败；不做分桶与自适应 | 已采纳 |
+| [0030](0030-Provider健康项.md) | Provider 健康项：清单声明的 `contributes.health` 由各 Provider 实现——连通性探针经内核 `PeriodicHealthContributor` 周期探测并缓存结果，容量 / 状态项同步计算，`Localization.Database` 以最近一次加载结果上报；架构测试守护清单与实现一致；不改内核聚合语义 | 已采纳 |
 | [0031](0031-OpenAPI权限扩展.md) | OpenAPI 文档以 `x-xihan-permission` / `x-xihan-policy` 发布操作的授权要求、以 `components.x-xihan-permissions` 发布权限定义（被引用的 ∪ 注册表全部），不占用标准 `security` 字段 | 已采纳 |
