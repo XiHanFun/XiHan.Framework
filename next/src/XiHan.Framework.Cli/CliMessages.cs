@@ -53,8 +53,11 @@ public static class CliMessages
     /// <summary><c>migrate</c> 命令说明。</summary>
     public const string MigrateDescription = "cli.migrate.description";
 
-    /// <summary>迁移来源不支持。参数：<c>version</c>。</summary>
+    /// <summary>来源版本没有对应的规则集。参数：<c>version</c>、<c>known</c>。</summary>
     public const string MigrateVersionUnknown = "cli.migrate.version_unknown";
+
+    /// <summary>这一版工具没有任何迁移规则集。参数：<c>version</c>。</summary>
+    public const string MigrateNoRuleSets = "cli.migrate.no_rule_sets";
 
     /// <summary>路径不存在。参数：<c>path</c>。</summary>
     public const string MigratePathNotFound = "cli.migrate.path_not_found";
@@ -73,99 +76,6 @@ public static class CliMessages
 
     /// <summary>报告已写出。参数：<c>path</c>。</summary>
     public const string MigrateReportWritten = "cli.migrate.report_written";
-
-    /// <summary>生成文件的头注释。</summary>
-    public const string MigrateGenerated = "cli.migrate.generated";
-
-    /// <summary>V4-05 标记：工作单元管理器。</summary>
-    public const string MigrateMarkerUnitOfWorkManager = "cli.migrate.marker.unit_of_work_manager";
-
-    /// <summary>V4-05 标记：生成的当前工作单元访问器要指向应用自己承接的 <c>IUnitOfWorkManager</c> / <c>IUnitOfWork</c>。</summary>
-    public const string MigrateMarkerUnitOfWorkAccessor = "cli.migrate.marker.unit_of_work_accessor";
-
-    /// <summary>V4-01 标记：应用构建器。</summary>
-    public const string MigrateMarkerApplicationBuilder = "cli.migrate.marker.application_builder";
-
-    /// <summary>V4-01 标记：关闭钩子的上下文。</summary>
-    public const string MigrateMarkerShutdownContext = "cli.migrate.marker.shutdown_context";
-
-    /// <summary>V4-01 标记：异步的服务配置钩子。</summary>
-    public const string MigrateMarkerAsyncConfigure = "cli.migrate.marker.async_configure";
-
-    /// <summary>V4-01 标记：删除了无能力的 4.x 模块。参数：<c>modules</c>。</summary>
-    public const string MigrateMarkerModulesDropped = "cli.migrate.marker.modules_dropped";
-
-    /// <summary>V4-01 标记：被删 4.x 模块在 <c>ConfigureServices</c> 里做过的注册，承接时按需补回。参数：<c>module</c>、<c>registrations</c>。</summary>
-    public const string MigrateMarkerModuleRegistrations = "cli.migrate.marker.module_registrations";
-
-    /// <summary>V4-02 标记：并发戳列类型。</summary>
-    public const string MigrateMarkerConcurrencyStampColumn = "cli.migrate.marker.concurrency_stamp_column";
-
-    /// <summary>V4-02 标记：租户 ID 类型。</summary>
-    public const string MigrateMarkerTenantIdType = "cli.migrate.marker.tenant_id_type";
-
-    /// <summary>V4-02 标记：没有对应物的接口。参数：<c>name</c>。</summary>
-    public const string MigrateMarkerAppInterface = "cli.migrate.marker.app_interface";
-
-    /// <summary>V4-02 标记：严格隔离的 <c>IStrictMultiTenantEntity</c> 保留为应用接口（继承 <c>IMultiTenant</c>，租户过滤按严格相等），不换成读共享的 <c>IMultiTenant</c>。</summary>
-    public const string MigrateMarkerStrictMultiTenant = "cli.migrate.marker.strict_multi_tenant";
-
-    /// <summary>V4-03 标记：没法自动注册的服务类（泛型、抽象或不在项目里）。参数：<c>name</c>。</summary>
-    public const string MigrateMarkerManualRegistration = "cli.migrate.marker.manual_registration";
-
-    /// <summary>V4-03 标记：调用生成的注册方法。参数：<c>method</c>。</summary>
-    public const string MigrateMarkerRegisterServices = "cli.migrate.marker.register_services";
-
-    /// <summary>V4-06 标记：在特性里登记生成的操作。</summary>
-    public const string MigrateMarkerAddOperations = "cli.migrate.marker.add_operations";
-
-    /// <summary>V4-06 标记：同一资源内动词重复。参数：<c>verb</c>。</summary>
-    public const string MigrateMarkerDuplicateVerb = "cli.migrate.marker.duplicate_verb";
-
-    /// <summary>V4-06 标记：方法没法变成操作。参数：<c>name</c>。</summary>
-    public const string MigrateMarkerUnsupportedOperation = "cli.migrate.marker.unsupported_operation";
-
-    /// <summary>V4-06 标记：用到了 <c>ApplicationServiceBase</c> 的成员。</summary>
-    public const string MigrateMarkerServiceBaseMember = "cli.migrate.marker.service_base_member";
-
-    /// <summary>V4-06 标记：多个权限只取了第一个。</summary>
-    public const string MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified";
-
-    /// <summary>V4-08 标记：事件用反射序列化，提醒改用序列化上下文。</summary>
-    public const string MigrateMarkerEventJson = "cli.migrate.marker.event_json";
-
-    /// <summary>V4-08 标记：推不出事件类型。参数：<c>name</c>。</summary>
-    public const string MigrateMarkerEventTopicUnresolved = "cli.migrate.marker.event_topic_unresolved";
-
-    /// <summary>V4-08 标记：<c>ILocalEventBus.Subscribe</c> 没有对应物。</summary>
-    public const string MigrateMarkerEventSubscribe = "cli.migrate.marker.event_subscribe";
-
-    /// <summary>V4-09 标记：装配嵌入的消息目录。参数：<c>domain</c>。</summary>
-    public const string MigrateMarkerLocalizationCatalog = "cli.migrate.marker.localization_catalog";
-
-    /// <summary>V4-02 展开属性的文档：创建者标识。</summary>
-    public const string MigrateEntityCreatedId = "cli.migrate.entity.created_id";
-
-    /// <summary>V4-02 展开属性的文档：创建人。</summary>
-    public const string MigrateEntityCreatedBy = "cli.migrate.entity.created_by";
-
-    /// <summary>V4-02 展开属性的文档：修改者标识。</summary>
-    public const string MigrateEntityModifiedId = "cli.migrate.entity.modified_id";
-
-    /// <summary>V4-02 展开属性的文档：修改人。</summary>
-    public const string MigrateEntityModifiedBy = "cli.migrate.entity.modified_by";
-
-    /// <summary>V4-02 展开属性的文档：删除者标识。</summary>
-    public const string MigrateEntityDeletedId = "cli.migrate.entity.deleted_id";
-
-    /// <summary>V4-02 展开属性的文档：删除人。</summary>
-    public const string MigrateEntityDeletedBy = "cli.migrate.entity.deleted_by";
-
-    /// <summary>V4-02 展开成员的文档：领域事件缓冲。</summary>
-    public const string MigrateEntityEvents = "cli.migrate.entity.events";
-
-    /// <summary>V4-02 展开成员的文档：记录领域事件。</summary>
-    public const string MigrateEntityRaise = "cli.migrate.entity.raise";
 
     /// <summary>
     /// 本包的消息目录。

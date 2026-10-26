@@ -4,6 +4,7 @@
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Cli.Commands;
+using XiHan.Framework.Cli.Migration;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Hosting.CommandLine.Parsing;
@@ -29,10 +30,17 @@ internal static class CliHost
     /// <summary>
     /// 以指定的子进程启动器执行（测试用）。
     /// </summary>
-    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, CancellationToken cancellationToken)
+    public static ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, CancellationToken cancellationToken)
+        => RunAsync(args, output, error, launcher, MigrationRuleSets.All, cancellationToken);
+
+    /// <summary>
+    /// 以指定的子进程启动器与迁移规则集执行（测试用）。
+    /// </summary>
+    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(launcher);
+        ArgumentNullException.ThrowIfNull(migrationRuleSets);
         var services = new ServiceCollection();
         // 文案按 --locale 或当前 UI 文化协商；工具自己的目录加上命令行宿主与内核的目录，失败文案才能翻译
         var localization = new LocalizationOptions();
@@ -47,7 +55,7 @@ internal static class CliHost
         services.AddXiHanCommand<HelpCommand>();
         services.AddXiHanCommand<VersionCommand>();
         services.AddXiHanCommand<PackCommand>();
-        services.AddXiHanCommand<MigrateCommand>();
+        services.AddSingleton<ICommand>(new MigrateCommand(migrationRuleSets));
         foreach (var (name, description) in new[] { ("graph", CliMessages.GraphDescription), ("pipeline", CliMessages.PipelineDescription), ("operations", CliMessages.OperationsDescription), ("invoke", CliMessages.InvokeDescription) })
         {
             services.AddSingleton<ICommand>(provider => new ForwardCommand(name, description, provider.GetRequiredService<IProcessLauncher>()));

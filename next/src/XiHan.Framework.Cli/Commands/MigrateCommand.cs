@@ -13,15 +13,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// <c>migrate v4 [--path &lt;目录|.csproj|.slnx&gt;] [--fixers V4-01,V4-03] [--dry-run] [--report &lt;文件&gt;]</c>：按 <c>spec/migration/v4.md</c> 把 4.x 代码改写成 5.0，打印每条规则的改动与标记。
+/// <c>migrate &lt;来源版本&gt; [--path &lt;目录|.csproj|.slnx&gt;] [--fixers &lt;规则编号,…&gt;] [--dry-run] [--report &lt;文件&gt;]</c>：
+/// 按来源版本的规则集（<c>spec/migration/README.md</c>）改写应用代码，打印每条规则的改动与标记。
 /// </summary>
-internal sealed class MigrateCommand : ICommand
+/// <param name="ruleSets">工具认识的规则集；运行时是 <see cref="MigrationRuleSets.All"/>，测试可以换成自己的。</param>
+internal sealed class MigrateCommand(IReadOnlyList<MigrationRuleSet> ruleSets) : ICommand
 {
-    /// <summary>
-    /// 支持的迁移来源。
-    /// </summary>
-    private const string SupportedVersion = "v4";
-
     /// <inheritdoc />
     public string Name => "migrate";
 
@@ -33,9 +30,14 @@ internal sealed class MigrateCommand : ICommand
     {
         ArgumentNullException.ThrowIfNull(context);
         var version = context.Arguments.Count > 0 ? context.Arguments[0] : string.Empty;
-        if (!string.Equals(version, SupportedVersion, StringComparison.OrdinalIgnoreCase))
+        var ruleSet = ruleSets.FirstOrDefault(set => string.Equals(set.Version, version, StringComparison.OrdinalIgnoreCase));
+        if (ruleSet is null)
         {
-            return await CommandLineFailure.WriteAsync(context.Error, Error.Validation(CliErrors.MigrateVersionUnknown, CliMessages.MigrateVersionUnknown, MessageArguments.Of(("version", version))), context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+            // 同一个错误码，文案区分「有规则集但版本不对」与「这一版工具没有任何规则集」
+            var error = ruleSets.Count == 0
+                ? Error.Validation(CliErrors.MigrateVersionUnknown, CliMessages.MigrateNoRuleSets, MessageArguments.Of(("version", version)))
+                : Error.Validation(CliErrors.MigrateVersionUnknown, CliMessages.MigrateVersionUnknown, MessageArguments.Of(("version", version), ("known", string.Join(", ", ruleSets.Select(static set => set.Version)))));
+            return await CommandLineFailure.WriteAsync(context.Error, error, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
         var path = Path.GetFullPath(context.Option("path").TryGetValue(out var explicitPath) ? explicitPath : ".");
@@ -44,25 +46,26 @@ internal sealed class MigrateCommand : ICommand
             return await CommandLineFailure.WriteAsync(context.Error, Error.NotFound(CliErrors.MigratePathNotFound, CliMessages.MigratePathNotFound, MessageArguments.Of(("path", path))), context.Services, null).ConfigureAwait(false);
         }
 
-        var fixers = V4Rules.All;
+        var fixers = ruleSet.Fixers;
         if (context.Option("fixers").TryGetValue(out var selection))
         {
             var selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var id in selection.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
-                if (!V4Rules.Ids.Contains(id, StringComparer.OrdinalIgnoreCase))
+                if (!ruleSet.Ids.Contains(id, StringComparer.OrdinalIgnoreCase))
                 {
-                    return await CommandLineFailure.WriteAsync(context.Error, Error.Validation(CliErrors.MigrateFixerUnknown, CliMessages.MigrateFixerUnknown, MessageArguments.Of(("fixer", id), ("known", string.Join(", ", V4Rules.Ids)))), context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+                    return await CommandLineFailure.WriteAsync(context.Error, Error.Validation(CliErrors.MigrateFixerUnknown, CliMessages.MigrateFixerUnknown, MessageArguments.Of(("fixer", id), ("known", string.Join(", ", ruleSet.Ids)))), context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
                 }
 
                 selected.Add(id);
             }
 
-            fixers = V4Rules.All.Where(fixer => selected.Contains(fixer.Id)).ToList();
+            // 子集仍按规则集的顺序执行
+            fixers = ruleSet.Fixers.Where(fixer => selected.Contains(fixer.Id)).ToList();
         }
 
         var dryRun = context.HasOption("dry-run");
-        var report = new V4Migration(path, fixers, dryRun).Run(context.CancellationToken);
+        var report = new MigrationRunner(path, ruleSet.Version, fixers, dryRun).Run(context.CancellationToken);
         await WriteTableAsync(context, report).ConfigureAwait(false);
         if (context.Option("report").TryGetValue(out var reportPath))
         {

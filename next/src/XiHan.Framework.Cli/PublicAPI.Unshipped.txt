@@ -1,5 +1,4 @@
 #nullable enable
-XiHan.Framework.Cli.CliMessages
 const XiHan.Framework.Cli.CliMessages.CatalogName = "cli" -> string!
 const XiHan.Framework.Cli.CliMessages.DotnetUnavailable = "cli.dotnet.unavailable" -> string!
 const XiHan.Framework.Cli.CliMessages.GraphDescription = "cli.graph.description" -> string!
@@ -8,38 +7,8 @@ const XiHan.Framework.Cli.CliMessages.ManifestInvalid = "cli.manifest.invalid" -
 const XiHan.Framework.Cli.CliMessages.ManifestNotFound = "cli.manifest.not_found" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateDescription = "cli.migrate.description" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateDryRun = "cli.migrate.dry_run" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityCreatedBy = "cli.migrate.entity.created_by" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityCreatedId = "cli.migrate.entity.created_id" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityDeletedBy = "cli.migrate.entity.deleted_by" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityDeletedId = "cli.migrate.entity.deleted_id" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityEvents = "cli.migrate.entity.events" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityModifiedBy = "cli.migrate.entity.modified_by" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityModifiedId = "cli.migrate.entity.modified_id" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateEntityRaise = "cli.migrate.entity.raise" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateFixerUnknown = "cli.migrate.fixer_unknown" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateGenerated = "cli.migrate.generated" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerAddOperations = "cli.migrate.marker.add_operations" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerAppInterface = "cli.migrate.marker.app_interface" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerApplicationBuilder = "cli.migrate.marker.application_builder" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerAsyncConfigure = "cli.migrate.marker.async_configure" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerConcurrencyStampColumn = "cli.migrate.marker.concurrency_stamp_column" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerDuplicateVerb = "cli.migrate.marker.duplicate_verb" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerEventJson = "cli.migrate.marker.event_json" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerEventSubscribe = "cli.migrate.marker.event_subscribe" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerEventTopicUnresolved = "cli.migrate.marker.event_topic_unresolved" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerLocalizationCatalog = "cli.migrate.marker.localization_catalog" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerManualRegistration = "cli.migrate.marker.manual_registration" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerModuleRegistrations = "cli.migrate.marker.module_registrations" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerModulesDropped = "cli.migrate.marker.modules_dropped" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerPermissionSimplified = "cli.migrate.marker.permission_simplified" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerRegisterServices = "cli.migrate.marker.register_services" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerServiceBaseMember = "cli.migrate.marker.service_base_member" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerShutdownContext = "cli.migrate.marker.shutdown_context" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerStrictMultiTenant = "cli.migrate.marker.strict_multi_tenant" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerTenantIdType = "cli.migrate.marker.tenant_id_type" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnitOfWorkAccessor = "cli.migrate.marker.unit_of_work_accessor" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnitOfWorkManager = "cli.migrate.marker.unit_of_work_manager" -> string!
-const XiHan.Framework.Cli.CliMessages.MigrateMarkerUnsupportedOperation = "cli.migrate.marker.unsupported_operation" -> string!
+const XiHan.Framework.Cli.CliMessages.MigrateNoRuleSets = "cli.migrate.no_rule_sets" -> string!
 const XiHan.Framework.Cli.CliMessages.MigratePathNotFound = "cli.migrate.path_not_found" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateReportWritten = "cli.migrate.report_written" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateSummary = "cli.migrate.summary" -> string!
@@ -52,3 +21,4 @@ const XiHan.Framework.Cli.CliMessages.PackWritten = "cli.pack.written" -> string
 const XiHan.Framework.Cli.CliMessages.PipelineDescription = "cli.pipeline.description" -> string!
 const XiHan.Framework.Cli.CliMessages.VersionDescription = "cli.version.description" -> string!
 static XiHan.Framework.Cli.CliMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
+XiHan.Framework.Cli.CliMessages
