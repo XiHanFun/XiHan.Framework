@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "操作 '{id}' は '{expected}' を処理しますが、'{actual}' が渡されました。",
   "kernel.operation.unknown": "操作 '{id}' は登録されていません。",
   "kernel.permission.duplicate": "権限コード '{code}' は既に登録されています。",
-  "kernel.permission.registry_full": "権限レジストリは容量上限 {capacity} に達しました。"
+  "kernel.permission.registry_full": "権限レジストリは容量上限 {capacity} に達しました。",
+  "kernel.resilience.circuit_open": "操作 '{id}' は一時的に利用できません（サーキットが開いています）。{retryAfter} 秒後に再試行してください。",
+  "kernel.resilience.concurrency_exceeded": "操作 '{id}' は同時実行数の上限に達しました。",
+  "kernel.resilience.rate_limited": "操作 '{id}' はレート制限中です。{retryAfter} 秒後に再試行してください。"
 }

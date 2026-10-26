@@ -4,7 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
-  <!-- Ring 0 / Ring 1 / Abstractions 允许的唯一外部依赖：Microsoft.Extensions.* 抽象包 -->
+  <!-- Ring 0 / Ring 1 / Abstractions 允许的外部依赖：Microsoft.Extensions.* 抽象包，以及内核 Resilience 阶段用的 BCL 扩展包 System.Threading.RateLimiting（不在共享框架里，架构测试允许名单登记） -->
   <ItemGroup Label="Microsoft.Extensions">
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.13" />
+    <PackageVersion Include="System.Threading.RateLimiting" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.11.0" />
     <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="10.11.0" />

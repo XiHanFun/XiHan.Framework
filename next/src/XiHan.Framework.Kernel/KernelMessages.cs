@@ -80,4 +80,13 @@ public static class KernelMessages
 
     /// <summary>请求对象的自校验失败。参数：<c>id</c>、<c>reason</c>（第一条违规，细节 <c>violations</c> 列全部）。</summary>
     public const string RequestInvalid = "kernel.operation.request_invalid";
+
+    /// <summary>操作被限流。参数：<c>id</c>、<c>retryAfter</c>（秒）。</summary>
+    public const string RateLimited = "kernel.resilience.rate_limited";
+
+    /// <summary>操作已达并发上限。参数：<c>id</c>。</summary>
+    public const string ConcurrencyExceeded = "kernel.resilience.concurrency_exceeded";
+
+    /// <summary>操作的熔断器打开。参数：<c>id</c>、<c>retryAfter</c>（秒）。</summary>
+    public const string CircuitOpen = "kernel.resilience.circuit_open";
 }

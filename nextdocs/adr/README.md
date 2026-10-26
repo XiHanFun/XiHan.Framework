@@ -29,3 +29,4 @@
 | [0023](0023-SqlSugar分表.md) | SqlSugar 分表：仓储按实体的 `[SplitTable]` 自动走分表入口，`EntityQuery<T>.Within` 是 Provider 无关的时间范围提示（只限定扫描的表，不过滤行） | 已采纳 |
 | [0024](0024-Validate阶段契约校验.md) | Validate 阶段契约校验：内核自带 JSON Schema 子集校验器按请求 Schema 拒绝载荷、解码后执行 `IValidatableObject`；DataAnnotations 由生成器折进 Schema；HTTP 宿主进管道前绑定载荷 | 已采纳 |
 | [0025](0025-领域事件派发.md) | 领域事件派发：工作单元登记写过的聚合，Transaction 阶段提交前经 `IDomainEventDispatcher`（Messaging 实现，显式登记事件类型）发成 CloudEvents；发件箱时同事务；没有派发器却有事件即失败 | 已采纳 |
+| [0029](0029-Resilience阶段.md) | Resilience 阶段：内核内置 `ResilienceMiddleware` 按操作 ID 施加熔断、固定窗口限流与并发上限（BCL `System.Threading.RateLimiting`，熔断自写三态），配置节 `XiHan:Kernel:Resilience` 可按操作覆盖，拒绝以 `KERNEL_UNAVAILABLE_002` – `004` 返回；只算基础设施类失败；不做分桶与自适应 | 已采纳 |

@@ -347,6 +347,38 @@ XiHan.Framework.Kernel.Plugins.PluginStatus.Manifest.init -> void
 XiHan.Framework.Kernel.Plugins.PluginStatus.PluginStatus(XiHan.Framework.Primitives.Manifests.Manifest! Manifest, XiHan.Framework.Primitives.LifecycleState State, XiHan.Framework.Primitives.Error? Error = null) -> void
 XiHan.Framework.Kernel.Plugins.PluginStatus.State.get -> XiHan.Framework.Primitives.LifecycleState
 XiHan.Framework.Kernel.Plugins.PluginStatus.State.init -> void
+XiHan.Framework.Kernel.Resilience.ResilienceMiddleware
+XiHan.Framework.Kernel.Resilience.ResilienceMiddleware.Dispose() -> void
+XiHan.Framework.Kernel.Resilience.ResilienceMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Kernel.Resilience.ResilienceMiddleware.ResilienceMiddleware(XiHan.Framework.Kernel.Resilience.ResilienceOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.Kernel.Resilience.ResilienceOptions
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.<Clone>$() -> XiHan.Framework.Kernel.Resilience.ResilienceOptions!
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.Defaults.get -> XiHan.Framework.Kernel.Resilience.ResiliencePolicy!
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.Defaults.init -> void
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.Equals(XiHan.Framework.Kernel.Resilience.ResilienceOptions? other) -> bool
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.Operations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Resilience.ResiliencePolicy!>!
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.Operations.init -> void
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.PolicyFor(string! operationId) -> XiHan.Framework.Kernel.Resilience.ResiliencePolicy!
+XiHan.Framework.Kernel.Resilience.ResilienceOptions.ResilienceOptions() -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.<Clone>$() -> XiHan.Framework.Kernel.Resilience.ResiliencePolicy!
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.BreakDuration.get -> System.TimeSpan
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.BreakDuration.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ConcurrencyLimit.get -> int?
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ConcurrencyLimit.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ConcurrencyQueueLimit.get -> int
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ConcurrencyQueueLimit.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Equals(XiHan.Framework.Kernel.Resilience.ResiliencePolicy? other) -> bool
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.FailureThreshold.get -> int?
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.FailureThreshold.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.IsEmpty.get -> bool
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.PermitLimit.get -> int?
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.PermitLimit.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.QueueLimit.get -> int
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.QueueLimit.init -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ResiliencePolicy() -> void
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Window.get -> System.TimeSpan
+XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Window.init -> void
 XiHan.Framework.Kernel.Security.AuthorizationRequest
 XiHan.Framework.Kernel.Security.AuthorizationRequest.<Clone>$() -> XiHan.Framework.Kernel.Security.AuthorizationRequest!
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Action.get -> string!
@@ -457,7 +489,9 @@ const XiHan.Framework.Kernel.KernelCapabilities.Version = 1 -> int
 const XiHan.Framework.Kernel.KernelErrors.AmbiguousProvider = "KERNEL_CAPABILITY_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Cancelled = "KERNEL_CANCELLED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.CapabilityVersionConflict = "KERNEL_CAPABILITY_003" -> string!
+const XiHan.Framework.Kernel.KernelErrors.CircuitOpen = "KERNEL_UNAVAILABLE_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.CircularCapability = "KERNEL_CAPABILITY_002" -> string!
+const XiHan.Framework.Kernel.KernelErrors.ConcurrencyExceeded = "KERNEL_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DeadlineExceeded = "KERNEL_TIMEOUT_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DuplicateManifest = "KERNEL_CAPABILITY_005" -> string!
 const XiHan.Framework.Kernel.KernelErrors.DuplicateOperation = "KERNEL_OPERATION_001" -> string!
@@ -475,12 +509,15 @@ const XiHan.Framework.Kernel.KernelErrors.OperationTypeMismatch = "KERNEL_VALIDA
 const XiHan.Framework.Kernel.KernelErrors.PermissionRegistryFull = "KERNEL_SECURITY_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineCycle = "KERNEL_PIPELINE_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineRegistration = "KERNEL_PIPELINE_003" -> string!
+const XiHan.Framework.Kernel.KernelErrors.RateLimited = "KERNEL_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.RequestInvalid = "KERNEL_VALIDATION_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.SchemaViolation = "KERNEL_VALIDATION_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownOperation = "KERNEL_NOTFOUND_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
 const XiHan.Framework.Kernel.KernelMessages.Cancelled = "kernel.invocation.cancelled" -> string!
+const XiHan.Framework.Kernel.KernelMessages.CircuitOpen = "kernel.resilience.circuit_open" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ConcurrencyExceeded = "kernel.resilience.concurrency_exceeded" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeadlineBeforeStart = "kernel.invocation.deadline_before_start" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeadlineExceeded = "kernel.invocation.deadline_exceeded" -> string!
 const XiHan.Framework.Kernel.KernelMessages.DeniedByPolicy = "kernel.authorization.denied_by_policy" -> string!
@@ -499,12 +536,15 @@ const XiHan.Framework.Kernel.KernelMessages.OperationNoResponse = "kernel.operat
 const XiHan.Framework.Kernel.KernelMessages.OperationRegistryFull = "kernel.operation.registry_full" -> string!
 const XiHan.Framework.Kernel.KernelMessages.OperationTypeMismatch = "kernel.operation.type_mismatch" -> string!
 const XiHan.Framework.Kernel.KernelMessages.PermissionRegistryFull = "kernel.permission.registry_full" -> string!
+const XiHan.Framework.Kernel.KernelMessages.RateLimited = "kernel.resilience.rate_limited" -> string!
 const XiHan.Framework.Kernel.KernelMessages.RequestInvalid = "kernel.operation.request_invalid" -> string!
 const XiHan.Framework.Kernel.KernelMessages.SchemaViolation = "kernel.operation.schema_violation" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnhandledException = "kernel.invocation.unhandled_exception" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnknownOperation = "kernel.operation.unknown" -> string!
 const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
+const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!
+const XiHan.Framework.Kernel.Resilience.ResilienceOptions.OperationsSection = "Operations" -> string!
 const XiHan.Framework.Kernel.Security.PermissionRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxDepth = 64 -> int
 const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxViolations = 32 -> int
@@ -555,6 +595,12 @@ override XiHan.Framework.Kernel.Plugins.PluginSource.ToString() -> string!
 override XiHan.Framework.Kernel.Plugins.PluginStatus.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Plugins.PluginStatus.GetHashCode() -> int
 override XiHan.Framework.Kernel.Plugins.PluginStatus.ToString() -> string!
+override XiHan.Framework.Kernel.Resilience.ResilienceOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Resilience.ResilienceOptions.GetHashCode() -> int
+override XiHan.Framework.Kernel.Resilience.ResilienceOptions.ToString() -> string!
+override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.GetHashCode() -> int
+override XiHan.Framework.Kernel.Resilience.ResiliencePolicy.ToString() -> string!
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.ToString() -> string!
@@ -632,6 +678,12 @@ static XiHan.Framework.Kernel.Plugins.PluginSource.operator !=(XiHan.Framework.K
 static XiHan.Framework.Kernel.Plugins.PluginSource.operator ==(XiHan.Framework.Kernel.Plugins.PluginSource? left, XiHan.Framework.Kernel.Plugins.PluginSource? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginStatus.operator !=(XiHan.Framework.Kernel.Plugins.PluginStatus? left, XiHan.Framework.Kernel.Plugins.PluginStatus? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PluginStatus.operator ==(XiHan.Framework.Kernel.Plugins.PluginStatus? left, XiHan.Framework.Kernel.Plugins.PluginStatus? right) -> bool
+static XiHan.Framework.Kernel.Resilience.ResilienceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Kernel.Resilience.ResilienceOptions!
+static XiHan.Framework.Kernel.Resilience.ResilienceOptions.operator !=(XiHan.Framework.Kernel.Resilience.ResilienceOptions? left, XiHan.Framework.Kernel.Resilience.ResilienceOptions? right) -> bool
+static XiHan.Framework.Kernel.Resilience.ResilienceOptions.operator ==(XiHan.Framework.Kernel.Resilience.ResilienceOptions? left, XiHan.Framework.Kernel.Resilience.ResilienceOptions? right) -> bool
+static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.FromConfiguration(Microsoft.Extensions.Configuration.IConfigurationSection! section, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? fallback = null) -> XiHan.Framework.Kernel.Resilience.ResiliencePolicy!
+static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.operator !=(XiHan.Framework.Kernel.Resilience.ResiliencePolicy? left, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? right) -> bool
+static XiHan.Framework.Kernel.Resilience.ResiliencePolicy.operator ==(XiHan.Framework.Kernel.Resilience.ResiliencePolicy? left, XiHan.Framework.Kernel.Resilience.ResiliencePolicy? right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationRequest.operator !=(XiHan.Framework.Kernel.Security.AuthorizationRequest? left, XiHan.Framework.Kernel.Security.AuthorizationRequest? right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationRequest.operator ==(XiHan.Framework.Kernel.Security.AuthorizationRequest? left, XiHan.Framework.Kernel.Security.AuthorizationRequest? right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationResult.Allow() -> XiHan.Framework.Kernel.Security.AuthorizationResult

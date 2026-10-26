@@ -23,5 +23,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
+    <!-- Resilience 阶段的限流与并发原语（固定窗口 / 并发限流器）：BCL 的一部分但不在共享框架里，架构测试允许名单登记 -->
+    <PackageReference Include="System.Threading.RateLimiting" />
   </ItemGroup>
 </Project>

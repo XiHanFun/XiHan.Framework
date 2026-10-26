@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Resilience;
 using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -179,14 +180,18 @@ public sealed class AppBuilder
         var permissions = new PermissionRegistry();
         var operations = new OperationRegistry();
 
-        // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后。
+        // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后；
+        // Resilience 阶段先截止时间再限制（同 Placement、同归属按注册顺序）。
         if (options.UseBuiltInMiddleware)
         {
             Services.TryAddSingleton<ObserveMiddleware>();
             Services.TryAddSingleton<DeadlineMiddleware>();
+            Services.TryAddSingleton(ResilienceOptions.FromConfiguration(Configuration));
+            Services.TryAddSingleton<ResilienceMiddleware>();
             Services.TryAddSingleton<ValidationMiddleware>();
             Pipeline.UseAt<ObserveMiddleware>(PipelineStage.Observe, Placement.Beginning, KernelCapabilities.Manifest.Id);
             Pipeline.UseAt<DeadlineMiddleware>(PipelineStage.Resilience, Placement.Beginning, KernelCapabilities.Manifest.Id);
+            Pipeline.UseAt<ResilienceMiddleware>(PipelineStage.Resilience, Placement.Beginning, KernelCapabilities.Manifest.Id);
             Pipeline.UseAt<ValidationMiddleware>(PipelineStage.Validate, Placement.Beginning, KernelCapabilities.Manifest.Id);
         }
 

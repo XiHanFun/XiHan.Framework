@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "Operation '{id}' handles '{expected}', but '{actual}' was supplied.",
   "kernel.operation.unknown": "Operation '{id}' is not registered.",
   "kernel.permission.duplicate": "Permission code '{code}' is already registered.",
-  "kernel.permission.registry_full": "The permission registry has reached its capacity of {capacity}."
+  "kernel.permission.registry_full": "The permission registry has reached its capacity of {capacity}.",
+  "kernel.resilience.circuit_open": "Operation '{id}' is temporarily unavailable because its circuit is open; retry after {retryAfter} seconds.",
+  "kernel.resilience.concurrency_exceeded": "Operation '{id}' has reached its concurrency limit.",
+  "kernel.resilience.rate_limited": "Operation '{id}' is rate limited; retry after {retryAfter} seconds."
 }

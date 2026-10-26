@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "操作 '{id}' 处理的是 '{expected}'，但传入的是 '{actual}'。",
   "kernel.operation.unknown": "操作 '{id}' 未登记。",
   "kernel.permission.duplicate": "权限码 '{code}' 已登记。",
-  "kernel.permission.registry_full": "权限注册表已达到容量上限 {capacity}。"
+  "kernel.permission.registry_full": "权限注册表已达到容量上限 {capacity}。",
+  "kernel.resilience.circuit_open": "操作 '{id}' 暂不可用（熔断已打开），请在 {retryAfter} 秒后重试。",
+  "kernel.resilience.concurrency_exceeded": "操作 '{id}' 已达到并发上限。",
+  "kernel.resilience.rate_limited": "操作 '{id}' 已被限流，请在 {retryAfter} 秒后重试。"
 }

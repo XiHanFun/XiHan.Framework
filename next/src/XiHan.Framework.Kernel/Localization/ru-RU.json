@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "Операция '{id}' обрабатывает '{expected}', но передано '{actual}'.",
   "kernel.operation.unknown": "Операция '{id}' не зарегистрирована.",
   "kernel.permission.duplicate": "Код разрешения '{code}' уже зарегистрирован.",
-  "kernel.permission.registry_full": "Реестр разрешений достиг предела ёмкости {capacity}."
+  "kernel.permission.registry_full": "Реестр разрешений достиг предела ёмкости {capacity}.",
+  "kernel.resilience.circuit_open": "Операция '{id}' временно недоступна, так как её автоматический выключатель разомкнут; повторите попытку через {retryAfter} с.",
+  "kernel.resilience.concurrency_exceeded": "Операция '{id}' достигла предела параллельности.",
+  "kernel.resilience.rate_limited": "Операция '{id}' ограничена по частоте; повторите попытку через {retryAfter} с."
 }
