@@ -14,7 +14,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 租户分库：带 <c>ConnectionString</c> 属性的租户在作用域内拿到指向分片库的客户端，其余租户与无租户调用用应用默认连接。
+/// 租户分库：带 <c>ConnectionString</c> 属性的租户在作用域内拿到带分片连接的客户端，租户实体落分片连接、平台实体仍落默认连接；其余租户与无租户调用只有默认连接。
 /// </summary>
 public sealed class SqlSugarTenantShardingTests : IDisposable
 {
@@ -58,21 +58,26 @@ public sealed class SqlSugarTenantShardingTests : IDisposable
 
         var acmeId = Guid.CreateVersion7();
         var betaId = Guid.CreateVersion7();
-        string? acmeConnection = null;
-        string? betaConnection = null;
+        string? acmeNoteConnection = null;
+        string? acmeRootConnection = null;
+        string? betaNoteConnection = null;
         (await InvokeAsync(host, "acme", ctx =>
         {
-            acmeConnection = ctx.Services.GetRequiredService<ISqlSugarClient>().CurrentConnectionConfig.ConnectionString;
+            var unitOfWork = ctx.Services.GetRequiredService<SqlSugarUnitOfWork>();
+            acmeNoteConnection = unitOfWork.ConnectionFor(typeof(ConformanceNote)).CurrentConnectionConfig.ConnectionString;
+            acmeRootConnection = unitOfWork.Client.CurrentConnectionConfig.ConnectionString;
             return Repository(ctx).AddAsync(new ConformanceNote { Id = acmeId, TenantId = "acme", Text = "acme" }, ctx.CancellationToken);
         })).ThrowIfFailure();
         (await InvokeAsync(host, "beta", ctx =>
         {
-            betaConnection = ctx.Services.GetRequiredService<ISqlSugarClient>().CurrentConnectionConfig.ConnectionString;
+            betaNoteConnection = ctx.Services.GetRequiredService<SqlSugarUnitOfWork>().ConnectionFor(typeof(ConformanceNote)).CurrentConnectionConfig.ConnectionString;
             return Repository(ctx).AddAsync(new ConformanceNote { Id = betaId, TenantId = "beta", Text = "beta" }, ctx.CancellationToken);
         })).ThrowIfFailure();
 
-        Assert.Equal(_shard.ConnectionString, acmeConnection);
-        Assert.Equal(_default.ConnectionString, betaConnection);
+        // 分片调用里根连接仍是默认库，租户实体的连接才是分片库；共库租户只有默认连接
+        Assert.Equal(_shard.ConnectionString, acmeNoteConnection);
+        Assert.Equal(_default.ConnectionString, acmeRootConnection);
+        Assert.Equal(_default.ConnectionString, betaNoteConnection);
 
         // 各自通过仓储只看到自己的行
         var acmeFound = false;

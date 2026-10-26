@@ -14,6 +14,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
 /// SqlSugar 仓储：读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。
+/// 实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。
 /// 批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。
 /// SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。
 /// 实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。
@@ -42,6 +43,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// 审计字段使用的时间源。
     /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+
+    /// <summary>
+    /// 本实体所用的连接；首次使用时由工作单元按落点规则选出，之后复用（同一工作单元内落点稳定）。
+    /// </summary>
+    private ISqlSugarClient? _connection;
 
     /// <inheritdoc />
     public async ValueTask<Maybe<TEntity>> FindAsync(TKey id, CancellationToken cancellationToken)
@@ -368,10 +374,10 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 活动工作单元的客户端；工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 本实体在活动工作单元里的连接；工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
     /// </summary>
     private ISqlSugarClient Client => _unitOfWork.State == UnitOfWorkState.Active
-        ? _unitOfWork.Client
+        ? _connection ??= _unitOfWork.ConnectionFor(typeof(TEntity))
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
     /// <summary>
@@ -468,7 +474,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     private ISugarQueryable<TEntity> Locked()
     {
         var source = Visible(includeDeleted: false);
-        return _unitOfWork.Client.CurrentConnectionConfig.DbType == DbType.Sqlite ? source : source.TranLock(DbLockType.Wait);
+        return Client.CurrentConnectionConfig.DbType == DbType.Sqlite ? source : source.TranLock(DbLockType.Wait);
     }
 
     /// <summary>
