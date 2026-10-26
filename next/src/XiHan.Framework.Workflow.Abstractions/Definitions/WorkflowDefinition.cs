@@ -82,17 +82,38 @@ public sealed record WorkflowDefinition
     /// <summary>
     /// 节点。
     /// </summary>
-    public IReadOnlyList<WorkflowNode> Nodes { get; init; } = [];
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理。
+    /// </remarks>
+    public IReadOnlyList<WorkflowNode> Nodes
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
 
     /// <summary>
     /// 转移。
     /// </summary>
-    public IReadOnlyList<WorkflowTransition> Transitions { get; init; } = [];
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理。
+    /// </remarks>
+    public IReadOnlyList<WorkflowTransition> Transitions
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
 
     /// <summary>
     /// 变量声明。
     /// </summary>
-    public IReadOnlyList<WorkflowVariableDefinition> Variables { get; init; } = [];
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理。
+    /// </remarks>
+    public IReadOnlyList<WorkflowVariableDefinition> Variables
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
 
     /// <summary>
     /// 所属租户；平台级为 <see langword="null"/>。

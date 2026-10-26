@@ -45,6 +45,24 @@ public sealed class WorkflowJsonTests
     }
 
     [Fact]
+    public void Definition_WithoutNodeProperties_DeserializesToEmptyProperties()
+    {
+        // 设计器交来的 JSON 常常不带 properties（或显式 null）：模型保证节点属性非空，校验与引擎不必逐处判空
+        const string json = "{\"id\":\"d\",\"name\":\"n\",\"version\":1,\"nodes\":[{\"id\":\"start\",\"activityType\":\"Start\"},{\"id\":\"log\",\"activityType\":\"Log\",\"properties\":null},{\"id\":\"end\",\"activityType\":\"End\",\"properties\":{\"Outcome\":\"done\"}}],\"transitions\":[{\"id\":\"t1\",\"sourceNodeId\":\"start\",\"targetNodeId\":\"log\"},{\"id\":\"t2\",\"sourceNodeId\":\"log\",\"targetNodeId\":\"end\"}]}";
+
+        var definition = WorkflowJson.DeserializeDefinition(json).ValueOrThrow();
+
+        Assert.NotNull(definition.FindNode("start").ValueOrThrow().Properties);
+        Assert.Empty(definition.FindNode("start").ValueOrThrow().Properties);
+        Assert.NotNull(definition.FindNode("log").ValueOrThrow().Properties);
+        Assert.Empty(definition.FindNode("log").ValueOrThrow().Properties);
+        Assert.Equal("done", definition.FindNode("end").ValueOrThrow().Properties["Outcome"]!.GetValue<string>());
+        Assert.NotNull(definition.Variables);
+        Assert.Empty(definition.Variables);
+        Assert.NotNull(WorkflowJson.Clone(definition).FindNode("start").ValueOrThrow().Properties);
+    }
+
+    [Fact]
     public void RuntimeModels_RoundTrip()
     {
         var instance = new WorkflowInstance

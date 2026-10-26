@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
+using XiHan.Framework.Workflow.Abstractions.Serialization;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
@@ -97,6 +98,19 @@ public sealed class WorkflowDefinitionValidatorTests
         Assert.Contains("NoSuchActivity", result.Error!.Details!["errors"]!.ToString(), StringComparison.Ordinal);
 
         Assert.Contains(scope.Validator.Errors(WorkflowDefinitionBuilder.Create("nostart").AddNode("a", ActivityTypes.Log).Build()), error => error.Contains("has no Start node", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NodesWithoutProperties_ValidateWithoutErrors()
+    {
+        // 设计器交来的 JSON 里 Start / 普通节点常常不带 properties 或给 null：校验器按空属性对待，不能抛空引用
+        const string json = "{\"id\":\"d\",\"name\":\"noprops\",\"version\":1,\"nodes\":[{\"id\":\"start\",\"activityType\":\"Start\"},{\"id\":\"join\",\"activityType\":\"Join\",\"properties\":null},{\"id\":\"end\",\"activityType\":\"End\"}],\"transitions\":[{\"id\":\"t1\",\"sourceNodeId\":\"start\",\"targetNodeId\":\"join\"},{\"id\":\"t2\",\"sourceNodeId\":\"join\",\"targetNodeId\":\"end\"}]}";
+        using var scope = Validator();
+
+        var definition = WorkflowJson.DeserializeDefinition(json).ValueOrThrow();
+
+        Assert.Empty(scope.Validator.Errors(definition));
+        Assert.True(scope.Validator.Validate(definition).IsSuccess);
     }
 
     /// <summary>

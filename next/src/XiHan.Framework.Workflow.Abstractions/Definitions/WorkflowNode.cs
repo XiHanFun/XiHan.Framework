@@ -35,7 +35,14 @@ public sealed record WorkflowNode
     /// <summary>
     /// 活动属性；各活动类型自行解释。
     /// </summary>
-    public JsonObject Properties { get; init; } = [];
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空属性处理（源生成的反序列化对 init 属性逐个赋值，缺省项会传 null）。
+    /// </remarks>
+    public JsonObject Properties
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
 
     /// <summary>
     /// 重试策略；没有则失败即故障。
