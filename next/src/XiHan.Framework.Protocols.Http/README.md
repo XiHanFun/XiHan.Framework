@@ -7,7 +7,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HttpProtocolFeat
 var app = builder.Build();
 app.UseXiHan();              // 构造上下文、把端点元数据里的操作描述放入上下文、回写 Problem Details
 app.MapXiHanOperations();    // orders.create → POST /orders，orders.get → GET /orders/{id} …
-app.MapXiHanOpenApi();       // /openapi.json：OpenAPI 3.1，从登记表与 OperationSchema 生成
+app.MapXiHanOpenApi();       // /openapi.json：OpenAPI 3.1，从登记表与 OperationSchema 生成，带权限 / 策略扩展
 ```
 
 ## 规则
@@ -17,6 +17,20 @@ app.MapXiHanOpenApi();       // /openapi.json：OpenAPI 3.1，从登记表与 Op
 - 响应：成功 `create` 为 201、其余 200，正文是响应类型的 JSON；失败由 `UseXiHan()` 写成 RFC 9457 Problem Details（`detail` 按 `Accept-Language` 本地化）。
 - 授权：Authorize 阶段按契约的权限或策略判定（描述经端点元数据进入上下文）；`Stability.Internal` 的操作不发布；`Expose` 不含 `Http` 的操作不发布。
 - OpenAPI：`MapXiHanOpenApi(pattern = "/openapi.json")` 在第一次请求时从登记表生成 OpenAPI 3.1 并缓存，绕过内核管道。路径与方法同路由推导；路由参数与（无请求体方法的）查询参数、请求体、成功响应都来自 `OperationSchema`，`$defs` 提升到 `components/schemas`；失败响应统一引用 `ProblemDetails` 组件。没有 Schema 的操作只发布路径与 `operationId`。
+- OpenAPI 权限扩展（ADR-0031）：契约有 `Permission` 的操作带 `x-xihan-permission`（权限码），有 `Policy` 的带 `x-xihan-policy`（策略名），都没有则不带；不占用标准 `security` / `securitySchemes`（权限码不是 OAuth scope，那些字段留给认证方案）。`components.x-xihan-permissions` 按权限码（序数排序）给出权限定义，收录范围 = 文档里已发布操作引用的权限码 ∪ `PermissionRegistry` 登记的全部定义——只在 gRPC / MCP 暴露的操作或端点级 `RequireXiHanPermission` 用到的权限也在其中，授权界面据此生成；被引用但未登记的只有 `code`，`description` 为 null 时省略。`OpenApiDocumentBuilder.Build(registry, options, permissions, title, version)` 的 `permissions` 为 null 时只按引用写。
+
+  ```json
+  {
+    "paths": { "/orders": { "post": { "operationId": "orders.create", "x-xihan-permission": "orders.write" } } },
+    "components": {
+      "schemas": { "...": {} },
+      "x-xihan-permissions": {
+        "orders.read": { "code": "orders.read", "displayName": "Read orders" },
+        "orders.write": { "code": "orders.write", "displayName": "Place orders", "description": "Create orders for the current tenant." }
+      }
+    }
+  }
+  ```
 
 ## 依赖方向
 
