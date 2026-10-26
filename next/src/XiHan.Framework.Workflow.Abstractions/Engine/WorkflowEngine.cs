@@ -9,6 +9,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Events;
@@ -56,6 +57,16 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// 子流程回调输入：子实例故障。
     /// </summary>
     public const string ChildFaultInput = "childFault";
+
+    /// <summary>
+    /// 信号启动时写入的变量：信号载荷。
+    /// </summary>
+    public const string SignalVariable = "signal";
+
+    /// <summary>
+    /// 输出映射表达式作用域里本节点输出的名字。
+    /// </summary>
+    public const string OutputsScopeName = "outputs";
 
     /// <summary>
     /// 通知父实例时等锁的尝试次数。
@@ -160,6 +171,23 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return found.Error!;
         }
 
+        // 重用策略：同名定义在同一关联 ID 下已有未结束的实例
+        if (request.CorrelationId is { Length: > 0 } correlation && request.ReusePolicy != WorkflowReusePolicy.AllowDuplicate)
+        {
+            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
+            if (!active.TryGetValue(out var activeList))
+            {
+                return active.Error!;
+            }
+
+            if (activeList.Count > 0)
+            {
+                return request.ReusePolicy == WorkflowReusePolicy.ReturnActive
+                    ? activeList[0]
+                    : Error.Conflict(WorkflowErrors.ActiveInstanceExists, WorkflowMessages.ActiveInstanceExists, MessageArguments.Of(("name", definition.Name.Value), ("correlation", correlation)));
+            }
+        }
+
         // 变量：声明的缺省补默认值，必填缺失即失败
         var variables = WorkflowJson.CloneObject(request.Variables);
         foreach (var declared in definition.Variables)
@@ -198,7 +226,6 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             CreatedAt = now,
             StartedAt = now,
         };
-
         // 先写入再加锁执行：实例从此可被查到、可被锁住
         var saved = await _instances.SaveAsync([instance], cancellationToken).ConfigureAwait(false);
         if (saved.IsFailure)
@@ -212,6 +239,21 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             if (session.Graph.StartNode is null)
             {
                 FaultInstance(session, Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionInvalid, MessageArguments.Of(("errors", "no start node"))), null, null);
+                return Result.Success();
+            }
+
+            if (session.Definition.Timeout is { } timeout)
+            {
+                // 实例级超时：书签的节点实例 ID 是实例 ID，到期由引擎直接处理
+                session.AddBookmark(session.Graph.StartNode.Id, session.Instance.Id, new BookmarkRequest { Kind = BookmarkKinds.InstanceTimeout, DueAt = session.Now + timeout });
+            }
+
+            if (request.StartAt is { } startAt && startAt > session.Now)
+            {
+                // 延迟启动：开始节点挂起到该时刻，到期后恢复并流出
+                var startInstance = session.AddNodeInstance(session.Graph.StartNode);
+                startInstance.Status = WorkflowNodeInstanceStatus.Suspended;
+                session.AddBookmark(startInstance, new BookmarkRequest { Kind = BookmarkKinds.Timer, DueAt = startAt });
                 return Result.Success();
             }
 
@@ -236,6 +278,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return BookmarkNotFound(bookmarkId);
         }
 
+        if (string.Equals(found.Kind, BookmarkKinds.DefinitionTimer, StringComparison.Ordinal))
+        {
+            return await ResumeDefinitionTimerAsync(found, cancellationToken).ConfigureAwait(false);
+        }
+
         return await RunLockedAsync(found.InstanceId, async session =>
         {
             // 锁内重读：书签可能已被别的执行者消费
@@ -250,9 +297,20 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 return Error.Conflict(WorkflowErrors.BookmarkNotResumable, WorkflowMessages.BookmarkKeyMismatch, MessageArguments.Of(("id", bookmarkId)));
             }
 
+            if (string.Equals(bookmark.Kind, BookmarkKinds.InstanceTimeout, StringComparison.Ordinal))
+            {
+                return await TimeOutInstanceAsync(session, bookmark).ConfigureAwait(false);
+            }
+
             if (session.Instance.Status != WorkflowInstanceStatus.Running)
             {
                 return Error.Conflict(WorkflowErrors.BookmarkNotResumable, WorkflowMessages.BookmarkNotResumable, MessageArguments.Of(("id", bookmarkId)));
+            }
+
+            if (string.Equals(bookmark.Kind, BookmarkKinds.Reminder, StringComparison.Ordinal))
+            {
+                RemindTask(session, bookmark);
+                return Result.Success();
             }
 
             var node = session.Graph.Node(bookmark.NodeId);
@@ -308,6 +366,44 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             else if (resumed.Error!.Code is not (WorkflowErrors.BookmarkNotFound or WorkflowErrors.BookmarkNotResumable))
             {
                 LogSignalFailed(_logger, signalName, bookmark.Id, resumed.Error.Code);
+            }
+        }
+
+        // 信号启动：Start 节点声明了该信号名的已发布定义各启动一个实例
+        var published = await _definitions.ListAsync(null, WorkflowDefinitionStatus.Published, cancellationToken).ConfigureAwait(false);
+        if (!published.TryGetValue(out var definitions))
+        {
+            return published.Error!;
+        }
+
+        foreach (var definition in definitions)
+        {
+            if (definition.TenantId is not null && !string.Equals(definition.TenantId, tenant, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var start = definition.Nodes.FirstOrDefault(static node => string.Equals(node.ActivityType.Value, ActivityTypes.Start, StringComparison.Ordinal));
+            var listens = start?.Properties.TryGetPropertyValue(StartActivity.SignalNameProperty, out var name) == true && name is JsonValue value && string.Equals(WorkflowValues.AsString(value), signalName, StringComparison.Ordinal);
+            if (!listens)
+            {
+                continue;
+            }
+
+            var started = await StartAsync(new WorkflowStartRequest
+            {
+                DefinitionId = definition.Id,
+                Variables = new JsonObject { [SignalVariable] = payload?.DeepClone() },
+                CorrelationId = correlationId,
+                TenantId = tenant,
+            }, cancellationToken).ConfigureAwait(false);
+            if (started.IsSuccess)
+            {
+                consumed++;
+            }
+            else
+            {
+                LogSignalStartFailed(_logger, signalName, definition.Id, started.Error!.Code);
             }
         }
 
@@ -379,6 +475,323 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             await RunBurstAsync(session).ConfigureAwait(false);
             return Result.Success();
         }, cancellationToken);
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(updates);
+        var results = new List<Result<WorkflowInstance>>(updates.Count);
+        foreach (var update in updates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await RunLockedAsync(update.InstanceId, session =>
+            {
+                if (session.Instance.Status is not (WorkflowInstanceStatus.Running or WorkflowInstanceStatus.Suspended))
+                {
+                    return ValueTask.FromResult<Result>(StatusConflict(session.Instance));
+                }
+
+                session.Variables.Merge(update.Variables);
+                foreach (var name in update.Remove ?? [])
+                {
+                    session.Variables.Remove(name);
+                }
+
+                return ValueTask.FromResult(Result.Success());
+            }, cancellationToken).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(jumps);
+        var results = new List<Result<WorkflowInstance>>(jumps.Count);
+        foreach (var jump in jumps)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await RunLockedAsync(jump.InstanceId, async session =>
+            {
+                var instance = session.Instance;
+                if (instance.Status is not (WorkflowInstanceStatus.Running or WorkflowInstanceStatus.Suspended or WorkflowInstanceStatus.Faulted))
+                {
+                    return StatusConflict(instance);
+                }
+
+                var target = session.Graph.Node(jump.TargetNodeId);
+                if (target is null)
+                {
+                    return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.NodeNotFound, MessageArguments.Of(("id", instance.Id), ("node", jump.TargetNodeId)));
+                }
+
+                // 未结束的节点与它们的书签全部作废，汇合计数清零，从目标节点重新开始；实例级超时书签保留
+                var wasSuspended = instance.Status == WorkflowInstanceStatus.Suspended;
+                session.CancelOpenNodeInstances();
+                session.RemoveAllBookmarks(keepInstanceTimeout: true);
+                instance.JoinStates.Clear();
+                instance.Status = WorkflowInstanceStatus.Running;
+                instance.EndedAt = null;
+                instance.Fault = null;
+                instance.FaultNodeId = null;
+                instance.FaultNodeInstanceId = null;
+                session.Variables.Merge(jump.Variables);
+                session.Publish(WorkflowTopics.InstanceJumped, session.EventData() with { NodeId = target.Id, Reason = jump.Reason, ActorId = jump.ActorId });
+                session.Queue.Enqueue(new WorkItem(WorkItemKind.Fresh, target));
+                await RunBurstAsync(session).ConfigureAwait(false);
+                if (wasSuspended && instance.Status == WorkflowInstanceStatus.Running)
+                {
+                    // 挂起的实例跳转后仍然挂起：目标节点执行到等待处为止
+                    instance.Status = WorkflowInstanceStatus.Suspended;
+                }
+
+                return Result.Success();
+            }, cancellationToken).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(migrations);
+        var results = new List<Result<WorkflowInstance>>(migrations.Count);
+        foreach (var migration in migrations)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var targetFound = await _definitions.FindAsync(migration.TargetDefinitionId, cancellationToken).ConfigureAwait(false);
+            if (!targetFound.TryGetValue(out var targetMaybe))
+            {
+                results.Add(targetFound.Error!);
+                continue;
+            }
+
+            if (!targetMaybe.TryGetValue(out var target) || target.Status != WorkflowDefinitionStatus.Published)
+            {
+                results.Add(Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", migration.TargetDefinitionId))));
+                continue;
+            }
+
+            results.Add(await RunLockedAsync(migration.InstanceId, session =>
+            {
+                var instance = session.Instance;
+                if (instance.Status is not (WorkflowInstanceStatus.Running or WorkflowInstanceStatus.Suspended))
+                {
+                    return ValueTask.FromResult<Result>(StatusConflict(instance));
+                }
+
+                if (target.Name != instance.DefinitionName)
+                {
+                    return ValueTask.FromResult<Result>(Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", migration.TargetDefinitionId))));
+                }
+
+                // 每个未结束的节点在目标定义里必须存在且活动类型相同，书签才还能对上
+                foreach (var nodeInstance in session.NodeInstances)
+                {
+                    if (nodeInstance.Status is not (WorkflowNodeInstanceStatus.Running or WorkflowNodeInstanceStatus.Suspended))
+                    {
+                        continue;
+                    }
+
+                    if (!target.FindNode(nodeInstance.NodeId).TryGetValue(out var node) || node.ActivityType != nodeInstance.ActivityType)
+                    {
+                        return ValueTask.FromResult<Result>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.MigrationIncompatible, MessageArguments.Of(("id", instance.Id), ("node", nodeInstance.NodeId))));
+                    }
+                }
+
+                instance.DefinitionId = target.Id;
+                instance.DefinitionVersion = target.Version;
+                session.Publish(WorkflowTopics.InstanceMigrated, session.EventData() with { DefinitionId = target.Id, DefinitionVersion = target.Version });
+                return ValueTask.FromResult(Result.Success());
+            }, cancellationToken).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var query = new WorkflowInstanceQuery
+        {
+            EndedBefore = request.EndedBefore,
+            Statuses = request.Statuses is { Count: > 0 } ? request.Statuses : [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Canceled, WorkflowInstanceStatus.Faulted, WorkflowInstanceStatus.Terminated],
+            DefinitionName = request.DefinitionName,
+            Limit = request.Limit,
+        };
+        var listed = await _instances.ListAsync(query, cancellationToken).ConfigureAwait(false);
+        if (!listed.TryGetValue(out var instances))
+        {
+            return listed.Error!;
+        }
+
+        if (instances.Count == 0)
+        {
+            return 0;
+        }
+
+        var ids = instances.Select(static instance => instance.Id).ToList();
+        var deletedBookmarks = await _bookmarks.DeleteByInstanceAsync(ids, cancellationToken).ConfigureAwait(false);
+        if (deletedBookmarks.IsFailure)
+        {
+            return deletedBookmarks.Error!;
+        }
+
+        var deleted = await _instances.DeleteAsync(ids, cancellationToken).ConfigureAwait(false);
+        return deleted.IsSuccess ? ids.Count : deleted.Error!;
+    }
+
+    /// <summary>
+    /// 定时启动：在定义 ID 的锁内消费书签、推算并写入下一次，锁外启动实例。
+    /// </summary>
+    private async ValueTask<Result<WorkflowInstance>> ResumeDefinitionTimerAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
+    {
+        var acquired = await _lock.AcquireAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+        if (!acquired.TryGetValue(out var handle))
+        {
+            return acquired.Error!;
+        }
+
+        WorkflowDefinition? definition;
+        await using (handle.ConfigureAwait(false))
+        {
+            // 锁内重读：别的节点可能已消费
+            var current = await _bookmarks.FindAsync(bookmark.Id, cancellationToken).ConfigureAwait(false);
+            if (!current.TryGetValue(out var maybe))
+            {
+                return current.Error!;
+            }
+
+            if (!maybe.HasValue)
+            {
+                return BookmarkNotFound(bookmark.Id);
+            }
+
+            var deleted = await _bookmarks.DeleteAsync([bookmark.Id], cancellationToken).ConfigureAwait(false);
+            if (deleted.IsFailure)
+            {
+                return deleted.Error!;
+            }
+
+            var found = await _definitions.FindAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var definitionMaybe))
+            {
+                return found.Error!;
+            }
+
+            // 定义不再发布：不再排期，也不启动
+            if (!definitionMaybe.TryGetValue(out definition) || definition.Status != WorkflowDefinitionStatus.Published)
+            {
+                return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", bookmark.InstanceId)));
+            }
+
+            if (DefinitionTimerBookmark(definition, _clock.GetUtcNow()) is { } next)
+            {
+                var saved = await _bookmarks.SaveAsync([next], cancellationToken).ConfigureAwait(false);
+                if (saved.IsFailure)
+                {
+                    return saved.Error!;
+                }
+            }
+        }
+
+        return await StartAsync(new WorkflowStartRequest { DefinitionId = definition.Id, TenantId = definition.TenantId }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 已发布定义的下一次定时启动书签；没有 <c>Start.Cron</c> 或没有下一次为空。
+    /// </summary>
+    public static WorkflowBookmark? DefinitionTimerBookmark(WorkflowDefinition definition, DateTimeOffset after)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        var start = definition.Nodes.FirstOrDefault(static node => string.Equals(node.ActivityType.Value, ActivityTypes.Start, StringComparison.Ordinal));
+        if (start is null || !start.Properties.TryGetPropertyValue(StartActivity.CronProperty, out var cronNode) || cronNode is not JsonValue cronValue || !CronExpression.TryParse(WorkflowValues.AsString(cronValue), out var cron))
+        {
+            return null;
+        }
+
+        var zoneId = start.Properties.TryGetPropertyValue(StartActivity.TimeZoneProperty, out var zoneNode) && zoneNode is JsonValue zoneValue ? WorkflowValues.AsString(zoneValue) : null;
+        var next = !string.IsNullOrWhiteSpace(zoneId) && TimeZoneInfo.TryFindSystemTimeZoneById(zoneId, out var zone) ? cron.Next(after, zone) : cron.Next(after);
+        if (!next.TryGetValue(out var dueAt))
+        {
+            return null;
+        }
+
+        return new WorkflowBookmark
+        {
+            Id = WorkflowIdentifiers.NewId(),
+            InstanceId = definition.Id,
+            NodeId = start.Id,
+            NodeInstanceId = definition.Id,
+            Kind = BookmarkKinds.DefinitionTimer,
+            Key = definition.Name.Value,
+            DueAt = dueAt,
+            CreatedAt = after,
+            TenantId = definition.TenantId,
+        };
+    }
+
+    /// <summary>
+    /// 实例级超时到期：按定义的超时动作故障或终止；已结束的实例只消费书签。
+    /// </summary>
+    private async ValueTask<Result> TimeOutInstanceAsync(WorkflowSession session, WorkflowBookmark bookmark)
+    {
+        session.RemoveBookmark(bookmark.Id);
+        var instance = session.Instance;
+        if (instance.IsFinal)
+        {
+            return Result.Success();
+        }
+
+        session.Publish(WorkflowTopics.InstanceTimedOut, session.EventData());
+        if (session.Definition.TimeoutAction == WorkflowTimeoutAction.Terminate)
+        {
+            return await FinishForciblyAsync(session, WorkflowInstanceStatus.Terminated, "timeout").ConfigureAwait(false);
+        }
+
+        session.CancelOpenNodeInstances();
+        session.RemoveAllBookmarks();
+        instance.Status = WorkflowInstanceStatus.Running;
+        FaultInstance(session, Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.InstanceTimedOut, details: MessageArguments.Of(("id", instance.Id))), null, null);
+        if (session.CompensationRequested)
+        {
+            await CompensateAsync(session, null).ConfigureAwait(false);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// 提醒到期：对该节点实例的每个用户任务书签发布提醒事件，再按间隔排下一次。
+    /// </summary>
+    private static void RemindTask(WorkflowSession session, WorkflowBookmark bookmark)
+    {
+        session.RemoveBookmark(bookmark.Id);
+        var nodeInstance = session.NodeInstance(bookmark.NodeInstanceId);
+        if (nodeInstance is null || nodeInstance.Status != WorkflowNodeInstanceStatus.Suspended)
+        {
+            return;
+        }
+
+        var tasks = session.BookmarksOf(nodeInstance.Id).Where(static candidate => string.Equals(candidate.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)).ToList();
+        if (tasks.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var task in tasks)
+        {
+            session.Publish(WorkflowTopics.TaskReminder, session.EventData(nodeInstance) with { TaskId = task.Id, AssigneeId = task.Key, Payload = WorkflowJson.CloneObject(task.Payload) });
+        }
+
+        if (bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.ReminderIntervalSeconds, out var intervalNode) && WorkflowValues.TryConvert<double>(intervalNode, out var seconds) && seconds > 0)
+        {
+            session.AddBookmark(nodeInstance, new BookmarkRequest { Kind = BookmarkKinds.Reminder, DueAt = session.Now + TimeSpan.FromSeconds(seconds), Payload = WorkflowJson.CloneObject(bookmark.Payload) });
+        }
+    }
 
     /// <summary>
     /// 在实例锁内对一组实例逐个执行 <paramref name="action"/>（同步版）。
@@ -609,7 +1022,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次：在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾。
+    /// 波次：在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾；故障要求了补偿就在收尾后补偿。
     /// </summary>
     private async ValueTask RunBurstAsync(WorkflowSession session)
     {
@@ -627,6 +1040,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         FinalizeBurst(session);
+        if (session.CompensationRequested)
+        {
+            session.CompensationRequested = false;
+            await CompensateAsync(session, null).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -660,6 +1078,15 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         session.Publish(WorkflowTopics.NodeExecuting, session.EventData(nodeInstance));
+        if (item.Kind == WorkItemKind.Fresh && string.Equals(node.ActivityType.Value, ActivityTypes.Compensate, StringComparison.Ordinal))
+        {
+            // 补偿节点：先对已完成的节点逆序补偿，再执行它自己（只是流出）
+            var targets = WorkflowValues.ToStringList(node.Properties.TryGetPropertyValue(CompensateActivity.NodeIdsProperty, out var ids) ? ids : null);
+            var compensated = await CompensateAsync(session, targets.Count == 0 ? null : targets).ConfigureAwait(false);
+            nodeInstance.State[CompensateActivity.CompensatedState] = new JsonArray(compensated.Select(static id => (JsonNode?)JsonValue.Create(id)).ToArray());
+            session.Touch(nodeInstance);
+        }
+
         var result = await _executor.RunAsync(session, node, nodeInstance, item.Bookmark, item.Inputs, CancellationToken.None).ConfigureAwait(false);
         if (!result.TryGetValue(out var outcome))
         {
@@ -671,7 +1098,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         {
             case ActivityOutcomeKind.Completed:
             case ActivityOutcomeKind.EndInstance:
-                CompleteNode(session, nodeInstance, outcome);
+                if (CompleteNode(session, node, nodeInstance, outcome) is { } mappingError)
+                {
+                    HandleFault(session, node, nodeInstance, mappingError);
+                    return;
+                }
+
                 if (outcome.Kind == ActivityOutcomeKind.EndInstance)
                 {
                     session.Instance.Outcome = outcome.Label ?? session.Instance.Outcome;
@@ -683,7 +1115,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 FlowOutgoing(session, node, outcome.Label);
                 return;
             case ActivityOutcomeKind.Terminated:
-                CompleteNode(session, nodeInstance, outcome);
+                CompleteNode(session, node, nodeInstance, outcome);
                 session.Instance.Status = WorkflowInstanceStatus.Terminated;
                 session.Instance.CancellationReason = outcome.Reason;
                 session.Queue.Clear();
@@ -695,9 +1127,9 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 节点完成：记输出与结果标签、合并变量、登记子流程、清掉剩余书签。
+    /// 节点完成：记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误。
     /// </summary>
-    private static void CompleteNode(WorkflowSession session, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome)
+    private Error? CompleteNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome)
     {
         nodeInstance.Status = WorkflowNodeInstanceStatus.Completed;
         nodeInstance.EndedAt = session.Now;
@@ -709,14 +1141,31 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         nodeInstance.Outputs = outputs;
         session.Variables.Merge(outcome.Outputs);
+        if (node.OutputMappings is { Count: > 0 } mappings)
+        {
+            // 输出映射：以本节点输出为 outputs 求值，写进实例变量
+            var scope = new ExpressionScope(session.Instance.Variables, _clock).With(OutputsScopeName, WorkflowJson.CloneObject(outputs));
+            foreach (var (variable, expression) in mappings)
+            {
+                var evaluated = _evaluator.Evaluate(expression, scope);
+                if (!evaluated.TryGetValue(out var value))
+                {
+                    return evaluated.Error!;
+                }
+
+                session.Variables.Set(variable, value?.DeepClone());
+            }
+        }
+
         session.ScheduleChildren(nodeInstance, outcome.Children);
         session.RemoveBookmarksOf(nodeInstance.Id);
         session.Touch(nodeInstance);
         session.Publish(WorkflowTopics.NodeExecuted, session.EventData(nodeInstance) with { Outcome = outcome.Label });
+        return null;
     }
 
     /// <summary>
-    /// 节点挂起：建书签（用户任务发创建事件）、首次挂起且有超时时加超时书签。
+    /// 节点挂起：建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签。
     /// </summary>
     private static void SuspendNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome, bool resumed)
     {
@@ -730,6 +1179,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             if (string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal))
             {
                 PublishTaskCreated(session, nodeInstance, bookmark);
+            }
+            else if (string.Equals(bookmark.Kind, BookmarkKinds.External, StringComparison.Ordinal) && !resumed)
+            {
+                session.Publish(WorkflowTopics.ExternalCreated, session.EventData(nodeInstance) with { TaskId = bookmark.Id, Payload = WorkflowJson.CloneObject(bookmark.Payload) });
             }
         }
 
@@ -783,7 +1236,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例故障：记录故障与位置，清空队列，发事件，通知父实例。
+    /// 实例故障：记录故障与位置，清空队列，发事件，通知父实例；定义要求故障补偿时记下，波次结束后补偿。
     /// </summary>
     private static void FaultInstance(WorkflowSession session, Error error, string? nodeId, string? nodeInstanceId)
     {
@@ -796,6 +1249,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         session.Queue.Clear();
         session.Publish(WorkflowTopics.InstanceFaulted, session.EventData());
         session.NotifyParent = true;
+        session.CompensationRequested = session.Definition.CompensateOnFault;
     }
 
     /// <summary>
@@ -949,7 +1403,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次收尾：结束请求或没有书签时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理。
+    /// 波次收尾：结束请求或没有节点在等待时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理。
     /// </summary>
     private static void FinalizeBurst(WorkflowSession session)
     {
@@ -964,7 +1418,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return;
         }
 
-        if (instance.Status == WorkflowInstanceStatus.Running && !session.HasBookmarks)
+        if (instance.Status == WorkflowInstanceStatus.Running && !session.HasActivityBookmarks)
         {
             if (instance.JoinStates.Count > 0)
             {
@@ -972,6 +1426,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 return;
             }
 
+            session.RemoveAllBookmarks();
             Complete(session);
             return;
         }
@@ -984,6 +1439,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             session.Publish(WorkflowTopics.InstanceTerminated, session.EventData());
             session.NotifyParent = true;
             session.CascadeToChildren = WorkflowInstanceStatus.Terminated;
+        }
+
+        if (instance.Status == WorkflowInstanceStatus.Faulted)
+        {
+            // 故障：节点的书签已无意义（重试从故障节点重新开始），实例级超时也不再计
+            session.RemoveAllBookmarks();
         }
     }
 
@@ -1016,7 +1477,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         session.RemoveAllBookmarks();
         if (status == WorkflowInstanceStatus.Canceled && session.Definition.EnableCompensation)
         {
-            await CompensateAsync(session).ConfigureAwait(false);
+            await CompensateAsync(session, null).ConfigureAwait(false);
         }
 
         session.Publish(status == WorkflowInstanceStatus.Canceled ? WorkflowTopics.InstanceCanceled : WorkflowTopics.InstanceTerminated, session.EventData() with { Reason = reason });
@@ -1026,13 +1487,14 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按完成顺序逆序补偿已完成的节点；单个补偿失败只记日志、继续。
+    /// 按完成顺序逆序补偿已完成的节点（<paramref name="nodeIds"/> 为空取全部）；单个补偿失败只记日志、继续。返回被补偿的节点实例 ID。
     /// </summary>
-    private async ValueTask CompensateAsync(WorkflowSession session)
+    private async ValueTask<IReadOnlyList<string>> CompensateAsync(WorkflowSession session, IReadOnlyList<string>? nodeIds)
     {
+        var compensated = new List<string>();
         foreach (var nodeInstance in session.NodeInstances.Reverse())
         {
-            if (nodeInstance.Status != WorkflowNodeInstanceStatus.Completed)
+            if (nodeInstance.Status != WorkflowNodeInstanceStatus.Completed || (nodeIds is not null && !nodeIds.Contains(nodeInstance.NodeId, StringComparer.Ordinal)))
             {
                 continue;
             }
@@ -1043,17 +1505,20 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 continue;
             }
 
-            var compensated = await _executor.CompensateAsync(session, node, nodeInstance, CancellationToken.None).ConfigureAwait(false);
-            if (compensated.IsFailure)
+            var result = await _executor.CompensateAsync(session, node, nodeInstance, CancellationToken.None).ConfigureAwait(false);
+            if (result.IsFailure)
             {
-                LogCompensationFailed(_logger, session.Instance.Id, nodeInstance.Id, compensated.Error!.Code);
+                LogCompensationFailed(_logger, session.Instance.Id, nodeInstance.Id, result.Error!.Code);
                 continue;
             }
 
             nodeInstance.Status = WorkflowNodeInstanceStatus.Compensated;
             nodeInstance.CompensatedAt = session.Now;
             session.Touch(nodeInstance);
+            compensated.Add(nodeInstance.Id);
         }
+
+        return compensated;
     }
 
     /// <summary>
@@ -1131,6 +1596,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Resuming bookmark '{BookmarkId}' for signal '{Signal}' failed with '{ErrorCode}'.")]
     private static partial void LogSignalFailed(ILogger logger, string signal, string bookmarkId, string errorCode);
+
+    /// <summary>
+    /// 信号启动失败。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Starting definition '{DefinitionId}' for signal '{Signal}' failed with '{ErrorCode}'.")]
+    private static partial void LogSignalStartFailed(ILogger logger, string signal, string definitionId, string errorCode);
 
     /// <summary>
     /// 通知父实例失败。

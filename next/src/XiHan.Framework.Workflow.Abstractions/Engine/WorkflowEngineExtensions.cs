@@ -56,4 +56,31 @@ public static class WorkflowEngineExtensions
         ArgumentNullException.ThrowIfNull(engine);
         return (await engine.RetryAsync([instanceId], cancellationToken).ConfigureAwait(false))[0];
     }
+
+    /// <summary>
+    /// 改一个实例的变量。
+    /// </summary>
+    public static async ValueTask<Result<WorkflowInstance>> SetVariablesAsync(this IWorkflowEngine engine, WorkflowVariableUpdate update, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        return (await engine.SetVariablesAsync([update], cancellationToken).ConfigureAwait(false))[0];
+    }
+
+    /// <summary>
+    /// 跳转一个实例。
+    /// </summary>
+    public static async ValueTask<Result<WorkflowInstance>> JumpAsync(this IWorkflowEngine engine, WorkflowJump jump, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        return (await engine.JumpAsync([jump], cancellationToken).ConfigureAwait(false))[0];
+    }
+
+    /// <summary>
+    /// 迁移一个实例。
+    /// </summary>
+    public static async ValueTask<Result<WorkflowInstance>> MigrateAsync(this IWorkflowEngine engine, WorkflowMigration migration, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        return (await engine.MigrateAsync([migration], cancellationToken).ConfigureAwait(false))[0];
+    }
 }

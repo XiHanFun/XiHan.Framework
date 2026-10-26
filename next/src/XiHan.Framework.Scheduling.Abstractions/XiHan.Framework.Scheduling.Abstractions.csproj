@@ -2,17 +2,20 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Scheduling.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Scheduling.Abstractions</RootNamespace>
-    <Description>XiHan Framework 调度契约（Ring 2）：作业与计划（间隔、cron、手动）、登记、经内核管道的派发、IJobScheduler 与租约式领导选举 ILeaderElection。</Description>
-    <PackageTags>xihan;framework;scheduling;jobs;cron;leader-election</PackageTags>
+    <Description>XiHan Framework 调度契约与引擎（Ring 2，RFC-0013）：作业与触发器、计划（间隔、Quartz 文法 cron、一次、手动）、日历、misfire、经内核管道的派发、作业存储契约 IJobStore、集群分发引擎 JobSchedulerEngine 与租约式领导选举 ILeaderElection。</Description>
+    <PackageTags>xihan;framework;scheduling;jobs;cron;quartz;leader-election</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
     <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

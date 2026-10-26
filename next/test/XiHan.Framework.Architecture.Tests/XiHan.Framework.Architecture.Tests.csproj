@@ -53,6 +53,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Conformance/XiHan.Framework.ObjectStorage.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.InMemory/XiHan.Framework.Scheduling.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Database/XiHan.Framework.Scheduling.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Kubernetes/XiHan.Framework.Scheduling.Kubernetes.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Scheduling.Conformance/XiHan.Framework.Scheduling.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Configuration.Abstractions/XiHan.Framework.Configuration.Abstractions.csproj" />
@@ -63,6 +64,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.Conformance/XiHan.Framework.Auditing.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Workflow.Database/XiHan.Framework.Workflow.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Conformance/XiHan.Framework.Workflow.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.AI.OpenAI/XiHan.Framework.AI.OpenAI.csproj" />

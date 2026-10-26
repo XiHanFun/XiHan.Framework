@@ -4,12 +4,11 @@
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 内存调度选项。从配置节 <c>XiHan:Scheduling:InMemory</c> 显式读取：<c>PollIntervalSeconds</c>、<c>LeaseResource</c>、<c>LeaseTimeToLiveSeconds</c>。
+/// 内存存储的选项（配置节 <c>XiHan:Scheduling:InMemory</c>）；引擎选项在 <c>XiHan:Scheduling</c>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemorySchedulingOptions
@@ -20,27 +19,13 @@ public sealed record InMemorySchedulingOptions
     public const string ConfigurationSection = "XiHan:Scheduling:InMemory";
 
     /// <summary>
-    /// 轮询周期：检查到期作业与续约的间隔；默认 1 秒。
+    /// 运行历史上限；超出时丢弃最旧的已结束记录。默认 1000。
     /// </summary>
-    public TimeSpan PollInterval
+    public int MaxRuns
     {
         get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The poll interval must be positive.");
-    } = TimeSpan.FromSeconds(1);
-
-    /// <summary>
-    /// 调度器竞争的领导资源；默认 <c>scheduling.jobs</c>。
-    /// </summary>
-    public JobName LeaseResource { get; init; } = new("scheduling.jobs");
-
-    /// <summary>
-    /// 领导租约的存活时间；默认 30 秒，须大于轮询周期。
-    /// </summary>
-    public TimeSpan LeaseTimeToLive
-    {
-        get => field;
-        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The lease time to live must be positive.");
-    } = TimeSpan.FromSeconds(30);
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of runs must be at least 1.");
+    } = 1000;
 
     /// <summary>
     /// 从配置读取。
@@ -49,25 +34,12 @@ public sealed record InMemorySchedulingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemorySchedulingOptions();
-        var poll = configuration[$"{ConfigurationSection}:PollIntervalSeconds"];
-        if (poll is not null)
+        var raw = configuration[$"{ConfigurationSection}:MaxRuns"];
+        if (raw is not null)
         {
-            options = double.TryParse(poll, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { PollInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:PollIntervalSeconds must be a positive number, but was '{poll}'.");
-        }
-
-        if (configuration[$"{ConfigurationSection}:LeaseResource"] is { } resource && !string.IsNullOrWhiteSpace(resource))
-        {
-            options = options with { LeaseResource = new JobName(resource) };
-        }
-
-        var ttl = configuration[$"{ConfigurationSection}:LeaseTimeToLiveSeconds"];
-        if (ttl is not null)
-        {
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { LeaseTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:LeaseTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
+            options = int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var max) && max >= 1
+                ? options with { MaxRuns = max }
+                : throw new ArgumentException($"{ConfigurationSection}:MaxRuns must be a positive integer, but was '{raw}'.");
         }
 
         return options;

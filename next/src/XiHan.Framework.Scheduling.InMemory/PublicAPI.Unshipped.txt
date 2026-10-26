@@ -1,14 +1,27 @@
 #nullable enable
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Dispose() -> void
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.InMemoryJobScheduler(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry! registry, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher! dispatcher, XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection! election, XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions! options, System.TimeProvider! clock, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.IsLeader.get -> bool
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.IsRunning.get -> bool
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Status(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobStatus!>
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.Statuses() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobStatus!>!
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Scheduling.InMemory.InMemoryJobScheduler.TriggerAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTriggerResult!>!>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.AcquireDueAsync(System.DateTimeOffset dueBefore, int limit, string! nodeId, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.CancelRequestedRunsAsync(string! nodeId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<string!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.CompleteRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.DeleteJobsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.DeleteTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.TriggerKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.FindJobAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.HeartbeatAsync(XiHan.Framework.Scheduling.Abstractions.Storage.SchedulerNodeRecord! node, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.InMemoryJobStore(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions! options) -> void
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.IsShared.get -> bool
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.LastRunsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! jobs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.ListJobsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.NodesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.SchedulerNodeRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.PurgeRunsAsync(System.DateTimeOffset before, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.RecoverNodesAsync(System.Collections.Generic.IReadOnlyList<string!>! nodeIds, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.RequestCancelAsync(System.Collections.Generic.IReadOnlyList<string!>! runIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.RunCount.get -> int
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.RunningAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.RunsAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.SaveJobsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>! jobs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.SaveTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>! triggers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.TriggersAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
+XiHan.Framework.Scheduling.InMemory.InMemoryJobStore.TryBeginRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, bool exclusive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>
 XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection
 XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection.InMemoryLeaderElection(System.TimeProvider! clock) -> void
 XiHan.Framework.Scheduling.InMemory.InMemoryLeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease!>>
@@ -22,12 +35,8 @@ XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? other) -> bool
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.InMemorySchedulingOptions() -> void
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseResource.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseResource.init -> void
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseTimeToLive.get -> System.TimeSpan
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.LeaseTimeToLive.init -> void
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.PollInterval.get -> System.TimeSpan
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.PollInterval.init -> void
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.MaxRuns.get -> int
+XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.MaxRuns.init -> void
 const XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.ConfigurationSection = "XiHan:Scheduling:InMemory" -> string!
 override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.GetHashCode() -> int

@@ -9,22 +9,22 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Scheduling.Abstractions;
-using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Scheduling.Abstractions.Storage;
 
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 内存调度的能力包入口：默认提供 <c>scheduling.jobs@1</c> 与 <c>scheduling.leader@1</c>。只为被选中的能力绑定契约：另有显式 Provider 提供领导选举时，调度器用那个选举。
+/// 内存调度的能力包入口：提供 <c>scheduling.jobs@1</c>（进程内作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（进程内租约）。被显式 Provider 顶替的能力只留本包自己的类型。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySchedulingFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动后保存的调度器，供停止时使用。
+    /// 引擎；只在本包被选中提供作业能力时存在。
     /// </summary>
-    private InMemoryJobScheduler? _scheduler;
+    private JobSchedulerEngine? _engine;
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -44,7 +44,7 @@ public sealed class InMemorySchedulingFeature : IHostedFeature
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         Contributes = new Contributions
         {
-            Config = new ConfigContribution("XiHan:Scheduling"),
+            Config = new ConfigContribution(SchedulerOptions.ConfigurationSection),
             Health = ["scheduling.inmemory.leader"],
         },
         Entry = typeof(InMemorySchedulingFeature).FullName,
@@ -56,19 +56,18 @@ public sealed class InMemorySchedulingFeature : IHostedFeature
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(SchedulingMessages.Catalog);
         context.Services.AddSingleton(InMemorySchedulingOptions.FromConfiguration(context.Configuration));
-        context.Services.GetJobRegistry();
-        context.Services.TryAddSingleton<JobDispatcher>();
+        context.Services.AddSingleton<InMemoryJobStore>();
         context.Services.AddSingleton<InMemoryLeaderElection>();
         if (context.Node.IsSelectedFor(SchedulingCapabilities.Leader))
         {
             context.Services.TryAddSingleton<ILeaderElection>(static sp => sp.GetRequiredService<InMemoryLeaderElection>());
         }
 
-        // 调度器总是用契约里的选举：本包被顶替时就是显式 Provider 的实现
+        // 引擎总是用契约里的选举：本包被顶替时就是显式 Provider 的实现（不共享的存储下集群唯一的作业只在领导者上运行）
         if (context.Node.IsSelectedFor(SchedulingCapabilities.Jobs))
         {
-            context.Services.AddSingleton<InMemoryJobScheduler>();
-            context.Services.TryAddSingleton<IJobScheduler>(static sp => sp.GetRequiredService<InMemoryJobScheduler>());
+            context.Services.TryAddSingleton<IJobStore>(static sp => sp.GetRequiredService<InMemoryJobStore>());
+            context.Services.AddJobSchedulerEngine(SchedulerOptions.FromConfiguration(context.Configuration));
         }
     }
 
@@ -76,17 +75,17 @@ public sealed class InMemorySchedulingFeature : IHostedFeature
     public Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
-        _scheduler = services.GetService<InMemoryJobScheduler>();
-        return _scheduler?.StartAsync(cancellationToken) ?? Task.CompletedTask;
+        _engine = services.GetService<JobSchedulerEngine>();
+        return _engine?.StartAsync(cancellationToken) ?? Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_scheduler is not null)
+        if (_engine is not null)
         {
-            await _scheduler.StopAsync(cancellationToken).ConfigureAwait(false);
-            _scheduler = null;
+            await _engine.StopAsync(cancellationToken).ConfigureAwait(false);
+            _engine = null;
         }
     }
 }

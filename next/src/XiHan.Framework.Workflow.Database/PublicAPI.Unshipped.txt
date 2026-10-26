@@ -1,0 +1,166 @@
+#nullable enable
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.DatabaseWorkflowFeature() -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.<Clone>$() -> XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.BatchSize.get -> int
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.BatchSize.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.DatabaseWorkflowOptions() -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.Equals(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? other) -> bool
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.get -> string!
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockLease.get -> System.TimeSpan
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockLease.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.PollInterval.get -> System.TimeSpan
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.PollInterval.init -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.CorrelationId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.CorrelationId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.CreatedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Document.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Document.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.DueAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.DueAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Id.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Id.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.InstanceId.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.InstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Key.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Key.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Kind.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Kind.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.NodeInstanceId.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.NodeInstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Sequence.get -> long
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.Sequence.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.TenantId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.TenantId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRecord.WorkflowBookmarkRecord() -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.CreatedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Document.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Document.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Id.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Id.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Name.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Name.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.PublishedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.PublishedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Status.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Status.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.TenantId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.TenantId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Version.get -> int
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.Version.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRecord.WorkflowDefinitionRecord() -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.CorrelationId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.CorrelationId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.CreatedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionId.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionName.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionName.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionVersion.get -> int
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.DefinitionVersion.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Document.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Document.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.EndedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.EndedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Id.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Id.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.ParentInstanceId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.ParentInstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Sequence.get -> long
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Sequence.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.StarterId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.StarterId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Status.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.Status.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.TenantId.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.TenantId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRecord.WorkflowInstanceRecord() -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.ConcurrencyStamp.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.ConcurrencyStamp.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.ExpiresAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.ExpiresAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.Holder.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.Holder.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.Id.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.Id.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowLockRecord.WorkflowLockRecord() -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Document.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Document.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Id.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Id.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.InstanceId.get -> string!
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.InstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Sequence.get -> long
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.Sequence.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.StartedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.StartedAt.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowNodeInstanceRecord.WorkflowNodeInstanceRecord() -> void
+XiHan.Framework.Workflow.Database.Locking.DatabaseWorkflowInstanceLock
+XiHan.Framework.Workflow.Database.Locking.DatabaseWorkflowInstanceLock.AcquireAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.IAsyncDisposable!>>
+XiHan.Framework.Workflow.Database.Locking.DatabaseWorkflowInstanceLock.DatabaseWorkflowInstanceLock(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Workflow.Abstractions.WorkflowOptions! options, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! databaseOptions, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.Dispose() -> void
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.DueBookmarkPollingLoop(XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller! poller, XiHan.Framework.Workflow.Database.Polling.PollerLeadership! leadership, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.IsLeader.get -> bool
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.IsRunning.get -> bool
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Database.Polling.PollerLeadership
+XiHan.Framework.Workflow.Database.Polling.PollerLeadership.IsLeader.get -> bool
+XiHan.Framework.Workflow.Database.Polling.PollerLeadership.PollerLeadership(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Workflow.Database.Polling.PollerLeadership.ReleaseAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Workflow.Database.Polling.PollerLeadership.TryHoldAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.ByInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.ByKindAndKeyAsync(string! kind, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.BySignalAsync(string! signalName, string? correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.DatabaseWorkflowBookmarkStore(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! clock) -> void
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.DeleteAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.DeleteByInstanceAsync(System.Collections.Generic.IReadOnlyList<string!>! instanceIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.DueAsync(System.DateTimeOffset now, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.FindAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.FindManyAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowBookmarkStore.SaveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>! bookmarks, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.DatabaseWorkflowDefinitionStore(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app) -> void
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.DeleteAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.FindAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.FindAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.FindLatestPublishedAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.FindManyAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.ListAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName? name, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus? status, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.MaxVersionAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowDefinitionStore.SaveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>! definitions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.CountAsync(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.DatabaseWorkflowInstanceStore(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! clock) -> void
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.DeleteAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.FindAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.FindManyAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.FindNodeInstanceAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.ListAsync(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.NodeInstancesAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>!>>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>! instances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Workflow.Database.Storage.DatabaseWorkflowInstanceStore.SaveNodeInstancesAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!>! nodeInstances, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+const XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.ConfigurationSection = "XiHan:Workflow:Database" -> string!
+const XiHan.Framework.Workflow.Database.Polling.PollerLeadership.Resource = "workflow.poller" -> string!
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.GetHashCode() -> int
+override XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.ToString() -> string!
+static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions!
+static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.operator !=(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? right) -> bool
+static XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.operator ==(XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? left, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions? right) -> bool

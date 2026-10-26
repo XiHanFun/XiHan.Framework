@@ -30,18 +30,12 @@ public sealed class JobDispatcher
     private readonly App _app;
 
     /// <summary>
-    /// 登记表。
-    /// </summary>
-    private readonly JobRegistry _registry;
-
-    /// <summary>
     /// 创建。
     /// </summary>
-    public JobDispatcher(IServiceProvider services, App app, JobRegistry registry)
+    public JobDispatcher(IServiceProvider services, App app)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _app = app ?? throw new ArgumentNullException(nameof(app));
-        _registry = registry ?? throw new ArgumentNullException(nameof(registry));
     }
 
     /// <summary>
@@ -54,16 +48,12 @@ public sealed class JobDispatcher
     }
 
     /// <summary>
-    /// 执行一次运行。
+    /// 执行一次运行：<paramref name="jobType"/> 是已登记的作业类型（作用域服务）。
     /// </summary>
-    public async ValueTask<Result> DispatchAsync(JobRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result> DispatchAsync(JobRun run, Type jobType, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        if (!_registry.Find(run.Name).TryGetValue(out var definition))
-        {
-            return Error.NotFound(SchedulingErrors.JobNotFound, SchedulingMessages.JobNotFound, MessageArguments.Of(("name", run.Name.Value)));
-        }
-
+        ArgumentNullException.ThrowIfNull(jobType);
         // 每次运行一个新作用域与新调用上下文：运行 ID 作为关联 ID，便于在日志与追踪里串起一次运行
         await using var scope = _services.CreateAsyncScope();
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Correlation] = run.Id };
@@ -73,7 +63,7 @@ public sealed class JobDispatcher
         {
             return await _app.InvokeAsync(context, async ctx =>
             {
-                var job = (IJob)ctx.Services.GetRequiredService(definition.JobType);
+                var job = (IJob)ctx.Services.GetRequiredService(jobType);
                 var result = await job.RunAsync(run, ctx, ctx.CancellationToken).ConfigureAwait(false);
                 if (result.IsFailure)
                 {

@@ -14,7 +14,7 @@ public sealed record ActivityDefinition
     /// <summary>
     /// 创建；<paramref name="activityClass"/> 必须实现 <see cref="IActivity"/>。
     /// </summary>
-    public ActivityDefinition(ActivityType type, Type activityClass, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched)
+    public ActivityDefinition(ActivityType type, Type activityClass, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched, ActivityDescriptor? descriptor = null)
     {
         Type = type;
         ActivityClass = activityClass ?? throw new ArgumentNullException(nameof(activityClass));
@@ -24,6 +24,7 @@ public sealed record ActivityDefinition
         }
 
         Outgoing = outgoing;
+        Descriptor = descriptor ?? new ActivityDescriptor(type.Value);
     }
 
     /// <summary>
@@ -40,4 +41,9 @@ public sealed record ActivityDefinition
     /// 出边选择方式。
     /// </summary>
     public ActivityOutgoing Outgoing { get; }
+
+    /// <summary>
+    /// 面向设计器的描述（显示名、分类、输入属性）。
+    /// </summary>
+    public ActivityDescriptor Descriptor { get; }
 }

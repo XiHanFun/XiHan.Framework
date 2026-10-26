@@ -57,6 +57,11 @@ public sealed record WorkflowNode
     public bool ContinueOnError { get; init; }
 
     /// <summary>
+    /// 输出映射：变量名 → 表达式，节点完成后以 <c>outputs</c>（本节点输出）为作用域求值并写入实例变量；求值失败即节点故障。
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? OutputMappings { get; init; }
+
+    /// <summary>
     /// 显示名或 ID。
     /// </summary>
     public string Title => string.IsNullOrWhiteSpace(DisplayName) ? Id : DisplayName;

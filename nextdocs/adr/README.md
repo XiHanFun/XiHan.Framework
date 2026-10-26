@@ -23,3 +23,4 @@
 | [0017](0017-AI子系统.md) | AI 子系统：以 `Microsoft.Extensions.AI` 为线格式；`Expose.Ai` 的操作契约经完整管道成为模型工具；知识库定义 `IKnowledgeStore`，`AI.VectorData` 适配 `VectorStore`；只有 `ai.tools` 有默认实现 | 已采纳 |
 | [0018](0018-P5-09能力补齐.md) | P5-09 能力补齐：租户分片契约与默认解析器进 `MultiTenancy.Abstractions`，Tenant 阶段解析、持久化 Provider 按分片选连接；`IDistributedCache` 架在 `ICacheStore` 上；`ObjectStorage.S3` 用 AWS SDK 覆盖全部兼容服务；不补 `Messaging.Kafka`（后由 ADR-0019 撤销） | 已采纳 |
 | [0019](0019-Kafka流、两级缓存与Nacos.md) | 流能力 = 队列 + `xihankey` 分区键有序 + 消费组位点 + `IMessageReplayer` 按时刻重放，`Messaging.Kafka` 同时提供队列与流；`Caching.Hybrid` 自己实现两级缓存（L1 对象 LRU + L2 共享缓存）而不架在 `HybridCache` 上；`Configuration.Nacos` 直连 HTTP 接口不依赖 SDK | 已采纳 |
+| [0020](0020-调度与工作流的数据库Provider.md) | 不引入 Quartz：调度引擎进抽象包、Provider 只实现 `IJobStore`，作业与触发器分离、Quartz 文法 cron、日历、misfire、运行历史、集群分发靠并发戳 CAS 抢占；`Workflow.Database` 的存储与锁单例各自提交；工作流补齐触发式启动、事件网关、外部任务、Http / Compensate、跳转 / 迁移 / 清理、认领 / 退回 / 催办、阈值与提醒 | 已采纳 |

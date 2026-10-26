@@ -42,7 +42,9 @@ public sealed class JobRegistryTests
         Assert.Throws<ArgumentException>(static () => new JobDefinition("x", JobSchedule.Manual, typeof(string)));
 
         var definition = new JobDefinition("x", JobSchedule.Manual, typeof(NoopJob));
-        Assert.True(definition.LeaderOnly);
+        Assert.False(definition.RunOnEveryInstance);
+        Assert.Empty(definition.Triggers);
+        Assert.Equal(JobTriggerDefinition.DefaultName, Assert.Single(new JobDefinition("x", JobSchedule.Every(TimeSpan.FromMinutes(1)), typeof(NoopJob)).Triggers).Name);
         Assert.False(definition.AllowConcurrent);
         Assert.Equal(JobTrigger.Manual, JobRun.Create("x", DateTimeOffset.UnixEpoch, JobTrigger.Manual).Trigger);
     }

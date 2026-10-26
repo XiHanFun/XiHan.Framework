@@ -52,4 +52,24 @@ public interface IWorkflowEngine
     /// 重试故障实例（只允许有故障节点的已故障实例）。
     /// </summary>
     ValueTask<IReadOnlyList<Result<WorkflowInstance>>> RetryAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 改实例变量（合并与删除）；只允许 Running / Suspended → 否则 <see cref="WorkflowErrors.InstanceStatus"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 跳转：取消全部未结束节点与书签、清 Join 状态，从目标节点重新执行；允许 Running / Suspended / Faulted；目标不存在 → <see cref="WorkflowErrors.InputInvalid"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 迁移到同名的另一个已发布版本：每个未结束节点在目标里必须存在且活动类型相同 → 否则 <see cref="WorkflowErrors.InputInvalid"/>；允许 Running / Suspended。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 删除早于给定时刻结束的实例（含节点实例与书签）；返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。
+    /// </summary>
+    ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken);
 }

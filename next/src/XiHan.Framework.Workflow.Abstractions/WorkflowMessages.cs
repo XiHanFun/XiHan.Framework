@@ -98,6 +98,39 @@ public static class WorkflowMessages
     /// <summary>子流程启动失败。参数：<c>id</c>、<c>reason</c>。</summary>
     public const string ChildFailed = "workflow.child.failed";
 
+    /// <summary>同一关联 ID 下已有未结束的实例。参数：<c>name</c>、<c>correlation</c>。</summary>
+    public const string ActiveInstanceExists = "workflow.instance.active_exists";
+
+    /// <summary>跳转目标节点不存在。参数：<c>id</c>、<c>node</c>。</summary>
+    public const string NodeNotFound = "workflow.instance.node_not_found";
+
+    /// <summary>迁移目标与未结束的节点不兼容。参数：<c>id</c>、<c>node</c>。</summary>
+    public const string MigrationIncompatible = "workflow.instance.migration_incompatible";
+
+    /// <summary>实例级超时到期。参数：<c>id</c>。</summary>
+    public const string InstanceTimedOut = "workflow.instance.timed_out";
+
+    /// <summary>任务已被别人认领。参数：<c>task</c>、<c>actor</c>。</summary>
+    public const string TaskClaimed = "workflow.task.claimed";
+
+    /// <summary>任务的完成策略不支持认领。参数：<c>task</c>。</summary>
+    public const string TaskNotClaimable = "workflow.task.not_claimable";
+
+    /// <summary>找不到可退回的节点。参数：<c>task</c>。</summary>
+    public const string TaskNoReturnTarget = "workflow.task.no_return_target";
+
+    /// <summary>任务查询不合法。参数：<c>reason</c>。</summary>
+    public const string TaskQueryInvalid = "workflow.task.query_invalid";
+
+    /// <summary>工作者没有持有外部任务的锁。参数：<c>task</c>、<c>worker</c>。</summary>
+    public const string ExternalTaskDenied = "workflow.external.denied";
+
+    /// <summary>外部任务由工作者报告失败。参数：<c>reason</c>。</summary>
+    public const string ExternalTaskFailed = "workflow.external.failed";
+
+    /// <summary>HTTP 请求失败。参数：<c>status</c>、<c>reason</c>。</summary>
+    public const string HttpFailed = "workflow.http.failed";
+
     /// <summary>
     /// 本包的消息目录。
     /// </summary>

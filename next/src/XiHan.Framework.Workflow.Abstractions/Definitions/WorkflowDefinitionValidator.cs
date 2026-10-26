@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Expressions;
@@ -91,6 +92,19 @@ public sealed class WorkflowDefinitionValidator
             }
 
             ValidateNodeProperties(node, errors);
+            foreach (var (variable, expression) in node.OutputMappings ?? new Dictionary<string, string>(StringComparer.Ordinal))
+            {
+                if (string.IsNullOrWhiteSpace(variable))
+                {
+                    errors.Add($"Node '{node.Id}': an output mapping has an empty variable name.");
+                }
+
+                var syntax = _evaluator.Validate(expression);
+                if (syntax.IsFailure)
+                {
+                    errors.Add($"Node '{node.Id}': output mapping '{variable}': {syntax.Error!.Message}");
+                }
+            }
         }
 
         if (start is null)
@@ -204,6 +218,44 @@ public sealed class WorkflowDefinitionValidator
             case ActivityTypes.UserTask:
                 ValidateUserTask(node, errors);
                 break;
+            case ActivityTypes.Start:
+                if (properties.TryGetPropertyValue(StartActivity.CronProperty, out var cron) && cron is JsonValue cronValue && !CronExpression.TryParse(WorkflowValues.AsString(cronValue), out _))
+                {
+                    errors.Add($"Node '{node.Id}': '{WorkflowValues.AsString(cronValue)}' is not a cron expression.");
+                }
+
+                if (properties.TryGetPropertyValue(StartActivity.TimeZoneProperty, out var zone) && zone is JsonValue zoneValue && !TimeZoneInfo.TryFindSystemTimeZoneById(WorkflowValues.AsString(zoneValue), out _))
+                {
+                    errors.Add($"Node '{node.Id}': '{WorkflowValues.AsString(zoneValue)}' is not a time zone.");
+                }
+
+                break;
+            case ActivityTypes.EventGateway:
+                if (WorkflowValues.ToStringList(properties.TryGetPropertyValue(EventGatewayActivity.SignalsProperty, out var signals) ? signals : null).Count == 0)
+                {
+                    errors.Add($"Node '{node.Id}': an EventGateway needs at least one signal.");
+                }
+
+                break;
+            case ActivityTypes.Http:
+                if (!properties.TryGetPropertyValue(HttpActivity.UrlProperty, out var url) || url is not JsonValue urlValue || string.IsNullOrWhiteSpace(WorkflowValues.AsString(urlValue)))
+                {
+                    errors.Add($"Node '{node.Id}': an Http node needs a Url.");
+                }
+
+                if (properties.TryGetPropertyValue(HttpActivity.MethodProperty, out var method) && method is JsonValue methodValue && !HttpActivity.IsValidMethod(WorkflowValues.AsString(methodValue)))
+                {
+                    errors.Add($"Node '{node.Id}': HTTP method '{WorkflowValues.AsString(methodValue)}' is not supported.");
+                }
+
+                break;
+            case ActivityTypes.ExternalTask:
+                if (!properties.TryGetPropertyValue(ExternalTaskActivity.TopicProperty, out var topic) || topic is not JsonValue topicValue || string.IsNullOrWhiteSpace(WorkflowValues.AsString(topicValue)))
+                {
+                    errors.Add($"Node '{node.Id}': an ExternalTask node needs a Topic.");
+                }
+
+                break;
         }
     }
 
@@ -259,6 +311,24 @@ public sealed class WorkflowDefinitionValidator
                 {
                     errors.Add($"Node '{node.Id}': {error}");
                 }
+            }
+        }
+
+        if (properties.TryGetPropertyValue(UserTaskActivity.ApprovalThresholdProperty, out var threshold) && threshold is not null && !UserTaskActivity.TryParseApprovalThreshold(threshold, out _, out _))
+        {
+            errors.Add($"Node '{node.Id}': approval threshold '{threshold}' must be a positive integer or a percentage like '60%'.");
+        }
+
+        if (properties.TryGetPropertyValue(UserTaskActivity.PriorityProperty, out var priority) && priority is not null && !UserTaskActivity.TryParsePriority(priority, out _))
+        {
+            errors.Add($"Node '{node.Id}': priority '{priority}' must be an integer.");
+        }
+
+        foreach (var secondsProperty in new[] { UserTaskActivity.DueAfterSecondsProperty, UserTaskActivity.ReminderAfterSecondsProperty })
+        {
+            if (properties.TryGetPropertyValue(secondsProperty, out var seconds) && seconds is not null && !UserTaskActivity.TryParseSeconds(seconds, out _))
+            {
+                errors.Add($"Node '{node.Id}': {secondsProperty} '{seconds}' must be a positive number of seconds.");
             }
         }
     }

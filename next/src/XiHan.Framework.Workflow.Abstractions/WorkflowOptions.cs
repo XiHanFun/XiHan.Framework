@@ -64,6 +64,33 @@ public sealed record WorkflowOptions
     } = 10_000;
 
     /// <summary>
+    /// 已结束实例的保留期；零为不自动清理（默认）。
+    /// </summary>
+    public TimeSpan Retention
+    {
+        get => field;
+        init => field = value >= TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The retention must not be negative.");
+    }
+
+    /// <summary>
+    /// 轮询器维护（按保留期清理）的周期；默认 1 小时。
+    /// </summary>
+    public TimeSpan HousekeepingInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The housekeeping interval must be positive.");
+    } = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// <c>Http</c> 活动的默认超时；默认 30 秒。
+    /// </summary>
+    public TimeSpan HttpTimeout
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The HTTP timeout must be positive.");
+    } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// 从配置读取：<c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>。
     /// </summary>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
@@ -93,6 +120,21 @@ public sealed record WorkflowOptions
         if (int.TryParse(configuration[$"{ConfigurationSection}:ExpressionCacheSize"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var cache))
         {
             options = options with { ExpressionCacheSize = cache };
+        }
+
+        if (double.TryParse(configuration[$"{ConfigurationSection}:RetentionDays"], NumberStyles.Float, CultureInfo.InvariantCulture, out var retention))
+        {
+            options = options with { Retention = TimeSpan.FromDays(retention) };
+        }
+
+        if (double.TryParse(configuration[$"{ConfigurationSection}:HousekeepingIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var housekeeping))
+        {
+            options = options with { HousekeepingInterval = TimeSpan.FromSeconds(housekeeping) };
+        }
+
+        if (double.TryParse(configuration[$"{ConfigurationSection}:HttpTimeoutSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var http))
+        {
+            options = options with { HttpTimeout = TimeSpan.FromSeconds(http) };
         }
 
         return options;

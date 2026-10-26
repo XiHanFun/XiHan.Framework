@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "作业定义 '{name}' 不合法：{reason}",
   "scheduling.job.failed": "作业 '{name}' 抛出了未处理的异常：{reason}",
   "scheduling.job.not_found": "作业 '{name}' 未登记。",
   "scheduling.job.running": "作业 '{name}' 正在运行，且不允许并发运行。",
+  "scheduling.job.type_not_registered": "作业类型 '{type}' 未登记。",
   "scheduling.lease.held": "'{resource}' 的领导租约被其他持有者占用。",
   "scheduling.lease.unavailable": "'{resource}' 的领导租约存储不可用：{reason}",
-  "scheduling.scheduler.unavailable": "作业调度器未运行。"
+  "scheduling.run.canceled": "运行 '{id}' 已被取消。",
+  "scheduling.run.not_found": "运行 '{id}' 不存在或已结束。",
+  "scheduling.scheduler.unavailable": "作业调度器未运行。",
+  "scheduling.store.capacity": "作业存储 '{store}' 已满（上限 {limit}）。",
+  "scheduling.store.unavailable": "作业存储不可用：{reason}",
+  "scheduling.trigger.not_found": "作业 '{job}' 的触发器 '{trigger}' 不存在。"
 }

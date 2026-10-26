@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "Job definition '{name}' is invalid: {reason}",
   "scheduling.job.failed": "Job '{name}' threw an unhandled exception: {reason}",
   "scheduling.job.not_found": "Job '{name}' is not registered.",
   "scheduling.job.running": "Job '{name}' is already running and does not allow concurrent runs.",
+  "scheduling.job.type_not_registered": "Job type '{type}' is not registered.",
   "scheduling.lease.held": "The leader lease for '{resource}' is held by another holder.",
   "scheduling.lease.unavailable": "The leader lease store for '{resource}' is unavailable: {reason}",
-  "scheduling.scheduler.unavailable": "The job scheduler is not running."
+  "scheduling.run.canceled": "Run '{id}' was canceled.",
+  "scheduling.run.not_found": "Run '{id}' does not exist or has already finished.",
+  "scheduling.scheduler.unavailable": "The job scheduler is not running.",
+  "scheduling.store.capacity": "The job store '{store}' is full (limit {limit}).",
+  "scheduling.store.unavailable": "The job store is unavailable: {reason}",
+  "scheduling.trigger.not_found": "Trigger '{trigger}' of job '{job}' does not exist."
 }

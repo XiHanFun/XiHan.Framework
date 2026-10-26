@@ -5,6 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions.Activities;
+using XiHan.Framework.Workflow.Abstractions.Engine;
+using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
 
@@ -27,6 +30,16 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     private readonly WorkflowDefinitionValidator _validator;
 
     /// <summary>
+    /// 书签存储：定时启动的书签。
+    /// </summary>
+    private readonly IWorkflowBookmarkStore _bookmarks;
+
+    /// <summary>
+    /// 活动登记表：描述符。
+    /// </summary>
+    private readonly ActivityRegistry _registry;
+
+    /// <summary>
     /// 时钟。
     /// </summary>
     private readonly TimeProvider _clock;
@@ -39,10 +52,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     /// <summary>
     /// 创建。
     /// </summary>
-    public WorkflowDefinitionCatalog(IWorkflowDefinitionStore store, WorkflowDefinitionValidator validator, TimeProvider clock, IServiceProvider services)
+    public WorkflowDefinitionCatalog(IWorkflowDefinitionStore store, IWorkflowBookmarkStore bookmarks, ActivityRegistry registry, WorkflowDefinitionValidator validator, TimeProvider clock, IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(services);
         _store = store ?? throw new ArgumentNullException(nameof(store));
+        _bookmarks = bookmarks ?? throw new ArgumentNullException(nameof(bookmarks));
+        _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _invocation = services.GetService<IInvocationAccessor>();
@@ -105,8 +120,9 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> PublishAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
-        => TransitionAsync(ids, definition =>
+    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> PublishAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var results = await TransitionAsync(ids, definition =>
         {
             if (definition.Status != WorkflowDefinitionStatus.Draft)
             {
@@ -117,7 +133,28 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
             return validated.IsSuccess
                 ? definition with { Status = WorkflowDefinitionStatus.Published, PublishedAt = _clock.GetUtcNow() }
                 : validated.Error!;
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
+        // 定时启动：发布成功的定义各排一个定义级定时书签（没有 Start.Cron 的没有）
+        var timers = new List<WorkflowBookmark>();
+        foreach (var result in results)
+        {
+            if (result.TryGetValue(out var published) && WorkflowEngine.DefinitionTimerBookmark(published, _clock.GetUtcNow()) is { } timer)
+            {
+                timers.Add(timer);
+            }
+        }
+
+        if (timers.Count > 0)
+        {
+            var saved = await _bookmarks.SaveAsync(timers, cancellationToken).ConfigureAwait(false);
+            if (saved.IsFailure)
+            {
+                return results.Select(result => result.IsSuccess ? Result.Failure<WorkflowDefinition>(saved.Error!) : result).ToList();
+            }
+        }
+
+        return results;
+    }
 
     /// <inheritdoc />
     public async ValueTask<Result<WorkflowDefinition>> NewVersionAsync(WorkflowName name, CancellationToken cancellationToken)
@@ -148,14 +185,37 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> DisableAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
-        => TransitionAsync(ids, static definition => definition.Status == WorkflowDefinitionStatus.Published
+    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> DisableAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var results = await TransitionAsync(ids, static definition => definition.Status == WorkflowDefinitionStatus.Published
             ? definition with { Status = WorkflowDefinitionStatus.Disabled }
-            : StatusConflict(definition), cancellationToken);
+            : StatusConflict(definition), cancellationToken).ConfigureAwait(false);
+        await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
+        return results;
+    }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> ArchiveAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
-        => TransitionAsync(ids, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken);
+    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> ArchiveAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var results = await TransitionAsync(ids, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken).ConfigureAwait(false);
+        await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
+        return results;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ActivityDescriptor> ActivityTypes() => _registry.Activities.Select(static activity => activity.Descriptor).OrderBy(static descriptor => descriptor.Type, StringComparer.Ordinal).ToList();
+
+    /// <summary>
+    /// 不再发布的定义不再定时启动：删除它们的定义级书签（书签的实例 ID = 定义 ID）。
+    /// </summary>
+    private async ValueTask RemoveTimersAsync(IReadOnlyList<Result<WorkflowDefinition>> results, CancellationToken cancellationToken)
+    {
+        var ids = results.Where(static result => result.IsSuccess).Select(static result => result.ValueOrThrow().Id).ToList();
+        if (ids.Count > 0)
+        {
+            await _bookmarks.DeleteByInstanceAsync(ids, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
@@ -189,6 +249,7 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 
         if (deletable.Count > 0)
         {
+            await _bookmarks.DeleteByInstanceAsync(deletable, cancellationToken).ConfigureAwait(false);
             var deleted = await _store.DeleteAsync(deletable, cancellationToken).ConfigureAwait(false);
             if (deleted.IsFailure)
             {

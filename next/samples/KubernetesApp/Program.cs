@@ -10,7 +10,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Profiles.Full;
 using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
-using XiHan.Framework.Scheduling.InMemory;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.Kubernetes;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,7 +44,7 @@ app.MapGet("/config", (IOptionsMonitor<BannerOptions> banner, IConfiguration con
     new ConfigView(banner.CurrentValue.Banner, configuration["XiHan:Kernel:StopTimeoutSeconds"], Environment.GetEnvironmentVariable(ConfigurationDirectory.Variable)));
 
 // 领导选举：只有持有 Lease 的 Pod 按计划运行心跳作业，Ticks 只在领导上增长
-app.MapGet("/leader", (InMemoryJobScheduler scheduler, ILeaderElection election, HeartbeatCounter counter) =>
+app.MapGet("/leader", (JobSchedulerEngine scheduler, ILeaderElection election, HeartbeatCounter counter) =>
     new LeaderView(election is KubernetesLeaderElection kubernetes ? kubernetes.Holder : Environment.MachineName, election.GetType().Name, scheduler.IsLeader, counter.Ticks));
 
 app.Run();

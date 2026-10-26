@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "La definición de trabajo '{name}' no es válida: {reason}",
   "scheduling.job.failed": "El trabajo '{name}' lanzó una excepción no controlada: {reason}",
   "scheduling.job.not_found": "El trabajo '{name}' no está registrado.",
   "scheduling.job.running": "El trabajo '{name}' ya se está ejecutando y no permite ejecuciones concurrentes.",
+  "scheduling.job.type_not_registered": "El tipo de trabajo '{type}' no está registrado.",
   "scheduling.lease.held": "La concesión de líder para '{resource}' la tiene otro titular.",
   "scheduling.lease.unavailable": "El almacén de concesiones de líder para '{resource}' no está disponible: {reason}",
-  "scheduling.scheduler.unavailable": "El programador de trabajos no está en ejecución."
+  "scheduling.run.canceled": "La ejecución '{id}' se ha cancelado.",
+  "scheduling.run.not_found": "La ejecución '{id}' no existe o ya ha terminado.",
+  "scheduling.scheduler.unavailable": "El programador de trabajos no está en ejecución.",
+  "scheduling.store.capacity": "El almacén de trabajos '{store}' está lleno (límite {limit}).",
+  "scheduling.store.unavailable": "El almacén de trabajos no está disponible: {reason}",
+  "scheduling.trigger.not_found": "El disparador '{trigger}' del trabajo '{job}' no existe."
 }

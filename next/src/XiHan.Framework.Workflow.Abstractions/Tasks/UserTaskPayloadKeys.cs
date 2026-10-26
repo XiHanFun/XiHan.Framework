@@ -40,4 +40,22 @@ public static class UserTaskPayloadKeys
 
     /// <summary>节点状态：历史（操作者、结果、意见、时间）。</summary>
     public const string History = "history";
+
+    /// <summary>节点状态：已拒绝的指派人列表。</summary>
+    public const string Rejected = "rejected";
+
+    /// <summary>节点状态：认领人。</summary>
+    public const string ClaimedBy = "claimedBy";
+
+    /// <summary>载荷：优先级。</summary>
+    public const string Priority = "priority";
+
+    /// <summary>载荷：截止时刻。</summary>
+    public const string DueAt = "dueAt";
+
+    /// <summary>载荷：表单键。</summary>
+    public const string FormKey = "formKey";
+
+    /// <summary>提醒书签载荷：提醒间隔秒数。</summary>
+    public const string ReminderIntervalSeconds = "intervalSeconds";
 }

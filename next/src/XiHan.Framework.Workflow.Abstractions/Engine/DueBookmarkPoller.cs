@@ -56,6 +56,11 @@ public sealed partial class DueBookmarkPoller : IDisposable
     private Task? _loop;
 
     /// <summary>
+    /// 上次维护时刻。
+    /// </summary>
+    private DateTimeOffset _lastHousekeeping = DateTimeOffset.MinValue;
+
+    /// <summary>
     /// 创建。
     /// </summary>
     public DueBookmarkPoller(IServiceProvider services, IWorkflowBookmarkStore bookmarks, WorkflowOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
@@ -193,6 +198,51 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
+    /// 按保留期清理已结束的实例：到了维护周期且配置了保留期时执行，分批直到没有可删的。
+    /// </summary>
+    public async ValueTask<int> HousekeepAsync(CancellationToken cancellationToken)
+    {
+        if (_options.Retention <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var purged = 0;
+        await using var scope = _services.CreateAsyncScope();
+        var engine = scope.ServiceProvider.GetRequiredService<IWorkflowEngine>();
+        while (true)
+        {
+            var result = await engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = _clock.GetUtcNow() - _options.Retention }, cancellationToken).ConfigureAwait(false);
+            if (!result.TryGetValue(out var count))
+            {
+                LogPollFailed(_logger, result.Error!.Code);
+                return purged;
+            }
+
+            purged += count;
+            if (count < WorkflowInstanceQuery.MaxLimit)
+            {
+                return purged;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 到了维护周期才清理。
+    /// </summary>
+    private async ValueTask HousekeepIfDueAsync(CancellationToken cancellationToken)
+    {
+        var now = _clock.GetUtcNow();
+        if (now - _lastHousekeeping < _options.HousekeepingInterval)
+        {
+            return;
+        }
+
+        _lastHousekeeping = now;
+        await HousekeepAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// 轮询循环。
     /// </summary>
     private async Task LoopAsync(TimeSpan interval, int batchSize, CancellationToken stopping)
@@ -205,6 +255,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
                 try
                 {
                     await PollOnceAsync(batchSize, stopping).ConfigureAwait(false);
+                    await HousekeepIfDueAsync(stopping).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (stopping.IsCancellationRequested)
                 {

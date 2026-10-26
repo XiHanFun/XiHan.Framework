@@ -61,6 +61,25 @@ public sealed record WorkflowDefinition
     public bool EnableCompensation { get; init; }
 
     /// <summary>
+    /// 故障时也按完成顺序逆序补偿已完成的节点。
+    /// </summary>
+    public bool CompensateOnFault { get; init; }
+
+    /// <summary>
+    /// 实例级超时：启动后超过它即按 <see cref="TimeoutAction"/> 处理；空为不限。
+    /// </summary>
+    public TimeSpan? Timeout
+    {
+        get => field;
+        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
+    }
+
+    /// <summary>
+    /// 实例级超时到期的处理；默认故障。
+    /// </summary>
+    public WorkflowTimeoutAction TimeoutAction { get; init; }
+
+    /// <summary>
     /// 节点。
     /// </summary>
     public IReadOnlyList<WorkflowNode> Nodes { get; init; } = [];
