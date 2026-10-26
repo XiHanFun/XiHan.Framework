@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Auditing.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Auditing.Database</RootNamespace>
+    <Description>XiHan Framework 数据库审计 Provider：审计事件经有界队列后台批量落库，按进程写入序号分页查询，记录以实体经 persistence.relational@1 的仓储读写。</Description>
+    <PackageTags>xihan;framework;auditing;database;audit-trail</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

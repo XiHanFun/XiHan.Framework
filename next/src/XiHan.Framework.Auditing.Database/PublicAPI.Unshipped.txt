@@ -1,0 +1,67 @@
+#nullable enable
+const XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.ConfigurationSection = "XiHan:Auditing:Database" -> string!
+override XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.GetHashCode() -> int
+override XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.ToString() -> string!
+static XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Auditing.Database.DatabaseAuditingOptions!
+static XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.operator !=(XiHan.Framework.Auditing.Database.DatabaseAuditingOptions? left, XiHan.Framework.Auditing.Database.DatabaseAuditingOptions? right) -> bool
+static XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.operator ==(XiHan.Framework.Auditing.Database.DatabaseAuditingOptions? left, XiHan.Framework.Auditing.Database.DatabaseAuditingOptions? right) -> bool
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.DatabaseAuditingFeature() -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.Dispose() -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Auditing.Database.DatabaseAuditingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.<Clone>$() -> XiHan.Framework.Auditing.Database.DatabaseAuditingOptions!
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.BatchSize.get -> int
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.BatchSize.init -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.DatabaseAuditingOptions() -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.Equals(XiHan.Framework.Auditing.Database.DatabaseAuditingOptions? other) -> bool
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.FlushInterval.get -> System.TimeSpan
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.FlushInterval.init -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.LogEvents.get -> bool
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.LogEvents.init -> void
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.QueueCapacity.get -> int
+XiHan.Framework.Auditing.Database.DatabaseAuditingOptions.QueueCapacity.init -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Action.get -> string!
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Action.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.AuditRecord() -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.DetailsJson.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.DetailsJson.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorCode.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorCode.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorDetailsJson.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorDetailsJson.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorMessage.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorMessage.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorMessageKey.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.ErrorMessageKey.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Id.get -> System.Guid
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Id.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.PrincipalId.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.PrincipalId.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Resource.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Resource.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Sequence.get -> long
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Sequence.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Succeeded.get -> bool
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Succeeded.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.TenantId.get -> string?
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.TenantId.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Timestamp.get -> System.DateTimeOffset
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.Timestamp.set -> void
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.TraceId.get -> string!
+XiHan.Framework.Auditing.Database.Trail.AuditRecord.TraceId.set -> void
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.DatabaseAuditTrail(System.IServiceProvider! services, XiHan.Framework.Auditing.Database.DatabaseAuditingOptions! options, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.Dispose() -> void
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.DroppedCount.get -> long
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.FailedCount.get -> long
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.FlushAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.PendingCount.get -> int
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.PersistedCount.get -> long
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.QueryAsync(XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Auditing.Abstractions.Trail.AuditPage!>>
+XiHan.Framework.Auditing.Database.Trail.DatabaseAuditTrail.WriteAsync(XiHan.Framework.Kernel.Diagnostics.AuditEvent! auditEvent, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask

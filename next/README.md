@@ -60,6 +60,7 @@ next/
 | `XiHan.Framework.Scheduling.Database` | 3 | 数据库 Provider：作业 / 触发器 / 运行 / 节点 / 租约五张表经仓储读写，并发戳 CAS 抢占的集群分发、节点心跳与失联恢复、数据库领导租约 |
 | `XiHan.Framework.Scheduling.Kubernetes` | 3 | Kubernetes Provider：以 Lease 做跨 Pod 的领导选举，直接调用 API Server，无客户端库 |
 | `XiHan.Framework.Auditing.InMemory` | 3 | 内存审计默认实现：有界环形缓冲、可查询、每条事件写日志 |
+| `XiHan.Framework.Auditing.Database` | 3 | 数据库 Provider：审计事件经有界队列后台批量落库（满了丢弃并计数、失败只记日志不重试），`AuditRecord` 经仓储读写，按进程写入序号分页查询、续页令牌是序号 |
 | `XiHan.Framework.AI.OpenAI` | 3 | OpenAI 兼容端点的 `ai.chat@1` / `ai.embedding@1` Provider：按配置创建客户端，工具调用在客户端循环里自动执行 |
 | `XiHan.Framework.AI.VectorData` | 3 | `ai.knowledge@1` Provider：把 `IKnowledgeStore` 映射到应用注册的 `Microsoft.Extensions.VectorData` 向量存储 |
 | `XiHan.Framework.Workflow.InMemory` | 3 | 内存工作流默认实现：有界内存的定义 / 实例 / 书签存储、进程内实例锁、单进程到期书签轮询 |
