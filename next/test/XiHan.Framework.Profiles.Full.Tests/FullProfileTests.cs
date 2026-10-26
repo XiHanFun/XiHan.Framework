@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ using XiHan.Framework.Auditing.Abstractions.Pipeline;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
 using XiHan.Framework.Protocols.Grpc.Services;
 using XiHan.Framework.Protocols.Http.OpenApi;
@@ -84,7 +86,20 @@ public sealed class FullProfileTests
 
             using var client = app.GetTestClient();
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/ready")).StatusCode);
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/openapi.json")).StatusCode);
+            var openApi = await client.GetAsync("/openapi.json");
+            Assert.Equal(HttpStatusCode.OK, openApi.StatusCode);
+            using (var document = JsonDocument.Parse(await openApi.Content.ReadAsStringAsync()))
+            {
+                // 缺省标题是应用名、版本是框架版本；探针、MCP、proto 与文档端点自身没有描述元数据，不进文档；Full 组合的认证是 ApiKey，不发布 Bearer 方案
+                var openApiRoot = document.RootElement;
+                Assert.Equal(app.Environment.ApplicationName, openApiRoot.GetProperty("info").GetProperty("title").GetString());
+                Assert.Equal(FrameworkInfo.Version, openApiRoot.GetProperty("info").GetProperty("version").GetString());
+                Assert.Empty(openApiRoot.GetProperty("paths").EnumerateObject());
+                Assert.False(openApiRoot.GetProperty("components").TryGetProperty("securitySchemes", out _));
+                Assert.False(openApiRoot.TryGetProperty("security", out _));
+                Assert.True(openApiRoot.GetProperty("components").GetProperty("schemas").TryGetProperty("ProblemDetails", out _));
+            }
+
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/operations.proto")).StatusCode);
             using var tools = new StringContent("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}""", Encoding.UTF8, "application/json");
             var mcp = await client.PostAsync("/mcp", tools);
