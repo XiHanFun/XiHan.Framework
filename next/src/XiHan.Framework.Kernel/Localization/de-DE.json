@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "Die Operation '{id}' verarbeitet '{expected}', übergeben wurde jedoch '{actual}'.",
   "kernel.operation.unknown": "Die Operation '{id}' ist nicht registriert.",
   "kernel.permission.duplicate": "Der Berechtigungscode '{code}' ist bereits registriert.",
-  "kernel.permission.registry_full": "Die Berechtigungsregistrierung hat ihre Kapazität von {capacity} erreicht."
+  "kernel.permission.registry_full": "Die Berechtigungsregistrierung hat ihre Kapazität von {capacity} erreicht.",
+  "kernel.resilience.circuit_open": "Der Vorgang '{id}' ist vorübergehend nicht verfügbar, da sein Schutzschalter offen ist; versuchen Sie es in {retryAfter} Sekunden erneut.",
+  "kernel.resilience.concurrency_exceeded": "Der Vorgang '{id}' hat seine Parallelitätsgrenze erreicht.",
+  "kernel.resilience.rate_limited": "Der Vorgang '{id}' ist ratenbegrenzt; versuchen Sie es in {retryAfter} Sekunden erneut."
 }

@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "A operação '{id}' processa '{expected}', mas '{actual}' foi fornecido.",
   "kernel.operation.unknown": "A operação '{id}' não está registrada.",
   "kernel.permission.duplicate": "O código de permissão '{code}' já está registrado.",
-  "kernel.permission.registry_full": "O registro de permissões atingiu sua capacidade de {capacity}."
+  "kernel.permission.registry_full": "O registro de permissões atingiu sua capacidade de {capacity}.",
+  "kernel.resilience.circuit_open": "A operação '{id}' está temporariamente indisponível porque seu circuito está aberto; tente novamente em {retryAfter} segundos.",
+  "kernel.resilience.concurrency_exceeded": "A operação '{id}' atingiu seu limite de concorrência.",
+  "kernel.resilience.rate_limited": "A operação '{id}' está com limite de taxa; tente novamente em {retryAfter} segundos."
 }

@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "작업 '{id}'은(는) '{expected}'을(를) 처리하지만 '{actual}'이(가) 제공되었습니다.",
   "kernel.operation.unknown": "작업 '{id}'이(가) 등록되지 않았습니다.",
   "kernel.permission.duplicate": "권한 코드 '{code}'이(가) 이미 등록되었습니다.",
-  "kernel.permission.registry_full": "권한 레지스트리가 용량 한도 {capacity}에 도달했습니다."
+  "kernel.permission.registry_full": "권한 레지스트리가 용량 한도 {capacity}에 도달했습니다.",
+  "kernel.resilience.circuit_open": "작업 '{id}'을(를) 일시적으로 사용할 수 없습니다(회로가 열림). {retryAfter}초 후에 다시 시도하십시오.",
+  "kernel.resilience.concurrency_exceeded": "작업 '{id}'이(가) 동시 실행 한도에 도달했습니다.",
+  "kernel.resilience.rate_limited": "작업 '{id}'이(가) 속도 제한되었습니다. {retryAfter}초 후에 다시 시도하십시오."
 }

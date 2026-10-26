@@ -21,5 +21,8 @@
   "kernel.operation.type_mismatch": "L'opération '{id}' traite '{expected}', mais '{actual}' a été fourni.",
   "kernel.operation.unknown": "L'opération '{id}' n'est pas enregistrée.",
   "kernel.permission.duplicate": "Le code de permission '{code}' est déjà enregistré.",
-  "kernel.permission.registry_full": "Le registre des permissions a atteint sa capacité de {capacity}."
+  "kernel.permission.registry_full": "Le registre des permissions a atteint sa capacité de {capacity}.",
+  "kernel.resilience.circuit_open": "L'opération '{id}' est temporairement indisponible car son disjoncteur est ouvert ; réessayez dans {retryAfter} secondes.",
+  "kernel.resilience.concurrency_exceeded": "L'opération '{id}' a atteint sa limite de concurrence.",
+  "kernel.resilience.rate_limited": "L'opération '{id}' est limitée en débit ; réessayez dans {retryAfter} secondes."
 }

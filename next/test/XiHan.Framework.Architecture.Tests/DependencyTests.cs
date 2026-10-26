@@ -12,9 +12,10 @@ namespace XiHan.Framework.Architecture.Tests;
 public sealed class DependencyTests
 {
     /// <summary>
-    /// Ring 1/2 除 <c>Microsoft.Extensions.*.Abstractions</c> 外额外允许的包：它们没有 Abstractions 拆分但本身只含契约与原语。
+    /// Ring 1/2 除 <c>Microsoft.Extensions.*.Abstractions</c> 外额外允许的包：前两个没有 Abstractions 拆分但本身只含契约与原语；
+    /// <c>System.Threading.RateLimiting</c> 是 BCL 的限流原语（不在共享框架里、没有其他依赖），内核 Resilience 阶段用它（ADR-0029）。
     /// </summary>
-    private static readonly string[] _allowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives"];
+    private static readonly string[] _allowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives", "System.Threading.RateLimiting"];
 
     /// <summary>
     /// 公开签名允许引用的程序集名前缀：BCL、Microsoft.Extensions 与框架自身。
@@ -78,7 +79,7 @@ public sealed class DependencyTests
 
                 if (!allowed)
                 {
-                    failures.Add($"'{project.PackageId}' must not reference '{reference.Id}': ring 0/1 and abstraction packages may only reference Microsoft.Extensions.* abstraction packages.");
+                    failures.Add($"'{project.PackageId}' must not reference '{reference.Id}': ring 0/1 and abstraction packages may only reference Microsoft.Extensions.* abstraction packages or the allow-listed packages ({string.Join(", ", _allowedExternalPackages)}).");
                 }
             }
         }

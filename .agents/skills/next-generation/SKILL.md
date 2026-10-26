@@ -21,7 +21,7 @@ ls next/src next/spec/rfcs nextdocs/adr
 ## 架构边界
 
 - 环层只能向下依赖：Primitives(0) → Kernel(1) → Domain 与 `.Abstractions`(2) → 实现(3) → Hosting(4) → Protocols 与 Plugins(5) → Profiles(6)；协议适配器在宿主之上翻译消息，可引用宿主包；工具链（Analyzers、Generators、Conformance、Testing、Cli、Compat）可引用任何环。同环之间只经契约包（`.Abstractions`，以及纯契约的 `Domain`）。
-- Ring 0/1 与抽象包零第三方依赖，只允许 `Microsoft.Extensions.*` 抽象包；原语层无任何引用。
+- Ring 0/1 与抽象包零第三方依赖，只允许 `Microsoft.Extensions.*` 抽象包（内核另加 BCL 扩展包 `System.Threading.RateLimiting`，见 `DependencyTests` 的允许名单）；原语层无任何引用。
 - Ring 0/1 零反射；反射只允许在 `Plugins.InProcess` 并标注 `RequiresDynamicCode`。
 - 原语层只增不改；破坏即新包 `Primitives.V2` 并存。
 - 每个抽象配一个 `role: default` 的默认实现，包名按机制命名（`InMemory`、`FileSystem`），零外部基础设施、容量有界、通过一致性套件。

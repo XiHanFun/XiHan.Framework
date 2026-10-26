@@ -53,6 +53,15 @@ public static class KernelErrors
     /// <summary>应用未就绪或正在停止，暂不接收调用；协议适配器据此返回 503。</summary>
     public const string NotServing = "KERNEL_UNAVAILABLE_001";
 
+    /// <summary>操作被限流：固定窗口的许可用尽且队列已满；Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。</summary>
+    public const string RateLimited = "KERNEL_UNAVAILABLE_002";
+
+    /// <summary>操作已达并发上限且队列已满；Resilience 阶段拒绝。</summary>
+    public const string ConcurrencyExceeded = "KERNEL_UNAVAILABLE_003";
+
+    /// <summary>操作的熔断器打开，暂不执行；Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。</summary>
+    public const string CircuitOpen = "KERNEL_UNAVAILABLE_004";
+
     /// <summary>调用超过截止时间。</summary>
     public const string DeadlineExceeded = "KERNEL_TIMEOUT_001";
 
