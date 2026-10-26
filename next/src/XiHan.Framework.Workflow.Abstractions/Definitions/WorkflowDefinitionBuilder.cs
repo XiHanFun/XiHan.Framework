@@ -55,6 +55,21 @@ public sealed class WorkflowDefinitionBuilder
     private bool _compensation;
 
     /// <summary>
+    /// 故障时也补偿。
+    /// </summary>
+    private bool _compensateOnFault;
+
+    /// <summary>
+    /// 实例级超时。
+    /// </summary>
+    private TimeSpan? _timeout;
+
+    /// <summary>
+    /// 超时动作。
+    /// </summary>
+    private WorkflowTimeoutAction _timeoutAction;
+
+    /// <summary>
     /// 扩展属性。
     /// </summary>
     private JsonObject? _properties;
@@ -102,6 +117,28 @@ public sealed class WorkflowDefinitionBuilder
 
     /// <summary>
     /// 扩展属性。
+    /// </summary>
+    /// <summary>
+    /// 故障时也按完成顺序逆序补偿。
+    /// </summary>
+    public WorkflowDefinitionBuilder WithCompensateOnFault(bool enabled = true)
+    {
+        _compensateOnFault = enabled;
+        return this;
+    }
+
+    /// <summary>
+    /// 实例级超时与到期动作。
+    /// </summary>
+    public WorkflowDefinitionBuilder WithTimeout(TimeSpan timeout, WorkflowTimeoutAction action = WorkflowTimeoutAction.Fault)
+    {
+        _timeout = timeout;
+        _timeoutAction = action;
+        return this;
+    }
+
+    /// <summary>
+    /// 定义属性。
     /// </summary>
     public WorkflowDefinitionBuilder WithProperties(JsonObject? properties)
     {
@@ -168,6 +205,50 @@ public sealed class WorkflowDefinitionBuilder
     public WorkflowDefinitionBuilder AddUserTask(string id, string? displayName, Action<WorkflowNodeBuilder> configure) => AddNode(id, ActivityTypes.UserTask, displayName, configure);
 
     /// <summary>
+    /// 事件网关：等待多个信号或超时中先到的一个。
+    /// </summary>
+    public WorkflowDefinitionBuilder AddEventGateway(string id, IReadOnlyList<string> signals, TimeSpan? timeout = null, bool acceptAnyCorrelation = false, string? displayName = null)
+        => AddNode(id, ActivityTypes.EventGateway, displayName, builder =>
+        {
+            builder.WithProperty(EventGatewayActivity.SignalsProperty, new JsonArray(signals.Select(static signal => (JsonNode?)JsonValue.Create(signal)).ToArray()));
+            if (timeout is { } span)
+            {
+                builder.WithProperty(EventGatewayActivity.TimeoutSecondsProperty, JsonValue.Create(span.TotalSeconds));
+            }
+
+            builder.WithProperty(EventGatewayActivity.AcceptAnyCorrelationProperty, acceptAnyCorrelation);
+        });
+
+    /// <summary>
+    /// HTTP 请求。
+    /// </summary>
+    public WorkflowDefinitionBuilder AddHttp(string id, string url, string method = "GET", string? displayName = null, Action<WorkflowNodeBuilder>? configure = null)
+        => AddNode(id, ActivityTypes.Http, displayName, builder =>
+        {
+            builder.WithProperty(HttpActivity.UrlProperty, url).WithProperty(HttpActivity.MethodProperty, method);
+            configure?.Invoke(builder);
+        });
+
+    /// <summary>
+    /// 外部任务。
+    /// </summary>
+    public WorkflowDefinitionBuilder AddExternalTask(string id, string topic, JsonObject? payload = null, string? displayName = null)
+        => AddNode(id, ActivityTypes.ExternalTask, displayName, builder =>
+        {
+            builder.WithProperty(ExternalTaskActivity.TopicProperty, topic);
+            if (payload is not null)
+            {
+                builder.WithProperty(ExternalTaskActivity.PayloadProperty, payload);
+            }
+        });
+
+    /// <summary>
+    /// 补偿节点。
+    /// </summary>
+    public WorkflowDefinitionBuilder AddCompensate(string id, IReadOnlyList<string>? nodeIds = null, string? displayName = null)
+        => AddNode(id, ActivityTypes.Compensate, displayName, nodeIds is null ? null : builder => builder.WithProperty(CompensateActivity.NodeIdsProperty, new JsonArray(nodeIds.Select(static node => (JsonNode?)JsonValue.Create(node)).ToArray())));
+
+    /// <summary>
     /// 加转移；ID 为 <c>源->目标#序号</c>。
     /// </summary>
     public WorkflowDefinitionBuilder AddTransition(string sourceNodeId, string targetNodeId, string? condition = null, int priority = 0, string? displayName = null)
@@ -212,6 +293,9 @@ public sealed class WorkflowDefinitionBuilder
         Description = _description,
         Category = _category,
         EnableCompensation = _compensation,
+        CompensateOnFault = _compensateOnFault,
+        Timeout = _timeout,
+        TimeoutAction = _timeoutAction,
         Nodes = _nodes.ToList(),
         Transitions = _transitions.ToList(),
         Variables = _variables.ToList(),

@@ -55,6 +55,26 @@ public sealed record UserTask
     public required string AssigneeId { get; init; }
 
     /// <summary>
+    /// 认领人（<c>Any</c> 策略下被认领后）。
+    /// </summary>
+    public string? ClaimedBy { get; init; }
+
+    /// <summary>
+    /// 优先级。
+    /// </summary>
+    public int? Priority { get; init; }
+
+    /// <summary>
+    /// 截止时刻。
+    /// </summary>
+    public DateTimeOffset? DueAt { get; init; }
+
+    /// <summary>
+    /// 表单键。
+    /// </summary>
+    public string? FormKey { get; init; }
+
+    /// <summary>
     /// 关联 ID（书签的，否则实例的）。
     /// </summary>
     public string? CorrelationId { get; init; }
@@ -80,6 +100,12 @@ public sealed record UserTask
     public string? TenantId { get; init; }
 
     /// <summary>
+    /// 载荷里的字符串值；没有或不是字符串为空。
+    /// </summary>
+    private static string? Text(JsonObject payload, string key)
+        => payload.TryGetPropertyValue(key, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
+
+    /// <summary>
     /// 从书签与实例构造。
     /// </summary>
     public static UserTask From(WorkflowBookmark bookmark, WorkflowInstance instance)
@@ -96,6 +122,10 @@ public sealed record UserTask
             NodeInstanceId = bookmark.NodeInstanceId,
             Title = bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Title, out var title) && title is JsonValue value ? WorkflowValues.AsString(value) : null,
             AssigneeId = bookmark.Key ?? string.Empty,
+            ClaimedBy = Text(bookmark.Payload, UserTaskPayloadKeys.ClaimedBy),
+            Priority = bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Priority, out var priority) && WorkflowValues.TryConvert<int>(priority, out var priorityValue) ? priorityValue : null,
+            DueAt = Text(bookmark.Payload, UserTaskPayloadKeys.DueAt) is { } due && DateTimeOffset.TryParse(due, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var dueValue) ? dueValue : null,
+            FormKey = Text(bookmark.Payload, UserTaskPayloadKeys.FormKey),
             CorrelationId = bookmark.CorrelationId ?? instance.CorrelationId,
             StarterId = instance.StarterId,
             FormData = bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.FormData, out var form) ? form as JsonObject : null,

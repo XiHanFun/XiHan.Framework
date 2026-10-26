@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "Die Jobdefinition '{name}' ist ungültig: {reason}",
   "scheduling.job.failed": "Der Job '{name}' hat eine unbehandelte Ausnahme ausgelöst: {reason}",
   "scheduling.job.not_found": "Der Job '{name}' ist nicht registriert.",
   "scheduling.job.running": "Der Job '{name}' läuft bereits und erlaubt keine gleichzeitigen Läufe.",
+  "scheduling.job.type_not_registered": "Der Jobtyp '{type}' ist nicht registriert.",
   "scheduling.lease.held": "Das Leader-Lease für '{resource}' wird von einem anderen Inhaber gehalten.",
   "scheduling.lease.unavailable": "Der Leader-Lease-Speicher für '{resource}' ist nicht verfügbar: {reason}",
-  "scheduling.scheduler.unavailable": "Der Job-Scheduler läuft nicht."
+  "scheduling.run.canceled": "Der Lauf '{id}' wurde abgebrochen.",
+  "scheduling.run.not_found": "Der Lauf '{id}' existiert nicht oder ist bereits beendet.",
+  "scheduling.scheduler.unavailable": "Der Job-Scheduler läuft nicht.",
+  "scheduling.store.capacity": "Der Jobspeicher '{store}' ist voll (Limit {limit}).",
+  "scheduling.store.unavailable": "Der Jobspeicher ist nicht verfügbar: {reason}",
+  "scheduling.trigger.not_found": "Der Trigger '{trigger}' des Jobs '{job}' existiert nicht."
 }

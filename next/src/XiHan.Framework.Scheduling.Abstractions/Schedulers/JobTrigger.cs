@@ -14,6 +14,9 @@ public enum JobTrigger
     /// <summary>按计划。</summary>
     Schedule = 0,
 
-    /// <summary>手动触发（<see cref="IJobScheduler.TriggerAsync"/>）。</summary>
+    /// <summary>手动触发（<see cref="IJobScheduler.TriggerAsync"/> 或 <see cref="IJobScheduler.EnqueueAsync"/>）。</summary>
     Manual = 1,
+
+    /// <summary>节点失联后的恢复运行。</summary>
+    Recovery = 2,
 }

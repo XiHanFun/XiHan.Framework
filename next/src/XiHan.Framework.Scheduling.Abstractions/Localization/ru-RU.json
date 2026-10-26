@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "Определение задания '{name}' недопустимо: {reason}",
   "scheduling.job.failed": "Задание '{name}' выбросило необработанное исключение: {reason}",
   "scheduling.job.not_found": "Задание '{name}' не зарегистрировано.",
   "scheduling.job.running": "Задание '{name}' уже выполняется и не допускает параллельных запусков.",
+  "scheduling.job.type_not_registered": "Тип задания '{type}' не зарегистрирован.",
   "scheduling.lease.held": "Аренда лидера для '{resource}' удерживается другим владельцем.",
   "scheduling.lease.unavailable": "Хранилище аренды лидера для '{resource}' недоступно: {reason}",
-  "scheduling.scheduler.unavailable": "Планировщик заданий не запущен."
+  "scheduling.run.canceled": "Запуск '{id}' был отменён.",
+  "scheduling.run.not_found": "Запуск '{id}' не существует или уже завершён.",
+  "scheduling.scheduler.unavailable": "Планировщик заданий не запущен.",
+  "scheduling.store.capacity": "Хранилище заданий '{store}' заполнено (лимит {limit}).",
+  "scheduling.store.unavailable": "Хранилище заданий недоступно: {reason}",
+  "scheduling.trigger.not_found": "Триггер '{trigger}' задания '{job}' не существует."
 }

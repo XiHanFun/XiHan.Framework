@@ -17,6 +17,9 @@ public enum JobScheduleKind
     /// <summary>固定间隔：上一次完成后再等一个间隔。</summary>
     Interval = 1,
 
-    /// <summary>cron 表达式（UTC）。</summary>
+    /// <summary>cron 表达式（默认 UTC，可指定时区）。</summary>
     Cron = 2,
+
+    /// <summary>指定时刻运行一次。</summary>
+    Once = 3,
 }

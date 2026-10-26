@@ -60,4 +60,9 @@ public interface IWorkflowDefinitionCatalog
     /// 列表：名字升序、版本降序。
     /// </summary>
     ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 已登记活动的描述符（设计器用），按类型名排序。
+    /// </summary>
+    IReadOnlyList<Activities.ActivityDescriptor> ActivityTypes();
 }

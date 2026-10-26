@@ -36,4 +36,29 @@ public interface IWorkflowTaskService
     /// 加签；已是指派人的忽略，全部已是 → <see cref="WorkflowErrors.AssigneeExists"/>。
     /// </summary>
     ValueTask<IReadOnlyList<Result>> AddAssigneesAsync(IReadOnlyList<UserTaskAddition> additions, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按条件查询待办（指派人或实例必填其一；只含当前租户、实例 Running 的任务）。
+    /// </summary>
+    ValueTask<Result<IReadOnlyList<UserTask>>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 认领（<c>Any</c> 策略）：其他指派人的书签撤下；已被认领 → <see cref="WorkflowErrors.AssigneeExists"/>，策略不支持 → <see cref="WorkflowErrors.InputInvalid"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> ClaimAsync(IReadOnlyList<UserTaskClaim> claims, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 释放认领：恢复其他指派人的书签。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> ReleaseAsync(IReadOnlyList<UserTaskRelease> releases, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 退回到上游节点（缺省为本节点之前最近完成的 <c>UserTask</c>，没有则 <c>Start</c> 之后的首个节点）：以跳转实现。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ReturnAsync(IReadOnlyList<UserTaskReturn> returns, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 催办：发布 <c>workflow.task.urged</c>，不改状态。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> UrgeAsync(IReadOnlyList<UserTaskUrge> urges, CancellationToken cancellationToken);
 }

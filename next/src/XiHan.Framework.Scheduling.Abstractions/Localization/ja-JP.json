@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "ジョブ定義 '{name}' が不正です：{reason}",
   "scheduling.job.failed": "ジョブ '{name}' が未処理の例外をスローしました: {reason}",
   "scheduling.job.not_found": "ジョブ '{name}' は登録されていません。",
   "scheduling.job.running": "ジョブ '{name}' は既に実行中で、同時実行は許可されていません。",
+  "scheduling.job.type_not_registered": "ジョブ型 '{type}' は登録されていません。",
   "scheduling.lease.held": "'{resource}' のリーダーリースは別の保持者が保持しています。",
   "scheduling.lease.unavailable": "'{resource}' のリーダーリースストアは利用できません: {reason}",
-  "scheduling.scheduler.unavailable": "ジョブスケジューラーは実行されていません。"
+  "scheduling.run.canceled": "実行 '{id}' はキャンセルされました。",
+  "scheduling.run.not_found": "実行 '{id}' は存在しないか、すでに終了しています。",
+  "scheduling.scheduler.unavailable": "ジョブスケジューラーは実行されていません。",
+  "scheduling.store.capacity": "ジョブストア '{store}' は満杯です（上限 {limit}）。",
+  "scheduling.store.unavailable": "ジョブストアを利用できません：{reason}",
+  "scheduling.trigger.not_found": "ジョブ '{job}' のトリガー '{trigger}' は存在しません。"
 }

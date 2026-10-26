@@ -43,6 +43,11 @@ public interface IWorkflowInstanceStore
     ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 匹配查询过滤项的实例总数（不受 <see cref="WorkflowInstanceQuery.Skip"/> 与 <see cref="WorkflowInstanceQuery.Limit"/> 影响）。
+    /// </summary>
+    ValueTask<Result<long>> CountAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 实例的全部节点实例：开始时间升序，同刻按创建顺序（补偿按它逆序）。
     /// </summary>
     ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken);

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Scheduling.Abstractions;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.InMemory;
@@ -135,7 +136,7 @@ public sealed class KubernetesLeaderElectionTests
         Assert.Equal(["scheduling.jobs"], host.App.Graph["xihan.scheduling.inmemory"].SelectedCapabilities);
         Assert.Equal(["scheduling.leader"], host.App.Graph["xihan.scheduling.kubernetes"].SelectedCapabilities);
 
-        var scheduler = host.Services.GetRequiredService<InMemoryJobScheduler>();
+        var scheduler = host.Services.GetRequiredService<JobSchedulerEngine>();
         var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
         while (!scheduler.IsLeader && DateTimeOffset.UtcNow < deadline)
         {

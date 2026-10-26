@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Workflow.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Workflow.Database</RootNamespace>
+    <Description>XiHan Framework 数据库工作流 Provider：定义、实例、节点实例与书签以实体经 persistence.relational@1 的仓储读写（过滤列加 JSON 文档），实例锁与到期书签轮询的领导权以租约行实现，多节点共用一个数据库。</Description>
+    <PackageTags>xihan;framework;workflow;database;persistence</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

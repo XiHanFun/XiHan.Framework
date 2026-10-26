@@ -55,6 +55,11 @@ public sealed class WorkflowNodeBuilder
     private bool _continueOnError;
 
     /// <summary>
+    /// 输出映射。
+    /// </summary>
+    private readonly Dictionary<string, string> _outputMappings = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 创建。
     /// </summary>
     internal WorkflowNodeBuilder(string id, ActivityType activityType, string? displayName)
@@ -149,6 +154,17 @@ public sealed class WorkflowNodeBuilder
     }
 
     /// <summary>
+    /// 输出映射：节点完成后以 <c>outputs</c> 为作用域求值 <paramref name="expression"/>，写入变量 <paramref name="variable"/>。
+    /// </summary>
+    public WorkflowNodeBuilder WithOutputMapping(string variable, string expression)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(variable);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        _outputMappings[variable] = expression;
+        return this;
+    }
+
+    /// <summary>
     /// 生成节点。
     /// </summary>
     internal WorkflowNode Build()
@@ -168,6 +184,7 @@ public sealed class WorkflowNodeBuilder
             RetryPolicy = _retry,
             Timeout = _timeout,
             ContinueOnError = _continueOnError,
+            OutputMappings = _outputMappings.Count == 0 ? null : new Dictionary<string, string>(_outputMappings, StringComparer.Ordinal),
         };
     }
 }

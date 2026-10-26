@@ -10,6 +10,7 @@ using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Expressions;
+using XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 namespace XiHan.Framework.Workflow.Abstractions;
@@ -23,12 +24,19 @@ public static class WorkflowServiceCollectionExtensions
     /// <summary>
     /// 登记活动：作用域服务加登记表；同一类型名登记两个不同的类是编程错误。
     /// </summary>
-    public static IServiceCollection AddActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TActivity>(this IServiceCollection services, ActivityType type, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched)
+    public static IServiceCollection AddActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TActivity>(this IServiceCollection services, ActivityType type)
+        where TActivity : class, IActivity
+        => services.AddActivity<TActivity>(type, ActivityOutgoing.AllMatched, null);
+
+    /// <summary>
+    /// 登记一个活动并给出出边选择方式与面向设计器的描述。
+    /// </summary>
+    public static IServiceCollection AddActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TActivity>(this IServiceCollection services, ActivityType type, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched, ActivityDescriptor? descriptor = null)
         where TActivity : class, IActivity
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddScoped<TActivity>();
-        services.GetActivityRegistry().Add(new ActivityDefinition(type, typeof(TActivity), outgoing));
+        services.GetActivityRegistry().Add(new ActivityDefinition(type, typeof(TActivity), outgoing, descriptor));
         return services;
     }
 
@@ -82,21 +90,26 @@ public static class WorkflowServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(options);
         services.TryAddSingleton(options);
-        services.AddActivity<StartActivity>(ActivityTypes.Start);
-        services.AddActivity<EndActivity>(ActivityTypes.End, ActivityOutgoing.None);
-        services.AddActivity<TerminateActivity>(ActivityTypes.Terminate, ActivityOutgoing.None);
-        services.AddActivity<SetVariableActivity>(ActivityTypes.SetVariable);
-        services.AddActivity<DecisionActivity>(ActivityTypes.Decision, ActivityOutgoing.Exclusive);
-        services.AddActivity<ParallelActivity>(ActivityTypes.Parallel, ActivityOutgoing.All);
-        services.AddActivity<JoinActivity>(ActivityTypes.Join);
-        services.AddActivity<DelayActivity>(ActivityTypes.Delay);
-        services.AddActivity<UserTaskActivity>(ActivityTypes.UserTask);
-        services.AddActivity<PublishEventActivity>(ActivityTypes.PublishEvent);
-        services.AddActivity<WaitSignalActivity>(ActivityTypes.WaitSignal);
-        services.AddActivity<SubWorkflowActivity>(ActivityTypes.SubWorkflow);
-        services.AddActivity<ForEachActivity>(ActivityTypes.ForEach);
-        services.AddActivity<LogActivity>(ActivityTypes.Log);
-        services.AddActivity<FaultActivity>(ActivityTypes.Fault, ActivityOutgoing.None);
+        services.AddActivity<StartActivity>(ActivityTypes.Start, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Start);
+        services.AddActivity<EndActivity>(ActivityTypes.End, ActivityOutgoing.None, BuiltInActivityDescriptors.End);
+        services.AddActivity<TerminateActivity>(ActivityTypes.Terminate, ActivityOutgoing.None, BuiltInActivityDescriptors.Terminate);
+        services.AddActivity<SetVariableActivity>(ActivityTypes.SetVariable, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.SetVariable);
+        services.AddActivity<DecisionActivity>(ActivityTypes.Decision, ActivityOutgoing.Exclusive, BuiltInActivityDescriptors.Decision);
+        services.AddActivity<ParallelActivity>(ActivityTypes.Parallel, ActivityOutgoing.All, BuiltInActivityDescriptors.Parallel);
+        services.AddActivity<JoinActivity>(ActivityTypes.Join, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Join);
+        services.AddActivity<DelayActivity>(ActivityTypes.Delay, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Delay);
+        services.AddActivity<UserTaskActivity>(ActivityTypes.UserTask, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.UserTask);
+        services.AddActivity<PublishEventActivity>(ActivityTypes.PublishEvent, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.PublishEvent);
+        services.AddActivity<WaitSignalActivity>(ActivityTypes.WaitSignal, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.WaitSignal);
+        services.AddActivity<SubWorkflowActivity>(ActivityTypes.SubWorkflow, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.SubWorkflow);
+        services.AddActivity<ForEachActivity>(ActivityTypes.ForEach, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.ForEach);
+        services.AddActivity<LogActivity>(ActivityTypes.Log, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Log);
+        services.AddActivity<FaultActivity>(ActivityTypes.Fault, ActivityOutgoing.None, BuiltInActivityDescriptors.Fault);
+        services.AddActivity<EventGatewayActivity>(ActivityTypes.EventGateway, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.EventGateway);
+        services.AddActivity<CompensateActivity>(ActivityTypes.Compensate, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Compensate);
+        services.AddActivity<HttpActivity>(ActivityTypes.Http, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Http);
+        services.AddActivity<ExternalTaskActivity>(ActivityTypes.ExternalTask, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.ExternalTask);
+        services.TryAddSingleton<WorkflowHttpClient>();
         services.AddAssigneeProvider<UserAssigneeProvider>();
         services.AddAssigneeProvider<StarterAssigneeProvider>();
         services.AddAssigneeProvider<ExpressionAssigneeProvider>();
@@ -106,6 +119,7 @@ public static class WorkflowServiceCollectionExtensions
         services.TryAddScoped<IWorkflowEngine, WorkflowEngine>();
         services.TryAddScoped<IWorkflowDefinitionCatalog, WorkflowDefinitionCatalog>();
         services.TryAddScoped<IWorkflowTaskService, WorkflowTaskService>();
+        services.TryAddScoped<IWorkflowExternalTaskService, WorkflowExternalTaskService>();
         services.TryAddSingleton<DueBookmarkPoller>();
         return services;
     }

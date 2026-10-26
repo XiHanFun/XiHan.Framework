@@ -93,9 +93,11 @@ public abstract class WorkflowStoreConformance
         var b = Instance("conf-list", "inst-b", now.AddMinutes(-1));
         b.Status = WorkflowInstanceStatus.Completed;
         b.CorrelationId = "doc-1";
+        b.EndedAt = now.AddSeconds(-30);
         var c = Instance("conf-list-2", "inst-c", now);
         c.ParentInstanceId = "inst-a";
         c.TenantId = "t1";
+        c.StarterId = "starter-c";
         Assert.True((await host.Instances.SaveAsync([a, b, c], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
         Assert.Equal(["inst-c", "inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
@@ -105,6 +107,14 @@ public abstract class WorkflowStoreConformance
         Assert.Equal(["inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { CorrelationId = "doc-1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
         Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { ParentInstanceId = "inst-a" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
         Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        // 分页、多状态、发起人、时间范围、结束时间与计数
+        Assert.Equal(["inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Skip = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        Assert.Equal(["inst-c", "inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Running], Skip = 0, Limit = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { StarterId = "starter-c" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        Assert.Equal(["inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { CreatedFrom = now.AddMinutes(-2), CreatedTo = now }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        Assert.Equal(["inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { EndedBefore = now }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+        Assert.Equal(3, (await host.Instances.CountAsync(new WorkflowInstanceQuery { Skip = 2, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.Instances.CountAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(2, (await host.Instances.FindManyAsync(["inst-a", "inst-c", "missing"], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
 
         var n1 = NodeInstance("inst-a", "n1", now.AddSeconds(1));

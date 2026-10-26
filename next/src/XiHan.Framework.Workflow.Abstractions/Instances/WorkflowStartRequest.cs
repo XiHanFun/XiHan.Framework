@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 启动实例的请求：按定义 ID 或名字（加可选版本，缺省最新已发布）找定义。
+/// 启动请求：按定义 ID 或名字（可带版本，缺省最新已发布）启动。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowStartRequest
 {
     /// <summary>
-    /// 定义 ID；优先于名字。
+    /// 定义 ID；给出时忽略名字与版本。
     /// </summary>
     public string? DefinitionId { get; init; }
 
@@ -23,12 +23,12 @@ public sealed record WorkflowStartRequest
     public WorkflowName? Name { get; init; }
 
     /// <summary>
-    /// 定义版本；缺省最新已发布版本。
+    /// 版本；空为最新已发布版本。
     /// </summary>
     public int? Version { get; init; }
 
     /// <summary>
-    /// 实例显示名；缺省定义的显示名。
+    /// 实例显示名；空取定义的。
     /// </summary>
     public string? DisplayName { get; init; }
 
@@ -38,7 +38,7 @@ public sealed record WorkflowStartRequest
     public JsonObject? Variables { get; init; }
 
     /// <summary>
-    /// 业务关联 ID。
+    /// 关联 ID（业务键）。
     /// </summary>
     public string? CorrelationId { get; init; }
 
@@ -48,27 +48,37 @@ public sealed record WorkflowStartRequest
     public string? StarterId { get; init; }
 
     /// <summary>
-    /// 租户；缺省取当前调用的租户。
+    /// 租户；空取当前调用的租户。
     /// </summary>
     public string? TenantId { get; init; }
 
     /// <summary>
-    /// 指定实例 ID；缺省由引擎生成。子流程由引擎设置。
+    /// 指定实例 ID（子流程用）；空由引擎生成。
     /// </summary>
     public string? InstanceId { get; init; }
 
     /// <summary>
-    /// 父实例 ID；子流程由引擎设置。
+    /// 父实例 ID（子流程用）。
     /// </summary>
     public string? ParentInstanceId { get; init; }
 
     /// <summary>
-    /// 父节点实例 ID；子流程由引擎设置。
+    /// 父节点实例 ID（子流程用）。
     /// </summary>
     public string? ParentNodeInstanceId { get; init; }
 
     /// <summary>
-    /// 子流程深度；顶层 0，子流程由引擎设置。
+    /// 嵌套深度（子流程用）。
     /// </summary>
     public int Depth { get; init; }
+
+    /// <summary>
+    /// 延迟启动：实例创建后在该时刻才执行 <c>Start</c> 之后的节点；空或已过去则立即执行。
+    /// </summary>
+    public DateTimeOffset? StartAt { get; init; }
+
+    /// <summary>
+    /// 同一定义名与关联 ID 下已有未结束实例时的策略。
+    /// </summary>
+    public WorkflowReusePolicy ReusePolicy { get; init; }
 }

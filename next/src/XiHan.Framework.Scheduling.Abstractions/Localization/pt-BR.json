@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "A definição de job '{name}' é inválida: {reason}",
   "scheduling.job.failed": "O trabalho '{name}' lançou uma exceção não tratada: {reason}",
   "scheduling.job.not_found": "O trabalho '{name}' não está registrado.",
   "scheduling.job.running": "O trabalho '{name}' já está em execução e não permite execuções concorrentes.",
+  "scheduling.job.type_not_registered": "O tipo de job '{type}' não está registrado.",
   "scheduling.lease.held": "A concessão de líder para '{resource}' está com outro detentor.",
   "scheduling.lease.unavailable": "O armazenamento de concessões de líder para '{resource}' está indisponível: {reason}",
-  "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução."
+  "scheduling.run.canceled": "A execução '{id}' foi cancelada.",
+  "scheduling.run.not_found": "A execução '{id}' não existe ou já terminou.",
+  "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução.",
+  "scheduling.store.capacity": "O armazenamento de jobs '{store}' está cheio (limite {limit}).",
+  "scheduling.store.unavailable": "O armazenamento de jobs está indisponível: {reason}",
+  "scheduling.trigger.not_found": "O gatilho '{trigger}' do job '{job}' não existe."
 }

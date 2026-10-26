@@ -102,17 +102,24 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
         lock (_lock)
         {
             IReadOnlyList<WorkflowInstance> listed = _instances.Values
-                .Where(entry => (query.Status is null || entry.Instance.Status == query.Status.Value)
-                    && (query.DefinitionName is null || entry.Instance.DefinitionName == query.DefinitionName.Value)
-                    && (query.CorrelationId is null || string.Equals(entry.Instance.CorrelationId, query.CorrelationId, StringComparison.Ordinal))
-                    && (query.ParentInstanceId is null || string.Equals(entry.Instance.ParentInstanceId, query.ParentInstanceId, StringComparison.Ordinal))
-                    && (query.TenantId is null || string.Equals(entry.Instance.TenantId, query.TenantId, StringComparison.Ordinal)))
+                .Where(entry => query.Matches(entry.Instance))
                 .OrderByDescending(static entry => entry.Instance.CreatedAt)
                 .ThenByDescending(static entry => entry.Sequence)
+                .Skip(query.Skip)
                 .Take(query.Limit)
                 .Select(static entry => WorkflowJson.Clone(entry.Instance))
                 .ToList();
             return ValueTask.FromResult(Result.Success(listed));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<long>> CountAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        lock (_lock)
+        {
+            return ValueTask.FromResult(Result.Success(_instances.Values.LongCount(entry => query.Matches(entry.Instance))));
         }
     }
 

@@ -1,0 +1,149 @@
+#nullable enable
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.DatabaseSchedulingFeature() -> void
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Database.Entities.JobEntity
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.AllowConcurrent.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.AllowConcurrent.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.ConcurrencyStamp.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.ConcurrencyStamp.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Data.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Data.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Description.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Description.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Id.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Id.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.JobEntity() -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.JobTypeName.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.JobTypeName.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Paused.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Paused.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RequestsRecovery.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RequestsRecovery.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RunOnEveryInstance.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RunOnEveryInstance.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Source.get -> int
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.Source.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.UpdatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.UpdatedAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CancelRequested.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CancelRequested.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CompletedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CompletedAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Data.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Data.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ErrorCode.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ErrorCode.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ErrorMessage.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ErrorMessage.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Id.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Id.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Job.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Job.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.JobRunEntity() -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.NodeId.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.NodeId.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ScheduledAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ScheduledAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Sequence.get -> long
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Sequence.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.StartedAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.StartedAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.State.get -> int
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.State.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Trigger.get -> int
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Trigger.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.TriggerName.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.TriggerName.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.ConcurrencyStamp.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.ConcurrencyStamp.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.ExpiresAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.ExpiresAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Holder.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Holder.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Id.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Id.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.SchedulerLeaseEntity() -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Token.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.SchedulerLeaseEntity.Token.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.Id.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.Id.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.LastHeartbeatAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.LastHeartbeatAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.SchedulerNodeEntity() -> void
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.StartedAt.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Database.Entities.SchedulerNodeEntity.StartedAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredAt.get -> System.DateTimeOffset?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredBy.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredBy.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.ConcurrencyStamp.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.ConcurrencyStamp.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Data.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Data.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Description.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Description.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Error.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Error.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.FireCount.get -> long
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.FireCount.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Id.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Id.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Job.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Job.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Local.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Local.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.MisfirePolicy.get -> int
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.MisfirePolicy.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Name.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Name.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.NextFireAt.get -> System.DateTimeOffset?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.NextFireAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.PreviousFireAt.get -> System.DateTimeOffset?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.PreviousFireAt.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Priority.get -> int
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Priority.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RunAs.get -> int
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RunAs.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Schedule.get -> string!
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Schedule.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.State.get -> int
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.State.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Transient.get -> bool
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Transient.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.TriggerEntity() -> void
+XiHan.Framework.Scheduling.Database.Leadership.DatabaseLeaderElection
+XiHan.Framework.Scheduling.Database.Leadership.DatabaseLeaderElection.DatabaseLeaderElection(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Scheduling.Database.Leadership.DatabaseLeaderElection.Holder.get -> string!
+XiHan.Framework.Scheduling.Database.Leadership.DatabaseLeaderElection.TryAcquireAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.AcquireDueAsync(System.DateTimeOffset dueBefore, int limit, string! nodeId, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.CancelRequestedRunsAsync(string! nodeId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<string!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.CompleteRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DatabaseJobStore(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! clock) -> void
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DeleteJobsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DeleteTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.TriggerKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.FindJobAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.HeartbeatAsync(XiHan.Framework.Scheduling.Abstractions.Storage.SchedulerNodeRecord! node, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.IsShared.get -> bool
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.LastRunsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! jobs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.ListJobsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.NodesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.SchedulerNodeRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.PurgeRunsAsync(System.DateTimeOffset before, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.RecoverNodesAsync(System.Collections.Generic.IReadOnlyList<string!>! nodeIds, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.RequestCancelAsync(System.Collections.Generic.IReadOnlyList<string!>! runIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.RunningAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.RunsAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.SaveJobsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord!>! jobs, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.SaveTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>! triggers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.TriggersAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.TryBeginRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, bool exclusive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>

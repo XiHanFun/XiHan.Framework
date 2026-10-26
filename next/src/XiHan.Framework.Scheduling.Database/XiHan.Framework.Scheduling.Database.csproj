@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Scheduling.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Scheduling.Database</RootNamespace>
+    <Description>XiHan Framework 数据库调度 Provider：作业、触发器、运行历史与节点以实体经 persistence.relational@1 的仓储读写，触发器抢占与领导租约以并发戳做跨进程的比较并交换，多节点共用一个数据库。</Description>
+    <PackageTags>xihan;framework;scheduling;database;persistence;cron;leader-election</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

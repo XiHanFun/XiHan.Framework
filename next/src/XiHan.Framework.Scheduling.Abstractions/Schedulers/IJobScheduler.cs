@@ -7,23 +7,68 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 /// <summary>
-/// 作业调度器（RFC-0013）：按计划运行登记的作业、手动触发、报告状态。手动触发不受领导租约限制。
+/// 作业调度器（RFC-0013）：登记、暂停、触发、状态与历史。全部批量、逐项结果。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IJobScheduler
 {
     /// <summary>
-    /// 立即运行并等待结果，按顺序逐项；未登记 → <see cref="SchedulingErrors.JobNotFound"/>，正在运行且不允许并发 → <see cref="SchedulingErrors.JobRunning"/>。
+    /// 新增或整体替换作业与触发器（来源 Runtime）；立即生效。作业类型未登记 → <see cref="SchedulingErrors.JobTypeNotRegistered"/>，定义不合法 → <see cref="SchedulingErrors.DefinitionInvalid"/>。
     /// </summary>
-    ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
+    ValueTask<IReadOnlyList<Result>> ScheduleAsync(IReadOnlyList<JobDefinition> definitions, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 删除作业与触发器；进行中的运行照常结束。未登记 → <see cref="SchedulingErrors.JobNotFound"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> UnscheduleAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 暂停作业的全部触发器；手动触发仍可用。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> PauseAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 恢复作业的全部触发器；暂停期间错过的按 misfire 策略处理。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> ResumeAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 暂停单个触发器；不存在 → <see cref="SchedulingErrors.TriggerNotFound"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> PauseTriggersAsync(IReadOnlyList<TriggerKey> keys, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 恢复单个触发器；不存在 → <see cref="SchedulingErrors.TriggerNotFound"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> ResumeTriggersAsync(IReadOnlyList<TriggerKey> keys, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 在本实例立即运行并等待结果，按顺序逐项；不受暂停与领导限制。未登记 → <see cref="SchedulingErrors.JobNotFound"/>，正在运行且不允许并发 → <see cref="SchedulingErrors.JobRunning"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 入队一次立即到期的运行，由集群中任一节点运行，不等待；返回一次性触发器的名字。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result<string>>> EnqueueAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 请求取消运行：本实例的运行立即取消其令牌，其他节点的在下一个轮询周期取消。不在运行中 → <see cref="SchedulingErrors.RunNotFound"/>。
+    /// </summary>
+    ValueTask<IReadOnlyList<Result>> CancelRunsAsync(IReadOnlyList<string> runIds, CancellationToken cancellationToken);
 
     /// <summary>
     /// 一个作业的状态；未登记为无值。
     /// </summary>
-    Maybe<JobStatus> Status(JobName name);
+    ValueTask<Result<Maybe<JobStatus>>> StatusAsync(JobName name, CancellationToken cancellationToken);
 
     /// <summary>
     /// 全部作业的状态，按名字排序。
     /// </summary>
-    IReadOnlyList<JobStatus> Statuses();
+    ValueTask<Result<IReadOnlyList<JobStatus>>> StatusesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 运行历史。
+    /// </summary>
+    ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 }

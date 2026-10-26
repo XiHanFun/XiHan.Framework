@@ -1,8 +1,15 @@
 {
+  "scheduling.definition.invalid": "La définition de tâche '{name}' est invalide : {reason}",
   "scheduling.job.failed": "Le travail '{name}' a levé une exception non gérée : {reason}",
   "scheduling.job.not_found": "Le travail '{name}' n'est pas enregistré.",
   "scheduling.job.running": "Le travail '{name}' est déjà en cours et n'autorise pas les exécutions concurrentes.",
+  "scheduling.job.type_not_registered": "Le type de tâche '{type}' n'est pas enregistré.",
   "scheduling.lease.held": "Le bail de leader pour '{resource}' est détenu par un autre titulaire.",
   "scheduling.lease.unavailable": "Le magasin de baux de leader pour '{resource}' est indisponible : {reason}",
-  "scheduling.scheduler.unavailable": "Le planificateur de travaux n'est pas en cours d'exécution."
+  "scheduling.run.canceled": "L'exécution '{id}' a été annulée.",
+  "scheduling.run.not_found": "L'exécution '{id}' n'existe pas ou est déjà terminée.",
+  "scheduling.scheduler.unavailable": "Le planificateur de travaux n'est pas en cours d'exécution.",
+  "scheduling.store.capacity": "Le magasin de tâches '{store}' est plein (limite {limit}).",
+  "scheduling.store.unavailable": "Le magasin de tâches est indisponible : {reason}",
+  "scheduling.trigger.not_found": "Le déclencheur '{trigger}' de la tâche '{job}' n'existe pas."
 }

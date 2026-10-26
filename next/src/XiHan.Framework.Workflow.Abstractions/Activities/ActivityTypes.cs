@@ -55,4 +55,16 @@ public static class ActivityTypes
 
     /// <summary>故障；<c>Message</c>。</summary>
     public const string Fault = "Fault";
+
+    /// <summary>事件网关：等待多个信号或超时中先到的一个。</summary>
+    public const string EventGateway = "EventGateway";
+
+    /// <summary>补偿：对已完成的节点逆序执行补偿后继续。</summary>
+    public const string Compensate = "Compensate";
+
+    /// <summary>HTTP 请求。</summary>
+    public const string Http = "Http";
+
+    /// <summary>外部任务：由外部工作者领取并完成。</summary>
+    public const string ExternalTask = "ExternalTask";
 }
