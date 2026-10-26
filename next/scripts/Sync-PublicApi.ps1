@@ -64,7 +64,10 @@ foreach ($symbol in $toAdd) {
     if (-not $body.Contains($symbol) -and -not ($shipped -contains $symbol)) { $body.Add($symbol) }
 }
 
-$sorted = @($body | Sort-Object -Unique -Culture ([System.Globalization.CultureInfo]::InvariantCulture))
+# 序数排序：与分析器及仓库里已有文件的顺序一致，文化排序会把 const / static / override 行挪到最前面制造整文件噪音
+$unique = [System.Collections.Generic.List[string]]::new([System.Collections.Generic.HashSet[string]]::new($body, [System.StringComparer]::Ordinal))
+$unique.Sort([System.StringComparer]::Ordinal)
+$sorted = @($unique)
 $content = @($header) + $sorted
 [System.IO.File]::WriteAllText($unshippedPath, (($content -join "`n") + "`n"), [System.Text.UTF8Encoding]::new($false))
 
