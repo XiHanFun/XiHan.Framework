@@ -294,7 +294,10 @@ public sealed class HttpProtocolTests
         Assert.Equal("OrderReply", post.GetProperty("responses").GetProperty("201").GetProperty("content").GetProperty("application/json").GetProperty("schema").GetProperty("title").GetString());
         Assert.Equal("#/components/schemas/ProblemDetails", post.GetProperty("responses").GetProperty("default").GetProperty("content").GetProperty("application/problem+json").GetProperty("schema").GetProperty("$ref").GetString());
         var schemas = root.GetProperty("components").GetProperty("schemas");
-        Assert.True(schemas.TryGetProperty("ProblemDetails", out _));
+        Assert.True(schemas.TryGetProperty("ProblemDetails", out var problem));
+        // 扩展成员：字段级 errors（字段 → 字符串数组）与标量 details
+        Assert.Equal("array", problem.GetProperty("properties").GetProperty("errors").GetProperty("additionalProperties").GetProperty("type").GetString());
+        Assert.Equal("object", problem.GetProperty("properties").GetProperty("details").GetProperty("type").GetString());
         Assert.Equal("sku", schemas.GetProperty("Line").GetProperty("required")[0].GetString());
 
         // 没有 Schema 的操作也发布，只是没有请求体与响应 Schema

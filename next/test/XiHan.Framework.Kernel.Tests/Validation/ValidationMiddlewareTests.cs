@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Tests.Fixtures;
+using XiHan.Framework.Kernel.Validation;
 
 namespace XiHan.Framework.Kernel.Tests.Validation;
 
@@ -64,6 +65,10 @@ public sealed class ValidationMiddlewareTests
         Assert.Equal(EchoOperation.Id, response.Error!.Details!["id"]);
         Assert.Equal("$.text: length must be >= 1", response.Error.Details["reason"]);
         Assert.Equal(["$.text: length must be >= 1", "$.repeat: value must be <= 5"], (IEnumerable<string>)response.Error.Details["violations"]!);
+        // errors 保留违规对象：宿主据此按字段键分组并按调用方区域翻译
+        var errors = (IReadOnlyList<SchemaViolation>)response.Error.Details["errors"]!;
+        Assert.Equal(["text", "repeat"], errors.Select(static e => e.Field));
+        Assert.Equal([KernelMessages.ValidationMinLength, KernelMessages.ValidationMaximum], errors.Select(static e => e.MessageKey));
         // 没进 Handle：没有响应对象，捕获中间件（Authorize 阶段）仍看到了调用
         Assert.False(context.GetOperationResponse().HasValue);
         Assert.True(response.Payload.IsEmpty);
@@ -116,7 +121,11 @@ public sealed class ValidationMiddlewareTests
         var typed = await invoker.InvokeAsync<EchoRequest, EchoResponse>(Hosts.Context(scope.ServiceProvider), EchoOperation.Id, new EchoRequest("invalid"));
 
         Assert.Equal(KernelErrors.RequestInvalid, raw.Error?.Code);
-        Assert.Equal(["$.Text: The text is not allowed."], (IEnumerable<string>)raw.Error!.Details!["violations"]!);
+        // 成员名按 camelCase 转成序列化名；应用给的文案没有消息键，原样进原因
+        Assert.Equal(["$.text: The text is not allowed."], (IEnumerable<string>)raw.Error!.Details!["violations"]!);
+        var violation = Assert.Single((IReadOnlyList<SchemaViolation>)raw.Error.Details["errors"]!);
+        Assert.Equal("text", violation.Field);
+        Assert.Null(violation.MessageKey);
         Assert.Equal(KernelErrors.RequestInvalid, typed.Error?.Code);
         await app.StopAsync(CancellationToken.None);
     }

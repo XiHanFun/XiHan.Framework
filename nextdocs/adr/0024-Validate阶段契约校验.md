@@ -44,3 +44,13 @@ RFC-0004 与总体方案附录 B 把「Schema 校验（由契约驱动）」放�
 - `Hosting.AspNetCore` 新增 `OperationPayloadBinder`；`Protocols.Http` 的端点行为变化：请求体不是 JSON 对象时在进管道前返回 400。
 - 行为变化：带 Schema 的操作收到不合法载荷时在 Validate 阶段返回 `KERNEL_VALIDATION_003`，操作不再被调用；没有 Schema（手写登记不传）的操作不受影响；`UseBuiltInMiddleware = false` 时不校验。
 - 测试：`Kernel.Tests/Validation`（校验器 30 余例、中间件 8 例）、`Kernel.Generators.Tests` 注解折叠、`Protocols.Http.Tests/ValidationStageTests`。
+
+## 补充（2026-10-27）：字段级错误进 Problem Details
+
+用户补充第 3 项的验收：校验失败的 Problem Details 要带字段级错误，否则前端表单拿不到哪个字段错了。
+
+- `SchemaViolation` 增加可选的 `MessageKey` / `Arguments` 与派生的 `Field`（去掉根 `$` 与开头的点的路径：`$` → 空串、`$.lines[0].sku` → `lines[0].sku`）；校验器的每条违规带 `kernel.validation.*` 键与参数（22 个键，10 种区域），`required` 违规挂在缺失属性自己的路径上而不是所属对象上；自校验（`IValidatableObject`）的结果没有键，原因就是应用给的文案（应用在 `Validate` 里用 `key.L()` 即得调用方语言），成员名按 camelCase 转成序列化名。失败结果的细节除 `id` / `reason` / `violations` 外多一项 `errors`（`IReadOnlyList<SchemaViolation>`）。
+- `Hosting.AspNetCore` 的 Problem Details：VALIDATION 种类的错误带扩展成员 `errors`（对象，键是字段键，值是该字段的本地化消息数组；有键的违规经 `IMessageLocalizer.Resolve(key, locale, arguments)` 按调用方区域翻译，与 `detail` 同一通道，没有本地化或没有键时用原因文本）；所有错误按白名单带 `details`（`Error.Details` 里的字符串、布尔、数值、`Guid`、时间等标量；集合与对象不写，防止泄露内部对象）。响应体改为手写 `Utf8JsonWriter`，不再经源生成上下文序列化 `object` 值。
+- `Protocols.Http` 的 OpenAPI `components/schemas/ProblemDetails` 加 `errors`（对象 → 字符串数组）与 `details`（对象 → 标量）；`spec/protocol/http.md` 同步。
+- 一致性向量：规范仓库目前没有 Problem Details 的向量（只有 plugin / primitives / provider 三组），不新增。
+- 其他协议（gRPC 状态尾部元数据、MCP `isError`、命令行 stderr 的 `{code, detail, traceId}`）不变。

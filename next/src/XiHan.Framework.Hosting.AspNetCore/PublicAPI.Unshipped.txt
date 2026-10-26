@@ -32,13 +32,17 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Code.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Code.init -> void
-XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Deconstruct(out string! Type, out string! Title, out int Status, out string! Detail, out string! Instance, out string! Code, out string! TraceId) -> void
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Deconstruct(out string! Type, out string! Title, out int Status, out string! Detail, out string! Instance, out string! Code, out string! TraceId, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? Errors, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Details) -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Detail.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Detail.init -> void
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Details.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Equals(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? other) -> bool
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Errors.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Errors.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Instance.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Instance.init -> void
-XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ProblemResponse(string! Type, string! Title, int Status, string! Detail, string! Instance, string! Code, string! TraceId) -> void
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ProblemResponse(string! Type, string! Title, int Status, string! Detail, string! Instance, string! Code, string! TraceId, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? Errors = null, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Details = null) -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Status.get -> int
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Status.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Title.get -> string!
@@ -47,9 +51,11 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.TraceId.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.TraceId.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.init -> void
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.WriteTo(System.Text.Json.Utf8JsonWriter! writer) -> void
 XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
+const XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ErrorsKey = "errors" -> string!
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.ToString() -> string!
@@ -76,7 +82,9 @@ static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator !=(XiHan
 static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FieldErrorsOf(XiHan.Framework.Primitives.Error! error, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>! translate) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>? translate = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ScalarDetailsOf(XiHan.Framework.Primitives.Error! error) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool

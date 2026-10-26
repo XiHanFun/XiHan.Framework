@@ -13,6 +13,7 @@ namespace XiHan.Framework.Kernel.Validation;
 /// <c>type</c>（含 <c>[type, "null"]</c>）、<c>properties</c>、<c>required</c>、<c>additionalProperties</c>、<c>items</c>、<c>enum</c>、<c>const</c>、
 /// <c>anyOf</c> / <c>oneOf</c> / <c>allOf</c>、<c>$ref</c>（<c>#/$defs/…</c>）、<c>minimum</c> / <c>maximum</c> / <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>、
 /// <c>minLength</c> / <c>maxLength</c>、<c>pattern</c>、<c>minItems</c> / <c>maxItems</c>。其他关键字（<c>format</c>、<c>contentEncoding</c> 等）不断言。零反射，可 AOT。
+/// 每条违规带英文原因与 <c>kernel.validation.*</c> 消息键及参数，宿主按调用方区域翻译成字段级错误。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class JsonSchemaValidator
@@ -70,7 +71,7 @@ public static class JsonSchemaValidator
 
         if (depth > MaxDepth)
         {
-            violations.Add(new SchemaViolation(path, $"nesting deeper than {MaxDepth} levels is not accepted"));
+            violations.Add(Violation(path, KernelMessages.ValidationDepth, $"nesting deeper than {MaxDepth} levels is not accepted", ("max", MaxDepth)));
             return;
         }
 
@@ -82,7 +83,7 @@ public static class JsonSchemaValidator
 
         if (schema.ValueKind == JsonValueKind.False)
         {
-            violations.Add(new SchemaViolation(path, "no value is allowed here"));
+            violations.Add(Violation(path, KernelMessages.ValidationNotAllowed, "no value is allowed here"));
             return;
         }
 
@@ -95,7 +96,8 @@ public static class JsonSchemaValidator
         {
             if (!TryResolve(root, reference, out var target))
             {
-                violations.Add(new SchemaViolation(path, $"schema reference '{reference.GetString()}' cannot be resolved"));
+                var text = reference.GetString();
+                violations.Add(Violation(path, KernelMessages.ValidationUnresolvedReference, $"schema reference '{text}' cannot be resolved", ("reference", text)));
                 return;
             }
 
@@ -104,7 +106,9 @@ public static class JsonSchemaValidator
 
         if (schema.TryGetProperty("type", out var type) && !MatchesType(type, instance))
         {
-            violations.Add(new SchemaViolation(path, $"expected type {Describe(type)} but found {Kind(instance)}"));
+            var expected = Describe(type);
+            var actual = Kind(instance);
+            violations.Add(Violation(path, KernelMessages.ValidationType, $"expected type {expected} but found {actual}", ("expected", expected), ("actual", actual)));
             // 类型不符时其余约束没有意义，避免同一位置堆叠多条
             return;
         }
@@ -137,12 +141,12 @@ public static class JsonSchemaValidator
 
         if (schema.TryGetProperty("anyOf", out var anyOf) && anyOf.ValueKind == JsonValueKind.Array && CountMatching(root, anyOf, instance, depth) == 0)
         {
-            violations.Add(new SchemaViolation(path, "value matches none of the allowed schemas"));
+            violations.Add(Violation(path, KernelMessages.ValidationAnyOf, "value matches none of the allowed schemas"));
         }
 
         if (schema.TryGetProperty("oneOf", out var oneOf) && oneOf.ValueKind == JsonValueKind.Array && CountMatching(root, oneOf, instance, depth) != 1)
         {
-            violations.Add(new SchemaViolation(path, "value must match exactly one of the allowed schemas"));
+            violations.Add(Violation(path, KernelMessages.ValidationOneOf, "value must match exactly one of the allowed schemas"));
         }
     }
 
@@ -172,12 +176,13 @@ public static class JsonSchemaValidator
     {
         if (schema.TryGetProperty("enum", out var allowed) && allowed.ValueKind == JsonValueKind.Array && !allowed.EnumerateArray().Any(candidate => JsonElement.DeepEquals(candidate, instance)))
         {
-            violations.Add(new SchemaViolation(path, "value is not one of the allowed values"));
+            violations.Add(Violation(path, KernelMessages.ValidationEnum, "value is not one of the allowed values"));
         }
 
         if (schema.TryGetProperty("const", out var constant) && !JsonElement.DeepEquals(constant, instance))
         {
-            violations.Add(new SchemaViolation(path, $"value must be {constant.GetRawText()}"));
+            var expected = constant.GetRawText();
+            violations.Add(Violation(path, KernelMessages.ValidationConst, $"value must be {expected}", ("expected", expected)));
         }
 
         if (instance.ValueKind == JsonValueKind.Number)
@@ -197,22 +202,22 @@ public static class JsonSchemaValidator
     {
         if (Bound(schema, "minimum") is { } minimum && Compare(instance, minimum) < 0)
         {
-            violations.Add(new SchemaViolation(path, $"value must be >= {minimum.GetRawText()}"));
+            violations.Add(Limit(path, KernelMessages.ValidationMinimum, "value must be >= ", minimum.GetRawText()));
         }
 
         if (Bound(schema, "maximum") is { } maximum && Compare(instance, maximum) > 0)
         {
-            violations.Add(new SchemaViolation(path, $"value must be <= {maximum.GetRawText()}"));
+            violations.Add(Limit(path, KernelMessages.ValidationMaximum, "value must be <= ", maximum.GetRawText()));
         }
 
         if (Bound(schema, "exclusiveMinimum") is { } exclusiveMinimum && Compare(instance, exclusiveMinimum) <= 0)
         {
-            violations.Add(new SchemaViolation(path, $"value must be > {exclusiveMinimum.GetRawText()}"));
+            violations.Add(Limit(path, KernelMessages.ValidationExclusiveMinimum, "value must be > ", exclusiveMinimum.GetRawText()));
         }
 
         if (Bound(schema, "exclusiveMaximum") is { } exclusiveMaximum && Compare(instance, exclusiveMaximum) >= 0)
         {
-            violations.Add(new SchemaViolation(path, $"value must be < {exclusiveMaximum.GetRawText()}"));
+            violations.Add(Limit(path, KernelMessages.ValidationExclusiveMaximum, "value must be < ", exclusiveMaximum.GetRawText()));
         }
     }
 
@@ -225,12 +230,12 @@ public static class JsonSchemaValidator
         var length = Length(text);
         if (Count(schema, "minLength") is { } minLength && length < minLength)
         {
-            violations.Add(new SchemaViolation(path, $"length must be >= {minLength}"));
+            violations.Add(Limit(path, KernelMessages.ValidationMinLength, "length must be >= ", minLength));
         }
 
         if (Count(schema, "maxLength") is { } maxLength && length > maxLength)
         {
-            violations.Add(new SchemaViolation(path, $"length must be <= {maxLength}"));
+            violations.Add(Limit(path, KernelMessages.ValidationMaxLength, "length must be <= ", maxLength));
         }
 
         if (schema.TryGetProperty("pattern", out var pattern) && pattern.ValueKind == JsonValueKind.String && pattern.GetString() is { Length: > 0 } expression)
@@ -239,22 +244,22 @@ public static class JsonSchemaValidator
             {
                 if (!PatternFor(expression).IsMatch(text))
                 {
-                    violations.Add(new SchemaViolation(path, $"value does not match pattern '{expression}'"));
+                    violations.Add(Violation(path, KernelMessages.ValidationPattern, $"value does not match pattern '{expression}'", ("pattern", expression)));
                 }
             }
             catch (RegexMatchTimeoutException)
             {
-                violations.Add(new SchemaViolation(path, $"matching pattern '{expression}' timed out"));
+                violations.Add(Violation(path, KernelMessages.ValidationPatternTimeout, $"matching pattern '{expression}' timed out", ("pattern", expression)));
             }
             catch (ArgumentException)
             {
-                violations.Add(new SchemaViolation(path, $"pattern '{expression}' is not a valid regular expression"));
+                violations.Add(Violation(path, KernelMessages.ValidationPatternInvalid, $"pattern '{expression}' is not a valid regular expression", ("pattern", expression)));
             }
         }
     }
 
     /// <summary>
-    /// 对象：<c>required</c>、<c>properties</c> 逐个下钻、<c>additionalProperties</c>（<see langword="false"/> 拒绝未声明的属性，Schema 则按它校验）。
+    /// 对象：<c>required</c>（违规挂在缺失属性自己的路径上，让字段级错误能落到字段）、<c>properties</c> 逐个下钻、<c>additionalProperties</c>（<see langword="false"/> 拒绝未声明的属性，Schema 则按它校验）。
     /// </summary>
     private static void VisitObject(JsonElement root, JsonElement schema, JsonElement instance, string path, int depth, List<SchemaViolation> violations)
     {
@@ -262,9 +267,9 @@ public static class JsonSchemaValidator
         {
             foreach (var name in required.EnumerateArray())
             {
-                if (name.ValueKind == JsonValueKind.String && !instance.TryGetProperty(name.GetString()!, out _))
+                if (name.ValueKind == JsonValueKind.String && name.GetString() is { } member && !instance.TryGetProperty(member, out _))
                 {
-                    violations.Add(new SchemaViolation(path, $"required property '{name.GetString()}' is missing"));
+                    violations.Add(Violation(Child(path, member), KernelMessages.ValidationRequired, $"required property '{member}' is missing", ("name", member)));
                 }
             }
         }
@@ -282,7 +287,7 @@ public static class JsonSchemaValidator
             {
                 if (additional.ValueKind == JsonValueKind.False)
                 {
-                    violations.Add(new SchemaViolation(memberPath, "property is not declared by the contract"));
+                    violations.Add(Violation(memberPath, KernelMessages.ValidationUndeclared, "property is not declared by the contract"));
                 }
                 else
                 {
@@ -300,12 +305,12 @@ public static class JsonSchemaValidator
         var count = instance.GetArrayLength();
         if (Count(schema, "minItems") is { } minItems && count < minItems)
         {
-            violations.Add(new SchemaViolation(path, $"must have at least {minItems} items"));
+            violations.Add(Violation(path, KernelMessages.ValidationMinItems, $"must have at least {minItems} items", ("limit", minItems)));
         }
 
         if (Count(schema, "maxItems") is { } maxItems && count > maxItems)
         {
-            violations.Add(new SchemaViolation(path, $"must have at most {maxItems} items"));
+            violations.Add(Violation(path, KernelMessages.ValidationMaxItems, $"must have at most {maxItems} items", ("limit", maxItems)));
         }
 
         if (schema.TryGetProperty("items", out var items))
@@ -317,6 +322,18 @@ public static class JsonSchemaValidator
             }
         }
     }
+
+    /// <summary>
+    /// 构造带消息键与参数的违规。
+    /// </summary>
+    private static SchemaViolation Violation(string path, string messageKey, string reason, params ReadOnlySpan<(string Name, object? Value)> arguments)
+        => new(path, reason, messageKey, arguments.Length == 0 ? null : MessageArguments.Of(arguments));
+
+    /// <summary>
+    /// 带单个 <c>limit</c> 参数的违规：原因 = 前缀 + 界限。
+    /// </summary>
+    private static SchemaViolation Limit(string path, string messageKey, string prefix, object limit)
+        => new(path, prefix + limit, messageKey, MessageArguments.Of(("limit", limit)));
 
     /// <summary>
     /// 解析本地 <c>$ref</c>（只支持 <c>#/$defs/名字</c>）。

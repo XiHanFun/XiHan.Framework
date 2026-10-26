@@ -56,7 +56,7 @@ public sealed class JsonSchemaValidatorTests
     }
 
     [Theory]
-    [InlineData("""{"amount":1}""", "$: required property 'name' is missing")]
+    [InlineData("""{"amount":1}""", "$.name: required property 'name' is missing")]
     [InlineData("""{"name":"abc","amount":"1"}""", "$.amount: expected type 'integer' but found string")]
     [InlineData("""{"name":"abc","amount":1.5}""", "$.amount: expected type 'integer' but found number")]
     [InlineData("""{"name":"abc","amount":0}""", "$.amount: value must be >= 1")]
@@ -72,7 +72,7 @@ public sealed class JsonSchemaValidatorTests
     [InlineData("""{"name":"abc","amount":1,"tags":[]}""", "$.tags: must have at least 1 items")]
     [InlineData("""{"name":"abc","amount":1,"tags":["a","b","c"]}""", "$.tags: must have at most 2 items")]
     [InlineData("""{"name":"abc","amount":1,"tags":["a",2]}""", "$.tags[1]: expected type 'string' but found number")]
-    [InlineData("""{"name":"abc","amount":1,"line":{}}""", "$.line: required property 'sku' is missing")]
+    [InlineData("""{"name":"abc","amount":1,"line":{}}""", "$.line.sku: required property 'sku' is missing")]
     [InlineData("""{"name":"abc","amount":1,"line":{"sku":1}}""", "$.line.sku: expected type 'string' but found number")]
     [InlineData("""{"name":"abc","amount":1,"first":{"sku":1}}""", "$.first: value matches none of the allowed schemas")]
     [InlineData("""{"name":"abc","amount":1,"either":true}""", "$.either: value must match exactly one of the allowed schemas")]
@@ -83,6 +83,32 @@ public sealed class JsonSchemaValidatorTests
     public void InvalidInstance_ReportsTheViolation(string json, string expected)
     {
         Assert.Equal([expected], Check(json));
+    }
+
+    [Fact]
+    public void Violations_CarryMessageKeysAndArguments_ForLocalizedFieldErrors()
+    {
+        using var schema = JsonDocument.Parse(Schema);
+        using var instance = JsonDocument.Parse("""{"name":"a","amount":"1","line":{},"tags":[]}""");
+
+        var violations = JsonSchemaValidator.Validate(schema.RootElement, instance.RootElement);
+
+        var name = Assert.Single(violations, static v => v.Path == "$.name");
+        Assert.Equal(KernelMessages.ValidationMinLength, name.MessageKey);
+        Assert.Equal(2L, name.Arguments!["limit"]);
+        Assert.Equal("name", name.Field);
+        var amount = Assert.Single(violations, static v => v.Path == "$.amount");
+        Assert.Equal(KernelMessages.ValidationType, amount.MessageKey);
+        Assert.Equal("'integer'", amount.Arguments!["expected"]);
+        Assert.Equal("string", amount.Arguments["actual"]);
+        // required 挂在缺失属性自己的路径上，字段键是点分路径
+        var sku = Assert.Single(violations, static v => v.Path == "$.line.sku");
+        Assert.Equal(KernelMessages.ValidationRequired, sku.MessageKey);
+        Assert.Equal("sku", sku.Arguments!["name"]);
+        Assert.Equal("line.sku", sku.Field);
+        var tags = Assert.Single(violations, static v => v.Path == "$.tags");
+        Assert.Equal(KernelMessages.ValidationMinItems, tags.MessageKey);
+        Assert.Equal(string.Empty, new SchemaViolation("$", "x").Field);
     }
 
     [Fact]

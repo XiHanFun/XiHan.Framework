@@ -70,6 +70,28 @@ public sealed class ValidationStageTests
     }
 
     [Fact]
+    public async Task Post_WithSchemaViolations_ListsFieldErrors_AndScalarDetails()
+    {
+        var (app, client) = await StartAsync();
+        await using var host = app;
+
+        // 缺必填 page 挂在字段 page 上；嵌套的类型不符挂在点分路径 line.sku 上；没有装配本地化时文案是违规的原因文本
+        var missing = await client.PostAsync("/orders", Json("""{"name":"a","line":{"sku":5}}"""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+        using var problem = JsonDocument.Parse(await missing.Content.ReadAsStringAsync());
+        var errors = problem.RootElement.GetProperty("errors");
+        Assert.Equal(["page", "line.sku"], errors.EnumerateObject().Select(static e => e.Name));
+        Assert.Equal("required property 'page' is missing", errors.GetProperty("page")[0].GetString());
+        Assert.Equal("expected type 'string' but found number", errors.GetProperty("line.sku")[0].GetString());
+        // details 只收标量：操作 ID 与第一条原因进，violations 列表与 errors 对象不进
+        var details = problem.RootElement.GetProperty("details");
+        Assert.Equal("orders.create", details.GetProperty("id").GetString());
+        Assert.False(details.TryGetProperty("violations", out _));
+        Assert.False(details.TryGetProperty("errors", out _));
+    }
+
+    [Fact]
     public async Task Post_WithNonObjectBody_IsRejectedBeforeThePipeline()
     {
         var (app, client) = await StartAsync();

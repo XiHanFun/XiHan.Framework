@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Buffers;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -10,6 +12,7 @@ using XiHan.Framework.Hosting.AspNetCore.Health;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
@@ -118,13 +121,14 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射；装配了本地化时 <c>detail</c> 按调用方区域翻译并带 <c>Content-Language</c>。
+    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射；装配了本地化时 <c>detail</c> 与字段级 <c>errors</c> 按调用方区域翻译并带 <c>Content-Language</c>。
     /// </summary>
-    private static Task WriteProblemAsync(HttpContext httpContext, Error error, string traceId, InvocationContext? context)
+    private static async Task WriteProblemAsync(HttpContext httpContext, Error error, string traceId, InvocationContext? context)
     {
         string? detail = null;
+        Func<SchemaViolation, string>? translate = null;
 
-        // 本地化是可选能力：没有装配时 detail 就是代码里的英文消息
+        // 本地化是可选能力：没有装配时 detail 就是代码里的英文消息，字段级错误就是违规的原因文本
         if (httpContext.RequestServices.GetService<IMessageLocalizer>() is { } localizer)
         {
             // 有调用上下文时区域已在 Ingress 协商进 Baggage；未就绪的 503 还没有上下文，直接从 Accept-Language 协商
@@ -135,10 +139,21 @@ public static class ApplicationBuilderExtensions
                 detail = localized.Text;
                 httpContext.Response.Headers.ContentLanguage = localized.Locale;
             }
+
+            // 字段级错误与 detail 走同一通道：有消息键的违规按同一区域翻译，没有键（应用自校验的文案）或目录没有时用原因文本
+            translate = violation => violation.MessageKey is { } key && localizer.Resolve(key, locale, violation.Arguments).TryGetValue(out var text) ? text.Text : violation.Reason;
         }
 
-        var problem = ProblemResponse.FromError(error, httpContext.Request.Path.ToString(), traceId, detail);
+        var problem = ProblemResponse.FromError(error, httpContext.Request.Path.ToString(), traceId, detail, translate);
         httpContext.Response.StatusCode = problem.Status;
-        return httpContext.Response.WriteAsJsonAsync(problem, HostingJsonContext.Default.ProblemResponse, "application/problem+json", httpContext.RequestAborted);
+        httpContext.Response.ContentType = "application/problem+json";
+        // 手写序列化：details 的值是运行期才知道类型的标量，不经源生成上下文的 object 分发
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            problem.WriteTo(writer);
+        }
+
+        await httpContext.Response.Body.WriteAsync(buffer.WrittenMemory, httpContext.RequestAborted).ConfigureAwait(false);
     }
 }

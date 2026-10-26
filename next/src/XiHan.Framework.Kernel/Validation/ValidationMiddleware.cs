@@ -122,17 +122,20 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
                 continue;
             }
 
-            // 一条结果可能涉及多个成员：按成员各列一条，没有成员的挂在根上
-            var reason = string.IsNullOrWhiteSpace(result.ErrorMessage) ? "value is invalid" : result.ErrorMessage;
+            // 一条结果可能涉及多个成员：按成员各列一条，没有成员的挂在根上；应用给的文案原样进原因（应用在 Validate 里用 key.L() 即得调用方语言），
+            // 没有文案时用内核的兜底键让宿主翻译；成员名是 CLR 属性名，按 camelCase 转成序列化名，让字段级错误与请求 JSON 的键一致
+            var hasMessage = !string.IsNullOrWhiteSpace(result.ErrorMessage);
+            var reason = hasMessage ? result.ErrorMessage! : "value is invalid";
+            var messageKey = hasMessage ? null : KernelMessages.ValidationInvalid;
             var members = result.MemberNames.Where(static m => !string.IsNullOrWhiteSpace(m)).ToList();
             if (members.Count == 0)
             {
-                violations.Add(new SchemaViolation("$", reason));
+                violations.Add(new SchemaViolation("$", reason, messageKey));
             }
 
             foreach (var member in members)
             {
-                violations.Add(new SchemaViolation($"$.{member}", reason));
+                violations.Add(new SchemaViolation($"$.{JsonNamingPolicy.CamelCase.ConvertName(member)}", reason, messageKey));
             }
 
             if (violations.Count >= JsonSchemaValidator.MaxViolations)
@@ -145,8 +148,8 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 失败结果的细节：<c>id</c> 是操作，<c>reason</c> 是第一条违规，<c>violations</c> 是全部的 <c>路径: 原因</c> 文本。
+    /// 失败结果的细节：<c>id</c> 是操作，<c>reason</c> 是第一条违规，<c>violations</c> 是全部的 <c>路径: 原因</c> 文本，<c>errors</c> 是全部违规对象（宿主据此写字段级错误）。
     /// </summary>
     private static IReadOnlyDictionary<string, object?> Details(string operationId, IReadOnlyList<SchemaViolation> violations)
-        => MessageArguments.Of(("id", operationId), ("reason", violations[0].ToString()), ("violations", violations.Select(static v => v.ToString()).ToList()));
+        => MessageArguments.Of(("id", operationId), ("reason", violations[0].ToString()), ("violations", violations.Select(static v => v.ToString()).ToList()), ("errors", violations));
 }
