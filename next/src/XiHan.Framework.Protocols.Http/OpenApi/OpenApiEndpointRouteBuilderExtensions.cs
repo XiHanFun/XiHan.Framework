@@ -7,12 +7,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 发布 OpenAPI 文档端点：从操作登记表按需生成一次并缓存；不经过内核管道。
+/// 发布 OpenAPI 文档端点：从操作登记表与权限码注册表按需生成一次并缓存；不经过内核管道。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class OpenApiEndpointRouteBuilderExtensions
@@ -25,10 +26,12 @@ public static class OpenApiEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
         var services = endpoints.ServiceProvider;
-        // 文档在第一次请求时生成：此时全部特性已装配、登记表已定型
+        // 文档在第一次请求时生成：此时全部特性已装配、登记表已定型。
+        // 权限码注册表由内核在装配后以单例登记（AppBuilder.Build），特性在配置阶段登记的权限定义都已在其中
         var document = new Lazy<byte[]>(() => OpenApiDocumentBuilder.Build(
             services.GetRequiredService<OperationRegistry>(),
             services.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions(),
+            services.GetService<PermissionRegistry>(),
             services.GetService<IHostEnvironment>()?.ApplicationName ?? FrameworkInfo.Name,
             FrameworkInfo.Version));
 

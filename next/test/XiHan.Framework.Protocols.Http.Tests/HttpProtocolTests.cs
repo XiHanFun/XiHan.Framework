@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.OpenApi;
 using XiHan.Framework.Protocols.Http.Routing;
@@ -18,7 +19,7 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 协议适配器：路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作。
+/// HTTP 协议适配器：路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作、OpenAPI 文档与权限扩展。
 /// </summary>
 public sealed class HttpProtocolTests
 {
@@ -54,8 +55,13 @@ public sealed class HttpProtocolTests
     /// <summary>
     /// 以订单请求（含 id）描述一个操作。
     /// </summary>
-    private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(string id)
-        => new OperationDescriptor<OrdersOperation, OrderRequest, OrderReply>(new OperationContract(id), "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+    private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(string id) => Describe(new OperationContract(id));
+
+    /// <summary>
+    /// 以订单请求（含 id）描述一个给定契约的操作。
+    /// </summary>
+    private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(OperationContract contract)
+        => new OperationDescriptor<OrdersOperation, OrderRequest, OrderReply>(contract, "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
 
     /// <summary>
     /// 以报表请求（不含 id）描述一个操作。
@@ -296,6 +302,53 @@ public sealed class HttpProtocolTests
         Assert.Equal("orders.cancel", cancel.GetProperty("operationId").GetString());
         Assert.False(cancel.TryGetProperty("requestBody", out _));
         Assert.False(root.GetProperty("paths").TryGetProperty("/api/orders/{id}:audit", out _));
+    }
+
+    [Fact]
+    public void OpenApi_WritesPermissionAndPolicyExtensions_AndPermissionComponents()
+    {
+        var registry = new OperationRegistry();
+        // 三种契约：按权限码、按策略、无授权要求；orders.export 引用了没登记的权限码；只给 MCP 的与内部的操作不进文档，它们引用的权限码也不算被引用
+        registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.export", expose: Expose.Http, permission: "orders.export"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.secret", expose: Expose.Mcp, permission: "orders.secret"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.audit", Stability.Internal, Expose.All, permission: "orders.audit"))).ThrowIfFailure();
+        var permissions = new PermissionRegistry();
+        permissions.Add(new PermissionDefinition("orders.write", "Place orders", "Create orders for the current tenant.")).ThrowIfFailure();
+        // 登记了但没有任何 HTTP 操作引用：授权界面仍需要它
+        permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
+
+        using var document = JsonDocument.Parse(OpenApiDocumentBuilder.Build(registry, new HttpProtocolOptions(), permissions, "Orders", "1.0"));
+        var paths = document.RootElement.GetProperty("paths");
+        var create = paths.GetProperty("/orders").GetProperty("post");
+        Assert.Equal("orders.write", create.GetProperty("x-xihan-permission").GetString());
+        Assert.False(create.TryGetProperty("x-xihan-policy", out _));
+        var list = paths.GetProperty("/orders").GetProperty("get");
+        Assert.Equal("authenticated", list.GetProperty("x-xihan-policy").GetString());
+        Assert.False(list.TryGetProperty("x-xihan-permission", out _));
+        var get = paths.GetProperty("/orders/{id}").GetProperty("get");
+        Assert.False(get.TryGetProperty("x-xihan-permission", out _));
+        Assert.False(get.TryGetProperty("x-xihan-policy", out _));
+
+        // 收录范围 = 被引用 ∪ 登记，键按序数排序；登记的带 displayName 与（非空的）description，只被引用的只有 code
+        var components = document.RootElement.GetProperty("components").GetProperty("x-xihan-permissions");
+        Assert.Equal(["orders.export", "orders.read", "orders.write"], components.EnumerateObject().Select(static p => p.Name));
+        var write = components.GetProperty("orders.write");
+        Assert.Equal(("orders.write", "Place orders", "Create orders for the current tenant."), (write.GetProperty("code").GetString(), write.GetProperty("displayName").GetString(), write.GetProperty("description").GetString()));
+        var read = components.GetProperty("orders.read");
+        Assert.Equal("Read orders", read.GetProperty("displayName").GetString());
+        Assert.False(read.TryGetProperty("description", out _));
+        var export = components.GetProperty("orders.export");
+        Assert.Equal("orders.export", export.GetProperty("code").GetString());
+        Assert.Equal(["code"], export.EnumerateObject().Select(static p => p.Name));
+
+        // 没有注册表时只按引用写，每条只有 code
+        using var unregistered = JsonDocument.Parse(OpenApiDocumentBuilder.Build(registry, new HttpProtocolOptions(), permissions: null, "Orders", "1.0"));
+        var referencedOnly = unregistered.RootElement.GetProperty("components").GetProperty("x-xihan-permissions");
+        Assert.Equal(["orders.export", "orders.write"], referencedOnly.EnumerateObject().Select(static p => p.Name));
+        Assert.Equal(["code"], referencedOnly.GetProperty("orders.write").EnumerateObject().Select(static p => p.Name));
     }
 
     [Fact]

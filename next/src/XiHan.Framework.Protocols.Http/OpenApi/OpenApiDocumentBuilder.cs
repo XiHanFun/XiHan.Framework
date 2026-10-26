@@ -4,6 +4,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.Routing;
 
@@ -12,6 +13,8 @@ namespace XiHan.Framework.Protocols.Http.OpenApi;
 /// <summary>
 /// 从操作登记表生成 OpenAPI 3.1 文档：路径与方法按 <see cref="HttpProtocolOptions.RouteFor"/>，参数与请求体来自 <see cref="OperationSchema"/>，
 /// 嵌套定义提升到 <c>components/schemas</c>，失败响应统一为 RFC 9457 Problem Details。没有 Schema 的操作只发布路径与操作 ID。
+/// 契约的授权要求以扩展字段发布：操作上的 <c>x-xihan-permission</c>（权限码）或 <c>x-xihan-policy</c>（策略名），
+/// 以及 <c>components</c> 下按权限码索引的 <c>x-xihan-permissions</c>（权限定义）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static partial class OpenApiDocumentBuilder
@@ -31,9 +34,10 @@ public static partial class OpenApiDocumentBuilder
     /// </summary>
     /// <param name="registry">操作登记表。</param>
     /// <param name="options">HTTP 选项（路由覆盖与前缀）。</param>
+    /// <param name="permissions">权限码注册表；为 <see langword="null"/> 时 <c>x-xihan-permissions</c> 只收录被已发布操作引用的权限码，且只有 <c>code</c>。</param>
     /// <param name="title">文档标题，通常是应用名。</param>
     /// <param name="version">文档版本。</param>
-    public static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, string title, string version)
+    public static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, PermissionRegistry? permissions, string title, string version)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(options);
@@ -42,6 +46,7 @@ public static partial class OpenApiDocumentBuilder
 
         var components = new SortedDictionary<string, JsonDocument>(StringComparer.Ordinal);
         var documents = new List<JsonDocument>();
+        var referencedPermissions = new SortedSet<string>(StringComparer.Ordinal);
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
         {
@@ -65,7 +70,7 @@ public static partial class OpenApiDocumentBuilder
                 foreach (var (descriptor, route) in group.OrderBy(static e => e.Route.Method, StringComparer.Ordinal))
                 {
                     writer.WriteStartObject(route.Method.ToLowerInvariant());
-                    WriteOperation(writer, descriptor, route, components, documents);
+                    WriteOperation(writer, descriptor, route, components, documents, referencedPermissions);
                     writer.WriteEndObject();
                 }
 
@@ -84,6 +89,7 @@ public static partial class OpenApiDocumentBuilder
             }
 
             writer.WriteEndObject();
+            WritePermissions(writer, referencedPermissions, permissions);
             writer.WriteEndObject();
             writer.WriteEndObject();
         }
@@ -102,9 +108,9 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写一个操作对象：操作 ID、标签、路径与查询参数、请求体、响应。
+    /// 写一个操作对象：操作 ID、标签、稳定性与授权要求的扩展字段、路径与查询参数、请求体、响应。被引用的权限码记入 <paramref name="referencedPermissions"/>。
     /// </summary>
-    private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, SortedDictionary<string, JsonDocument> components, List<JsonDocument> documents)
+    private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, SortedDictionary<string, JsonDocument> components, List<JsonDocument> documents, SortedSet<string> referencedPermissions)
     {
         writer.WriteString("operationId", descriptor.Id);
         writer.WriteStartArray("tags");
@@ -113,6 +119,18 @@ public static partial class OpenApiDocumentBuilder
         if (descriptor.Contract.Stability != Stability.Stable)
         {
             writer.WriteString("x-xihan-stability", descriptor.Contract.Stability.ToString());
+        }
+
+        // 契约里权限与策略二选一（OperationContract 构造时已校验），都没有则是无授权要求的操作，不写扩展字段。
+        // 权限码不是 OAuth scope、策略名更不是，所以不落到标准的 security / securitySchemes，留给认证方案用
+        if (descriptor.Contract.Permission is { } permission)
+        {
+            writer.WriteString("x-xihan-permission", permission);
+            referencedPermissions.Add(permission);
+        }
+        else if (descriptor.Contract.Policy is { } policy)
+        {
+            writer.WriteString("x-xihan-policy", policy);
         }
 
         var request = Load(descriptor.Schema?.Request, components, documents);
@@ -252,6 +270,40 @@ public static partial class OpenApiDocumentBuilder
             {
                 property.WriteTo(writer);
             }
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 写 <c>components</c> 下的 <c>x-xihan-permissions</c>：键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>。
+    /// </summary>
+    private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions)
+    {
+        // 收录范围 = 已发布操作引用到的权限码 ∪ 注册表里登记的全部定义：
+        // 授权界面要列出应用的全部权限，其中有些权限不被任何 HTTP 操作引用（只在 gRPC / MCP 暴露的操作、端点级 RequireXiHanPermission），
+        // 而被操作引用却没登记的权限码也要出现，前端才能按操作的权限码对上条目——这种只写 code，因为没有定义可取
+        var codes = new SortedSet<string>(referencedPermissions, StringComparer.Ordinal);
+        if (permissions is not null)
+        {
+            codes.UnionWith(permissions.All().Select(static p => p.Code));
+        }
+
+        writer.WriteStartObject("x-xihan-permissions");
+        foreach (var code in codes)
+        {
+            writer.WriteStartObject(code);
+            writer.WriteString("code", code);
+            if (permissions is not null && permissions.Find(code).TryGetValue(out var definition))
+            {
+                writer.WriteString("displayName", definition.DisplayName);
+                if (definition.Description is { } description)
+                {
+                    writer.WriteString("description", description);
+                }
+            }
+
+            writer.WriteEndObject();
         }
 
         writer.WriteEndObject();

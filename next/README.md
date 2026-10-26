@@ -65,7 +65,7 @@ next/
 | `XiHan.Framework.Observability.OpenTelemetry` | 3 | OpenTelemetry 导出：内核与运行时的追踪、指标、日志，OTLP 与控制台导出器 |
 | `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、`Accept-Language` 协商、探针端点、本地化的 Problem Details |
 | `XiHan.Framework.Hosting.CommandLine` | 4 | 命令行宿主：`help` / `graph` / `pipeline` / `operations` / `invoke`，按错误 KIND 的退出码，Problem 写 stderr |
-| `XiHan.Framework.Protocols.Http` | 5 | HTTP 协议适配器：操作 ID 推导路由（可覆盖）、路由值/请求体/查询串绑定为 XGI 载荷、`MapXiHanOperations()` |
+| `XiHan.Framework.Protocols.Http` | 5 | HTTP 协议适配器：操作 ID 推导路由（可覆盖）、路由值/请求体/查询串绑定为 XGI 载荷、`MapXiHanOperations()`、OpenAPI 带权限扩展 |
 | `XiHan.Framework.Protocols.Grpc` | 5 | gRPC 协议适配器：操作成为一元方法，protobuf 线格式由 JSON Schema 推出，`/operations.proto` 发布 |
 | `XiHan.Framework.Protocols.Mcp` | 5 | MCP 协议适配器：操作成为 tool，JSON-RPC 2.0 + Streamable HTTP 与 stdio 传输 |
 | `XiHan.Framework.Protocols.CloudEvents` | 5 | CloudEvents 1.0 HTTP 绑定：入站 `/events` 派发或发布，出站 Webhook 发布者 |
