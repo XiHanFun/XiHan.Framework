@@ -20,6 +20,11 @@ namespace XiHan.Framework.Messaging.InMemory;
 public sealed class InMemoryMessagingFeature : IHostedFeature
 {
     /// <summary>
+    /// 健康项名：每主题的有界队列是否都还有余量。
+    /// </summary>
+    public const string HealthName = "messaging.inmemory.capacity";
+
+    /// <summary>
     /// 启动后取得的运行时；停止时用它结束消费。
     /// </summary>
     private MessagingRuntime? _runtime;
@@ -39,7 +44,7 @@ public sealed class InMemoryMessagingFeature : IHostedFeature
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:Messaging"),
-            Health = ["messaging.inmemory.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemoryMessagingFeature).FullName,
     };
@@ -53,6 +58,8 @@ public sealed class InMemoryMessagingFeature : IHostedFeature
         context.Services.AddSingleton(InMemoryMessagingOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryMessageBroker>();
         context.Services.TryAddSingleton<IMessageBroker>(static sp => sp.GetRequiredService<InMemoryMessageBroker>());
+        // 代理自己就是健康项的贡献者：它持有各主题的队列，直接看排队条数
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryMessageBroker>());
         MessagingRegistration.Configure(context);
     }
 

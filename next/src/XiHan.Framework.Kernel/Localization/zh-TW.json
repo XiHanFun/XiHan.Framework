@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "特性 '{id}' 啟動失敗：{reason}",
   "kernel.feature.stop_failed": "特性 '{id}' 停止失敗：{reason}",
   "kernel.feature.stop_timeout": "特性 '{id}' 停止逾時。",
+  "kernel.health.probe_failed": "健康探針 '{name}' 失敗：{reason}",
   "kernel.hosting.not_serving": "應用程式處於 {state} 狀態，暫不接收請求。",
   "kernel.invocation.cancelled": "呼叫已取消。",
   "kernel.invocation.deadline_before_start": "呼叫在開始前就已超過截止時間。",

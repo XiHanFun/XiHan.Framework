@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Text;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
@@ -95,6 +96,22 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// 是否已建立生产者并确认过集群可达。
     /// </summary>
     public bool IsConnected => _producer is not null;
+
+    /// <summary>
+    /// 连通性探针（健康项）：以生产者的句柄建一个从属管理客户端描述集群——复用生产者已有的连接，只取节点与控制器，不拉主题元数据。
+    /// 生产者还没建立时返回 <see cref="MessagingErrors.BrokerUnavailable"/>；集群不可达时抛出 <see cref="KafkaException"/>，由探针宿主记成 Degraded。
+    /// </summary>
+    public async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+    {
+        if (_producer is not { } producer)
+        {
+            return Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", "The producer has not been created.")));
+        }
+
+        using var admin = new DependentAdminClientBuilder(producer.Handle).Build();
+        await admin.DescribeClusterAsync(new DescribeClusterOptions { RequestTimeout = _operationTimeout }).WaitAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
 
     /// <summary>
     /// 创建生产者并向集群取一次元数据确认可达；连不上视为失败，不降级运行。可重复调用。

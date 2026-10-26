@@ -32,13 +32,13 @@ modelBuilder.Entity<WorkflowInstanceRecord>(static i =>
 
 | 类型 | 用途 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 登记五个实体的仓储，装配存储、实例锁与引擎；应用进入服务状态后启动 `DueBookmarkPollingLoop`，停止时等进行中的轮询结束并释放领导权 |
+| `DatabaseWorkflowFeature` | 登记五个实体的仓储，装配存储、实例锁与引擎；应用进入服务状态后启动 `DueBookmarkPollingLoop`，停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
 | `Entities.WorkflowDefinitionRecord` / `WorkflowInstanceRecord` / `WorkflowNodeInstanceRecord` / `WorkflowBookmarkRecord` | 主键都是模型的 ID；查询列加 `Document`（JSON）；实例、节点实例与书签另有写入序号 `Sequence`（首次写入分配、替换保留）作同刻排序的次关键字——UUID v7 只到毫秒单调，不能当写入顺序用；租户只是普通列，不实现 `IMultiTenant`，存储不按租户过滤 |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 单例；每个操作在根提供者的新作用域里经 `App.InvokeAsync` 走完整管道，仓储在 Transaction 阶段内使用，返回即提交 |
 | `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到，过期的行按并发戳接管，持有期间每三分之一租约续约，释放删自己的行 |
 | `Polling.PollerLeadership` / `DueBookmarkPollingLoop` | 资源 `workflow.poller` 的租约；每个周期先拿或续领导权，持有才 `PollOnceAsync` |
-| `DatabaseWorkflowOptions` | `XiHan:Workflow:Database`：`PollIntervalSeconds`（1）、`BatchSize`（100）、`LockLeaseSeconds`（60）、`HolderId`（`机器名:进程 ID:8 位随机十六进制`） |
+| `DatabaseWorkflowOptions` | `XiHan:Workflow:Database`：`PollIntervalSeconds`（1）、`BatchSize`（100）、`LockLeaseSeconds`（60）、`HolderId`（`机器名:进程 ID:8 位随机十六进制`）、`HealthProbeIntervalSeconds`（15） |
 
 引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`）。
 

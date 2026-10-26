@@ -5,6 +5,12 @@ XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.DatabaseScheduling
 XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions!
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.DatabaseSchedulingOptions() -> void
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.Equals(XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions? other) -> bool
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.get -> string?
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.set -> void
@@ -147,3 +153,11 @@ XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.SaveJobsAsync(Syste
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.SaveTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>! triggers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.TriggersAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName? job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.TryBeginRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, bool exclusive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>
+const XiHan.Framework.Scheduling.Database.DatabaseSchedulingFeature.HealthName = "scheduling.database.leader" -> string!
+const XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.ConfigurationSection = "XiHan:Scheduling:Database" -> string!
+override XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.ToString() -> string!
+static XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions!
+static XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.operator !=(XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions? left, XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions? right) -> bool
+static XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions.operator ==(XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions? left, XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions? right) -> bool

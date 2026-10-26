@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "特性 '{id}' 启动失败：{reason}",
   "kernel.feature.stop_failed": "特性 '{id}' 停止失败：{reason}",
   "kernel.feature.stop_timeout": "特性 '{id}' 停止超时。",
+  "kernel.health.probe_failed": "健康探针 '{name}' 失败：{reason}",
   "kernel.hosting.not_serving": "应用处于 {state} 状态，暂不接收请求。",
   "kernel.invocation.cancelled": "调用已取消。",
   "kernel.invocation.deadline_before_start": "调用在开始前就已超过截止时间。",

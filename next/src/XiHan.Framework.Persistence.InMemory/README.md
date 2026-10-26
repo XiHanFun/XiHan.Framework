@@ -8,6 +8,7 @@
 - 工作单元读己之写：新增、更新、删除先进覆盖层，提交时原子写入表；回滚丢弃。
 - 软删除、创建与修改时间、租户写入与过滤、并发戳刷新按 `PersistenceConventions` 执行。
 - 存储的是对象引用，不做深拷贝；不检测跨工作单元的乐观并发冲突。
+- 健康项 `persistence.inmemory.capacity`（存储自己实现，同步计算）：任一实体的表达到 `MaxEntitiesPerType` 即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，`entity` 是按序数顺序的第一个满表），否则 Ready。
 
 ## 依赖方向
 

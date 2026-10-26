@@ -2,5 +2,6 @@
   "objectstorage.blob.exists": "容器 '{container}' 里已存在对象 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 里不存在对象 '{key}'。",
   "objectstorage.quota.exceeded": "写入 {requested} 字节会超出对象存储配额 {limit} 字节。",
+  "objectstorage.quota.reached": "对象存储配额 {limit} 字节已用尽：已使用 {used} 字节。",
   "objectstorage.store.unavailable": "对象存储不可用：{reason}"
 }

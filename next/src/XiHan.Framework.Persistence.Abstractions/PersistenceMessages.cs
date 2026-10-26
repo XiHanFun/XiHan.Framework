@@ -44,6 +44,9 @@ public static class PersistenceMessages
     /// <summary>内存表容量已满。参数：<c>entity</c>、<c>capacity</c>。</summary>
     public const string CapacityExceeded = "persistence.store.capacity_exceeded";
 
+    /// <summary>关系数据库连不上（健康探针）。</summary>
+    public const string StoreUnavailable = "persistence.store.unavailable";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>

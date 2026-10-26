@@ -1,5 +1,6 @@
 #nullable enable
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.CheckConnection() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.IsConnected.get -> bool
@@ -19,12 +20,15 @@ XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.<Clone>$() -> XiHan.
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Configuration.get -> string!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Configuration.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Equals(XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions? other) -> bool
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.get -> ushort
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.get -> string!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.RabbitMQMessagingOptions() -> void
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.ConnectionBinding = "queue" -> string!
+const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.HealthName = "messaging.rabbitmq.connection" -> string!
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.ConfigurationSection = "XiHan:Messaging:RabbitMQ" -> string!
 override XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.GetHashCode() -> int

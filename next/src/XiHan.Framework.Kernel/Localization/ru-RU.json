@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "Не удалось запустить компонент '{id}': {reason}",
   "kernel.feature.stop_failed": "Не удалось остановить компонент '{id}': {reason}",
   "kernel.feature.stop_timeout": "Истекло время ожидания остановки компонента '{id}'.",
+  "kernel.health.probe_failed": "Проверка состояния '{name}' завершилась ошибкой: {reason}",
   "kernel.hosting.not_serving": "Приложение находится в состоянии {state} и не принимает запросы.",
   "kernel.invocation.cancelled": "Вызов был отменён.",
   "kernel.invocation.deadline_before_start": "Вызов превысил предельный срок ещё до начала.",

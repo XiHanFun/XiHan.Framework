@@ -1,5 +1,6 @@
 {
   "caching.idempotency.in_progress": "A call with the same idempotency key is still in progress.",
   "caching.idempotency.invalid_key": "The idempotency key is invalid: it must be non-empty and contain no whitespace or control characters.",
-  "caching.idempotency.recently_completed": "A call with the same idempotency key has just completed or is still in progress; retry later."
+  "caching.idempotency.recently_completed": "A call with the same idempotency key has just completed or is still in progress; retry later.",
+  "caching.store.capacity_reached": "The in-memory cache has reached its capacity of {capacity} entries."
 }

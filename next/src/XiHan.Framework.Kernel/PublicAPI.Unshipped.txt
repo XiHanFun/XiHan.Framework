@@ -180,6 +180,16 @@ XiHan.Framework.Kernel.Hosting.KernelOptions.StopTimeout.get -> System.TimeSpan
 XiHan.Framework.Kernel.Hosting.KernelOptions.StopTimeout.init -> void
 XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.get -> bool
 XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.init -> void
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Interval.get -> System.TimeSpan
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.LastProbedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Name.get -> string!
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.PeriodicHealthContributor(string! name, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>>! probe, System.TimeSpan interval, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
 XiHan.Framework.Kernel.KernelMessages
@@ -503,6 +513,7 @@ const XiHan.Framework.Kernel.KernelErrors.DuplicateOperation = "KERNEL_OPERATION
 const XiHan.Framework.Kernel.KernelErrors.DuplicatePermission = "KERNEL_SECURITY_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.FeatureStartFailed = "KERNEL_HOSTING_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.FeatureStopTimeout = "KERNEL_HOSTING_003" -> string!
+const XiHan.Framework.Kernel.KernelErrors.HealthProbeFailed = "KERNEL_UNAVAILABLE_005" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidAppState = "KERNEL_HOSTING_004" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidManifest = "KERNEL_CAPABILITY_006" -> string!
 const XiHan.Framework.Kernel.KernelErrors.InvalidOperationPayload = "KERNEL_VALIDATION_001" -> string!
@@ -531,6 +542,7 @@ const XiHan.Framework.Kernel.KernelMessages.DuplicatePermission = "kernel.permis
 const XiHan.Framework.Kernel.KernelMessages.FeatureStartFailed = "kernel.feature.start_failed" -> string!
 const XiHan.Framework.Kernel.KernelMessages.FeatureStopFailed = "kernel.feature.stop_failed" -> string!
 const XiHan.Framework.Kernel.KernelMessages.FeatureStopTimeout = "kernel.feature.stop_timeout" -> string!
+const XiHan.Framework.Kernel.KernelMessages.HealthProbeFailed = "kernel.health.probe_failed" -> string!
 const XiHan.Framework.Kernel.KernelMessages.InvalidOperationPayload = "kernel.operation.invalid_payload" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestEmpty = "kernel.manifest.empty" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ManifestFileMissing = "kernel.manifest.file_missing" -> string!

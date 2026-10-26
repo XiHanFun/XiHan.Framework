@@ -19,6 +19,7 @@ builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
 - 每个订阅主题一个消费者（同一消费组 `GroupId`，默认 `xihan`），从最早位点开始（订阅前发布的消息也收到），单线程按分区顺序派发；处理失败在原位重试到 `MaxAttempts`（不重新入队，顺序不变），仍失败发布到死信主题 `<topic><DeadLetterSuffix>`；无法解码的消息直接进死信。投递完成后才提交位点，停止时未完成的消息重启后重新投递（至少一次）。
 - 重放 `IMessageReplayer.ReplayAsync(topic, since)`：用独立消费组从该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍，不提交位点、不影响正常消费；主题不存在或该时刻之后没有消息时成功返回。
 - 启动时向集群取一次元数据，连不上即启动失败（`MESSAGING_UNAVAILABLE_001`）。
+- 健康项 `messaging.kafka.connection`：启动后按 `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds`（默认 15）在后台以生产者的连接描述集群（从属管理客户端，不另开连接）并缓存结果；集群不可达或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 不满足 AOT 分析器（librdkafka 本机库）。
 
 ## 测试

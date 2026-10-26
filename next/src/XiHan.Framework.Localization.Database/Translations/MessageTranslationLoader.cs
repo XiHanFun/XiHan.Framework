@@ -12,9 +12,10 @@ namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
 /// 把数据库里的翻译装进 <see cref="DatabaseMessageLocalizer"/>：宿主进入服务状态后首次加载，之后按周期刷新；写入翻译后可显式 <see cref="ReloadAsync"/>。读取经完整管道（仓储要求 Transaction 阶段）。
+/// 同时是健康项 <see cref="DatabaseLocalizationFeature.HealthName"/> 的贡献者：以最近一次加载的结果报告，失败（保留上一份快照）为 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class MessageTranslationLoader : IDisposable
+public sealed partial class MessageTranslationLoader : IDisposable, IHealthContributor
 {
     /// <summary>
     /// 根服务提供者；每次加载开新作用域。
@@ -47,6 +48,16 @@ public sealed partial class MessageTranslationLoader : IDisposable
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 最近一次加载的失败；成功后清空。后台循环写、健康采集读，整体替换不加锁。
+    /// </summary>
+    private volatile Error? _lastError;
+
+    /// <summary>
+    /// 是否已成功加载过一次。
+    /// </summary>
+    private volatile bool _loaded;
+
+    /// <summary>
     /// 停止信号。
     /// </summary>
     private CancellationTokenSource? _stopping;
@@ -74,6 +85,11 @@ public sealed partial class MessageTranslationLoader : IDisposable
     /// 最近一次成功加载的时刻；还没有加载过为 <see langword="null"/>。
     /// </summary>
     public DateTimeOffset? LastLoadedAt { get; private set; }
+
+    /// <summary>
+    /// 最近一次加载的失败；成功后为 <see langword="null"/>。失败时上一份快照仍在生效。
+    /// </summary>
+    public Error? LastError => _lastError;
 
     /// <summary>
     /// 立即重新加载并替换快照。只能在宿主服务期间调用；失败时保留上一份快照并返回失败。
@@ -110,18 +126,34 @@ public sealed partial class MessageTranslationLoader : IDisposable
 
         if (outcome.IsFailure)
         {
+            // 失败只记下来供健康项上报，快照不动
+            _lastError = outcome.Error;
             LogLoadFailed(_logger, outcome.Error!.Code);
             return outcome;
         }
 
         _localizer.Apply(TranslationOverlay.From(loaded));
         LastLoadedAt = _clock.GetUtcNow();
+        _lastError = null;
+        _loaded = true;
         if (truncated)
         {
             LogLimitReached(_logger, _options.MaxTranslations);
         }
 
         return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ContributorStatus> Check()
+    {
+        // 最近一次加载失败 → Degraded（上一份快照仍在生效）；还没加载过（宿主尚未进入服务状态）→ Started；否则 Ready
+        if (_lastError is { } error)
+        {
+            return [new ContributorStatus(DatabaseLocalizationFeature.HealthName, LifecycleState.Degraded, error)];
+        }
+
+        return [new ContributorStatus(DatabaseLocalizationFeature.HealthName, _loaded ? LifecycleState.Ready : LifecycleState.Started)];
     }
 
     /// <inheritdoc />

@@ -4,6 +4,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
@@ -16,9 +17,10 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// 文件系统对象存储：<c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。
 /// 写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；ETag 是内容的 SHA-256。
 /// 配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。
+/// 同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class FileSystemBlobStore : IBlobStore
+public sealed class FileSystemBlobStore : IBlobStore, IHealthContributor
 {
     /// <summary>
     /// 内容目录名。
@@ -86,6 +88,19 @@ public sealed class FileSystemBlobStore : IBlobStore
                 return Math.Max(_usedBytes, 0);
             }
         }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ContributorStatus> Check()
+    {
+        // 已用量达到总配额即 Degraded：此后任何写入都会被 QuotaExceeded 拒绝
+        var used = UsedBytes;
+        return
+        [
+            used >= _options.MaxTotalBytes
+                ? new ContributorStatus(FileSystemObjectStorageFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(ObjectStorageErrors.QuotaExceeded, ObjectStorageMessages.QuotaReached, MessageArguments.Of(("limit", _options.MaxTotalBytes), ("used", used))))
+                : new ContributorStatus(FileSystemObjectStorageFeature.HealthName, LifecycleState.Ready),
+        ];
     }
 
     /// <summary>

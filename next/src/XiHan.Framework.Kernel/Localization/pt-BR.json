@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "O recurso '{id}' não pôde ser iniciado: {reason}",
   "kernel.feature.stop_failed": "O recurso '{id}' não pôde ser interrompido: {reason}",
   "kernel.feature.stop_timeout": "O recurso '{id}' excedeu o tempo limite ao parar.",
+  "kernel.health.probe_failed": "A sonda de integridade '{name}' falhou: {reason}",
   "kernel.hosting.not_serving": "O aplicativo está no estado {state} e não aceita solicitações.",
   "kernel.invocation.cancelled": "A chamada foi cancelada.",
   "kernel.invocation.deadline_before_start": "A chamada excedeu o prazo antes de começar.",

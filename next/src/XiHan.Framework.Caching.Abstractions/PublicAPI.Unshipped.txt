@@ -112,11 +112,13 @@ XiHan.Framework.Caching.Abstractions.Stores.ICacheStore.TryRemoveAsync(XiHan.Fra
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Distributed = "caching.distributed" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Local = "caching.local" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Version = 1 -> int
+const XiHan.Framework.Caching.Abstractions.CachingErrors.CapacityReached = "CACHING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.IdempotentInProgress = "CACHING_CONFLICT_002" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidKey = "CACHING_VALIDATION_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidOptions = "CACHING_VALIDATION_002" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.LockHeld = "CACHING_CONFLICT_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.StoreUnavailable = "CACHING_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.CapacityReached = "caching.store.capacity_reached" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.CatalogName = "caching" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentInProgress = "caching.idempotency.in_progress" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentRecentlyCompleted = "caching.idempotency.recently_completed" -> string!

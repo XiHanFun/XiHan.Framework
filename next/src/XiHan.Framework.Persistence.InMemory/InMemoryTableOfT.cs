@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// 一种实体的有界表。读取返回快照；写入由工作单元在提交时原子应用。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryTable<TEntity, TKey>(int capacity)
+public sealed class InMemoryTable<TEntity, TKey>(int capacity) : IInMemoryTable
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
@@ -29,6 +29,9 @@ public sealed class InMemoryTable<TEntity, TKey>(int capacity)
     /// 容量上限。
     /// </summary>
     public int Capacity { get; } = capacity;
+
+    /// <inheritdoc />
+    string IInMemoryTable.EntityName => typeof(TEntity).Name;
 
     /// <summary>
     /// 当前条数（含已软删除）。

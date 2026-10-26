@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "La característica '{id}' no pudo iniciarse: {reason}",
   "kernel.feature.stop_failed": "La característica '{id}' no pudo detenerse: {reason}",
   "kernel.feature.stop_timeout": "La característica '{id}' agotó el tiempo de espera al detenerse.",
+  "kernel.health.probe_failed": "La sonda de estado '{name}' falló: {reason}",
   "kernel.hosting.not_serving": "La aplicación está en estado {state} y no acepta solicitudes.",
   "kernel.invocation.cancelled": "La llamada fue cancelada.",
   "kernel.invocation.deadline_before_start": "La llamada superó su plazo antes de comenzar.",

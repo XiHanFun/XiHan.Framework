@@ -12,6 +12,8 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOp
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.EnsureCreated.init -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.EntityFrameworkCorePersistenceOptions() -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? other) -> bool
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
@@ -38,6 +40,7 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.St
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.TenantId.get -> string?
 XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions
 const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.ConnectionBinding = "db" -> string!
+const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.HealthName = "persistence.entityframeworkcore.database" -> string!
 const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore" -> string!
 override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.GetHashCode() -> int

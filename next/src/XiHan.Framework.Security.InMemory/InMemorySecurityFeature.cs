@@ -23,6 +23,11 @@ namespace XiHan.Framework.Security.InMemory;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySecurityFeature : IFeature
 {
+    /// <summary>
+    /// 健康项名：主体与授予存储是否都还有余量。
+    /// </summary>
+    public const string HealthName = "security.inmemory.capacity";
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {
@@ -47,7 +52,7 @@ public sealed class InMemorySecurityFeature : IFeature
                 new PipelineContribution(typeof(AuthorizationMiddleware).FullName!, PipelineStage.Authorize),
             ],
             Config = new ConfigContribution("XiHan:Security"),
-            Health = ["security.inmemory.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemorySecurityFeature).FullName,
     };
@@ -61,6 +66,8 @@ public sealed class InMemorySecurityFeature : IFeature
         // SecurityOptions 用 TryAdd：与 Jwt 等其他安全特性共存时只注册一次
         context.Services.TryAddSingleton(SecurityOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(InMemorySecurityOptions.FromConfiguration(context.Configuration));
+        // 健康项看两个存储的用量；哪个能力没被选中，对应的存储就不存在，取到 null 即不参与判定
+        context.Services.AddSingleton<IHealthContributor>(static sp => new InMemorySecurityHealthContributor(sp.GetService<InMemoryPrincipalStore>(), sp.GetService<InMemoryPermissionGrantStore>()));
 
         // 只为解析器选中本特性的能力注册服务与中间件；显式 Provider 胜出时本特性让出对应能力
         if (context.Node.IsSelectedFor(SecurityCapabilities.Authentication))

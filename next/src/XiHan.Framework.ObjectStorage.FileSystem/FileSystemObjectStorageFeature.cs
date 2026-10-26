@@ -20,6 +20,11 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 public sealed class FileSystemObjectStorageFeature : IHostedFeature
 {
     /// <summary>
+    /// 健康项名：总配额是否还有余量。
+    /// </summary>
+    public const string HealthName = "objectstorage.filesystem.capacity";
+
+    /// <summary>
     /// 启动后保存的存储实例，供停止时使用。
     /// </summary>
     private FileSystemBlobStore? _store;
@@ -39,7 +44,7 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:ObjectStorage"),
-            Health = ["objectstorage.filesystem.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(FileSystemObjectStorageFeature).FullName,
     };
@@ -51,6 +56,8 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
         context.Services.AddSingleton(FileSystemObjectStorageOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<FileSystemBlobStore>();
+        // 存储自己就是健康项的贡献者：直接看已用量与总配额
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
         {
             context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<FileSystemBlobStore>());

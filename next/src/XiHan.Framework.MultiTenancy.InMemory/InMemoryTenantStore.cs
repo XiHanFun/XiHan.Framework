@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
@@ -9,10 +10,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 有界的内存租户存储。ID 区分大小写。
+/// 有界的内存租户存储。ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryTenantStore : ITenantStore
+public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
 {
     /// <summary>
     /// 按 ID 索引的租户；读取无锁。
@@ -46,6 +47,18 @@ public sealed class InMemoryTenantStore : ITenantStore
     /// 当前租户数。
     /// </summary>
     public int Count => _tenants.Count;
+
+    /// <inheritdoc />
+    public IReadOnlyList<ContributorStatus> Check()
+    {
+        // 租户数达到容量即 Degraded：再登记新租户会被拒绝
+        return
+        [
+            _tenants.Count >= Capacity
+                ? new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity))))
+                : new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Ready),
+        ];
+    }
 
     /// <inheritdoc />
     public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)

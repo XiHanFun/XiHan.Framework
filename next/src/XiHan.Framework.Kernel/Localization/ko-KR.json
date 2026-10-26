@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "기능 '{id}'을(를) 시작하지 못했습니다: {reason}",
   "kernel.feature.stop_failed": "기능 '{id}'을(를) 중지하지 못했습니다: {reason}",
   "kernel.feature.stop_timeout": "기능 '{id}' 중지가 시간 제한을 초과했습니다.",
+  "kernel.health.probe_failed": "상태 프로브 '{name}'이(가) 실패했습니다: {reason}",
   "kernel.hosting.not_serving": "애플리케이션이 {state} 상태이므로 요청을 받지 않습니다.",
   "kernel.invocation.cancelled": "호출이 취소되었습니다.",
   "kernel.invocation.deadline_before_start": "호출이 시작되기 전에 기한을 초과했습니다.",

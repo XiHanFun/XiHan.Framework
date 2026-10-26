@@ -155,4 +155,7 @@ public static class KernelMessages
 
     /// <summary>校验违规：请求对象自校验给出的结果没有文案时的兜底。</summary>
     public const string ValidationInvalid = "kernel.validation.invalid";
+
+    /// <summary>健康探针失败。参数：<c>name</c>、<c>reason</c>。</summary>
+    public const string HealthProbeFailed = "kernel.health.probe_failed";
 }

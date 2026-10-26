@@ -43,7 +43,16 @@ public sealed record RedisCachingOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>。
+    /// 健康项 <c>caching.redis.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </summary>
     public static RedisCachingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -65,6 +74,14 @@ public sealed record RedisCachingOptions
             options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { DefaultTimeToLive = TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
+        }
+
+        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
+        if (probe is not null)
+        {
+            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
         }
 
         return options;

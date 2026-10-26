@@ -109,6 +109,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobExist
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobNotFound = "objectstorage.blob.not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.CatalogName = "objectstorage" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.QuotaExceeded = "objectstorage.quota.exceeded" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.QuotaReached = "objectstorage.quota.reached" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreUnavailable = "objectstorage.store.unavailable" -> string!
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult.GetHashCode() -> int

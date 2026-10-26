@@ -20,11 +20,16 @@ namespace XiHan.Framework.Caching.InMemory;
 /// <summary>
 /// 内存缓存的能力包入口：默认提供 <c>caching.local@1</c> 与 <c>caching.distributed@1</c>。
 /// 只为被选中的能力注册服务：另有显式 Provider 提供共享缓存时，本包只注册 <see cref="ICache"/>。
-/// 类型化缓存直接存对象，不需要序列化器。
+/// 类型化缓存直接存对象，不需要序列化器。健康项 <see cref="HealthName"/> 在任一张表满时 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCachingFeature : IFeature
 {
+    /// <summary>
+    /// 健康项名：两张 LRU 表是否都还有余量。
+    /// </summary>
+    public const string HealthName = "caching.inmemory.capacity";
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {
@@ -45,7 +50,7 @@ public sealed class InMemoryCachingFeature : IFeature
         {
             Pipeline = [new PipelineContribution(typeof(IdempotencyMiddleware).FullName!, PipelineStage.Idempotency)],
             Config = new ConfigContribution("XiHan:Caching"),
-            Health = ["caching.inmemory.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemoryCachingFeature).FullName,
     };
@@ -60,6 +65,8 @@ public sealed class InMemoryCachingFeature : IFeature
         context.Services.AddSingleton(InMemoryCachingOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryCacheStore>();
         context.Services.AddSingleton<InMemoryObjectCache>();
+        // 健康项看两张表的用量，与哪些能力被选中无关
+        context.Services.AddSingleton<IHealthContributor, InMemoryCacheHealthContributor>();
 
         if (context.Node.IsSelectedFor(CachingCapabilities.Local))
         {

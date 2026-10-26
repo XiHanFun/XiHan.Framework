@@ -4,6 +4,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
@@ -21,6 +22,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
 /// EF Core 持久化的能力包入口：提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。
+/// 健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
 /// </summary>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -31,6 +33,11 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     /// 连接绑定名：<c>db</c>，类型 <c>connection:relational</c>，可选。
     /// </summary>
     public const string ConnectionBinding = "db";
+
+    /// <summary>
+    /// 健康项名：默认连接的数据库是否可达。
+    /// </summary>
+    public const string HealthName = "persistence.entityframeworkcore.database";
 
     /// <summary>
     /// 连接绑定的类型。
@@ -46,6 +53,11 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     /// 配置阶段读取的选项；<see cref="StartAsync"/> 据此决定是否建表。
     /// </summary>
     private EntityFrameworkCorePersistenceOptions _options = new();
+
+    /// <summary>
+    /// 启动时起循环的健康探针，停止时结束它。
+    /// </summary>
+    private PeriodicHealthContributor? _health;
 
     /// <summary>
     /// 创建特性。
@@ -77,7 +89,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
             Config = new ConfigContribution("XiHan:Persistence"),
-            Health = ["persistence.entityframeworkcore.database"],
+            Health = [HealthName],
         },
         Entry = typeof(EntityFrameworkCorePersistenceFeature<>).FullName,
     };
@@ -107,24 +119,36 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);
+        // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集
+        var interval = _options.HealthProbeInterval;
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, ct => ProbeAsync(sp, ct), interval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
     }
 
     /// <inheritdoc />
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
-        if (!_options.EnsureCreated)
+        if (_options.EnsureCreated)
         {
-            return;
+            // DbContext 是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析
+            await using var scope = services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        // DbContext 是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析
-        await using var scope = services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
+        await _health.StartAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_health is not null)
+        {
+            await _health.StopAsync(cancellationToken).ConfigureAwait(false);
+            _health = null;
+        }
+    }
 
     /// <inheritdoc />
     public void Register<TEntity, TKey>(IServiceCollection services)
@@ -133,5 +157,15 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddScoped<IRepository<TEntity, TKey>, EntityFrameworkCoreRepository<TEntity, TKey>>();
+    }
+
+    /// <summary>
+    /// 连通性探针：在独立作用域里取应用默认连接的 DbContext 试连；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>。
+    /// </summary>
+    private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var reachable = await scope.ServiceProvider.GetRequiredService<TContext>().Database.CanConnectAsync(cancellationToken).ConfigureAwait(false);
+        return reachable ? Result.Success() : Error.Unavailable(PersistenceErrors.StoreUnavailable, PersistenceMessages.StoreUnavailable);
     }
 }

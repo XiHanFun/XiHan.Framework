@@ -5,6 +5,7 @@
   "persistence.entity.stale_stamp": "Метка параллелизма сущности '{entity}' с идентификатором '{id}' устарела.",
   "persistence.entity.tenant_required": "Сущность '{entity}' является мультиарендной, но у текущего вызова нет арендатора.",
   "persistence.store.capacity_exceeded": "Таблица в памяти для '{entity}' достигла предела ёмкости {capacity}.",
+  "persistence.store.unavailable": "Реляционная база данных недоступна.",
   "persistence.unit_of_work.concurrency_conflict": "Конфликт оптимистичного параллелизма при фиксации: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' записал {count} доменных событий, но диспетчер доменных событий не зарегистрирован.",
   "persistence.unit_of_work.read_only": "Единица работы только для чтения не принимает записи."

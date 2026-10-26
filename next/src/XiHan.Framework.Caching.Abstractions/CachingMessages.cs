@@ -26,6 +26,9 @@ public static class CachingMessages
     /// <summary>同一幂等键的调用仍在处理中。</summary>
     public const string IdempotentInProgress = "caching.idempotency.in_progress";
 
+    /// <summary>内存缓存已达容量上限。参数：<c>capacity</c>。</summary>
+    public const string CapacityReached = "caching.store.capacity_reached";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>

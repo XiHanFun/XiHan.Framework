@@ -21,6 +21,10 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.EnsureBuckets.init -> vo
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? other) -> bool
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ForcePathStyle.get -> bool
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ForcePathStyle.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthBucket.get -> string?
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthBucket.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.HealthProbeInterval.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.get -> string!
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Region.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.S3ObjectStorageOptions() -> void
@@ -29,6 +33,7 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.init -> void
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConnectionBinding = "objectstorage" -> string!
+const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.HealthName = "objectstorage.s3.connection" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConfigurationSection = "XiHan:ObjectStorage:S3" -> string!
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.GetHashCode() -> int

@@ -97,4 +97,7 @@ public static class KernelErrors
 
     /// <summary>操作登记表已满。</summary>
     public const string OperationRegistryFull = "KERNEL_OPERATION_002";
+
+    /// <summary>健康探针失败（抛出或超时）；条目 Degraded，应用仍在服务。</summary>
+    public const string HealthProbeFailed = "KERNEL_UNAVAILABLE_005";
 }

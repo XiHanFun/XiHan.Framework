@@ -5,6 +5,7 @@
   "persistence.entity.stale_stamp": "ID '{id}' の '{entity}' の同時実行スタンプが古くなっています。",
   "persistence.entity.tenant_required": "エンティティ '{entity}' はマルチテナントですが、現在の呼び出しにテナントがありません。",
   "persistence.store.capacity_exceeded": "'{entity}' のインメモリテーブルは容量上限 {capacity} に達しました。",
+  "persistence.store.unavailable": "リレーショナルデータベースに接続できません。",
   "persistence.unit_of_work.concurrency_conflict": "コミット中に楽観的同時実行の競合が発生しました: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' は {count} 件のドメインイベントを記録しましたが、ドメインイベントディスパッチャーが登録されていません。",
   "persistence.unit_of_work.read_only": "読み取り専用の作業単位は書き込みを受け付けません。"

@@ -16,11 +16,16 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 内存多租户的能力包入口：默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。
+/// 内存多租户的能力包入口：默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。健康项 <see cref="HealthName"/> 在租户存储满时 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMultiTenancyFeature : IFeature
 {
+    /// <summary>
+    /// 健康项名：租户存储是否还有余量。
+    /// </summary>
+    public const string HealthName = "multitenancy.inmemory.capacity";
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {
@@ -41,7 +46,7 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         {
             Pipeline = [new PipelineContribution(typeof(TenantResolutionMiddleware).FullName!, PipelineStage.Tenant)],
             Config = new ConfigContribution("XiHan:MultiTenancy"),
-            Health = ["multitenancy.inmemory.capacity"],
+            Health = [HealthName],
         },
         Entry = typeof(InMemoryMultiTenancyFeature).FullName,
     };
@@ -56,6 +61,8 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<InMemoryTenantStore>();
         context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+        // 存储自己就是健康项的贡献者：直接看租户数与容量
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
         // 解析器的注册顺序就是解析顺序：先信已认证主体的声明，再看调用方自报的 Baggage，防止自报租户覆盖身份里的租户
         context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
         context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();

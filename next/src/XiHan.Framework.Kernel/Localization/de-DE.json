@@ -3,6 +3,7 @@
   "kernel.feature.start_failed": "Das Feature '{id}' konnte nicht gestartet werden: {reason}",
   "kernel.feature.stop_failed": "Das Feature '{id}' konnte nicht gestoppt werden: {reason}",
   "kernel.feature.stop_timeout": "Das Feature '{id}' hat beim Stoppen die Zeitüberschreitung erreicht.",
+  "kernel.health.probe_failed": "Die Zustandsprüfung '{name}' ist fehlgeschlagen: {reason}",
   "kernel.hosting.not_serving": "Die Anwendung befindet sich im Zustand {state} und nimmt keine Anfragen an.",
   "kernel.invocation.cancelled": "Der Aufruf wurde abgebrochen.",
   "kernel.invocation.deadline_before_start": "Der Aufruf hat seine Frist bereits vor dem Start überschritten.",

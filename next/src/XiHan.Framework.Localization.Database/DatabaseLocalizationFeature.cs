@@ -17,10 +17,16 @@ namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
 /// 数据库本地化的能力包入口：提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。
+/// 健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseLocalizationFeature : IHostedFeature
 {
+    /// <summary>
+    /// 健康项名：翻译最近一次加载是否成功。
+    /// </summary>
+    public const string HealthName = "localization.database.translations";
+
     /// <summary>
     /// 启动后保存的加载器，供停止时使用。
     /// </summary>
@@ -42,7 +48,11 @@ public sealed class DatabaseLocalizationFeature : IHostedFeature
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
         ],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Localization") },
+        Contributes = new Contributions
+        {
+            Config = new ConfigContribution("XiHan:Localization"),
+            Health = [HealthName],
+        },
         Entry = typeof(DatabaseLocalizationFeature).FullName,
     };
 
@@ -60,6 +70,8 @@ public sealed class DatabaseLocalizationFeature : IHostedFeature
         context.Services.TryAddScoped<MessageTranslationStore>();
         context.Services.AddSingleton<DatabaseMessageLocalizer>();
         context.Services.AddSingleton<MessageTranslationLoader>();
+        // 加载器自己就是健康项的贡献者：它最清楚最近一次加载成功与否，不另起探测循环
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<MessageTranslationLoader>());
         if (context.Node.IsSelectedFor(LocalizationCapabilities.Resources))
         {
             // 同一个实例同时作为本地化器（显式区域）与解析器（环境作用域）

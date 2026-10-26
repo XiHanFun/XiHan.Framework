@@ -17,6 +17,8 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StopAsync(System
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? other) -> bool
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.InitTables.get -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.InitTables.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.SqlSugarPersistenceOptions() -> void
@@ -48,6 +50,7 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.TenantId.get -> string?
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Default = "default" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Shard = "shard" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ConnectionBinding = "db" -> string!
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.HealthName = "persistence.sqlsugar.database" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ConfigurationSection = "XiHan:Persistence:SqlSugar" -> string!
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.GetHashCode() -> int

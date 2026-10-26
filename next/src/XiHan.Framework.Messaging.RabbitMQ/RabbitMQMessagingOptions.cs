@@ -45,7 +45,16 @@ public sealed record RabbitMQMessagingOptions
     } = 16;
 
     /// <summary>
-    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>QueuePrefix</c>、<c>PrefetchCount</c>。
+    /// 健康项 <c>messaging.rabbitmq.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// </summary>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </summary>
     public static RabbitMQMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -66,6 +75,14 @@ public sealed record RabbitMQMessagingOptions
             options = ushort.TryParse(prefetch, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count >= 1
                 ? options with { PrefetchCount = count }
                 : throw new ArgumentException($"{ConfigurationSection}:PrefetchCount must be an integer between 1 and 65535, but was '{prefetch}'.");
+        }
+
+        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
+        if (probe is not null)
+        {
+            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
         }
 
         return options;

@@ -9,6 +9,8 @@
 - 字节存储写入复制字节，读取返回不可修改的视图；类型化缓存（`ICache` / `ISharedCache`）直接存对象引用、不序列化，调用方不得修改取回的对象。
 - 被选中提供 `caching.distributed` 时注册 `ISharedCache`、`ICacheStore`（字节级契约，指向同一个存储）、分布式锁与幂等中间件；当另一个显式 Provider（如 `Caching.Redis`）被选中提供 `caching.distributed` 时，本包只注册 `ICache`。
 
+- 健康项 `caching.inmemory.capacity`（`InMemoryCacheHealthContributor`，同步计算）：两张表任一条目数达到 `MaxEntries` 即 Degraded（`CACHING_UNAVAILABLE_002`，缓存仍可用但每次写入都在淘汰），否则 Ready。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Caching.Abstractions`。
