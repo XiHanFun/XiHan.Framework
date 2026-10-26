@@ -27,3 +27,4 @@
 | [0021](0021-撤掉4.x迁移规则集.md) | 撤掉 4.x 迁移规则集：4.x 单独维护，`xihan migrate <来源版本>` 只保留通用机制、规则集为空，P5 不再要求 4.x 迁移指南 | 已采纳 |
 | [0022](0022-SqlSugar多库.md) | SqlSugar 多库：作用域内的客户端带默认与 `shard` 两个连接，实体按 `IEntityConnectionSelector` 落点（`[Tenant]` → `IMultiTenant` 落分片 → 默认），工作单元经 `AsTenant()` 跨连接提交或回滚 | 已采纳 |
 | [0023](0023-SqlSugar分表.md) | SqlSugar 分表：仓储按实体的 `[SplitTable]` 自动走分表入口，`EntityQuery<T>.Within` 是 Provider 无关的时间范围提示（只限定扫描的表，不过滤行） | 已采纳 |
+| [0024](0024-Validate阶段契约校验.md) | Validate 阶段契约校验：内核自带 JSON Schema 子集校验器按请求 Schema 拒绝载荷、解码后执行 `IValidatableObject`；DataAnnotations 由生成器折进 Schema；HTTP 宿主进管道前绑定载荷 | 已采纳 |

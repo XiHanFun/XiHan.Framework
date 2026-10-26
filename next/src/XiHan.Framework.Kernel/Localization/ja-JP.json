@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "操作 '{id}' のペイロードが不正です: {reason}",
   "kernel.operation.no_response": "操作 '{id}' は完了しましたが、応答を生成しませんでした。",
   "kernel.operation.registry_full": "操作レジストリは容量上限 {capacity} に達しました。",
+  "kernel.operation.request_invalid": "操作 '{id}' のリクエストが無効です：{reason}",
+  "kernel.operation.schema_violation": "操作 '{id}' のリクエストが契約に一致しません：{reason}",
   "kernel.operation.type_mismatch": "操作 '{id}' は '{expected}' を処理しますが、'{actual}' が渡されました。",
   "kernel.operation.unknown": "操作 '{id}' は登録されていません。",
   "kernel.permission.duplicate": "権限コード '{code}' は既に登録されています。",

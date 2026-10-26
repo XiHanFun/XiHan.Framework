@@ -8,6 +8,9 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// <summary>
 /// 从类型符号生成 JSON Schema（draft 2020-12）：基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，
 /// 对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。
+/// 属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），
+/// <c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），
+/// <c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。
 /// </summary>
 internal sealed class JsonSchemaBuilder
 {
@@ -71,17 +74,17 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 某类型的 Schema 片段；<paramref name="inline"/> 为 <see langword="true"/> 时对象直接展开而不是进 <c>$defs</c>。
+    /// 某类型的 Schema 片段；<paramref name="inline"/> 为 <see langword="true"/> 时对象直接展开而不是进 <c>$defs</c>；<paramref name="forceNonNull"/> 为 <see langword="true"/> 时（<c>[Required]</c>）忽略类型的可空性。
     /// </summary>
-    private string SchemaOf(ITypeSymbol type, bool nullable, bool inline = false)
+    private string SchemaOf(ITypeSymbol type, bool nullable, bool inline = false, bool forceNonNull = false)
     {
-        // 可空注解或 Nullable<T> 都允许 null；类型本身的 Schema 在内层决定
+        // 可空注解或 Nullable<T> 都允许 null；类型本身的 Schema 在内层决定；[Required] 的属性不允许 null
         if (type is INamedTypeSymbol { IsGenericType: true } nullableValue && nullableValue.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
         {
-            return SchemaOf(nullableValue.TypeArguments[0], nullable: true, inline);
+            return SchemaOf(nullableValue.TypeArguments[0], nullable: !forceNonNull, inline);
         }
 
-        nullable |= type.NullableAnnotation == NullableAnnotation.Annotated && !type.IsValueType;
+        nullable |= !forceNonNull && type.NullableAnnotation == NullableAnnotation.Annotated && !type.IsValueType;
         var json = new JsonText().StartObject();
         switch (type)
         {
@@ -196,8 +199,9 @@ internal sealed class JsonSchemaBuilder
         foreach (var property in Properties(type))
         {
             var name = PropertyName(property);
-            json.Raw(name, SchemaOf(property.Type, nullable: false));
-            if (IsRequired(type, property))
+            var constraints = PropertyConstraints.Collect(type, property);
+            json.Raw(name, constraints.ApplyTo(SchemaOf(property.Type, nullable: false, forceNonNull: constraints.Required), property.Type));
+            if (constraints.Required || IsRequired(type, property))
             {
                 required.Add(name);
             }

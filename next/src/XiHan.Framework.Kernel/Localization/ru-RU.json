@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "Полезная нагрузка операции '{id}' недопустима: {reason}",
   "kernel.operation.no_response": "Операция '{id}' завершилась, не создав ответа.",
   "kernel.operation.registry_full": "Реестр операций достиг предела ёмкости {capacity}.",
+  "kernel.operation.request_invalid": "Запрос операции '{id}' недопустим: {reason}",
+  "kernel.operation.schema_violation": "Запрос операции '{id}' не соответствует её контракту: {reason}",
   "kernel.operation.type_mismatch": "Операция '{id}' обрабатывает '{expected}', но передано '{actual}'.",
   "kernel.operation.unknown": "Операция '{id}' не зарегистрирована.",
   "kernel.permission.duplicate": "Код разрешения '{code}' уже зарегистрирован.",

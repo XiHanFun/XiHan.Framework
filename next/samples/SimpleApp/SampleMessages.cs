@@ -16,4 +16,7 @@ public static class SampleMessages
 
     /// <summary>MCP tool <c>orders_list</c> 的描述。</summary>
     public const string ListOrdersDescription = "orders.list.description";
+
+    /// <summary>订单名称只有空白；<c>PlaceOrderRequest</c> 自校验的文案。</summary>
+    public const string OrderNameBlank = "samples.order.name_blank";
 }

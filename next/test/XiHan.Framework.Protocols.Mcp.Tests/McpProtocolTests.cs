@@ -249,15 +249,15 @@ public sealed class McpProtocolTests
         Assert.Equal("orders.list", listed.GetProperty("structuredContent").GetProperty("operation").GetString());
 
         // 操作失败是 tool 结果而不是协议错误
-        var failed = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"name":"fail"}}"""));
+        var failed = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"name":"fail","page":1}}"""));
         Assert.True(failed.GetProperty("isError").GetBoolean());
         Assert.StartsWith("ORDERS_CONFLICT_001: ", failed.GetProperty("content")[0].GetProperty("text").GetString(), StringComparison.Ordinal);
         Assert.False(failed.TryGetProperty("structuredContent", out _));
 
-        // 载荷不合法由内核判定，同样是 tool 结果
+        // 参数不符合 tool 公布的 Schema（page 要整数）由内核 Validate 阶段判定，同样是 tool 结果
         var invalid = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"page":"many"}}"""));
         Assert.True(invalid.GetProperty("isError").GetBoolean());
-        Assert.StartsWith("KERNEL_VALIDATION_001: ", invalid.GetProperty("content")[0].GetProperty("text").GetString(), StringComparison.Ordinal);
+        Assert.StartsWith("KERNEL_VALIDATION_003: ", invalid.GetProperty("content")[0].GetProperty("text").GetString(), StringComparison.Ordinal);
 
         // 协议错误：未登记的 tool（含只给 HTTP 的与内部的）、非对象参数、缺 name
         await AssertErrorAsync(client, Rpc("tools/call", """{"name":"orders_secret"}"""), HttpStatusCode.OK, -32602, McpErrors.UnknownTool);
@@ -271,7 +271,7 @@ public sealed class McpProtocolTests
     {
         var (app, client) = await StartAsync();
         await using var host = app;
-        var create = Rpc("tools/call", """{"name":"orders_create","arguments":{"name":"widget"}}""");
+        var create = Rpc("tools/call", """{"name":"orders_create","arguments":{"name":"widget","page":1}}""");
 
         var anonymous = await ResultOf(client, create);
         Assert.True(anonymous.GetProperty("isError").GetBoolean());

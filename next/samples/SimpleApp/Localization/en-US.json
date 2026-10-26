@@ -1,5 +1,6 @@
 {
   "orders.create.description": "Place an order with a name and an amount; requires the orders.write permission.",
   "orders.list.description": "List the orders of the current tenant in creation order; requires the orders.read permission.",
+  "samples.order.name_blank": "The order name must not be blank.",
   "samples.resource.missing": "The sample resource does not exist."
 }

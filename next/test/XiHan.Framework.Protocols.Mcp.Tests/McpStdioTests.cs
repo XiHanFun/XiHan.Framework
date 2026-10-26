@@ -53,7 +53,7 @@ public sealed class McpStdioTests
                 """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
                 string.Empty,
                 """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""",
-                """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7"}}}""",
+                """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1}}}""",
                 """{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"x"}}}""",
                 "not json"));
             var output = new StringWriter();

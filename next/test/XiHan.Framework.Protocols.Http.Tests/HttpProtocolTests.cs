@@ -209,14 +209,15 @@ public sealed class HttpProtocolTests
         await using var _ = app;
         Assert.Equal(OrdersFeature.HttpOperations.Length, mapped);
 
-        var created = await client.PostAsync("/orders", Json("""{"name":"widget"}"""));
+        // orders.create 与 orders.get 带 Schema（page 必填），Validate 阶段会校验，所以请求都带上 page
+        var created = await client.PostAsync("/orders?page=1", Json("""{"name":"widget"}"""));
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         Assert.Equal("application/json", created.Content.Headers.ContentType!.MediaType);
         var reply = await ReplyOf(created);
         Assert.Equal("orders.create", reply.Operation);
         Assert.Equal("widget", reply.Name);
 
-        var got = await client.GetAsync("/orders/42");
+        var got = await client.GetAsync("/orders/42?page=1");
         Assert.Equal(HttpStatusCode.OK, got.StatusCode);
         Assert.Equal(("orders.get", "42"), (await ReplyOf(got)).Let(static r => (r.Operation, r.Id)));
 
@@ -247,7 +248,7 @@ public sealed class HttpProtocolTests
 
         Assert.Equal("KERNEL_VALIDATION_001", await CodeOf(await client.PostAsync("/orders", Json("not json"))));
         Assert.Equal("KERNEL_VALIDATION_001", await CodeOf(await client.PostAsync("/orders", Json("[1]"))));
-        var rejected = await client.PostAsync("/orders", Json("""{"name":"fail"}"""));
+        var rejected = await client.PostAsync("/orders?page=1", Json("""{"name":"fail"}"""));
         Assert.Equal(HttpStatusCode.Conflict, rejected.StatusCode);
         Assert.Equal("ORDERS_CONFLICT_001", await CodeOf(rejected));
 
@@ -303,7 +304,7 @@ public sealed class HttpProtocolTests
         var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));
         await using var _ = app;
 
-        Assert.Equal("orders.get", (await ReplyOf(await client.GetAsync("/api/orders/1"))).Operation);
+        Assert.Equal("orders.get", (await ReplyOf(await client.GetAsync("/api/orders/1?page=1"))).Operation);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/orders/1")).StatusCode);
     }
 }

@@ -426,6 +426,17 @@ XiHan.Framework.Kernel.Security.TenantContext.DisplayName.init -> void
 XiHan.Framework.Kernel.Security.TenantContext.Equals(XiHan.Framework.Kernel.Security.TenantContext? other) -> bool
 XiHan.Framework.Kernel.Security.TenantContext.Id.get -> string!
 XiHan.Framework.Kernel.Security.TenantContext.TenantContext(string! Id) -> void
+XiHan.Framework.Kernel.Validation.JsonSchemaValidator
+XiHan.Framework.Kernel.Validation.SchemaViolation
+XiHan.Framework.Kernel.Validation.SchemaViolation.<Clone>$() -> XiHan.Framework.Kernel.Validation.SchemaViolation!
+XiHan.Framework.Kernel.Validation.SchemaViolation.Deconstruct(out string! Path, out string! Reason) -> void
+XiHan.Framework.Kernel.Validation.SchemaViolation.Equals(XiHan.Framework.Kernel.Validation.SchemaViolation? other) -> bool
+XiHan.Framework.Kernel.Validation.SchemaViolation.Path.get -> string!
+XiHan.Framework.Kernel.Validation.SchemaViolation.Reason.get -> string!
+XiHan.Framework.Kernel.Validation.SchemaViolation.SchemaViolation(string! Path, string! Reason) -> void
+XiHan.Framework.Kernel.Validation.ValidationMiddleware
+XiHan.Framework.Kernel.Validation.ValidationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Kernel.Validation.ValidationMiddleware.ValidationMiddleware() -> void
 abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.DecodeRequest(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
 abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.EncodeResponse(object! response) -> System.ReadOnlyMemory<byte>
 abstract XiHan.Framework.Kernel.Operations.OperationDescriptor.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext! context, object! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<object!>>
@@ -464,6 +475,8 @@ const XiHan.Framework.Kernel.KernelErrors.OperationTypeMismatch = "KERNEL_VALIDA
 const XiHan.Framework.Kernel.KernelErrors.PermissionRegistryFull = "KERNEL_SECURITY_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineCycle = "KERNEL_PIPELINE_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.PipelineRegistration = "KERNEL_PIPELINE_003" -> string!
+const XiHan.Framework.Kernel.KernelErrors.RequestInvalid = "KERNEL_VALIDATION_004" -> string!
+const XiHan.Framework.Kernel.KernelErrors.SchemaViolation = "KERNEL_VALIDATION_003" -> string!
 const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownOperation = "KERNEL_NOTFOUND_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
@@ -486,11 +499,15 @@ const XiHan.Framework.Kernel.KernelMessages.OperationNoResponse = "kernel.operat
 const XiHan.Framework.Kernel.KernelMessages.OperationRegistryFull = "kernel.operation.registry_full" -> string!
 const XiHan.Framework.Kernel.KernelMessages.OperationTypeMismatch = "kernel.operation.type_mismatch" -> string!
 const XiHan.Framework.Kernel.KernelMessages.PermissionRegistryFull = "kernel.permission.registry_full" -> string!
+const XiHan.Framework.Kernel.KernelMessages.RequestInvalid = "kernel.operation.request_invalid" -> string!
+const XiHan.Framework.Kernel.KernelMessages.SchemaViolation = "kernel.operation.schema_violation" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnhandledException = "kernel.invocation.unhandled_exception" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnknownOperation = "kernel.operation.unknown" -> string!
 const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Security.PermissionRegistry.DefaultCapacity = 10000 -> int
+const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxDepth = 64 -> int
+const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxViolations = 32 -> int
 override XiHan.Framework.Kernel.Capabilities.ResolvedNode.ToString() -> string!
 override XiHan.Framework.Kernel.Diagnostics.AuditEvent.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Diagnostics.AuditEvent.GetHashCode() -> int
@@ -556,6 +573,9 @@ override XiHan.Framework.Kernel.Security.SecurityContext.ToString() -> string!
 override XiHan.Framework.Kernel.Security.TenantContext.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Security.TenantContext.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.TenantContext.ToString() -> string!
+override XiHan.Framework.Kernel.Validation.SchemaViolation.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Validation.SchemaViolation.GetHashCode() -> int
+override XiHan.Framework.Kernel.Validation.SchemaViolation.ToString() -> string!
 static XiHan.Framework.Kernel.Capabilities.CapabilityResolver.Resolve(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Manifests.Manifest!>! manifests, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? providerSelections = null) -> XiHan.Framework.Kernel.Capabilities.ResolvedGraph!
 static XiHan.Framework.Kernel.Capabilities.ManifestReader.Read(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
 static XiHan.Framework.Kernel.Capabilities.ManifestReader.ReadFile(string! path) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
@@ -586,9 +606,11 @@ static XiHan.Framework.Kernel.KernelCapabilities.Manifest.get -> XiHan.Framework
 static XiHan.Framework.Kernel.Operations.OperationContract.operator !=(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationContract.operator ==(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperation(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperationPayload(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.GetOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperation(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> void
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationPayload(this XiHan.Framework.Primitives.InvocationContext! context, System.ReadOnlyMemory<byte> payload) -> void
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context, object! request) -> void
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context, object! response) -> void
 static XiHan.Framework.Kernel.Operations.OperationRequest.operator !=(XiHan.Framework.Kernel.Operations.OperationRequest? left, XiHan.Framework.Kernel.Operations.OperationRequest? right) -> bool
@@ -633,6 +655,9 @@ static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetSecurity(thi
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetTenant(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.TenantContext? tenant) -> void
 static XiHan.Framework.Kernel.Security.TenantContext.operator !=(XiHan.Framework.Kernel.Security.TenantContext? left, XiHan.Framework.Kernel.Security.TenantContext? right) -> bool
 static XiHan.Framework.Kernel.Security.TenantContext.operator ==(XiHan.Framework.Kernel.Security.TenantContext? left, XiHan.Framework.Kernel.Security.TenantContext? right) -> bool
+static XiHan.Framework.Kernel.Validation.JsonSchemaValidator.Validate(System.Text.Json.JsonElement schema, System.Text.Json.JsonElement instance) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Validation.SchemaViolation!>!
+static XiHan.Framework.Kernel.Validation.SchemaViolation.operator !=(XiHan.Framework.Kernel.Validation.SchemaViolation? left, XiHan.Framework.Kernel.Validation.SchemaViolation? right) -> bool
+static XiHan.Framework.Kernel.Validation.SchemaViolation.operator ==(XiHan.Framework.Kernel.Validation.SchemaViolation? left, XiHan.Framework.Kernel.Validation.SchemaViolation? right) -> bool
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask

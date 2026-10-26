@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "Die Nutzlast der Operation '{id}' ist ungültig: {reason}",
   "kernel.operation.no_response": "Die Operation '{id}' wurde abgeschlossen, ohne eine Antwort zu erzeugen.",
   "kernel.operation.registry_full": "Die Operationsregistrierung hat ihre Kapazität von {capacity} erreicht.",
+  "kernel.operation.request_invalid": "Die Anfrage der Operation '{id}' ist ungültig: {reason}",
+  "kernel.operation.schema_violation": "Die Anfrage der Operation '{id}' entspricht nicht ihrem Vertrag: {reason}",
   "kernel.operation.type_mismatch": "Die Operation '{id}' verarbeitet '{expected}', übergeben wurde jedoch '{actual}'.",
   "kernel.operation.unknown": "Die Operation '{id}' ist nicht registriert.",
   "kernel.permission.duplicate": "Der Berechtigungscode '{code}' ist bereits registriert.",

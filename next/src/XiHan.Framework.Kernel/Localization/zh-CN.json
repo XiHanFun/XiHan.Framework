@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "操作 '{id}' 的载荷不合法：{reason}",
   "kernel.operation.no_response": "操作 '{id}' 已完成，但没有产生响应。",
   "kernel.operation.registry_full": "操作登记表已达到容量上限 {capacity}。",
+  "kernel.operation.request_invalid": "操作 '{id}' 的请求无效：{reason}",
+  "kernel.operation.schema_violation": "操作 '{id}' 的请求不符合契约：{reason}",
   "kernel.operation.type_mismatch": "操作 '{id}' 处理的是 '{expected}'，但传入的是 '{actual}'。",
   "kernel.operation.unknown": "操作 '{id}' 未登记。",
   "kernel.permission.duplicate": "权限码 '{code}' 已登记。",

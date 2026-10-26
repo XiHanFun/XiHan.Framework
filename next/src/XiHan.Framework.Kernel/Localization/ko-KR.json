@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "작업 '{id}'의 페이로드가 올바르지 않습니다: {reason}",
   "kernel.operation.no_response": "작업 '{id}'이(가) 완료되었지만 응답을 생성하지 않았습니다.",
   "kernel.operation.registry_full": "작업 레지스트리가 용량 한도 {capacity}에 도달했습니다.",
+  "kernel.operation.request_invalid": "작업 '{id}'의 요청이 유효하지 않습니다: {reason}",
+  "kernel.operation.schema_violation": "작업 '{id}'의 요청이 계약과 일치하지 않습니다: {reason}",
   "kernel.operation.type_mismatch": "작업 '{id}'은(는) '{expected}'을(를) 처리하지만 '{actual}'이(가) 제공되었습니다.",
   "kernel.operation.unknown": "작업 '{id}'이(가) 등록되지 않았습니다.",
   "kernel.permission.duplicate": "권한 코드 '{code}'이(가) 이미 등록되었습니다.",

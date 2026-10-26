@@ -1,5 +1,6 @@
 {
   "orders.create.description": "按名称与金额下单；需要 orders.write 权限。",
   "orders.list.description": "按创建顺序列出当前租户的订单；需要 orders.read 权限。",
+  "samples.order.name_blank": "订单名称不能只有空白。",
   "samples.resource.missing": "示例资源不存在。"
 }
