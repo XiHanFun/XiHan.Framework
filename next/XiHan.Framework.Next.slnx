@@ -46,6 +46,7 @@
     <Project Path="src/XiHan.Framework.Scheduling.Kubernetes/XiHan.Framework.Scheduling.Kubernetes.csproj" />
     <Project Path="src/XiHan.Framework.Scheduling.Database/XiHan.Framework.Scheduling.Database.csproj" />
     <Project Path="src/XiHan.Framework.Auditing.InMemory/XiHan.Framework.Auditing.InMemory.csproj" />
+    <Project Path="src/XiHan.Framework.Auditing.Database/XiHan.Framework.Auditing.Database.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Database/XiHan.Framework.Workflow.Database.csproj" />
     <Project Path="src/XiHan.Framework.AI.OpenAI/XiHan.Framework.AI.OpenAI.csproj" />
@@ -143,6 +144,7 @@
     <Project Path="test/XiHan.Framework.Configuration.Abstractions.Tests/XiHan.Framework.Configuration.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.Abstractions.Tests/XiHan.Framework.Auditing.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Auditing.InMemory.Tests/XiHan.Framework.Auditing.InMemory.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Auditing.Database.Tests/XiHan.Framework.Auditing.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Abstractions.Tests/XiHan.Framework.Workflow.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.InMemory.Tests/XiHan.Framework.Workflow.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Workflow.Database.Tests/XiHan.Framework.Workflow.Database.Tests.csproj" />
