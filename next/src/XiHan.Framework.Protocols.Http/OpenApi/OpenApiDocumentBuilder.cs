@@ -1,20 +1,27 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.Routing;
+using XiHan.Framework.Security.Abstractions.Authorization;
 
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 从操作登记表生成 OpenAPI 3.1 文档：路径与方法按 <see cref="HttpProtocolOptions.RouteFor"/>，参数与请求体来自 <see cref="OperationSchema"/>，
-/// 嵌套定义提升到 <c>components/schemas</c>，失败响应统一为 RFC 9457 Problem Details。没有 Schema 的操作只发布路径与操作 ID。
-/// 契约的授权要求以扩展字段发布：操作上的 <c>x-xihan-permission</c>（权限码）或 <c>x-xihan-policy</c>（策略名），
-/// 以及 <c>components</c> 下按权限码索引的 <c>x-xihan-permissions</c>（权限定义）。
+/// 生成 OpenAPI 3.1 文档：操作按 <see cref="HttpProtocolOptions.RouteFor"/> 得到路径与方法，参数与请求体来自 <see cref="OperationSchema"/>，
+/// 嵌套定义提升到 <c>components/schemas</c>，失败响应统一为 RFC 9457 Problem Details；没有 Schema 的操作只发布路径与操作 ID。
+/// 授权要求以扩展字段发布：操作上的 <c>x-xihan-permission</c>（权限码）或 <c>x-xihan-policy</c>（策略名），以及 <c>components</c> 下按权限码索引的 <c>x-xihan-permissions</c>。
+/// 装配了 Bearer 认证时发布 <c>components.securitySchemes.bearer</c> 与全局 <c>security</c>，没有授权要求的操作标 <c>security: []</c>。
+/// 操作的 <c>summary</c> 由 <see cref="OpenApiDocumentSource.Describe"/> 按区域给出。
+/// 普通端点（见 <see cref="EndpointReader"/>）也进文档：路由参数、端点名 / 摘要 / 说明 / 标签、端点级授权要求、<c>Accepts</c> / <c>Produces</c> 的内容类型；
+/// JSON 类型不另推导 Schema，只能引用已登记操作的根 Schema（显式 <see cref="OperationSchemaReference"/> 或按类型匹配），被引用的根 Schema 提升到 <c>components/schemas</c>，引用不到即 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static partial class OpenApiDocumentBuilder
@@ -30,7 +37,12 @@ public static partial class OpenApiDocumentBuilder
     private static readonly string[] _bodyMethods = ["POST", "PUT", "PATCH"];
 
     /// <summary>
-    /// 生成文档的 UTF-8 JSON。
+    /// <c>securitySchemes</c> 里 Bearer 方案的名字。
+    /// </summary>
+    private const string BearerSchemeName = "bearer";
+
+    /// <summary>
+    /// 生成文档的 UTF-8 JSON；标题与版本给定，其余（<c>servers</c>、认证方案、普通端点、摘要）都不带。
     /// </summary>
     /// <param name="registry">操作登记表。</param>
     /// <param name="options">HTTP 选项（路由覆盖与前缀）。</param>
@@ -38,39 +50,34 @@ public static partial class OpenApiDocumentBuilder
     /// <param name="title">文档标题，通常是应用名。</param>
     /// <param name="version">文档版本。</param>
     public static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, PermissionRegistry? permissions, string title, string version)
-    {
-        ArgumentNullException.ThrowIfNull(registry);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        ArgumentException.ThrowIfNullOrWhiteSpace(version);
+        => Build(new OpenApiDocumentSource(registry, options, permissions) { Title = title, Version = version });
 
-        var components = new SortedDictionary<string, JsonDocument>(StringComparer.Ordinal);
-        var documents = new List<JsonDocument>();
-        var referencedPermissions = new SortedSet<string>(StringComparer.Ordinal);
+    /// <summary>
+    /// 生成文档的 UTF-8 JSON。
+    /// </summary>
+    public static byte[] Build(OpenApiDocumentSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var context = new BuildContext(source);
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
         {
             writer.WriteStartObject();
             writer.WriteString("openapi", "3.1.0");
             writer.WriteStartObject("info");
-            writer.WriteString("title", title);
-            writer.WriteString("version", version);
+            writer.WriteString("title", source.Title);
+            writer.WriteString("version", source.Version);
             writer.WriteEndObject();
+            WriteServers(writer, source.Servers);
 
             writer.WriteStartObject("paths");
-            // 同一路径模板下可能有多个方法（GET /orders/{id} 与 PUT /orders/{id}），按模板分组后再按方法写
-            var byTemplate = registry.ExposedTo(Expose.Http)
-                .Where(static d => d.Contract.Stability != Stability.Internal)
-                .Select(d => (Descriptor: d, Route: options.RouteFor(d)))
-                .GroupBy(static e => e.Route.Template, StringComparer.Ordinal)
-                .OrderBy(static g => g.Key, StringComparer.Ordinal);
-            foreach (var group in byTemplate)
+            foreach (var (template, methods) in context.Paths)
             {
-                writer.WriteStartObject(group.Key);
-                foreach (var (descriptor, route) in group.OrderBy(static e => e.Route.Method, StringComparer.Ordinal))
+                writer.WriteStartObject(template);
+                foreach (var (method, write) in methods)
                 {
-                    writer.WriteStartObject(route.Method.ToLowerInvariant());
-                    WriteOperation(writer, descriptor, route, components, documents, referencedPermissions);
+                    writer.WriteStartObject(method.ToLowerInvariant());
+                    write(writer);
                     writer.WriteEndObject();
                 }
 
@@ -82,40 +89,96 @@ public static partial class OpenApiDocumentBuilder
             writer.WriteStartObject("components");
             writer.WriteStartObject("schemas");
             WriteProblemDetails(writer);
-            foreach (var (name, schema) in components)
+            foreach (var (name, schema) in context.Components)
             {
                 writer.WritePropertyName(name);
                 schema.RootElement.WriteTo(writer);
             }
 
             writer.WriteEndObject();
-            WritePermissions(writer, referencedPermissions, permissions);
+            if (context.Bearer)
+            {
+                // 权限码不是 OAuth scope、策略名更不是，所以 security 只挂方案不带 scope；权限与策略仍只走 x-xihan-* 扩展
+                writer.WriteStartObject("securitySchemes");
+                writer.WriteStartObject(BearerSchemeName);
+                writer.WriteString("type", "http");
+                writer.WriteString("scheme", "bearer");
+                writer.WriteString("bearerFormat", "JWT");
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            WritePermissions(writer, context.ReferencedPermissions, source.Permissions);
             writer.WriteEndObject();
+            if (context.Bearer)
+            {
+                WriteSecurity(writer, required: true);
+            }
+
             writer.WriteEndObject();
         }
 
-        foreach (var document in documents)
-        {
-            document.Dispose();
-        }
-
-        foreach (var document in components.Values)
-        {
-            document.Dispose();
-        }
-
+        context.Dispose();
         return buffer.ToArray();
     }
 
     /// <summary>
-    /// 写一个操作对象：操作 ID、标签、稳定性与授权要求的扩展字段、路径与查询参数、请求体、响应。被引用的权限码记入 <paramref name="referencedPermissions"/>。
+    /// 写 <c>servers</c>（空列表不写）。
     /// </summary>
-    private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, SortedDictionary<string, JsonDocument> components, List<JsonDocument> documents, SortedSet<string> referencedPermissions)
+    private static void WriteServers(Utf8JsonWriter writer, IReadOnlyList<OpenApiServer> servers)
+    {
+        if (servers.Count == 0)
+        {
+            return;
+        }
+
+        writer.WriteStartArray("servers");
+        foreach (var server in servers)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("url", server.Url);
+            if (server.Description is { } description)
+            {
+                writer.WriteString("description", description);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
+    /// <summary>
+    /// 写 <c>security</c>：要求认证时挂 Bearer 方案，不要求时为空数组（覆盖全局要求）。
+    /// </summary>
+    private static void WriteSecurity(Utf8JsonWriter writer, bool required)
+    {
+        writer.WriteStartArray("security");
+        if (required)
+        {
+            writer.WriteStartObject();
+            writer.WriteStartArray(BearerSchemeName);
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
+    /// <summary>
+    /// 写一个操作对象：操作 ID、标签、摘要、稳定性与授权要求的扩展字段、安全要求、路径与查询参数、请求体、响应。
+    /// </summary>
+    private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, BuildContext context)
     {
         writer.WriteString("operationId", descriptor.Id);
         writer.WriteStartArray("tags");
         writer.WriteStringValue(descriptor.Contract.Resource);
         writer.WriteEndArray();
+        if (context.Source.Describe?.Invoke(descriptor.Id) is { } summary)
+        {
+            writer.WriteString("summary", summary);
+        }
+
         if (descriptor.Contract.Stability != Stability.Stable)
         {
             writer.WriteString("x-xihan-stability", descriptor.Contract.Stability.ToString());
@@ -123,32 +186,30 @@ public static partial class OpenApiDocumentBuilder
 
         // 契约里权限与策略二选一（OperationContract 构造时已校验），都没有则是无授权要求的操作，不写扩展字段。
         // 权限码不是 OAuth scope、策略名更不是，所以不落到标准的 security / securitySchemes，留给认证方案用
-        if (descriptor.Contract.Permission is { } permission)
+        var authorized = WriteAuthorization(writer, descriptor.Contract.Permission, descriptor.Contract.Policy, context);
+        if (context.Bearer && !authorized)
         {
-            writer.WriteString("x-xihan-permission", permission);
-            referencedPermissions.Add(permission);
-        }
-        else if (descriptor.Contract.Policy is { } policy)
-        {
-            writer.WriteString("x-xihan-policy", policy);
+            WriteSecurity(writer, required: false);
         }
 
-        var request = Load(descriptor.Schema?.Request, components, documents);
-        var response = Load(descriptor.Schema?.Response, components, documents);
+        var request = context.Promoted(descriptor, SchemaRole.Request, out var requestName) ? null : context.Load(descriptor.Schema?.Request);
+        var response = context.Promoted(descriptor, SchemaRole.Response, out var responseName) ? null : context.Load(descriptor.Schema?.Response);
+        // 参数要看请求 Schema 的属性：被提升的根也从组件里读
+        var requestForParameters = request ?? (requestName is { } promoted ? context.Component(promoted) : null);
         var pathParameters = PathParameter().Matches(route.Template).Select(static m => m.Groups["name"].Value).ToList();
         var hasBody = _bodyMethods.Contains(route.Method, StringComparer.Ordinal);
-        var required = request is { } r && r.RootElement.TryGetProperty("required", out var requiredArray)
+        var required = requestForParameters is { } r && r.RootElement.TryGetProperty("required", out var requiredArray)
             ? requiredArray.EnumerateArray().Select(static e => e.GetString()!).ToHashSet(StringComparer.Ordinal)
             : [];
 
         writer.WriteStartArray("parameters");
         foreach (var name in pathParameters)
         {
-            WriteParameter(writer, name, "path", required: true, PropertySchema(request, name));
+            WriteParameter(writer, name, "path", required: true, PropertySchema(requestForParameters, name));
         }
 
         // 没有请求体的方法：请求对象里除路由值以外的属性都从查询串绑定
-        if (!hasBody && request is { } queryable && queryable.RootElement.TryGetProperty("properties", out var properties))
+        if (!hasBody && requestForParameters is { } queryable && queryable.RootElement.TryGetProperty("properties", out var properties))
         {
             foreach (var property in properties.EnumerateObject())
             {
@@ -161,33 +222,255 @@ public static partial class OpenApiDocumentBuilder
 
         writer.WriteEndArray();
 
-        if (hasBody && request is { } body)
+        if (hasBody && (request is not null || requestName is not null))
         {
             writer.WriteStartObject("requestBody");
             writer.WriteBoolean("required", true);
             writer.WriteStartObject("content");
             writer.WriteStartObject("application/json");
             writer.WritePropertyName("schema");
-            WriteSchema(writer, body.RootElement);
+            WriteSchemaOrReference(writer, request, requestName);
             writer.WriteEndObject();
             writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
         writer.WriteStartObject("responses");
-        writer.WriteStartObject(HttpRouteConvention.SuccessStatusCode(descriptor.Contract).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        writer.WriteStartObject(HttpRouteConvention.SuccessStatusCode(descriptor.Contract).ToString(CultureInfo.InvariantCulture));
         writer.WriteString("description", "Success");
-        if (response is { } ok)
+        if (response is not null || responseName is not null)
         {
             writer.WriteStartObject("content");
             writer.WriteStartObject("application/json");
             writer.WritePropertyName("schema");
-            WriteSchema(writer, ok.RootElement);
+            WriteSchemaOrReference(writer, response, responseName);
             writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
         writer.WriteEndObject();
+        WriteProblemResponse(writer);
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 写一个普通端点的操作对象：端点名、标签、摘要与说明、授权要求的扩展字段、安全要求、路径参数、按内容类型写的请求体与响应。
+    /// </summary>
+    private static void WriteEndpoint(Utf8JsonWriter writer, EndpointDescription endpoint, BuildContext context)
+    {
+        if (endpoint.Name is { } name)
+        {
+            writer.WriteString("operationId", name);
+        }
+
+        if (endpoint.Tags.Count > 0)
+        {
+            writer.WriteStartArray("tags");
+            foreach (var tag in endpoint.Tags)
+            {
+                writer.WriteStringValue(tag);
+            }
+
+            writer.WriteEndArray();
+        }
+
+        if (endpoint.Summary is { } summary)
+        {
+            writer.WriteString("summary", summary);
+        }
+
+        if (endpoint.Description is { } description)
+        {
+            writer.WriteString("description", description);
+        }
+
+        // 端点级 RequireXiHanPermission 的要求是 permission:<码> 策略，拆回权限码；其余（authenticated、命名策略）按策略名
+        var permission = endpoint.Requirement is { } requirement ? PermissionPolicy.CodeOf(requirement.Policy) : null;
+        var policy = endpoint.Requirement is { } named && permission is null ? named.Policy : null;
+        var authorized = WriteAuthorization(writer, permission, policy, context);
+        if (context.Bearer && !authorized)
+        {
+            WriteSecurity(writer, required: false);
+        }
+
+        writer.WriteStartArray("parameters");
+        foreach (var parameter in PathParameter().Matches(endpoint.Template).Select(static m => m.Groups["name"].Value))
+        {
+            WriteParameter(writer, parameter, "path", required: true, null);
+        }
+
+        writer.WriteEndArray();
+
+        if (endpoint.Accepts is { } accepts && accepts.ContentTypes.Count > 0)
+        {
+            writer.WriteStartObject("requestBody");
+            writer.WriteBoolean("required", !accepts.IsOptional);
+            writer.WriteStartObject("content");
+            foreach (var contentType in accepts.ContentTypes)
+            {
+                writer.WriteStartObject(contentType);
+                writer.WritePropertyName("schema");
+                WriteContentSchema(writer, contentType, accepts.RequestType, endpoint, SchemaRole.Request, context);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+
+        writer.WriteStartObject("responses");
+        foreach (var produces in endpoint.Produces)
+        {
+            writer.WriteStartObject(produces.StatusCode.ToString(CultureInfo.InvariantCulture));
+            writer.WriteString("description", produces.StatusCode is >= 200 and < 300 ? "Success" : "Error");
+            // 有类型没写内容类型的按 JSON；只写了内容类型没有类型的按内容类型写（二进制下载）；两者都没有的没有正文
+            var (contentTypes, type) = ResponseContent(produces);
+            if (contentTypes.Count > 0)
+            {
+                writer.WriteStartObject("content");
+                foreach (var contentType in contentTypes)
+                {
+                    writer.WriteStartObject(contentType);
+                    writer.WritePropertyName("schema");
+                    WriteContentSchema(writer, contentType, type, endpoint, SchemaRole.Response, context);
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        WriteProblemResponse(writer);
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 写授权要求的扩展字段：权限码进 <c>x-xihan-permission</c> 并记入被引用集合，否则策略名进 <c>x-xihan-policy</c>；返回是否有要求。
+    /// </summary>
+    private static bool WriteAuthorization(Utf8JsonWriter writer, string? permission, string? policy, BuildContext context)
+    {
+        if (permission is not null)
+        {
+            writer.WriteString("x-xihan-permission", permission);
+            context.ReferencedPermissions.Add(permission);
+            return true;
+        }
+
+        if (policy is not null)
+        {
+            writer.WriteString("x-xihan-policy", policy);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 按内容类型写请求体 / 响应正文的 Schema：JSON 引用已登记操作的根 Schema（提升到组件），<c>multipart/form-data</c> 是含二进制属性的对象，
+    /// 表单是对象，文本是字符串，其余二进制按内容类型写成 <c>format: binary</c> 的字符串。
+    /// </summary>
+    private static void WriteContentSchema(Utf8JsonWriter writer, string contentType, Type? type, EndpointDescription endpoint, SchemaRole role, BuildContext context)
+    {
+        if (IsJson(contentType))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("$ref", "#/components/schemas/" + context.ResolveJson(endpoint, role, type));
+            writer.WriteEndObject();
+            return;
+        }
+
+        if (contentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+        {
+            // 表单文件：一个文件是 file 属性，多个是 files 数组，其余表单类型只知道是对象
+            writer.WriteStartObject();
+            writer.WriteString("type", "object");
+            if (type is not null && (typeof(IFormFile).IsAssignableFrom(type) || typeof(IFormFileCollection).IsAssignableFrom(type) || type == typeof(IFormFile[])))
+            {
+                var many = type != typeof(IFormFile) && !typeof(IFormFile).IsAssignableFrom(type);
+                writer.WriteStartObject("properties");
+                writer.WriteStartObject(many ? "files" : "file");
+                if (many)
+                {
+                    writer.WriteString("type", "array");
+                    writer.WriteStartObject("items");
+                    WriteBinary(writer);
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    writer.WriteString("type", "string");
+                    writer.WriteString("format", "binary");
+                }
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+            return;
+        }
+
+        if (contentType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "object");
+            writer.WriteEndObject();
+            return;
+        }
+
+        if (type == typeof(string) || contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "string");
+            writer.WriteEndObject();
+            return;
+        }
+
+        writer.WriteStartObject();
+        WriteBinary(writer);
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 响应元数据的内容类型与正文类型：有类型（非 void）没写内容类型的按 JSON，没有类型的按写出的内容类型，两者都没有的没有正文。
+    /// </summary>
+    private static (List<string> ContentTypes, Type? Type) ResponseContent(IProducesResponseTypeMetadata produces)
+    {
+        var type = produces.Type is { } t && t != typeof(void) ? t : null;
+        var contentTypes = produces.ContentTypes.ToList();
+        if (contentTypes.Count == 0 && type is not null)
+        {
+            contentTypes.Add("application/json");
+        }
+
+        return (contentTypes, type);
+    }
+
+    /// <summary>
+    /// 写二进制字符串 Schema 的成员。
+    /// </summary>
+    private static void WriteBinary(Utf8JsonWriter writer)
+    {
+        writer.WriteString("type", "string");
+        writer.WriteString("format", "binary");
+    }
+
+    /// <summary>
+    /// 内容类型是否 JSON（<c>application/json</c> 或 <c>+json</c> 后缀）。
+    /// </summary>
+    private static bool IsJson(string contentType)
+    {
+        var media = contentType.Split(';', 2)[0].Trim();
+        return media.Equals("application/json", StringComparison.OrdinalIgnoreCase) || media.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// 写 <c>default</c> 的 Problem Details 响应。
+    /// </summary>
+    private static void WriteProblemResponse(Utf8JsonWriter writer)
+    {
         writer.WriteStartObject("default");
         writer.WriteString("description", "Error");
         writer.WriteStartObject("content");
@@ -198,34 +481,6 @@ public static partial class OpenApiDocumentBuilder
         writer.WriteEndObject();
         writer.WriteEndObject();
         writer.WriteEndObject();
-        writer.WriteEndObject();
-    }
-
-    /// <summary>
-    /// 解析一段 JSON Schema：把 <c>#/$defs/</c> 引用改写为 <c>#/components/schemas/</c>，并把 <c>$defs</c> 提升到组件。
-    /// </summary>
-    private static JsonDocument? Load(string? schema, SortedDictionary<string, JsonDocument> components, List<JsonDocument> documents)
-    {
-        if (schema is null)
-        {
-            return null;
-        }
-
-        var document = JsonDocument.Parse(schema.Replace("\"#/$defs/", "\"#/components/schemas/", StringComparison.Ordinal));
-        documents.Add(document);
-        if (document.RootElement.TryGetProperty("$defs", out var definitions))
-        {
-            foreach (var definition in definitions.EnumerateObject())
-            {
-                // 同名定义按先到者为准：同一类型在多个操作里出现时内容相同
-                if (!components.ContainsKey(definition.Name))
-                {
-                    components[definition.Name] = JsonDocument.Parse(definition.Value.GetRawText());
-                }
-            }
-        }
-
-        return document;
     }
 
     /// <summary>
@@ -259,6 +514,22 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
+    /// 写内联的 Schema 根对象（去掉 <c>$schema</c> 与已提升的 <c>$defs</c>），或已提升到组件时的 <c>$ref</c>。
+    /// </summary>
+    private static void WriteSchemaOrReference(Utf8JsonWriter writer, JsonDocument? inline, string? componentName)
+    {
+        if (componentName is { } name)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("$ref", "#/components/schemas/" + name);
+            writer.WriteEndObject();
+            return;
+        }
+
+        WriteSchema(writer, inline!.RootElement);
+    }
+
+    /// <summary>
     /// 写 Schema 根对象，去掉 <c>$schema</c> 与已提升的 <c>$defs</c>。
     /// </summary>
     private static void WriteSchema(Utf8JsonWriter writer, JsonElement root)
@@ -280,9 +551,9 @@ public static partial class OpenApiDocumentBuilder
     /// </summary>
     private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions)
     {
-        // 收录范围 = 已发布操作引用到的权限码 ∪ 注册表里登记的全部定义：
-        // 授权界面要列出应用的全部权限，其中有些权限不被任何 HTTP 操作引用（只在 gRPC / MCP 暴露的操作、端点级 RequireXiHanPermission），
-        // 而被操作引用却没登记的权限码也要出现，前端才能按操作的权限码对上条目——这种只写 code，因为没有定义可取
+        // 收录范围 = 已发布操作与普通端点引用到的权限码 ∪ 注册表里登记的全部定义：
+        // 授权界面要列出应用的全部权限，其中有些权限不被任何 HTTP 操作引用（只在 gRPC / MCP 暴露的操作），
+        // 而被引用却没登记的权限码也要出现，前端才能按权限码对上条目——这种只写 code，因为没有定义可取
         var codes = new SortedSet<string>(referencedPermissions, StringComparer.Ordinal);
         if (permissions is not null)
         {
@@ -368,4 +639,243 @@ public static partial class OpenApiDocumentBuilder
     /// </summary>
     [GeneratedRegex(@"\{(?<name>[A-Za-z_][A-Za-z0-9_]*)[^}]*\}")]
     private static partial Regex PathParameter();
+
+    /// <summary>
+    /// 根 Schema 的角色。
+    /// </summary>
+    private enum SchemaRole
+    {
+        /// <summary>请求。</summary>
+        Request,
+
+        /// <summary>响应。</summary>
+        Response,
+    }
+
+    /// <summary>
+    /// 一次生成的工作状态：路径（模板 → 方法 → 写入动作）、组件、被引用的权限码、提升的根 Schema，以及普通端点 JSON 类型到操作根 Schema 的解析。
+    /// 先读普通端点决定哪些根要提升，再写路径，这样操作自己也以 <c>$ref</c> 引用被提升的根，一份 Schema 只出现一次。
+    /// </summary>
+    private sealed class BuildContext : IDisposable
+    {
+        /// <summary>
+        /// 解析过的 Schema 文档，结束时释放。
+        /// </summary>
+        private readonly List<JsonDocument> _documents = [];
+
+        /// <summary>
+        /// 提升到组件的根：操作 ID 与角色 → 组件名。
+        /// </summary>
+        private readonly Dictionary<(string Id, SchemaRole Role), string> _promoted = [];
+
+        /// <summary>
+        /// 发布的操作，按 ID。
+        /// </summary>
+        private readonly Dictionary<string, (OperationDescriptor Descriptor, HttpRoute Route)> _operations;
+
+        /// <summary>
+        /// 创建：挑出发布的操作与普通端点，解析端点的 JSON 引用（决定提升的根），按模板与方法排好写入顺序。
+        /// </summary>
+        public BuildContext(OpenApiDocumentSource source)
+        {
+            Source = source;
+            Bearer = source.AuthenticationSchemes.Any(static s => string.Equals(s, "Bearer", StringComparison.OrdinalIgnoreCase));
+            _operations = source.Registry.ExposedTo(Expose.Http)
+                .Where(static d => d.Contract.Stability != Stability.Internal)
+                .ToDictionary(static d => d.Id, d => (Descriptor: d, Route: source.Options.RouteFor(d)), StringComparer.Ordinal);
+            var endpoints = EndpointReader.Read(source.Endpoints);
+
+            // 先解析端点引用的 JSON 类型：引用不到在这里失败，提升的根在写操作前就定下来
+            foreach (var endpoint in endpoints)
+            {
+                if (endpoint.Accepts is { } accepts && accepts.ContentTypes.Any(IsJson))
+                {
+                    ResolveJson(endpoint, SchemaRole.Request, accepts.RequestType);
+                }
+
+                foreach (var produces in endpoint.Produces)
+                {
+                    var (contentTypes, type) = ResponseContent(produces);
+                    if (contentTypes.Any(IsJson))
+                    {
+                        ResolveJson(endpoint, SchemaRole.Response, type);
+                    }
+                }
+            }
+
+            var paths = new SortedDictionary<string, SortedDictionary<string, Action<Utf8JsonWriter>>>(StringComparer.Ordinal);
+            foreach (var (descriptor, route) in _operations.Values)
+            {
+                Methods(paths, route.Template)[route.Method] = writer => WriteOperation(writer, descriptor, route, this);
+            }
+
+            foreach (var endpoint in endpoints)
+            {
+                var methods = Methods(paths, endpoint.Template);
+                // 普通端点与操作共用一条路由：ASP.NET Core 到匹配时才报歧义，文档里会出现重复的键，这里先失败
+                if (!methods.TryAdd(endpoint.Method, writer => WriteEndpoint(writer, endpoint, this)))
+                {
+                    throw new FrameworkException(HttpErrors.DuplicateRoute, $"Endpoint '{endpoint.DisplayName}' shares the HTTP route '{endpoint.Method} {endpoint.Template}' with another endpoint or operation.");
+                }
+            }
+
+            Paths = paths;
+        }
+
+        /// <summary>
+        /// 输入。
+        /// </summary>
+        public OpenApiDocumentSource Source { get; }
+
+        /// <summary>
+        /// 是否发布 Bearer 方案。
+        /// </summary>
+        public bool Bearer { get; }
+
+        /// <summary>
+        /// 路径：模板 → 方法 → 写入动作，都按序数排序。
+        /// </summary>
+        public SortedDictionary<string, SortedDictionary<string, Action<Utf8JsonWriter>>> Paths { get; }
+
+        /// <summary>
+        /// <c>components/schemas</c>：提升的 <c>$defs</c> 定义与被引用的根，按名字排序。
+        /// </summary>
+        public SortedDictionary<string, JsonDocument> Components { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 被操作与端点引用的权限码。
+        /// </summary>
+        public SortedSet<string> ReferencedPermissions { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 解析一段 JSON Schema：把 <c>#/$defs/</c> 引用改写为 <c>#/components/schemas/</c>，并把 <c>$defs</c> 提升到组件；为空返回 <see langword="null"/>。
+        /// </summary>
+        public JsonDocument? Load(string? schema)
+        {
+            if (schema is null)
+            {
+                return null;
+            }
+
+            var document = JsonDocument.Parse(schema.Replace("\"#/$defs/", "\"#/components/schemas/", StringComparison.Ordinal));
+            _documents.Add(document);
+            if (document.RootElement.TryGetProperty("$defs", out var definitions))
+            {
+                foreach (var definition in definitions.EnumerateObject())
+                {
+                    // 同名定义按先到者为准：同一类型在多个操作里出现时内容相同
+                    if (!Components.ContainsKey(definition.Name))
+                    {
+                        Components[definition.Name] = JsonDocument.Parse(definition.Value.GetRawText());
+                    }
+                }
+            }
+
+            return document;
+        }
+
+        /// <summary>
+        /// 操作的某个根是否已提升到组件；是则给出组件名。
+        /// </summary>
+        public bool Promoted(OperationDescriptor descriptor, SchemaRole role, out string? name)
+            => _promoted.TryGetValue((descriptor.Id, role), out name);
+
+        /// <summary>
+        /// 组件里的 Schema 文档。
+        /// </summary>
+        public JsonDocument Component(string name) => Components[name];
+
+        /// <summary>
+        /// 解析普通端点的 JSON 类型到某个已登记操作的根 Schema：显式声明优先，否则按类型与操作的请求 / 响应类型匹配（取 ID 最小且有 Schema 的操作）；
+        /// 把该根提升到组件并返回组件名；引用不到抛 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。
+        /// </summary>
+        public string ResolveJson(EndpointDescription endpoint, SchemaRole role, Type? type)
+        {
+            var declared = role == SchemaRole.Request ? endpoint.SchemaReference?.RequestOperationId : endpoint.SchemaReference?.ResponseOperationId;
+            OperationDescriptor? descriptor;
+            if (declared is not null)
+            {
+                descriptor = Source.Registry.Find(declared).TryGetValue(out var found) && found.Schema is not null ? found : null;
+                if (descriptor is null)
+                {
+                    throw new FrameworkException(HttpErrors.OpenApiSchemaUnresolved, $"Endpoint '{endpoint.DisplayName}' declares its {Describe(role)} schema as operation '{declared}', which is not registered or has no schema.");
+                }
+            }
+            else
+            {
+                descriptor = type is null
+                    ? null
+                    : Source.Registry.All().FirstOrDefault(d => d.Schema is not null && (role == SchemaRole.Request ? d.RequestType : d.ResponseType) == type);
+                if (descriptor is null)
+                {
+                    throw new FrameworkException(HttpErrors.OpenApiSchemaUnresolved, $"Endpoint '{endpoint.DisplayName}' has a JSON {Describe(role)} of type '{type?.FullName ?? "(none)"}' that matches no registered operation's {Describe(role)} type; declare it with WithXiHanOperationSchema or register an operation with that contract.");
+                }
+            }
+
+            return Promote(descriptor, role);
+        }
+
+        /// <summary>
+        /// 把操作的根 Schema 提升到组件（已提升则直接返回）：名字取 Schema 的 <c>title</c>，没有则按操作 ID 拼。
+        /// </summary>
+        private string Promote(OperationDescriptor descriptor, SchemaRole role)
+        {
+            if (_promoted.TryGetValue((descriptor.Id, role), out var existing))
+            {
+                return existing;
+            }
+
+            var document = Load(role == SchemaRole.Request ? descriptor.Schema!.Request : descriptor.Schema!.Response)!;
+            var name = document.RootElement.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String && title.GetString() is { Length: > 0 } text
+                ? text
+                : descriptor.Id.Replace('.', '_').Replace('-', '_') + (role == SchemaRole.Request ? "_request" : "_response");
+            // 根提升时去掉 $schema 与已提升的 $defs；同名组件先到者为准（同一类型的根内容相同）
+            if (!Components.ContainsKey(name))
+            {
+                using var stripped = new MemoryStream();
+                using (var writer = new Utf8JsonWriter(stripped))
+                {
+                    WriteSchema(writer, document.RootElement);
+                }
+
+                Components[name] = JsonDocument.Parse(stripped.ToArray());
+            }
+
+            _promoted[(descriptor.Id, role)] = name;
+            return name;
+        }
+
+        /// <summary>
+        /// 角色的英文名，用于错误说明。
+        /// </summary>
+        private static string Describe(SchemaRole role) => role == SchemaRole.Request ? "request" : "response";
+
+        /// <summary>
+        /// 某模板下的方法表。
+        /// </summary>
+        private static SortedDictionary<string, Action<Utf8JsonWriter>> Methods(SortedDictionary<string, SortedDictionary<string, Action<Utf8JsonWriter>>> paths, string template)
+        {
+            if (!paths.TryGetValue(template, out var methods))
+            {
+                methods = new SortedDictionary<string, Action<Utf8JsonWriter>>(StringComparer.Ordinal);
+                paths[template] = methods;
+            }
+
+            return methods;
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            foreach (var document in _documents)
+            {
+                document.Dispose();
+            }
+
+            foreach (var document in Components.Values)
+            {
+                document.Dispose();
+            }
+        }
+    }
 }
