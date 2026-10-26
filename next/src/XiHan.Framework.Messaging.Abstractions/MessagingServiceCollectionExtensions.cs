@@ -2,9 +2,13 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Domain.Events;
+using XiHan.Framework.Messaging.Abstractions.DomainEvents;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions;
@@ -25,6 +29,41 @@ public static class MessagingServiceCollectionExtensions
         services.TryAddScoped<THandler>();
         services.GetMessageSubscriptions().Add(topic, typeof(THandler));
         return services;
+    }
+
+    /// <summary>
+    /// 登记一种领域事件（RFC-0009）：聚合记录的 <typeparamref name="TEvent"/> 在工作单元提交前发布到 <paramref name="topic"/>，CloudEvents <c>type</c> 为 <paramref name="type"/>，
+    /// 数据用 <paramref name="info"/> 序列化（源生成，不经反射），<paramref name="subject"/> 给出信封的 <c>subject</c>。首次调用同时注册 <see cref="IDomainEventDispatcher"/> 的实现 <see cref="DomainEventDispatcher"/>（作用域）。
+    /// </summary>
+    public static IServiceCollection AddDomainEvent<TEvent>(this IServiceCollection services, string topic, string type, JsonTypeInfo<TEvent> info, Func<TEvent, string?>? subject = null)
+        where TEvent : IDomainEvent
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(info);
+        // 选择器按事件对象调用，登记表只认非泛型委托；强制转换在这里完成一次
+        Func<IDomainEvent, string?>? selector = subject is null ? null : domainEvent => subject((TEvent)domainEvent);
+        services.GetDomainEventRegistry().Add(new DomainEventRegistration(typeof(TEvent), topic, type, info, selector));
+        services.TryAddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        return services;
+    }
+
+    /// <summary>
+    /// 取（必要时创建）领域事件登记表；以实例注册，多次调用返回同一对象。
+    /// </summary>
+    public static DomainEventRegistry GetDomainEventRegistry(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(DomainEventRegistry) && descriptor.ImplementationInstance is DomainEventRegistry existing)
+            {
+                return existing;
+            }
+        }
+
+        var registry = new DomainEventRegistry();
+        services.AddSingleton(registry);
+        return registry;
     }
 
     /// <summary>

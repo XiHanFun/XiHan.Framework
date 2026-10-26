@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "O agente de mensagens está indisponível: {reason}",
+  "messaging.domain_event.unregistered": "O evento de domínio '{event}' não está registrado; use AddDomainEvent para mapeá-lo a um tópico.",
   "messaging.envelope.attributes_required": "Os atributos 'id', 'source' e 'type' são obrigatórios.",
   "messaging.envelope.invalid": "O envelope não é válido: {reason}",
   "messaging.envelope.invalid_base64": "O atributo 'data_base64' não é um Base64 válido.",

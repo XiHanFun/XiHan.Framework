@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "消息代理不可达：{reason}",
+  "messaging.domain_event.unregistered": "领域事件 '{event}' 未登记；请用 AddDomainEvent 把它映射到主题。",
   "messaging.envelope.attributes_required": "'id'、'source' 和 'type' 属性是必需的。",
   "messaging.envelope.invalid": "信封不合法：{reason}",
   "messaging.envelope.invalid_base64": "'data_base64' 属性不是合法的 Base64。",

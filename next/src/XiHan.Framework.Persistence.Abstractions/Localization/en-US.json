@@ -6,5 +6,6 @@
   "persistence.entity.tenant_required": "Entity '{entity}' is multi-tenant, but the current invocation has no tenant.",
   "persistence.store.capacity_exceeded": "The in-memory table for '{entity}' has reached its capacity of {capacity}.",
   "persistence.unit_of_work.concurrency_conflict": "An optimistic concurrency conflict occurred during commit: {reason}",
+  "persistence.unit_of_work.events_undispatched": "'{aggregate}' recorded {count} domain event(s), but no domain event dispatcher is registered.",
   "persistence.unit_of_work.read_only": "A read-only unit of work does not accept writes."
 }

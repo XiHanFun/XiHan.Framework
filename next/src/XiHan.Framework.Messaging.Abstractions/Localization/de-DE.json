@@ -1,5 +1,6 @@
 {
   "messaging.broker.unavailable": "Der Message-Broker ist nicht erreichbar: {reason}",
+  "messaging.domain_event.unregistered": "Das Domänenereignis '{event}' ist nicht registriert; ordnen Sie es mit AddDomainEvent einem Thema zu.",
   "messaging.envelope.attributes_required": "Die Attribute 'id', 'source' und 'type' sind erforderlich.",
   "messaging.envelope.invalid": "Der Umschlag ist ungültig: {reason}",
   "messaging.envelope.invalid_base64": "Das Attribut 'data_base64' ist kein gültiges Base64.",

@@ -6,5 +6,6 @@
   "persistence.entity.tenant_required": "Die Entität '{entity}' ist mandantenfähig, der aktuelle Aufruf hat jedoch keinen Mandanten.",
   "persistence.store.capacity_exceeded": "Die In-Memory-Tabelle für '{entity}' hat ihre Kapazität von {capacity} erreicht.",
   "persistence.unit_of_work.concurrency_conflict": "Beim Commit ist ein optimistischer Nebenläufigkeitskonflikt aufgetreten: {reason}",
+  "persistence.unit_of_work.events_undispatched": "'{aggregate}' hat {count} Domänenereignis(se) aufgezeichnet, aber es ist kein Domänenereignis-Dispatcher registriert.",
   "persistence.unit_of_work.read_only": "Eine schreibgeschützte Arbeitseinheit akzeptiert keine Schreibvorgänge."
 }

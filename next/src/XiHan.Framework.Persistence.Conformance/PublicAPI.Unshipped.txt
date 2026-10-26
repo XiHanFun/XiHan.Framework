@@ -2,6 +2,15 @@
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.Advance(System.TimeSpan by) -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.ConformanceClock(System.DateTimeOffset start) -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.<Clone>$() -> XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent!
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.ConformanceEvent(string! Name, System.DateTimeOffset OccurredAt) -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Deconstruct(out string! Name, out System.DateTimeOffset OccurredAt) -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Equals(XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent? other) -> bool
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Name.get -> string!
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Name.init -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.OccurredAt.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.OccurredAt.init -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceFeature
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceFeature.ConformanceFeature() -> void
@@ -41,6 +50,12 @@ XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceOrder.ModifiedAt.set
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceOrder.Name.get -> string!
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceOrder.Name.set -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceOrder.Raise(XiHan.Framework.Domain.Events.IDomainEvent! domainEvent) -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.Batches.get -> System.Collections.Generic.IReadOnlyList<(System.Collections.Generic.IReadOnlyList<string!>! Events, string? TenantId)>!
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IHasDomainEvents!>! aggregates, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.Failure.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.Failure.set -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.RecordingDomainEventDispatcher() -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware.TenantFromBaggageMiddleware() -> void
@@ -50,6 +65,8 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_DuplicateId_Re
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_IsReadableInSameUnitOfWork_AndVisibleAfterCommit() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.BatchMethods_EmptyInputReturnsEmpty_AndRequireUnitOfWork() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Clock.get -> XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_AreDispatchedOnCommit_AndCleared() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_DispatchFailureRollsBack_AndMissingDispatcherIsRejected() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Exception_RollsBack_AndBecomesUnexpectedOutcome() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.FailureOutcome_RollsBack() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_AppliesFilterOrderingAndPaging_CountIgnoresPaging() -> System.Threading.Tasks.Task!
@@ -61,13 +78,18 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_PlainEntity
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_SoftDeletable_HidesEntity_UntilIncludeDeleted() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.RepositoryConformance() -> void
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Repository_OutsideTransactionStage_Throws() -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.Conformance.RepositoryConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? extra = null) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.UncommittedWrite_IsInvisibleToOtherUnitOfWork() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.UpdateRange_RefreshesStamps_AndReportsStaleOrMissingPerItem() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_Missing_ReturnNotFound() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.GetUtcNow() -> System.DateTimeOffset
+override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.GetHashCode() -> int
+override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.ToString() -> string!
+static XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.operator !=(XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent? left, XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent? right) -> bool
+static XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.operator ==(XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent? left, XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent? right) -> bool
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.CountAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, string? tenantId = null) -> System.Threading.Tasks.Task<long>!
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.Epoch.get -> System.DateTimeOffset
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.FindAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, TKey id, string? tenantId = null) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Maybe<TEntity!>>!

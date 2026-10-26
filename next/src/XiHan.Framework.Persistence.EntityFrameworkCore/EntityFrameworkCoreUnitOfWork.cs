@@ -36,6 +36,9 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     public bool IsReadOnly { get; private set; }
 
     /// <inheritdoc />
+    public DomainEventTracker DomainEvents { get; } = new();
+
+    /// <inheritdoc />
     public Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);

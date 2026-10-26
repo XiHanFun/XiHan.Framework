@@ -25,11 +25,11 @@ next/
 | `XiHan.Framework.Kernel` | 1 | 宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象、操作契约与 XGI 调用器、Validate 阶段的契约校验（JSON Schema 子集 + `IValidatableObject`） |
 | `XiHan.Framework.Domain` | 2 | 实体协议、值对象、领域事件缓冲、规约；纯契约 |
 | `XiHan.Framework.Localization.Abstractions` | 2 | 区域名、内置 10 种区域（默认 `en-US`）、消息目录（每种语言一个文件）、显式区域的本地化接口；消息键、模板与 `key.L()` 在原语层 |
-| `XiHan.Framework.Persistence.Abstractions` | 2 | 仓储、工作单元、查询、标识生成、Transaction 阶段中间件、实体登记 |
+| `XiHan.Framework.Persistence.Abstractions` | 2 | 仓储、工作单元（登记写过的聚合）、查询（含时间范围提示）、标识生成、Transaction 阶段中间件（提交前经 `IDomainEventDispatcher` 派发领域事件）、实体登记 |
 | `XiHan.Framework.Caching.Abstractions` | 2 | 字节存储、类型化缓存、序列化器、分布式锁、Idempotency 阶段中间件、`IDistributedCache` 适配 |
 | `XiHan.Framework.MultiTenancy.Abstractions` | 2 | 租户信息与存储、租户解析器、租户分片契约与默认解析器、Tenant 阶段中间件 |
 | `XiHan.Framework.Security.Abstractions` | 2 | 凭据与认证处理器、授权要求与策略目录、RBAC 授予，Authenticate / Authorize 阶段中间件 |
-| `XiHan.Framework.Messaging.Abstractions` | 2 | CloudEvents 信封、代理与发布者、处理器订阅、经管道的派发、事务性发件箱 |
+| `XiHan.Framework.Messaging.Abstractions` | 2 | CloudEvents 信封、代理与发布者、处理器订阅、经管道的派发、事务性发件箱、领域事件到消息的登记与派发 |
 | `XiHan.Framework.ObjectStorage.Abstractions` | 2 | 对象存储契约：容器与键文法、批量写入与删除、按键读取、按前缀分页列举 |
 | `XiHan.Framework.Scheduling.Abstractions` | 2 | 调度契约与引擎：作业与触发器、计划（间隔 / Quartz 文法 cron / 一次 / 手动，起止窗口与日历）、misfire 策略、经管道的派发、作业存储契约 `IJobStore`、集群分发引擎 `JobSchedulerEngine`（抢占、独占、失联恢复、历史）、租约式领导选举 |
 | `XiHan.Framework.Configuration.Abstractions` | 2 | 远程配置客户端与密钥库契约，以及接进 `IConfigurationBuilder` 的配置源（轮询重载、失败保留最后一份） |

@@ -121,6 +121,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         // 立即保存：同一工作单元内后续的 Find 与查询都能看到新行，事务提交前对其他连接不可见
         Set.Add(entity);
         await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 
@@ -176,6 +177,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         foreach (var index in pending)
         {
             results[index] = saved;
+            if (saved.IsSuccess)
+            {
+                _unitOfWork.DomainEvents.Track(entities[index]);
+            }
         }
 
         return results;
@@ -203,9 +208,15 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
 
         var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
         // 审计字段写在跟踪实例上，保存成功后同步回调用方的游离实例，让它拿到新的修改时间与并发戳
-        if (saved.IsSuccess && !ReferenceEquals(existing, entity))
+        if (saved.IsSuccess)
         {
-            CopyAuditBack(existing, entity);
+            if (!ReferenceEquals(existing, entity))
+            {
+                CopyAuditBack(existing, entity);
+            }
+
+            // 调用方的实例持有领域事件；登记它而不是跟踪的当前行
+            _unitOfWork.DomainEvents.Track(entity);
         }
 
         return saved;
@@ -260,9 +271,14 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         foreach (var (index, existing) in pending)
         {
             results[index] = saved;
-            if (saved.IsSuccess && !ReferenceEquals(existing, entities[index]))
+            if (saved.IsSuccess)
             {
-                CopyAuditBack(existing, entities[index]);
+                if (!ReferenceEquals(existing, entities[index]))
+                {
+                    CopyAuditBack(existing, entities[index]);
+                }
+
+                _unitOfWork.DomainEvents.Track(entities[index]);
             }
         }
 
@@ -286,9 +302,15 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
 
         StageRemoval(existing, _timeProvider.GetUtcNow());
         var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
-        if (saved.IsSuccess && !ReferenceEquals(existing, entity))
+        if (saved.IsSuccess)
         {
-            CopyAuditBack(existing, entity);
+            if (!ReferenceEquals(existing, entity))
+            {
+                CopyAuditBack(existing, entity);
+            }
+
+            // 调用方的实例持有领域事件；登记它而不是跟踪的当前行
+            _unitOfWork.DomainEvents.Track(entity);
         }
 
         return saved;
@@ -338,9 +360,14 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         foreach (var (index, existing) in pending)
         {
             results[index] = saved;
-            if (saved.IsSuccess && !ReferenceEquals(existing, entities[index]))
+            if (saved.IsSuccess)
             {
-                CopyAuditBack(existing, entities[index]);
+                if (!ReferenceEquals(existing, entities[index]))
+                {
+                    CopyAuditBack(existing, entities[index]);
+                }
+
+                _unitOfWork.DomainEvents.Track(entities[index]);
             }
         }
 

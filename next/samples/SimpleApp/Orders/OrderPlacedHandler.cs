@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 订单事件处理器：消息经完整管道派发，这里能看到租户等上下文。
+/// 订单事件处理器：收到的是 <see cref="OrderPlaced"/> 领域事件派发成的 <c>orders.placed</c> 消息；消息经完整管道派发，这里能看到租户等上下文。
 /// </summary>
 public sealed class OrderPlacedHandler(OrderEventCounter counter) : IMessageHandler
 {

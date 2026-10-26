@@ -38,6 +38,7 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.Client.get -> SqlSugar.I
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.ConnectionFor(System.Type! entityType) -> SqlSugar.ISqlSugarClient!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

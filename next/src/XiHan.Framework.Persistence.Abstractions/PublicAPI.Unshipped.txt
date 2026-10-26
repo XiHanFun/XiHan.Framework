@@ -63,9 +63,18 @@ XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Ap
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar!>!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.RepositoryRegistrations() -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Clear() -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Count.get -> int
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.DomainEventTracker() -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Pending() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IHasDomainEvents!>!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Track(object! entity) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IDomainEventDispatcher
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IDomainEventDispatcher.DispatchAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IHasDomainEvents!>! aggregates, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
@@ -93,6 +102,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Version =
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.CapacityExceeded = "PERSISTENCE_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Concurrency = "PERSISTENCE_CONFLICT_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Duplicate = "PERSISTENCE_CONFLICT_002" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.EventsUndispatched = "PERSISTENCE_VALIDATION_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.InvalidUnitOfWorkState = "PERSISTENCE_VALIDATION_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
@@ -103,6 +113,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CatalogName =
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CommitConflict = "persistence.unit_of_work.concurrency_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ConcurrencyConflict = "persistence.entity.concurrency_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.Duplicate = "persistence.entity.duplicate" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.EventsUndispatched = "persistence.unit_of_work.events_undispatched" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "persistence.entity.not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!

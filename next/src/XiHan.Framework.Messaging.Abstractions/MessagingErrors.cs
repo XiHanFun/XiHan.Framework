@@ -17,6 +17,12 @@ public static class MessagingErrors
     /// <summary>信封不合法或无法解码。</summary>
     public const string InvalidEnvelope = "MESSAGING_VALIDATION_002";
 
+    /// <summary>领域事件类型未登记（<c>AddDomainEvent</c>）。</summary>
+    public const string DomainEventUnregistered = "MESSAGING_VALIDATION_003";
+
+    /// <summary>领域事件类型重复登记或登记表已满（以异常抛出）。</summary>
+    public const string DomainEventRegistration = "MESSAGING_VALIDATION_004";
+
     /// <summary>代理不可达或操作失败。</summary>
     public const string BrokerUnavailable = "MESSAGING_UNAVAILABLE_001";
 

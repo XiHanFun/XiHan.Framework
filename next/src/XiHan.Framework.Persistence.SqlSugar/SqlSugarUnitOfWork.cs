@@ -51,6 +51,9 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// <inheritdoc />
     public bool IsReadOnly { get; private set; }
 
+    /// <inheritdoc />
+    public DomainEventTracker DomainEvents { get; } = new();
+
     /// <summary>
     /// 取实体类型应使用的连接；由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。
     /// </summary>

@@ -29,6 +29,7 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.Be
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.Context.get -> Microsoft.EntityFrameworkCore.DbContext!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EntityFrameworkCoreUnitOfWork(Microsoft.EntityFrameworkCore.DbContext! context) -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.IsReadOnly.get -> bool

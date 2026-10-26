@@ -6,5 +6,6 @@
   "persistence.entity.tenant_required": "엔터티 '{entity}'은(는) 다중 테넌트이지만 현재 호출에 테넌트가 없습니다.",
   "persistence.store.capacity_exceeded": "'{entity}'의 메모리 내 테이블이 용량 한도 {capacity}에 도달했습니다.",
   "persistence.unit_of_work.concurrency_conflict": "커밋 중 낙관적 동시성 충돌이 발생했습니다: {reason}",
+  "persistence.unit_of_work.events_undispatched": "'{aggregate}'이(가) 도메인 이벤트 {count}개를 기록했지만 도메인 이벤트 디스패처가 등록되어 있지 않습니다.",
   "persistence.unit_of_work.read_only": "읽기 전용 작업 단위는 쓰기를 허용하지 않습니다."
 }

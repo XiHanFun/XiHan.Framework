@@ -29,6 +29,11 @@ public interface IUnitOfWork
     bool IsReadOnly { get; }
 
     /// <summary>
+    /// 本工作单元内写过的聚合：仓储在新增 / 更新 / 删除成功后登记，Transaction 阶段提交前把带有未派发事件的聚合交给 <see cref="IDomainEventDispatcher"/>。
+    /// </summary>
+    DomainEventTracker DomainEvents { get; }
+
+    /// <summary>
     /// 开始。只能调用一次。
     /// </summary>
     Task BeginAsync(UnitOfWorkOptions options, CancellationToken cancellationToken);

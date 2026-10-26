@@ -133,6 +133,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
 
         cancellationToken.ThrowIfCancellationRequested();
         await InsertAsync(entity).ConfigureAwait(false);
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 
@@ -190,6 +191,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         foreach (var index in pendingIndexes)
         {
             results[index] = Result.Success();
+            _unitOfWork.DomainEvents.Track(entities[index]);
         }
 
         return results;
@@ -218,9 +220,13 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         PersistenceConventions.ApplyOnUpdate(entity, _timeProvider.GetUtcNow());
         cancellationToken.ThrowIfCancellationRequested();
         // 行已在本事务内加锁，按主键整行写入；影响 0 行只可能是行在锁定前已被删除，按冲突报告
-        return await UpdateAsync(entity).ConfigureAwait(false) == 0
-            ? Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.ConcurrencyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("reason", "the row changed after it was read")))
-            : Result.Success();
+        if (await UpdateAsync(entity).ConfigureAwait(false) == 0)
+        {
+            return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.ConcurrencyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("reason", "the row changed after it was read")));
+        }
+
+        _unitOfWork.DomainEvents.Track(entity);
+        return Result.Success();
     }
 
     /// <inheritdoc />
@@ -277,6 +283,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         foreach (var index in pendingIndexes)
         {
             results[index] = Result.Success();
+            _unitOfWork.DomainEvents.Track(entities[index]);
         }
 
         return results;
@@ -309,6 +316,8 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             await DeleteAsync(existing).ConfigureAwait(false);
         }
 
+        // 调用方的实例持有领域事件；登记它而不是取回的当前行
+        _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
 
@@ -364,6 +373,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             {
                 results[index] = Result.Success();
                 CopyAuditBack(existing, entities[index]);
+                _unitOfWork.DomainEvents.Track(entities[index]);
             }
         }
 
@@ -373,6 +383,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             foreach (var index in deletionIndexes)
             {
                 results[index] = Result.Success();
+                _unitOfWork.DomainEvents.Track(entities[index]);
             }
         }
 
