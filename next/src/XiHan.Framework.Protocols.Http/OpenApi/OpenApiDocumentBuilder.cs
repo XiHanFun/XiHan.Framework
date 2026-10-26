@@ -310,7 +310,7 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// RFC 9457 Problem Details 的 Schema（含 <c>code</c> 与 <c>traceId</c> 扩展）。
+    /// RFC 9457 Problem Details 的 Schema（含 <c>code</c>、<c>traceId</c>、字段级 <c>errors</c> 与标量 <c>details</c> 扩展）。
     /// </summary>
     private static void WriteProblemDetails(Utf8JsonWriter writer)
     {
@@ -326,6 +326,31 @@ public static partial class OpenApiDocumentBuilder
 
         writer.WriteStartObject("status");
         writer.WriteString("type", "integer");
+        writer.WriteEndObject();
+
+        // errors：字段键 → 该字段的本地化消息数组（只在 VALIDATION 错误上出现）
+        writer.WriteStartObject("errors");
+        writer.WriteString("type", "object");
+        writer.WriteStartObject("additionalProperties");
+        writer.WriteString("type", "array");
+        writer.WriteStartObject("items");
+        writer.WriteString("type", "string");
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+
+        // details：错误细节里的标量（名字 → 字符串 / 数值 / 布尔 / null）
+        writer.WriteStartObject("details");
+        writer.WriteString("type", "object");
+        writer.WriteStartObject("additionalProperties");
+        writer.WriteStartArray("type");
+        foreach (var name in new[] { "string", "number", "integer", "boolean", "null" })
+        {
+            writer.WriteStringValue(name);
+        }
+
+        writer.WriteEndArray();
+        writer.WriteEndObject();
         writer.WriteEndObject();
         writer.WriteEndObject();
         writer.WriteStartArray("required");

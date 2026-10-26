@@ -461,11 +461,16 @@ XiHan.Framework.Kernel.Security.TenantContext.TenantContext(string! Id) -> void
 XiHan.Framework.Kernel.Validation.JsonSchemaValidator
 XiHan.Framework.Kernel.Validation.SchemaViolation
 XiHan.Framework.Kernel.Validation.SchemaViolation.<Clone>$() -> XiHan.Framework.Kernel.Validation.SchemaViolation!
-XiHan.Framework.Kernel.Validation.SchemaViolation.Deconstruct(out string! Path, out string! Reason) -> void
+XiHan.Framework.Kernel.Validation.SchemaViolation.Arguments.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
+XiHan.Framework.Kernel.Validation.SchemaViolation.Arguments.init -> void
+XiHan.Framework.Kernel.Validation.SchemaViolation.Deconstruct(out string! Path, out string! Reason, out string? MessageKey, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Arguments) -> void
 XiHan.Framework.Kernel.Validation.SchemaViolation.Equals(XiHan.Framework.Kernel.Validation.SchemaViolation? other) -> bool
+XiHan.Framework.Kernel.Validation.SchemaViolation.Field.get -> string!
+XiHan.Framework.Kernel.Validation.SchemaViolation.MessageKey.get -> string?
+XiHan.Framework.Kernel.Validation.SchemaViolation.MessageKey.init -> void
 XiHan.Framework.Kernel.Validation.SchemaViolation.Path.get -> string!
 XiHan.Framework.Kernel.Validation.SchemaViolation.Reason.get -> string!
-XiHan.Framework.Kernel.Validation.SchemaViolation.SchemaViolation(string! Path, string! Reason) -> void
+XiHan.Framework.Kernel.Validation.SchemaViolation.SchemaViolation(string! Path, string! Reason, string? MessageKey = null, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Arguments = null) -> void
 XiHan.Framework.Kernel.Validation.ValidationMiddleware
 XiHan.Framework.Kernel.Validation.ValidationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Validation.ValidationMiddleware.ValidationMiddleware() -> void
@@ -541,6 +546,28 @@ const XiHan.Framework.Kernel.KernelMessages.RequestInvalid = "kernel.operation.r
 const XiHan.Framework.Kernel.KernelMessages.SchemaViolation = "kernel.operation.schema_violation" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnhandledException = "kernel.invocation.unhandled_exception" -> string!
 const XiHan.Framework.Kernel.KernelMessages.UnknownOperation = "kernel.operation.unknown" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationAnyOf = "kernel.validation.any_of" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationConst = "kernel.validation.const" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationDepth = "kernel.validation.depth" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationEnum = "kernel.validation.enum" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationExclusiveMaximum = "kernel.validation.exclusive_maximum" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationExclusiveMinimum = "kernel.validation.exclusive_minimum" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationInvalid = "kernel.validation.invalid" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMaxItems = "kernel.validation.max_items" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMaxLength = "kernel.validation.max_length" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMaximum = "kernel.validation.maximum" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMinItems = "kernel.validation.min_items" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMinLength = "kernel.validation.min_length" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationMinimum = "kernel.validation.minimum" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationNotAllowed = "kernel.validation.not_allowed" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationOneOf = "kernel.validation.one_of" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationPattern = "kernel.validation.pattern" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationPatternInvalid = "kernel.validation.pattern_invalid" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationPatternTimeout = "kernel.validation.pattern_timeout" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationRequired = "kernel.validation.required" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationType = "kernel.validation.type" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationUndeclared = "kernel.validation.undeclared" -> string!
+const XiHan.Framework.Kernel.KernelMessages.ValidationUnresolvedReference = "kernel.validation.unresolved_reference" -> string!
 const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!

@@ -13,6 +13,8 @@ ASP.NET Core 宿主适配（Ring 4）。
 
 `Accept-Language` 在调用方没有显式 `xihan.locale` Baggage 时按权重协商进该 Baggage（装配了本地化时协商到启用的区域，否则取第一个合法值）；装配了 `localization.resources` 时，Problem Details 的 `detail` 用 `IMessageLocalizer.Resolve` 翻译成调用方区域，`Content-Language` 是实际命中的区域（可能是回退链上的区域），`code` 不变；没有装配本地化或错误是自由文本时 `detail` 是 `Error.Message`（RFC-0010）。
 
+Problem Details 的扩展成员（ADR-0024 补充）：VALIDATION 种类的错误带 `errors`——对象，键是字段键（`SchemaViolation.Field`：去掉根 `$` 的点分路径，如 `name`、`lines[0].sku`，根级为空串），值是该字段的消息数组；内核校验器的违规带 `kernel.validation.*` 消息键，经 `IMessageLocalizer.Resolve(key, locale, arguments)` 按与 `detail` 相同的区域翻译，应用自校验的文案（没有键）原样，没有装配本地化时用违规的原因文本。所有错误按白名单带 `details`：`Error.Details` 里的字符串、布尔、数值、`Guid`、时间等标量（如 `id`、`capacity`、`retryAfter`），集合与对象（含 `errors` / `violations`）不输出。`ProblemResponse.FromError` / `FieldErrorsOf` / `ScalarDetailsOf` / `WriteTo` 是这套规则的公开入口，响应体由 `WriteTo` 手写，不经源生成上下文。
+
 `Authorization` 头原样进入上下文凭据（`SetCredential`），由安全子系统的 Authenticate 阶段解释；宿主不认证。端点用 `RequireXiHanPermission("orders.read")`、`RequireXiHanAuthentication()`、`RequireXiHanPolicy("name")` 挂授权要求，`UseXiHan()` 把它放进上下文，Authorize 阶段判定。
 
 ## 挂载的配置目录

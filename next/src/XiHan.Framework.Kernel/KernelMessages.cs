@@ -89,4 +89,70 @@ public static class KernelMessages
 
     /// <summary>操作的熔断器打开。参数：<c>id</c>、<c>retryAfter</c>（秒）。</summary>
     public const string CircuitOpen = "kernel.resilience.circuit_open";
+
+    /// <summary>校验违规：嵌套过深。参数：<c>max</c>。</summary>
+    public const string ValidationDepth = "kernel.validation.depth";
+
+    /// <summary>校验违规：此处不允许任何值（<c>false</c> Schema）。</summary>
+    public const string ValidationNotAllowed = "kernel.validation.not_allowed";
+
+    /// <summary>校验违规：<c>$ref</c> 无法解析。参数：<c>reference</c>。</summary>
+    public const string ValidationUnresolvedReference = "kernel.validation.unresolved_reference";
+
+    /// <summary>校验违规：类型不符。参数：<c>expected</c>、<c>actual</c>。</summary>
+    public const string ValidationType = "kernel.validation.type";
+
+    /// <summary>校验违规：不符合任何一个 <c>anyOf</c> 候选。</summary>
+    public const string ValidationAnyOf = "kernel.validation.any_of";
+
+    /// <summary>校验违规：不恰好符合一个 <c>oneOf</c> 候选。</summary>
+    public const string ValidationOneOf = "kernel.validation.one_of";
+
+    /// <summary>校验违规：不在 <c>enum</c> 内。</summary>
+    public const string ValidationEnum = "kernel.validation.enum";
+
+    /// <summary>校验违规：不等于 <c>const</c>。参数：<c>expected</c>。</summary>
+    public const string ValidationConst = "kernel.validation.const";
+
+    /// <summary>校验违规：小于 <c>minimum</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMinimum = "kernel.validation.minimum";
+
+    /// <summary>校验违规：大于 <c>maximum</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMaximum = "kernel.validation.maximum";
+
+    /// <summary>校验违规：不大于 <c>exclusiveMinimum</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationExclusiveMinimum = "kernel.validation.exclusive_minimum";
+
+    /// <summary>校验违规：不小于 <c>exclusiveMaximum</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationExclusiveMaximum = "kernel.validation.exclusive_maximum";
+
+    /// <summary>校验违规：短于 <c>minLength</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMinLength = "kernel.validation.min_length";
+
+    /// <summary>校验违规：长于 <c>maxLength</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMaxLength = "kernel.validation.max_length";
+
+    /// <summary>校验违规：不匹配 <c>pattern</c>。参数：<c>pattern</c>。</summary>
+    public const string ValidationPattern = "kernel.validation.pattern";
+
+    /// <summary>校验违规：匹配 <c>pattern</c> 超时。参数：<c>pattern</c>。</summary>
+    public const string ValidationPatternTimeout = "kernel.validation.pattern_timeout";
+
+    /// <summary>校验违规：<c>pattern</c> 不是合法正则。参数：<c>pattern</c>。</summary>
+    public const string ValidationPatternInvalid = "kernel.validation.pattern_invalid";
+
+    /// <summary>校验违规：缺少必填属性。参数：<c>name</c>。</summary>
+    public const string ValidationRequired = "kernel.validation.required";
+
+    /// <summary>校验违规：属性未在契约中声明。</summary>
+    public const string ValidationUndeclared = "kernel.validation.undeclared";
+
+    /// <summary>校验违规：元素数少于 <c>minItems</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMinItems = "kernel.validation.min_items";
+
+    /// <summary>校验违规：元素数多于 <c>maxItems</c>。参数：<c>limit</c>。</summary>
+    public const string ValidationMaxItems = "kernel.validation.max_items";
+
+    /// <summary>校验违规：请求对象自校验给出的结果没有文案时的兜底。</summary>
+    public const string ValidationInvalid = "kernel.validation.invalid";
 }

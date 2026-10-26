@@ -9,6 +9,7 @@ namespace SimpleApp.Orders;
 /// <summary>
 /// <c>POST /orders</c> 的请求体。DataAnnotations 由 <c>Kernel.Generators</c> 折进请求 Schema（名称 1 到 64 个字符、金额 1 到 1000000），
 /// Validate 阶段按 Schema 拒绝（<c>KERNEL_VALIDATION_003</c>）；自校验（名称不能只有空白）在解码后执行（<c>KERNEL_VALIDATION_004</c>），文案按消息键取。
+/// 两种拒绝的 Problem Details 都带字段级 <c>errors</c>（如 <c>{"errors":{"name":["长度必须 >= 1"],"amount":["值必须 >= 1"]}}</c>，按 <c>Accept-Language</c> 翻译），前端表单据此定位字段。
 /// </summary>
 /// <param name="Name">订单名称。</param>
 /// <param name="Amount">订单金额。</param>
