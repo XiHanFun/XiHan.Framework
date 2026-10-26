@@ -33,6 +33,7 @@
   "cli.migrate.marker.register_services": "Llame a {method}() desde Configure de la característica.",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider venían de ApplicationServiceBase; inyecte ILogger<T> o el servicio necesario por el constructor.",
   "cli.migrate.marker.shutdown_context": "StopAsync no recibe contexto; resuelva lo necesario en StartAsync y guárdelo en un campo.",
+  "cli.migrate.marker.strict_multi_tenant": "IStrictMultiTenantEntity no tiene equivalente en 5.0 e IMultiTenant es de lectura compartida; consérvela como interfaz de la aplicación que extiende IMultiTenant y aplique igualdad estricta en el filtro de inquilino de la persistencia (el inquilino solo ve sus filas, la plataforma solo las de plataforma).",
   "cli.migrate.marker.tenant_id_type": "TenantId pasó a ser una cadena; cambie el tipo de la columna Tenant_Id y las comparaciones numéricas.",
   "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor lee IUnitOfWorkManager.Current desde el ámbito de servicios de la invocación actual para los consumidores singleton; IUnitOfWorkManager / IUnitOfWork no tienen equivalente en 5.0, así que apunte los using al gestor de unidad de trabajo propio de la aplicación (con ámbito, respaldado por AsyncLocal) o lea su valor ambiental directamente.",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager no tiene equivalente en 5.0: cada operación recibe una unidad de trabajo por defecto; inyecte el IUnitOfWork de ámbito para controlarla explícitamente.",

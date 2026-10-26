@@ -33,6 +33,7 @@
   "cli.migrate.marker.register_services": "在特性的 Configure 里调用 {method}()。",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider 来自 ApplicationServiceBase；改为构造函数注入 ILogger<T> 或所需服务。",
   "cli.migrate.marker.shutdown_context": "StopAsync 没有上下文；需要的服务在 StartAsync 里解析并存到字段。",
+  "cli.migrate.marker.strict_multi_tenant": "IStrictMultiTenantEntity 没有 5.0 对应物，IMultiTenant 是读共享；保留为应用自己的接口并继承 IMultiTenant，在持久化的租户过滤里按严格相等实现（租户态只看本租户行、平台态只看平台行）。",
   "cli.migrate.marker.tenant_id_type": "TenantId 改为字符串；把 Tenant_Id 列类型与按数字比较的地方一起改掉。",
   "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor 给单例消费方从当前调用的服务作用域读 IUnitOfWorkManager.Current；IUnitOfWorkManager / IUnitOfWork 没有 5.0 对应物，请把 using 指向应用自己承接的工作单元管理器（作用域、AsyncLocal 维护当前值），或直接读它的环境值。",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager 没有 5.0 对应物：每个操作默认一个工作单元，需要显式控制时注入作用域的 IUnitOfWork。",

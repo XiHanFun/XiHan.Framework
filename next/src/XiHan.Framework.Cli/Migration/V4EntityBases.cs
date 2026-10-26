@@ -114,14 +114,23 @@ internal static class V4EntityBases
 
     /// <summary>
     /// 4.x 标记接口 → 5.0 接口；值为空表示没有对应物（保留为应用接口并留标记）。
+    /// <c>IStrictMultiTenantEntity</c> 故意不映射：5.0 只有读共享的 <c>IMultiTenant</c>，换成它会让严格隔离退化成读共享（租户态读到平台行、写守卫又拦着改），由应用声明同名接口继承 <c>IMultiTenant</c> 并在租户过滤里按严格相等实现。
     /// </summary>
     public static readonly IReadOnlyDictionary<string, string?> Interfaces = new Dictionary<string, string?>(StringComparer.Ordinal)
     {
         ["IMultiTenantEntity"] = "IMultiTenant",
-        ["IStrictMultiTenantEntity"] = "IMultiTenant",
+        ["IStrictMultiTenantEntity"] = null,
         ["ITraceableEntity"] = null,
         ["ISplitTableEntity"] = null,
     };
+
+    /// <summary>
+    /// 保留为应用接口的 4.x 标记接口要留的标记文案：严格隔离接口说明要继承 <c>IMultiTenant</c> 并按严格相等过滤，其余只说明没有对应物。
+    /// </summary>
+    public static string AppInterfaceMarker(string name)
+        => name == "IStrictMultiTenantEntity"
+            ? CliMessages.MigrateMarkerStrictMultiTenant.L()
+            : CliMessages.MigrateMarkerAppInterface.L(("name", name));
 
     /// <summary>
     /// 成员改名：4.x 名 → 5.0 名。

@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// V4-02：实体成员改名（<c>BasicId</c> → <c>Id</c> 等）、<c>RowVersion</c> / <c>TenantId</c> 改字符串、4.x Sugar 基类展开成协议接口与属性、标记接口换名。
+/// V4-02：实体成员改名（<c>BasicId</c> → <c>Id</c> 等）、<c>RowVersion</c> / <c>TenantId</c> 改字符串、4.x Sugar 基类展开成协议接口与属性、标记接口换名（没有 5.0 对应物的保留为应用接口并留标记，严格隔离的 <c>IStrictMultiTenantEntity</c> 也在其列）。
 /// </summary>
 internal sealed class EntityProtocolFixer : SyntaxFixer
 {
@@ -194,7 +194,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     if (replacement is null)
                     {
                         // 保留为应用接口：只留标记，不算改动，再跑一遍才是零改动
-                        messages.Add(CliMessages.MigrateMarkerAppInterface.L(("name", name)));
+                        messages.Add(V4EntityBases.AppInterfaceMarker(name));
                         types.Add(baseType);
                     }
                     else
@@ -253,7 +253,7 @@ internal sealed class EntityProtocolFixer : SyntaxFixer
                     touched = true;
                     if (replacement is null)
                     {
-                        messages.Add(CliMessages.MigrateMarkerAppInterface.L(("name", name)));
+                        messages.Add(V4EntityBases.AppInterfaceMarker(name));
                         types.Add(baseType);
                     }
                     else

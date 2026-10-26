@@ -392,6 +392,63 @@ public sealed class MigrationTests
     }
 
     [Fact]
+    public void EntityProtocol_KeepsStrictMultiTenantInterface_WithMarker_AndMapsSharedOne()
+    {
+        const string source = """
+            using XiHan.Framework.Domain.Entities.Abstracts;
+
+            namespace Shop.Entities;
+
+            public partial class Department : ShopAggregateRoot, IStrictMultiTenantEntity
+            {
+                public string DepartmentCode { get; set; } = string.Empty;
+            }
+
+            public sealed class Dictionary : ShopEntity, IMultiTenantEntity
+            {
+            }
+
+            public interface IOwnedByTenant : IStrictMultiTenantEntity
+            {
+            }
+
+            """;
+        var expected = $$"""
+            using XiHan.Framework.Domain.Entities;
+            using XiHan.Framework.Domain.Entities.Abstracts;
+
+            namespace Shop.Entities;
+
+            {{Markers.Line("V4-02", CliMessages.MigrateMarkerStrictMultiTenant.L())}}
+            public partial class Department : ShopAggregateRoot, IStrictMultiTenantEntity
+            {
+                public string DepartmentCode { get; set; } = string.Empty;
+            }
+
+            public sealed class Dictionary : ShopEntity, IMultiTenant
+            {
+            }
+
+            {{Markers.Line("V4-02", CliMessages.MigrateMarkerStrictMultiTenant.L())}}
+            public interface IOwnedByTenant : IStrictMultiTenantEntity
+            {
+            }
+
+            """;
+
+        var (text, session) = Apply(new EntityProtocolFixer(), source);
+
+        // 严格隔离标记原样保留、只留标记；读共享的 IMultiTenantEntity 才换成 IMultiTenant
+        Assert.Equal(Lf(expected), text);
+        Assert.Equal(2, session.Findings.Count(static finding => finding.IsMarker));
+        Assert.Single(session.Findings, static finding => !finding.IsMarker);
+
+        var (again, second) = Apply(new EntityProtocolFixer(), text);
+        Assert.Equal(text, again);
+        Assert.Empty(second.Findings);
+    }
+
+    [Fact]
     public void DependencyMarker_CollectsRegistrations_StripsMarkers_AndGeneratesServicesFile()
     {
         const string source = """

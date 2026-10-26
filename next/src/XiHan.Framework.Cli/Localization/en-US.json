@@ -33,6 +33,7 @@
   "cli.migrate.marker.register_services": "Call {method}() from the feature's Configure.",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider came from ApplicationServiceBase; inject ILogger<T> or the needed service through the constructor.",
   "cli.migrate.marker.shutdown_context": "StopAsync receives no context; resolve what you need in StartAsync and keep it in a field.",
+  "cli.migrate.marker.strict_multi_tenant": "IStrictMultiTenantEntity has no 5.0 counterpart and IMultiTenant is read-shared; keep it as an application interface that extends IMultiTenant and filter it by strict tenant equality in the persistence provider (a tenant sees only its own rows, the platform only platform rows).",
   "cli.migrate.marker.tenant_id_type": "TenantId became a string; change the Tenant_Id column type and the comparisons that used numbers.",
   "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor reads IUnitOfWorkManager.Current from the current invocation's service scope for singleton consumers; IUnitOfWorkManager / IUnitOfWork have no 5.0 counterpart, so point the usings at the application's own unit-of-work manager (scoped, AsyncLocal-backed) or read its ambient value directly.",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager has no 5.0 counterpart: each operation gets one unit of work; inject the scoped IUnitOfWork for explicit control.",
