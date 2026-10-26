@@ -18,6 +18,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。
 /// SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。
 /// 实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。
+/// 带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -33,6 +34,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// 实体是否实现 <see cref="IMultiTenant"/>；按闭合泛型只判断一次，查询据此决定是否追加租户条件。
     /// </summary>
     private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
+
+    /// <summary>
+    /// 实体是否带 SqlSugar <see cref="SplitTableAttribute"/>（分表）；按闭合泛型只判断一次，读写据此切换到分表入口。
+    /// </summary>
+    private static readonly bool _isSplitTable = typeof(TEntity).IsDefined(typeof(SplitTableAttribute), inherit: false);
 
     /// <summary>
     /// 本作用域的工作单元；提供客户端、事务与当前租户。
@@ -53,7 +59,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     public async ValueTask<Maybe<TEntity>> FindAsync(TKey id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
-        var entity = await Visible(includeDeleted: false).Where(EntityExpressions.IdEquals<TEntity, TKey>(id)).FirstAsync(cancellationToken).ConfigureAwait(false);
+        var entity = await Split(Visible(includeDeleted: false).Where(EntityExpressions.IdEquals<TEntity, TKey>(id))).FirstAsync(cancellationToken).ConfigureAwait(false);
         return entity is null ? default : Maybe.Some(entity);
     }
 
@@ -68,7 +74,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         var distinct = Distinct(ids);
-        var rows = await Visible(includeDeleted: false).In(distinct).ToListAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await Split(Visible(includeDeleted: false).In(distinct)).ToListAsync(cancellationToken).ConfigureAwait(false);
         var byId = rows.ToDictionary(static e => e.Id);
         var found = new List<TEntity>(distinct.Count);
         foreach (var id in distinct)
@@ -86,7 +92,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     public async Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var source = Filtered(query);
+        var source = Split(Filtered(query), query.TimeRange);
         // SqlSugar 的 OrderBy 可以叠加，多级排序按声明顺序追加；排序键重新包成不带可空标注的委托类型，表达式体不变
         foreach (var ordering in query.Orderings)
         {
@@ -101,7 +107,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     public async Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return await Filtered(query).CountAsync(cancellationToken).ConfigureAwait(false);
+        return await Split(Filtered(query), query.TimeRange).CountAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -114,7 +120,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         // 已存在的行（含已软删除、其他租户）都与新键冲突，所以不加可见性过滤
-        if (await Client.Queryable<TEntity>().Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id)).AnyAsync(cancellationToken).ConfigureAwait(false))
+        if (await Split(Client.Queryable<TEntity>().Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id))).AnyAsync(cancellationToken).ConfigureAwait(false))
         {
             return Duplicate(entity.Id);
         }
@@ -126,7 +132,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await Client.InsertableByObject(entity).ExecuteCommandAsync().ConfigureAwait(false);
+        await InsertAsync(entity).ConfigureAwait(false);
         return Result.Success();
     }
 
@@ -146,7 +152,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         // 一次主键 IN 查询拿到库里已存在的标识（含已软删除、其他租户）；之后每个通过校验的项把标识加进同一集合，批内重复就能被看见
-        var taken = (await Client.Queryable<TEntity>().In(Distinct(entities.Select(static e => e.Id))).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false)).ToHashSet();
+        var taken = (await Split(Client.Queryable<TEntity>().In(Distinct(entities.Select(static e => e.Id)))).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false)).ToHashSet();
         var now = _timeProvider.GetUtcNow();
         var results = new Result[entities.Count];
         var pending = new List<TEntity>(entities.Count);
@@ -180,7 +186,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
 
         // 通过校验的项一次多行插入
         cancellationToken.ThrowIfCancellationRequested();
-        await Client.InsertableByObject(pending).ExecuteCommandAsync().ConfigureAwait(false);
+        await InsertAsync(pending).ConfigureAwait(false);
         foreach (var index in pendingIndexes)
         {
             results[index] = Result.Success();
@@ -198,7 +204,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return rejected;
         }
 
-        var existing = await Locked().Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id)).FirstAsync(cancellationToken).ConfigureAwait(false);
+        var existing = await Locked(q => q.Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id))).FirstAsync(cancellationToken).ConfigureAwait(false);
         if (existing is null)
         {
             return NotFound(entity.Id);
@@ -212,7 +218,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         PersistenceConventions.ApplyOnUpdate(entity, _timeProvider.GetUtcNow());
         cancellationToken.ThrowIfCancellationRequested();
         // 行已在本事务内加锁，按主键整行写入；影响 0 行只可能是行在锁定前已被删除，按冲突报告
-        return await Client.UpdateableByObject(entity).ExecuteCommandAsync().ConfigureAwait(false) == 0
+        return await UpdateAsync(entity).ConfigureAwait(false) == 0
             ? Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.ConcurrencyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("reason", "the row changed after it was read")))
             : Result.Success();
     }
@@ -267,7 +273,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
 
         // 通过校验的项一次按主键批量更新
         cancellationToken.ThrowIfCancellationRequested();
-        await Client.UpdateableByObject(pending).ExecuteCommandAsync().ConfigureAwait(false);
+        await UpdateAsync(pending).ConfigureAwait(false);
         foreach (var index in pendingIndexes)
         {
             results[index] = Result.Success();
@@ -285,7 +291,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return rejected;
         }
 
-        var existing = await Locked().Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id)).FirstAsync(cancellationToken).ConfigureAwait(false);
+        var existing = await Locked(q => q.Where(EntityExpressions.IdEquals<TEntity, TKey>(entity.Id))).FirstAsync(cancellationToken).ConfigureAwait(false);
         if (existing is null)
         {
             return NotFound(entity.Id);
@@ -295,12 +301,12 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         // 软删除在取回的当前行上打标并整行写回，调用方的实例再同步审计字段；不支持软删除的实体按主键真正删除
         if (PersistenceConventions.TrySoftDelete(existing, _timeProvider.GetUtcNow()))
         {
-            await Client.UpdateableByObject(existing).ExecuteCommandAsync().ConfigureAwait(false);
+            await UpdateAsync(existing).ConfigureAwait(false);
             CopyAuditBack(existing, entity);
         }
         else
         {
-            await Client.DeleteableByObject(existing).ExecuteCommandAsync().ConfigureAwait(false);
+            await DeleteAsync(existing).ConfigureAwait(false);
         }
 
         return Result.Success();
@@ -353,7 +359,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         // 软删除的行一次批量更新，物理删除的行一次按主键批量删除
         if (tombstones.Count > 0)
         {
-            await Client.UpdateableByObject(tombstones.Select(static t => t.Existing).ToList()).ExecuteCommandAsync().ConfigureAwait(false);
+            await UpdateAsync(tombstones.Select(static t => t.Existing).ToList()).ConfigureAwait(false);
             foreach (var (index, existing) in tombstones)
             {
                 results[index] = Result.Success();
@@ -363,7 +369,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
 
         if (deletions.Count > 0)
         {
-            await Client.DeleteableByObject(deletions).ExecuteCommandAsync().ConfigureAwait(false);
+            await DeleteAsync(deletions).ConfigureAwait(false);
             foreach (var index in deletionIndexes)
             {
                 results[index] = Result.Success();
@@ -464,18 +470,51 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// </summary>
     private async Task<Dictionary<TKey, TEntity>> LoadLockedAsync(IReadOnlyList<TEntity> entities, CancellationToken cancellationToken)
     {
-        var rows = await Locked().In(Distinct(entities.Select(static e => e.Id))).ToListAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await Locked(q => q.In(Distinct(entities.Select(static e => e.Id)))).ToListAsync(cancellationToken).ConfigureAwait(false);
         return rows.ToDictionary(static e => e.Id);
     }
 
     /// <summary>
-    /// 写入路径的读取：可见行加事务内行锁（<c>FOR UPDATE</c> / <c>UPDLOCK</c>），读取与写入之间别人改不了这些行；SQLite 不支持行锁，由其数据库级写锁保证。
+    /// 写入路径的读取：在可见行上施加 <paramref name="filter"/> 后加事务内行锁（<c>FOR UPDATE</c> / <c>UPDLOCK</c>），读取与写入之间别人改不了这些行。
+    /// SQLite 不支持行锁，由其数据库级写锁保证；分表实体的查询是多表 <c>UNION ALL</c>，不能加行锁，靠并发戳。
     /// </summary>
-    private ISugarQueryable<TEntity> Locked()
+    private ISugarQueryable<TEntity> Locked(Func<ISugarQueryable<TEntity>, ISugarQueryable<TEntity>> filter)
     {
-        var source = Visible(includeDeleted: false);
-        return Client.CurrentConnectionConfig.DbType == DbType.Sqlite ? source : source.TranLock(DbLockType.Wait);
+        var source = Split(filter(Visible(includeDeleted: false)));
+        return _isSplitTable || Client.CurrentConnectionConfig.DbType == DbType.Sqlite ? source : source.TranLock(DbLockType.Wait);
     }
+
+    /// <summary>
+    /// 分表实体的查询在全部过滤条件之后切到分表入口：有时间范围提示只扫范围内的表（按 UTC 时刻），没有就扫全部分表；不分表的实体原样返回。
+    /// 必须在 <c>Where</c> / <c>In</c> 之后、排序与分页之前调用，SqlSugar 把它之前的条件下推到每张分表再 <c>UNION ALL</c>。
+    /// </summary>
+    private static ISugarQueryable<TEntity> Split(ISugarQueryable<TEntity> source, TimeRange? range = null)
+    {
+        if (!_isSplitTable)
+        {
+            return source;
+        }
+
+        return range is null ? source.SplitTable() : source.SplitTable(range.From.UtcDateTime, range.To.UtcDateTime);
+    }
+
+    /// <summary>
+    /// 插入单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值落表（列表按表分组，缺少的分表由 SqlSugar 建出）。
+    /// </summary>
+    private Task<int> InsertAsync(object entityOrList)
+        => _isSplitTable ? Client.InsertableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.InsertableByObject(entityOrList).ExecuteCommandAsync();
+
+    /// <summary>
+    /// 按主键整行更新单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表，所以分表字段写入后不要再改。
+    /// </summary>
+    private Task<int> UpdateAsync(object entityOrList)
+        => _isSplitTable ? Client.UpdateableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.UpdateableByObject(entityOrList).ExecuteCommandAsync();
+
+    /// <summary>
+    /// 按主键物理删除单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表。
+    /// </summary>
+    private Task<int> DeleteAsync(object entityOrList)
+        => _isSplitTable ? Client.DeleteableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.DeleteableByObject(entityOrList).ExecuteCommandAsync();
 
     /// <summary>
     /// 写入前：要求活动工作单元、拒绝只读、确保事务已开启。

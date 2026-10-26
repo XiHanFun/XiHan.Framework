@@ -571,6 +571,24 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 19：时间范围提示不是过滤条件——不分表的实体带 <c>Within</c> 查询仍返回范围之外的行，计数也不变；范围颠倒是编程错误。
+    /// </summary>
+    [Fact]
+    public async Task List_WithTimeRangeHint_OnUnpartitionedEntity_ReturnsAllRows()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "a", Amount = 1 }, new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "b", Amount = 2 }],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+
+        // 套件时钟从 Epoch 开始，两条都在 Epoch 当天创建；范围取远在创建时间之前的一天，仍然两条都返回
+        var query = EntityQuery.All<ConformanceOrder>().Within(Epoch.AddYears(-1), Epoch.AddYears(-1).AddDays(1)).OrderBy(static o => o.Amount);
+        Assert.Equal(["a", "b"], (await ListAsync<ConformanceOrder, Guid>(host, query).ConfigureAwait(false)).Select(static o => o.Name));
+        Assert.Equal(2, await CountAsync<ConformanceOrder, Guid>(host, query).ConfigureAwait(false));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<ConformanceOrder>().Within(Epoch, Epoch.AddDays(-1)));
+    }
+
+    /// <summary>
     /// 取调用作用域内的仓储。
     /// </summary>
     protected static IRepository<TEntity, TKey> Repository<TEntity, TKey>(InvocationContext context)

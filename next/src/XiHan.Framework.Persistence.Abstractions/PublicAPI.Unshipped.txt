@@ -25,7 +25,10 @@ XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Skip.get -> int
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Skip.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.get -> int
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.TimeRange.get -> XiHan.Framework.Persistence.Abstractions.Queries.TimeRange?
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.TimeRange.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Where(XiHan.Framework.Domain.Specifications.ISpecification<T>! filter) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Within(System.DateTimeOffset from, System.DateTimeOffset to) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>!
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, out bool Descending) -> void
@@ -35,6 +38,12 @@ XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Equals(XiHan.Framew
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<T, object?>!>!
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, bool Descending = false) -> void
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Queries.TimeRange!
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.Equals(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.From.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.TimeRange(System.DateTimeOffset from, System.DateTimeOffset to) -> void
+XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.To.get -> System.DateTimeOffset
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
@@ -105,6 +114,9 @@ override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.ToStrin
 override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
@@ -120,6 +132,8 @@ static XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.operator 
 static XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations!
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Default.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
