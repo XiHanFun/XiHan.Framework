@@ -33,6 +33,7 @@
   "cli.migrate.marker.register_services": "機能の Configure から {method}() を呼び出してください。",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider は ApplicationServiceBase 由来です。ILogger<T> または必要なサービスをコンストラクターで注入してください。",
   "cli.migrate.marker.shutdown_context": "StopAsync はコンテキストを受け取りません。必要なものは StartAsync で解決してフィールドに保持してください。",
+  "cli.migrate.marker.strict_multi_tenant": "IStrictMultiTenantEntity には 5.0 の対応物がなく、IMultiTenant は読み取り共有です。IMultiTenant を継承するアプリケーション側のインターフェイスとして残し、永続化のテナントフィルターで厳密な一致（テナントは自テナントの行のみ、プラットフォームはプラットフォームの行のみ）として実装してください。",
   "cli.migrate.marker.tenant_id_type": "TenantId は文字列になりました。Tenant_Id 列の型と数値で比較していた箇所を変更してください。",
   "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor はシングルトンの利用側のために現在の呼び出しのサービススコープから IUnitOfWorkManager.Current を読みます。IUnitOfWorkManager / IUnitOfWork には 5.0 の対応物がないので、using をアプリケーション自身の作業単位マネージャー（スコープ付き、AsyncLocal で現在値を保持）に向けるか、その環境値を直接読んでください。",
   "cli.migrate.marker.unit_of_work_manager": "IUnitOfWorkManager には 5.0 の対応物がありません。各操作は既定で 1 つの作業単位を持ち、明示的に制御するにはスコープ付きの IUnitOfWork を注入します。",

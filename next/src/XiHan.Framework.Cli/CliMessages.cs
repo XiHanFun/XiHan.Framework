@@ -107,6 +107,9 @@ public static class CliMessages
     /// <summary>V4-02 标记：没有对应物的接口。参数：<c>name</c>。</summary>
     public const string MigrateMarkerAppInterface = "cli.migrate.marker.app_interface";
 
+    /// <summary>V4-02 标记：严格隔离的 <c>IStrictMultiTenantEntity</c> 保留为应用接口（继承 <c>IMultiTenant</c>，租户过滤按严格相等），不换成读共享的 <c>IMultiTenant</c>。</summary>
+    public const string MigrateMarkerStrictMultiTenant = "cli.migrate.marker.strict_multi_tenant";
+
     /// <summary>V4-03 标记：没法自动注册的服务类（泛型、抽象或不在项目里）。参数：<c>name</c>。</summary>
     public const string MigrateMarkerManualRegistration = "cli.migrate.marker.manual_registration";
 

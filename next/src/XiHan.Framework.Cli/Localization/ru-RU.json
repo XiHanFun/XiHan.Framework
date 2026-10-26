@@ -33,6 +33,7 @@
   "cli.migrate.marker.register_services": "Вызовите {method}() из Configure функции.",
   "cli.migrate.marker.service_base_member": "Logger / ServiceProvider пришли из ApplicationServiceBase; внедрите ILogger<T> или нужный сервис через конструктор.",
   "cli.migrate.marker.shutdown_context": "StopAsync не получает контекст; получите нужное в StartAsync и храните в поле.",
+  "cli.migrate.marker.strict_multi_tenant": "У IStrictMultiTenantEntity нет аналога в 5.0, а IMultiTenant читается совместно; оставьте его интерфейсом приложения, расширяющим IMultiTenant, и фильтруйте по строгому равенству арендатора в персистентности (арендатор видит только свои строки, платформа только строки платформы).",
   "cli.migrate.marker.tenant_id_type": "TenantId стал строкой; измените тип столбца Tenant_Id и числовые сравнения.",
   "cli.migrate.marker.unit_of_work_accessor": "ICurrentUnitOfWorkAccessor читает IUnitOfWorkManager.Current из области служб текущего вызова для одиночных потребителей; у IUnitOfWorkManager / IUnitOfWork нет аналога в 5.0, поэтому направьте using на собственный менеджер единицы работы приложения (областной, на AsyncLocal) или читайте его окружающее значение напрямую.",
   "cli.migrate.marker.unit_of_work_manager": "У IUnitOfWorkManager нет аналога в 5.0: каждая операция по умолчанию получает одну единицу работы; для явного управления внедрите IUnitOfWork области.",
