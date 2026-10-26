@@ -22,6 +22,7 @@ public sealed class OperationGeneratorTests
     private const string Source = """
         using System;
         using System.Collections.Generic;
+        using System.ComponentModel.DataAnnotations;
         using System.Text.Json;
         using System.Text.Json.Serialization;
         using System.Text.Json.Serialization.Metadata;
@@ -39,6 +40,21 @@ public sealed class OperationGeneratorTests
 
         public sealed record OrderResponse(Guid Id, DateTimeOffset CreatedAt, OrderStatus Status, OrderLine? First, byte[] Receipt);
 
+        public sealed record AnnotatedRequest(
+            [property: Required, StringLength(64, MinimumLength = 2)] string? Code,
+            [Range(1, 1000)] int Amount,
+            [MinLength(1), MaxLength(5)] List<string> Tags,
+            [RegularExpression("^[a-z]+$")] string Slug,
+            [Range(0.5, 9.5, MinimumIsExclusive = true)] double Ratio,
+            [Required] int? Count,
+            [Required(AllowEmptyStrings = true)] string? Label = null);
+
+        [Operation("orders.annotate")]
+        public sealed class AnnotateOrder : IOperation<AnnotatedRequest, OrderResponse>
+        {
+            public ValueTask<Result<OrderResponse>> HandleAsync(AnnotatedRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
         [Operation("orders.create", Stability = Stability.Experimental, Expose = Expose.Http | Expose.Mcp, Permission = "orders.write")]
         public sealed class CreateOrder : IOperation<CreateOrderRequest, OrderResponse>
         {
@@ -54,6 +70,7 @@ public sealed class OperationGeneratorTests
         [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
         [JsonSerializable(typeof(CreateOrderRequest))]
         [JsonSerializable(typeof(OrderResponse), TypeInfoPropertyName = "Order")]
+        [JsonSerializable(typeof(AnnotatedRequest))]
         internal sealed class DemoJsonContext : JsonSerializerContext
         {
             public static DemoJsonContext Default { get; } = new();
@@ -62,6 +79,7 @@ public sealed class OperationGeneratorTests
             public override JsonTypeInfo? GetTypeInfo(Type type) => null;
             public JsonTypeInfo<CreateOrderRequest> CreateOrderRequest => null!;
             public JsonTypeInfo<OrderResponse> Order => null!;
+            public JsonTypeInfo<AnnotatedRequest> AnnotatedRequest => null!;
         }
         """;
 
@@ -116,6 +134,16 @@ public sealed class OperationGeneratorTests
         Assert.Contains("\"required\":[\"name\",\"lines\"]", text, StringComparison.Ordinal);
         Assert.Contains("\"$defs\":{\"OrderLine\":{\"type\":\"object\",\"properties\":{\"sku\":{\"type\":\"string\"},\"quantity\":{\"type\":\"integer\",\"format\":\"int32\"}},\"required\":[\"sku\",\"quantity\"]}}", text, StringComparison.Ordinal);
 
+        // DataAnnotations 折进请求 Schema：[Required] 去可空并进 required（字符串默认 minLength 1，AllowEmptyStrings 除外）、[Range] 的闭开区间、长度与元素数、模式；注解在参数或属性上都认
+        Assert.Contains("\"code\":{\"type\":\"string\",\"minLength\":2,\"maxLength\":64}", text, StringComparison.Ordinal);
+        Assert.Contains("\"amount\":{\"type\":\"integer\",\"format\":\"int32\",\"minimum\":1,\"maximum\":1000}", text, StringComparison.Ordinal);
+        Assert.Contains("\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minItems\":1,\"maxItems\":5}", text, StringComparison.Ordinal);
+        Assert.Contains("\"slug\":{\"type\":\"string\",\"pattern\":\"^[a-z]+$\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"ratio\":{\"type\":\"number\",\"format\":\"double\",\"exclusiveMinimum\":0.5,\"maximum\":9.5}", text, StringComparison.Ordinal);
+        Assert.Contains("\"count\":{\"type\":\"integer\",\"format\":\"int32\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"label\":{\"type\":\"string\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"required\":[\"code\",\"amount\",\"tags\",\"slug\",\"ratio\",\"count\",\"label\"]", text, StringComparison.Ordinal);
+
         // 响应 Schema：uuid、date-time、枚举按整数、可空引用的 anyOf、字节数组 base64
         Assert.Contains("\"id\":{\"type\":\"string\",\"format\":\"uuid\"}", text, StringComparison.Ordinal);
         Assert.Contains("\"createdAt\":{\"type\":\"string\",\"format\":\"date-time\"}", text, StringComparison.Ordinal);
@@ -128,7 +156,7 @@ public sealed class OperationGeneratorTests
             .Where(static c => c.Type.ToString().EndsWith("OperationSchema", StringComparison.Ordinal))
             .Select(static c => c.ArgumentList!.Arguments.Select(static a => ((LiteralExpressionSyntax)a.Expression).Token.ValueText).ToArray())
             .ToList();
-        Assert.Equal(2, schemas.Count);
+        Assert.Equal(3, schemas.Count);
         foreach (var pair in schemas)
         {
             var schema = new OperationSchema(pair[0], pair[1]);

@@ -41,8 +41,9 @@ internal sealed class OperationInvoker : IOperationInvoker
             return OperationResponse.Failure(Unknown(request.Id));
         }
 
-        // 描述在管道开始前进入上下文：Authorize 阶段按契约判定，Validate 阶段可按请求类型校验
+        // 描述与载荷在管道开始前进入上下文：Authorize 阶段按契约判定，Validate 阶段按 Schema 校验载荷并解码
         context.SetOperation(descriptor);
+        context.SetOperationPayload(request.Payload);
         var outcome = await _app.InvokeAsync(context, ctx => DispatchAsync(ctx, descriptor, request.Payload)).ConfigureAwait(false);
         return ToResponse(context, descriptor, outcome);
     }
@@ -74,7 +75,9 @@ internal sealed class OperationInvoker : IOperationInvoker
             return error;
         }
 
+        // 类型化调用没有载荷：请求对象先进上下文，Validate 阶段按序列化元数据编码一次再校验
         context.SetOperation(descriptor);
+        context.SetOperationRequest(request);
         var outcome = await _app.InvokeAsync(context, ctx => ExecuteTypedAsync(ctx, descriptor, request)).ConfigureAwait(false);
         return ToTypedResult<TResponse>(context, descriptor, outcome);
     }
@@ -96,18 +99,22 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// Handle 阶段的终点：解码载荷、执行、把结果与响应对象写进上下文。
+    /// Handle 阶段的终点：Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文。
     /// </summary>
     private static async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
-        var decoded = descriptor.DecodeRequest(payload);
-        if (!decoded.TryGetValue(out var request))
+        if (!context.GetOperationRequest().TryGetValue(out var request))
         {
-            context.SetOutcome(decoded.Error!);
-            return;
+            var decoded = descriptor.DecodeRequest(payload);
+            if (!decoded.TryGetValue(out request))
+            {
+                context.SetOutcome(decoded.Error!);
+                return;
+            }
+
+            context.SetOperationRequest(request);
         }
 
-        context.SetOperationRequest(request);
         await ExecuteTypedAsync(context, descriptor, request).ConfigureAwait(false);
     }
 

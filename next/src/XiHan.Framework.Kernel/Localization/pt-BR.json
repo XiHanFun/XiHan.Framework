@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "A carga útil da operação '{id}' não é válida: {reason}",
   "kernel.operation.no_response": "A operação '{id}' foi concluída sem produzir uma resposta.",
   "kernel.operation.registry_full": "O registro de operações atingiu sua capacidade de {capacity}.",
+  "kernel.operation.request_invalid": "A solicitação da operação '{id}' é inválida: {reason}",
+  "kernel.operation.schema_violation": "A solicitação da operação '{id}' não corresponde ao seu contrato: {reason}",
   "kernel.operation.type_mismatch": "A operação '{id}' processa '{expected}', mas '{actual}' foi fornecido.",
   "kernel.operation.unknown": "A operação '{id}' não está registrada.",
   "kernel.permission.duplicate": "O código de permissão '{code}' já está registrado.",

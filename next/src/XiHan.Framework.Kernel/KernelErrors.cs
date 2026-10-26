@@ -77,6 +77,12 @@ public static class KernelErrors
     /// <summary>类型化调用的请求或响应类型与登记不符。</summary>
     public const string OperationTypeMismatch = "KERNEL_VALIDATION_002";
 
+    /// <summary>请求不满足操作契约的 JSON Schema；Validate 阶段拒绝，不进 Handle。</summary>
+    public const string SchemaViolation = "KERNEL_VALIDATION_003";
+
+    /// <summary>请求对象的自校验（<c>IValidatableObject</c>）失败；Validate 阶段拒绝，不进 Handle。</summary>
+    public const string RequestInvalid = "KERNEL_VALIDATION_004";
+
     /// <summary>操作 ID 重复登记。</summary>
     public const string DuplicateOperation = "KERNEL_OPERATION_001";
 

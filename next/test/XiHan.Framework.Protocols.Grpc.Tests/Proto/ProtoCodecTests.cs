@@ -132,7 +132,7 @@ public sealed class ProtoCodecTests
     {
         var message = ProtoSchema.FromJsonSchema(RichSchema);
 
-        // 同一 repeated 字段混合打包与不打包；未知字段号 99 跳过；单值字段重复出现取最后一个
+        // 同一 repeated 字段混合打包与不打包；未知字段号 99 跳过；单值字段重复出现取最后一个；缺席的布尔 / 数值 / 集合按 proto3 默认值补出，字符串、消息与 optional 不补
         var bytes = ProtoBytes.Concat(
             ProtoBytes.BytesField(13, ProtoBytes.Concat(ProtoBytes.Varint(1), ProtoBytes.Varint(2))),
             ProtoBytes.VarintField(13, 3),
@@ -140,10 +140,10 @@ public sealed class ProtoCodecTests
             ProtoBytes.StringField(99, "ignored"),
             ProtoBytes.StringField(1, "first"),
             ProtoBytes.StringField(1, "last"));
-        Assert.Equal("""{"s":"last","ints":[1,2,3]}""", Decode(message, bytes));
+        Assert.Equal("""{"s":"last","b":false,"i":0,"l":0,"f":0,"d":0,"m":0,"big":0,"ints":[1,2,3],"names":[],"children":[],"prices":{},"byName":{}}""", Decode(message, bytes));
 
         // 映射缺值按默认值，缺键按空串
-        Assert.Equal("""{"prices":{"a":0,"":1.5}}""", Decode(message, ProtoBytes.Concat(
+        Assert.Equal("""{"b":false,"i":0,"l":0,"f":0,"d":0,"m":0,"big":0,"ints":[],"names":[],"children":[],"prices":{"a":0,"":1.5},"byName":{}}""", Decode(message, ProtoBytes.Concat(
             ProtoBytes.BytesField(18, ProtoBytes.StringField(1, "a")),
             ProtoBytes.BytesField(18, [0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x3F]))));
 

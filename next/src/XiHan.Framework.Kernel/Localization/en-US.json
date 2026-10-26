@@ -16,6 +16,8 @@
   "kernel.operation.invalid_payload": "The payload of operation '{id}' is not valid: {reason}",
   "kernel.operation.no_response": "Operation '{id}' completed without producing a response.",
   "kernel.operation.registry_full": "The operation registry has reached its capacity of {capacity}.",
+  "kernel.operation.request_invalid": "The request of operation '{id}' is invalid: {reason}",
+  "kernel.operation.schema_violation": "The request of operation '{id}' does not match its contract: {reason}",
   "kernel.operation.type_mismatch": "Operation '{id}' handles '{expected}', but '{actual}' was supplied.",
   "kernel.operation.unknown": "Operation '{id}' is not registered.",
   "kernel.permission.duplicate": "Permission code '{code}' is already registered.",

@@ -11,7 +11,8 @@ namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
 /// 按消息描述把 protobuf 线格式解码为 JSON 对象。描述里没有的字段号跳过；重复的单值字段取最后一个；repeated 的数值接受打包与不打包两种形式；
-/// 线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的字段不出现在 JSON 里（proto3 默认值由消费方补）。
+/// 线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的隐式存在字段按 proto3 语义写出默认值：布尔与数值写零值、重复写空数组、映射写空对象，
+/// 让契约 Schema 里的 <c>required</c> 在 gRPC 上成立；字符串 / 字节 / 任意 JSON 不补（空串对 date-time、uuid、枚举这类带格式的字符串不是合法值），显式存在（<c>optional</c>）与嵌套消息缺席时不写。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoDecoder
@@ -49,6 +50,8 @@ public static class ProtoDecoder
         {
             if (!values.TryGetValue(field.Number, out var raws))
             {
+                // proto3 隐式存在：线上缺席就是默认值，布尔 / 数值 / 集合照样写出，Schema 的 required 才能在 gRPC 上成立；字符串不补（带格式的空串不合法），显式存在与消息字段缺席即缺席
+                WriteAbsent(field, writer);
                 continue;
             }
 
@@ -241,6 +244,32 @@ public static class ProtoDecoder
         else
         {
             WriteDefault(valueType, writer);
+        }
+    }
+
+    /// <summary>
+    /// 线上缺席的字段：单值的布尔与数值写 proto3 默认值，重复写空数组，映射写空对象；字符串、字节、任意 JSON、消息与 <c>optional</c> 不写。
+    /// </summary>
+    private static void WriteAbsent(ProtoField field, Utf8JsonWriter writer)
+    {
+        switch (field.Cardinality)
+        {
+            case ProtoCardinality.Singular when field.Value.Kind is ProtoKind.Bool or ProtoKind.Varint32 or ProtoKind.Varint64 or ProtoKind.Fixed32 or ProtoKind.Fixed64 or ProtoKind.TextNumber:
+                writer.WritePropertyName(field.JsonName);
+                WriteDefault(field.Value, writer);
+                break;
+            case ProtoCardinality.Repeated:
+                writer.WritePropertyName(field.JsonName);
+                writer.WriteStartArray();
+                writer.WriteEndArray();
+                break;
+            case ProtoCardinality.Map:
+                writer.WritePropertyName(field.JsonName);
+                writer.WriteStartObject();
+                writer.WriteEndObject();
+                break;
+            default:
+                break;
         }
     }
 

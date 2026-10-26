@@ -2,6 +2,7 @@
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
+XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder
 XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!
@@ -80,3 +81,4 @@ static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Fr
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Builder.WebApplicationBuilder! builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> Microsoft.AspNetCore.Builder.WebApplicationBuilder!
+virtual XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder.Invoke(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>

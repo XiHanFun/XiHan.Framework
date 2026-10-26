@@ -18,6 +18,11 @@ public static class OperationInvocationExtensions
     private static readonly ContextItemKey<OperationDescriptor> _operationKey = new("xihan.operation");
 
     /// <summary>
+    /// 当前调用的原始载荷（UTF-8 JSON）。
+    /// </summary>
+    private static readonly ContextItemKey<ReadOnlyMemory<byte>> _payloadKey = new("xihan.operation.payload");
+
+    /// <summary>
     /// 当前调用的请求对象（解码后）。
     /// </summary>
     private static readonly ContextItemKey<object> _requestKey = new("xihan.operation.request");
@@ -36,6 +41,16 @@ public static class OperationInvocationExtensions
     /// 取本次调用的操作描述；不是操作调用时无值。
     /// </summary>
     public static Maybe<OperationDescriptor> GetOperation(this InvocationContext context) => context.Get(_operationKey);
+
+    /// <summary>
+    /// 把本次调用的原始载荷（UTF-8 JSON，空表示 <c>{}</c>）放进上下文；调用器与宿主在管道开始前设置，Validate 阶段据此校验 Schema 并解码。
+    /// </summary>
+    public static void SetOperationPayload(this InvocationContext context, ReadOnlyMemory<byte> payload) => context.Set(_payloadKey, payload);
+
+    /// <summary>
+    /// 取本次调用的原始载荷；类型化调用没有载荷时无值。
+    /// </summary>
+    public static Maybe<ReadOnlyMemory<byte>> GetOperationPayload(this InvocationContext context) => context.Get(_payloadKey);
 
     /// <summary>
     /// 记录解码后的请求对象，供 Validate 等后续阶段检查。

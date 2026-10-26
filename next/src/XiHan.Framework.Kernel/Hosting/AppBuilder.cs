@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -183,8 +184,10 @@ public sealed class AppBuilder
         {
             Services.TryAddSingleton<ObserveMiddleware>();
             Services.TryAddSingleton<DeadlineMiddleware>();
+            Services.TryAddSingleton<ValidationMiddleware>();
             Pipeline.UseAt<ObserveMiddleware>(PipelineStage.Observe, Placement.Beginning, KernelCapabilities.Manifest.Id);
             Pipeline.UseAt<DeadlineMiddleware>(PipelineStage.Resilience, Placement.Beginning, KernelCapabilities.Manifest.Id);
+            Pipeline.UseAt<ValidationMiddleware>(PipelineStage.Validate, Placement.Beginning, KernelCapabilities.Manifest.Id);
         }
 
         var runtimes = new List<FeatureRuntime>();
