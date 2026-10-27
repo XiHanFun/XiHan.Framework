@@ -8,6 +8,7 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// <summary>
 /// 从类型符号生成 JSON Schema（draft 2020-12）：基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，
 /// 对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。
+/// 根 <c>title</c> 与定义名按 <see cref="SchemaNames"/>（封闭泛型带实参名）；按字符串序列化的枚举进 <c>$defs/&lt;枚举类型名&gt;</c>（<c>type: string</c> + <c>enum</c>）并以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。
 /// 属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），
 /// <c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），
 /// <c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。
@@ -51,7 +52,7 @@ internal sealed class JsonSchemaBuilder
         var body = SchemaOf(root, nullable: false, inline: true);
         var json = new JsonText().StartObject()
             .String("$schema", "https://json-schema.org/draft/2020-12/schema")
-            .String("title", root.Name);
+            .String("title", SchemaNames.Of(root));
         // 根对象直接展开（去掉外层花括号再拼进来，逗号由 JsonText 补），其他对象放在 $defs
         var inner = body.Substring(1, body.Length - 2);
         if (inner.Length > 0)
@@ -96,17 +97,19 @@ internal sealed class JsonSchemaBuilder
                 Type(json, "array", nullable);
                 json.Raw("items", SchemaOf(array.ElementType, nullable: false));
                 break;
+            case INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType when _stringEnums && !inline:
+                // 字符串枚举是有名字的值集：进 $defs/<枚举类型名>，属性以 $ref 引用，协议适配器与前端生成器据此得到同名类型而不是按属性各起一个
+                json.EndObject();
+                return Reference(enumType, nullable, body =>
+                {
+                    Type(body, "string", nullable: false);
+                    WriteEnumMembers(body, enumType);
+                });
             case INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType:
                 if (_stringEnums)
                 {
                     Type(json, "string", nullable);
-                    json.StartArray("enum");
-                    foreach (var member in enumType.GetMembers().OfType<IFieldSymbol>().Where(static f => f.HasConstantValue))
-                    {
-                        json.String(null, member.Name);
-                    }
-
-                    json.EndArray();
+                    WriteEnumMembers(json, enumType);
                 }
                 else
                 {
@@ -141,7 +144,11 @@ internal sealed class JsonSchemaBuilder
                 break;
             case INamedTypeSymbol named:
                 json.EndObject();
-                return Reference(named, nullable);
+                return Reference(named, nullable, body =>
+                {
+                    Type(body, "object", nullable: false);
+                    WriteProperties(body, named);
+                });
             default:
                 break;
         }
@@ -150,17 +157,30 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 对象类型进 <c>$defs</c>（只登记一次，先占位再生成以支持递归），返回 <c>$ref</c> 片段。
+    /// 写字符串枚举的 <c>enum</c>：成员名按声明顺序。
     /// </summary>
-    private string Reference(INamedTypeSymbol type, bool nullable)
+    private static void WriteEnumMembers(JsonText json, INamedTypeSymbol enumType)
+    {
+        json.StartArray("enum");
+        foreach (var member in enumType.GetMembers().OfType<IFieldSymbol>().Where(static f => f.HasConstantValue))
+        {
+            json.String(null, member.Name);
+        }
+
+        json.EndArray();
+    }
+
+    /// <summary>
+    /// 类型进 <c>$defs</c>（只登记一次，先占位再生成以支持递归；定义名按 <see cref="SchemaNames"/>），返回 <c>$ref</c> 片段；<paramref name="writeBody"/> 写定义的内容。
+    /// </summary>
+    private string Reference(INamedTypeSymbol type, bool nullable, Action<JsonText> writeBody)
     {
         if (!_definitions.TryGetValue(type, out var name))
         {
-            name = UniqueDefinitionName(type.Name);
+            name = UniqueDefinitionName(SchemaNames.Of(type));
             _definitions[type] = name;
             var body = new JsonText().StartObject();
-            Type(body, "object", nullable: false);
-            WriteProperties(body, type);
+            writeBody(body);
             _definitionBodies.Add(new KeyValuePair<string, string>(name, body.EndObject().ToString()));
         }
 
@@ -175,13 +195,13 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 同名类型来自不同命名空间时加序号。
+    /// 同名类型来自不同命名空间时加序号；按已占位的名字判重，嵌套生成途中遇到的同名类型也不会撞名。
     /// </summary>
     private string UniqueDefinitionName(string name)
     {
         var candidate = name;
         var index = 2;
-        while (_definitionBodies.Any(d => d.Key == candidate))
+        while (_definitions.ContainsValue(candidate))
         {
             candidate = name + index++;
         }

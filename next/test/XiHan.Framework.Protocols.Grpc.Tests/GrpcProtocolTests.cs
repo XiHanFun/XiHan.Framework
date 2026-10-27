@@ -198,6 +198,23 @@ public sealed class GrpcProtocolTests
     }
 
     [Fact]
+    public async Task ProtoEndpoint_KeepsClosedGenericMessagesApart_AndMapsStringEnumsToString()
+    {
+        // 同一登记表里两个 PageResult<T> 操作同时暴露给 gRPC：消息名带实参名，启动不再以 PROTOCOLS_CONFLICT_003 失败
+        var (app, channel, client) = await StartAsync(static xihan => xihan.UseFeature<PagedFeature>());
+        await using var host = app;
+        using var scope = channel;
+
+        var proto = await client.GetStringAsync("/operations.proto");
+        Assert.Contains("message PageResultOfUserResponse {\n  repeated UserResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("message PageResultOfRoleResponse {\n  repeated RoleResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("  string status = 2;\n  optional string previous_status = 3;\n", proto, StringComparison.Ordinal);
+        Assert.Contains("service Roles {\n  // roles.list\n  rpc List (PageQuery) returns (PageResultOfRoleResponse);\n}", proto, StringComparison.Ordinal);
+        Assert.Contains("service Users {\n  // users.list\n  rpc List (PageQuery) returns (PageResultOfUserResponse);\n}", proto, StringComparison.Ordinal);
+        Assert.DoesNotContain("UserStatus", proto, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SchemalessOrDuplicateOperations_FailAtStartup()
     {
         var schemaless = await Assert.ThrowsAsync<FrameworkException>(static () => StartAsync(static xihan => xihan.UseFeature<SchemalessFeature>()));

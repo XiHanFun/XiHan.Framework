@@ -188,6 +188,46 @@ public sealed class ProtoCodecTests
     }
 
     [Fact]
+    public void StringEnumDefinitions_MapToStrings_AndGenericTitlesKeepMessagesApart()
+    {
+        var users = ProtoSchema.FromJsonSchema(PagedSchemas.UsersPage);
+        var roles = ProtoSchema.FromJsonSchema(PagedSchemas.RolesPage);
+        var query = ProtoSchema.FromJsonSchema(PagedSchemas.PageQuery);
+
+        // 字符串枚举定义不建消息：$ref 到它的字段按 string 映射，可空为 optional，数组与映射的元素同样是 string
+        Assert.Equal("PageResultOfUserResponse", users.Name);
+        var user = Assert.Single(users.Fields, static f => f.JsonName == "items").Value.Message!;
+        Assert.Equal("UserResponse", user.Name);
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Singular), user.Fields[1].Let(static f => (f.Value.Kind, f.Cardinality)));
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Optional), user.Fields[2].Let(static f => (f.Value.Kind, f.Cardinality)));
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Repeated), user.Fields[3].Let(static f => (f.Value.Kind, f.Cardinality)));
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Map), user.Fields[4].Let(static f => (f.Value.Kind, f.Cardinality)));
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Optional), query.Fields[1].Let(static f => (f.Value.Kind, f.Cardinality)));
+
+        // 线格式不变：枚举名按字符串上线，往返一致
+        var bytes = Encode(users, """{"items":[{"id":"u-1","status":"Active","previousStatus":"Disabled","history":["Disabled","Active"],"byRole":{"admin":"Active"}}],"total":1}""");
+        Assert.Contains(ProtoBytes.StringField(2, "Active"), bytes);
+        Assert.Equal("""{"items":[{"id":"u-1","status":"Active","previousStatus":"Disabled","history":["Disabled","Active"],"byRole":{"admin":"Active"}}],"total":1}""", Decode(users, bytes));
+
+        // 同一泛型的两个封闭类型是两个消息，.proto 里都在、不冲突；枚举没有对应的 message
+        var operations = new List<GrpcOperation>
+        {
+            new(Descriptor(new OperationContract("users.list")), new GrpcMethodName("Users", "List"), query, users),
+            new(Descriptor(new OperationContract("roles.list")), new GrpcMethodName("Roles", "List"), query, roles),
+        };
+        var proto = ProtoFileBuilder.Build(operations, null);
+        Assert.Contains("message PageResultOfUserResponse {\n  repeated UserResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("message PageResultOfRoleResponse {\n  repeated RoleResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("message UserResponse {\n  string id = 1;\n  string status = 2;\n  optional string previous_status = 3;\n  repeated string history = 4;\n  map<string, string> by_role = 5;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("message PageQuery {\n  int32 page = 1;\n  optional string status = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.DoesNotContain("UserStatus", proto, StringComparison.Ordinal);
+        Assert.Contains("rpc List (PageQuery) returns (PageResultOfUserResponse);", proto, StringComparison.Ordinal);
+
+        // 标量定义之间成环时失败，而不是无限递归
+        Assert.Throws<ProtoException>(static () => ProtoSchema.FromJsonSchema("""{"title":"X","type":"object","properties":{"a":{"$ref":"#/$defs/A"}},"$defs":{"A":{"$ref":"#/$defs/B"},"B":{"$ref":"#/$defs/A"}}}"""));
+    }
+
+    [Fact]
     public void MethodNames_FollowConvention_AndOptionsValidate()
     {
         Assert.Equal("Orders/Create", GrpcMethodConvention.Derive(new OperationContract("orders.create")).ToString());
