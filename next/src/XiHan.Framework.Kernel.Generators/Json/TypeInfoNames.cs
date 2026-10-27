@@ -46,26 +46,31 @@ internal static class TypeInfoNames
 
                 return;
             default:
-                builder.Append(type.SpecialType switch
-                {
-                    SpecialType.System_Boolean => "Boolean",
-                    SpecialType.System_Byte => "Byte",
-                    SpecialType.System_SByte => "SByte",
-                    SpecialType.System_Int16 => "Int16",
-                    SpecialType.System_UInt16 => "UInt16",
-                    SpecialType.System_Int32 => "Int32",
-                    SpecialType.System_UInt32 => "UInt32",
-                    SpecialType.System_Int64 => "Int64",
-                    SpecialType.System_UInt64 => "UInt64",
-                    SpecialType.System_Single => "Single",
-                    SpecialType.System_Double => "Double",
-                    SpecialType.System_Decimal => "Decimal",
-                    SpecialType.System_Char => "Char",
-                    SpecialType.System_String => "String",
-                    SpecialType.System_Object => "Object",
-                    _ => type.Name,
-                });
+                builder.Append(SimpleName(type));
                 return;
         }
     }
+
+    /// <summary>
+    /// 非泛型、非数组类型的名字：基元类型用 CLR 名（<c>Int32</c>、<c>String</c>），其余取类型名。
+    /// </summary>
+    public static string SimpleName(ITypeSymbol type) => type.SpecialType switch
+    {
+        SpecialType.System_Boolean => "Boolean",
+        SpecialType.System_Byte => "Byte",
+        SpecialType.System_SByte => "SByte",
+        SpecialType.System_Int16 => "Int16",
+        SpecialType.System_UInt16 => "UInt16",
+        SpecialType.System_Int32 => "Int32",
+        SpecialType.System_UInt32 => "UInt32",
+        SpecialType.System_Int64 => "Int64",
+        SpecialType.System_UInt64 => "UInt64",
+        SpecialType.System_Single => "Single",
+        SpecialType.System_Double => "Double",
+        SpecialType.System_Decimal => "Decimal",
+        SpecialType.System_Char => "Char",
+        SpecialType.System_String => "String",
+        SpecialType.System_Object => "Object",
+        _ => type.Name,
+    };
 }

@@ -189,6 +189,33 @@ public sealed class OpenApiExtensionsTests
     }
 
     [Fact]
+    public async Task DocumentSource_FromServices_ProducesTheSameDocument_AsTheMappedEndpoint()
+    {
+        var options = new OpenApiOptions { Title = "Orders API", Version = "2.0.0", Servers = [new OpenApiServer("https://api.example.com", "prod")] };
+        var (app, client) = await StartAsync(localization: true, bearer: true, options: options);
+        await using var host = app;
+        var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).ToList();
+
+        // 导出工具用同一工厂组装输入：与 /openapi.json 在同一区域下逐字节相同（标题 / 版本 / servers、Bearer 方案、普通端点、摘要都在内）
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/openapi.json");
+        request.Headers.TryAddWithoutValidation("Accept-Language", "zh-CN");
+        var served = await (await client.SendAsync(request)).Content.ReadAsByteArrayAsync();
+        var built = OpenApiDocumentBuilder.Build(OpenApiDocumentSource.FromServices(app.Services, options, endpoints, "zh-CN"));
+        Assert.Equal(served, built);
+        using var chinese = JsonDocument.Parse(built);
+        Assert.Equal("按 ID 读取一个订单。", chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
+        Assert.Equal("Orders API", chinese.RootElement.GetProperty("info").GetProperty("title").GetString());
+        Assert.Equal("https://api.example.com", chinese.RootElement.GetProperty("servers")[0].GetProperty("url").GetString());
+
+        // 不给区域时按本地化的默认区域取摘要；不给选项时标题取应用名、版本取框架版本
+        using var english = JsonDocument.Parse(OpenApiDocumentBuilder.Build(OpenApiDocumentSource.FromServices(app.Services, null, endpoints)));
+        Assert.Equal("Get one order by its ID.", english.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
+        Assert.Equal(FrameworkInfo.Version, english.RootElement.GetProperty("info").GetProperty("version").GetString());
+        Assert.NotEqual("Orders API", english.RootElement.GetProperty("info").GetProperty("title").GetString());
+        Assert.True(english.RootElement.GetProperty("components").TryGetProperty("securitySchemes", out _));
+    }
+
+    [Fact]
     public async Task OpenApi_IncludesPlainEndpoints_ByMetadata_WithBinaryFormTextAndSchemaReferences()
     {
         var (app, client) = await StartAsync(map: static web =>

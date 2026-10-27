@@ -81,6 +81,53 @@ public sealed class OperationGeneratorTests
             public JsonTypeInfo<OrderResponse> Order => null!;
             public JsonTypeInfo<AnnotatedRequest> AnnotatedRequest => null!;
         }
+
+        public enum UserStatus { Active, Disabled }
+
+        public sealed record PageResult<T>(IReadOnlyList<T> Items, long Total);
+
+        public sealed record Envelope<TBody, TMeta>(TBody Body, TMeta Meta);
+
+        public sealed record UserResponse(Guid Id, UserStatus Status, UserStatus? PreviousStatus);
+
+        public sealed record RoleResponse(Guid Id, string Name);
+
+        public sealed record PageQuery(int Page = 1, UserStatus? Status = null);
+
+        [Operation("users.list", Expose = Expose.Http | Expose.Grpc)]
+        public sealed class ListUsers : IOperation<PageQuery, PageResult<UserResponse>>
+        {
+            public ValueTask<Result<PageResult<UserResponse>>> HandleAsync(PageQuery request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("roles.list", Expose = Expose.Http | Expose.Grpc)]
+        public sealed class ListRoles : IOperation<PageQuery, PageResult<RoleResponse>>
+        {
+            public ValueTask<Result<PageResult<RoleResponse>>> HandleAsync(PageQuery request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("users.export")]
+        public sealed class ExportUsers : IOperation<PageQuery, Envelope<List<UserResponse>, int>>
+        {
+            public ValueTask<Result<Envelope<List<UserResponse>, int>>> HandleAsync(PageQuery request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
+        [JsonSerializable(typeof(PageQuery))]
+        [JsonSerializable(typeof(PageResult<UserResponse>))]
+        [JsonSerializable(typeof(PageResult<RoleResponse>))]
+        [JsonSerializable(typeof(Envelope<List<UserResponse>, int>))]
+        internal sealed class PagedJsonContext : JsonSerializerContext
+        {
+            public static PagedJsonContext Default { get; } = new();
+            public PagedJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<PageQuery> PageQuery => null!;
+            public JsonTypeInfo<PageResult<UserResponse>> PageResultUserResponse => null!;
+            public JsonTypeInfo<PageResult<RoleResponse>> PageResultRoleResponse => null!;
+            public JsonTypeInfo<Envelope<List<UserResponse>, int>> EnvelopeListUserResponseInt32 => null!;
+        }
         """;
 
     /// <summary>
@@ -156,13 +203,39 @@ public sealed class OperationGeneratorTests
             .Where(static c => c.Type.ToString().EndsWith("OperationSchema", StringComparison.Ordinal))
             .Select(static c => c.ArgumentList!.Arguments.Select(static a => ((LiteralExpressionSyntax)a.Expression).Token.ValueText).ToArray())
             .ToList();
-        Assert.Equal(3, schemas.Count);
+        Assert.Equal(6, schemas.Count);
         foreach (var pair in schemas)
         {
             var schema = new OperationSchema(pair[0], pair[1]);
             using var request = JsonDocument.Parse(schema.Request);
             Assert.Equal("object", request.RootElement.GetProperty("type").GetString());
         }
+    }
+
+    [Fact]
+    public void Names_ClosedGenericsByTypeArguments_AndPutsStringEnumsInDefinitions()
+    {
+        var (compile, generator, generated) = Run(Source);
+        var text = generated.Replace("\"\"", "\"", StringComparison.Ordinal);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        Assert.Contains("global::Demo.App.PagedJsonContext.Default.PageResultUserResponse", generated, StringComparison.Ordinal);
+
+        // 封闭泛型：根 title 带实参名，两个 PageResult<T> 各是一份 Schema，列表项分别引用各自的实参类型
+        Assert.Contains("\"title\":\"PageResultOfUserResponse\",\"type\":\"object\",\"properties\":{\"items\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/UserResponse\"}},\"total\":{\"type\":\"integer\",\"format\":\"int64\"}},\"required\":[\"items\",\"total\"]", text, StringComparison.Ordinal);
+        Assert.Contains("\"title\":\"PageResultOfRoleResponse\",\"type\":\"object\",\"properties\":{\"items\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/RoleResponse\"}}", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"title\":\"PageResult\"", text, StringComparison.Ordinal);
+        // 嵌套泛型递归、多个实参以 And 连接
+        Assert.Contains("\"title\":\"EnvelopeOfListOfUserResponseAndInt32\",\"type\":\"object\",\"properties\":{\"body\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/UserResponse\"}},\"meta\":{\"type\":\"integer\",\"format\":\"int32\"}}", text, StringComparison.Ordinal);
+
+        // 字符串枚举进 $defs/<枚举类型名>，属性以 $ref 引用，可空为 anyOf 带 null；枚举定义先于引用它的对象定义写出
+        Assert.Contains("\"$defs\":{\"UserStatus\":{\"type\":\"string\",\"enum\":[\"Active\",\"Disabled\"]},\"UserResponse\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"uuid\"},\"status\":{\"$ref\":\"#/$defs/UserStatus\"},\"previousStatus\":{\"anyOf\":[{\"$ref\":\"#/$defs/UserStatus\"},{\"type\":\"null\"}]}},\"required\":[\"id\",\"status\"]}}", text, StringComparison.Ordinal);
+        // 请求里的可空枚举同样引用定义；没有必填属性时没有 required
+        Assert.Contains("\"title\":\"PageQuery\",\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"integer\",\"format\":\"int32\"},\"status\":{\"anyOf\":[{\"$ref\":\"#/$defs/UserStatus\"},{\"type\":\"null\"}]}},\"$defs\":{\"UserStatus\":{\"type\":\"string\",\"enum\":[\"Active\",\"Disabled\"]}}", text, StringComparison.Ordinal);
+        // 不按字符串序列化的上下文里枚举仍是内联整数
+        Assert.Contains("\"status\":{\"type\":\"integer\",\"format\":\"int32\"}", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"OrderStatus\"", text, StringComparison.Ordinal);
     }
 
     [Fact]

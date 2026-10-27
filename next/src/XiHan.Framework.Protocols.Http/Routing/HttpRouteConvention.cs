@@ -163,15 +163,16 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求 Schema 的顶层属性里是否有对象（<c>type: object</c>、<c>properties</c> 或 <c>$ref</c>）或元素是对象的数组；Schema 不是合法 JSON 对象时视为没有。
+    /// 请求 Schema 的顶层属性里是否有对象（<c>type: object</c>、<c>properties</c>，或 <c>$ref</c> 到对象定义）或元素是对象的数组；Schema 不是合法 JSON 对象时视为没有。
     /// </summary>
     private static bool SchemaDeclaresNestedFields(string requestSchema)
     {
         try
         {
             using var document = JsonDocument.Parse(requestSchema);
-            if (document.RootElement.ValueKind != JsonValueKind.Object
-                || !document.RootElement.TryGetProperty("properties", out var properties)
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("properties", out var properties)
                 || properties.ValueKind != JsonValueKind.Object)
             {
                 return false;
@@ -180,8 +181,8 @@ public static class HttpRouteConvention
             foreach (var property in properties.EnumerateObject())
             {
                 var schema = property.Value;
-                if (IsObjectSchema(schema)
-                    || (schema.ValueKind == JsonValueKind.Object && schema.TryGetProperty("items", out var items) && IsObjectSchema(items)))
+                if (IsObjectSchema(root, schema, depth: 0)
+                    || (schema.ValueKind == JsonValueKind.Object && schema.TryGetProperty("items", out var items) && IsObjectSchema(root, items, depth: 0)))
                 {
                     return true;
                 }
@@ -196,16 +197,26 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 一个属性 Schema 是否描述对象。
+    /// 标量定义互相引用时允许的最大跳数。
     /// </summary>
-    private static bool IsObjectSchema(JsonElement schema)
+    private const int MaxReferenceDepth = 8;
+
+    /// <summary>
+    /// 一个属性 Schema 是否描述对象；<c>$ref</c> 按根 <c>$defs</c> 里的定义判定（字符串枚举这类标量定义不是对象），解析不到的引用按对象处理。
+    /// </summary>
+    private static bool IsObjectSchema(JsonElement root, JsonElement schema, int depth)
     {
         if (schema.ValueKind != JsonValueKind.Object)
         {
             return false;
         }
 
-        if (schema.TryGetProperty("$ref", out _) || schema.TryGetProperty("properties", out _))
+        if (schema.TryGetProperty("$ref", out var reference))
+        {
+            return depth >= MaxReferenceDepth || !TryResolve(root, reference, out var target) || IsObjectSchema(root, target, depth + 1);
+        }
+
+        if (schema.TryGetProperty("properties", out _))
         {
             return true;
         }
@@ -221,6 +232,21 @@ public static class HttpRouteConvention
             JsonValueKind.Array => type.EnumerateArray().Any(static item => item.ValueKind == JsonValueKind.String && item.ValueEquals("object"u8)),
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// 解析本地 <c>$ref</c>（只支持 <c>#/$defs/名字</c>）。
+    /// </summary>
+    private static bool TryResolve(JsonElement root, JsonElement reference, out JsonElement target)
+    {
+        const string prefix = "#/$defs/";
+        target = default;
+        var text = reference.ValueKind == JsonValueKind.String ? reference.GetString() : null;
+        return text is not null
+            && text.StartsWith(prefix, StringComparison.Ordinal)
+            && root.TryGetProperty("$defs", out var definitions)
+            && definitions.ValueKind == JsonValueKind.Object
+            && definitions.TryGetProperty(text[prefix.Length..], out target);
     }
 
     /// <summary>

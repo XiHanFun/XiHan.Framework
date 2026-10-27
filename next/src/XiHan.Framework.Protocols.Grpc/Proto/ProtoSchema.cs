@@ -10,7 +10,8 @@ namespace XiHan.Framework.Protocols.Grpc.Proto;
 /// 把操作的 JSON Schema（draft 2020-12，<c>Kernel.Generators</c> 的产出形态）映射为 protobuf 消息描述。字段号按 <c>properties</c> 的声明顺序从 1 起分配。
 /// 映射：<c>string</c> → string（<c>contentEncoding: base64</c> → bytes）；<c>boolean</c> → bool；<c>integer</c> 按 <c>format</c> int32 / int64，没有格式按十进制文本；
 /// <c>number</c> 按 <c>format</c> float / double，decimal 与没有格式按十进制文本；<c>array</c> → repeated（元素不能再是数组或映射）；
-/// 带 <c>additionalProperties</c> 的 <c>object</c> → map&lt;string, T&gt;；<c>$ref</c> → 嵌套消息（<c>$defs</c>）；可空（<c>type</c> 含 <c>null</c> 或 <c>anyOf</c> 含 null）→ optional；没有约束的 Schema → JSON 文本。
+/// 带 <c>additionalProperties</c> 的 <c>object</c> → map&lt;string, T&gt;；<c>$ref</c> 到对象定义 → 嵌套消息（<c>$defs</c>），到标量定义（字符串枚举）→ 按该标量映射，不建消息；
+/// 可空（<c>type</c> 含 <c>null</c> 或 <c>anyOf</c> 含 null）→ optional；没有约束的 Schema → JSON 文本。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoSchema
@@ -21,7 +22,12 @@ public static class ProtoSchema
     private const string DefinitionPrefix = "#/$defs/";
 
     /// <summary>
-    /// 从 Schema 文本建根消息（名字取 <c>title</c>）；<c>$defs</c> 里的对象成为嵌套消息。不能映射时抛出 <see cref="ProtoException"/>。
+    /// 标量定义互相引用时允许的最大跳数（防环）。
+    /// </summary>
+    private const int MaxReferenceDepth = 16;
+
+    /// <summary>
+    /// 从 Schema 文本建根消息（名字取 <c>title</c>）；<c>$defs</c> 里的对象定义成为嵌套消息，其余定义在引用处按标量展开。不能映射时抛出 <see cref="ProtoException"/>。
     /// </summary>
     public static ProtoMessage FromJsonSchema(string schema)
     {
@@ -44,19 +50,26 @@ public static class ProtoSchema
                 throw new ProtoException("The schema must be a JSON object.");
             }
 
-            // 先为每个定义建空消息再填字段：定义之间可以互相引用，甚至递归
-            var definitions = new Dictionary<string, ProtoMessage>(StringComparer.Ordinal);
+            // 先为每个对象定义建空消息再填字段：定义之间可以互相引用，甚至递归；不是对象的定义（字符串枚举这类标量）不建消息
+            var definitions = new Definitions();
             var hasDefinitions = root.TryGetProperty("$defs", out var definitionElements) && definitionElements.ValueKind == JsonValueKind.Object;
             if (hasDefinitions)
             {
                 foreach (var definition in definitionElements.EnumerateObject())
                 {
-                    definitions[definition.Name] = new ProtoMessage(definition.Name);
+                    if (IsMessageSchema(definition.Value))
+                    {
+                        definitions.Messages[definition.Name] = new ProtoMessage(definition.Name);
+                    }
+                    else
+                    {
+                        definitions.Scalars[definition.Name] = definition.Value;
+                    }
                 }
             }
 
             var name = root.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(title.GetString()) ? title.GetString()! : "Message";
-            if (definitions.ContainsKey(name))
+            if (definitions.Messages.ContainsKey(name))
             {
                 throw new ProtoException($"The root message '{name}' collides with a definition of the same name.");
             }
@@ -66,7 +79,10 @@ public static class ProtoSchema
             {
                 foreach (var definition in definitionElements.EnumerateObject())
                 {
-                    Fill(definitions[definition.Name], definition.Value, definitions);
+                    if (definitions.Messages.TryGetValue(definition.Name, out var nested))
+                    {
+                        Fill(nested, definition.Value, definitions);
+                    }
                 }
             }
 
@@ -76,11 +92,17 @@ public static class ProtoSchema
     }
 
     /// <summary>
+    /// 一个定义是否对象定义（带 <c>properties</c>）：是则成为消息，否则在引用处按标量展开。
+    /// </summary>
+    private static bool IsMessageSchema(JsonElement schema)
+        => schema.ValueKind == JsonValueKind.Object && schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object;
+
+    /// <summary>
     /// 以对象 Schema 的 <c>properties</c> 填消息字段。
     /// </summary>
-    private static void Fill(ProtoMessage message, JsonElement schema, IReadOnlyDictionary<string, ProtoMessage> definitions)
+    private static void Fill(ProtoMessage message, JsonElement schema, Definitions definitions)
     {
-        var (type, _, node) = Classify(schema, message.Name);
+        var (type, _, node) = Classify(schema, message.Name, definitions);
         if (type != "object" || !node.TryGetProperty("properties", out var properties) || properties.ValueKind != JsonValueKind.Object)
         {
             throw new ProtoException($"Schema '{message.Name}' must be an object with properties to become a protobuf message.");
@@ -99,9 +121,9 @@ public static class ProtoSchema
     /// <summary>
     /// 一个属性 → 一个字段：数组成重复字段，带 <c>additionalProperties</c> 的对象成映射字段，其余按可空性成 optional 或单值字段。
     /// </summary>
-    private static ProtoField FieldOf(int number, string jsonName, JsonElement schema, IReadOnlyDictionary<string, ProtoMessage> definitions, string path)
+    private static ProtoField FieldOf(int number, string jsonName, JsonElement schema, Definitions definitions, string path)
     {
-        var (type, nullable, node) = Classify(schema, path);
+        var (type, nullable, node) = Classify(schema, path, definitions);
         switch (type)
         {
             case "array":
@@ -121,9 +143,9 @@ public static class ProtoSchema
     /// <summary>
     /// 数组元素或映射值的类型：protobuf 没有嵌套的 repeated / map，这里只接受标量与消息。
     /// </summary>
-    private static ProtoValueType ElementOf(JsonElement schema, IReadOnlyDictionary<string, ProtoMessage> definitions, string path)
+    private static ProtoValueType ElementOf(JsonElement schema, Definitions definitions, string path)
     {
-        var (type, _, node) = Classify(schema, path);
+        var (type, _, node) = Classify(schema, path, definitions);
         if (type == "array")
         {
             throw new ProtoException($"'{path}': nested arrays are not representable in protobuf; wrap the inner array in a type.");
@@ -140,18 +162,13 @@ public static class ProtoSchema
     /// <summary>
     /// 标量或消息的类型。
     /// </summary>
-    private static ProtoValueType ValueOf(string type, JsonElement node, IReadOnlyDictionary<string, ProtoMessage> definitions, string path)
+    private static ProtoValueType ValueOf(string type, JsonElement node, Definitions definitions, string path)
     {
         switch (type)
         {
             case "ref":
-                var reference = node.GetProperty("$ref").GetString() ?? string.Empty;
-                if (!reference.StartsWith(DefinitionPrefix, StringComparison.Ordinal) || !definitions.TryGetValue(reference[DefinitionPrefix.Length..], out var message))
-                {
-                    throw new ProtoException($"'{path}': reference '{reference}' does not point to a definition in $defs.");
-                }
-
-                return ProtoValueType.Of(message);
+                // Classify 只把指向对象定义的 $ref 归为 ref，这里一定能取到消息
+                return ProtoValueType.Of(definitions.Messages[node.GetProperty("$ref").GetString()![DefinitionPrefix.Length..]]);
             case "string":
                 return ProtoValueType.Scalar(node.TryGetProperty("contentEncoding", out var encoding) && string.Equals(encoding.GetString(), "base64", StringComparison.Ordinal) ? ProtoKind.Bytes : ProtoKind.Text);
             case "boolean":
@@ -192,8 +209,9 @@ public static class ProtoSchema
 
     /// <summary>
     /// 归类一个 Schema 节点：主类型（<c>ref</c> / <c>any</c> / JSON Schema 类型名）、是否可空、有效节点（<c>anyOf</c> 展开后的非 null 分支）。
+    /// <c>$ref</c> 指向对象定义时归为 <c>ref</c>；指向标量定义（字符串枚举）时在此展开为该定义的归类，字段按其标量映射。
     /// </summary>
-    private static (string Type, bool Nullable, JsonElement Node) Classify(JsonElement schema, string path)
+    private static (string Type, bool Nullable, JsonElement Node) Classify(JsonElement schema, string path, Definitions definitions, int depth = 0)
     {
         if (schema.ValueKind != JsonValueKind.Object)
         {
@@ -226,13 +244,30 @@ public static class ProtoSchema
                 throw new ProtoException($"'{path}': anyOf has no non-null branch.");
             }
 
-            var inner = Classify(branch.Value, path);
+            var inner = Classify(branch.Value, path, definitions, depth);
             return (inner.Type, inner.Nullable || nullable, inner.Node);
         }
 
-        if (schema.TryGetProperty("$ref", out _))
+        if (schema.TryGetProperty("$ref", out var reference))
         {
-            return ("ref", false, schema);
+            var text = reference.GetString() ?? string.Empty;
+            var name = text.StartsWith(DefinitionPrefix, StringComparison.Ordinal) ? text[DefinitionPrefix.Length..] : null;
+            if (name is not null && definitions.Messages.ContainsKey(name))
+            {
+                return ("ref", false, schema);
+            }
+
+            if (name is not null && definitions.Scalars.TryGetValue(name, out var scalar))
+            {
+                if (depth >= MaxReferenceDepth)
+                {
+                    throw new ProtoException($"'{path}': reference '{text}' is nested too deeply or forms a cycle.");
+                }
+
+                return Classify(scalar, path, definitions, depth + 1);
+            }
+
+            throw new ProtoException($"'{path}': reference '{text}' does not point to a definition in $defs.");
         }
 
         if (!schema.TryGetProperty("type", out var type))
@@ -270,5 +305,21 @@ public static class ProtoSchema
         }
 
         throw new ProtoException($"'{path}': 'type' must be a string or an array of strings.");
+    }
+
+    /// <summary>
+    /// <c>$defs</c> 的两类定义：对象定义（成为嵌套消息）与标量定义（字符串枚举等，在引用处展开）。
+    /// </summary>
+    private sealed class Definitions
+    {
+        /// <summary>
+        /// 对象定义名 → 消息。
+        /// </summary>
+        public Dictionary<string, ProtoMessage> Messages { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 标量定义名 → 定义节点。
+        /// </summary>
+        public Dictionary<string, JsonElement> Scalars { get; } = new(StringComparer.Ordinal);
     }
 }

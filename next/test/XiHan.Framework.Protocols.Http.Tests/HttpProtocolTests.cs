@@ -190,6 +190,9 @@ public sealed class HttpProtocolTests
         Assert.True(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"page":{"$ref":"#/$defs/Page"}}}""", """{"type":"object"}"""))));
         Assert.True(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"lines":{"type":"array","items":{"type":["object","null"]}}}}""", """{"type":"object"}"""))));
         Assert.False(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"tags":{"type":"array","items":{"type":"string"}}}}""", """{"type":"object"}"""))));
+        // $ref 按 $defs 里的定义判定：指向字符串枚举这类标量定义的不算嵌套，指向对象定义的算
+        Assert.False(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"status":{"anyOf":[{"$ref":"#/$defs/Status"},{"type":"null"}]},"kinds":{"type":"array","items":{"$ref":"#/$defs/Status"}}},"$defs":{"Status":{"type":"string","enum":["Open"]}}}""", """{"type":"object"}"""))));
+        Assert.True(HttpRouteConvention.HasNestedFields(new SchemaOnlyDescriptor("orders.list", new OperationSchema("""{"type":"object","properties":{"page":{"$ref":"#/$defs/Page"}},"$defs":{"Page":{"type":"object","properties":{"size":{"type":"integer"}}}}}""", """{"type":"object"}"""))));
 
         var (app, client, _) = await StartAsync(("XiHan:Protocols:Http:RoutePrefix", "/api"));
         await using var host = app;

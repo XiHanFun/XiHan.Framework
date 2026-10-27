@@ -5,28 +5,19 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Security.Abstractions.Authentication;
 
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 发布 OpenAPI 文档端点：从操作登记表、权限码注册表、已装配的认证处理器与宿主的全部端点按需生成并缓存；装配了本地化时按 <c>Accept-Language</c> 协商出的区域分别生成并缓存
-/// （操作的 <c>summary</c> 来自消息目录，响应带 <c>Content-Language</c>）。端点不经过内核管道。
+/// 发布 OpenAPI 文档端点：从操作登记表、权限码注册表、已装配的认证处理器与宿主的全部端点按需生成并缓存（输入由 <see cref="OpenApiDocumentSource.FromServices"/> 组装）；
+/// 装配了本地化时按 <c>Accept-Language</c> 协商出的区域分别生成并缓存（操作的 <c>summary</c> 来自消息目录，响应带 <c>Content-Language</c>）。端点不经过内核管道。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class OpenApiEndpointRouteBuilderExtensions
 {
-    /// <summary>
-    /// 消息目录里操作摘要键的后缀，与 MCP <c>tools/list</c> 的 <c>description</c> 同一个键。
-    /// </summary>
-    private const string DescriptionKeySuffix = ".description";
-
     /// <summary>
     /// 默认的文档路径。
     /// </summary>
@@ -46,18 +37,7 @@ public static class OpenApiEndpointRouteBuilderExtensions
         // 文档在第一次请求时按区域生成并缓存：此时全部特性已装配、登记表已定型、宿主的端点都已映射。
         // 权限码注册表由内核在装配后以单例登记（AppBuilder.Build），特性在配置阶段登记的权限定义都已在其中
         var documents = new ConcurrentDictionary<string, Lazy<byte[]>>(StringComparer.Ordinal);
-        byte[] Generate(string locale) => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(
-            services.GetRequiredService<OperationRegistry>(),
-            services.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions(),
-            services.GetService<PermissionRegistry>())
-        {
-            Title = options.Title ?? services.GetService<IHostEnvironment>()?.ApplicationName ?? FrameworkInfo.Name,
-            Version = options.Version ?? FrameworkInfo.Version,
-            Servers = options.Servers,
-            AuthenticationSchemes = services.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme).ToList(),
-            Endpoints = dataSources.SelectMany(static source => source.Endpoints).ToList(),
-            Describe = localizer is null ? null : id => Describe(localizer, id, locale),
-        });
+        byte[] Generate(string locale) => OpenApiDocumentBuilder.Build(OpenApiDocumentSource.FromServices(services, options, dataSources.SelectMany(static source => source.Endpoints), locale));
 
         return PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(pattern, async httpContext =>
         {
@@ -72,14 +52,5 @@ public static class OpenApiEndpointRouteBuilderExtensions
 
             await httpContext.Response.Body.WriteAsync(document, httpContext.RequestAborted).ConfigureAwait(false);
         }));
-    }
-
-    /// <summary>
-    /// 操作 ID 对应的摘要：消息目录里 <c>&lt;操作 ID&gt;.description</c>（ID 里的连字符不合键的文法，换成下划线）在该区域的文案；没有就不给。
-    /// </summary>
-    private static string? Describe(IMessageLocalizer localizer, string operationId, string locale)
-    {
-        var key = operationId.Replace('-', '_') + DescriptionKeySuffix;
-        return MessageTemplate.IsValidKey(key) && localizer.Find(key, locale).TryGetValue(out var text) ? text : null;
     }
 }
