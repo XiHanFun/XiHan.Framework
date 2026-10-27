@@ -57,6 +57,8 @@ XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.LeaseTimeT
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.SnowflakeOptions() -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.WorkerId.get -> int?
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.WorkerId.init -> void
+XiHan.Framework.Persistence.Abstractions.LongTextAttribute
+XiHan.Framework.Persistence.Abstractions.LongTextAttribute.LongTextAttribute() -> void
 XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities
 XiHan.Framework.Persistence.Abstractions.PersistenceConventions
 XiHan.Framework.Persistence.Abstractions.PersistenceErrors

@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
@@ -14,11 +16,13 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp
 {
     /// <inheritdoc />
+    [StringLength(128)]
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 显示名。
     /// </summary>
+    [StringLength(256)]
     public string? DisplayName { get; set; }
 
     /// <summary>
@@ -29,6 +33,7 @@ public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModifi
     /// <summary>
     /// 租户属性（键区分大小写的字符串字典）的 JSON 对象；长文本列。
     /// </summary>
+    [LongText]
     public string PropertiesJson { get; set; } = TenantRecordMapping.EmptyProperties;
 
     /// <inheritdoc />
@@ -38,5 +43,6 @@ public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModifi
     public DateTimeOffset? ModifiedAt { get; set; }
 
     /// <inheritdoc />
+    [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;
 }

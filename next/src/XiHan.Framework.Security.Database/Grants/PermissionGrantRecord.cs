@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
@@ -27,21 +28,25 @@ public sealed class PermissionGrantRecord : IEntity<Guid>, IHasCreationTime
     /// <summary>
     /// 主体种类：<see cref="GrantSubject.User"/> 或 <see cref="GrantSubject.Role"/>。
     /// </summary>
+    [StringLength(32)]
     public string SubjectKind { get; set; } = string.Empty;
 
     /// <summary>
     /// 主体 ID（用户 ID 或角色名，区分大小写）。
     /// </summary>
+    [StringLength(256)]
     public string SubjectId { get; set; } = string.Empty;
 
     /// <summary>
     /// 权限码，或 <see cref="PermissionGrant.All"/>。
     /// </summary>
+    [StringLength(256)]
     public string Permission { get; set; } = string.Empty;
 
     /// <summary>
     /// 租户；全局授予为 <see cref="GlobalTenantId"/>。
     /// </summary>
+    [StringLength(128)]
     public string TenantId { get; set; } = GlobalTenantId;
 
     /// <inheritdoc />

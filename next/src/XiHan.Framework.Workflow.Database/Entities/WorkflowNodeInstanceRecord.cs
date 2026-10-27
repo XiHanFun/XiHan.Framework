@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Database.Entities;
@@ -13,11 +15,13 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 public sealed class WorkflowNodeInstanceRecord : IEntity<string>
 {
     /// <inheritdoc />
+    [StringLength(128)]
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 所属实例 ID。
     /// </summary>
+    [StringLength(128)]
     public string InstanceId { get; set; } = string.Empty;
 
     /// <summary>
@@ -33,5 +37,6 @@ public sealed class WorkflowNodeInstanceRecord : IEntity<string>
     /// <summary>
     /// 整份节点实例的 JSON；长文本列。
     /// </summary>
+    [LongText]
     public string Document { get; set; } = string.Empty;
 }

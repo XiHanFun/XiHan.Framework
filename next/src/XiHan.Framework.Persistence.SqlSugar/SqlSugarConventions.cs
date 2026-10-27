@@ -2,16 +2,19 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using SqlSugar;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
 /// 按实体协议配置 SqlSugar 的实体映射，实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>：
-/// <c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列。
+/// <c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，
+/// <see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列。
 /// 由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -62,6 +65,32 @@ public static class SqlSugarConventions
         if (string.Equals(property.Name, nameof(IHasConcurrencyStamp.ConcurrencyStamp), StringComparison.Ordinal) && property.PropertyType == typeof(string))
         {
             column.Length = 32;
+        }
+
+        // 字符串列的长度：[LongText] → 数据库的长文本类型（PostgreSQL text、SQL Server nvarchar(max) 等）；[StringLength(n)] / [MaxLength(n)] → 长度 n（无参 [MaxLength] 也按长文本，
+        // 但它的构造函数带 RequiresUnreferencedCode，框架自己的记录用 [LongText]）；实体自己的 [SugarColumn] 已给长度或类型时不动。
+        // 没有注解的字符串列沿用 SqlSugar 的默认（PostgreSQL 为 varchar(255)，超长写入整批失败），框架的数据库记录全部显式标注
+        if (property.PropertyType == typeof(string) && column.Length == 0 && string.IsNullOrEmpty(column.DataType))
+        {
+            if (property.IsDefined(typeof(LongTextAttribute), inherit: true))
+            {
+                column.DataType = StaticConfig.CodeFirst_BigString;
+            }
+            else if (property.GetCustomAttribute<StringLengthAttribute>() is { MaximumLength: > 0 } stringLength)
+            {
+                column.Length = stringLength.MaximumLength;
+            }
+            else if (property.GetCustomAttribute<MaxLengthAttribute>() is { } maxLength)
+            {
+                if (maxLength.Length > 0)
+                {
+                    column.Length = maxLength.Length;
+                }
+                else
+                {
+                    column.DataType = StaticConfig.CodeFirst_BigString;
+                }
+            }
         }
 
         // DateTimeOffset 经转换器按 UTC 时刻往返；SqlSugar 默认按本地时间处理会改变时刻

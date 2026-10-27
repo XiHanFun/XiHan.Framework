@@ -66,6 +66,24 @@ public sealed class SqlSugarPersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task Conventions_MapStringColumnLengths_FromDataAnnotations()
+    {
+        await using var host = await _database.StartHostAsync();
+        await using var scope = host.Services.CreateAsyncScope();
+        var columns = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().EntityMaintenance.GetEntityInfo<LengthAnnotatedRecord>().Columns;
+        EntityColumnInfo Column(string name) => columns.Single(c => c.PropertyName == name);
+
+        // [StringLength(n)] / [MaxLength(n)] 给长度，[LongText] 与无参 [MaxLength] 是数据库的长文本类型，没有注解的沿用 SqlSugar 默认（没有长度、没有类型）
+        Assert.Equal(64, Column(nameof(LengthAnnotatedRecord.Code)).Length);
+        Assert.Equal(StaticConfig.CodeFirst_BigString, Column(nameof(LengthAnnotatedRecord.Body)).DataType);
+        Assert.Equal(StaticConfig.CodeFirst_BigString, Column(nameof(LengthAnnotatedRecord.Document)).DataType);
+        Assert.Equal(10, Column(nameof(LengthAnnotatedRecord.Tag)).Length);
+        Assert.True(Column(nameof(LengthAnnotatedRecord.Tag)).IsNullable);
+        Assert.Equal(0, Column(nameof(LengthAnnotatedRecord.Plain)).Length);
+        Assert.True(string.IsNullOrEmpty(Column(nameof(LengthAnnotatedRecord.Plain)).DataType));
+    }
+
+    [Fact]
     public async Task Update_WithStaleDetachedEntity_ReturnsConcurrencyConflict()
     {
         await using var host = await _database.StartHostAsync();

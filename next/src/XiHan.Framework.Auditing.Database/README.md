@@ -11,7 +11,7 @@ builder.AddXiHan(x => x
     }))
     .UseFeature<DatabaseAuditingFeature>());
 
-// EF Core 应用在自己的 DbContext 里登记实体，并给 JSON 与消息列用长文本类型
+// EF Core 应用在自己的 DbContext 里登记实体：列长按记录上的 [StringLength] 自动映射，[LongText] 的列按 EF Core 默认建长文本
 modelBuilder.Entity<AuditRecord>(static a =>
 {
     a.Property(static x => x.DetailsJson).HasColumnType("text");
@@ -44,7 +44,7 @@ await host.Services.GetRequiredService<DatabaseAuditTrail>().FlushAsync(ct);
 | 类型 | 用途 |
 | --- | --- |
 | `DatabaseAuditingFeature` | 登记 `AuditRecord` 的仓储；被选中时把 `DatabaseAuditTrail` 绑定为 `IAuditSink` 与 `IAuditTrail` 并挂 `AuditMiddleware`（Observe 末尾）；启动后运行刷写循环，停止时先停循环再把队列里剩余的事件刷完 |
-| `Trail.AuditRecord` | 存储行：`Sequence`（写入序号）、`Timestamp`、`Action`、`Succeeded`、`ErrorCode` / `ErrorMessageKey` / `ErrorMessage` / `ErrorDetailsJson`、`TraceId`、`Resource`、`PrincipalId`、`TenantId`、`DetailsJson`；只追加，不软删除、无并发戳；租户只是普通列，不实现 `IMultiTenant` |
+| `Trail.AuditRecord` | 存储行：`Sequence`（写入序号）、`Timestamp`、`Action`、`Succeeded`、`ErrorCode` / `ErrorMessageKey` / `ErrorMessage` / `ErrorDetailsJson`、`TraceId`、`Resource`、`PrincipalId`、`TenantId`、`DetailsJson`；只追加，不软删除、无并发戳；租户只是普通列，不实现 `IMultiTenant`。字符串列显式声明长度（`[StringLength(n)]`：动作 256、错误码 64、消息键 256、trace-id 64、资源 1024、主体 256、租户 128），错误文案与两个 JSON 列是长文本（`[LongText]`），SqlSugar 与 EF Core 都据此建表（ADR-0036） |
 | `Trail.DatabaseAuditTrail` | 单例接收器与查询：`WriteAsync` 进队列，`FlushAsync` 立即刷写并等待完成，`QueryAsync` 分页查询；`PendingCount` / `PersistedCount` / `FailedCount` / `DroppedCount` 计数 |
 | `DatabaseAuditingOptions` | `XiHan:Auditing:Database`：`QueueCapacity`（10000）、`BatchSize`（100）、`FlushIntervalSeconds`（1）、`LogEvents`（true） |
 

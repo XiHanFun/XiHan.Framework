@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Database.Trail;
@@ -29,6 +31,7 @@ public sealed class AuditRecord : IEntity<Guid>
     /// <summary>
     /// 动作，例如 <c>orders.create</c>。
     /// </summary>
+    [StringLength(256)]
     public string Action { get; set; } = string.Empty;
 
     /// <summary>
@@ -39,45 +42,54 @@ public sealed class AuditRecord : IEntity<Guid>
     /// <summary>
     /// 失败的错误码。
     /// </summary>
+    [StringLength(64)]
     public string? ErrorCode { get; set; }
 
     /// <summary>
     /// 失败的消息键；字面错误（线上还原、异常转换）没有键。
     /// </summary>
+    [StringLength(256)]
     public string? ErrorMessageKey { get; set; }
 
     /// <summary>
     /// 写入时按进程默认区域渲染的错误消息；没有键的字面错误靠它还原。长文本列。
     /// </summary>
+    [LongText]
     public string? ErrorMessage { get; set; }
 
     /// <summary>
     /// 错误细节（模板参数）的 JSON 对象文本；长文本列。
     /// </summary>
+    [LongText]
     public string? ErrorDetailsJson { get; set; }
 
     /// <summary>
     /// 所属调用的 trace-id。
     /// </summary>
+    [StringLength(64)]
     public string TraceId { get; set; } = string.Empty;
 
     /// <summary>
     /// 资源名（<c>xrn:</c>）。
     /// </summary>
+    [StringLength(1024)]
     public string? Resource { get; set; }
 
     /// <summary>
     /// 主体 ID。
     /// </summary>
+    [StringLength(256)]
     public string? PrincipalId { get; set; }
 
     /// <summary>
     /// 租户 ID。
     /// </summary>
+    [StringLength(128)]
     public string? TenantId { get; set; }
 
     /// <summary>
     /// 附加细节的 JSON 对象文本（键区分大小写）；长文本列。
     /// </summary>
+    [LongText]
     public string? DetailsJson { get; set; }
 }
