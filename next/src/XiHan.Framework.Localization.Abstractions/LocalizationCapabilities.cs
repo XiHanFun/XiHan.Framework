@@ -11,9 +11,13 @@ namespace XiHan.Framework.Localization.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class LocalizationCapabilities
 {
-    /// <summary>消息资源：按键与区域取文案。</summary>
+    /// <summary>
+    /// 消息资源：按键与区域取文案。
+    /// </summary>
     public const string Resources = "localization.resources";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

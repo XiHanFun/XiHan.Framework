@@ -11,12 +11,18 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class UserTaskOutcomes
 {
-    /// <summary>通过。</summary>
+    /// <summary>
+    /// 通过。
+    /// </summary>
     public const string Approved = "approved";
 
-    /// <summary>拒绝。</summary>
+    /// <summary>
+    /// 拒绝。
+    /// </summary>
     public const string Rejected = "rejected";
 
-    /// <summary>超时。</summary>
+    /// <summary>
+    /// 超时。
+    /// </summary>
     public const string Timeout = "timeout";
 }

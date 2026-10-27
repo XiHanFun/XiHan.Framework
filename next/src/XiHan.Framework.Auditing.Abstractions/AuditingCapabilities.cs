@@ -12,9 +12,13 @@ namespace XiHan.Framework.Auditing.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AuditingCapabilities
 {
-    /// <summary>审计：接收器 <c>IAuditSink</c> 与查询 <see cref="IAuditTrail"/>。</summary>
+    /// <summary>
+    /// 审计：接收器 <c>IAuditSink</c> 与查询 <see cref="IAuditTrail"/>。
+    /// </summary>
     public const string Trail = "auditing.trail";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

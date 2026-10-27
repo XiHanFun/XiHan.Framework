@@ -17,7 +17,9 @@ public static class LocalizationMessages
     /// </summary>
     public const string CatalogName = "localization.database";
 
-    /// <summary>数据库里没有这条翻译。参数：<c>key</c>、<c>locale</c>。</summary>
+    /// <summary>
+    /// 数据库里没有这条翻译。参数：<c>key</c>、<c>locale</c>。
+    /// </summary>
     public const string TranslationNotFound = "localization.translation.not_found";
 
     /// <summary>

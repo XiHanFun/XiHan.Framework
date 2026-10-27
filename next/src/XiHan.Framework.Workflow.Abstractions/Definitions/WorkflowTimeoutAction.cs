@@ -13,9 +13,13 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowTimeoutAction>))]
 public enum WorkflowTimeoutAction
 {
-    /// <summary>实例故障（可重试、可按 <see cref="WorkflowDefinition.CompensateOnFault"/> 补偿）。</summary>
+    /// <summary>
+    /// 实例故障（可重试、可按 <see cref="WorkflowDefinition.CompensateOnFault"/> 补偿）。
+    /// </summary>
     Fault = 0,
 
-    /// <summary>实例终止。</summary>
+    /// <summary>
+    /// 实例终止。
+    /// </summary>
     Terminate = 1,
 }

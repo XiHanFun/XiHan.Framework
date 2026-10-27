@@ -995,39 +995,57 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private Error Unavailable()
         => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", Manifest.Id), ("state", State.ToString())));
 
-    /// <summary>记录握手完成。</summary>
+    /// <summary>
+    /// 记录握手完成。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Wasm plugin {PluginId} completed the handshake with protocol v{ProtocolVersion}: {Operations} operations, {Subscriptions} subscriptions.")]
     private static partial void LogHandshake(ILogger logger, string pluginId, uint protocolVersion, int operations, int subscriptions);
 
-    /// <summary>记录启动完成。</summary>
+    /// <summary>
+    /// 记录启动完成。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Wasm plugin {PluginId} started (ABI v{AbiVersion}, sdk {Sdk}).")]
     private static partial void LogStarted(ILogger logger, string pluginId, uint abiVersion, string sdk);
 
-    /// <summary>记录状态变化。</summary>
+    /// <summary>
+    /// 记录状态变化。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Wasm plugin {PluginId} entered {State}.")]
     private static partial void LogState(ILogger logger, string pluginId, LifecycleState state);
 
-    /// <summary>记录崩溃。</summary>
+    /// <summary>
+    /// 记录崩溃。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {PluginId} crashed: {Reason}")]
     private static partial void LogCrashed(ILogger logger, string pluginId, string reason);
 
-    /// <summary>记录重建排期。</summary>
+    /// <summary>
+    /// 记录重建排期。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Wasm plugin {PluginId} will be rebuilt in {Delay} (attempt {Attempt}).")]
     private static partial void LogRestartScheduled(ILogger logger, string pluginId, TimeSpan delay, int attempt);
 
-    /// <summary>记录重建成功。</summary>
+    /// <summary>
+    /// 记录重建成功。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Wasm plugin {PluginId} rebuilt (total restarts: {Restarts}).")]
     private static partial void LogRestarted(ILogger logger, string pluginId, int restarts);
 
-    /// <summary>记录重建次数耗尽。</summary>
+    /// <summary>
+    /// 记录重建次数耗尽。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {PluginId} reached the restart limit of {Limit} within {Window}; it stays failed until it is reloaded.")]
     private static partial void LogRestartLimit(ILogger logger, string pluginId, int limit, TimeSpan window);
 
-    /// <summary>记录健康探测连续失败。</summary>
+    /// <summary>
+    /// 记录健康探测连续失败。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {PluginId} failed {Failures} consecutive health probes; rebuilding the instance.")]
     private static partial void LogHealthLost(ILogger logger, string pluginId, int failures);
 
-    /// <summary>记录 Stop 调用失败。</summary>
+    /// <summary>
+    /// 记录 Stop 调用失败。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Stop call to Wasm plugin {PluginId} failed with {Code}; dropping the instance.")]
     private static partial void LogStopFailed(ILogger logger, string pluginId, string code);
 }

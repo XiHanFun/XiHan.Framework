@@ -11,34 +11,54 @@ namespace XiHan.Framework.Hosting.CommandLine;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineExitCodes
 {
-    /// <summary>成功。</summary>
+    /// <summary>
+    /// 成功。
+    /// </summary>
     public const int Success = 0;
 
-    /// <summary>未预期的失败（UNEXPECTED 与未知 KIND）。</summary>
+    /// <summary>
+    /// 未预期的失败（UNEXPECTED 与未知 KIND）。
+    /// </summary>
     public const int Unexpected = 1;
 
-    /// <summary>VALIDATION。</summary>
+    /// <summary>
+    /// VALIDATION。
+    /// </summary>
     public const int Validation = 2;
 
-    /// <summary>NOTFOUND。</summary>
+    /// <summary>
+    /// NOTFOUND。
+    /// </summary>
     public const int NotFound = 3;
 
-    /// <summary>DENIED。</summary>
+    /// <summary>
+    /// DENIED。
+    /// </summary>
     public const int Denied = 4;
 
-    /// <summary>CONFLICT。</summary>
+    /// <summary>
+    /// CONFLICT。
+    /// </summary>
     public const int Conflict = 5;
 
-    /// <summary>UNAVAILABLE。</summary>
+    /// <summary>
+    /// UNAVAILABLE。
+    /// </summary>
     public const int Unavailable = 6;
 
-    /// <summary>TIMEOUT。</summary>
+    /// <summary>
+    /// TIMEOUT。
+    /// </summary>
     public const int Timeout = 7;
 
-    /// <summary>CANCELLED。</summary>
+    /// <summary>
+    /// CANCELLED。
+    /// </summary>
     public const int Cancelled = 8;
 
-    /// <summary>命令行用法错误。</summary>
+    /// <summary>
+    /// 命令行用法错误。
+    /// </summary>
     public const int Usage = 64;
 
     /// <summary>

@@ -11,9 +11,13 @@ namespace XiHan.Framework.Kernel.Hosting;
 [ApiLevel(Stability.Stable, "5.0")]
 public enum FailurePolicy
 {
-    /// <summary>终止启动，抛出 <see cref="KernelErrors.FeatureStartFailed"/>。</summary>
+    /// <summary>
+    /// 终止启动，抛出 <see cref="KernelErrors.FeatureStartFailed"/>。
+    /// </summary>
     TerminateStartup = 0,
 
-    /// <summary>隔离该特性（<see cref="LifecycleState.Failed"/>），继续启动其余特性；应用不就绪。</summary>
+    /// <summary>
+    /// 隔离该特性（<see cref="LifecycleState.Failed"/>），继续启动其余特性；应用不就绪。
+    /// </summary>
     IsolateFeature = 1,
 }

@@ -11,12 +11,18 @@ namespace XiHan.Framework.Persistence.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PersistenceCapabilities
 {
-    /// <summary>关系型持久化：仓储、工作单元、迁移。</summary>
+    /// <summary>
+    /// 关系型持久化：仓储、工作单元、迁移。
+    /// </summary>
     public const string Relational = "persistence.relational";
 
-    /// <summary>文档型持久化。</summary>
+    /// <summary>
+    /// 文档型持久化。
+    /// </summary>
     public const string Document = "persistence.document";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

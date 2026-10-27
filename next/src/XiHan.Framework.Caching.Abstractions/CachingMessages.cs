@@ -17,16 +17,24 @@ public static class CachingMessages
     /// </summary>
     public const string CatalogName = "caching";
 
-    /// <summary>幂等键不合法。</summary>
+    /// <summary>
+    /// 幂等键不合法。
+    /// </summary>
     public const string InvalidIdempotencyKey = "caching.idempotency.invalid_key";
 
-    /// <summary>同一幂等键的调用刚完成或仍在处理中。</summary>
+    /// <summary>
+    /// 同一幂等键的调用刚完成或仍在处理中。
+    /// </summary>
     public const string IdempotentRecentlyCompleted = "caching.idempotency.recently_completed";
 
-    /// <summary>同一幂等键的调用仍在处理中。</summary>
+    /// <summary>
+    /// 同一幂等键的调用仍在处理中。
+    /// </summary>
     public const string IdempotentInProgress = "caching.idempotency.in_progress";
 
-    /// <summary>内存缓存已达容量上限。参数：<c>capacity</c>。</summary>
+    /// <summary>
+    /// 内存缓存已达容量上限。参数：<c>capacity</c>。
+    /// </summary>
     public const string CapacityReached = "caching.store.capacity_reached";
 
     /// <summary>

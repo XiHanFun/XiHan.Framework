@@ -13,12 +13,18 @@ namespace XiHan.Framework.Scheduling.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SchedulingCapabilities
 {
-    /// <summary>作业：登记、按计划运行、手动触发、状态，<see cref="IJobScheduler"/>。</summary>
+    /// <summary>
+    /// 作业：登记、按计划运行、手动触发、状态，<see cref="IJobScheduler"/>。
+    /// </summary>
     public const string Jobs = "scheduling.jobs";
 
-    /// <summary>领导选举：租约，<see cref="ILeaderElection"/>。</summary>
+    /// <summary>
+    /// 领导选举：租约，<see cref="ILeaderElection"/>。
+    /// </summary>
     public const string Leader = "scheduling.leader";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

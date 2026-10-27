@@ -17,49 +17,79 @@ public static class CommandLineMessages
     /// </summary>
     public const string CatalogName = "hosting.commandline";
 
-    /// <summary>用法行。参数：<c>program</c>。</summary>
+    /// <summary>
+    /// 用法行。参数：<c>program</c>。
+    /// </summary>
     public const string Usage = "hosting.commandline.usage";
 
-    /// <summary>命令列表的标题。</summary>
+    /// <summary>
+    /// 命令列表的标题。
+    /// </summary>
     public const string Commands = "hosting.commandline.commands";
 
-    /// <summary><c>&lt;resource&gt; &lt;verb&gt;</c> 简写的说明。</summary>
+    /// <summary>
+    /// <c>&lt;resource&gt; &lt;verb&gt;</c> 简写的说明。
+    /// </summary>
     public const string OperationShorthand = "hosting.commandline.operation_shorthand";
 
-    /// <summary>命令不存在。参数：<c>command</c>。</summary>
+    /// <summary>
+    /// 命令不存在。参数：<c>command</c>。
+    /// </summary>
     public const string CommandUnknown = "hosting.commandline.command_unknown";
 
-    /// <summary><c>help</c> 命令的说明。</summary>
+    /// <summary>
+    /// <c>help</c> 命令的说明。
+    /// </summary>
     public const string HelpDescription = "hosting.commandline.help_description";
 
-    /// <summary><c>graph</c> 命令的说明。</summary>
+    /// <summary>
+    /// <c>graph</c> 命令的说明。
+    /// </summary>
     public const string GraphDescription = "hosting.commandline.graph_description";
 
-    /// <summary><c>pipeline</c> 命令的说明。</summary>
+    /// <summary>
+    /// <c>pipeline</c> 命令的说明。
+    /// </summary>
     public const string PipelineDescription = "hosting.commandline.pipeline_description";
 
-    /// <summary><c>operations</c> 命令的说明。</summary>
+    /// <summary>
+    /// <c>operations</c> 命令的说明。
+    /// </summary>
     public const string OperationsDescription = "hosting.commandline.operations_description";
 
-    /// <summary><c>invoke</c> 命令的说明。</summary>
+    /// <summary>
+    /// <c>invoke</c> 命令的说明。
+    /// </summary>
     public const string InvokeDescription = "hosting.commandline.invoke_description";
 
-    /// <summary><c>invoke</c> 缺少操作 ID。</summary>
+    /// <summary>
+    /// <c>invoke</c> 缺少操作 ID。
+    /// </summary>
     public const string InvokeOperationMissing = "hosting.commandline.invoke_operation_missing";
 
-    /// <summary><c>--json</c> 不是 JSON 对象。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// <c>--json</c> 不是 JSON 对象。参数：<c>reason</c>。
+    /// </summary>
     public const string InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid";
 
-    /// <summary><c>--data</c> 指向的文件不存在。参数：<c>path</c>。</summary>
+    /// <summary>
+    /// <c>--data</c> 指向的文件不存在。参数：<c>path</c>。
+    /// </summary>
     public const string InvokeDataMissing = "hosting.commandline.invoke_data_missing";
 
-    /// <summary><c>--timeout</c> 不是正数秒。</summary>
+    /// <summary>
+    /// <c>--timeout</c> 不是正数秒。
+    /// </summary>
     public const string InvokeTimeoutInvalid = "hosting.commandline.invoke_timeout_invalid";
 
-    /// <summary><c>--authorization</c> 格式不对。</summary>
+    /// <summary>
+    /// <c>--authorization</c> 格式不对。
+    /// </summary>
     public const string InvokeAuthorizationInvalid = "hosting.commandline.invoke_authorization_invalid";
 
-    /// <summary>操作未登记或未暴露给命令行。参数：<c>id</c>。</summary>
+    /// <summary>
+    /// 操作未登记或未暴露给命令行。参数：<c>id</c>。
+    /// </summary>
     public const string OperationNotExposed = "hosting.commandline.operation_not_exposed";
 
     /// <summary>

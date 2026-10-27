@@ -11,24 +11,38 @@ namespace XiHan.Framework.Protocols.Mcp;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpErrors
 {
-    /// <summary>消息不是合法的 JSON 或不是合法的 JSON-RPC 2.0 请求。</summary>
+    /// <summary>
+    /// 消息不是合法的 JSON 或不是合法的 JSON-RPC 2.0 请求。
+    /// </summary>
     public const string InvalidMessage = "PROTOCOLS_VALIDATION_001";
 
-    /// <summary>MCP 协议版本不受支持。</summary>
+    /// <summary>
+    /// MCP 协议版本不受支持。
+    /// </summary>
     public const string UnsupportedVersion = "PROTOCOLS_VALIDATION_002";
 
-    /// <summary>tool 的参数不是 JSON 对象。</summary>
+    /// <summary>
+    /// tool 的参数不是 JSON 对象。
+    /// </summary>
     public const string InvalidArguments = "PROTOCOLS_VALIDATION_003";
 
-    /// <summary>由操作 ID 推导或配置覆盖的 tool 名不合法。</summary>
+    /// <summary>
+    /// 由操作 ID 推导或配置覆盖的 tool 名不合法。
+    /// </summary>
     public const string InvalidToolName = "PROTOCOLS_VALIDATION_004";
 
-    /// <summary>JSON-RPC 方法不受支持。</summary>
+    /// <summary>
+    /// JSON-RPC 方法不受支持。
+    /// </summary>
     public const string UnknownMethod = "PROTOCOLS_NOTFOUND_001";
 
-    /// <summary>tool 未登记。</summary>
+    /// <summary>
+    /// tool 未登记。
+    /// </summary>
     public const string UnknownTool = "PROTOCOLS_NOTFOUND_002";
 
-    /// <summary>两个操作得到同一个 tool 名。</summary>
+    /// <summary>
+    /// 两个操作得到同一个 tool 名。
+    /// </summary>
     public const string DuplicateToolName = "PROTOCOLS_CONFLICT_001";
 }

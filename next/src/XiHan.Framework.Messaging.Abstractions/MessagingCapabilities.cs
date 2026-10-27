@@ -11,12 +11,18 @@ namespace XiHan.Framework.Messaging.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MessagingCapabilities
 {
-    /// <summary>工作队列：至少一次投递、重试与死信。</summary>
+    /// <summary>
+    /// 工作队列：至少一次投递、重试与死信。
+    /// </summary>
     public const string Queue = "messaging.queue";
 
-    /// <summary>流（预留）。</summary>
+    /// <summary>
+    /// 流（预留）。
+    /// </summary>
     public const string Stream = "messaging.stream";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

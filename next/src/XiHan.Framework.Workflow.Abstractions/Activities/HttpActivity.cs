@@ -17,31 +17,49 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HttpActivity : IActivity
 {
-    /// <summary>属性：URL（模板）。</summary>
+    /// <summary>
+    /// 属性：URL（模板）。
+    /// </summary>
     public const string UrlProperty = "Url";
 
-    /// <summary>属性：方法。</summary>
+    /// <summary>
+    /// 属性：方法。
+    /// </summary>
     public const string MethodProperty = "Method";
 
-    /// <summary>属性：请求头（对象）。</summary>
+    /// <summary>
+    /// 属性：请求头（对象）。
+    /// </summary>
     public const string HeadersProperty = "Headers";
 
-    /// <summary>属性：请求体。</summary>
+    /// <summary>
+    /// 属性：请求体。
+    /// </summary>
     public const string BodyProperty = "Body";
 
-    /// <summary>属性：内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）。</summary>
+    /// <summary>
+    /// 属性：内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）。
+    /// </summary>
     public const string ContentTypeProperty = "ContentType";
 
-    /// <summary>属性：超时秒数（默认取引擎选项 <c>HttpTimeoutSeconds</c>）。</summary>
+    /// <summary>
+    /// 属性：超时秒数（默认取引擎选项 <c>HttpTimeoutSeconds</c>）。
+    /// </summary>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
-    /// <summary>属性：结果写入的变量名。</summary>
+    /// <summary>
+    /// 属性：结果写入的变量名。
+    /// </summary>
     public const string ResultVariableProperty = "ResultVariable";
 
-    /// <summary>属性：非 2xx 状态是否视为节点故障。</summary>
+    /// <summary>
+    /// 属性：非 2xx 状态是否视为节点故障。
+    /// </summary>
     public const string FailOnErrorStatusProperty = "FailOnErrorStatus";
 
-    /// <summary>默认结果变量。</summary>
+    /// <summary>
+    /// 默认结果变量。
+    /// </summary>
     public const string DefaultResultVariable = "http";
 
     /// <summary>

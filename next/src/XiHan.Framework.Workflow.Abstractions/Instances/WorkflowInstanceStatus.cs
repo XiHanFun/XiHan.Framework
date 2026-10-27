@@ -13,21 +13,33 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceStatus>))]
 public enum WorkflowInstanceStatus
 {
-    /// <summary>运行中（含等待书签）。</summary>
+    /// <summary>
+    /// 运行中（含等待书签）。
+    /// </summary>
     Running = 1,
 
-    /// <summary>已挂起：书签保留，到期的书签不恢复。</summary>
+    /// <summary>
+    /// 已挂起：书签保留，到期的书签不恢复。
+    /// </summary>
     Suspended = 2,
 
-    /// <summary>已完成。</summary>
+    /// <summary>
+    /// 已完成。
+    /// </summary>
     Completed = 3,
 
-    /// <summary>已取消（可能已补偿）。</summary>
+    /// <summary>
+    /// 已取消（可能已补偿）。
+    /// </summary>
     Canceled = 4,
 
-    /// <summary>已故障；有故障节点时可重试。</summary>
+    /// <summary>
+    /// 已故障；有故障节点时可重试。
+    /// </summary>
     Faulted = 5,
 
-    /// <summary>已终止。</summary>
+    /// <summary>
+    /// 已终止。
+    /// </summary>
     Terminated = 6,
 }

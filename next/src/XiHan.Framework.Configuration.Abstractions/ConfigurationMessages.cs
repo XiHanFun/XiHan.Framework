@@ -17,22 +17,34 @@ public static class ConfigurationMessages
     /// </summary>
     public const string CatalogName = "configuration";
 
-    /// <summary>远程配置的命名空间不存在。参数：<c>namespace</c>。</summary>
+    /// <summary>
+    /// 远程配置的命名空间不存在。参数：<c>namespace</c>。
+    /// </summary>
     public const string NamespaceNotFound = "configuration.namespace.not_found";
 
-    /// <summary>远程配置不可达。参数：<c>namespace</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 远程配置不可达。参数：<c>namespace</c>、<c>reason</c>。
+    /// </summary>
     public const string RemoteUnavailable = "configuration.remote.unavailable";
 
-    /// <summary>密钥不存在。参数：<c>name</c>。</summary>
+    /// <summary>
+    /// 密钥不存在。参数：<c>name</c>。
+    /// </summary>
     public const string SecretNotFound = "configuration.secret.not_found";
 
-    /// <summary>没有读取密钥的权限。参数：<c>name</c>。</summary>
+    /// <summary>
+    /// 没有读取密钥的权限。参数：<c>name</c>。
+    /// </summary>
     public const string SecretDenied = "configuration.secret.denied";
 
-    /// <summary>密钥库不可达。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// 密钥库不可达。参数：<c>reason</c>。
+    /// </summary>
     public const string SecretsUnavailable = "configuration.secrets.unavailable";
 
-    /// <summary>远程配置文档不是声明的格式。参数：<c>namespace</c>、<c>format</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 远程配置文档不是声明的格式。参数：<c>namespace</c>、<c>format</c>、<c>reason</c>。
+    /// </summary>
     public const string DocumentInvalid = "configuration.document.invalid";
 
     /// <summary>

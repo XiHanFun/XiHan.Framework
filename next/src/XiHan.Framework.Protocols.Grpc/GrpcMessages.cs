@@ -17,10 +17,14 @@ public static class GrpcMessages
     /// </summary>
     public const string CatalogName = "protocols.grpc";
 
-    /// <summary>请求不是合法的 protobuf 消息。参数：<c>operation</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 请求不是合法的 protobuf 消息。参数：<c>operation</c>、<c>reason</c>。
+    /// </summary>
     public const string RequestMalformed = "protocols.grpc.request_malformed";
 
-    /// <summary>响应无法编码为 protobuf。参数：<c>operation</c>。</summary>
+    /// <summary>
+    /// 响应无法编码为 protobuf。参数：<c>operation</c>。
+    /// </summary>
     public const string ResponseUnencodable = "protocols.grpc.response_unencodable";
 
     /// <summary>

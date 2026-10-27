@@ -11,33 +11,53 @@ namespace XiHan.Framework.Security.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SecurityErrors
 {
-    /// <summary>未认证。</summary>
+    /// <summary>
+    /// 未认证。
+    /// </summary>
     public const string NotAuthenticated = "SECURITY_DENIED_001";
 
-    /// <summary>策略拒绝。</summary>
+    /// <summary>
+    /// 策略拒绝。
+    /// </summary>
     public const string PolicyDenied = "SECURITY_DENIED_002";
 
-    /// <summary>凭据无效、过期或签名不符。</summary>
+    /// <summary>
+    /// 凭据无效、过期或签名不符。
+    /// </summary>
     public const string InvalidCredential = "SECURITY_DENIED_003";
 
-    /// <summary>缺少权限。</summary>
+    /// <summary>
+    /// 缺少权限。
+    /// </summary>
     public const string PermissionMissing = "SECURITY_DENIED_004";
 
-    /// <summary>不支持的认证方案或凭据格式不合法。</summary>
+    /// <summary>
+    /// 不支持的认证方案或凭据格式不合法。
+    /// </summary>
     public const string UnsupportedScheme = "SECURITY_VALIDATION_001";
 
-    /// <summary>策略不存在或权限码未定义。</summary>
+    /// <summary>
+    /// 策略不存在或权限码未定义。
+    /// </summary>
     public const string PolicyNotFound = "SECURITY_NOTFOUND_001";
 
-    /// <summary>要撤销的权限授予不存在。</summary>
+    /// <summary>
+    /// 要撤销的权限授予不存在。
+    /// </summary>
     public const string GrantNotFound = "SECURITY_NOTFOUND_002";
 
-    /// <summary>身份或授予存储不可达。</summary>
+    /// <summary>
+    /// 身份或授予存储不可达。
+    /// </summary>
     public const string StoreUnavailable = "SECURITY_UNAVAILABLE_001";
 
-    /// <summary>存储容量已满。</summary>
+    /// <summary>
+    /// 存储容量已满。
+    /// </summary>
     public const string CapacityExceeded = "SECURITY_UNAVAILABLE_002";
 
-    /// <summary>签发者的发现文档或 JWKS 不可达且没有缓存。</summary>
+    /// <summary>
+    /// 签发者的发现文档或 JWKS 不可达且没有缓存。
+    /// </summary>
     public const string IssuerUnavailable = "SECURITY_UNAVAILABLE_003";
 }

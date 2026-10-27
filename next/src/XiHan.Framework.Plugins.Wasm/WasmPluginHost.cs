@@ -442,7 +442,9 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         return manifest;
     }
 
-    /// <summary>记录插件启动失败（宿主继续运行）。</summary>
+    /// <summary>
+    /// 记录插件启动失败（宿主继续运行）。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {PluginId} failed to start: {Code} {Message}")]
     private static partial void LogStartFailed(ILogger logger, string pluginId, string code, string message);
 }

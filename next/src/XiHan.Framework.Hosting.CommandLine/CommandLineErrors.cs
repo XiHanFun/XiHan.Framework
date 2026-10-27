@@ -11,12 +11,18 @@ namespace XiHan.Framework.Hosting.CommandLine;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineErrors
 {
-    /// <summary>命令行用法不合法：选项值、载荷或数据文件有误。</summary>
+    /// <summary>
+    /// 命令行用法不合法：选项值、载荷或数据文件有误。
+    /// </summary>
     public const string UsageInvalid = "HOSTING_VALIDATION_001";
 
-    /// <summary>操作未登记或未暴露给命令行。</summary>
+    /// <summary>
+    /// 操作未登记或未暴露给命令行。
+    /// </summary>
     public const string OperationNotExposed = "HOSTING_NOTFOUND_001";
 
-    /// <summary>命令不存在。</summary>
+    /// <summary>
+    /// 命令不存在。
+    /// </summary>
     public const string CommandUnknown = "HOSTING_NOTFOUND_002";
 }

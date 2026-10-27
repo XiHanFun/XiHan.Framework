@@ -14,13 +14,19 @@ namespace XiHan.Framework.Plugins.Wasm.Instances;
 /// </summary>
 internal static partial class ShadowStackGuard
 {
-    /// <summary>影子栈策略位：已启用。</summary>
+    /// <summary>
+    /// 影子栈策略位：已启用。
+    /// </summary>
     private const uint EnableUserShadowStack = 0x1;
 
-    /// <summary>影子栈策略位：只审计、不终止进程。</summary>
+    /// <summary>
+    /// 影子栈策略位：只审计、不终止进程。
+    /// </summary>
     private const uint AuditUserShadowStack = 0x2;
 
-    /// <summary><c>GetProcessMitigationPolicy</c> 的 <c>ProcessUserShadowStackPolicy</c>。</summary>
+    /// <summary>
+    /// <c>GetProcessMitigationPolicy</c> 的 <c>ProcessUserShadowStackPolicy</c>。
+    /// </summary>
     private const int ProcessUserShadowStackPolicy = 16;
 
     /// <summary>

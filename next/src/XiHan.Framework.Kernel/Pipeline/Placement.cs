@@ -11,9 +11,13 @@ namespace XiHan.Framework.Kernel.Pipeline;
 [ApiLevel(Stability.Stable, "5.0")]
 public enum Placement
 {
-    /// <summary>阶段末尾（默认）。</summary>
+    /// <summary>
+    /// 阶段末尾（默认）。
+    /// </summary>
     End = 0,
 
-    /// <summary>阶段开头。</summary>
+    /// <summary>
+    /// 阶段开头。
+    /// </summary>
     Beginning = 1,
 }

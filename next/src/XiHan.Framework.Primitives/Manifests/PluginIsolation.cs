@@ -10,12 +10,18 @@ namespace XiHan.Framework.Primitives.Manifests;
 [ApiLevel(Stability.Stable, "5.0")]
 public enum PluginIsolation
 {
-    /// <summary>可收集 AssemblyLoadContext。</summary>
+    /// <summary>
+    /// 可收集 AssemblyLoadContext。
+    /// </summary>
     InProcess = 0,
 
-    /// <summary>WASI 组件。</summary>
+    /// <summary>
+    /// WASI 组件。
+    /// </summary>
     Wasm = 1,
 
-    /// <summary>子进程 + gRPC 插件协议。</summary>
+    /// <summary>
+    /// 子进程 + gRPC 插件协议。
+    /// </summary>
     OutOfProcess = 2,
 }

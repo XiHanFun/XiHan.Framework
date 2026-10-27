@@ -12,9 +12,13 @@ namespace XiHan.Framework.ObjectStorage.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObjectStorageCapabilities
 {
-    /// <summary>对象存储：容器 / 键 / 字节 / 元数据，<see cref="IBlobStore"/>。</summary>
+    /// <summary>
+    /// 对象存储：容器 / 键 / 字节 / 元数据，<see cref="IBlobStore"/>。
+    /// </summary>
     public const string Blob = "objectstorage.blob";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

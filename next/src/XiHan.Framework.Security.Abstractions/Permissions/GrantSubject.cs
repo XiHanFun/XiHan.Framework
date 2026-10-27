@@ -13,10 +13,14 @@ namespace XiHan.Framework.Security.Abstractions.Permissions;
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct GrantSubject(string Kind, string Id)
 {
-    /// <summary>用户。</summary>
+    /// <summary>
+    /// 用户。
+    /// </summary>
     public const string User = "user";
 
-    /// <summary>角色。</summary>
+    /// <summary>
+    /// 角色。
+    /// </summary>
     public const string Role = "role";
 
     /// <summary>

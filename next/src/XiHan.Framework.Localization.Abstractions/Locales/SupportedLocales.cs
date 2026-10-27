@@ -11,34 +11,54 @@ namespace XiHan.Framework.Localization.Abstractions.Locales;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SupportedLocales
 {
-    /// <summary>英语（美国）；默认区域，也是代码里消息文本的语言。</summary>
+    /// <summary>
+    /// 英语（美国）；默认区域，也是代码里消息文本的语言。
+    /// </summary>
     public const string EnglishUnitedStates = "en-US";
 
-    /// <summary>简体中文。</summary>
+    /// <summary>
+    /// 简体中文。
+    /// </summary>
     public const string ChineseSimplified = "zh-CN";
 
-    /// <summary>繁体中文（台湾）。</summary>
+    /// <summary>
+    /// 繁体中文（台湾）。
+    /// </summary>
     public const string ChineseTraditional = "zh-TW";
 
-    /// <summary>日语。</summary>
+    /// <summary>
+    /// 日语。
+    /// </summary>
     public const string Japanese = "ja-JP";
 
-    /// <summary>韩语。</summary>
+    /// <summary>
+    /// 韩语。
+    /// </summary>
     public const string Korean = "ko-KR";
 
-    /// <summary>德语。</summary>
+    /// <summary>
+    /// 德语。
+    /// </summary>
     public const string German = "de-DE";
 
-    /// <summary>西班牙语。</summary>
+    /// <summary>
+    /// 西班牙语。
+    /// </summary>
     public const string Spanish = "es-ES";
 
-    /// <summary>法语。</summary>
+    /// <summary>
+    /// 法语。
+    /// </summary>
     public const string French = "fr-FR";
 
-    /// <summary>葡萄牙语（巴西）。</summary>
+    /// <summary>
+    /// 葡萄牙语（巴西）。
+    /// </summary>
     public const string PortugueseBrazil = "pt-BR";
 
-    /// <summary>俄语。</summary>
+    /// <summary>
+    /// 俄语。
+    /// </summary>
     public const string Russian = "ru-RU";
 
     /// <summary>

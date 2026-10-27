@@ -17,10 +17,14 @@ public static class AuditingMessages
     /// </summary>
     public const string CatalogName = "auditing";
 
-    /// <summary>查询不合法。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// 查询不合法。参数：<c>reason</c>。
+    /// </summary>
     public const string QueryInvalid = "auditing.query.invalid";
 
-    /// <summary>审计存储不可达。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// 审计存储不可达。参数：<c>reason</c>。
+    /// </summary>
     public const string TrailUnavailable = "auditing.trail.unavailable";
 
     /// <summary>

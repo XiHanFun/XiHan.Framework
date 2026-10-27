@@ -11,9 +11,13 @@ namespace XiHan.Framework.Auditing.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AuditingErrors
 {
-    /// <summary>查询不合法：页大小越界、起止颠倒或续页令牌不可识别。</summary>
+    /// <summary>
+    /// 查询不合法：页大小越界、起止颠倒或续页令牌不可识别。
+    /// </summary>
     public const string QueryInvalid = "AUDITING_VALIDATION_001";
 
-    /// <summary>审计存储不可达。</summary>
+    /// <summary>
+    /// 审计存储不可达。
+    /// </summary>
     public const string TrailUnavailable = "AUDITING_UNAVAILABLE_001";
 }

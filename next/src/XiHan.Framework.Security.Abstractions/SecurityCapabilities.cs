@@ -11,12 +11,18 @@ namespace XiHan.Framework.Security.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SecurityCapabilities
 {
-    /// <summary>认证：凭据到主体。</summary>
+    /// <summary>
+    /// 认证：凭据到主体。
+    /// </summary>
     public const string Authentication = "security.authentication";
 
-    /// <summary>授权：策略判定与权限授予。</summary>
+    /// <summary>
+    /// 授权：策略判定与权限授予。
+    /// </summary>
     public const string Authorization = "security.authorization";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

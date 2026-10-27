@@ -11,21 +11,33 @@ namespace XiHan.Framework.Protocols.Grpc;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class GrpcErrors
 {
-    /// <summary>请求不是合法的 protobuf 消息，或与操作的 Schema 不符。</summary>
+    /// <summary>
+    /// 请求不是合法的 protobuf 消息，或与操作的 Schema 不符。
+    /// </summary>
     public const string RequestMalformed = "PROTOCOLS_VALIDATION_005";
 
-    /// <summary>暴露给 gRPC 的操作没有 Schema，或其 Schema 无法映射为 protobuf（启动失败）。</summary>
+    /// <summary>
+    /// 暴露给 gRPC 的操作没有 Schema，或其 Schema 无法映射为 protobuf（启动失败）。
+    /// </summary>
     public const string SchemaUnsupported = "PROTOCOLS_VALIDATION_006";
 
-    /// <summary>推导或配置的服务名 / 方法名不合法（启动失败）。</summary>
+    /// <summary>
+    /// 推导或配置的服务名 / 方法名不合法（启动失败）。
+    /// </summary>
     public const string InvalidMethodName = "PROTOCOLS_VALIDATION_007";
 
-    /// <summary>两个操作得到同一个服务 / 方法名（启动失败）。</summary>
+    /// <summary>
+    /// 两个操作得到同一个服务 / 方法名（启动失败）。
+    /// </summary>
     public const string DuplicateMethod = "PROTOCOLS_CONFLICT_002";
 
-    /// <summary>同名 protobuf 消息在不同操作里形状不同（启动失败）。</summary>
+    /// <summary>
+    /// 同名 protobuf 消息在不同操作里形状不同（启动失败）。
+    /// </summary>
     public const string MessageConflict = "PROTOCOLS_CONFLICT_003";
 
-    /// <summary>操作的响应无法按 Schema 编码为 protobuf。</summary>
+    /// <summary>
+    /// 操作的响应无法按 Schema 编码为 protobuf。
+    /// </summary>
     public const string ResponseUnencodable = "PROTOCOLS_UNEXPECTED_001";
 }

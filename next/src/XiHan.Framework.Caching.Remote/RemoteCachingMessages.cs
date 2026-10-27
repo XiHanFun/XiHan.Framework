@@ -18,16 +18,24 @@ public static class RemoteCachingMessages
     /// </summary>
     public const string CatalogName = "caching.remote";
 
-    /// <summary>缓存键不合法。</summary>
+    /// <summary>
+    /// 缓存键不合法。
+    /// </summary>
     public const string InvalidKey = "caching.remote.key_invalid";
 
-    /// <summary>过期选项不合法。</summary>
+    /// <summary>
+    /// 过期选项不合法。
+    /// </summary>
     public const string InvalidOptions = "caching.remote.options_invalid";
 
-    /// <summary>后端不可用。</summary>
+    /// <summary>
+    /// 后端不可用。
+    /// </summary>
     public const string StoreUnavailable = "caching.remote.store_unavailable";
 
-    /// <summary>存储已满。</summary>
+    /// <summary>
+    /// 存储已满。
+    /// </summary>
     public const string CapacityReached = "caching.remote.capacity_reached";
 
     /// <summary>

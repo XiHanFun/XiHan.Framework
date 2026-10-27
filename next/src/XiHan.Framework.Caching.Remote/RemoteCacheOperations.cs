@@ -12,28 +12,44 @@ namespace XiHan.Framework.Caching.Remote;
 [ApiLevel(Stability.Experimental, "5.0")]
 public static class RemoteCacheOperations
 {
-    /// <summary>读取：不存在或已过期为 <see langword="null"/>，滑动过期在读取时延长。</summary>
+    /// <summary>
+    /// 读取：不存在或已过期为 <see langword="null"/>，滑动过期在读取时延长。
+    /// </summary>
     public const string Get = "cache-entries.get";
 
-    /// <summary>写入或覆盖。</summary>
+    /// <summary>
+    /// 写入或覆盖。
+    /// </summary>
     public const string Set = "cache-entries.set";
 
-    /// <summary>不存在（或已过期）才写入，原子。</summary>
+    /// <summary>
+    /// 不存在（或已过期）才写入，原子。
+    /// </summary>
     public const string TryAdd = "cache-entries.try-add";
 
-    /// <summary>删除并报告是否存在。</summary>
+    /// <summary>
+    /// 删除并报告是否存在。
+    /// </summary>
     public const string Remove = "cache-entries.remove";
 
-    /// <summary>当前值等于期望值才删除，原子。</summary>
+    /// <summary>
+    /// 当前值等于期望值才删除，原子。
+    /// </summary>
     public const string TryRemove = "cache-entries.try-remove";
 
-    /// <summary>批量读取：逐键同 <see cref="Get"/>，一次往返。</summary>
+    /// <summary>
+    /// 批量读取：逐键同 <see cref="Get"/>，一次往返。
+    /// </summary>
     public const string GetMany = "cache-entries.get-many";
 
-    /// <summary>批量写入：逐项同 <see cref="Set"/>，一次往返，同一键后者覆盖。</summary>
+    /// <summary>
+    /// 批量写入：逐项同 <see cref="Set"/>，一次往返，同一键后者覆盖。
+    /// </summary>
     public const string SetMany = "cache-entries.set-many";
 
-    /// <summary>批量删除：逐键同 <see cref="Remove"/>，一次往返。</summary>
+    /// <summary>
+    /// 批量删除：逐键同 <see cref="Remove"/>，一次往返。
+    /// </summary>
     public const string RemoveMany = "cache-entries.remove-many";
 
     /// <summary>

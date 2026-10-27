@@ -11,9 +11,13 @@ namespace XiHan.Framework.Protocols.Grpc;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class GrpcProtocolCapabilities
 {
-    /// <summary>gRPC 协议：操作作为一元方法经 gRPC 暴露。</summary>
+    /// <summary>
+    /// gRPC 协议：操作作为一元方法经 gRPC 暴露。
+    /// </summary>
     public const string Grpc = "protocols.grpc";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

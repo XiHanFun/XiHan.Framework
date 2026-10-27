@@ -17,22 +17,34 @@ public static class MultiTenancyMessages
     /// </summary>
     public const string CatalogName = "multitenancy";
 
-    /// <summary>调用必须带租户但没有解析到。</summary>
+    /// <summary>
+    /// 调用必须带租户但没有解析到。
+    /// </summary>
     public const string TenantRequired = "multitenancy.tenant.required";
 
-    /// <summary>租户 ID 不合法。参数：<c>tenantId</c>。</summary>
+    /// <summary>
+    /// 租户 ID 不合法。参数：<c>tenantId</c>。
+    /// </summary>
     public const string InvalidTenantId = "multitenancy.tenant.invalid_id";
 
-    /// <summary>租户不存在。参数：<c>tenantId</c>。</summary>
+    /// <summary>
+    /// 租户不存在。参数：<c>tenantId</c>。
+    /// </summary>
     public const string TenantNotFound = "multitenancy.tenant.not_found";
 
-    /// <summary>租户已禁用。参数：<c>tenantId</c>。</summary>
+    /// <summary>
+    /// 租户已禁用。参数：<c>tenantId</c>。
+    /// </summary>
     public const string TenantDisabled = "multitenancy.tenant.disabled";
 
-    /// <summary>租户存储容量已满。参数：<c>capacity</c>。</summary>
+    /// <summary>
+    /// 租户存储容量已满。参数：<c>capacity</c>。
+    /// </summary>
     public const string CapacityExceeded = "multitenancy.store.capacity_exceeded";
 
-    /// <summary>租户分片无法解析。参数：<c>tenantId</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 租户分片无法解析。参数：<c>tenantId</c>、<c>reason</c>。
+    /// </summary>
     public const string ShardUnavailable = "multitenancy.shard.unavailable";
 
     /// <summary>

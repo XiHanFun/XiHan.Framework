@@ -12,19 +12,29 @@ namespace XiHan.Framework.Kernel.Operations;
 [Flags]
 public enum Expose
 {
-    /// <summary>不对外暴露，只能进程内调用。</summary>
+    /// <summary>
+    /// 不对外暴露，只能进程内调用。
+    /// </summary>
     None = 0,
 
-    /// <summary>HTTP（<c>Protocols.Http</c>）。</summary>
+    /// <summary>
+    /// HTTP（<c>Protocols.Http</c>）。
+    /// </summary>
     Http = 1,
 
-    /// <summary>gRPC（<c>Protocols.Grpc</c>）。</summary>
+    /// <summary>
+    /// gRPC（<c>Protocols.Grpc</c>）。
+    /// </summary>
     Grpc = 2,
 
-    /// <summary>MCP tool（<c>Protocols.Mcp</c>）。</summary>
+    /// <summary>
+    /// MCP tool（<c>Protocols.Mcp</c>）。
+    /// </summary>
     Mcp = 4,
 
-    /// <summary>命令行（<c>Hosting.CommandLine</c>）。</summary>
+    /// <summary>
+    /// 命令行（<c>Hosting.CommandLine</c>）。
+    /// </summary>
     CommandLine = 8,
 
     /// <summary>
@@ -32,6 +42,8 @@ public enum Expose
     /// </summary>
     Ai = 16,
 
-    /// <summary>全部协议。</summary>
+    /// <summary>
+    /// 全部协议。
+    /// </summary>
     All = Http | Grpc | Mcp | CommandLine | Ai,
 }

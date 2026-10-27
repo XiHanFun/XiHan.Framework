@@ -12,9 +12,13 @@ namespace XiHan.Framework.Workflow.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowCapabilities
 {
-    /// <summary>持久化执行：定义目录、实例执行、书签、用户任务，<see cref="IWorkflowEngine"/>。</summary>
+    /// <summary>
+    /// 持久化执行：定义目录、实例执行、书签、用户任务，<see cref="IWorkflowEngine"/>。
+    /// </summary>
     public const string Execution = "workflow.execution";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

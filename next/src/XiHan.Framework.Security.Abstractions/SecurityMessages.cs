@@ -17,37 +17,59 @@ public static class SecurityMessages
     /// </summary>
     public const string CatalogName = "security";
 
-    /// <summary>调用需要认证。</summary>
+    /// <summary>
+    /// 调用需要认证。
+    /// </summary>
     public const string AuthenticationRequired = "security.authentication.required";
 
-    /// <summary>认证方案不受支持。参数：<c>scheme</c>。</summary>
+    /// <summary>
+    /// 认证方案不受支持。参数：<c>scheme</c>。
+    /// </summary>
     public const string UnsupportedScheme = "security.authentication.unsupported_scheme";
 
-    /// <summary>策略不存在。参数：<c>policy</c>。</summary>
+    /// <summary>
+    /// 策略不存在。参数：<c>policy</c>。
+    /// </summary>
     public const string PolicyNotFound = "security.policy.not_found";
 
-    /// <summary>缺少权限。参数：<c>permission</c>。</summary>
+    /// <summary>
+    /// 缺少权限。参数：<c>permission</c>。
+    /// </summary>
     public const string PermissionMissing = "security.permission.missing";
 
-    /// <summary>要撤销的权限授予不存在。参数：<c>subject</c>、<c>permission</c>、<c>tenant</c>（全局为 <c>*</c>）。</summary>
+    /// <summary>
+    /// 要撤销的权限授予不存在。参数：<c>subject</c>、<c>permission</c>、<c>tenant</c>（全局为 <c>*</c>）。
+    /// </summary>
     public const string GrantNotFound = "security.grant.not_found";
 
-    /// <summary>API Key 无效。</summary>
+    /// <summary>
+    /// API Key 无效。
+    /// </summary>
     public const string InvalidApiKey = "security.api_key.invalid";
 
-    /// <summary>授予存储容量已满。参数：<c>capacity</c>。</summary>
+    /// <summary>
+    /// 授予存储容量已满。参数：<c>capacity</c>。
+    /// </summary>
     public const string GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded";
 
-    /// <summary>主体存储容量已满。参数：<c>capacity</c>。</summary>
+    /// <summary>
+    /// 主体存储容量已满。参数：<c>capacity</c>。
+    /// </summary>
     public const string PrincipalStoreCapacityExceeded = "security.principal_store.capacity_exceeded";
 
-    /// <summary>令牌无效、过期或签名不符。</summary>
+    /// <summary>
+    /// 令牌无效、过期或签名不符。
+    /// </summary>
     public const string InvalidToken = "security.token.invalid";
 
-    /// <summary>令牌缺少主体声明。参数：<c>claim</c>。</summary>
+    /// <summary>
+    /// 令牌缺少主体声明。参数：<c>claim</c>。
+    /// </summary>
     public const string TokenSubjectMissing = "security.token.subject_missing";
 
-    /// <summary>签发者的元数据不可达。参数：<c>authority</c>。</summary>
+    /// <summary>
+    /// 签发者的元数据不可达。参数：<c>authority</c>。
+    /// </summary>
     public const string IssuerUnavailable = "security.issuer.unavailable";
 
     /// <summary>

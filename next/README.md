@@ -163,7 +163,7 @@ dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
 | --- | --- |
 | 警告即错误、Nullable、NU1903/NU1904 | `Directory.Build.props` |
 | PublicAPI 文件、包验证、AOT 分析器 | `src/Directory.Build.props` |
-| 依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头 | `test/XiHan.Framework.Architecture.Tests` |
+| 依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头、`<summary>` 三行写法 | `test/XiHan.Framework.Architecture.Tests` |
 | CI | `.github/workflows/next-ci.yml` |
 
 ## 阶段

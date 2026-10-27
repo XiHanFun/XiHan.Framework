@@ -438,11 +438,15 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         return null;
     }
 
-    /// <summary>记录回调服务器已监听。</summary>
+    /// <summary>
+    /// 记录回调服务器已监听。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin host callback server is listening on {Endpoint}.")]
     private static partial void LogServer(ILogger logger, PluginEndpoint endpoint);
 
-    /// <summary>记录插件启动失败（宿主继续运行）。</summary>
+    /// <summary>
+    /// 记录插件启动失败（宿主继续运行）。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} failed to start: {Code} {Message}")]
     private static partial void LogStartFailed(ILogger logger, string pluginId, string code, string message);
 }

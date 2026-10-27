@@ -11,12 +11,18 @@ namespace XiHan.Framework.Auditing.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public enum AuditSelection
 {
-    /// <summary>只记声明了权限的操作（默认）。</summary>
+    /// <summary>
+    /// 只记声明了权限的操作（默认）。
+    /// </summary>
     Protected = 0,
 
-    /// <summary>记所有操作。</summary>
+    /// <summary>
+    /// 记所有操作。
+    /// </summary>
     All = 1,
 
-    /// <summary>只记显式声明动作的调用。</summary>
+    /// <summary>
+    /// 只记显式声明动作的调用。
+    /// </summary>
     None = 2,
 }
