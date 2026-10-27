@@ -65,6 +65,7 @@ public sealed class PipelineBuilder
 
     /// <summary>
     /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之前；两者必须在同一阶段。
+    /// 跨包依赖必须这样声明：阶段内的基准次序（归属清单 ID 字典序）只保证可复现，不表达依赖。
     /// </summary>
     public PipelineBuilder Before<TMiddleware, TOther>()
         where TMiddleware : class, IPipelineMiddleware
@@ -77,6 +78,7 @@ public sealed class PipelineBuilder
 
     /// <summary>
     /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之后；两者必须在同一阶段。
+    /// 要用到另一个包中间件产出（认证后的主体、解析后的租户）的中间件必须这样声明，基准次序不表达依赖。
     /// </summary>
     public PipelineBuilder After<TMiddleware, TOther>()
         where TMiddleware : class, IPipelineMiddleware
