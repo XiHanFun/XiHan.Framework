@@ -1,9 +1,62 @@
 #nullable enable
+XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource
+XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
+XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource.FixedWorkerIdSource(int workerId) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource.WorkerId.get -> int
 XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator
 XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator.GuidV7IdGenerator(System.TimeProvider! timeProvider) -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.GuidV7IdGenerator.NewId() -> System.Guid
 XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>
 XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>.NewId() -> TKey
+XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource
+XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ExpiresAt.get -> System.DateTimeOffset?
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.LeasedWorkerIdSource(XiHan.Framework.Caching.Abstractions.Locking.IDistributedLock! distributedLock, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.RenewAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.RenewInterval.get -> System.TimeSpan
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Deconstruct(out long Value, out System.DateTimeOffset Timestamp, out int WorkerId, out int Sequence) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Equals(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId other) -> bool
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Sequence.get -> int
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Sequence.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.SnowflakeId() -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.SnowflakeId(long Value, System.DateTimeOffset Timestamp, int WorkerId, int Sequence) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Timestamp.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Timestamp.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Value.get -> long
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Value.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerId.get -> int
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerId.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.SnowflakeIdFeature() -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator.Epoch.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator.NewId() -> long
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator.Parse(long value) -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator.SnowflakeIdGenerator(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions! options, XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource! workerIds, System.TimeProvider! clock) -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdGenerator.WorkerId.get -> XiHan.Framework.Primitives.Maybe<int>
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions!
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.ClockDriftTolerance.get -> System.TimeSpan
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.ClockDriftTolerance.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.Epoch.get -> System.DateTimeOffset
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.Epoch.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.Equals(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.LeaseTimeToLive.get -> System.TimeSpan
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.LeaseTimeToLive.init -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.SnowflakeOptions() -> void
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.WorkerId.get -> int?
+XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.WorkerId.init -> void
 XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities
 XiHan.Framework.Persistence.Abstractions.PersistenceConventions
 XiHan.Framework.Persistence.Abstractions.PersistenceErrors
@@ -96,10 +149,22 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.NotStarted = 0 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.RolledBack = 3 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.HealthName = "persistence.snowflake.worker" -> string!
+const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ResourcePrefix = "persistence:snowflake:worker:" -> string!
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxSequence = 4095 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxTimestamp = 2199023255551 -> long
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxWorkerId = 1023 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.SequenceBits = 12 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.TimestampBits = 41 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.TimestampShift = 22 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerIdBits = 10 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerIdShift = 12 -> int
+const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.ConfigurationSection = "XiHan:Persistence:Snowflake" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Document = "persistence.document" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Relational = "persistence.relational" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Version = 1 -> int
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.CapacityExceeded = "PERSISTENCE_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ClockMovedBackwards = "PERSISTENCE_UNAVAILABLE_004" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Concurrency = "PERSISTENCE_CONFLICT_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Duplicate = "PERSISTENCE_CONFLICT_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.EventsUndispatched = "PERSISTENCE_VALIDATION_003" -> string!
@@ -108,6 +173,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfW
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TenantRequired = "PERSISTENCE_VALIDATION_001" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CapacityExceeded = "persistence.store.capacity_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CatalogName = "persistence" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CommitConflict = "persistence.unit_of_work.concurrency_conflict" -> string!
@@ -119,7 +185,12 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "p
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavailable = "persistence.store.unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
+override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.ToString() -> string!
@@ -132,6 +203,14 @@ override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.ToString() -
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Compose(long timestamp, int workerId, int sequence) -> long
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Parse(long value, System.DateTimeOffset epoch) -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.operator !=(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId left, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.operator ==(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId left, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.DefaultEpoch.get -> System.DateTimeOffset
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions!
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.operator !=(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions? left, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.operator ==(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions? left, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnAdd<TEntity>(TEntity! entity, string? tenantId, System.DateTimeOffset now) -> XiHan.Framework.Primitives.Result
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnUpdate<TEntity>(TEntity! entity, System.DateTimeOffset now) -> void
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.IsDeleted<TEntity>(TEntity! entity) -> bool
@@ -151,3 +230,5 @@ static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCo
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Default.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator !=(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator ==(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool
+~override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Equals(object obj) -> bool
+~override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.ToString() -> string

@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "La entidad '{entity}' no tiene ningún elemento con el identificador '{id}'.",
   "persistence.entity.stale_stamp": "El sello de concurrencia de '{entity}' con el identificador '{id}' está obsoleto.",
   "persistence.entity.tenant_required": "La entidad '{entity}' es multiinquilino, pero la llamada actual no tiene inquilino.",
+  "persistence.snowflake.worker_unavailable": "Actualmente no se posee ningún ID de trabajador snowflake: el arrendamiento no se ha adquirido o se ha perdido.",
   "persistence.store.capacity_exceeded": "La tabla en memoria de '{entity}' alcanzó su capacidad de {capacity}.",
   "persistence.store.unavailable": "No se puede acceder a la base de datos relacional.",
   "persistence.unit_of_work.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista durante la confirmación: {reason}",

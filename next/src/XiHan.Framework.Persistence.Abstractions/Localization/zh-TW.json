@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "實體 '{entity}' 沒有識別碼為 '{id}' 的項目。",
   "persistence.entity.stale_stamp": "實體 '{entity}'（識別碼 '{id}'）的並行戳記已過期。",
   "persistence.entity.tenant_required": "實體 '{entity}' 是多租戶實體，但目前呼叫沒有租戶。",
+  "persistence.snowflake.worker_unavailable": "目前沒有持有雪花識別碼的機器位：租約尚未取得或已遺失。",
   "persistence.store.capacity_exceeded": "實體 '{entity}' 的記憶體資料表已達到容量上限 {capacity}。",
   "persistence.store.unavailable": "無法連線關聯式資料庫。",
   "persistence.unit_of_work.concurrency_conflict": "提交時發生樂觀並行衝突：{reason}",

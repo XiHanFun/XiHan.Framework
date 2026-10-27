@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "У сущности '{entity}' нет элемента с идентификатором '{id}'.",
   "persistence.entity.stale_stamp": "Метка параллелизма сущности '{entity}' с идентификатором '{id}' устарела.",
   "persistence.entity.tenant_required": "Сущность '{entity}' является мультиарендной, но у текущего вызова нет арендатора.",
+  "persistence.snowflake.worker_unavailable": "Идентификатор воркера snowflake сейчас не удерживается: аренда не получена или утрачена.",
   "persistence.store.capacity_exceeded": "Таблица в памяти для '{entity}' достигла предела ёмкости {capacity}.",
   "persistence.store.unavailable": "Реляционная база данных недоступна.",
   "persistence.unit_of_work.concurrency_conflict": "Конфликт оптимистичного параллелизма при фиксации: {reason}",

@@ -5,10 +5,14 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.Conformance/XiHan.Framework.Persistence.Conformance.csproj" />
+    <!-- 雪花机器位租约的用例用内存缓存存储上的分布式锁模拟多个实例共用一个锁存储 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>

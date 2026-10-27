@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "Die Entität '{entity}' hat kein Element mit der ID '{id}'.",
   "persistence.entity.stale_stamp": "Der Nebenläufigkeitsstempel von '{entity}' mit der ID '{id}' ist veraltet.",
   "persistence.entity.tenant_required": "Die Entität '{entity}' ist mandantenfähig, der aktuelle Aufruf hat jedoch keinen Mandanten.",
+  "persistence.snowflake.worker_unavailable": "Derzeit wird keine Snowflake-Worker-ID gehalten: die Lease wurde noch nicht erworben oder ist verloren gegangen.",
   "persistence.store.capacity_exceeded": "Die In-Memory-Tabelle für '{entity}' hat ihre Kapazität von {capacity} erreicht.",
   "persistence.store.unavailable": "Die relationale Datenbank ist nicht erreichbar.",
   "persistence.unit_of_work.concurrency_conflict": "Beim Commit ist ein optimistischer Nebenläufigkeitskonflikt aufgetreten: {reason}",

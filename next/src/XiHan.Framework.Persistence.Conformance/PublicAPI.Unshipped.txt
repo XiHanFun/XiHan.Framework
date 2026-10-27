@@ -59,6 +59,11 @@ XiHan.Framework.Persistence.Conformance.Fixtures.RecordingDomainEventDispatcher.
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.Conformance.Fixtures.TenantFromBaggageMiddleware.TenantFromBaggageMiddleware() -> void
+XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>
+XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.IdGeneratorConformance() -> void
+XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.NewId_GrowsWithClock() -> void
+XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.NewId_IsUniqueAcrossSequentialCalls() -> void
+XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.NewId_IsUniqueAcrossThreads() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.AddRange_ReportsPerItem_AndFindManyKeepsInputOrder() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_DuplicateId_ReturnsDuplicate() -> System.Threading.Tasks.Task!
@@ -83,6 +88,7 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.UncommittedWrite_I
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.UpdateRange_RefreshesStamps_AndReportsStaleOrMissingPerItem() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_Missing_ReturnNotFound() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
+abstract XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.CreateGenerator(System.TimeProvider! clock) -> XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>!
 abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.GetUtcNow() -> System.DateTimeOffset
 override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceEvent.Equals(object? obj) -> bool

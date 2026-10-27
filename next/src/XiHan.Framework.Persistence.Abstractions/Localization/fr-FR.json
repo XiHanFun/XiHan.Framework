@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "L'entité '{entity}' n'a aucun élément avec l'identifiant '{id}'.",
   "persistence.entity.stale_stamp": "Le jeton de concurrence de '{entity}' avec l'identifiant '{id}' est obsolète.",
   "persistence.entity.tenant_required": "L'entité '{entity}' est multi-locataire, mais l'appel courant n'a aucun locataire.",
+  "persistence.snowflake.worker_unavailable": "Aucun identifiant de worker snowflake n'est actuellement détenu : le bail n'a pas été acquis ou a été perdu.",
   "persistence.store.capacity_exceeded": "La table en mémoire de '{entity}' a atteint sa capacité de {capacity}.",
   "persistence.store.unavailable": "La base de données relationnelle est injoignable.",
   "persistence.unit_of_work.concurrency_conflict": "Un conflit de concurrence optimiste s'est produit lors de la validation : {reason}",

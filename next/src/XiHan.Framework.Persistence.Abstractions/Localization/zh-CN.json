@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "实体 '{entity}' 没有标识为 '{id}' 的条目。",
   "persistence.entity.stale_stamp": "实体 '{entity}'（标识 '{id}'）的并发戳已过期。",
   "persistence.entity.tenant_required": "实体 '{entity}' 是多租户实体，但当前调用没有租户。",
+  "persistence.snowflake.worker_unavailable": "当前没有持有雪花标识的机器位：租约尚未取得或已丢失。",
   "persistence.store.capacity_exceeded": "实体 '{entity}' 的内存表已达到容量上限 {capacity}。",
   "persistence.store.unavailable": "无法连接关系数据库。",
   "persistence.unit_of_work.concurrency_conflict": "提交时发生乐观并发冲突：{reason}",

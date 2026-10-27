@@ -37,4 +37,10 @@ public static class PersistenceErrors
 
     /// <summary>存储不可用。</summary>
     public const string StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003";
+
+    /// <summary>雪花标识生成器的时钟回拨超过容忍阈值（以异常抛出）。</summary>
+    public const string ClockMovedBackwards = "PERSISTENCE_UNAVAILABLE_004";
+
+    /// <summary>雪花标识生成器没有可用的机器位：未配置且没有分布式锁、机器位已满、租约尚未取得或已丢失。</summary>
+    public const string WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005";
 }
