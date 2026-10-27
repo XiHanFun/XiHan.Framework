@@ -13,15 +13,23 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowDefinitionStatus>))]
 public enum WorkflowDefinitionStatus
 {
-    /// <summary>草稿：可修改、删除、发布。</summary>
+    /// <summary>
+    /// 草稿：可修改、删除、发布。
+    /// </summary>
     Draft = 0,
 
-    /// <summary>已发布：可启动实例、可停用。</summary>
+    /// <summary>
+    /// 已发布：可启动实例、可停用。
+    /// </summary>
     Published = 1,
 
-    /// <summary>已停用：不再启动新实例，已有实例继续。</summary>
+    /// <summary>
+    /// 已停用：不再启动新实例，已有实例继续。
+    /// </summary>
     Disabled = 2,
 
-    /// <summary>已归档：只读。</summary>
+    /// <summary>
+    /// 已归档：只读。
+    /// </summary>
     Archived = 3,
 }

@@ -11,15 +11,23 @@ namespace XiHan.Framework.ObjectStorage.Abstractions;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObjectStorageErrors
 {
-    /// <summary>对象不存在。</summary>
+    /// <summary>
+    /// 对象不存在。
+    /// </summary>
     public const string BlobNotFound = "OBJECTSTORAGE_NOTFOUND_001";
 
-    /// <summary>对象已存在且不允许覆盖。</summary>
+    /// <summary>
+    /// 对象已存在且不允许覆盖。
+    /// </summary>
     public const string BlobExists = "OBJECTSTORAGE_CONFLICT_001";
 
-    /// <summary>存储不可达或 IO 失败。</summary>
+    /// <summary>
+    /// 存储不可达或 IO 失败。
+    /// </summary>
     public const string StoreUnavailable = "OBJECTSTORAGE_UNAVAILABLE_001";
 
-    /// <summary>配额或单对象大小超限。</summary>
+    /// <summary>
+    /// 配额或单对象大小超限。
+    /// </summary>
     public const string QuotaExceeded = "OBJECTSTORAGE_UNAVAILABLE_002";
 }

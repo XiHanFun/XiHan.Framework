@@ -18,6 +18,8 @@ public sealed class ConformanceNote : IEntity<Guid>, IMultiTenant
     /// <inheritdoc />
     public string TenantId { get; set; } = string.Empty;
 
-    /// <summary>内容。</summary>
+    /// <summary>
+    /// 内容。
+    /// </summary>
     public string Text { get; set; } = string.Empty;
 }

@@ -17,19 +17,29 @@ public static class ObjectStorageMessages
     /// </summary>
     public const string CatalogName = "objectstorage";
 
-    /// <summary>对象不存在。参数：<c>container</c>、<c>key</c>。</summary>
+    /// <summary>
+    /// 对象不存在。参数：<c>container</c>、<c>key</c>。
+    /// </summary>
     public const string BlobNotFound = "objectstorage.blob.not_found";
 
-    /// <summary>对象已存在。参数：<c>container</c>、<c>key</c>。</summary>
+    /// <summary>
+    /// 对象已存在。参数：<c>container</c>、<c>key</c>。
+    /// </summary>
     public const string BlobExists = "objectstorage.blob.exists";
 
-    /// <summary>存储不可达。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// 存储不可达。参数：<c>reason</c>。
+    /// </summary>
     public const string StoreUnavailable = "objectstorage.store.unavailable";
 
-    /// <summary>配额超限。参数：<c>limit</c>、<c>requested</c>。</summary>
+    /// <summary>
+    /// 配额超限。参数：<c>limit</c>、<c>requested</c>。
+    /// </summary>
     public const string QuotaExceeded = "objectstorage.quota.exceeded";
 
-    /// <summary>配额已用尽（健康项）。参数：<c>limit</c>、<c>used</c>。</summary>
+    /// <summary>
+    /// 配额已用尽（健康项）。参数：<c>limit</c>、<c>used</c>。
+    /// </summary>
     public const string QuotaReached = "objectstorage.quota.reached";
 
     /// <summary>

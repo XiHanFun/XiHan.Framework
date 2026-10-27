@@ -15,6 +15,8 @@ public sealed class ConformanceItem : IEntity<int>
     /// <inheritdoc />
     public int Id { get; init; }
 
-    /// <summary>标签。</summary>
+    /// <summary>
+    /// 标签。
+    /// </summary>
     public string Label { get; set; } = string.Empty;
 }

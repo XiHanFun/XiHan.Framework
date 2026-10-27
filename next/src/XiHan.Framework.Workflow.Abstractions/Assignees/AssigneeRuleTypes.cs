@@ -11,12 +11,18 @@ namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AssigneeRuleTypes
 {
-    /// <summary>指定用户：参数即指派人。</summary>
+    /// <summary>
+    /// 指定用户：参数即指派人。
+    /// </summary>
     public const string User = "User";
 
-    /// <summary>发起人；无参数。</summary>
+    /// <summary>
+    /// 发起人；无参数。
+    /// </summary>
     public const string Starter = "Starter";
 
-    /// <summary>表达式：一个表达式，求值为列表或逗号分隔字符串。</summary>
+    /// <summary>
+    /// 表达式：一个表达式，求值为列表或逗号分隔字符串。
+    /// </summary>
     public const string Expression = "Expression";
 }

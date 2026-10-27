@@ -16,16 +16,24 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DelayActivity : IResumableActivity
 {
-    /// <summary>属性：秒数或表达式。</summary>
+    /// <summary>
+    /// 属性：秒数或表达式。
+    /// </summary>
     public const string DurationProperty = "Duration";
 
-    /// <summary>属性：时刻或表达式。</summary>
+    /// <summary>
+    /// 属性：时刻或表达式。
+    /// </summary>
     public const string UntilProperty = "Until";
 
-    /// <summary>属性：cron 表达式。</summary>
+    /// <summary>
+    /// 属性：cron 表达式。
+    /// </summary>
     public const string CronProperty = "Cron";
 
-    /// <summary>属性：cron 的时区 ID。</summary>
+    /// <summary>
+    /// 属性：cron 的时区 ID。
+    /// </summary>
     public const string TimeZoneProperty = "TimeZone";
 
     /// <inheritdoc />

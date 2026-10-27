@@ -11,21 +11,33 @@ namespace XiHan.Framework.Caching.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CachingErrors
 {
-    /// <summary>键不合法。</summary>
+    /// <summary>
+    /// 键不合法。
+    /// </summary>
     public const string InvalidKey = "CACHING_VALIDATION_001";
 
-    /// <summary>条目选项不合法。</summary>
+    /// <summary>
+    /// 条目选项不合法。
+    /// </summary>
     public const string InvalidOptions = "CACHING_VALIDATION_002";
 
-    /// <summary>存储不可达或操作失败。</summary>
+    /// <summary>
+    /// 存储不可达或操作失败。
+    /// </summary>
     public const string StoreUnavailable = "CACHING_UNAVAILABLE_001";
 
-    /// <summary>锁被其他持有者占用。</summary>
+    /// <summary>
+    /// 锁被其他持有者占用。
+    /// </summary>
     public const string LockHeld = "CACHING_CONFLICT_001";
 
-    /// <summary>同一幂等键的调用仍在处理中。</summary>
+    /// <summary>
+    /// 同一幂等键的调用仍在处理中。
+    /// </summary>
     public const string IdempotentInProgress = "CACHING_CONFLICT_002";
 
-    /// <summary>内存缓存已达容量上限（健康项 Degraded；LRU 继续淘汰最久未访问的条目）。</summary>
+    /// <summary>
+    /// 内存缓存已达容量上限（健康项 Degraded；LRU 继续淘汰最久未访问的条目）。
+    /// </summary>
     public const string CapacityReached = "CACHING_UNAVAILABLE_002";
 }

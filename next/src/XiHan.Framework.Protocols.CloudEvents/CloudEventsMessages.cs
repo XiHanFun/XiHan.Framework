@@ -17,22 +17,34 @@ public static class CloudEventsMessages
     /// </summary>
     public const string CatalogName = "protocols.cloudevents";
 
-    /// <summary>请求不是 CloudEvent。参数：<c>contentType</c>。</summary>
+    /// <summary>
+    /// 请求不是 CloudEvent。参数：<c>contentType</c>。
+    /// </summary>
     public const string ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported";
 
-    /// <summary>事件类型没有映射到主题。参数：<c>type</c>。</summary>
+    /// <summary>
+    /// 事件类型没有映射到主题。参数：<c>type</c>。
+    /// </summary>
     public const string TopicUnresolved = "protocols.cloudevents.topic_unresolved";
 
-    /// <summary>主题没有处理器。参数：<c>topic</c>。</summary>
+    /// <summary>
+    /// 主题没有处理器。参数：<c>topic</c>。
+    /// </summary>
     public const string NoSubscriber = "protocols.cloudevents.no_subscriber";
 
-    /// <summary>主题没有配置 Webhook。参数：<c>topic</c>。</summary>
+    /// <summary>
+    /// 主题没有配置 Webhook。参数：<c>topic</c>。
+    /// </summary>
     public const string WebhookMissing = "protocols.cloudevents.webhook_missing";
 
-    /// <summary>Webhook 返回了非 2xx 状态。参数：<c>topic</c>、<c>status</c>。</summary>
+    /// <summary>
+    /// Webhook 返回了非 2xx 状态。参数：<c>topic</c>、<c>status</c>。
+    /// </summary>
     public const string WebhookFailed = "protocols.cloudevents.webhook_failed";
 
-    /// <summary>Webhook 无法连接。参数：<c>topic</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// Webhook 无法连接。参数：<c>topic</c>、<c>reason</c>。
+    /// </summary>
     public const string WebhookUnreachable = "protocols.cloudevents.webhook_unreachable";
 
     /// <summary>

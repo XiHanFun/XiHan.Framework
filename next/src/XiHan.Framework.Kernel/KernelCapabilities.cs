@@ -12,25 +12,39 @@ namespace XiHan.Framework.Kernel;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class KernelCapabilities
 {
-    /// <summary>应用构建、特性装配、生命周期。</summary>
+    /// <summary>
+    /// 应用构建、特性装配、生命周期。
+    /// </summary>
     public const string Hosting = "kernel.hosting";
 
-    /// <summary>清单解析与能力图谱。</summary>
+    /// <summary>
+    /// 清单解析与能力图谱。
+    /// </summary>
     public const string Capabilities = "kernel.capabilities";
 
-    /// <summary>执行管道。</summary>
+    /// <summary>
+    /// 执行管道。
+    /// </summary>
     public const string Pipeline = "kernel.pipeline";
 
-    /// <summary>诊断薄桥与审计接收器。</summary>
+    /// <summary>
+    /// 诊断薄桥与审计接收器。
+    /// </summary>
     public const string Diagnostics = "kernel.diagnostics";
 
-    /// <summary>安全原语。</summary>
+    /// <summary>
+    /// 安全原语。
+    /// </summary>
     public const string Security = "kernel.security";
 
-    /// <summary>插件宿主抽象。</summary>
+    /// <summary>
+    /// 插件宿主抽象。
+    /// </summary>
     public const string Plugins = "kernel.plugins";
 
-    /// <summary>当前内核实现的接口版本。</summary>
+    /// <summary>
+    /// 当前内核实现的接口版本。
+    /// </summary>
     public const int Version = 1;
 
     /// <summary>

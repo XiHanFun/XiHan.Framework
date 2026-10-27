@@ -10,18 +10,28 @@ namespace XiHan.Framework.Primitives.Manifests;
 [ApiLevel(Stability.Stable, "5.0")]
 public enum ManifestKind
 {
-    /// <summary>能力包：编译期引用、同进程、可信。</summary>
+    /// <summary>
+    /// 能力包：编译期引用、同进程、可信。
+    /// </summary>
     Capability = 0,
 
-    /// <summary>Provider：某个抽象的实现。</summary>
+    /// <summary>
+    /// Provider：某个抽象的实现。
+    /// </summary>
     Provider = 1,
 
-    /// <summary>插件：运行期加载、隔离。</summary>
+    /// <summary>
+    /// 插件：运行期加载、隔离。
+    /// </summary>
     Plugin = 2,
 
-    /// <summary>宿主适配。</summary>
+    /// <summary>
+    /// 宿主适配。
+    /// </summary>
     Host = 3,
 
-    /// <summary>协议适配器。</summary>
+    /// <summary>
+    /// 协议适配器。
+    /// </summary>
     Protocol = 4,
 }

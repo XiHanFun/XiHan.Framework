@@ -22,58 +22,94 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class UserTaskActivity : IResumableActivity
 {
-    /// <summary>属性：指派人列表。</summary>
+    /// <summary>
+    /// 属性：指派人列表。
+    /// </summary>
     public const string AssigneesProperty = "Assignees";
 
-    /// <summary>属性：指派人表达式（列表或逗号分隔字符串）。</summary>
+    /// <summary>
+    /// 属性：指派人表达式（列表或逗号分隔字符串）。
+    /// </summary>
     public const string AssigneesExpressionProperty = "AssigneesExpression";
 
-    /// <summary>属性：指派规则（<c>[{ type, values }]</c>）。</summary>
+    /// <summary>
+    /// 属性：指派规则（<c>[{ type, values }]</c>）。
+    /// </summary>
     public const string AssigneeRulesProperty = "AssigneeRules";
 
-    /// <summary>属性：排除发起人。</summary>
+    /// <summary>
+    /// 属性：排除发起人。
+    /// </summary>
     public const string ExcludeStarterProperty = "ExcludeStarter";
 
-    /// <summary>属性：没有指派人时的策略。</summary>
+    /// <summary>
+    /// 属性：没有指派人时的策略。
+    /// </summary>
     public const string EmptyAssigneeStrategyProperty = "EmptyAssigneeStrategy";
 
-    /// <summary>属性：兜底指派规则。</summary>
+    /// <summary>
+    /// 属性：兜底指派规则。
+    /// </summary>
     public const string FallbackAssigneeRulesProperty = "FallbackAssigneeRules";
 
-    /// <summary>属性：完成策略。</summary>
+    /// <summary>
+    /// 属性：完成策略。
+    /// </summary>
     public const string CompletionPolicyProperty = "CompletionPolicy";
 
-    /// <summary>属性：<c>All</c> 策略的通过阈值：正整数（人数）或 <c>"60%"</c>（百分比，按指派人数向上取整）；缺省全部指派人。</summary>
+    /// <summary>
+    /// 属性：<c>All</c> 策略的通过阈值：正整数（人数）或 <c>"60%"</c>（百分比，按指派人数向上取整）；缺省全部指派人。
+    /// </summary>
     public const string ApprovalThresholdProperty = "ApprovalThreshold";
 
-    /// <summary>属性：标题模板。</summary>
+    /// <summary>
+    /// 属性：标题模板。
+    /// </summary>
     public const string TitleProperty = "Title";
 
-    /// <summary>属性：表单数据。</summary>
+    /// <summary>
+    /// 属性：表单数据。
+    /// </summary>
     public const string FormDataProperty = "FormData";
 
-    /// <summary>属性：表单键（模板）。</summary>
+    /// <summary>
+    /// 属性：表单键（模板）。
+    /// </summary>
     public const string FormKeyProperty = "FormKey";
 
-    /// <summary>属性：优先级（整数）。</summary>
+    /// <summary>
+    /// 属性：优先级（整数）。
+    /// </summary>
     public const string PriorityProperty = "Priority";
 
-    /// <summary>属性：截止时长（秒，相对挂起时刻）。</summary>
+    /// <summary>
+    /// 属性：截止时长（秒，相对挂起时刻）。
+    /// </summary>
     public const string DueAfterSecondsProperty = "DueAfterSeconds";
 
-    /// <summary>属性：截止时刻（ISO-8601 字符串，或求值为时刻的表达式）；优先于 <see cref="DueAfterSecondsProperty"/>。</summary>
+    /// <summary>
+    /// 属性：截止时刻（ISO-8601 字符串，或求值为时刻的表达式）；优先于 <see cref="DueAfterSecondsProperty"/>。
+    /// </summary>
     public const string DueAtProperty = "DueAt";
 
-    /// <summary>属性：提醒间隔秒数：每隔该时长发布一次 <c>workflow.task.reminder</c>，直至节点结束。</summary>
+    /// <summary>
+    /// 属性：提醒间隔秒数：每隔该时长发布一次 <c>workflow.task.reminder</c>，直至节点结束。
+    /// </summary>
     public const string ReminderAfterSecondsProperty = "ReminderAfterSeconds";
 
-    /// <summary>属性：抄送人。</summary>
+    /// <summary>
+    /// 属性：抄送人。
+    /// </summary>
     public const string CcUserIdsProperty = "CcUserIds";
 
-    /// <summary>属性：抄送规则。</summary>
+    /// <summary>
+    /// 属性：抄送规则。
+    /// </summary>
     public const string CcRulesProperty = "CcRules";
 
-    /// <summary>属性：允许的结果；缺省 <c>approved</c> / <c>rejected</c>。</summary>
+    /// <summary>
+    /// 属性：允许的结果；缺省 <c>approved</c> / <c>rejected</c>。
+    /// </summary>
     public const string AllowedOutcomesProperty = "AllowedOutcomes";
 
     /// <inheritdoc />

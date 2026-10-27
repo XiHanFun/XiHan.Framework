@@ -15,22 +15,34 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EventGatewayActivity : IResumableActivity
 {
-    /// <summary>属性：信号名列表（元素为模板）。</summary>
+    /// <summary>
+    /// 属性：信号名列表（元素为模板）。
+    /// </summary>
     public const string SignalsProperty = "Signals";
 
-    /// <summary>属性：超时秒数；空为不超时。</summary>
+    /// <summary>
+    /// 属性：超时秒数；空为不超时。
+    /// </summary>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
-    /// <summary>属性：接受任意关联。</summary>
+    /// <summary>
+    /// 属性：接受任意关联。
+    /// </summary>
     public const string AcceptAnyCorrelationProperty = "AcceptAnyCorrelation";
 
-    /// <summary>超时的结果标签。</summary>
+    /// <summary>
+    /// 超时的结果标签。
+    /// </summary>
     public const string TimeoutOutcome = "timeout";
 
-    /// <summary>输出：命中的信号名。</summary>
+    /// <summary>
+    /// 输出：命中的信号名。
+    /// </summary>
     public const string SignalOutput = "signal";
 
-    /// <summary>输出：信号载荷。</summary>
+    /// <summary>
+    /// 输出：信号载荷。
+    /// </summary>
     public const string PayloadOutput = "payload";
 
     /// <inheritdoc />

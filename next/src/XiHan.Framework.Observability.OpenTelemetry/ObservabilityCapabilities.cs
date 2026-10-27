@@ -11,9 +11,13 @@ namespace XiHan.Framework.Observability.OpenTelemetry;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObservabilityCapabilities
 {
-    /// <summary>导出器：把 Activity、Meter 与日志导出到后端。</summary>
+    /// <summary>
+    /// 导出器：把 Activity、Meter 与日志导出到后端。
+    /// </summary>
     public const string Export = "observability.export";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

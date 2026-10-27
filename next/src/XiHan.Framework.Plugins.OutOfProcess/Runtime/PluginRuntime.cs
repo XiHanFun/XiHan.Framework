@@ -841,47 +841,69 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     private Error Timeout(string phase)
         => new(PluginErrors.Timeout, PluginMessages.ProcessTimeout, MessageArguments.Of(("id", Manifest.Id), ("phase", phase)));
 
-    /// <summary>记录握手完成。</summary>
+    /// <summary>
+    /// 记录握手完成。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} completed the handshake with protocol v{ProtocolVersion}: {Operations} operations, {Subscriptions} subscriptions.")]
     private static partial void LogHandshake(ILogger logger, string pluginId, uint protocolVersion, int operations, int subscriptions);
 
-    /// <summary>记录启动完成。</summary>
+    /// <summary>
+    /// 记录启动完成。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} started (pid {ProcessId}, sdk {Sdk}).")]
     private static partial void LogStarted(ILogger logger, string pluginId, int processId, string sdk);
 
-    /// <summary>记录状态变化。</summary>
+    /// <summary>
+    /// 记录状态变化。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Plugin {PluginId} entered {State}.")]
     private static partial void LogState(ILogger logger, string pluginId, LifecycleState state);
 
-    /// <summary>记录崩溃。</summary>
+    /// <summary>
+    /// 记录崩溃。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} exited unexpectedly with code {ExitCode}.")]
     private static partial void LogCrashed(ILogger logger, string pluginId, int exitCode);
 
-    /// <summary>记录重启排期。</summary>
+    /// <summary>
+    /// 记录重启排期。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} will be restarted in {Delay} (attempt {Attempt}).")]
     private static partial void LogRestartScheduled(ILogger logger, string pluginId, TimeSpan delay, int attempt);
 
-    /// <summary>记录重启成功。</summary>
+    /// <summary>
+    /// 记录重启成功。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} restarted (total restarts: {Restarts}).")]
     private static partial void LogRestarted(ILogger logger, string pluginId, int restarts);
 
-    /// <summary>记录重启次数耗尽。</summary>
+    /// <summary>
+    /// 记录重启次数耗尽。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} reached the restart limit of {Limit} within {Window}; it stays failed until it is reloaded.")]
     private static partial void LogRestartLimit(ILogger logger, string pluginId, int limit, TimeSpan window);
 
-    /// <summary>记录健康推送断开。</summary>
+    /// <summary>
+    /// 记录健康推送断开。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Health stream of plugin {PluginId} ended with {StatusCode}; falling back to polling.")]
     private static partial void LogHealthStreamLost(ILogger logger, string pluginId, StatusCode statusCode);
 
-    /// <summary>记录健康探测连续失败。</summary>
+    /// <summary>
+    /// 记录健康探测连续失败。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} failed {Failures} consecutive health probes; terminating the process.")]
     private static partial void LogHealthLost(ILogger logger, string pluginId, int failures);
 
-    /// <summary>记录 Stop 调用失败。</summary>
+    /// <summary>
+    /// 记录 Stop 调用失败。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Stop call to plugin {PluginId} failed with {StatusCode}; waiting for the process to exit.")]
     private static partial void LogStopFailed(ILogger logger, string pluginId, StatusCode statusCode);
 
-    /// <summary>记录停止超时。</summary>
+    /// <summary>
+    /// 记录停止超时。
+    /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} did not exit within {Grace}; terminating the process.")]
     private static partial void LogStopTimeout(ILogger logger, string pluginId, TimeSpan grace);
 }

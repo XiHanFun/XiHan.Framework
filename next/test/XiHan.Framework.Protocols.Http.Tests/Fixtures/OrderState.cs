@@ -8,9 +8,13 @@ namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 /// </summary>
 internal enum OrderState
 {
-    /// <summary>待处理。</summary>
+    /// <summary>
+    /// 待处理。
+    /// </summary>
     Pending = 0,
 
-    /// <summary>已关闭。</summary>
+    /// <summary>
+    /// 已关闭。
+    /// </summary>
     Closed = 1,
 }

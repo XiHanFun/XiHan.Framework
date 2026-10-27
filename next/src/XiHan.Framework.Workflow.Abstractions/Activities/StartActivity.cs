@@ -11,13 +11,19 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class StartActivity : IResumableActivity
 {
-    /// <summary>属性：信号启动的信号名。</summary>
+    /// <summary>
+    /// 属性：信号启动的信号名。
+    /// </summary>
     public const string SignalNameProperty = "SignalName";
 
-    /// <summary>属性：定时启动的 cron 表达式。</summary>
+    /// <summary>
+    /// 属性：定时启动的 cron 表达式。
+    /// </summary>
     public const string CronProperty = "Cron";
 
-    /// <summary>属性：定时启动的时区 ID。</summary>
+    /// <summary>
+    /// 属性：定时启动的时区 ID。
+    /// </summary>
     public const string TimeZoneProperty = "TimeZone";
 
     /// <inheritdoc />

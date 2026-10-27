@@ -26,39 +26,63 @@ internal sealed class OperationModel
         ResponseType = responseType;
     }
 
-    /// <summary>操作实现类型。</summary>
+    /// <summary>
+    /// 操作实现类型。
+    /// </summary>
     public INamedTypeSymbol OperationType { get; }
 
-    /// <summary>操作 ID。</summary>
+    /// <summary>
+    /// 操作 ID。
+    /// </summary>
     public string Id { get; }
 
-    /// <summary>稳定性（枚举整数值）。</summary>
+    /// <summary>
+    /// 稳定性（枚举整数值）。
+    /// </summary>
     public int Stability { get; }
 
-    /// <summary>暴露的协议（标志整数值）。</summary>
+    /// <summary>
+    /// 暴露的协议（标志整数值）。
+    /// </summary>
     public int Expose { get; }
 
-    /// <summary>策略名。</summary>
+    /// <summary>
+    /// 策略名。
+    /// </summary>
     public string? Policy { get; }
 
-    /// <summary>权限码。</summary>
+    /// <summary>
+    /// 权限码。
+    /// </summary>
     public string? Permission { get; }
 
-    /// <summary>请求类型。</summary>
+    /// <summary>
+    /// 请求类型。
+    /// </summary>
     public ITypeSymbol RequestType { get; }
 
-    /// <summary>响应类型。</summary>
+    /// <summary>
+    /// 响应类型。
+    /// </summary>
     public ITypeSymbol ResponseType { get; }
 
-    /// <summary>请求类型所在的序列化上下文。</summary>
+    /// <summary>
+    /// 请求类型所在的序列化上下文。
+    /// </summary>
     public JsonContextModel? RequestContext { get; set; }
 
-    /// <summary>请求类型在上下文 <c>Default</c> 上的属性名。</summary>
+    /// <summary>
+    /// 请求类型在上下文 <c>Default</c> 上的属性名。
+    /// </summary>
     public string? RequestProperty { get; set; }
 
-    /// <summary>响应类型所在的序列化上下文。</summary>
+    /// <summary>
+    /// 响应类型所在的序列化上下文。
+    /// </summary>
     public JsonContextModel? ResponseContext { get; set; }
 
-    /// <summary>响应类型在上下文 <c>Default</c> 上的属性名。</summary>
+    /// <summary>
+    /// 响应类型在上下文 <c>Default</c> 上的属性名。
+    /// </summary>
     public string? ResponseProperty { get; set; }
 }

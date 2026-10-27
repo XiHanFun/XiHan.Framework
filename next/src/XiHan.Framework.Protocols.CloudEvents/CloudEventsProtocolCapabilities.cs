@@ -11,9 +11,13 @@ namespace XiHan.Framework.Protocols.CloudEvents;
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsProtocolCapabilities
 {
-    /// <summary>CloudEvents 协议：消息信封经 CloudEvents HTTP 绑定进出。</summary>
+    /// <summary>
+    /// CloudEvents 协议：消息信封经 CloudEvents HTTP 绑定进出。
+    /// </summary>
     public const string CloudEvents = "protocols.cloudevents";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

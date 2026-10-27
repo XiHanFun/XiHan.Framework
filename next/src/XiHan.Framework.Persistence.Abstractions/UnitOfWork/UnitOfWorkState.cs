@@ -11,15 +11,23 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 [ApiLevel(Stability.Stable, "5.0")]
 public enum UnitOfWorkState
 {
-    /// <summary>尚未开始。</summary>
+    /// <summary>
+    /// 尚未开始。
+    /// </summary>
     NotStarted = 0,
 
-    /// <summary>进行中。</summary>
+    /// <summary>
+    /// 进行中。
+    /// </summary>
     Active = 1,
 
-    /// <summary>已提交。</summary>
+    /// <summary>
+    /// 已提交。
+    /// </summary>
     Committed = 2,
 
-    /// <summary>已回滚。</summary>
+    /// <summary>
+    /// 已回滚。
+    /// </summary>
     RolledBack = 3,
 }

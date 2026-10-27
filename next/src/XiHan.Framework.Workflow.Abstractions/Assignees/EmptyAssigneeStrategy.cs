@@ -11,15 +11,23 @@ namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 [ApiLevel(Stability.Preview, "5.0")]
 public enum EmptyAssigneeStrategy
 {
-    /// <summary>节点故障（默认）。</summary>
+    /// <summary>
+    /// 节点故障（默认）。
+    /// </summary>
     Fault = 1,
 
-    /// <summary>自动通过。</summary>
+    /// <summary>
+    /// 自动通过。
+    /// </summary>
     AutoApprove = 2,
 
-    /// <summary>自动拒绝。</summary>
+    /// <summary>
+    /// 自动拒绝。
+    /// </summary>
     AutoReject = 3,
 
-    /// <summary>用 <c>FallbackAssigneeRules</c> 再解析一次。</summary>
+    /// <summary>
+    /// 用 <c>FallbackAssigneeRules</c> 再解析一次。
+    /// </summary>
     Fallback = 4,
 }

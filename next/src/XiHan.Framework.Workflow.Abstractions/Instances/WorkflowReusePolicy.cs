@@ -11,12 +11,18 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 [ApiLevel(Stability.Preview, "5.0")]
 public enum WorkflowReusePolicy
 {
-    /// <summary>照常再启动一个（默认）。</summary>
+    /// <summary>
+    /// 照常再启动一个（默认）。
+    /// </summary>
     AllowDuplicate = 0,
 
-    /// <summary>拒绝：<see cref="WorkflowErrors.ActiveInstanceExists"/>。</summary>
+    /// <summary>
+    /// 拒绝：<see cref="WorkflowErrors.ActiveInstanceExists"/>。
+    /// </summary>
     RejectActive = 1,
 
-    /// <summary>返回已有的实例，不启动新的。</summary>
+    /// <summary>
+    /// 返回已有的实例，不启动新的。
+    /// </summary>
     ReturnActive = 2,
 }

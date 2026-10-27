@@ -9,6 +9,8 @@ namespace XiHan.Framework.Primitives;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ResultMessages
 {
-    /// <summary>使用了未初始化的结果（<c>default</c> 值）。</summary>
+    /// <summary>
+    /// 使用了未初始化的结果（<c>default</c> 值）。
+    /// </summary>
     public const string Uninitialized = "primitives.result.uninitialized";
 }

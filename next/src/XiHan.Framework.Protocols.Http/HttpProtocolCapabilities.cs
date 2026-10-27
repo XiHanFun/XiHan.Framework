@@ -11,9 +11,13 @@ namespace XiHan.Framework.Protocols.Http;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class HttpProtocolCapabilities
 {
-    /// <summary>HTTP 协议：操作经 HTTP 暴露。</summary>
+    /// <summary>
+    /// HTTP 协议：操作经 HTTP 暴露。
+    /// </summary>
     public const string Http = "protocols.http";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

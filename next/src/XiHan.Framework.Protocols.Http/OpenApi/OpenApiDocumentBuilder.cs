@@ -645,10 +645,14 @@ public static partial class OpenApiDocumentBuilder
     /// </summary>
     private enum SchemaRole
     {
-        /// <summary>请求。</summary>
+        /// <summary>
+        /// 请求。
+        /// </summary>
         Request,
 
-        /// <summary>响应。</summary>
+        /// <summary>
+        /// 响应。
+        /// </summary>
         Response,
     }
 

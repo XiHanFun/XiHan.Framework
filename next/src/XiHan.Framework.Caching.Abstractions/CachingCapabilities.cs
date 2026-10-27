@@ -11,12 +11,18 @@ namespace XiHan.Framework.Caching.Abstractions;
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CachingCapabilities
 {
-    /// <summary>进程内缓存。</summary>
+    /// <summary>
+    /// 进程内缓存。
+    /// </summary>
     public const string Local = "caching.local";
 
-    /// <summary>跨进程共享的缓存与分布式锁。</summary>
+    /// <summary>
+    /// 跨进程共享的缓存与分布式锁。
+    /// </summary>
     public const string Distributed = "caching.distributed";
 
-    /// <summary>当前接口版本。</summary>
+    /// <summary>
+    /// 当前接口版本。
+    /// </summary>
     public const int Version = 1;
 }

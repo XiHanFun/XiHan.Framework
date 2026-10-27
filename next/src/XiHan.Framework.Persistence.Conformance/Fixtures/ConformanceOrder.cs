@@ -21,10 +21,14 @@ public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, I
     /// <inheritdoc />
     public Guid Id { get; init; }
 
-    /// <summary>名称。</summary>
+    /// <summary>
+    /// 名称。
+    /// </summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>金额（整数，避免 Provider 对 decimal 的排序差异）。</summary>
+    /// <summary>
+    /// 金额（整数，避免 Provider 对 decimal 的排序差异）。
+    /// </summary>
     public int Amount { get; set; }
 
     /// <inheritdoc />

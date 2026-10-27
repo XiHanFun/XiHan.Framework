@@ -12,16 +12,24 @@ namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class EnvelopeExtensions
 {
-    /// <summary>租户 ID，派发时进入 Baggage <c>xihan.tenant</c>。</summary>
+    /// <summary>
+    /// 租户 ID，派发时进入 Baggage <c>xihan.tenant</c>。
+    /// </summary>
     public const string Tenant = "xihantenant";
 
-    /// <summary>关联 ID，派发时进入 Baggage <c>xihan.correlation</c>。</summary>
+    /// <summary>
+    /// 关联 ID，派发时进入 Baggage <c>xihan.correlation</c>。
+    /// </summary>
     public const string Correlation = "xihancorrelation";
 
-    /// <summary>W3C <c>traceparent</c>（CloudEvents 分布式追踪扩展）。</summary>
+    /// <summary>
+    /// W3C <c>traceparent</c>（CloudEvents 分布式追踪扩展）。
+    /// </summary>
     public const string TraceParent = "traceparent";
 
-    /// <summary>分区键：流能力按它选分区，同一主题内同键的消息按发布顺序投递。</summary>
+    /// <summary>
+    /// 分区键：流能力按它选分区，同一主题内同键的消息按发布顺序投递。
+    /// </summary>
     public const string PartitionKey = "xihankey";
 
     /// <summary>

@@ -11,10 +11,14 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CompensateActivity : IActivity
 {
-    /// <summary>属性：要补偿的节点 ID 列表；空为全部已完成的节点。</summary>
+    /// <summary>
+    /// 属性：要补偿的节点 ID 列表；空为全部已完成的节点。
+    /// </summary>
     public const string NodeIdsProperty = "NodeIds";
 
-    /// <summary>节点状态：本次补偿了的节点实例 ID。</summary>
+    /// <summary>
+    /// 节点状态：本次补偿了的节点实例 ID。
+    /// </summary>
     public const string CompensatedState = "compensated";
 
     /// <inheritdoc />

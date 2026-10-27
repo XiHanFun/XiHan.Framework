@@ -17,43 +17,69 @@ public static class SchedulingMessages
     /// </summary>
     public const string CatalogName = "scheduling";
 
-    /// <summary>作业未登记。参数：<c>name</c>。</summary>
+    /// <summary>
+    /// 作业未登记。参数：<c>name</c>。
+    /// </summary>
     public const string JobNotFound = "scheduling.job.not_found";
 
-    /// <summary>作业正在运行。参数：<c>name</c>。</summary>
+    /// <summary>
+    /// 作业正在运行。参数：<c>name</c>。
+    /// </summary>
     public const string JobRunning = "scheduling.job.running";
 
-    /// <summary>作业抛出异常。参数：<c>name</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 作业抛出异常。参数：<c>name</c>、<c>reason</c>。
+    /// </summary>
     public const string JobFailed = "scheduling.job.failed";
 
-    /// <summary>作业类型未登记。参数：<c>type</c>。</summary>
+    /// <summary>
+    /// 作业类型未登记。参数：<c>type</c>。
+    /// </summary>
     public const string JobTypeNotRegistered = "scheduling.job.type_not_registered";
 
-    /// <summary>作业定义不合法。参数：<c>name</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 作业定义不合法。参数：<c>name</c>、<c>reason</c>。
+    /// </summary>
     public const string DefinitionInvalid = "scheduling.definition.invalid";
 
-    /// <summary>触发器不存在。参数：<c>job</c>、<c>trigger</c>。</summary>
+    /// <summary>
+    /// 触发器不存在。参数：<c>job</c>、<c>trigger</c>。
+    /// </summary>
     public const string TriggerNotFound = "scheduling.trigger.not_found";
 
-    /// <summary>运行不存在或已结束。参数：<c>id</c>。</summary>
+    /// <summary>
+    /// 运行不存在或已结束。参数：<c>id</c>。
+    /// </summary>
     public const string RunNotFound = "scheduling.run.not_found";
 
-    /// <summary>运行被取消。参数：<c>id</c>。</summary>
+    /// <summary>
+    /// 运行被取消。参数：<c>id</c>。
+    /// </summary>
     public const string RunCanceled = "scheduling.run.canceled";
 
-    /// <summary>领导租约被占用。参数：<c>resource</c>。</summary>
+    /// <summary>
+    /// 领导租约被占用。参数：<c>resource</c>。
+    /// </summary>
     public const string LeaseHeld = "scheduling.lease.held";
 
-    /// <summary>调度器未运行。</summary>
+    /// <summary>
+    /// 调度器未运行。
+    /// </summary>
     public const string SchedulerUnavailable = "scheduling.scheduler.unavailable";
 
-    /// <summary>领导选举的存储不可达。参数：<c>resource</c>、<c>reason</c>。</summary>
+    /// <summary>
+    /// 领导选举的存储不可达。参数：<c>resource</c>、<c>reason</c>。
+    /// </summary>
     public const string LeaseUnavailable = "scheduling.lease.unavailable";
 
-    /// <summary>作业存储不可达。参数：<c>reason</c>。</summary>
+    /// <summary>
+    /// 作业存储不可达。参数：<c>reason</c>。
+    /// </summary>
     public const string StoreUnavailable = "scheduling.store.unavailable";
 
-    /// <summary>作业存储容量已满。参数：<c>store</c>、<c>limit</c>。</summary>
+    /// <summary>
+    /// 作业存储容量已满。参数：<c>store</c>、<c>limit</c>。
+    /// </summary>
     public const string StoreCapacity = "scheduling.store.capacity";
 
     /// <summary>

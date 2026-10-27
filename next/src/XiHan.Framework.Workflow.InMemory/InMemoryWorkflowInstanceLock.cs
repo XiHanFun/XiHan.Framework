@@ -123,10 +123,14 @@ public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDispo
     /// </summary>
     private sealed class Entry
     {
-        /// <summary>信号量（一次一个）。</summary>
+        /// <summary>
+        /// 信号量（一次一个）。
+        /// </summary>
         public SemaphoreSlim Semaphore { get; } = new(1, 1);
 
-        /// <summary>持有或等待的人数。</summary>
+        /// <summary>
+        /// 持有或等待的人数。
+        /// </summary>
         public int Users { get; set; }
     }
 

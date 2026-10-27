@@ -8,21 +8,33 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// </summary>
 internal enum JsonNamingPolicyKind
 {
-    /// <summary>不改名。</summary>
+    /// <summary>
+    /// 不改名。
+    /// </summary>
     Unspecified = 0,
 
-    /// <summary>camelCase。</summary>
+    /// <summary>
+    /// camelCase。
+    /// </summary>
     CamelCase = 1,
 
-    /// <summary>snake_case。</summary>
+    /// <summary>
+    /// snake_case。
+    /// </summary>
     SnakeCaseLower = 2,
 
-    /// <summary>SNAKE_CASE。</summary>
+    /// <summary>
+    /// SNAKE_CASE。
+    /// </summary>
     SnakeCaseUpper = 3,
 
-    /// <summary>kebab-case。</summary>
+    /// <summary>
+    /// kebab-case。
+    /// </summary>
     KebabCaseLower = 4,
 
-    /// <summary>KEBAB-CASE。</summary>
+    /// <summary>
+    /// KEBAB-CASE。
+    /// </summary>
     KebabCaseUpper = 5,
 }
