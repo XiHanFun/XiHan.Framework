@@ -34,6 +34,17 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
       rabbitmq:
         image: rabbitmq:4-alpine
         ports:
@@ -74,9 +85,10 @@ jobs:
 
       - name: 测试（MTP 模式，采集覆盖率）
         env:
-          # Caching.Redis 与 Messaging.RabbitMQ 的一致性套件只在设置了这些变量时运行
+          # Caching.Redis、Messaging.RabbitMQ 与 Persistence.SqlSugar（PostgreSQL）的一致性套件只在设置了这些变量时运行
           XIHAN_TEST_REDIS: localhost:6379
           XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
+          XIHAN_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
         # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
         run: >
           dotnet test --solution next/XiHan.Framework.Next.slnx
