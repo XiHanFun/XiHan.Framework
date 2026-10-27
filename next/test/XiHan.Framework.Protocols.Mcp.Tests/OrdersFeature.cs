@@ -18,7 +18,7 @@ internal sealed class OrdersFeature : IFeature
     /// <summary>
     /// 暴露给 MCP 且非内部的操作 ID。
     /// </summary>
-    public static readonly string[] McpOperations = ["orders.cancel", "orders.create", "orders.delete", "orders.get", "orders.list", "orders.update"];
+    public static readonly string[] McpOperations = ["order-notes.list", "orders.cancel", "orders.create", "orders.delete", "orders.get", "orders.list", "orders.update"];
 
     /// <summary>
     /// 手写的 Schema：请求带 $defs 的嵌套定义，响应为对象。

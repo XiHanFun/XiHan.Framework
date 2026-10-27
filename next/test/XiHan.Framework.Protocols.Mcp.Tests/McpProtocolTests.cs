@@ -193,7 +193,7 @@ public sealed class McpProtocolTests
 
         var result = await ResultOf(client, Rpc("tools/list"), ("Accept-Language", "zh-CN"));
         var tools = result.GetProperty("tools").EnumerateArray().ToList();
-        Assert.Equal(["cancel_order", "orders_create", "orders_delete", "orders_get", "orders_list", "orders_update"], tools.Select(static t => t.GetProperty("name").GetString()));
+        Assert.Equal(["cancel_order", "order-notes_list", "orders_create", "orders_delete", "orders_get", "orders_list", "orders_update"], tools.Select(static t => t.GetProperty("name").GetString()));
         var byName = tools.ToDictionary(static t => t.GetProperty("name").GetString()!, static t => t);
 
         // 带 Schema 的操作：inputSchema 原样（含 $defs），响应为对象时给 outputSchema；描述按 Accept-Language
@@ -219,6 +219,8 @@ public sealed class McpProtocolTests
         Assert.Equal("object", list.GetProperty("inputSchema").GetProperty("type").GetString());
         Assert.False(list.TryGetProperty("outputSchema", out _));
         Assert.False(list.TryGetProperty("description", out _));
+        // 资源段带连字符的操作（order-notes.list）：tool 名保留连字符（order-notes_list），描述按 order_notes.list.description 取——键的首段允许下划线
+        Assert.Equal("列出订单附带的备注。", byName["order-notes_list"].GetProperty("description").GetString());
         Assert.True(byName["orders_delete"].GetProperty("annotations").GetProperty("destructiveHint").GetBoolean());
 
         // 默认区域回退到英文
