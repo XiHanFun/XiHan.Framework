@@ -40,6 +40,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
 - 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，方式一创建的客户端默认连接 `ConfigId` 为 `default`（回调里设置的 `ConfigId` 以特性为准），带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一回调再建一个 `ConfigId = shard` 的连接，两者组成一个客户端：租户实体落分片库，平台目录表（租户、授予、翻译、发件箱等不带租户的实体）仍落默认库，同一调用里一起提交或回滚；其余调用只有默认连接。方式二由应用自己按 `context.GetTenantShard()` 组装连接集合，提供名为 `shard` 的连接即可让默认规则生效。分片库的表结构由应用管理。
 - `XiHan:Persistence:SqlSugar:InitTables=true` 时启动按已登记的实体建表，按落点分组：启动时没有调用也就没有分片，方式一的全部实体在默认连接建表；方式二带 `[Tenant]` 的实体在各自连接建表。
+- 规约里可空值类型与 null 的 `==` / `!=` 在交给 SqlSugar 前改写成 `HasValue` 判定（`NullableComparisonRewriter`，ADR-0035）：C# 把 `x.RevokedAt == null`（`DateTimeOffset?`、`int?` 等）编译成带运算符方法的提升比较，SqlSugar 据此生成 `WHERE revoked_at = NULL`——永假、静默返回空集，而 `string?` 的 `== null` 正确译成 `IS NULL`。改写覆盖字面量 null、闭包里求值为 null 的变量或静态成员、左右互换；与非 null 值的比较不动。一致性套件 `List_NullableValueTypeComparedWithNull_FiltersByPresence` 覆盖 SQLite，PostgreSQL 由同一套件按配置跑。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它们绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 - 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按 `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——在独立作用域里取客户端对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。
 

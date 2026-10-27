@@ -345,6 +345,43 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 11b：规约里可空值类型与 null 的相等 / 不等按存在性（<c>IS NULL</c> / <c>IS NOT NULL</c>）过滤——字面量 null、闭包里的 null 变量、左右互换、与 <c>HasValue</c> 都一致，
+    /// 组合到别的条件里也成立。SqlSugar 原本把 <c>DateTimeOffset?</c> 的提升比较译成 <c>= NULL</c>（永假、静默空集），Provider 必须按本用例的语义翻译。
+    /// </summary>
+    [Fact]
+    public async Task List_NullableValueTypeComparedWithNull_FiltersByPresence()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var touched = Guid.CreateVersion7();
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [new ConformanceOrder { Id = touched, Name = "touched", Amount = 1 }, new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "untouched", Amount = 2 }],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+        Clock.Advance(TimeSpan.FromMinutes(1));
+        // 更新 touched 写入 ModifiedAt；untouched 的 ModifiedAt 仍是 null
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var order = (await repository.FindAsync(touched, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            order.Amount = 3;
+            return await repository.UpdateAsync(order, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false)).ThrowIfFailure();
+
+        DateTimeOffset? none = null;
+        Assert.Equal(["untouched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.ModifiedAt == null)).ConfigureAwait(false));
+        Assert.Equal(["touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.ModifiedAt != null)).ConfigureAwait(false));
+        Assert.Equal(["untouched"], await NamesAsync(new Specification<ConformanceOrder>(static o => null == o.ModifiedAt)).ConfigureAwait(false));
+        Assert.Equal(["untouched"], await NamesAsync(new Specification<ConformanceOrder>(o => o.ModifiedAt == none)).ConfigureAwait(false));
+        Assert.Equal(["touched"], await NamesAsync(new Specification<ConformanceOrder>(o => o.ModifiedAt != none)).ConfigureAwait(false));
+        Assert.Equal(["untouched"], await NamesAsync(new Specification<ConformanceOrder>(static o => !o.ModifiedAt.HasValue)).ConfigureAwait(false));
+        Assert.Equal(["untouched", "touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.ModifiedAt == null || o.Amount == 3)).ConfigureAwait(false));
+        Assert.Equal(["touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.ModifiedAt != null && o.Amount == 3)).ConfigureAwait(false));
+
+        // 按规约过滤后的订单名，按金额升序
+        async Task<List<string>> NamesAsync(Specification<ConformanceOrder> filter)
+            => (await ListAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>().Where(filter).OrderBy(static o => o.Amount)).ConfigureAwait(false)).Select(static o => o.Name).ToList();
+    }
+
+    /// <summary>
     /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
     /// </summary>
     [Fact]
