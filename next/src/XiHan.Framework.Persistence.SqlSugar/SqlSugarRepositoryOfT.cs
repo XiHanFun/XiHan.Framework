@@ -544,12 +544,12 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 在可见性过滤之上追加查询自身的过滤规约。
+    /// 在可见性过滤之上追加查询自身的过滤规约；规约先经 <see cref="NullableComparisonRewriter"/>，可空值类型与 null 的比较按 <c>IS NULL</c> 语义翻译。
     /// </summary>
     private ISugarQueryable<TEntity> Filtered(EntityQuery<TEntity> query)
     {
         var source = Visible(query.IncludeDeleted);
-        return query.Filter is null ? source : source.Where(query.Filter.Criteria);
+        return query.Filter is null ? source : source.Where(NullableComparisonRewriter.Rewrite(query.Filter.Criteria));
     }
 
     /// <summary>
