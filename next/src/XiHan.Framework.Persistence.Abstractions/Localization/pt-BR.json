@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "A entidade '{entity}' não tem nenhum item com o identificador '{id}'.",
   "persistence.entity.stale_stamp": "O carimbo de concorrência de '{entity}' com o identificador '{id}' está desatualizado.",
   "persistence.entity.tenant_required": "A entidade '{entity}' é multilocatário, mas a chamada atual não tem locatário.",
+  "persistence.snowflake.worker_unavailable": "Nenhum ID de worker snowflake está em posse no momento: o arrendamento não foi adquirido ou foi perdido.",
   "persistence.store.capacity_exceeded": "A tabela em memória de '{entity}' atingiu sua capacidade de {capacity}.",
   "persistence.store.unavailable": "O banco de dados relacional não pode ser alcançado.",
   "persistence.unit_of_work.concurrency_conflict": "Ocorreu um conflito de concorrência otimista durante a confirmação: {reason}",

@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "エンティティ '{entity}' に ID '{id}' の項目がありません。",
   "persistence.entity.stale_stamp": "ID '{id}' の '{entity}' の同時実行スタンプが古くなっています。",
   "persistence.entity.tenant_required": "エンティティ '{entity}' はマルチテナントですが、現在の呼び出しにテナントがありません。",
+  "persistence.snowflake.worker_unavailable": "現在スノーフレークのワーカー ID を保持していません。リースが未取得か、失われています。",
   "persistence.store.capacity_exceeded": "'{entity}' のインメモリテーブルは容量上限 {capacity} に達しました。",
   "persistence.store.unavailable": "リレーショナルデータベースに接続できません。",
   "persistence.unit_of_work.concurrency_conflict": "コミット中に楽観的同時実行の競合が発生しました: {reason}",

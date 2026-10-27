@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "Entity '{entity}' has no item with id '{id}'.",
   "persistence.entity.stale_stamp": "The concurrency stamp of '{entity}' with id '{id}' is stale.",
   "persistence.entity.tenant_required": "Entity '{entity}' is multi-tenant, but the current invocation has no tenant.",
+  "persistence.snowflake.worker_unavailable": "No snowflake worker ID is currently held: the lease has not been acquired or has been lost.",
   "persistence.store.capacity_exceeded": "The in-memory table for '{entity}' has reached its capacity of {capacity}.",
   "persistence.store.unavailable": "The relational database cannot be reached.",
   "persistence.unit_of_work.concurrency_conflict": "An optimistic concurrency conflict occurred during commit: {reason}",

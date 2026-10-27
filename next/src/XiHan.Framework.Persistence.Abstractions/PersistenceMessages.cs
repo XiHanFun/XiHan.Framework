@@ -47,6 +47,9 @@ public static class PersistenceMessages
     /// <summary>关系数据库连不上（健康探针）。</summary>
     public const string StoreUnavailable = "persistence.store.unavailable";
 
+    /// <summary>雪花标识的机器位租约尚未取得或已丢失（健康项）。</summary>
+    public const string WorkerIdUnavailable = "persistence.snowflake.worker_unavailable";
+
     /// <summary>
     /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
     /// </summary>

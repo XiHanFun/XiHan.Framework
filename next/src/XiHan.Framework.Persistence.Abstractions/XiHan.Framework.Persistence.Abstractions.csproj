@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <!-- 雪花标识的机器位租约建立在分布式锁契约上（RFC-0005「标识生成」，ADR-0033）；同环只经契约包 -->
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Domain/XiHan.Framework.Domain.csproj" />
   </ItemGroup>
