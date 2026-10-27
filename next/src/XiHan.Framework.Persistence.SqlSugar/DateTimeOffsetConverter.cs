@@ -30,9 +30,12 @@ internal sealed class DateTimeOffsetConverter : ISugarDataConverter
             return default!;
         }
 
-        // 不同驱动把日期时间列读成 DateTime、DateTimeOffset 或文本（SQLite），统一按 UTC 解释
+        // 不同驱动把日期时间列读成 DateTime、DateTimeOffset 或文本（SQLite），统一按 UTC 解释。
+        // DateTime 要看 Kind：Npgsql 的 legacy 时间戳模式（SqlSugar 的 PostgreSQL 提供器自己打开）把 timestamptz 换算成本地时间、Kind=Local 交出，
+        // 直接当 UTC 会多出本地时区偏移，而且经实体回写后逐次累加；Local 先换回 UTC，Unspecified 按写入时的 UTC 解释
         var utc = dataRecord.GetValue(dataRecordIndex) switch
         {
+            DateTime { Kind: DateTimeKind.Local } local => local.ToUniversalTime(),
             DateTime dateTime => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
             DateTimeOffset offset => offset.UtcDateTime,
             string text => DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal),
