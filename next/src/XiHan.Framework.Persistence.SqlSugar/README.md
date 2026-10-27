@@ -33,7 +33,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 - 软删除与租户过滤以表达式显式施加在每个查询上，不用全局查询过滤器；无租户的调用看不到任何多租户实体。
 - 更新与删除先在事务内加行锁取回当前行（`TranLock`：`FOR UPDATE` / `UPDLOCK`；SQLite 不支持行锁，由其数据库级写锁保证），游离实例的并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；行被锁住，读取与写入之间别人改不了它。
 - 软删除在取回的当前行上打标并整行写回，调用方实例随后拿到修改时间、并发戳与删除标记。
-- `SqlSugarConventions.Apply(config)`：`Id` 为主键（是否自增沿用实体自己的 `[SugarColumn(IsIdentity)]`，默认不自增），`ConcurrencyStamp` 长度 32，`DateTimeOffset` 经转换器按 UTC 时刻往返（SqlSugar 默认按本地时间处理会改变时刻），可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射。约定通过 `ConfigureExternalServices.EntityService` 施加，已有回调先执行。
+- `SqlSugarConventions.Apply(config)`：`Id` 为主键（是否自增沿用实体自己的 `[SugarColumn(IsIdentity)]`，默认不自增），`ConcurrencyStamp` 长度 32，字符串列的长度——`[StringLength(n)]`（或 `[MaxLength(n)]`）→ 长度 n，`Persistence.Abstractions` 的 `[LongText]`（或无参 `[MaxLength]`）→ 数据库的长文本类型（`StaticConfig.CodeFirst_BigString`），实体自己的 `[SugarColumn]` 已给长度或类型时不动；DataAnnotations 的 `[MaxLength]` 构造函数带 `RequiresUnreferencedCode`，AOT 分析器不放行，框架的记录只用前两种；没有注解的字符串列沿用 SqlSugar 默认（PostgreSQL 为 `varchar(255)`，超长写入整批失败），框架的数据库记录全部显式标注并有架构测试门禁，应用实体建议同样标注（ADR-0036）；`DateTimeOffset` 经转换器按 UTC 时刻往返（SqlSugar 默认按本地时间处理会改变时刻），可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射。约定通过 `ConfigureExternalServices.EntityService` 施加，已有回调先执行。
 - 实体类型没有 `new()` 约束，写入经 SqlSugar 的 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject` 入口，语义与泛型构建器相同。
 - 分表（ADR-0023）：带 SqlSugar `[SplitTable]` 的实体（表名含 `{year}{month}{day}` 占位符、`[SplitField]` 是按 UTC 写入的 `DateTime` 列）自动走分表入口——查询在全部过滤条件之后 `SplitTable(from, to)`（按 `EntityQuery<T>.Within` 的时间范围只扫范围内的表，没有提示扫全部分表），写入按 `[SplitField]` 的值落表（缺少的分表由 SqlSugar 建出），分表字段写入后不要再改；分表实体的写入路径不加行锁，靠并发戳；`InitTables` 对它们走 `CodeFirst.SplitTables()`。`Within` 只是扫描范围提示，不是过滤条件。
 - 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。

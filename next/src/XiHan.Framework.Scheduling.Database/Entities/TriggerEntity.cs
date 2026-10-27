@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Scheduling.Database.Entities;
@@ -14,26 +16,31 @@ namespace XiHan.Framework.Scheduling.Database.Entities;
 public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
 {
     /// <inheritdoc />
+    [StringLength(128)]
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 作业名。
     /// </summary>
+    [StringLength(128)]
     public string Job { get; set; } = string.Empty;
 
     /// <summary>
     /// 触发器名。
     /// </summary>
+    [StringLength(256)]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// 计划文本。
     /// </summary>
+    [StringLength(256)]
     public string Schedule { get; set; } = string.Empty;
 
     /// <summary>
     /// 覆盖作业数据的数据，JSON 对象文本；长文本列。
     /// </summary>
+    [LongText]
     public string Data { get; set; } = "{}";
 
     /// <summary>
@@ -49,6 +56,7 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     /// <summary>
     /// 说明。
     /// </summary>
+    [StringLength(1024)]
     public string? Description { get; set; }
 
     /// <summary>
@@ -69,6 +77,7 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     /// <summary>
     /// 抢占它的节点。
     /// </summary>
+    [StringLength(256)]
     public string? AcquiredBy { get; set; }
 
     /// <summary>
@@ -84,6 +93,7 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     /// <summary>
     /// 状态为错误时的原因。
     /// </summary>
+    [LongText]
     public string? Error { get; set; }
 
     /// <summary>
@@ -102,5 +112,6 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     public int RunAs { get; set; }
 
     /// <inheritdoc />
+    [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;
 }

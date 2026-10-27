@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Scheduling.Database.Entities;
@@ -14,16 +16,19 @@ namespace XiHan.Framework.Scheduling.Database.Entities;
 public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
 {
     /// <inheritdoc />
+    [StringLength(128)]
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// 作业类型键。
     /// </summary>
+    [StringLength(512)]
     public string JobTypeName { get; set; } = string.Empty;
 
     /// <summary>
     /// 运行时传给作业的数据，JSON 对象文本；长文本列。
     /// </summary>
+    [LongText]
     public string Data { get; set; } = "{}";
 
     /// <summary>
@@ -44,6 +49,7 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     /// <summary>
     /// 说明。
     /// </summary>
+    [StringLength(1024)]
     public string? Description { get; set; }
 
     /// <summary>
@@ -54,6 +60,7 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     /// <summary>
     /// 不允许并发时正在运行的运行 ID；没有为空。
     /// </summary>
+    [StringLength(128)]
     public string? ActiveRunId { get; set; }
 
     /// <summary>
@@ -67,5 +74,6 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     public DateTimeOffset UpdatedAt { get; set; }
 
     /// <inheritdoc />
+    [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;
 }

@@ -4,7 +4,7 @@
 
 | 契约 | 用途 |
 | --- | --- |
-| `AuditMiddleware`、`AuditingOptions` | Observe 阶段末尾：按显式动作或 `Selection`（`Protected` 默认只记声明了权限的操作 / `All` / `None`）决定是否记录；结果取管道 outcome，异常按 `KERNEL_UNEXPECTED_001` 记失败；`IncludeSuccesses` 为假只记失败；接收器故障只记日志 |
+| `AuditMiddleware`、`AuditingOptions` | Observe 阶段末尾：主体与租户优先取安全上下文（认证后的 `Principal.Id`、解析后的 `TenantContext.Id`），没有时回退到 Baggage 的 `xihan.principal` / `xihan.tenant`（ADR-0036）；按显式动作或 `Selection`（`Protected` 默认只记声明了权限的操作 / `All` / `None`）决定是否记录；结果取管道 outcome，异常按 `KERNEL_UNEXPECTED_001` 记失败；`IncludeSuccesses` 为假只记失败；接收器故障只记日志 |
 | `SetAuditAction` / `SetAuditResource` / `AddAuditDetail` | 调用期间补充动作（让非操作调用也被记录）、资源名（`xrn:`）与细节 |
 | `IAuditTrail`、`AuditQuery`、`AuditPage` | 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页（`PageSize` 1 到 1000，不透明续页令牌） |
 | `AddAuditing(this FeatureContext)` | Provider 注册接收器后调用：注册消息目录与选项、挂中间件 |

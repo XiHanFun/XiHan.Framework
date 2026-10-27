@@ -6,12 +6,14 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Abstractions.Pipeline;
 
 /// <summary>
 /// Observe 阶段末尾的审计中间件：调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。
+/// 主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class AuditMiddleware : IPipelineMiddleware
@@ -106,11 +108,14 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
             return;
         }
 
+        // 主体与租户先看安全上下文：Observe 在 Authenticate 之外、事件在调用结束时构造，认证后的主体与解析后的租户此时都已就绪，
+        // 而 HTTP + JWT 这条路上没有中间件写 Baggage；匿名调用或只带 Baggage 的调用（插件协议、消息派发、命令行）再回退到 Baggage
+        var security = context.GetSecurity();
         var auditEvent = new AuditEvent(_clock.GetUtcNow(), action, outcome, context.TraceId)
         {
             Resource = context.GetAuditResource().TryGetValue(out var resource) ? resource : null,
-            PrincipalId = context.TryGetBaggage(BaggageKeys.Principal, out var principal) ? principal : null,
-            TenantId = context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null,
+            PrincipalId = security.Principal.IsAuthenticated ? security.Principal.Id : context.TryGetBaggage(BaggageKeys.Principal, out var principal) ? principal : null,
+            TenantId = security.Tenant?.Id ?? (context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null),
             Details = context.GetAuditDetails(),
         };
 

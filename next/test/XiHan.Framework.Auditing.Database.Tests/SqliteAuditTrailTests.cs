@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using SqlSugar;
 using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Auditing.Database.Tests.Fixtures;
 using XiHan.Framework.Auditing.Database.Trail;
@@ -20,6 +21,32 @@ public sealed class SqliteAuditTrailTests
     /// 基准时刻。
     /// </summary>
     private static readonly DateTimeOffset _epoch = new(2026, 10, 27, 9, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task AuditRecord_DeclaresColumnLengths_WithLongTextForMessagesAndJson()
+    {
+        await using var database = new SqliteDatabase();
+        var host = await database.StartHostAsync();
+        await using var scope = host.Services.CreateAsyncScope();
+        var columns = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().EntityMaintenance.GetEntityInfo<AuditRecord>().Columns;
+        EntityColumnInfo Column(string name) => columns.Single(c => c.PropertyName == name);
+
+        // 没有长度的字符串列在 PostgreSQL 会建成 varchar(255)，一条带字段级错误的审计就超长、整批丢弃：文案与 JSON 是长文本，其余列有明确长度
+        foreach (var name in new[] { nameof(AuditRecord.ErrorMessage), nameof(AuditRecord.ErrorDetailsJson), nameof(AuditRecord.DetailsJson) })
+        {
+            Assert.Equal(StaticConfig.CodeFirst_BigString, Column(name).DataType);
+        }
+
+        Assert.Equal((256, 64, 256, 64, 1024, 256, 128), (
+            Column(nameof(AuditRecord.Action)).Length,
+            Column(nameof(AuditRecord.ErrorCode)).Length,
+            Column(nameof(AuditRecord.ErrorMessageKey)).Length,
+            Column(nameof(AuditRecord.TraceId)).Length,
+            Column(nameof(AuditRecord.Resource)).Length,
+            Column(nameof(AuditRecord.PrincipalId)).Length,
+            Column(nameof(AuditRecord.TenantId)).Length));
+        Assert.All(columns.Where(static c => c.PropertyInfo.PropertyType == typeof(string)), static c => Assert.True(c.Length > 0 || !string.IsNullOrEmpty(c.DataType), $"{c.PropertyName} has no length"));
+    }
 
     [Fact]
     public async Task Query_FiltersAndPages_OnSqlite()

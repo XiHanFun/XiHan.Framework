@@ -9,6 +9,7 @@ using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
@@ -64,6 +65,42 @@ public sealed class AuditMiddlewareTests
         Assert.Equal(32, created.TraceId.Length);
         Assert.True(created.Timestamp <= DateTimeOffset.UtcNow);
         Assert.Null(sink.Events[1].PrincipalId == null ? null : sink.Events[1].Resource);
+    }
+
+    [Fact]
+    public async Task PrincipalAndTenant_ComeFromSecurityContext_AndFallBackToBaggage()
+    {
+        await using var host = await StartAsync();
+        var sink = host.Services.GetRequiredService<RecordingAuditSink>();
+
+        // 认证后的主体与解析后的租户在安全上下文里：Baggage 没有也记得到（HTTP + JWT 的路径没有中间件写这两个 Baggage）
+        await host.InvokeAsync(static context =>
+        {
+            context.SetSecurity(new SecurityContext(new Principal("alice", "jwt"), new TenantContext("acme")));
+            context.SetAuditAction("manual.touch");
+            return ValueTask.CompletedTask;
+        });
+        // 安全上下文优先于 Baggage
+        await host.InvokeAsync(static context =>
+        {
+            context.SetSecurity(new SecurityContext(new Principal("bob", "jwt"), new TenantContext("globex")));
+            context.SetAuditAction("manual.touch");
+            return ValueTask.CompletedTask;
+        }, baggage: _alice);
+        // 匿名主体、没有租户：回退到 Baggage（插件协议、消息派发、命令行写入的）
+        await host.InvokeAsync(static context =>
+        {
+            context.SetAuditAction("manual.touch");
+            return ValueTask.CompletedTask;
+        }, baggage: _alice);
+        // 两边都没有就是空
+        await host.InvokeAsync(static context =>
+        {
+            context.SetAuditAction("manual.touch");
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.Equal([("alice", "acme"), ("bob", "globex"), ("alice", "acme"), (null, null)], sink.Events.Select(static e => (e.PrincipalId, e.TenantId)));
     }
 
     [Fact]
