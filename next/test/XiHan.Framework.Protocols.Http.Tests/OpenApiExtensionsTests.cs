@@ -35,7 +35,8 @@ public sealed class OpenApiExtensionsTests
     /// </summary>
     private static readonly MessageCatalog _descriptions = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
-        ["en-US"] = new Dictionary<string, string> { ["orders.get.description"] = "Get one order by its ID." },
+        // 资源段带连字符的操作：键的首段是连字符换成下划线的形态
+        ["en-US"] = new Dictionary<string, string> { ["orders.get.description"] = "Get one order by its ID.", ["order_filters.list.description"] = "List the saved order filters." },
         ["zh-CN"] = new Dictionary<string, string> { ["orders.get.description"] = "按 ID 读取一个订单。" },
     });
 
@@ -176,6 +177,8 @@ public sealed class OpenApiExtensionsTests
         Assert.Equal("按 ID 读取一个订单。", chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
         // 目录没有的操作没有摘要
         Assert.False(chinese.RootElement.GetProperty("paths").GetProperty("/orders").GetProperty("post").TryGetProperty("summary", out _));
+        // 资源段带连字符的操作（order-filters.list）按 order_filters.list.description 取摘要；只有英文时回退到 en-US
+        Assert.Equal("List the saved order filters.", chinese.RootElement.GetProperty("paths").GetProperty("/order-filters").GetProperty("get").GetProperty("summary").GetString());
 
         // 没有 Accept-Language 走默认区域 en-US；日文是启用的区域（Content-Language 标 ja-JP），目录没有日文时文案回退到 en-US；各区域分别缓存，再次请求各自不变
         foreach (var acceptLanguage in new[] { null, "ja-JP", "zh-CN" })

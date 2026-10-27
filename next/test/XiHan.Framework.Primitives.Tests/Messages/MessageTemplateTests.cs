@@ -14,12 +14,15 @@ public sealed class MessageTemplateTests
     [InlineData("kernel.manifest.empty", true)]
     [InlineData("persistence.entity.not_found", true)]
     [InlineData("a1.b2_c3.d", true)]
+    [InlineData("kernel_core.empty", true)]
+    [InlineData("tenant_members.list.description", true)]
     [InlineData("kernel", false)]
     [InlineData("Kernel.manifest.empty", false)]
     [InlineData("kernel.Manifest", false)]
     [InlineData("kernel..empty", false)]
     [InlineData("kernel.manifest.", false)]
-    [InlineData("kernel_core.empty", false)]
+    [InlineData("_tenant.list", false)]
+    [InlineData("tenant-members.list.description", false)]
     [InlineData("", false)]
     public void IsValidKey_FollowsGrammar(string key, bool valid)
     {

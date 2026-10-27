@@ -100,6 +100,8 @@ public sealed class AIToolCatalogTests
         Assert.Equal("order_items_bulk_import", AIToolNameConvention.Derive(new OperationContract("order-items.bulk-import")));
         Assert.Equal("orders.create.description", AIToolNameConvention.DescriptionKeyOf("orders.create"));
         Assert.Equal("order_items.bulk_import.description", AIToolNameConvention.DescriptionKeyOf("order-items.bulk-import"));
+        // 资源段带连字符的操作派生的说明键必须是合法的消息键，否则目录收不下、描述也取不到
+        Assert.True(MessageTemplate.IsValidKey(AIToolNameConvention.DescriptionKeyOf("order-items.bulk-import")));
 
         // 超过 64 个字符：前 55 个字符 + "_" + 全名哈希前 8 位，合法、稳定且与同前缀的别的操作不撞名
         var longName = AIToolNameConvention.Derive(new OperationContract("permission-condition-insight-query.get-permission-condition-batch-trial"));

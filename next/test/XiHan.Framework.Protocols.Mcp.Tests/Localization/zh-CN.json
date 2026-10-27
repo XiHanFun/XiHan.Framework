@@ -1,4 +1,5 @@
 {
+  "order_notes.list.description": "列出订单附带的备注。",
   "orders.create.description": "按名称下单。",
   "orders.get.description": "按标识读取一笔订单。",
   "orders.get.title": "读取订单"

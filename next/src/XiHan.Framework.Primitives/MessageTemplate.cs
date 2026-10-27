@@ -22,7 +22,7 @@ public static partial class MessageTemplate
     public const int MaxKeyLength = 128;
 
     /// <summary>
-    /// 消息键是否合法：<c>^[a-z][a-z0-9]*(\.[a-z][a-z0-9_]*)+$</c>，首段是领域词的小写形式。
+    /// 消息键是否合法：<c>^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$</c>，首段是领域词的小写形式或应用自定义的小写标识（操作 ID 的资源段把连字符换成下划线后即是，如 <c>tenant_members.list.description</c>）。
     /// </summary>
     public static bool IsValidKey([NotNullWhen(true)] string? key)
         => key is not null && key.Length <= MaxKeyLength && KeyPattern().IsMatch(key);
@@ -205,7 +205,7 @@ public static partial class MessageTemplate
     /// <summary>
     /// 消息键文法：小写字母开头的点分段，首段只含字母数字，其余段可含下划线。
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)+$")]
+    [GeneratedRegex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$")]
     private static partial Regex KeyPattern();
 
     /// <summary>

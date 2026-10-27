@@ -20,7 +20,7 @@ public sealed record MessageTranslationKey
         ArgumentNullException.ThrowIfNull(key);
         if (!MessageTemplate.IsValidKey(key))
         {
-            throw new ArgumentException($"Message key '{key}' is invalid: it must match ^[a-z][a-z0-9]*(\\.[a-z][a-z0-9_]*)+$.", nameof(key));
+            throw new ArgumentException($"Message key '{key}' is invalid: it must match ^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$.", nameof(key));
         }
 
         Key = key;
