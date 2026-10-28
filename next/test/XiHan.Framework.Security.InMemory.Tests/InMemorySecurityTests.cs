@@ -139,6 +139,31 @@ public sealed class InMemorySecurityTests
         Assert.Equal(["orders.read"], filter.Permissions);
     }
 
+    [Fact]
+    public async Task Feature_AppliesRegisteredGrantSources_WhenTheStoreMisses()
+    {
+        // 应用按单例登记的授予来源被 Provider 登记的检查器接上：alice 的存储授予里没有 orders.delete，来源补上
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>(),
+            _configuration,
+            static services => services.AddSingleton<IPermissionGrantSource>(new FixedGrantSource("orders.delete")));
+
+        var (granted, _) = await InvokeAsync(host, "ApiKey dev-alice-key", AuthorizationRequirement.Permission("orders.delete"));
+        Assert.True(granted.IsSuccess, granted.ToString());
+        var (anonymous, _) = await InvokeAsync(host, null, AuthorizationRequirement.Permission("orders.delete"));
+        Assert.True(anonymous.IsFailure);
+    }
+
+    /// <summary>
+    /// 给任何已认证主体固定额外授予的来源。
+    /// </summary>
+    private sealed class FixedGrantSource(params string[] grants) : IPermissionGrantSource
+    {
+        /// <inheritdoc />
+        public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
+            => ValueTask.FromResult<IReadOnlyCollection<string>>(grants);
+    }
+
     /// <summary>
     /// 一律拒绝并记录被问到的权限码的过滤器。
     /// </summary>

@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Permissions;
 
 /// <summary>
-/// RBAC 检查器：用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集；<see cref="PermissionGrant.All"/> 匹配任何权限。
+/// RBAC 检查器：用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。
 /// 授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -29,12 +29,18 @@ public sealed class PermissionChecker : IPermissionChecker
     private readonly IPermissionFilter[] _filters;
 
     /// <summary>
-    /// 创建检查器。容器解析时 <paramref name="filters"/> 是全部登记的 <see cref="IPermissionFilter"/>（没有就是空集合）。
+    /// 存储之外的授予来源，按登记顺序；没有登记时为空。
+    /// </summary>
+    private readonly IPermissionGrantSource[] _sources;
+
+    /// <summary>
+    /// 创建检查器。容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）。
     /// </summary>
     /// <param name="store">授予存储。</param>
     /// <param name="options">安全选项。</param>
     /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有。</param>
-    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters = null)
+    /// <param name="sources">存储之外的授予来源；<see langword="null"/> 视为没有。</param>
+    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters = null, IEnumerable<IPermissionGrantSource>? sources = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -42,6 +48,12 @@ public sealed class PermissionChecker : IPermissionChecker
         if (Array.Exists(_filters, static f => f is null))
         {
             throw new ArgumentException("Permission filters must not contain null.", nameof(filters));
+        }
+
+        _sources = sources is null ? [] : [.. sources];
+        if (Array.Exists(_sources, static s => s is null))
+        {
+            throw new ArgumentException("Permission grant sources must not contain null.", nameof(sources));
         }
     }
 
@@ -74,7 +86,7 @@ public sealed class PermissionChecker : IPermissionChecker
     }
 
     /// <summary>
-    /// 授予是否命中：先查用户本身的授予，再逐个角色查；任一命中即返回，避免多余的存储访问。
+    /// 授予是否命中：先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。
     /// </summary>
     private async ValueTask<bool> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
@@ -87,6 +99,15 @@ public sealed class PermissionChecker : IPermissionChecker
         foreach (var role in security.Principal.ClaimValues(_options.RoleClaim))
         {
             if (Matches(await _store.GetGrantsAsync(GrantSubject.ForRole(role), tenantId, cancellationToken).ConfigureAwait(false), permission))
+            {
+                return true;
+            }
+        }
+
+        // 存储之外的授予（角色继承、委托等）只能加：命中后与存储授予一样经全部过滤器收窄
+        foreach (var source in _sources)
+        {
+            if (Matches(await source.GetGrantsAsync(security, cancellationToken).ConfigureAwait(false), permission))
             {
                 return true;
             }
