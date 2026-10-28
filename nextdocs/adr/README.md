@@ -45,3 +45,4 @@
 | [0039](0039-权限收窄过滤器.md) | 权限收窄过滤器 `IPermissionFilter`：`PermissionChecker` 在授予命中之后按登记顺序逐个调用（AND），任一拒绝即不持有；匿名与未命中不调用；套餐白名单、显式拒绝、委托到期据此实现，不再需要替换 `IPermissionChecker` | 已采纳 |
 | [0040](0040-InitTables加列缺省值.md) | `InitTables` 给已有行的表加非可空列：PostgreSQL 上 `SqlSugarConventions` 给非可空的数值 / 枚举 / 布尔 / Guid 列配 CLR 缺省值，SqlSugar 据此回填旧行；SQLite 不配（本来加可空列），非可空字符串、日期时间列与其他数据库写明不受支持；约定不碰 BCL 类型，修正字典更新里名为 `Count` 的列被丢掉 | 已采纳 |
 | [0041](0041-程序集级Expose缺省与只读声明.md) | 程序集级 `[assembly: OperationDefaults(Expose = …)]` 给没写 `Expose` 的操作定缺省，生成器落定进契约；`XHG004`（缺省关闭）报告依赖隐式 `Expose.All` 的操作；`[Operation(ReadOnly = true)]` 声明只读的非标准动词，`OperationContract.IsReadOnly` 驱动 MCP 只读提示与 HTTP `GET …:{verb}`；写动词声明只读报 `XHG005` | 已采纳 |
+| [0042](0042-凭据无效映射401.md) | 凭据无效（`SECURITY_DENIED_003`：过期、签名不符、格式错）与未认证一样是认证失败：HTTP 401（原为 403）、gRPC `Unauthenticated`（原为 `PermissionDenied`）；401 带 `WWW-Authenticate`——凭据无效时质询被拒的方案（Bearer 为 `error="invalid_token"`），没有凭据时质询全部已装配的方案 | 已采纳 |

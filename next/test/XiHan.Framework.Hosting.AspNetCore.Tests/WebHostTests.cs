@@ -14,6 +14,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
 using XiHan.Framework.Security.Abstractions.Authorization;
 using XiHan.Framework.Testing;
 
@@ -243,9 +244,34 @@ public sealed class WebHostTests
         Assert.Equal(400, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_VALIDATION_001", "x")));
         Assert.Equal(401, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_001", "x")));
         Assert.Equal(403, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_002", "x")));
+        // 凭据无效 / 过期 / 签名不符也是认证失败：401（RFC 6750 §3.1），不是 403
+        Assert.Equal(401, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_003", "x")));
+        Assert.Equal(403, ProblemResponse.StatusCodeFor(Error.Literal("SECURITY_DENIED_004", "x")));
+        Assert.Equal(403, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_DENIED_001", "x")));
         Assert.Equal(409, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_CONFLICT_001", "x")));
         Assert.Equal(503, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_UNAVAILABLE_001", "x")));
         Assert.Equal(504, ProblemResponse.StatusCodeFor(Error.Literal("KERNEL_TIMEOUT_001", "x")));
         Assert.Equal(500, ProblemResponse.StatusCodeFor(Error.Literal("KERNEL_HOSTING_004", "x")));
+    }
+
+    [Fact]
+    public void AuthenticationChallenge_NamesTheRejectedScheme_OrEveryRegisteredScheme()
+    {
+        string[] schemes = ["Bearer", "ApiKey", "bearer"];
+        var invalid = Error.Literal("SECURITY_DENIED_003", "x");
+        var anonymous = Error.Literal("SECURITY_DENIED_001", "x");
+
+        // 凭据无效：只质询被拒的方案；Bearer 带 invalid_token（方案名按处理器登记的写法），其他方案只写名字
+        Assert.Equal(["Bearer error=\"invalid_token\""], AuthenticationChallenge.For(invalid, Maybe.Some(new AuthenticationCredential("bearer", "expired")), schemes));
+        Assert.Equal(["ApiKey"], AuthenticationChallenge.For(invalid, Maybe.Some(new AuthenticationCredential("ApiKey", "nope")), schemes));
+
+        // 没有凭据：逐个质询已装配的方案（去重、不带错误码）；没有方案就没有质询
+        Assert.Equal(["Bearer", "ApiKey"], AuthenticationChallenge.For(anonymous, Maybe.None<AuthenticationCredential>(), schemes));
+        Assert.Empty(AuthenticationChallenge.For(anonymous, Maybe.None<AuthenticationCredential>(), []));
+
+        // 不是认证失败（无权限、业务错误）不质询
+        Assert.Empty(AuthenticationChallenge.For(Error.Literal("SECURITY_DENIED_004", "x"), Maybe.Some(new AuthenticationCredential("Bearer", "t")), schemes));
+        Assert.True(ProblemResponse.IsAuthenticationFailure(invalid));
+        Assert.False(ProblemResponse.IsAuthenticationFailure(Error.Literal("SECURITY_DENIED_002", "x")));
     }
 }
