@@ -12,7 +12,7 @@
 
 BasicApp 6.0 N2 第一批（操作表定稿）提出两项：
 
-1. `OperationAttribute.Expose` 缺省 `Expose.All`，生成器在没写 `Expose` 时取 31。BasicApp 的规矩是"管理操作只 Http，选中的只读操作加 Mcp | Ai，内部调用加 Grpc"；它只能在自己的架构测试里用正则扫源码，强制每个 `[Operation]` 都写 `Expose =`。70 个操作里有 62 个写的是 `Expose.Http`。
+1. `OperationAttribute.Expose` 缺省 `Expose.All`，生成器在没写 `Expose` 时取 31。BasicApp 的规矩是"管理操作只 Http，选中的只读操作加 Mcp | Ai，内部调用加 Grpc"；它只能在自己的架构测试里用正则扫源码，强制每个 `[Operation]` 都写 `Expose =`。操作表定稿后 70 个操作里 63 个只走 HTTP、7 个超出 HTTP。
 2. MCP 行为提示只按动词推导，只有 `get` / `list` 算只读，`departments.tree`、`users.list-online` 这类查询变体被标成"可能破坏"。BasicApp 因此暂不把它们暴露给 MCP / AI。
 
 ## 备选
