@@ -135,6 +135,10 @@ public sealed class McpProtocolTests
         Assert.Equal(new McpToolAnnotations(ReadOnly: false, Destructive: true, Idempotent: true), McpToolAnnotations.For(new OperationContract("orders.delete")));
         Assert.Equal(new McpToolAnnotations(ReadOnly: false, Destructive: false, Idempotent: false), McpToolAnnotations.For(new OperationContract("orders.create")));
         Assert.Equal(new McpToolAnnotations(ReadOnly: false, Destructive: true, Idempotent: false), McpToolAnnotations.For(new OperationContract("orders.export")));
+        // 声明只读的非标准动词（树形查询、查询变体）与 get / list 同样只读且幂等
+        Assert.Equal(new McpToolAnnotations(ReadOnly: true, Destructive: false, Idempotent: true), McpToolAnnotations.For(new OperationContract("departments.tree", readOnly: true)));
+        Assert.Equal(new McpToolAnnotations(ReadOnly: true, Destructive: false, Idempotent: true), McpToolAnnotations.For(new OperationContract("users.list-online", readOnly: true)));
+        Assert.Equal(new McpToolAnnotations(ReadOnly: false, Destructive: true, Idempotent: false), McpToolAnnotations.For(new OperationContract("departments.tree")));
     }
 
     [Fact]

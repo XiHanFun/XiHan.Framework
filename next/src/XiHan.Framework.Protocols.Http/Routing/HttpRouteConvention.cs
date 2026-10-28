@@ -37,7 +37,7 @@ public static class HttpRouteConvention
     /// </summary>
     /// <param name="contract">契约。</param>
     /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；有则路由带 <c>/{id}</c> 段，没有则落在集合（或单例资源）上。</param>
-    /// <param name="hasNestedFields">请求是否有嵌套对象字段；有则 <c>get</c> / <c>list</c> / <c>delete</c> 改用 POST 自定义动词。</param>
+    /// <param name="hasNestedFields">请求是否有嵌套对象字段；有则 <c>get</c> / <c>list</c> / <c>delete</c> 与只读的自定义动词改用 POST。</param>
     public static HttpRoute Derive(OperationContract contract, bool hasIdentifier, bool hasNestedFields = false)
     {
         ArgumentNullException.ThrowIfNull(contract);
@@ -54,6 +54,8 @@ public static class HttpRouteConvention
             "delete" when !hasNestedFields => new HttpRoute("DELETE", target),
             // 带嵌套对象（分页、复合筛选）的 list 仍是集合级动作，改成 POST 自定义动词
             "list" => new HttpRoute("POST", $"/{resource}:list"),
+            // 声明只读的自定义动词（tree、list-online 等查询变体）与 get 同规则：只有标量字段时走 GET（Google AIP-136），有嵌套对象时仍是 POST
+            var verb when contract.IsReadOnly && !hasNestedFields => new HttpRoute("GET", $"{target}:{verb}"),
             var verb => new HttpRoute("POST", $"{target}:{verb}"),
         };
     }

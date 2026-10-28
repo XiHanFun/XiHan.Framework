@@ -23,6 +23,16 @@ public sealed class OperationGenerator : IIncrementalGenerator
     private const string OperationAttributeName = "XiHan.Framework.Kernel.Operations.OperationAttribute";
 
     /// <summary>
+    /// <c>OperationDefaultsAttribute</c> 的全名。
+    /// </summary>
+    private const string OperationDefaultsAttributeName = "XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute";
+
+    /// <summary>
+    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）。
+    /// </summary>
+    private const int ExposeAll = 31;
+
+    /// <summary>
     /// <c>IOperation&lt;,&gt;</c> 的元数据名。
     /// </summary>
     private const string OperationInterfaceName = "XiHan.Framework.Kernel.Operations.IOperation`2";
@@ -59,10 +69,11 @@ public sealed class OperationGenerator : IIncrementalGenerator
 
         var operationInterface = compilation.GetTypeByMetadataName(OperationInterfaceName);
         var contexts = JsonContextModel.Collect(compilation);
+        var defaultExpose = AssemblyDefaultExpose(compilation);
         var models = new List<OperationModel>();
         foreach (var (symbol, attribute) in candidates.OrderBy(static c => c.Symbol.ToDisplayString(), StringComparer.Ordinal))
         {
-            var model = CreateModel(context, symbol, attribute, operationInterface, contexts);
+            var model = CreateModel(context, symbol, attribute, operationInterface, contexts, defaultExpose);
             if (model is not null)
             {
                 models.Add(model);
@@ -79,9 +90,29 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 读取特性与接口、解析上下文；有问题的操作报诊断并跳过。
+    /// 程序集级缺省暴露协议：<c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>。
     /// </summary>
-    private static OperationModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, AttributeData attribute, INamedTypeSymbol? operationInterface, List<JsonContextModel> contexts)
+    private static int? AssemblyDefaultExpose(Compilation compilation)
+    {
+        foreach (var attribute in compilation.Assembly.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() != OperationDefaultsAttributeName)
+            {
+                continue;
+            }
+
+            // 写了特性却没写 Expose：等于声明"缺省就是 All"，同样视为有程序集缺省
+            var expose = attribute.NamedArguments.FirstOrDefault(static a => a.Key == "Expose").Value.Value;
+            return expose is int value ? value : ExposeAll;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 读取特性与接口、解析上下文；有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议。
+    /// </summary>
+    private static OperationModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, AttributeData attribute, INamedTypeSymbol? operationInterface, List<JsonContextModel> contexts, int? defaultExpose)
     {
         var location = symbol.Locations.FirstOrDefault() ?? Location.None;
         var id = attribute.ConstructorArguments.Length == 1 ? attribute.ConstructorArguments[0].Value as string : null;
@@ -101,10 +132,10 @@ public sealed class OperationGenerator : IIncrementalGenerator
         }
 
         var stability = 0;
-        // Expose.All：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）
-        var expose = 31;
+        int? explicitExpose = null;
         string? policy = null;
         string? permission = null;
+        var readOnly = false;
         foreach (var argument in attribute.NamedArguments)
         {
             switch (argument.Key)
@@ -113,7 +144,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
                     stability = s;
                     break;
                 case "Expose" when argument.Value.Value is int e:
-                    expose = e;
+                    explicitExpose = e;
                     break;
                 case "Policy":
                     policy = argument.Value.Value as string;
@@ -121,10 +152,27 @@ public sealed class OperationGenerator : IIncrementalGenerator
                 case "Permission":
                     permission = argument.Value.Value as string;
                     break;
+                case "ReadOnly" when argument.Value.Value is bool r:
+                    readOnly = r;
+                    break;
             }
         }
 
-        var model = new OperationModel(symbol, id, stability, expose, policy, permission, implemented.TypeArguments[0], implemented.TypeArguments[1]);
+        // 写操作的动词不能声明只读：契约构造会在运行期抛出，这里提前到编译期
+        var verb = id.Substring(id.IndexOf('.') + 1);
+        if (readOnly && verb is "create" or "update" or "delete")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.ReadOnlyOnWriteVerb, location, id, verb));
+            return null;
+        }
+
+        if (explicitExpose is null && defaultExpose is null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.ImplicitExposeAll, location, id));
+        }
+
+        var expose = explicitExpose ?? defaultExpose ?? ExposeAll;
+        var model = new OperationModel(symbol, id, stability, expose, policy, permission, readOnly, implemented.TypeArguments[0], implemented.TypeArguments[1]);
         if (!Resolve(contexts, model.RequestType, out var requestContext, out var requestProperty))
         {
             context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.MissingJsonTypeInfo, location, model.RequestType.ToDisplayString(), id));
@@ -208,7 +256,8 @@ public sealed class OperationGenerator : IIncrementalGenerator
                 .Append(", (global::XiHan.Framework.Primitives.Stability)").Append(model.Stability)
                 .Append(", (global::XiHan.Framework.Kernel.Operations.Expose)").Append(model.Expose)
                 .Append(", ").Append(model.Policy is null ? "null" : Literal(model.Policy))
-                .Append(", ").Append(model.Permission is null ? "null" : Literal(model.Permission)).AppendLine("),");
+                .Append(", ").Append(model.Permission is null ? "null" : Literal(model.Permission))
+                .Append(model.ReadOnly ? ", readOnly: true" : string.Empty).AppendLine("),");
             builder.Append("            ").Append(Display(model.RequestContext.Type)).Append(".Default.").Append(model.RequestProperty).AppendLine(",");
             builder.Append("            ").Append(Display(model.ResponseContext.Type)).Append(".Default.").Append(model.ResponseProperty).AppendLine(",");
             builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationSchema(").Append(Literal(requestSchema)).Append(", ").Append(Literal(responseSchema)).AppendLine("));");

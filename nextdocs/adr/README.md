@@ -44,3 +44,4 @@
 | [0038](0038-消息键首段放开下划线.md) | 消息键文法首段放开成 `[a-z][a-z0-9_]*`（与后段同形）：OpenAPI / MCP / AI 按 `<操作 ID>.description`（`-` 换 `_`）取说明，资源段带连字符的操作（`tenant-members.list`）原先派生的键 `tenant_members.list.description` 进不了目录也取不到摘要 | 已采纳 |
 | [0039](0039-权限收窄过滤器.md) | 权限收窄过滤器 `IPermissionFilter`：`PermissionChecker` 在授予命中之后按登记顺序逐个调用（AND），任一拒绝即不持有；匿名与未命中不调用；套餐白名单、显式拒绝、委托到期据此实现，不再需要替换 `IPermissionChecker` | 已采纳 |
 | [0040](0040-InitTables加列缺省值.md) | `InitTables` 给已有行的表加非可空列：PostgreSQL 上 `SqlSugarConventions` 给非可空的数值 / 枚举 / 布尔 / Guid 列配 CLR 缺省值，SqlSugar 据此回填旧行；SQLite 不配（本来加可空列），非可空字符串、日期时间列与其他数据库写明不受支持；约定不碰 BCL 类型，修正字典更新里名为 `Count` 的列被丢掉 | 已采纳 |
+| [0041](0041-程序集级Expose缺省与只读声明.md) | 程序集级 `[assembly: OperationDefaults(Expose = …)]` 给没写 `Expose` 的操作定缺省，生成器落定进契约；`XHG004`（缺省关闭）报告依赖隐式 `Expose.All` 的操作；`[Operation(ReadOnly = true)]` 声明只读的非标准动词，`OperationContract.IsReadOnly` 驱动 MCP 只读提示与 HTTP `GET …:{verb}`；写动词声明只读报 `XHG005` | 已采纳 |

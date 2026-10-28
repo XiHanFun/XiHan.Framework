@@ -85,6 +85,29 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public void Contract_IsReadOnly_ForGetAndList_AndDeclaredQueryVerbs()
+    {
+        // get / list 天生只读；非标准动词默认不是，声明后才是
+        Assert.True(new OperationContract("orders.get").IsReadOnly);
+        Assert.True(new OperationContract("orders.list").IsReadOnly);
+        Assert.False(new OperationContract("departments.tree").IsReadOnly);
+        Assert.True(new OperationContract("departments.tree", readOnly: true).IsReadOnly);
+        Assert.True(new OperationContract("users.list-online", readOnly: true).IsReadOnly);
+        Assert.False(new OperationContract("orders.cancel").IsReadOnly);
+
+        // 写操作的动词不能声明只读
+        foreach (var id in new[] { "orders.create", "orders.update", "orders.delete" })
+        {
+            Assert.False(new OperationContract(id).IsReadOnly);
+            Assert.Throws<ArgumentException>(() => new OperationContract(id, readOnly: true));
+        }
+
+        // 特性只是生成器输入：只读与程序集缺省都有，缺省值分别是 false 与 All
+        Assert.False(new OperationAttribute("departments.tree").ReadOnly);
+        Assert.Equal(Expose.All, new OperationDefaultsAttribute().Expose);
+    }
+
+    [Fact]
     public async Task Invoke_Json_RoundTripsThroughPipeline()
     {
         var (provider, app) = await StartAsync();

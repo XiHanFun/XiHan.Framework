@@ -217,6 +217,8 @@ XiHan.Framework.Kernel.Operations.OperationAttribute.Permission.get -> string?
 XiHan.Framework.Kernel.Operations.OperationAttribute.Permission.init -> void
 XiHan.Framework.Kernel.Operations.OperationAttribute.Policy.get -> string?
 XiHan.Framework.Kernel.Operations.OperationAttribute.Policy.init -> void
+XiHan.Framework.Kernel.Operations.OperationAttribute.ReadOnly.get -> bool
+XiHan.Framework.Kernel.Operations.OperationAttribute.ReadOnly.init -> void
 XiHan.Framework.Kernel.Operations.OperationAttribute.Stability.get -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Kernel.Operations.OperationAttribute.Stability.init -> void
 XiHan.Framework.Kernel.Operations.OperationContract
@@ -225,12 +227,17 @@ XiHan.Framework.Kernel.Operations.OperationContract.Equals(XiHan.Framework.Kerne
 XiHan.Framework.Kernel.Operations.OperationContract.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
 XiHan.Framework.Kernel.Operations.OperationContract.Id.get -> string!
 XiHan.Framework.Kernel.Operations.OperationContract.IsExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> bool
-XiHan.Framework.Kernel.Operations.OperationContract.OperationContract(string! id, XiHan.Framework.Primitives.Stability stability = XiHan.Framework.Primitives.Stability.Stable, XiHan.Framework.Kernel.Operations.Expose expose = XiHan.Framework.Kernel.Operations.Expose.All, string? policy = null, string? permission = null) -> void
+XiHan.Framework.Kernel.Operations.OperationContract.IsReadOnly.get -> bool
+XiHan.Framework.Kernel.Operations.OperationContract.OperationContract(string! id, XiHan.Framework.Primitives.Stability stability = XiHan.Framework.Primitives.Stability.Stable, XiHan.Framework.Kernel.Operations.Expose expose = XiHan.Framework.Kernel.Operations.Expose.All, string? policy = null, string? permission = null, bool readOnly = false) -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Permission.get -> string?
 XiHan.Framework.Kernel.Operations.OperationContract.Policy.get -> string?
 XiHan.Framework.Kernel.Operations.OperationContract.Resource.get -> string!
 XiHan.Framework.Kernel.Operations.OperationContract.Stability.get -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Kernel.Operations.OperationContract.Verb.get -> string!
+XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute
+XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute.Expose.init -> void
+XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute.OperationDefaultsAttribute() -> void
 XiHan.Framework.Kernel.Operations.OperationDescriptor
 XiHan.Framework.Kernel.Operations.OperationDescriptor.Contract.get -> XiHan.Framework.Kernel.Operations.OperationContract!
 XiHan.Framework.Kernel.Operations.OperationDescriptor.Id.get -> string!

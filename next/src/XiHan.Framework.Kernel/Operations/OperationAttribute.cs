@@ -34,9 +34,16 @@ public sealed class OperationAttribute : Attribute
     public Stability Stability { get; init; } = Stability.Stable;
 
     /// <summary>
-    /// 暴露的协议；默认 <see cref="Expose.All"/>。
+    /// 暴露的协议；没写时取程序集的 <see cref="OperationDefaultsAttribute.Expose"/>，程序集也没声明时为 <see cref="Expose.All"/>。
     /// </summary>
     public Expose Expose { get; init; } = Expose.All;
+
+    /// <summary>
+    /// 声明非标准动词的操作是只读的（不改变状态、可重复调用）：<c>get</c> / <c>list</c> 本来就是只读，<c>tree</c>、<c>list-online</c> 这类查询变体在这里声明。
+    /// 协议据此推导：MCP 的 <c>readOnlyHint</c> / <c>idempotentHint</c> 为真、<c>destructiveHint</c> 为假，HTTP 走 <c>GET …:{verb}</c>（请求带嵌套对象时仍是 POST）。
+    /// 不能用在 <c>create</c> / <c>update</c> / <c>delete</c> 上（生成器报 <c>XHG005</c>，契约构造抛出）。
+    /// </summary>
+    public bool ReadOnly { get; init; }
 
     /// <summary>
     /// 授权策略名；与 <see cref="Permission"/> 二选一。
