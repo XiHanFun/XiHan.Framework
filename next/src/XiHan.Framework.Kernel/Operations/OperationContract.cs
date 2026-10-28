@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 操作契约的运行期形态：操作 ID、稳定性、暴露的协议与授权要求。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
+/// 操作契约的运行期形态：操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationContract
@@ -19,9 +19,15 @@ public sealed record OperationContract
     /// <param name="expose">暴露的协议。</param>
     /// <param name="policy">授权策略名；与 <paramref name="permission"/> 二选一。</param>
     /// <param name="permission">所需权限码；与 <paramref name="policy"/> 二选一。</param>
-    public OperationContract(string id, Stability stability = Stability.Stable, Expose expose = Expose.All, string? policy = null, string? permission = null)
+    /// <param name="readOnly">声明非标准动词是只读的；<c>get</c> / <c>list</c> 不需要声明，<c>create</c> / <c>update</c> / <c>delete</c> 不能声明。</param>
+    public OperationContract(string id, Stability stability = Stability.Stable, Expose expose = Expose.All, string? policy = null, string? permission = null, bool readOnly = false)
     {
         Id = OperationId.Validate(id);
+        var verb = OperationId.VerbOf(Id);
+        if (readOnly && verb is "create" or "update" or "delete")
+        {
+            throw new ArgumentException($"Operation '{Id}' cannot be declared read-only: the '{verb}' verb changes state.", nameof(readOnly));
+        }
         if (policy is not null && string.IsNullOrWhiteSpace(policy))
         {
             throw new ArgumentException("The policy name must not be blank.", nameof(policy));
@@ -41,7 +47,13 @@ public sealed record OperationContract
         Expose = expose;
         Policy = policy;
         Permission = permission;
+        IsReadOnly = readOnly || verb is "get" or "list";
     }
+
+    /// <summary>
+    /// 是否只读（不改变状态、可重复调用）：动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法。
+    /// </summary>
+    public bool IsReadOnly { get; }
 
     /// <summary>
     /// 操作 ID。

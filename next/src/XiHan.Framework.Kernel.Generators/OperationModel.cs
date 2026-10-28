@@ -14,7 +14,7 @@ internal sealed class OperationModel
     /// <summary>
     /// 创建模型。
     /// </summary>
-    public OperationModel(INamedTypeSymbol operationType, string id, int stability, int expose, string? policy, string? permission, ITypeSymbol requestType, ITypeSymbol responseType)
+    public OperationModel(INamedTypeSymbol operationType, string id, int stability, int expose, string? policy, string? permission, bool readOnly, ITypeSymbol requestType, ITypeSymbol responseType)
     {
         OperationType = operationType;
         Id = id;
@@ -22,9 +22,15 @@ internal sealed class OperationModel
         Expose = expose;
         Policy = policy;
         Permission = permission;
+        ReadOnly = readOnly;
         RequestType = requestType;
         ResponseType = responseType;
     }
+
+    /// <summary>
+    /// 是否声明为只读（非标准动词）。
+    /// </summary>
+    public bool ReadOnly { get; }
 
     /// <summary>
     /// 操作实现类型。

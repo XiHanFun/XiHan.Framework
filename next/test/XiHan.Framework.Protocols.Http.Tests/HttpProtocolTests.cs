@@ -102,6 +102,12 @@ public sealed class HttpProtocolTests
         Assert.Equal("POST /orders:delete", HttpRouteConvention.Derive(new OperationContract("orders.delete"), hasIdentifier: false, hasNestedFields: true).ToString());
         Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update"), hasIdentifier: true, hasNestedFields: true).ToString());
         Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: false, hasNestedFields: true).ToString());
+        // 声明只读的自定义动词与 get 同规则：只有标量字段走 GET（集合级或实例级），带嵌套对象仍是 POST；没声明的自定义动词照旧 POST
+        Assert.Equal("GET /departments:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree", readOnly: true), hasIdentifier: false).ToString());
+        Assert.Equal("GET /departments/{id}:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree", readOnly: true), hasIdentifier: true).ToString());
+        Assert.Equal("GET /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online", readOnly: true), hasIdentifier: false).ToString());
+        Assert.Equal("POST /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online", readOnly: true), hasIdentifier: false, hasNestedFields: true).ToString());
+        Assert.Equal("POST /departments:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree"), hasIdentifier: false).ToString());
         Assert.Equal(201, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.create")));
         Assert.Equal(200, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.get")));
     }

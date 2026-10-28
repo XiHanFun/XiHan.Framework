@@ -17,6 +17,10 @@ public void Configure(FeatureContext context) => context.AddGeneratedOperations(
 | `XHG001` | 标注 `[Operation]` 的类必须实现 `IOperation<TRequest, TResponse>` |
 | `XHG002` | 请求或响应类型没有任何 `JsonSerializerContext` 用 `[JsonSerializable]` 登记 |
 | `XHG003` | 操作 ID 不符合 `<resource>.<verb>` 文法 |
+| `XHG004` | 缺省关闭：操作没写 `Expose`、程序集也没有 `[assembly: OperationDefaults]`，于是暴露给全部协议；以 `dotnet_diagnostic.XHG004.severity = error` 打开即强制写明 |
+| `XHG005` | `create` / `update` / `delete` 声明了 `ReadOnly = true` |
+
+暴露协议的缺省（ADR-0041）：操作没写 `Expose` 时取程序集级 `[assembly: OperationDefaults(Expose = Expose.Http)]` 的值，再没有就是 `Expose.All`；落定的值写进生成的 `OperationContract`。`ReadOnly = true` 原样生成为契约的 `readOnly: true`。
 
 引用方式：`<ProjectReference Include="…/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />`，或 NuGet 包（分析器形式，不进入运行时依赖）。
 

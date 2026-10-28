@@ -55,4 +55,29 @@ internal static class GeneratorRules
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XHG004：操作没写 <c>Expose</c>，程序集也没有 <c>[assembly: OperationDefaults]</c>，于是暴露给全部协议。缺省关闭：想强制每个操作写明协议的应用以
+    /// <c>dotnet_diagnostic.XHG004.severity = error</c> 打开，或声明程序集缺省。
+    /// </summary>
+    public static readonly DiagnosticDescriptor ImplicitExposeAll = new(
+        "XHG004",
+        "Operation is exposed on every protocol by default",
+        "Operation '{0}' does not set Expose and the assembly has no [assembly: OperationDefaults(Expose = ...)], so it is exposed on every protocol; set Expose explicitly or declare an assembly default",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: false,
+        helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XHG005：<c>create</c> / <c>update</c> / <c>delete</c> 动词的操作声明了 <c>ReadOnly</c>。
+    /// </summary>
+    public static readonly DiagnosticDescriptor ReadOnlyOnWriteVerb = new(
+        "XHG005",
+        "Write verbs cannot be declared read-only",
+        "Operation '{0}' declares ReadOnly = true, but the '{1}' verb changes state",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
 }

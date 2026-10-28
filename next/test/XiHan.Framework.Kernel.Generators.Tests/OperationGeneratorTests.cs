@@ -133,7 +133,7 @@ public sealed class OperationGeneratorTests
     /// <summary>
     /// 运行生成器并把生成的代码编回编译；返回编译诊断、生成器诊断与生成的源文本。
     /// </summary>
-    private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, string rootNamespace = "Demo.App")
+    private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, string rootNamespace = "Demo.App", IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
     {
         var trustedAssemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator);
         var references = trustedAssemblies
@@ -144,7 +144,8 @@ public sealed class OperationGeneratorTests
             "Demo.App",
             [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest))],
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable)
+                .WithSpecificDiagnosticOptions(diagnosticOptions ?? ImmutableDictionary<string, ReportDiagnostic>.Empty));
 
         var driver = CSharpGeneratorDriver.Create([new OperationGenerator().AsSourceGenerator()], optionsProvider: new TestAnalyzerConfigOptionsProvider(rootNamespace));
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var generatorDiagnostics);
@@ -236,6 +237,113 @@ public sealed class OperationGeneratorTests
         // 不按字符串序列化的上下文里枚举仍是内联整数
         Assert.Contains("\"status\":{\"type\":\"integer\",\"format\":\"int32\"}", text, StringComparison.Ordinal);
         Assert.DoesNotContain("\"OrderStatus\"", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 程序集缺省与只读声明的源码：<c>[assembly: OperationDefaults]</c> 行由占位符替换，三个操作分别没写 Expose、显式写 Expose、声明只读。
+    /// </summary>
+    private const string DefaultsSource = """
+        using System;
+        using System.Text.Json;
+        using System.Text.Json.Serialization;
+        using System.Text.Json.Serialization.Metadata;
+        using System.Threading.Tasks;
+        using XiHan.Framework.Kernel.Operations;
+        using XiHan.Framework.Primitives;
+
+        ASSEMBLY_DEFAULTS
+
+        namespace Demo.App;
+
+        public sealed record Ping(string Name);
+
+        [Operation("pings.create")]
+        public sealed class CreatePing : IOperation<Ping, Ping>
+        {
+            public ValueTask<Result<Ping>> HandleAsync(Ping request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("pings.get", Expose = Expose.Http | Expose.Mcp)]
+        public sealed class GetPing : IOperation<Ping, Ping>
+        {
+            public ValueTask<Result<Ping>> HandleAsync(Ping request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("pings.tree", ReadOnly = true)]
+        public sealed class TreePing : IOperation<Ping, Ping>
+        {
+            public ValueTask<Result<Ping>> HandleAsync(Ping request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [JsonSerializable(typeof(Ping))]
+        internal sealed class PingJsonContext : JsonSerializerContext
+        {
+            public static PingJsonContext Default { get; } = new();
+            public PingJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<Ping> Ping => null!;
+        }
+        """;
+
+    /// <summary>
+    /// 生成代码里某个操作的契约构造表达式前缀。
+    /// </summary>
+    private static string ContractOf(string id, int expose)
+        => $"new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"{id}\", (global::XiHan.Framework.Primitives.Stability)0, (global::XiHan.Framework.Kernel.Operations.Expose){expose}, null, null";
+
+    [Fact]
+    public void AssemblyDefaults_ApplyToOperationsWithoutExpose_AndReadOnlyIsEmitted()
+    {
+        var (compile, generator, generated) = Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", "[assembly: OperationDefaults(Expose = Expose.Http)]", StringComparison.Ordinal));
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        // 没写 Expose 的取程序集缺省（Http = 1），显式写的不受影响（Http | Mcp = 5），只读声明原样进契约
+        Assert.Contains(ContractOf("pings.create", 1) + "),", generated, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.get", 5) + "),", generated, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.tree", 1) + ", readOnly: true),", generated, StringComparison.Ordinal);
+
+        // 没有程序集缺省时没写 Expose 的仍是全部协议（31）
+        var (_, _, withoutDefaults) = Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", string.Empty, StringComparison.Ordinal));
+        Assert.Contains(ContractOf("pings.create", 31) + "),", withoutDefaults, StringComparison.Ordinal);
+        // 写了特性却没写 Expose：缺省就是全部协议
+        var (_, _, bareDefaults) = Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", "[assembly: OperationDefaults]", StringComparison.Ordinal));
+        Assert.Contains(ContractOf("pings.create", 31) + "),", bareDefaults, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ImplicitExposeAll_IsOptIn_AndSilencedByAssemblyDefaults()
+    {
+        var enabled = new Dictionary<string, ReportDiagnostic>(StringComparer.Ordinal) { ["XHG004"] = ReportDiagnostic.Error };
+        var withoutDefaults = DefaultsSource.Replace("ASSEMBLY_DEFAULTS", string.Empty, StringComparison.Ordinal);
+
+        // 缺省关闭：不打开就不报
+        Assert.Empty(Run(withoutDefaults).Generator);
+
+        // 打开后，没写 Expose 又没有程序集缺省的操作逐个报告；显式写了的不报
+        var reported = Run(withoutDefaults, diagnosticOptions: enabled).Generator;
+        Assert.All(reported, static d => Assert.Equal(("XHG004", DiagnosticSeverity.Error), (d.Id, d.Severity)));
+        Assert.Equal(["pings.create", "pings.tree"], reported.Select(static d => d.GetMessage(System.Globalization.CultureInfo.InvariantCulture).Split('\'')[1]).OrderBy(static id => id, StringComparer.Ordinal));
+
+        // 声明了程序集缺省就没有隐式的全部协议，打开了也不报
+        Assert.Empty(Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", "[assembly: OperationDefaults(Expose = Expose.Http)]", StringComparison.Ordinal), diagnosticOptions: enabled).Generator);
+    }
+
+    [Fact]
+    public void ReadOnly_OnWriteVerb_IsReported()
+    {
+        var (_, generator, generated) = Run("""
+            using System.Text.Json.Serialization;
+            using XiHan.Framework.Kernel.Operations;
+            namespace Demo.App;
+            public sealed record Ping;
+            [Operation("pings.delete", ReadOnly = true)] public sealed class DeletePing : IOperation<Ping, Ping> { public System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<Ping>> HandleAsync(Ping request, XiHan.Framework.Primitives.InvocationContext context) => throw new System.NotImplementedException(); }
+            """);
+
+        // 写操作的动词声明只读是编译期错误，该操作不生成登记代码（契约构造本来也会在启动时抛出）
+        Assert.Equal(["XHG005"], generator.Select(static d => d.Id));
+        Assert.Empty(generated);
     }
 
     [Fact]
