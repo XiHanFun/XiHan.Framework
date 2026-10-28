@@ -6,8 +6,19 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.ConnectionFor(Sy
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.SqlSugarConnectionSelector() -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Deconstruct(out System.Type! EntityType, out System.IServiceProvider! Services) -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.EntityType.get -> System.Type!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.EntityType.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? other) -> bool
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Services.get -> System.IServiceProvider!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Services.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.SqlSugarDiffLogData(System.Type! EntityType, System.IServiceProvider! Services) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.DiffLog.get -> System.Func<System.Type!, bool>?
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.DiffLog.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.SqlSugarPersistenceFeature() -> void
@@ -16,6 +27,8 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StartAsync(Syste
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.DiffLog.get -> System.Func<System.Type!, bool>!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.DiffLog.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? other) -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInterval.init -> void
@@ -31,7 +44,7 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.FindManyA
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.SqlSugarRepository(XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork! unitOfWork, System.TimeProvider! timeProvider) -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.SqlSugarRepository(XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork! unitOfWork, System.TimeProvider! timeProvider, XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions! options, System.IServiceProvider! services) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarUnitOfWork
@@ -52,11 +65,16 @@ const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Shard = "shard" -
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ConnectionBinding = "db" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.HealthName = "persistence.sqlsugar.database" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ConfigurationSection = "XiHan:Persistence:SqlSugar" -> string!
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.GetHashCode() -> int
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.ToString() -> string!
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ToString() -> string!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Apply(SqlSugar.ConnectionConfig! config) -> SqlSugar.ConnectionConfig!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Configure(System.Reflection.PropertyInfo! property, SqlSugar.EntityColumnInfo! column) -> void
+static XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.operator !=(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? right) -> bool
+static XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.operator ==(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? right) -> bool
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.operator !=(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? right) -> bool
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.operator ==(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? right) -> bool

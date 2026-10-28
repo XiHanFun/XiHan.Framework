@@ -80,6 +80,11 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         _configure = configure ?? throw new ArgumentNullException(nameof(configure));
     }
 
+    /// <summary>
+    /// 哪些实体的仓储写入经 SqlSugar 差异日志（见 <see cref="SqlSugarPersistenceOptions.DiffLog"/>）；为 <see langword="null"/> 时一个都不开。
+    /// </summary>
+    public Func<Type, bool>? DiffLog { get; init; }
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {
@@ -113,6 +118,11 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
         context.Services.AddMessageCatalog(PersistenceMessages.Catalog);
         _options = SqlSugarPersistenceOptions.FromConfiguration(context.Configuration);
+        if (DiffLog is { } diffLog)
+        {
+            _options = _options with { DiffLog = diffLog };
+        }
+
         context.Services.AddSingleton(_options);
 
         if (_configure is { } configure)
