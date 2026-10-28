@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
@@ -50,6 +51,7 @@ public sealed class McpProtocolTests
         builder.Configuration.AddInMemoryCollection(_security.Concat(configuration).Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<McpProtocolFeature>().UseFeature<OrdersFeature>());
         builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersFeature)));
+        builder.Services.AddSingleton<OriginLog>();
 
         var app = builder.Build();
         app.UseXiHan();
@@ -238,7 +240,10 @@ public sealed class McpProtocolTests
         var (app, client) = await StartAsync();
         await using var host = app;
 
-        var got = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"id":"42","page":2,"tags":["a","b"]}}"""));
+        var got = await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"id":"42","page":2,"tags":["a","b"]}}"""), ("User-Agent", "probe/1.0"), ("Referer", "https://admin.test/orders"));
+        // 子调用的来源记 MCP 与 tool 名，User-Agent 与来源页沿用外层 HTTP 请求
+        var origin = Assert.Single(app.Services.GetRequiredService<OriginLog>().Origins);
+        Assert.Equal((InvocationProtocols.Mcp, "orders_get", "probe/1.0", "https://admin.test/orders"), (origin?.Protocol, origin?.Target, origin?.UserAgent, origin?.Referer));
         Assert.False(got.TryGetProperty("isError", out _));
         var content = got.GetProperty("content")[0];
         Assert.Equal("text", content.GetProperty("type").GetString());

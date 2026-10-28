@@ -8,8 +8,10 @@ using Grpc.Net.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Protocols.Grpc.Proto;
@@ -50,6 +52,7 @@ public sealed class GrpcProtocolTests
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(_security.Concat(configuration).Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
+        builder.Services.AddSingleton<OriginLog>();
         builder.AddXiHan(xihan =>
         {
             xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<GrpcProtocolFeature>().UseFeature<OrdersFeature>();
@@ -115,6 +118,11 @@ public sealed class GrpcProtocolTests
         Assert.Equal(["a", "b"], reply.GetProperty("tags").EnumerateArray().Select(static t => t.GetString()));
         Assert.False(reply.TryGetProperty("name", out _));
         Assert.Equal(32, call.GetTrailers().GetValue("xihan-trace-id")!.Length);
+
+        // 调用来源：协议 grpc、目标是方法全名，User-Agent 沿用承载它的 HTTP/2 请求
+        var origin = Assert.Single(app.Services.GetRequiredService<OriginLog>().Origins);
+        Assert.Equal((InvocationProtocols.Grpc, "/Orders/Get"), (origin?.Protocol, origin?.Target));
+        Assert.StartsWith("grpc-dotnet/", origin!.UserAgent, StringComparison.Ordinal);
 
         // 空请求：proto3 默认值；连字符资源成 PascalCase 服务
         using var empty = Call(channel, "OrderLines", "List", []);

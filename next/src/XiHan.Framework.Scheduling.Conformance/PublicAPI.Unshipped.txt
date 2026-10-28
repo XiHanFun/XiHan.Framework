@@ -37,9 +37,9 @@ XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.get -> System.TimeS
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.set -> void
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.FailWith.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.FailWith.set -> void
-XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Record(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, string? correlation) -> void
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Record(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, string? correlation, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? origin) -> void
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.RecordingJobLog() -> void
-XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Runs.get -> System.Collections.Generic.IReadOnlyList<(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! Run, string? Correlation)>!
+XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Runs.get -> System.Collections.Generic.IReadOnlyList<(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! Run, string? Correlation, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? Origin)>!
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Throw.get -> bool
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Throw.set -> void
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.WaitAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name, int count, System.TimeSpan timeout) -> System.Threading.Tasks.Task!

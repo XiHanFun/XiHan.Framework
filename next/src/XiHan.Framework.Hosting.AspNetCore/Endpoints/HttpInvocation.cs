@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Primitives;
@@ -37,7 +38,8 @@ public static partial class HttpInvocation
 
     /// <summary>
     /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、
-    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）。
+    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）；
+    /// 调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -111,8 +113,38 @@ public static partial class HttpInvocation
             context.SetCredential(credential);
         }
 
+        context.SetOrigin(OriginOf(httpContext));
         return context;
     }
+
+    /// <summary>
+    /// HTTP 请求的调用来源：方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer。
+    /// 远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4。
+    /// </summary>
+    private static InvocationOrigin OriginOf(HttpContext httpContext)
+    {
+        var request = httpContext.Request;
+        var address = httpContext.Connection.RemoteIpAddress;
+        if (address is { IsIPv4MappedToIPv6: true })
+        {
+            address = address.MapToIPv4();
+        }
+
+        var path = request.PathBase.Add(request.Path).Value;
+        return new InvocationOrigin
+        {
+            Protocol = InvocationProtocols.Http,
+            Target = $"{request.Method} {(string.IsNullOrEmpty(path) ? "/" : path)}",
+            RemoteAddress = address?.ToString(),
+            UserAgent = HeaderOrNull(request.Headers.UserAgent.ToString()),
+            Referer = HeaderOrNull(request.Headers.Referer.ToString()),
+        };
+    }
+
+    /// <summary>
+    /// 空头值视为没有。
+    /// </summary>
+    private static string? HeaderOrNull(string value) => value.Length > 0 ? value : null;
 
     /// <summary>
     /// 取当前请求的调用上下文；请求未经过 <c>UseXiHan()</c> 时为无值。

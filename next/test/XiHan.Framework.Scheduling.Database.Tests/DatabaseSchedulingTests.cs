@@ -151,7 +151,7 @@ public sealed class DatabaseSchedulingTests
 
         // 领导者在下个维护周期发现失联：运行记为 Lost、占用释放、触发器回到等待、节点删除；要求恢复的作业以恢复触发器重新运行一次
         await log.WaitAsync(job, 1, TimeSpan.FromSeconds(10));
-        var (run, _) = Assert.Single(log.Runs);
+        var (run, _, _) = Assert.Single(log.Runs);
         Assert.Equal((JobTrigger.Recovery, "ghost"), (run.Trigger, run.Data["who"]!.GetValue<string>()));
         Assert.Null(run.TriggerName);
         await WaitUntilAsync(async () => (await store.RunningAsync(job, CancellationToken.None)).ValueOrThrow().Count == 0);

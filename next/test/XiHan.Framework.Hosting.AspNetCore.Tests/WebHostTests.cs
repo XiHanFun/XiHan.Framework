@@ -6,6 +6,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
@@ -52,7 +53,7 @@ public sealed class WebHostTests
     /// <summary>
     /// 用 TestServer 启动一个装配了捕获中间件与若干测试端点的应用，返回应用、客户端与捕获器。
     /// </summary>
-    private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync(Action<AppBuilder>? extra = null)
+    private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync(Action<AppBuilder>? extra = null, Action<WebApplication>? beforeXiHan = null)
     {
         var captured = new Captured();
         var builder = WebApplication.CreateBuilder();
@@ -69,6 +70,7 @@ public sealed class WebHostTests
         });
 
         var app = builder.Build();
+        beforeXiHan?.Invoke(app);
         app.UseXiHan();
         app.MapXiHanHealth();
         app.MapGet("/ok", () => "ok");
@@ -137,6 +139,41 @@ public sealed class WebHostTests
         Assert.Equal("t-42", captured.Context.Baggage[BaggageKeys.Tenant]);
         Assert.Equal("zh-CN", captured.Context.Baggage[BaggageKeys.Locale]);
         Assert.False(captured.Context.Baggage.ContainsKey("ignored"));
+    }
+
+    [Fact]
+    public async Task Origin_RecordsMethodPathAndClient_HonouringForwardedHeaders()
+    {
+        var (app, _, captured) = await StartAsync(beforeXiHan: static web => web.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor }));
+        await using var _ = app;
+        var server = app.GetTestServer();
+
+        // 直连：方法与路径（含 PathBase，不含查询串）、连接对端地址（IPv4 映射的 IPv6 还原为 IPv4）、User-Agent 与 Referer
+        await server.SendAsync(static http =>
+        {
+            http.Request.Method = HttpMethods.Get;
+            http.Request.PathBase = "/app";
+            http.Request.Path = "/ok";
+            http.Request.QueryString = new QueryString("?token=secret");
+            http.Request.Headers.UserAgent = "probe/1.0";
+            http.Request.Headers.Referer = "https://admin.test/users";
+            http.Connection.RemoteIpAddress = IPAddress.Parse("::ffff:203.0.113.7");
+        });
+        Assert.Equal(
+            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /app/ok", RemoteAddress = "203.0.113.7", UserAgent = "probe/1.0", Referer = "https://admin.test/users" },
+            captured.Context!.GetOrigin().ValueOrThrow());
+
+        // 经反向代理：宿主在 UseXiHan() 之前 UseForwardedHeaders()，远端地址是转发头里的客户端；没有的头为 null
+        await server.SendAsync(static http =>
+        {
+            http.Request.Method = HttpMethods.Get;
+            http.Request.Path = "/ok";
+            http.Request.Headers["X-Forwarded-For"] = "198.51.100.9";
+            http.Connection.RemoteIpAddress = IPAddress.Loopback;
+        });
+        Assert.Equal(
+            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /ok", RemoteAddress = "198.51.100.9" },
+            captured.Context!.GetOrigin().ValueOrThrow());
     }
 
     [Fact]

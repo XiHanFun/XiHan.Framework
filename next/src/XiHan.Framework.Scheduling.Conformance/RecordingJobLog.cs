@@ -1,13 +1,14 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// 套件作业的记录与行为开关：记录每次运行与上下文里的关联 ID；可让运行失败、抛出或停留一段时间。
+/// 套件作业的记录与行为开关：记录每次运行与上下文里的关联 ID、调用来源；可让运行失败、抛出或停留一段时间。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordingJobLog
@@ -20,7 +21,7 @@ public sealed class RecordingJobLog
     /// <summary>
     /// 记录。
     /// </summary>
-    private readonly List<(JobRun Run, string? Correlation)> _runs = [];
+    private readonly List<(JobRun Run, string? Correlation, InvocationOrigin? Origin)> _runs = [];
 
     /// <summary>
     /// 下一次运行返回的失败；为 <see langword="null"/> 时成功。
@@ -40,7 +41,7 @@ public sealed class RecordingJobLog
     /// <summary>
     /// 已记录的运行快照。
     /// </summary>
-    public IReadOnlyList<(JobRun Run, string? Correlation)> Runs
+    public IReadOnlyList<(JobRun Run, string? Correlation, InvocationOrigin? Origin)> Runs
     {
         get
         {
@@ -54,12 +55,12 @@ public sealed class RecordingJobLog
     /// <summary>
     /// 记录一次运行。
     /// </summary>
-    public void Record(JobRun run, string? correlation)
+    public void Record(JobRun run, string? correlation, InvocationOrigin? origin)
     {
         ArgumentNullException.ThrowIfNull(run);
         lock (_lock)
         {
-            _runs.Add((run, correlation));
+            _runs.Add((run, correlation, origin));
         }
     }
 

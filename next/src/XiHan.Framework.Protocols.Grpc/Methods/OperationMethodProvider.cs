@@ -9,6 +9,7 @@ using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Grpc.Proto;
@@ -94,6 +95,8 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
 
         var httpContext = call.GetHttpContext();
         var context = HttpInvocation.CreateContext(httpContext);
+        // 协议与请求目标改记 gRPC 方法全名；远端地址与 User-Agent 沿用承载它的 HTTP/2 请求
+        context.SetOrigin(context.GetOrigin().ValueOrThrow() with { Protocol = InvocationProtocols.Grpc, Target = call.Method });
         call.ResponseTrailers.Add(TraceIdTrailer, context.TraceId);
 
         var json = new ArrayBufferWriter<byte>();

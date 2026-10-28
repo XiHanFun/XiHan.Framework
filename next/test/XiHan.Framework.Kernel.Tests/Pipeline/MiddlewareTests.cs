@@ -133,4 +133,19 @@ public sealed class MiddlewareTests
         Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
         Assert.Equal("test.number", key.ToString());
     }
+
+    [Fact]
+    public void Origin_IsAbsentUntilSet_AndSharedWithDerivedContexts()
+    {
+        var context = App.CreateContext(_services, CancellationToken.None);
+        Assert.False(context.GetOrigin().HasValue);
+
+        var origin = new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /orders", RemoteAddress = "203.0.113.7" };
+        context.SetOrigin(origin);
+        Assert.Equal(origin, context.WithBaggage(BaggageKeys.Tenant, "acme").GetOrigin().ValueOrThrow());
+        Assert.Equal(origin with { Protocol = InvocationProtocols.Grpc }, new InvocationOrigin { Protocol = "grpc", Target = "GET /orders", RemoteAddress = "203.0.113.7" });
+
+        Assert.Throws<ArgumentException>(static () => new InvocationOrigin { Protocol = " ", Target = "x" });
+        Assert.Throws<ArgumentNullException>(static () => new InvocationOrigin { Protocol = InvocationProtocols.Job, Target = null! });
+    }
 }
