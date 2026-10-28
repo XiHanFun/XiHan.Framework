@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
@@ -29,7 +30,7 @@ public sealed class RecordingJob : IJob
     public async ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        _log.Record(run, context.TryGetBaggage(BaggageKeys.Correlation, out var correlation) ? correlation : null);
+        _log.Record(run, context.TryGetBaggage(BaggageKeys.Correlation, out var correlation) ? correlation : null, context.GetOrigin().TryGetValue(out var origin) ? origin : null);
         if (_log.Delay > TimeSpan.Zero)
         {
             await Task.Delay(_log.Delay, cancellationToken).ConfigureAwait(false);

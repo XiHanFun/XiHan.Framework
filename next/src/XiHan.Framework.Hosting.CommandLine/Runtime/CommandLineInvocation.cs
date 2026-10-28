@@ -5,6 +5,7 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
@@ -30,11 +31,14 @@ public static class CommandLineInvocation
     public static readonly IReadOnlySet<string> ReservedOptions = new HashSet<string>(StringComparer.Ordinal) { "json", "data", "authorization", "tenant", "correlation", "locale", "timeout", "help" };
 
     /// <summary>
-    /// 从命令环境构造调用上下文；选项不合法返回 <see cref="CommandLineErrors.UsageInvalid"/>。
+    /// 从命令环境构造调用上下文；选项不合法返回 <see cref="CommandLineErrors.UsageInvalid"/>。调用来源记命令行与被调用的操作 ID，没有远端地址与 User-Agent。
     /// </summary>
-    public static Result<InvocationContext> Create(CommandContext context)
+    /// <param name="context">命令环境。</param>
+    /// <param name="operationId">被调用的操作 ID，记为调用来源的请求目标。</param>
+    public static Result<InvocationContext> Create(CommandContext context, string operationId)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(operationId);
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal);
         if (context.Option("tenant").TryGetValue(out var tenant))
         {
@@ -63,6 +67,7 @@ public static class CommandLineInvocation
         }
 
         var invocation = App.CreateContext(context.Services, context.CancellationToken, deadline: deadline, baggage: baggage);
+        invocation.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.CommandLine, Target = operationId });
 
         // 凭据只做格式拆分，不在这里验证；解释交给安全子系统的 Authenticate 阶段
         var authorization = context.Option("authorization").ValueOr(Environment.GetEnvironmentVariable(AuthorizationVariable) ?? string.Empty);

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Primitives;
 
@@ -17,7 +18,7 @@ public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);
-        log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId));
+        log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId) { Origin = context.GetOrigin().TryGetValue(out var origin) ? origin : null });
         if (log.ThrowingIds.ContainsKey(delivery.Envelope.Id))
         {
             throw new InvalidOperationException($"The handler threw for '{delivery.Envelope.Id}' as instructed.");

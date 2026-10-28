@@ -121,6 +121,7 @@ internal sealed class ActivityExecutor
         {
             await using var scope = _services.CreateAsyncScope();
             var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+            context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = node.ActivityType.Value });
             var invoked = await _app.InvokeAsync(context, async ctx =>
             {
                 var activity = (IActivity)ctx.Services.GetRequiredService(definition.ActivityClass);

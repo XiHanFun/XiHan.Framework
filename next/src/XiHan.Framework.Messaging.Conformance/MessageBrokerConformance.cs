@@ -4,6 +4,7 @@
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
@@ -195,6 +196,7 @@ public abstract class MessageBrokerConformance
         Assert.Equal("acme", received.Baggage[BaggageKeys.Tenant]);
         Assert.Equal("corr-9", received.Baggage[BaggageKeys.Correlation]);
         Assert.Equal("0af7651916cd43dd8448eb211c80319c", received.TraceId);
+        Assert.Equal(new InvocationOrigin { Protocol = InvocationProtocols.Messaging, Target = OrdersTopic }, received.Origin);
     }
 
     /// <summary>

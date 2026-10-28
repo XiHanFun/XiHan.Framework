@@ -17,6 +17,11 @@ public static class InvocationContextExtensions
     private static readonly ContextItemKey<Result> _outcomeKey = new("xihan.outcome");
 
     /// <summary>
+    /// 调用来源在 <see cref="InvocationContext.Items"/> 中的键。
+    /// </summary>
+    private static readonly ContextItemKey<InvocationOrigin> _originKey = new("xihan.origin");
+
+    /// <summary>
     /// 读取强类型项。
     /// </summary>
     public static Maybe<T> Get<T>(this InvocationContext context, ContextItemKey<T> key)
@@ -48,6 +53,16 @@ public static class InvocationContextExtensions
     /// 设置本次调用的结果。Egress 阶段据此翻译响应。
     /// </summary>
     public static void SetOutcome(this InvocationContext context, Result outcome) => context.Set(_outcomeKey, outcome);
+
+    /// <summary>
+    /// 读取调用来源；内部发起、没有经协议适配器的调用为无值。派生上下文共享同一个来源。
+    /// </summary>
+    public static Maybe<InvocationOrigin> GetOrigin(this InvocationContext context) => context.Get(_originKey);
+
+    /// <summary>
+    /// 写入调用来源。协议适配器建上下文时调用；之后的阶段只读。
+    /// </summary>
+    public static void SetOrigin(this InvocationContext context, InvocationOrigin origin) => context.Set(_originKey, origin);
 
     /// <summary>
     /// 若尚未设置结果，则设置为 <paramref name="outcome"/>；已设置时保留原值。

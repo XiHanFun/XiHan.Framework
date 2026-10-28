@@ -47,7 +47,7 @@ public sealed class InvokeCommand : ICommand
             return await CommandLineFailure.WriteAsync(context.Error, payload.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
-        var invocation = CommandLineInvocation.Create(context);
+        var invocation = CommandLineInvocation.Create(context, id);
         if (!invocation.TryGetValue(out var invocationContext))
         {
             return await CommandLineFailure.WriteAsync(context.Error, invocation.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);

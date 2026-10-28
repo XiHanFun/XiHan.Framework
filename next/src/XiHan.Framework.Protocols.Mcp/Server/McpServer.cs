@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Mcp.Tools;
@@ -356,6 +357,10 @@ public sealed class McpServer
 
         // 每次 tools/call 都是一次独立调用：新的上下文经完整管道，Authorize 阶段按契约判定，事务与作用域服务互不影响
         var call = createCallContext();
+        // 来源记 MCP 与 tool 名；HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求，stdio 传输没有这些
+        call.SetOrigin(call.GetOrigin().TryGetValue(out var outer)
+            ? outer with { Protocol = InvocationProtocols.Mcp, Target = name }
+            : new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = name });
         var response = await _invoker.InvokeAsync(call, new OperationRequest(tool.Descriptor.Id, payload)).ConfigureAwait(false);
         return WriteResult(id, writer => WriteCallResult(writer, response, call));
     }

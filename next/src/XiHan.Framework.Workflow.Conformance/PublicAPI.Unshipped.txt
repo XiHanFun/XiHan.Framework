@@ -5,11 +5,13 @@ XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.ConformanceLog() -> v
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Events.get -> System.Collections.Generic.IReadOnlyList<(string! Topic, XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData! Data)>!
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.EventsOf(string! topic) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData!>!
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Executed.get -> System.Collections.Generic.IReadOnlyList<(string! InstanceId, string! NodeId, int Attempt)>!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Origins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Pipeline.InvocationOrigin?>!
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.Outcomes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordCompensation(string! nodeId) -> void
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordExecution(string! instanceId, string! nodeId, int attempt) -> void
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordOrigin(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? origin) -> void
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordOutcome(string! outcome) -> void
 XiHan.Framework.Workflow.Conformance.Engine.RecordActivity
 XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.CompensateAsync(XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>

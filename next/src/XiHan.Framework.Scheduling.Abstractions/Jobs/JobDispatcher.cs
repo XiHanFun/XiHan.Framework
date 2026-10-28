@@ -59,6 +59,7 @@ public sealed class JobDispatcher
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Correlation] = run.Id };
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
         context.Set(_runKey, run);
+        context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Job, Target = run.Name.Value });
         try
         {
             return await _app.InvokeAsync(context, async ctx =>

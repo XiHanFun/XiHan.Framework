@@ -291,6 +291,21 @@ XiHan.Framework.Kernel.Pipeline.IInvocationAccessor.Current.get -> XiHan.Framewo
 XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware
 XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.<Clone>$() -> XiHan.Framework.Kernel.Pipeline.InvocationOrigin!
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Equals(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? other) -> bool
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.InvocationOrigin() -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Protocol.get -> string!
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Protocol.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Referer.get -> string?
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Referer.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.RemoteAddress.get -> string?
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.RemoteAddress.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Target.get -> string!
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Target.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.UserAgent.get -> string?
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.UserAgent.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationProtocols
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.<Clone>$() -> XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor!
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.After.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
@@ -588,6 +603,13 @@ const XiHan.Framework.Kernel.KernelMessages.ValidationType = "kernel.validation.
 const XiHan.Framework.Kernel.KernelMessages.ValidationUndeclared = "kernel.validation.undeclared" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ValidationUnresolvedReference = "kernel.validation.unresolved_reference" -> string!
 const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.CommandLine = "cli" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Grpc = "grpc" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Http = "http" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Job = "job" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Mcp = "mcp" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Messaging = "messaging" -> string!
+const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Workflow = "workflow" -> string!
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.OperationsSection = "Operations" -> string!
@@ -632,6 +654,9 @@ override XiHan.Framework.Kernel.Operations.OperationSchema.Equals(object? obj) -
 override XiHan.Framework.Kernel.Operations.OperationSchema.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationSchema.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>.ToString() -> string!
+override XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Pipeline.InvocationOrigin.GetHashCode() -> int
+override XiHan.Framework.Kernel.Pipeline.InvocationOrigin.ToString() -> string!
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.GetHashCode() -> int
 override XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.ToString() -> string!
@@ -713,10 +738,14 @@ static XiHan.Framework.Kernel.Operations.OperationResponse.operator ==(XiHan.Fra
 static XiHan.Framework.Kernel.Operations.OperationSchema.operator !=(XiHan.Framework.Kernel.Operations.OperationSchema? left, XiHan.Framework.Kernel.Operations.OperationSchema? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationSchema.operator ==(XiHan.Framework.Kernel.Operations.OperationSchema? left, XiHan.Framework.Kernel.Operations.OperationSchema? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Get<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key) -> XiHan.Framework.Primitives.Maybe<T>
+static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.GetOrigin(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Pipeline.InvocationOrigin!>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.GetOutcome(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Set<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key, T value) -> void
+static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.SetOrigin(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.InvocationOrigin! origin) -> void
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.SetOutcome(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Primitives.Result outcome) -> void
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.SetOutcomeIfMissing(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Primitives.Result outcome) -> void
+static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator !=(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? left, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? right) -> bool
+static XiHan.Framework.Kernel.Pipeline.InvocationOrigin.operator ==(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? left, XiHan.Framework.Kernel.Pipeline.InvocationOrigin? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator !=(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
 static XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.operator ==(XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? left, XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor? right) -> bool
 static XiHan.Framework.Kernel.Plugins.PermissionGrant.Empty.get -> XiHan.Framework.Kernel.Plugins.PermissionGrant!

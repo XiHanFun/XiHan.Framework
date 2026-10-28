@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.CommandLine.Runtime;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Security.InMemory;
 
@@ -48,6 +49,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
         builder.Configuration.AddInMemoryCollection(_security);
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<EchoFeature>());
         builder.Services.AddXiHanCommandLine();
+        builder.Services.AddSingleton<OriginLog>();
         _host = builder.Build();
         await _host.StartAsync();
         _runner = _host.Services.GetRequiredService<CommandLineRunner>();
@@ -113,6 +115,8 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
         Assert.Equal(CommandLineExitCodes.Success, code);
         var reply = Json(output);
         Assert.Equal(("orders.get", "widget", 2), (reply.GetProperty("operation").GetString(), reply.GetProperty("name").GetString(), reply.GetProperty("page").GetInt32()));
+        // 调用来源：命令行与被调用的操作 ID，没有远端地址与 User-Agent
+        Assert.Equal([new InvocationOrigin { Protocol = InvocationProtocols.CommandLine, Target = "orders.get" }], _host.Services.GetRequiredService<OriginLog>().Origins);
 
         // 简写 + 字段选项（字符串按序列化上下文读成数字，重复选项成数组）+ 上下文选项
         var (shorthand, shorthandOutput, _) = await RunAsync("orders", "get", "--name", "gizmo", "--page", "3", "--tags", "a", "--tags", "b", "--tenant", "acme", "--correlation", "c-1", "--timeout", "30");

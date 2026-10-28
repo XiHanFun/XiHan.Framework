@@ -62,6 +62,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
         await using var scope = _services.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, TraceIdOf(delivery.Envelope), SpanIdOf(delivery.Envelope), null, BaggageOf(delivery.Envelope));
         context.Set(_deliveryKey, delivery);
+        context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Messaging, Target = delivery.Topic });
 
         return await _app.InvokeAsync(context, async ctx =>
         {

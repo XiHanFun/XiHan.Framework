@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Profiles.Minimal;
@@ -37,6 +38,7 @@ public sealed class McpStdioTests
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<McpProtocolFeature>().UseFeature<OrdersFeature>());
         builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersFeature)));
         builder.Services.AddXiHanCommandLine();
+        builder.Services.AddSingleton<OriginLog>();
         var host = builder.Build();
         await host.StartAsync();
         return host;
@@ -74,6 +76,9 @@ public sealed class McpStdioTests
             Assert.True(denied.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
             using var malformed = JsonDocument.Parse(lines[4]);
             Assert.Equal(-32700, malformed.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+
+            // stdio 传输没有网络对端：来源只有协议与 tool 名（被拒的 orders_create 没有执行到操作）
+            Assert.Equal([new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = "orders_get" }], host.Services.GetRequiredService<OriginLog>().Origins);
 
             // mcp 命令已注册进命令行宿主
             Assert.Contains(host.Services.GetServices<ICommand>(), static c => c.Name == "mcp" && c.DescriptionKey == McpMessages.StdioDescription);

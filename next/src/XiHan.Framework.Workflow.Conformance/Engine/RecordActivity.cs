@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Nodes;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -53,6 +54,7 @@ public sealed class RecordActivity : ICompensableActivity
     {
         ArgumentNullException.ThrowIfNull(context);
         _log.RecordExecution(context.Instance.Id, context.Node.Id, context.NodeInstance.Attempt);
+        _log.RecordOrigin(context.Invocation.GetOrigin().TryGetValue(out var origin) ? origin : null);
         if (context.NodeInstance.Attempt <= context.Property(FailTimesProperty, 0))
         {
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", TypeName), ("reason", "flaky")))));

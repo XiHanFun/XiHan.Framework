@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
@@ -69,6 +70,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(["start", "a", "b", "end"], nodes.Select(static node => node.NodeId));
         Assert.All(nodes, node => Assert.Equal(WorkflowNodeInstanceStatus.Completed, node.Status));
         Assert.Equal([(started.Id, "a", 1)], log.Executed);
+        Assert.Equal([new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = RecordActivity.TypeName }], log.Origins);
         Assert.Empty(await host.BookmarksAsync(started.Id).ConfigureAwait(false));
 
         var topics = log.Events.Where(pending => pending.Data.InstanceId == started.Id).Select(static pending => pending.Topic).ToList();

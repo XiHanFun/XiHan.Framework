@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
@@ -41,6 +42,11 @@ public sealed class ConformanceLog : IMessagePublisher
     private readonly List<(string Topic, WorkflowEventData Data)> _events = [];
 
     /// <summary>
+    /// 活动执行时调用上下文里的来源。
+    /// </summary>
+    private readonly List<InvocationOrigin?> _origins = [];
+
+    /// <summary>
     /// 执行过的节点。
     /// </summary>
     public IReadOnlyList<(string InstanceId, string NodeId, int Attempt)> Executed
@@ -50,6 +56,20 @@ public sealed class ConformanceLog : IMessagePublisher
             lock (_lock)
             {
                 return _executed.ToList();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 活动执行时调用上下文里的来源（RFC-0003），按执行顺序；没有来源记 <see langword="null"/>。
+    /// </summary>
+    public IReadOnlyList<InvocationOrigin?> Origins
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _origins.ToList();
             }
         }
     }
@@ -109,6 +129,17 @@ public sealed class ConformanceLog : IMessagePublisher
         lock (_lock)
         {
             _executed.Add((instanceId, nodeId, attempt));
+        }
+    }
+
+    /// <summary>
+    /// 记一次活动执行的调用来源。
+    /// </summary>
+    public void RecordOrigin(InvocationOrigin? origin)
+    {
+        lock (_lock)
+        {
+            _origins.Add(origin);
         }
     }
 

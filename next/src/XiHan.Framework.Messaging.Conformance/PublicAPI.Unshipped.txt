@@ -30,6 +30,8 @@ XiHan.Framework.Messaging.Conformance.ReceivedMessage.Deconstruct(out XiHan.Fram
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Delivery.get -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Delivery.init -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Equals(XiHan.Framework.Messaging.Conformance.ReceivedMessage? other) -> bool
+XiHan.Framework.Messaging.Conformance.ReceivedMessage.Origin.get -> XiHan.Framework.Kernel.Pipeline.InvocationOrigin?
+XiHan.Framework.Messaging.Conformance.ReceivedMessage.Origin.init -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.ReceivedMessage(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! Delivery, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Baggage, string! TraceId) -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.get -> string!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.init -> void

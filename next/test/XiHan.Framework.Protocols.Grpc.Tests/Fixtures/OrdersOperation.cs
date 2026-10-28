@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 
@@ -14,6 +15,7 @@ internal sealed class OrdersOperation : IOperation<OrderRequest, OrderReply>
     /// <inheritdoc />
     public ValueTask<Result<OrderReply>> HandleAsync(OrderRequest request, InvocationContext context)
     {
+        context.Services.GetService<OriginLog>()?.Record(context);
         if (request.Name == "fail")
         {
             return ValueTask.FromResult<Result<OrderReply>>(Error.Conflict("ORDERS_CONFLICT_001", "orders.order.rejected"));
