@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 
 namespace XiHan.Framework.Hosting.AspNetCore;
 
@@ -71,14 +72,25 @@ public sealed record ProblemResponse(
             "VALIDATION" => StatusCodes.Status400BadRequest,
             "NOTFOUND" => StatusCodes.Status404NotFound,
             "CONFLICT" => StatusCodes.Status409Conflict,
-            // SECURITY_DENIED_001 是“未认证”，按语义给 401；其余 DENIED 都是已认证但无权限，给 403
-            "DENIED" => string.Equals(error.Code, "SECURITY_DENIED_001", StringComparison.Ordinal) ? StatusCodes.Status401Unauthorized : StatusCodes.Status403Forbidden,
+            // 认证失败给 401：SECURITY_DENIED_001 未认证、SECURITY_DENIED_003 凭据无效 / 过期 / 签名不符（RFC 6750 §3.1 的 invalid_token）；
+            // 其余 DENIED 都是已认证但无权限，给 403。客户端与网关按 401 触发刷新、按 403 判定越权
+            "DENIED" => IsAuthenticationFailure(error) ? StatusCodes.Status401Unauthorized : StatusCodes.Status403Forbidden,
             "UNAVAILABLE" => StatusCodes.Status503ServiceUnavailable,
             "TIMEOUT" => StatusCodes.Status504GatewayTimeout,
             "CANCELLED" => StatusCodes.Status408RequestTimeout,
             // 未知 KIND（含 UNEXPECTED 与内核 HOSTING 等）一律视为服务端错误
             _ => StatusCodes.Status500InternalServerError,
         };
+    }
+
+    /// <summary>
+    /// 是否认证失败（HTTP 401）：<see cref="SecurityErrors.NotAuthenticated"/>（未认证）或 <see cref="SecurityErrors.InvalidCredential"/>（凭据无效、过期或签名不符）。
+    /// </summary>
+    public static bool IsAuthenticationFailure(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return string.Equals(error.Code, SecurityErrors.NotAuthenticated, StringComparison.Ordinal)
+            || string.Equals(error.Code, SecurityErrors.InvalidCredential, StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Hosting.AspNetCore.Health;
 using XiHan.Framework.Kernel;
@@ -16,6 +17,7 @@ using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
 using XiHan.Framework.Security.Abstractions.Authorization;
 
 namespace XiHan.Framework.Hosting.AspNetCore;
@@ -147,6 +149,16 @@ public static class ApplicationBuilderExtensions
         var problem = ProblemResponse.FromError(error, httpContext.Request.Path.ToString(), traceId, detail, translate);
         httpContext.Response.StatusCode = problem.Status;
         httpContext.Response.ContentType = "application/problem+json";
+        // 401 带质询：凭据无效时质询被拒的方案（Bearer 带 error="invalid_token"），没有凭据时质询全部已装配的方案
+        if (problem.Status == StatusCodes.Status401Unauthorized)
+        {
+            var presented = context?.GetCredential() ?? Maybe.None<AuthenticationCredential>();
+            var schemes = httpContext.RequestServices.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme);
+            foreach (var challenge in AuthenticationChallenge.For(error, presented, schemes))
+            {
+                httpContext.Response.Headers.Append(HeaderNames.WWWAuthenticate, challenge);
+            }
+        }
         // 手写序列化：details 的值是运行期才知道类型的标量，不经源生成上下文的 object 分发
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))

@@ -84,6 +84,7 @@ static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator !=(XiHa
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FieldErrorsOf(XiHan.Framework.Primitives.Error! error, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>! translate) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>? translate = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.IsAuthenticationFailure(XiHan.Framework.Primitives.Error! error) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ScalarDetailsOf(XiHan.Framework.Primitives.Error! error) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.ProblemResponse? left, XiHan.Framework.Hosting.AspNetCore.ProblemResponse? right) -> bool

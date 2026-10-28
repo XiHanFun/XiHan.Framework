@@ -1,12 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Security.Claims;
-using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -26,17 +22,17 @@ public sealed class JwtAuthenticationTests
     /// <summary>
     /// 测试用对称密钥；满足最小长度。
     /// </summary>
-    private const string Secret = "unit-test-secret-key-with-at-least-32-bytes!";
+    private const string Secret = JwtTokens.Secret;
 
     /// <summary>
     /// 测试用签发者。
     /// </summary>
-    private const string Issuer = "https://issuer.test";
+    private const string Issuer = JwtTokens.Issuer;
 
     /// <summary>
     /// 测试用受众。
     /// </summary>
-    private const string Audience = "api";
+    private const string Audience = JwtTokens.Audience;
 
     /// <summary>
     /// 严格选项：校验签发者与受众，时钟偏移为零。
@@ -47,28 +43,7 @@ public sealed class JwtAuthenticationTests
     /// 签发 HS256 令牌；默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
     /// </summary>
     private static string CreateToken(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
-    {
-        var identity = new ClaimsIdentity();
-        if (subject is not null)
-        {
-            identity.AddClaim(new Claim("sub", subject));
-        }
-
-        foreach (var (type, value) in claims)
-        {
-            identity.AddClaim(new Claim(type, value));
-        }
-
-        return new JsonWebTokenHandler { SetDefaultTimesOnTokenCreation = false }.CreateToken(new SecurityTokenDescriptor
-        {
-            Issuer = issuer,
-            Audience = audience,
-            Subject = identity,
-            NotBefore = DateTime.UtcNow.AddMinutes(-5),
-            Expires = DateTime.UtcNow.Add(lifetime ?? TimeSpan.FromMinutes(10)),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256),
-        });
-    }
+        => JwtTokens.Create(subject, secret, issuer, audience, lifetime, claims);
 
     /// <summary>
     /// 用给定选项（默认严格选项）认证 Bearer 令牌。

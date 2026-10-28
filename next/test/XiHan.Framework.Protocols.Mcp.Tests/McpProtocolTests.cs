@@ -290,9 +290,12 @@ public sealed class McpProtocolTests
         Assert.True(bob.GetProperty("isError").GetBoolean());
         Assert.StartsWith("SECURITY_DENIED_004: ", bob.GetProperty("content")[0].GetProperty("text").GetString(), StringComparison.Ordinal);
 
-        // 凭据无效：外层管道在解析 JSON-RPC 之前就拒绝整个请求
-        var (status, text) = await PostAsync(client, Rpc("ping"), ("Authorization", "ApiKey nope"));
-        Assert.Equal(HttpStatusCode.Forbidden, status);
-        Assert.Equal("SECURITY_DENIED_003", Root(text).GetProperty("code").GetString());
+        // 凭据无效：外层管道在解析 JSON-RPC 之前就拒绝整个请求，认证失败是 401 并质询被拒的方案
+        using var invalid = new HttpRequestMessage(HttpMethod.Post, "/mcp") { Content = new StringContent(Rpc("ping"), Encoding.UTF8, "application/json") };
+        invalid.Headers.TryAddWithoutValidation("Authorization", "ApiKey nope");
+        using var rejected = await client.SendAsync(invalid);
+        Assert.Equal(HttpStatusCode.Unauthorized, rejected.StatusCode);
+        Assert.Equal(["ApiKey"], rejected.Headers.WwwAuthenticate.Select(static h => h.ToString()));
+        Assert.Equal("SECURITY_DENIED_003", Root(await rejected.Content.ReadAsStringAsync()).GetProperty("code").GetString());
     }
 }

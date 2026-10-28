@@ -16,7 +16,7 @@
 context.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));   // 宿主或操作契约在 Authorize 阶段之前设置
 ```
 
-认证与授权失败都以 `Result` 返回，宿主翻译为 401 / 403；处理器内部的基础设施失败抛异常。
+认证与授权失败都以 `Result` 返回，宿主翻译为 401 / 403：`SECURITY_DENIED_001`（未认证）与 `SECURITY_DENIED_003`（凭据无效、过期或签名不符）是 401 并带 `WWW-Authenticate`（Bearer 被拒时为 `Bearer error="invalid_token"`），其余 DENIED 是 403（ADR-0042）；处理器内部的基础设施失败抛异常。
 
 ## 依赖方向
 

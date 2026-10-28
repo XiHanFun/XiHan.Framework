@@ -167,8 +167,9 @@ public sealed class GrpcProtocolTests
         Assert.Equal(StatusCode.PermissionDenied, bob.StatusCode);
         Assert.Equal("SECURITY_DENIED_004", bob.Trailers.GetValue("xihan-error-code"));
 
+        // 凭据无效也是认证失败：与 HTTP 的 401 对应为 Unauthenticated，不是 PermissionDenied
         var invalid = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", request, ("authorization", "ApiKey nope")).ResponseAsync);
-        Assert.Equal(StatusCode.PermissionDenied, invalid.StatusCode);
+        Assert.Equal(StatusCode.Unauthenticated, invalid.StatusCode);
         Assert.Equal("SECURITY_DENIED_003", invalid.Trailers.GetValue("xihan-error-code"));
 
         using var alice = Call(channel, "Orders", "Create", request, ("authorization", "ApiKey dev-alice-key"));
