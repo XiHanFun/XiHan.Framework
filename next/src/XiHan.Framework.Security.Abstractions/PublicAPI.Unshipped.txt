@@ -239,6 +239,24 @@ XiHan.Framework.Security.Abstractions.Conditions.IConditionEvaluator.EvaluateAsy
 XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource
 XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource.GetAsync(string! canonicalName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!>
 XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource.MemoizingConditionAttributeSource(XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource! inner) -> void
+XiHan.Framework.Security.Abstractions.Network.IIpRegionResolver
+XiHan.Framework.Security.Abstractions.Network.IIpRegionResolver.Resolve(System.Net.IPAddress! address) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Network.IpRegion!>
+XiHan.Framework.Security.Abstractions.Network.IpRegion
+XiHan.Framework.Security.Abstractions.Network.IpRegion.<Clone>$() -> XiHan.Framework.Security.Abstractions.Network.IpRegion!
+XiHan.Framework.Security.Abstractions.Network.IpRegion.City.get -> string?
+XiHan.Framework.Security.Abstractions.Network.IpRegion.City.init -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Country.get -> string?
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Country.init -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.CountryCode.get -> string?
+XiHan.Framework.Security.Abstractions.Network.IpRegion.CountryCode.init -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Deconstruct(out string? Country, out string? Province, out string? City, out string? Isp, out string? CountryCode) -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Equals(XiHan.Framework.Security.Abstractions.Network.IpRegion? other) -> bool
+XiHan.Framework.Security.Abstractions.Network.IpRegion.IpRegion(string? Country, string? Province, string? City, string? Isp, string? CountryCode) -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Isp.get -> string?
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Isp.init -> void
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Location.get -> string!
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Province.get -> string?
+XiHan.Framework.Security.Abstractions.Network.IpRegion.Province.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Deconstruct(out string! Kind, out string! Id) -> void
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Equals(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject other) -> bool
@@ -286,6 +304,7 @@ const XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.User = "use
 const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.All = "*" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication = "security.authentication" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityCapabilities.IpRegion = "security.ip-region" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Version = 1 -> int
 const XiHan.Framework.Security.Abstractions.SecurityErrors.CapacityExceeded = "SECURITY_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeInvalid = "SECURITY_VALIDATION_003" -> string!
@@ -371,6 +390,9 @@ override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluati
 override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Network.IpRegion.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Network.IpRegion.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Network.IpRegion.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Equals(object? obj) -> bool
@@ -418,6 +440,8 @@ static XiHan.Framework.Security.Abstractions.Conditions.ConditionServiceCollecti
 static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Empty.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionSet!
 static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? right) -> bool
 static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? right) -> bool
+static XiHan.Framework.Security.Abstractions.Network.IpRegion.operator !=(XiHan.Framework.Security.Abstractions.Network.IpRegion? left, XiHan.Framework.Security.Abstractions.Network.IpRegion? right) -> bool
+static XiHan.Framework.Security.Abstractions.Network.IpRegion.operator ==(XiHan.Framework.Security.Abstractions.Network.IpRegion? left, XiHan.Framework.Security.Abstractions.Network.IpRegion? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForRole(string! role) -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForUser(string! userId) -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator !=(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject left, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject right) -> bool

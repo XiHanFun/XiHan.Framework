@@ -1,0 +1,24 @@
+#nullable enable
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.<Clone>$() -> XiHan.Framework.Security.Ip2Region.Ip2RegionOptions!
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.Equals(XiHan.Framework.Security.Ip2Region.Ip2RegionOptions? other) -> bool
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.Ip2RegionOptions() -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.V4Database.get -> string!
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.V4Database.init -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.V6Database.get -> string!
+XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.V6Database.init -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionResolver
+XiHan.Framework.Security.Ip2Region.Ip2RegionResolver.Dispose() -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionResolver.Ip2RegionResolver(XiHan.Framework.Security.Ip2Region.Ip2RegionOptions! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionResolver.Resolve(System.Net.IPAddress! address) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Network.IpRegion!>
+XiHan.Framework.Security.Ip2Region.Ip2RegionSecurityFeature
+XiHan.Framework.Security.Ip2Region.Ip2RegionSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionSecurityFeature.Ip2RegionSecurityFeature() -> void
+XiHan.Framework.Security.Ip2Region.Ip2RegionSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+const XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.ConfigurationSection = "XiHan:Security:Ip2Region" -> string!
+override XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.GetHashCode() -> int
+override XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.ToString() -> string!
+static XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.Ip2Region.Ip2RegionOptions!
+static XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.operator !=(XiHan.Framework.Security.Ip2Region.Ip2RegionOptions? left, XiHan.Framework.Security.Ip2Region.Ip2RegionOptions? right) -> bool
+static XiHan.Framework.Security.Ip2Region.Ip2RegionOptions.operator ==(XiHan.Framework.Security.Ip2Region.Ip2RegionOptions? left, XiHan.Framework.Security.Ip2Region.Ip2RegionOptions? right) -> bool
