@@ -33,6 +33,16 @@ public sealed record SqlSugarPersistenceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// 哪些实体的仓储写入经 SqlSugar 差异日志（<c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>），应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收；缺省一个都不开。
+    /// 开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置。
+    /// </summary>
+    public Func<Type, bool> DiffLog
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = static _ => false;
+
+    /// <summary>
     /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </summary>
     public static SqlSugarPersistenceOptions FromConfiguration(IConfiguration configuration)

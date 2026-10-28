@@ -47,3 +47,4 @@
 | [0041](0041-程序集级Expose缺省与只读声明.md) | 程序集级 `[assembly: OperationDefaults(Expose = …)]` 给没写 `Expose` 的操作定缺省，生成器落定进契约；`XHG004`（缺省关闭）报告依赖隐式 `Expose.All` 的操作；`[Operation(ReadOnly = true)]` 声明只读的非标准动词，`OperationContract.IsReadOnly` 驱动 MCP 只读提示与 HTTP `GET …:{verb}`；写动词声明只读报 `XHG005` | 已采纳 |
 | [0042](0042-凭据无效映射401.md) | 凭据无效（`SECURITY_DENIED_003`：过期、签名不符、格式错）与未认证一样是认证失败：HTTP 401（原为 403）、gRPC `Unauthenticated`（原为 `PermissionDenied`）；401 带 `WWW-Authenticate`——凭据无效时质询被拒的方案（Bearer 为 `error="invalid_token"`），没有凭据时质询全部已装配的方案 | 已采纳 |
 | [0043](0043-调用来源.md) | 调用来源 `InvocationOrigin`：协议适配器与派发器建上下文时写入协议（http / grpc / mcp / cli / messaging / job / workflow）、请求目标、远端地址、User-Agent 与来源页，Kernel 的 `GetOrigin()` 读取；远端地址取转发头改写后的连接地址，MCP 子调用沿用外层 HTTP 请求；不跨进程传播 | 已采纳 |
+| [0044](0044-SqlSugar仓储差异日志.md) | SqlSugar 仓储写入按实体开启差异日志：`SqlSugarPersistenceFeature.DiffLog` 谓词（缺省关）选出的实体走泛型构建器带 `EnableDiffLogEvent`，含批量、软删除与分表（分表删除由框架按表分组），业务数据 `SqlSugarDiffLogData` 带实体类型与作用域服务，回调在写入后同步触发、不等提交 | 已采纳 |

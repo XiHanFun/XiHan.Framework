@@ -19,9 +19,14 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。
 /// 实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。
 /// 带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。
+/// <see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
 /// </summary>
+/// <param name="unitOfWork">本作用域的工作单元。</param>
+/// <param name="timeProvider">审计字段使用的时间源。</param>
+/// <param name="options">Provider 选项；据此决定本实体是否带差异日志。</param>
+/// <param name="services">本作用域的服务提供器；随差异日志交给回调。</param>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
+public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfWork, TimeProvider timeProvider, SqlSugarPersistenceOptions options, IServiceProvider services) : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
@@ -41,6 +46,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     private static readonly bool _isSplitTable = typeof(TEntity).IsDefined(typeof(SplitTableAttribute), inherit: false);
 
     /// <summary>
+    /// 本实体带差异日志的写入入口；按闭合泛型在首次需要时构造一次。
+    /// </summary>
+    private static IDiffLoggedWrites? _diffLoggedWrites;
+
+    /// <summary>
     /// 本作用域的工作单元；提供客户端、事务与当前租户。
     /// </summary>
     private readonly SqlSugarUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
@@ -49,6 +59,13 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// 审计字段使用的时间源。
     /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+
+    /// <summary>
+    /// 差异日志的业务数据；本实体没有开启差异日志时为 <see langword="null"/>。
+    /// </summary>
+    private readonly SqlSugarDiffLogData? _diffLog = (options ?? throw new ArgumentNullException(nameof(options))).DiffLog(typeof(TEntity))
+        ? new SqlSugarDiffLogData(typeof(TEntity), services ?? throw new ArgumentNullException(nameof(services)))
+        : null;
 
     /// <summary>
     /// 本实体所用的连接；首次使用时由工作单元按落点规则选出，之后复用（同一工作单元内落点稳定）。
@@ -513,19 +530,46 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// 插入单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值落表（列表按表分组，缺少的分表由 SqlSugar 建出）。
     /// </summary>
     private Task<int> InsertAsync(object entityOrList)
-        => _isSplitTable ? Client.InsertableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.InsertableByObject(entityOrList).ExecuteCommandAsync();
+    {
+        if (_diffLog is { } diffLog)
+        {
+            return DiffLogged.InsertAsync(Client, entityOrList, _isSplitTable, diffLog);
+        }
+
+        return _isSplitTable ? Client.InsertableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.InsertableByObject(entityOrList).ExecuteCommandAsync();
+    }
 
     /// <summary>
     /// 按主键整行更新单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表，所以分表字段写入后不要再改。
     /// </summary>
     private Task<int> UpdateAsync(object entityOrList)
-        => _isSplitTable ? Client.UpdateableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.UpdateableByObject(entityOrList).ExecuteCommandAsync();
+    {
+        if (_diffLog is { } diffLog)
+        {
+            return DiffLogged.UpdateAsync(Client, entityOrList, _isSplitTable, diffLog);
+        }
+
+        return _isSplitTable ? Client.UpdateableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.UpdateableByObject(entityOrList).ExecuteCommandAsync();
+    }
 
     /// <summary>
     /// 按主键物理删除单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表。
     /// </summary>
     private Task<int> DeleteAsync(object entityOrList)
-        => _isSplitTable ? Client.DeleteableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.DeleteableByObject(entityOrList).ExecuteCommandAsync();
+    {
+        if (_diffLog is { } diffLog)
+        {
+            return DiffLogged.DeleteAsync(Client, entityOrList, _isSplitTable, diffLog);
+        }
+
+        return _isSplitTable ? Client.DeleteableByObject(entityOrList).SplitTable().ExecuteCommandAsync() : Client.DeleteableByObject(entityOrList).ExecuteCommandAsync();
+    }
+
+    /// <summary>
+    /// 本实体带差异日志的写入入口：按闭合类型构造 <see cref="DiffLoggedWrites{T}"/>，实体没有公开无参构造函数时抛出（SqlSugar 的按对象入口同样要求）。
+    /// </summary>
+    private static IDiffLoggedWrites DiffLogged
+        => _diffLoggedWrites ??= (IDiffLoggedWrites)Activator.CreateInstance(typeof(DiffLoggedWrites<>).MakeGenericType(typeof(TEntity)))!;
 
     /// <summary>
     /// 写入前：要求活动工作单元、拒绝只读、确保事务已开启。
