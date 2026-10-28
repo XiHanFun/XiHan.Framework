@@ -49,3 +49,4 @@
 | [0043](0043-调用来源.md) | 调用来源 `InvocationOrigin`：协议适配器与派发器建上下文时写入协议（http / grpc / mcp / cli / messaging / job / workflow）、请求目标、远端地址、User-Agent 与来源页，Kernel 的 `GetOrigin()` 读取；远端地址取转发头改写后的连接地址，MCP 子调用沿用外层 HTTP 请求；不跨进程传播 | 已采纳 |
 | [0044](0044-SqlSugar仓储差异日志.md) | SqlSugar 仓储写入按实体开启差异日志：`SqlSugarPersistenceFeature.DiffLog` 谓词（缺省关）选出的实体走泛型构建器带 `EnableDiffLogEvent`，含批量、软删除与分表（分表删除由框架按表分组），业务数据 `SqlSugarDiffLogData` 带实体类型与作用域服务，回调在写入后同步触发、不等提交 | 已采纳 |
 | [0045](0045-授予来源.md) | 授予来源 `IPermissionGrantSource`：与收窄过滤器对称，给出存储之外的额外授予（角色继承、限时委托），检查器在存储没命中时按登记顺序查询，命中后照常经全部过滤器收窄；只能加、不能拿走 | 已采纳 |
+| [0046](0046-条件引擎.md) | 条件引擎移入 `Security.Abstractions.Conditions`：4.x 的十五个运算符、七种值种类、值语法与求值语义原样保留（整数值是持久化契约），编译错误与求值原因改为带错误码与消息键的 `Error`（十种区域），属性登记经容器（`AddConditionAttributes`），去掉 Options 与 `Default` 前缀 | 已采纳 |
