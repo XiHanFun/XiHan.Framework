@@ -43,3 +43,4 @@
 | [0037](0037-DateTimeOffset读取按Kind还原.md) | `Persistence.SqlSugar` 的 `DateTimeOffsetConverter` 读取按 `DateTime.Kind` 还原：Npgsql legacy 时间戳模式把 `timestamptz` 换算成本地时间、Kind=Local 交出，原先一律当 UTC 多出本地时区偏移且经实体回写逐次累加；一致性套件新增 PostgreSQL 门控运行（`XIHAN_TEST_POSTGRES`），CI 加 PostgreSQL 服务 | 已采纳 |
 | [0038](0038-消息键首段放开下划线.md) | 消息键文法首段放开成 `[a-z][a-z0-9_]*`（与后段同形）：OpenAPI / MCP / AI 按 `<操作 ID>.description`（`-` 换 `_`）取说明，资源段带连字符的操作（`tenant-members.list`）原先派生的键 `tenant_members.list.description` 进不了目录也取不到摘要 | 已采纳 |
 | [0039](0039-权限收窄过滤器.md) | 权限收窄过滤器 `IPermissionFilter`：`PermissionChecker` 在授予命中之后按登记顺序逐个调用（AND），任一拒绝即不持有；匿名与未命中不调用；套餐白名单、显式拒绝、委托到期据此实现，不再需要替换 `IPermissionChecker` | 已采纳 |
+| [0040](0040-InitTables加列缺省值.md) | `InitTables` 给已有行的表加非可空列：PostgreSQL 上 `SqlSugarConventions` 给非可空的数值 / 枚举 / 布尔 / Guid 列配 CLR 缺省值，SqlSugar 据此回填旧行；SQLite 不配（本来加可空列），非可空字符串、日期时间列与其他数据库写明不受支持；约定不碰 BCL 类型，修正字典更新里名为 `Count` 的列被丢掉 | 已采纳 |
