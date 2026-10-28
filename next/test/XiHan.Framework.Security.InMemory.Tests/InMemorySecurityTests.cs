@@ -120,6 +120,44 @@ public sealed class InMemorySecurityTests
     }
 
     [Fact]
+    public async Task Feature_AppliesRegisteredPermissionFilters_AfterTheGrantMatches()
+    {
+        // 应用按单例登记的收窄过滤器被 Provider 登记的检查器接上：editor 持 orders.read，但白名单是空的
+        var filter = new DenyAllPermissionFilter();
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>(),
+            _configuration,
+            services => services.AddSingleton<IPermissionFilter>(filter));
+
+        var (narrowed, _) = await InvokeAsync(host, "ApiKey dev-alice-key", AuthorizationRequirement.Permission("orders.read"));
+        Assert.Equal(SecurityErrors.PermissionMissing, narrowed.Error?.Code);
+        Assert.Equal(["orders.read"], filter.Permissions);
+
+        // 授予未命中（alice 没有 orders.delete）与匿名都不调用过滤器
+        await InvokeAsync(host, "ApiKey dev-alice-key", AuthorizationRequirement.Permission("orders.delete"));
+        await InvokeAsync(host, null, AuthorizationRequirement.Permission("orders.read"));
+        Assert.Equal(["orders.read"], filter.Permissions);
+    }
+
+    /// <summary>
+    /// 一律拒绝并记录被问到的权限码的过滤器。
+    /// </summary>
+    private sealed class DenyAllPermissionFilter : IPermissionFilter
+    {
+        /// <summary>
+        /// 被问到的权限码，按调用顺序。
+        /// </summary>
+        public List<string> Permissions { get; } = [];
+
+        /// <inheritdoc />
+        public ValueTask<bool> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+        {
+            Permissions.Add(permission);
+            return ValueTask.FromResult(false);
+        }
+    }
+
+    [Fact]
     public async Task Feature_WhenExplicitAuthenticationProviderWins_RegistersOnlyAuthorization()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.security.fake-jwt", provides: ["security.authentication@1"], requires: ["kernel.hosting@1"]))), _configuration);

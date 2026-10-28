@@ -69,6 +69,52 @@ public sealed class AuthorizationTests
     }
 
     [Fact]
+    public async Task PermissionChecker_NarrowsGrantedPermissions_ThroughEveryFilter()
+    {
+        // 套餐白名单式的收窄：只放行 orders.read 与 reports.read；第二个过滤器全部放行，只用来证明逐个 AND
+        var edition = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal) { "orders.read", "reports.read" });
+        var audit = new RecordingPermissionFilter(allowed: null);
+        var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition, audit]);
+        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
+        var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);
+
+        // 授予命中且全部放行 → 持有；两个过滤器按登记顺序都被调用
+        Assert.True(await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None));
+        Assert.Equal([("alice", "orders.read")], edition.Calls);
+        Assert.Equal([("alice", "orders.read")], audit.Calls);
+
+        // 持 * 的主体也被收窄：过滤器收到的是具体权限码，拒绝即不持有，后面的过滤器不再调用
+        Assert.False(await checker.HasPermissionAsync(root, "orders.delete", CancellationToken.None));
+        Assert.Equal(("root", "orders.delete"), edition.Calls[^1]);
+        Assert.Single(audit.Calls);
+        Assert.True(await checker.HasPermissionAsync(root, "reports.read", CancellationToken.None));
+
+        // 授予未命中与匿名主体不调用过滤器：过滤器只能拿走权限、不能凭空给出
+        var before = edition.Calls.Count;
+        Assert.False(await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None));
+        Assert.False(await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None));
+        Assert.Equal(before, edition.Calls.Count);
+
+        // 没有过滤器与过滤器为空集合时行为同原来；集合里有 null 是编程错误
+        Assert.True(await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), []).HasPermissionAsync(root, "orders.delete", CancellationToken.None));
+        Assert.Throws<ArgumentException>(() => new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition, null!]));
+    }
+
+    [Fact]
+    public async Task PermissionPolicy_ReportsPermissionMissing_WhenAFilterNarrowsTheGrant()
+    {
+        var edition = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal));
+        var catalog = new PolicyCatalog([new AuthenticatedPolicy()], SecurityHosts.Registry(SecurityHosts.OrdersRead), new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition]));
+        var policy = catalog.Find(PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)).ValueOrThrow();
+
+        // 授予命中（editor 持 orders.read）但过滤器拒绝：与缺权限同一个错误码，调用方不需要区分"没授予"与"被收窄"
+        var result = await policy.EvaluateAsync(new AuthorizationRequest(new SecurityContext(SecurityHosts.Alice("editor"), null), PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)), CancellationToken.None);
+        Assert.False(result.IsAllowed);
+        Assert.Equal(SecurityErrors.PermissionMissing, result.Reason?.Code);
+        Assert.Single(edition.Calls);
+    }
+
+    [Fact]
     public void PolicyCatalog_FindsRegistered_AndDynamicPermissionPolicies_OnlyForDefinedPermissions()
     {
         var catalog = new PolicyCatalog([new AuthenticatedPolicy()], SecurityHosts.Registry(SecurityHosts.OrdersRead), new PermissionChecker(new DictionaryGrantStore(), new SecurityOptions()));
