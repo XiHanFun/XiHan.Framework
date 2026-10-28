@@ -22,6 +22,11 @@ public static class SecurityCapabilities
     public const string Authorization = "security.authorization";
 
     /// <summary>
+    /// IP 归属地解析：<see cref="Network.IIpRegionResolver"/>。
+    /// </summary>
+    public const string IpRegion = "security.ip-region";
+
+    /// <summary>
     /// 当前接口版本。
     /// </summary>
     public const int Version = 1;
