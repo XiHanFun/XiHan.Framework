@@ -47,6 +47,26 @@ public static class SecurityErrors
     public const string GrantNotFound = "SECURITY_NOTFOUND_002";
 
     /// <summary>
+    /// 条件无效：子句编译出错（属性未登记、运算符与值种类不搭配、条件值解析不了）。
+    /// </summary>
+    public const string ConditionInvalid = "SECURITY_VALIDATION_002";
+
+    /// <summary>
+    /// 条件属性的值不是登记的值种类。
+    /// </summary>
+    public const string ConditionAttributeInvalid = "SECURITY_VALIDATION_003";
+
+    /// <summary>
+    /// 取不到条件属性的值。
+    /// </summary>
+    public const string ConditionAttributeMissing = "SECURITY_NOTFOUND_003";
+
+    /// <summary>
+    /// 条件属性暂不可得，补齐后再求值。
+    /// </summary>
+    public const string ConditionAttributePending = "SECURITY_UNAVAILABLE_004";
+
+    /// <summary>
     /// 身份或授予存储不可达。
     /// </summary>
     public const string StoreUnavailable = "SECURITY_UNAVAILABLE_001";

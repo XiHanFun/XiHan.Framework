@@ -35,6 +35,210 @@ XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Security.IPolicy!>
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.Names.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.PolicyCatalog(System.Collections.Generic.IEnumerable<XiHan.Framework.Kernel.Security.IPolicy!>! policies, XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker! checker) -> void
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause.Error.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause.Resolution.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution?
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause.Source.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionClause!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Clauses.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause!>!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Clauses.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.CompiledConditionGroup(string? Key, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause!>! Clauses) -> void
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Deconstruct(out string? Key, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionClause!>! Clauses) -> void
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Equals(XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Key.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Key.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet.Errors.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError!>!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup!>!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet.IsEmpty.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet.ReferencedAttributes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet.UsesAlias.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Aliases.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.ConditionAttributeDescriptor(string! Name, XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind Kind, bool IsMultiValued = false, string? DisplayName = null, System.Collections.Generic.IReadOnlyList<string!>? Aliases = null) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Deconstruct(out string! Name, out XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind Kind, out bool IsMultiValued, out string? DisplayName, out System.Collections.Generic.IReadOnlyList<string!>? Aliases) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.DisplayName.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.DisplayName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.IsFamily.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.IsMultiValued.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.IsMultiValued.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Kind.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Kind.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Name.get -> string!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Name.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeRegistry
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeRegistry.Attributes.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeRegistry.ConditionAttributeRegistry(System.Collections.Generic.IEnumerable<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!>! attributes) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeRegistry.TryResolve(string! attributeName, out XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? resolution) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.CanonicalName.get -> string!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.CanonicalName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.ConditionAttributeResolution(string! CanonicalName, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor! Descriptor, bool IsAlias) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.Deconstruct(out string! CanonicalName, out XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor! Descriptor, out bool IsAlias) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.Descriptor.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.Descriptor.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.IsAlias.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.IsAlias.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue.State.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue.Values.get -> System.Collections.Generic.IReadOnlyList<object!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState.Deferred = 2 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState.Missing = 1 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState
+XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState.Present = 0 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValueState
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionClause!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.AttributeName.get -> string!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.AttributeName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.ConditionClause(string! AttributeName, XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator Operator, string? Value, bool IsNegated = false, string? Key = null) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Deconstruct(out string! AttributeName, out XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator Operator, out string? Value, out bool IsNegated, out string? Key) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionClause? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.IsNegated.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.IsNegated.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Key.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Key.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Operator.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Operator.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Value.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Value.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.AttributeName.get -> string!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.AttributeName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.AttributeValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.AttributeValues.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.CanonicalName.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.CanonicalName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.ConditionClauseEvaluation(string? Key, string! AttributeName, string? CanonicalName, XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator Operator, bool IsNegated, string? Value, XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, System.Collections.Generic.IReadOnlyList<string!>! AttributeValues, XiHan.Framework.Primitives.Error? Reason) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Deconstruct(out string? Key, out string! AttributeName, out string? CanonicalName, out XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator Operator, out bool IsNegated, out string? Value, out XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, out System.Collections.Generic.IReadOnlyList<string!>! AttributeValues, out XiHan.Framework.Primitives.Error? Reason) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.IsNegated.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.IsNegated.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Key.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Key.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Operator.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Operator.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Outcome.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Outcome.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Reason.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Reason.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Value.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Value.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.AttributeName.get -> string!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.AttributeName.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.ClauseKey.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.ClauseKey.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.ConditionCompileError(string? ClauseKey, string! AttributeName, XiHan.Framework.Primitives.Error! Error) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.Deconstruct(out string? ClauseKey, out string! AttributeName, out XiHan.Framework.Primitives.Error! Error) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.Error.get -> XiHan.Framework.Primitives.Error!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.Error.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.AdditionalAttributes.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.AdditionalAttributes.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.ConditionCompileOptions() -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.TimeZone.get -> System.TimeZoneInfo!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.TimeZone.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompiler
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompiler.Compile(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet! conditions, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? options = null) -> XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionCompiler.ConditionCompiler(XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeRegistry! registry) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.ConditionEvaluationResult(XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation!>! Groups) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Deconstruct(out XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation!>! Groups) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Groups.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.IsMatched.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.IsPending.get -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Outcome.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Outcome.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluator.ConditionEvaluator() -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluator.EvaluateAsync(XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet! conditions, XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource! source, bool explain, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult!>
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Clauses.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClause!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Clauses.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.ConditionGroup(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClause!>! Clauses, string? Key = null) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClause!>! Clauses, out string? Key) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Key.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Key.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Clauses.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Clauses.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.ConditionGroupEvaluation(string? Key, XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation!>! Clauses) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Deconstruct(out string? Key, out XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome Outcome, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation!>! Clauses) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Key.get -> string?
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Key.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Outcome.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Outcome.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.Between = 10 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.Contains = 6 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.EndsWith = 12 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.Equals = 0 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.GreaterThan = 2 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.GreaterThanOrEquals = 3 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.In = 8 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.IsNotNull = 14 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.IsNull = 13 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.LessThan = 4 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.LessThanOrEquals = 5 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.NotContains = 7 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.NotEquals = 1 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.NotIn = 9 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator.StartsWith = 11 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOperatorRules
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome.Indeterminate = 2 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome.Matched = 0 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome.NotMatched = 1 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome.Pending = 3 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionOutcome
+XiHan.Framework.Security.Abstractions.Conditions.ConditionServiceCollectionExtensions
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.<Clone>$() -> XiHan.Framework.Security.Abstractions.Conditions.ConditionSet!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.ConditionSet(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup!>! Groups) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup!>! Groups) -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Equals(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? other) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup!>!
+XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Groups.init -> void
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.Boolean = 2 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.Date = 4 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.DateTime = 3 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.IpAddress = 6 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.Number = 1 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.String = 0 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind.TimeOfDay = 5 -> XiHan.Framework.Security.Abstractions.Conditions.ConditionValueKind
+XiHan.Framework.Security.Abstractions.Conditions.DictionaryConditionAttributeSource
+XiHan.Framework.Security.Abstractions.Conditions.DictionaryConditionAttributeSource.DictionaryConditionAttributeSource(System.Collections.Generic.IReadOnlyDictionary<string!, object?>! values) -> void
+XiHan.Framework.Security.Abstractions.Conditions.DictionaryConditionAttributeSource.GetAsync(string! canonicalName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!>
+XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeRegistry
+XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeRegistry.Attributes.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor!>!
+XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeRegistry.TryResolve(string! attributeName, out XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? resolution) -> bool
+XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource
+XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource.GetAsync(string! canonicalName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!>
+XiHan.Framework.Security.Abstractions.Conditions.IConditionCompiler
+XiHan.Framework.Security.Abstractions.Conditions.IConditionCompiler.Compile(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet! conditions, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? options = null) -> XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet!
+XiHan.Framework.Security.Abstractions.Conditions.IConditionEvaluator
+XiHan.Framework.Security.Abstractions.Conditions.IConditionEvaluator.EvaluateAsync(XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionSet! conditions, XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource! source, bool explain, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult!>
+XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource
+XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource.GetAsync(string! canonicalName, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!>
+XiHan.Framework.Security.Abstractions.Conditions.MemoizingConditionAttributeSource.MemoizingConditionAttributeSource(XiHan.Framework.Security.Abstractions.Conditions.IConditionAttributeSource! inner) -> void
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Deconstruct(out string! Kind, out string! Id) -> void
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Equals(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject other) -> bool
@@ -84,6 +288,10 @@ const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication 
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Version = 1 -> int
 const XiHan.Framework.Security.Abstractions.SecurityErrors.CapacityExceeded = "SECURITY_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeInvalid = "SECURITY_VALIDATION_003" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeMissing = "SECURITY_NOTFOUND_003" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributePending = "SECURITY_UNAVAILABLE_004" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionInvalid = "SECURITY_VALIDATION_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.GrantNotFound = "SECURITY_NOTFOUND_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.InvalidCredential = "SECURITY_DENIED_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.IssuerUnavailable = "SECURITY_UNAVAILABLE_003" -> string!
@@ -95,6 +303,24 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "S
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributeInvalid = "security.condition.attribute_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributeMissing = "security.condition.attribute_missing" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributePending = "security.condition.attribute_pending" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributeRequired = "security.condition.attribute_required" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributeUnknown = "security.condition.attribute_unknown" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionListElementInvalid = "security.condition.list_element_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionListElementUnsupported = "security.condition.list_element_unsupported" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionListEmpty = "security.condition.list_empty" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionListJsonInvalid = "security.condition.list_json_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionOperatorMismatch = "security.condition.operator_mismatch" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionOperatorMismatchMultiValued = "security.condition.operator_mismatch_multi_valued" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionOperatorUnsupported = "security.condition.operator_unsupported" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionRangeArity = "security.condition.range_arity" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionRangeObjectInvalid = "security.condition.range_object_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionRangeReversed = "security.condition.range_reversed" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionRangeValueInvalid = "security.condition.range_value_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionValueInvalid = "security.condition.value_invalid" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionValueRequired = "security.condition.value_required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantNotFound = "security.grant.not_found" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
@@ -112,6 +338,39 @@ override XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCred
 override XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Equals(object? obj) -> bool
@@ -129,6 +388,36 @@ static XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirem
 static XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement.operator ==(XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement? left, XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement? right) -> bool
 static XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.CodeOf(string! policyName) -> string?
 static XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.NameFor(string! permissionCode) -> string!
+static XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.operator !=(XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup? left, XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup.operator ==(XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup? left, XiHan.Framework.Security.Abstractions.Conditions.CompiledConditionGroup? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeResolution? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue.Deferred.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue.Missing.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue.Of(object? value) -> XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeValue!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionClause? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionClause? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionClause.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionClause? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionClause? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionClauseEvaluation? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileError? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.Default.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionCompileOptions? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionEvaluationResult? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionGroup? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionGroupEvaluation? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionOperatorRules.AllowedFor(XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator>!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionOperatorRules.IsAllowed(XiHan.Framework.Security.Abstractions.Conditions.ConditionOperator operator, XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor! descriptor) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionServiceCollectionExtensions.AddConditionAttributes(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params XiHan.Framework.Security.Abstractions.Conditions.ConditionAttributeDescriptor![]! attributes) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.Empty.get -> XiHan.Framework.Security.Abstractions.Conditions.ConditionSet!
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.operator !=(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? right) -> bool
+static XiHan.Framework.Security.Abstractions.Conditions.ConditionSet.operator ==(XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? left, XiHan.Framework.Security.Abstractions.Conditions.ConditionSet? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForRole(string! role) -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForUser(string! userId) -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator !=(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject left, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject right) -> bool

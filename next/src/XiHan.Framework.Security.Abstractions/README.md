@@ -11,6 +11,7 @@
 | `IPermissionGrantStore`、`PermissionGrant`、`GrantSubject`、`IPermissionChecker`、`PermissionChecker` | RBAC：用户与角色（来自 `role` 声明）的授予之并集，`*` 表示全部；租户专属授予只对该租户生效 |
 | `IPermissionFilter` | 权限收窄（ADR-0039）：授予命中之后 `PermissionChecker` 按登记顺序逐个调用，任一拒绝即不持有（权限策略返回 `SECURITY_DENIED_004`）；匿名与未命中不调用；收到的是具体权限码，持 `*` 也会被收窄。按单例登记：`services.AddSingleton<IPermissionFilter, EditionPermissionFilter>()`。用于套餐白名单、显式拒绝、委托到期；替换 `IPermissionChecker` 的实现须同样施加 |
 | `IPermissionGrantSource` | 授予来源（ADR-0045）：与收窄对称，给出主体在授予存储之外的额外授予（权限码或 `*`）。`PermissionChecker` 在用户与角色的存储授予都没命中时按登记顺序逐个查询，任一命中即算授予命中，之后照常经全部过滤器收窄；匿名不查询。按单例登记：`services.AddSingleton<IPermissionGrantSource, RoleInheritanceGrantSource>()`。用于角色继承、限时委托；替换 `IPermissionChecker` 的实现须同样并上 |
+| `Conditions` | 条件引擎（ADR-0046，RFC-0008「条件」）：`ConditionSet` / `ConditionGroup` / `ConditionClause`（组内且、组间或），十五个运算符与七种值种类（整数值是持久化契约），`ConditionOperatorRules` 搭配规则；`IConditionAttributeRegistry`（精确名 → 别名 → 最长前缀的族）、`IConditionCompiler`（编译错误 `SECURITY_VALIDATION_002`，消息键说明原因，出错子句保留）、`IConditionEvaluator`（命中 / 不命中 / 无法判定 / 待定，说明模式逐组逐子句）；属性来源 `IConditionAttributeSource` 由应用提供，自带 `DictionaryConditionAttributeSource`（试算）与 `MemoizingConditionAttributeSource`。`services.AddConditionAttributes(...)` 登记属性并确保三项单例服务 |
 | `SecurityOptions` | `RequireAuthentication`、`RoleClaim` |
 
 ```csharp
