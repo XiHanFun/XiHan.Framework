@@ -101,6 +101,42 @@ public sealed class AuthorizationTests
     }
 
     [Fact]
+    public async Task PermissionChecker_AddsGrantsFromSources_OnlyAfterTheStoreMisses_AndStillNarrows()
+    {
+        // 继承式的来源给 alice 加 orders.write，委托式的来源给 bob 加 *；过滤器不放行 orders.delete
+        var inherited = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["alice"] = ["orders.write"] });
+        var delegated = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["bob"] = [PermissionGrant.All] });
+        var narrowing = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal) { "orders.read", "orders.write", "reports.read" });
+        var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [narrowing], [inherited, delegated]);
+        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
+        var bob = new SecurityContext(new Principal("bob", "test"), null);
+
+        // 存储命中时不查来源
+        Assert.True(await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None));
+        Assert.Empty(inherited.Calls);
+
+        // 存储没命中：按登记顺序查来源，第一个命中即止；来源给出的授予同样经过滤器
+        Assert.True(await checker.HasPermissionAsync(alice, "orders.write", CancellationToken.None));
+        Assert.Equal(["alice"], inherited.Calls);
+        Assert.Empty(delegated.Calls);
+        Assert.Equal(("alice", "orders.write"), narrowing.Calls[^1]);
+
+        // 来源的 * 也只是授予命中，过滤器照常收窄；来源都没命中就不调用过滤器
+        Assert.True(await checker.HasPermissionAsync(bob, "reports.read", CancellationToken.None));
+        Assert.False(await checker.HasPermissionAsync(bob, "orders.delete", CancellationToken.None));
+        var filtered = narrowing.Calls.Count;
+        Assert.False(await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None));
+        Assert.Equal(filtered, narrowing.Calls.Count);
+        Assert.Equal(["bob", "bob", "alice"], delegated.Calls);
+
+        // 匿名主体不查来源；集合里有 null 是编程错误
+        var asked = inherited.Calls.Count;
+        Assert.False(await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.write", CancellationToken.None));
+        Assert.Equal(asked, inherited.Calls.Count);
+        Assert.Throws<ArgumentException>(() => new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [], [inherited, null!]));
+    }
+
+    [Fact]
     public async Task PermissionPolicy_ReportsPermissionMissing_WhenAFilterNarrowsTheGrant()
     {
         var edition = new RecordingPermissionFilter(new HashSet<string>(StringComparer.Ordinal));
