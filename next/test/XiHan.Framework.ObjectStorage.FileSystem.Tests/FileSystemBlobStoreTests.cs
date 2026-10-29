@@ -8,6 +8,7 @@ using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
@@ -159,6 +160,29 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         Assert.True(Directory.Exists(_root.Path));
         Assert.True((await store.PutAsync("hosted", "k", Bytes("v"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
         Assert.Equal("v", Encoding.UTF8.GetString((await store.ReadAllBytesAsync("hosted", "k", CancellationToken.None)).ValueOrThrow()));
-        Assert.Equal(["objectstorage.blob"], host.App.Graph["xihan.objectstorage.filesystem"].SelectedCapabilities);
+        Assert.Equal(["objectstorage.blob", "objectstorage.multipart"], host.App.Graph["xihan.objectstorage.filesystem"].SelectedCapabilities);
+        Assert.Same(store, host.Services.GetRequiredService<IBlobMultipartStore>());
+    }
+
+    [Fact]
+    public async Task Initialize_RemovesExpiredMultipartUploads_AndKeepsRecentOnes()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+        var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path, MultipartExpiry = TimeSpan.FromHours(24) }, clock);
+        await store.InitializeAsync(CancellationToken.None);
+        var stale = (await store.StartAsync("uploads", "stale.bin", BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        clock.Advance(TimeSpan.FromHours(20));
+        var recent = (await store.StartAsync("uploads", "recent.bin", BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        Assert.True((await store.UploadPartAsync(recent, 1, new MemoryStream(Bytes("part")), CancellationToken.None)).IsSuccess);
+
+        // 第一次发起后 25 小时：过期的清掉，20 小时后发起的那次还在且分片完好；分片不计入用量
+        clock.Advance(TimeSpan.FromHours(5));
+        await store.InitializeAsync(CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await store.ListPartsAsync(stale, CancellationToken.None)).Error?.Code);
+        Assert.Single((await store.ListPartsAsync(recent, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(0, store.UsedBytes);
+
+        // 伪造的上传标识（不是本实现发出的格式）一律当作不存在，不会拼出根目录外的路径
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await store.ListPartsAsync(new BlobMultipartUpload("uploads", "recent.bin", "../../escape"), CancellationToken.None)).Error?.Code);
     }
 }

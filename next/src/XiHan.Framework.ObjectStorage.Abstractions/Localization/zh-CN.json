@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "容器 '{container}' 里已存在对象 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 里不存在对象 '{key}'。",
+  "objectstorage.multipart.part_too_small": "分片 {part} 只有 {length} 字节；除最后一片外每片至少 {minimum} 字节。",
+  "objectstorage.multipart.part_unknown": "分片 {part} 未上传或 ETag 不符。",
+  "objectstorage.multipart.parts_empty": "分片清单不能为空。",
+  "objectstorage.multipart.parts_rejected": "对象存储拒绝了分片清单：{reason}",
+  "objectstorage.multipart.parts_unordered": "分片 {part} 顺序不对：分片编号必须严格升序。",
+  "objectstorage.multipart.upload_not_found": "容器 '{container}' 中对象 '{key}' 的分片上传 '{upload}' 不存在或已结束。",
   "objectstorage.quota.exceeded": "写入 {requested} 字节会超出对象存储配额 {limit} 字节。",
   "objectstorage.quota.reached": "对象存储配额 {limit} 字节已用尽：已使用 {used} 字节。",
+  "objectstorage.range.not_satisfiable": "从第 {offset} 字节起的范围不可满足：对象长 {length} 字节。",
+  "objectstorage.signed_url.expired": "预签名地址已于 {expiresAt} 过期。",
+  "objectstorage.signed_url.invalid": "预签名地址无效。",
   "objectstorage.store.unavailable": "对象存储不可用：{reason}"
 }

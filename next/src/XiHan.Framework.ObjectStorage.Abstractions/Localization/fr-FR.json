@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "Le blob '{key}' existe déjà dans le conteneur '{container}'.",
   "objectstorage.blob.not_found": "Le blob '{key}' n'existe pas dans le conteneur '{container}'.",
+  "objectstorage.multipart.part_too_small": "La partie {part} fait {length} octets ; chaque partie sauf la dernière doit faire au moins {minimum} octets.",
+  "objectstorage.multipart.part_unknown": "La partie {part} n'a pas été téléversée ou son ETag ne correspond pas.",
+  "objectstorage.multipart.parts_empty": "La liste des parties ne doit pas être vide.",
+  "objectstorage.multipart.parts_rejected": "Le stockage d'objets a refusé la liste des parties : {reason}",
+  "objectstorage.multipart.parts_unordered": "La partie {part} n'est pas dans l'ordre : les numéros de partie doivent être strictement croissants.",
+  "objectstorage.multipart.upload_not_found": "Le téléversement en plusieurs parties '{upload}' de l'objet '{key}' dans le conteneur '{container}' n'existe pas ou est déjà terminé.",
   "objectstorage.quota.exceeded": "L'écriture de {requested} octets dépasserait le quota de stockage d'objets de {limit} octets.",
   "objectstorage.quota.reached": "Le quota de stockage d'objets de {limit} octets est épuisé : {used} octets sont utilisés.",
+  "objectstorage.range.not_satisfiable": "La plage commençant à l'octet {offset} ne peut pas être satisfaite : l'objet fait {length} octets.",
+  "objectstorage.signed_url.expired": "L'URL signée a expiré le {expiresAt}.",
+  "objectstorage.signed_url.invalid": "L'URL signée n'est pas valide.",
   "objectstorage.store.unavailable": "Le stockage d'objets est indisponible : {reason}"
 }

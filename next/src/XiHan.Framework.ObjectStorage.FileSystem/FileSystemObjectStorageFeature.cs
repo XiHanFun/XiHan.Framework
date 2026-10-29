@@ -8,13 +8,14 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储的能力包入口：默认提供 <c>objectstorage.blob@1</c>；启动时建根目录并扫描已用量。另有显式 Provider 被选中时只注册具体类型，不绑定契约。
+/// 文件系统对象存储的能力包入口：默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。另有显式 Provider 被选中时只注册具体类型，不绑定契约。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FileSystemObjectStorageFeature : IHostedFeature
@@ -39,7 +40,11 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         Stability = Stability.Preview,
         Kind = ManifestKind.Provider,
         Role = ManifestRole.Default,
-        Provides = [new CapabilityDeclaration(ObjectStorageCapabilities.Blob, ObjectStorageCapabilities.Version)],
+        Provides =
+        [
+            new CapabilityDeclaration(ObjectStorageCapabilities.Blob, ObjectStorageCapabilities.Version),
+            new CapabilityDeclaration(ObjectStorageCapabilities.Multipart, ObjectStorageCapabilities.Version),
+        ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         Contributes = new Contributions
         {
@@ -61,6 +66,11 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
         {
             context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
+        }
+
+        if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Multipart))
+        {
+            context.Services.TryAddSingleton<IBlobMultipartStore>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
         }
     }
 

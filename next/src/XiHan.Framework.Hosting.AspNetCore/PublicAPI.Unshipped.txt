@@ -1,5 +1,23 @@
 #nullable enable
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature.HostedBlobUrlFeature() -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.BasePath.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.BaseUrl.get -> string!
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.BaseUrl.init -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Equals(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? other) -> bool
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.HostedBlobUrlOptions() -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Secret.get -> System.ReadOnlyMemory<byte>
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Secret.init -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.HostedBlobUrlSigner(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.Options.get -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.SignAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl!>>
 XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder
@@ -53,9 +71,14 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.WriteTo(System.Text.Json.Utf8JsonWriter! writer) -> void
 XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions
+const XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.ConfigurationSection = "XiHan:ObjectStorage:SignedUrls" -> string!
+const XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.MinSecretBytes = 32 -> int
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
 const XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ErrorsKey = "errors" -> string!
+override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.GetHashCode() -> int
+override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.ToString() -> string!
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.ToString() -> string!
@@ -67,6 +90,10 @@ override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions.MapXiHanBlobs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
+static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator !=(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
+static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator ==(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanAuthentication<TBuilder>(this TBuilder builder) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder

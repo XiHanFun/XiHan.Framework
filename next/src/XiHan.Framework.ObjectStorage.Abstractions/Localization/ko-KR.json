@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "컨테이너 '{container}'에 Blob '{key}'이(가) 이미 있습니다.",
   "objectstorage.blob.not_found": "컨테이너 '{container}'에 Blob '{key}'이(가) 없습니다.",
+  "objectstorage.multipart.part_too_small": "파트 {part}은(는) {length}바이트입니다. 마지막 파트를 제외한 각 파트는 최소 {minimum}바이트여야 합니다.",
+  "objectstorage.multipart.part_unknown": "파트 {part}이(가) 업로드되지 않았거나 ETag가 일치하지 않습니다.",
+  "objectstorage.multipart.parts_empty": "파트 목록은 비워 둘 수 없습니다.",
+  "objectstorage.multipart.parts_rejected": "개체 스토리지가 파트 목록을 거부했습니다: {reason}",
+  "objectstorage.multipart.parts_unordered": "파트 {part}의 순서가 잘못되었습니다. 파트 번호는 엄격하게 오름차순이어야 합니다.",
+  "objectstorage.multipart.upload_not_found": "컨테이너 '{container}'에 있는 개체 '{key}'의 멀티파트 업로드 '{upload}'이(가) 없거나 이미 종료되었습니다.",
   "objectstorage.quota.exceeded": "{requested}바이트를 쓰면 개체 스토리지 할당량 {limit}바이트를 초과합니다.",
   "objectstorage.quota.reached": "개체 스토리지 할당량 {limit}바이트를 모두 사용했습니다: {used}바이트 사용 중입니다.",
+  "objectstorage.range.not_satisfiable": "{offset}바이트부터 시작하는 범위를 충족할 수 없습니다. 개체 길이는 {length}바이트입니다.",
+  "objectstorage.signed_url.expired": "미리 서명된 URL이 {expiresAt}에 만료되었습니다.",
+  "objectstorage.signed_url.invalid": "미리 서명된 URL이 올바르지 않습니다.",
   "objectstorage.store.unavailable": "개체 스토리지를 사용할 수 없습니다: {reason}"
 }

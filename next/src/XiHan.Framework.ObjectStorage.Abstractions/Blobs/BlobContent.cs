@@ -21,12 +21,26 @@ public sealed class BlobContent : IAsyncDisposable
     }
 
     /// <summary>
+    /// 创建范围读取的结果：<paramref name="content"/> 只含 <paramref name="range"/> 的字节，<see cref="BlobMetadata.Length"/> 仍是对象总长。
+    /// </summary>
+    public BlobContent(BlobMetadata metadata, Stream content, BlobContentRange range)
+        : this(metadata, content)
+    {
+        Range = range ?? throw new ArgumentNullException(nameof(range));
+    }
+
+    /// <summary>
+    /// 范围读取时实际读到的范围；整对象读取时为 <see langword="null"/>。
+    /// </summary>
+    public BlobContentRange? Range { get; }
+
+    /// <summary>
     /// 元数据。
     /// </summary>
     public BlobMetadata Metadata { get; }
 
     /// <summary>
-    /// 内容流，从头开始。
+    /// 内容流，从头开始；范围读取时只含该范围的字节。
     /// </summary>
     public Stream Content { get; }
 

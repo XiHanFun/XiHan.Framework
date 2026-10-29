@@ -18,6 +18,16 @@ public static class ObjectStorageCapabilities
     public const string Blob = "objectstorage.blob";
 
     /// <summary>
+    /// 分片上传：<see cref="Multipart.IBlobMultipartStore"/>。
+    /// </summary>
+    public const string Multipart = "objectstorage.multipart";
+
+    /// <summary>
+    /// 预签名地址：<see cref="Signing.IBlobUrlSigner"/>。
+    /// </summary>
+    public const string Presign = "objectstorage.presign";
+
+    /// <summary>
     /// 当前接口版本。
     /// </summary>
     public const int Version = 1;

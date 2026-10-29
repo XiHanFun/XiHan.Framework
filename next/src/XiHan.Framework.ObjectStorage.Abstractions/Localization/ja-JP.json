@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "コンテナー '{container}' には Blob '{key}' が既に存在します。",
   "objectstorage.blob.not_found": "コンテナー '{container}' に Blob '{key}' は存在しません。",
+  "objectstorage.multipart.part_too_small": "パート {part} は {length} バイトです。最後のパート以外は {minimum} バイト以上である必要があります。",
+  "objectstorage.multipart.part_unknown": "パート {part} はアップロードされていないか、ETag が一致しません。",
+  "objectstorage.multipart.parts_empty": "パートの一覧を空にすることはできません。",
+  "objectstorage.multipart.parts_rejected": "オブジェクトストレージがパートの一覧を拒否しました：{reason}",
+  "objectstorage.multipart.parts_unordered": "パート {part} の順序が正しくありません。パート番号は厳密に昇順である必要があります。",
+  "objectstorage.multipart.upload_not_found": "コンテナー '{container}' のオブジェクト '{key}' のマルチパートアップロード '{upload}' は存在しないか、すでに終了しています。",
   "objectstorage.quota.exceeded": "{requested} バイトを書き込むとオブジェクトストレージのクォータ {limit} バイトを超えます。",
   "objectstorage.quota.reached": "オブジェクトストレージのクォータ {limit} バイトを使い切りました: {used} バイト使用中です。",
+  "objectstorage.range.not_satisfiable": "{offset} バイト目から始まる範囲は満たせません。オブジェクトの長さは {length} バイトです。",
+  "objectstorage.signed_url.expired": "署名付き URL は {expiresAt} に期限切れになりました。",
+  "objectstorage.signed_url.invalid": "署名付き URL が無効です。",
   "objectstorage.store.unavailable": "オブジェクトストレージを利用できません: {reason}"
 }

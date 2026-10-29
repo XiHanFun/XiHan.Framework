@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "Das Blob '{key}' existiert bereits im Container '{container}'.",
   "objectstorage.blob.not_found": "Das Blob '{key}' existiert nicht im Container '{container}'.",
+  "objectstorage.multipart.part_too_small": "Teil {part} ist {length} Bytes groß; jeder Teil außer dem letzten muss mindestens {minimum} Bytes groß sein.",
+  "objectstorage.multipart.part_unknown": "Teil {part} wurde nicht hochgeladen oder sein ETag stimmt nicht überein.",
+  "objectstorage.multipart.parts_empty": "Die Liste der Teile darf nicht leer sein.",
+  "objectstorage.multipart.parts_rejected": "Der Objektspeicher hat die Liste der Teile abgelehnt: {reason}",
+  "objectstorage.multipart.parts_unordered": "Teil {part} ist in falscher Reihenfolge: Teilnummern müssen streng aufsteigend sein.",
+  "objectstorage.multipart.upload_not_found": "Der mehrteilige Upload '{upload}' des Objekts '{key}' im Container '{container}' existiert nicht oder ist bereits beendet.",
   "objectstorage.quota.exceeded": "Das Schreiben von {requested} Bytes würde das Objektspeicher-Kontingent von {limit} Bytes überschreiten.",
   "objectstorage.quota.reached": "Das Objektspeicher-Kontingent von {limit} Bytes ist erschöpft: {used} Bytes sind belegt.",
+  "objectstorage.range.not_satisfiable": "Der Bereich ab Byte {offset} kann nicht erfüllt werden: Das Objekt ist {length} Bytes lang.",
+  "objectstorage.signed_url.expired": "Die signierte URL ist am {expiresAt} abgelaufen.",
+  "objectstorage.signed_url.invalid": "Die signierte URL ist ungültig.",
   "objectstorage.store.unavailable": "Der Objektspeicher ist nicht verfügbar: {reason}"
 }

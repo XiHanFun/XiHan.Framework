@@ -10,4 +10,5 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(BlobMetadataDocument))]
+[JsonSerializable(typeof(MultipartManifestDocument))]
 internal sealed partial class FileSystemJsonContext : JsonSerializerContext;

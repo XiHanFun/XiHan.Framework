@@ -25,6 +25,12 @@ public interface IBlobStore
     ValueTask<Result<BlobContent>> GetAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 读取一段字节与元数据（音视频拖动、断点续传下载）：<see cref="BlobContent.Range"/> 给出实际范围，<see cref="BlobMetadata.Length"/> 仍是对象总长。
+    /// 不存在返回 <see cref="ObjectStorageErrors.BlobNotFound"/>；起点不在对象内（含空对象）返回 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>。
+    /// </summary>
+    ValueTask<Result<BlobContent>> GetAsync(ContainerName container, BlobKey key, BlobRange range, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 只读元数据；不存在返回 <see cref="ObjectStorageErrors.BlobNotFound"/>。
     /// </summary>
     ValueTask<Result<BlobMetadata>> HeadAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken);

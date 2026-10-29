@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "Объект '{key}' уже существует в контейнере '{container}'.",
   "objectstorage.blob.not_found": "Объект '{key}' не существует в контейнере '{container}'.",
+  "objectstorage.multipart.part_too_small": "Часть {part} имеет размер {length} байт; каждая часть, кроме последней, должна быть не меньше {minimum} байт.",
+  "objectstorage.multipart.part_unknown": "Часть {part} не загружена или её ETag не совпадает.",
+  "objectstorage.multipart.parts_empty": "Список частей не может быть пустым.",
+  "objectstorage.multipart.parts_rejected": "Хранилище объектов отклонило список частей: {reason}",
+  "objectstorage.multipart.parts_unordered": "Часть {part} нарушает порядок: номера частей должны строго возрастать.",
+  "objectstorage.multipart.upload_not_found": "Составная загрузка '{upload}' объекта '{key}' в контейнере '{container}' не существует или уже завершена.",
   "objectstorage.quota.exceeded": "Запись {requested} байт превысит квоту объектного хранилища в {limit} байт.",
   "objectstorage.quota.reached": "Квота объектного хранилища в {limit} байт исчерпана: используется {used} байт.",
+  "objectstorage.range.not_satisfiable": "Диапазон, начинающийся с байта {offset}, не может быть выполнен: длина объекта {length} байт.",
+  "objectstorage.signed_url.expired": "Срок действия подписанного URL истёк {expiresAt}.",
+  "objectstorage.signed_url.invalid": "Подписанный URL недействителен.",
   "objectstorage.store.unavailable": "Объектное хранилище недоступно: {reason}"
 }

@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "容器 '{container}' 裡已存在物件 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 裡不存在物件 '{key}'。",
+  "objectstorage.multipart.part_too_small": "分段 {part} 只有 {length} 位元組；除最後一段外每段至少 {minimum} 位元組。",
+  "objectstorage.multipart.part_unknown": "分段 {part} 未上傳或 ETag 不符。",
+  "objectstorage.multipart.parts_empty": "分段清單不可為空。",
+  "objectstorage.multipart.parts_rejected": "物件儲存拒絕了分段清單：{reason}",
+  "objectstorage.multipart.parts_unordered": "分段 {part} 順序不對：分段編號必須嚴格遞增。",
+  "objectstorage.multipart.upload_not_found": "容器 '{container}' 中物件 '{key}' 的分段上傳 '{upload}' 不存在或已結束。",
   "objectstorage.quota.exceeded": "寫入 {requested} 位元組會超出物件儲存配額 {limit} 位元組。",
   "objectstorage.quota.reached": "物件儲存配額 {limit} 位元組已用盡：已使用 {used} 位元組。",
+  "objectstorage.range.not_satisfiable": "從第 {offset} 位元組起的範圍無法滿足：物件長 {length} 位元組。",
+  "objectstorage.signed_url.expired": "預先簽署的網址已於 {expiresAt} 過期。",
+  "objectstorage.signed_url.invalid": "預先簽署的網址無效。",
   "objectstorage.store.unavailable": "物件儲存無法使用：{reason}"
 }

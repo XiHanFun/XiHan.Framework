@@ -21,6 +21,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 - 列举：`ListObjectsV2` 按前缀分页（S3 保证键的序数顺序），续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为默认值、自定义元数据为空，需要时再 `Head`；不符合键文法的对象（如以 `/` 结尾的"目录"占位）跳过；桶不存在视作空容器。
 - 错误：不存在的键与桶映射为 `OBJECTSTORAGE_NOTFOUND_001`，其余服务端错误、网络错误与 SDK 超时映射为 `OBJECTSTORAGE_UNAVAILABLE_001`；调用方的取消原样抛出。没有配额（由桶策略管理）。
 - 健康项 `objectstorage.s3.connection`：启动时同步探一次，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果；配了 `HealthBucket` 就对它 HEAD（桶不存在、无权限或服务不可达都算失败），没配就列桶；失败或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 是 SDK 的异常消息），应用仍在服务。
+- 范围读取、分片与预签名（ADR-0049，同时提供 `objectstorage.multipart@1` 与 `objectstorage.presign@1`）：范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长，起点越界（416）报 `OBJECTSTORAGE_VALIDATION_001`；分片直接映射 S3 multipart，`ListParts` 分页取全，不覆盖的完成先 HEAD 再带 `If-None-Match: *`，服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）报 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 报 `OBJECTSTORAGE_NOTFOUND_002`；预签名经 SDK 本地签出（签名 V4，端点是 http 时按 http 签），下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号，客户端直连存储。
 - 不满足 AOT 分析器（AWS SDK 的请求编组基于运行时反射）。
 
 ## 依赖方向

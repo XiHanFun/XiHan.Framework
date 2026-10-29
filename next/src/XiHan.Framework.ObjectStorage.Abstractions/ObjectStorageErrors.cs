@@ -30,4 +30,24 @@ public static class ObjectStorageErrors
     /// 配额或单对象大小超限。
     /// </summary>
     public const string QuotaExceeded = "OBJECTSTORAGE_UNAVAILABLE_002";
+
+    /// <summary>
+    /// 读取范围的起点不在对象内。
+    /// </summary>
+    public const string RangeNotSatisfiable = "OBJECTSTORAGE_VALIDATION_001";
+
+    /// <summary>
+    /// 完成分片上传时的分片清单不合法（为空、乱序、未上传或 ETag 不符、非末片过小）。
+    /// </summary>
+    public const string PartsInvalid = "OBJECTSTORAGE_VALIDATION_002";
+
+    /// <summary>
+    /// 分片上传不存在或已结束。
+    /// </summary>
+    public const string UploadNotFound = "OBJECTSTORAGE_NOTFOUND_002";
+
+    /// <summary>
+    /// 预签名地址无效或已过期。
+    /// </summary>
+    public const string SignatureInvalid = "OBJECTSTORAGE_DENIED_001";
 }
