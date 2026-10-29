@@ -31,13 +31,19 @@ public sealed record WorkflowTransition
     public required string TargetNodeId { get; init; }
 
     /// <summary>
-    /// 条件表达式；空为无条件。作用域是实例变量加 <c>outcome</c>。
+    /// 条件表达式。
     /// </summary>
+    /// <remarks>
+    /// 空为无条件。作用域是实例变量加 <c>outcome</c>。
+    /// </remarks>
     public string? Condition { get; init; }
 
     /// <summary>
-    /// 优先级，小者先评估；默认 0。
+    /// 优先级，小者先评估。
     /// </summary>
+    /// <remarks>
+    /// 默认 0。
+    /// </remarks>
     public int Priority { get; init; }
 
     /// <summary>

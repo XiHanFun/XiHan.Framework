@@ -7,8 +7,11 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 一个属性上折进 Schema 的 DataAnnotations：从属性本身与位置记录的同名主构造参数两处收集（位置记录的注解默认落在参数上）。
+/// 一个属性上折进 Schema 的 DataAnnotations。
 /// </summary>
+/// <remarks>
+/// 从属性本身与位置记录的同名主构造参数两处收集（位置记录的注解默认落在参数上）。
+/// </remarks>
 internal sealed class PropertyConstraints
 {
     /// <summary>
@@ -89,8 +92,11 @@ internal sealed class PropertyConstraints
     }
 
     /// <summary>
-    /// 把约束关键字并进属性的 Schema 片段（一个 JSON 对象文本）；字符串用长度与模式，数组与集合用元素数。
+    /// 把约束关键字并进属性的 Schema 片段（一个 JSON 对象文本）。
     /// </summary>
+    /// <remarks>
+    /// 字符串用长度与模式，数组与集合用元素数。
+    /// </remarks>
     public string ApplyTo(string fragment, ITypeSymbol propertyType)
     {
         var isString = propertyType.SpecialType == SpecialType.System_String;
@@ -139,8 +145,11 @@ internal sealed class PropertyConstraints
     }
 
     /// <summary>
-    /// 按注解类型记录约束；不认识的注解忽略。
+    /// 按注解类型记录约束。
     /// </summary>
+    /// <remarks>
+    /// 不认识的注解忽略。
+    /// </remarks>
     private void Apply(AttributeData attribute)
     {
         var name = attribute.AttributeClass?.ToDisplayString();
@@ -195,8 +204,11 @@ internal sealed class PropertyConstraints
         => attribute.NamedArguments.FirstOrDefault(a => string.Equals(a.Key, name, StringComparison.Ordinal)).Value.Value;
 
     /// <summary>
-    /// 把 <c>[Range]</c> 的整数或浮点参数写成 JSON 数值文本；其他重载（类型 + 字符串）不折。
+    /// 把 <c>[Range]</c> 的整数或浮点参数写成 JSON 数值文本。
     /// </summary>
+    /// <remarks>
+    /// 其他重载（类型 + 字符串）不折。
+    /// </remarks>
     private static string? Number(TypedConstant constant) => constant.Value switch
     {
         int i => i.ToString(CultureInfo.InvariantCulture),

@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tools;
 
 /// <summary>
-/// 工具目录的实现（单例）：构造时从登记表与显式登记建表，工具名不合法或重复以 <see cref="AIErrors.RequestInvalid"/> 失败。
+/// 工具目录的实现（单例）。
 /// </summary>
+/// <remarks>
+/// 构造时从登记表与显式登记建表，工具名不合法或重复以 <see cref="AIErrors.RequestInvalid"/> 失败。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIToolCatalog : IAIToolCatalog
 {
@@ -116,8 +119,11 @@ public sealed class AIToolCatalog : IAIToolCatalog
         => entry.Tool ?? AIFunctionFactory.CreateDeclaration(entry.Name, Describe(entry.Descriptor!, locale), entry.Schema, entry.ReturnSchema);
 
     /// <summary>
-    /// 操作描述：消息目录里 <c>&lt;操作 ID&gt;.description</c> 按区域翻译；没有为空。
+    /// 操作描述。
     /// </summary>
+    /// <remarks>
+    /// 消息目录里 <c>&lt;操作 ID&gt;.description</c> 按区域翻译；没有为空。
+    /// </remarks>
     private string? Describe(OperationDescriptor descriptor, string? locale)
     {
         if (_localizer is null || locale is null)

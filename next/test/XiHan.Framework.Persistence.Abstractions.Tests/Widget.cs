@@ -14,12 +14,18 @@ internal sealed class Widget : IEntity<Guid>
     public Guid Id { get; init; }
 
     /// <summary>
-    /// 名称；查询测试按它过滤与排序。
+    /// 名称。
     /// </summary>
+    /// <remarks>
+    /// 查询测试按它过滤与排序。
+    /// </remarks>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 排名；查询测试按它过滤与排序。
+    /// 排名。
     /// </summary>
+    /// <remarks>
+    /// 查询测试按它过滤与排序。
+    /// </remarks>
     public int Rank { get; set; }
 }

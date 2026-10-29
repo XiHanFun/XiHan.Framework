@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 可以往回拨的时钟：<c>FakeTimeProvider</c> 拒绝回到过去，而时钟回拨正是雪花生成器要处理的情形。读写用 <see cref="Volatile"/>，生成线程自旋读它时能看到测试线程的改动。
+/// 可以往回拨的时钟。
 /// </summary>
+/// <remarks>
+/// <c>FakeTimeProvider</c> 拒绝回到过去，而时钟回拨正是雪花生成器要处理的情形。读写用 <see cref="Volatile"/>，生成线程自旋读它时能看到测试线程的改动。
+/// </remarks>
 /// <param name="start">起始时刻。</param>
 internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
 {

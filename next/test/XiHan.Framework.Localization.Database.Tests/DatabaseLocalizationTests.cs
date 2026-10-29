@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为：翻译优先于目录、重载与周期刷新、批量写入与删除、上限、顶替内存实现、选项解析。
+/// 数据库 Provider 特有的行为。
 /// </summary>
+/// <remarks>
+/// 翻译优先于目录、重载与周期刷新、批量写入与删除、上限、顶替内存实现、选项解析。
+/// </remarks>
 public sealed class DatabaseLocalizationTests
 {
     /// <summary>

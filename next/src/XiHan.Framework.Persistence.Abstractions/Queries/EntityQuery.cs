@@ -22,8 +22,11 @@ public static class EntityQuery
     public static EntityQuery<T> All<T>() => AllOf<T>.Instance;
 
     /// <summary>
-    /// 按类型缓存无条件查询；查询不可变，共享同一实例是安全的。
+    /// 按类型缓存无条件查询。
     /// </summary>
+    /// <remarks>
+    /// 查询不可变，共享同一实例是安全的。
+    /// </remarks>
     private static class AllOf<T>
     {
         /// <summary>

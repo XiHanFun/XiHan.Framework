@@ -4,8 +4,11 @@
 namespace SimpleCli;
 
 /// <summary>
-/// 示例的消息键；各语言文案在 <c>Localization/&lt;区域&gt;.json</c>。
+/// 示例的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在 <c>Localization/&lt;区域&gt;.json</c>。
+/// </remarks>
 public static class CliMessages
 {
     /// <summary>
@@ -14,7 +17,10 @@ public static class CliMessages
     public const string GreetDescription = "greetings.create.description";
 
     /// <summary>
-    /// 重复次数超出范围。参数：<c>times</c>。
+    /// 重复次数超出范围。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>times</c>。
+    /// </remarks>
     public const string TimesInvalid = "samples.greet.times_invalid";
 }

@@ -7,9 +7,12 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// System.Text.Json 源生成器为 <c>[JsonSerializable(typeof(T))]</c> 生成的 <c>Default.&lt;属性&gt;</c> 默认名：
-/// 简单类型用 CLR 名（<c>Int32</c>、<c>String</c>），泛型为类型名加各实参名（<c>ListOrderResponse</c>），数组加 <c>Array</c>，可空值类型加 <c>Nullable</c> 前缀。
+/// 序列化上下文里类型信息属性的默认名。
 /// </summary>
+/// <remarks>
+/// 即 System.Text.Json 源生成器为 <c>[JsonSerializable(typeof(T))]</c> 生成的 <c>Default.&lt;属性&gt;</c> 的名字。
+/// 简单类型用 CLR 名（<c>Int32</c>、<c>String</c>），泛型为类型名加各实参名（<c>ListOrderResponse</c>），数组加 <c>Array</c>，可空值类型加 <c>Nullable</c> 前缀。
+/// </remarks>
 internal static class TypeInfoNames
 {
     /// <summary>

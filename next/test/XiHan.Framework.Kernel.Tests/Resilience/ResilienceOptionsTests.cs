@@ -7,8 +7,11 @@ using XiHan.Framework.Kernel.Tests.Fixtures;
 namespace XiHan.Framework.Kernel.Tests.Resilience;
 
 /// <summary>
-/// <see cref="ResilienceOptions"/> 与 <see cref="ResiliencePolicy"/> 的读取：默认无限制、键的解析、按操作覆盖与默认合并、非法值拒绝。
+/// <see cref="ResilienceOptions"/> 与 <see cref="ResiliencePolicy"/> 的读取。
 /// </summary>
+/// <remarks>
+/// 默认无限制、键的解析、按操作覆盖与默认合并、非法值拒绝。
+/// </remarks>
 public sealed class ResilienceOptionsTests
 {
     [Fact]

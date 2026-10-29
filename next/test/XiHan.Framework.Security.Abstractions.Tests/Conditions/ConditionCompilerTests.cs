@@ -7,9 +7,11 @@ using static XiHan.Framework.Security.Abstractions.Tests.Fixtures.ConditionTestK
 namespace XiHan.Framework.Security.Abstractions.Tests.Conditions;
 
 /// <summary>
-/// 条件编译器：编译是保存前的唯一关卡——属性要登记、运算符要配得上值种类、条件值要解析得了；
-/// 出错的子句保留在结果里（求值时无法判定），错误码一律 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明原因。
+/// 条件编译器。
 /// </summary>
+/// <remarks>
+/// 编译是保存前的唯一关卡——属性要登记、运算符要配得上值种类、条件值要解析得了；出错的子句保留在结果里（求值时无法判定），错误码一律 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明原因。
+/// </remarks>
 public sealed class ConditionCompilerTests
 {
     [Fact]

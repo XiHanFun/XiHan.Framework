@@ -12,8 +12,11 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 public sealed class ConformanceClock(DateTimeOffset start) : TimeProvider
 {
     /// <summary>
-    /// 当前时刻；只由 <see cref="Advance"/> 推进，不随真实时间流动。
+    /// 当前时刻。
     /// </summary>
+    /// <remarks>
+    /// 只由 <see cref="Advance"/> 推进，不随真实时间流动。
+    /// </remarks>
     private DateTimeOffset _now = start;
 
     /// <inheritdoc />

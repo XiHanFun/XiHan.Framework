@@ -12,8 +12,11 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 public sealed class ConfigurationDocument
 {
     /// <summary>
-    /// 创建；版本不能为空，键不能为空。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 版本不能为空，键不能为空。
+    /// </remarks>
     public ConfigurationDocument(string version, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(version);

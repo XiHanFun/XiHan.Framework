@@ -11,13 +11,19 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策：成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传。
+/// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策。
 /// </summary>
+/// <remarks>
+/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传。
+/// </remarks>
 public sealed class UnitOfWorkMiddlewareTests
 {
     /// <summary>
-    /// 记录调用顺序的工作单元替身；提交结果可预设，用于验证中间件对各种结果的处理。
+    /// 记录调用顺序的工作单元替身。
     /// </summary>
+    /// <remarks>
+    /// 提交结果可预设，用于验证中间件对各种结果的处理。
+    /// </remarks>
     private sealed class RecordingUnitOfWork : IUnitOfWork
     {
         /// <summary>

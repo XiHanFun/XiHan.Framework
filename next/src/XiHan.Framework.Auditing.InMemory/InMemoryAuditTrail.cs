@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.InMemory;
 
 /// <summary>
-/// 有界的内存审计：环形缓冲保留最近 <see cref="InMemoryAuditingOptions.Capacity"/> 条事件，按写入顺序查询；每条事件可同时写日志（内核日志薄桥）。
+/// 有界的内存审计。
 /// </summary>
+/// <remarks>
+/// 环形缓冲保留最近 <see cref="InMemoryAuditingOptions.Capacity"/> 条事件，按写入顺序查询；每条事件可同时写日志（内核日志薄桥）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
 {

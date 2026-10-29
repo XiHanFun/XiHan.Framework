@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Remote;
 
 /// <summary>
-/// 远程配置的 Provider：首次同步加载，之后按周期带已知版本轮询；拿到新版本就整体替换并触发重载，失败保留最后一份成功的数据。
+/// 远程配置的 Provider。
 /// </summary>
+/// <remarks>
+/// 首次同步加载，之后按周期带已知版本轮询；拿到新版本就整体替换并触发重载，失败保留最后一份成功的数据。
+/// </remarks>
 internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvider
 {
     /// <summary>
@@ -121,8 +124,11 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
     }
 
     /// <summary>
-    /// 轮询：带已知版本取值，拿到新文档就替换并触发重载；失败只回调，不丢弃已有数据。
+    /// 轮询。
     /// </summary>
+    /// <remarks>
+    /// 带已知版本取值，拿到新文档就替换并触发重载；失败只回调，不丢弃已有数据。
+    /// </remarks>
     private async Task PollAsync(PeriodicTimer timer, CancellationToken cancellationToken)
     {
         try

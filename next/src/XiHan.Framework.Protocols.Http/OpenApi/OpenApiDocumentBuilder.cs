@@ -58,8 +58,11 @@ public static partial class OpenApiDocumentBuilder
     private const string ErrorText = "Error";
 
     /// <summary>
-    /// 生成文档的 UTF-8 JSON；标题与版本给定，其余（<c>servers</c>、认证方案、普通端点、摘要）都不带。
+    /// 生成文档的 UTF-8 JSON。
     /// </summary>
+    /// <remarks>
+    /// 标题与版本给定，其余（<c>servers</c>、认证方案、普通端点、摘要）都不带。
+    /// </remarks>
     /// <param name="registry">操作登记表。</param>
     /// <param name="options">HTTP 选项（路由覆盖与前缀）。</param>
     /// <param name="permissions">权限码注册表；为 <see langword="null"/> 时 <c>x-xihan-permissions</c> 只收录被已发布操作引用的权限码，且只有 <c>code</c>。</param>
@@ -183,8 +186,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写顶层 <c>tags</c>：文档里用到的每个标签，名字序数排序，带区域的显示名与说明（有才写）。
+    /// 写顶层 <c>tags</c>。
     /// </summary>
+    /// <remarks>
+    /// 文档里用到的每个标签，名字序数排序，带区域的显示名与说明（有才写）。
+    /// </remarks>
     private static void WriteTags(Utf8JsonWriter writer, BuildContext context)
     {
         if (context.UsedTags.Count == 0)
@@ -214,8 +220,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写全量文档的 <c>x-tagGroups</c>：各组按排序、名字列出组内用到的标签，没进任何组的标签归入最后一组。
+    /// 写全量文档的 <c>x-tagGroups</c>。
     /// </summary>
+    /// <remarks>
+    /// 各组按排序、名字列出组内用到的标签，没进任何组的标签归入最后一组。
+    /// </remarks>
     private static void WriteTagGroups(Utf8JsonWriter writer, BuildContext context)
     {
         var grouped = new HashSet<string>(StringComparer.Ordinal);
@@ -274,8 +283,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写一个操作对象：操作 ID、标签、摘要、稳定性与授权要求的扩展字段、安全要求、路径与查询参数、请求体、响应。
+    /// 写一个操作对象。
     /// </summary>
+    /// <remarks>
+    /// 操作 ID、标签、摘要、稳定性与授权要求的扩展字段、安全要求、路径与查询参数、请求体、响应。
+    /// </remarks>
     private static void WriteOperation(Utf8JsonWriter writer, OperationDescriptor descriptor, HttpRoute route, BuildContext context)
     {
         writer.WriteString("operationId", descriptor.Id);
@@ -374,8 +386,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写一个普通端点的操作对象：端点名、标签、摘要与说明、授权要求的扩展字段、安全要求、路径参数、按内容类型写的请求体与响应。
+    /// 写一个普通端点的操作对象。
     /// </summary>
+    /// <remarks>
+    /// 端点名、标签、摘要与说明、授权要求的扩展字段、安全要求、路径参数、按内容类型写的请求体与响应。
+    /// </remarks>
     private static void WriteEndpoint(Utf8JsonWriter writer, EndpointDescription endpoint, BuildContext context)
     {
         if (endpoint.Name is { } name)
@@ -467,8 +482,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 授权要求的那一行说明：权限（带显示名）、命名策略或只要求登录；没有要求或没有本地化时为 <see langword="null"/>。
+    /// 授权要求的那一行说明。
     /// </summary>
+    /// <remarks>
+    /// 权限（带显示名）、命名策略或只要求登录；没有要求或没有本地化时为 <see langword="null"/>。
+    /// </remarks>
     private static string? AuthorizationText(string? permission, string? policy, BuildContext context)
     {
         if (permission is not null)
@@ -489,14 +507,20 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 两段说明之间空一行；都没有为 <see langword="null"/>。
+    /// 两段说明之间空一行。
     /// </summary>
+    /// <remarks>
+    /// 都没有为 <see langword="null"/>。
+    /// </remarks>
     private static string? Join(string? first, string? second)
         => first is null ? second : second is null ? first : first + "\n\n" + second;
 
     /// <summary>
-    /// 写授权要求的扩展字段：权限码进 <c>x-xihan-permission</c> 并记入被引用集合，否则策略名进 <c>x-xihan-policy</c>；返回是否有要求。
+    /// 写授权要求的扩展字段。
     /// </summary>
+    /// <remarks>
+    /// 权限码进 <c>x-xihan-permission</c> 并记入被引用集合，否则策略名进 <c>x-xihan-policy</c>；返回是否有要求。
+    /// </remarks>
     private static bool WriteAuthorization(Utf8JsonWriter writer, string? permission, string? policy, BuildContext context)
     {
         if (permission is not null)
@@ -516,9 +540,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 按内容类型写请求体 / 响应正文的 Schema：JSON 引用已登记操作的根 Schema（提升到组件），<c>multipart/form-data</c> 是含二进制属性的对象，
-    /// 表单是对象，文本是字符串，其余二进制按内容类型写成 <c>format: binary</c> 的字符串。
+    /// 按内容类型写请求体 / 响应正文的 Schema。
     /// </summary>
+    /// <remarks>
+    /// JSON 引用已登记操作的根 Schema（提升到组件），<c>multipart/form-data</c> 是含二进制属性的对象，表单是对象，文本是字符串，其余二进制按内容类型写成 <c>format: binary</c> 的字符串。
+    /// </remarks>
     private static void WriteContentSchema(Utf8JsonWriter writer, string contentType, Type? type, EndpointDescription endpoint, SchemaRole role, BuildContext context)
     {
         if (IsJson(contentType))
@@ -582,8 +608,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 响应元数据的内容类型与正文类型：有类型（非 void）没写内容类型的按 JSON，没有类型的按写出的内容类型，两者都没有的没有正文。
+    /// 响应元数据的内容类型与正文类型。
     /// </summary>
+    /// <remarks>
+    /// 有类型（非 void）没写内容类型的按 JSON，没有类型的按写出的内容类型，两者都没有的没有正文。
+    /// </remarks>
     private static (List<string> ContentTypes, Type? Type) ResponseContent(IProducesResponseTypeMetadata produces)
     {
         var type = produces.Type is { } t && t != typeof(void) ? t : null;
@@ -632,14 +661,20 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 请求 Schema 里某属性的 Schema；没有时按字符串。
+    /// 请求 Schema 里某属性的 Schema。
     /// </summary>
+    /// <remarks>
+    /// 没有时按字符串。
+    /// </remarks>
     private static JsonElement? PropertySchema(JsonDocument? request, string name)
         => request is { } r && r.RootElement.TryGetProperty("properties", out var properties) && properties.TryGetProperty(name, out var property) ? property : null;
 
     /// <summary>
-    /// 写一个参数对象；说明取区域覆盖或属性 Schema 的 <c>description</c>。
+    /// 写一个参数对象。
     /// </summary>
+    /// <remarks>
+    /// 说明取区域覆盖或属性 Schema 的 <c>description</c>。
+    /// </remarks>
     private static void WriteParameter(Utf8JsonWriter writer, string name, string location, bool required, JsonElement? schema, string? localized)
     {
         writer.WriteStartObject();
@@ -667,8 +702,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写内联的 Schema 根对象（去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，说明按区域），或已提升到组件时的 <c>$ref</c>。
+    /// 写内联的 Schema 根对象（去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，说明按区域）。
     /// </summary>
+    /// <remarks>
+    /// 或已提升到组件时的 <c>$ref</c>。
+    /// </remarks>
     private static void WriteSchemaOrReference(Utf8JsonWriter writer, JsonDocument? inline, string? componentName, BuildContext context)
     {
         if (componentName is { } name)
@@ -683,8 +721,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写 Schema 根对象：去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，根与直接属性的 <c>description</c> 有区域覆盖时替换（没有说明的补上）。
+    /// 写 Schema 根对象。
     /// </summary>
+    /// <remarks>
+    /// 去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，根与直接属性的 <c>description</c> 有区域覆盖时替换（没有说明的补上）。
+    /// </remarks>
     private static void WriteLocalizedSchema(Utf8JsonWriter writer, JsonElement root, string? name, BuildContext context)
     {
         var key = name is null ? null : SchemaKey(name);
@@ -722,8 +763,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写一个属性的 Schema；有区域覆盖时把 <c>description</c> 换成它（放在最前）。
+    /// 写一个属性的 Schema。
     /// </summary>
+    /// <remarks>
+    /// 有区域覆盖时把 <c>description</c> 换成它（放在最前）。
+    /// </remarks>
     private static void WritePropertySchema(Utf8JsonWriter writer, JsonElement schema, string? localized)
     {
         if (localized is null || schema.ValueKind != JsonValueKind.Object)
@@ -765,8 +809,11 @@ public static partial class OpenApiDocumentBuilder
         => root.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String ? title.GetString() : null;
 
     /// <summary>
-    /// 按根 <c>title</c> 的 Schema 键前缀；没有 <c>title</c> 为 <see langword="null"/>。
+    /// 按根 <c>title</c> 的 Schema 键前缀。
     /// </summary>
+    /// <remarks>
+    /// 没有 <c>title</c> 为 <see langword="null"/>。
+    /// </remarks>
     private static string? SchemaKeyOf(JsonElement root) => TitleOf(root) is { } title ? SchemaKey(title) : null;
 
     /// <summary>
@@ -840,8 +887,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写 <c>components</c> 下的 <c>x-xihan-permissions</c>：键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>。
+    /// 写 <c>components</c> 下的 <c>x-xihan-permissions</c>。
     /// </summary>
+    /// <remarks>
+    /// 键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>。
+    /// </remarks>
     private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions, bool includeRegistered)
     {
         // 收录范围 = 已发布操作与普通端点引用到的权限码 ∪ 注册表里登记的全部定义：
@@ -875,8 +925,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// RFC 9457 Problem Details 的 Schema（含 <c>code</c>、<c>traceId</c>、字段级 <c>errors</c> 与标量 <c>details</c> 扩展）。
+    /// RFC 9457 Problem Details 的 Schema。
     /// </summary>
+    /// <remarks>
+    /// 含 <c>code</c>、<c>traceId</c>、字段级 <c>errors</c> 与标量 <c>details</c> 扩展。
+    /// </remarks>
     private static void WriteProblemDetails(Utf8JsonWriter writer)
     {
         writer.WriteStartObject("ProblemDetails");
@@ -951,9 +1004,11 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 一次生成的工作状态：路径（模板 → 方法 → 写入动作）、组件、被引用的权限码、提升的根 Schema，以及普通端点 JSON 类型到操作根 Schema 的解析。
-    /// 先读普通端点决定哪些根要提升，再写路径，这样操作自己也以 <c>$ref</c> 引用被提升的根，一份 Schema 只出现一次。
+    /// 一次生成的工作状态。
     /// </summary>
+    /// <remarks>
+    /// 路径（模板 → 方法 → 写入动作）、组件、被引用的权限码、提升的根 Schema，以及普通端点 JSON 类型到操作根 Schema 的解析。先读普通端点决定哪些根要提升，再写路径，这样操作自己也以 <c>$ref</c> 引用被提升的根，一份 Schema 只出现一次。
+    /// </remarks>
     private sealed class BuildContext : IDisposable
     {
         /// <summary>
@@ -972,8 +1027,11 @@ public static partial class OpenApiDocumentBuilder
         private readonly Dictionary<string, (OperationDescriptor Descriptor, HttpRoute Route)> _operations;
 
         /// <summary>
-        /// 创建：挑出发布的操作与普通端点，解析端点的 JSON 引用（决定提升的根），按模板与方法排好写入顺序。
+        /// 创建。
         /// </summary>
+        /// <remarks>
+        /// 挑出发布的操作与普通端点，解析端点的 JSON 引用（决定提升的根），按模板与方法排好写入顺序。
+        /// </remarks>
         public BuildContext(OpenApiDocumentSource source)
         {
             Source = source;
@@ -1046,8 +1104,11 @@ public static partial class OpenApiDocumentBuilder
         public bool Bearer { get; }
 
         /// <summary>
-        /// 只出这一组时的组；全量文档为 <see langword="null"/>。
+        /// 只出这一组时的组。
         /// </summary>
+        /// <remarks>
+        /// 全量文档为 <see langword="null"/>。
+        /// </remarks>
         public OpenApiGroup? Group { get; }
 
         /// <summary>
@@ -1061,8 +1122,11 @@ public static partial class OpenApiDocumentBuilder
         public SortedSet<string> UsedTags { get; } = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// 按键（与参数）取文档区域的文案；没有本地化或没有这条为 <see langword="null"/>。
+        /// 按键（与参数）取文档区域的文案。
         /// </summary>
+        /// <remarks>
+        /// 没有本地化或没有这条为 <see langword="null"/>。
+        /// </remarks>
         public string? Text(string key, IReadOnlyDictionary<string, object?>? arguments = null) => Source.Localize?.Invoke(key, arguments);
 
         /// <summary>
@@ -1081,8 +1145,11 @@ public static partial class OpenApiDocumentBuilder
         public SortedSet<string> ReferencedPermissions { get; } = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// 解析一段 JSON Schema：把 <c>#/$defs/</c> 引用改写为 <c>#/components/schemas/</c>，并把 <c>$defs</c> 提升到组件；为空返回 <see langword="null"/>。
+        /// 解析一段 JSON Schema。
         /// </summary>
+        /// <remarks>
+        /// 把 <c>#/$defs/</c> 引用改写为 <c>#/components/schemas/</c>，并把 <c>$defs</c> 提升到组件；为空返回 <see langword="null"/>。
+        /// </remarks>
         public JsonDocument? Load(string? schema)
         {
             if (schema is null)
@@ -1108,8 +1175,11 @@ public static partial class OpenApiDocumentBuilder
         }
 
         /// <summary>
-        /// 操作的某个根是否已提升到组件；是则给出组件名。
+        /// 操作的某个根是否已提升到组件。
         /// </summary>
+        /// <remarks>
+        /// 是则给出组件名。
+        /// </remarks>
         public bool Promoted(OperationDescriptor descriptor, SchemaRole role, out string? name)
             => _promoted.TryGetValue((descriptor.Id, role), out name);
 
@@ -1119,9 +1189,11 @@ public static partial class OpenApiDocumentBuilder
         public JsonDocument Component(string name) => Components[name];
 
         /// <summary>
-        /// 解析普通端点的 JSON 类型到某个已登记操作的根 Schema：显式声明优先，否则按类型与操作的请求 / 响应类型匹配（取 ID 最小且有 Schema 的操作）；
-        /// 把该根提升到组件并返回组件名；引用不到抛 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。
+        /// 解析普通端点的 JSON 类型到某个已登记操作的根 Schema。
         /// </summary>
+        /// <remarks>
+        /// 显式声明优先，否则按类型与操作的请求 / 响应类型匹配（取 ID 最小且有 Schema 的操作）；把该根提升到组件并返回组件名；引用不到抛 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。
+        /// </remarks>
         public string ResolveJson(EndpointDescription endpoint, SchemaRole role, Type? type)
         {
             var declared = role == SchemaRole.Request ? endpoint.SchemaReference?.RequestOperationId : endpoint.SchemaReference?.ResponseOperationId;
@@ -1149,8 +1221,11 @@ public static partial class OpenApiDocumentBuilder
         }
 
         /// <summary>
-        /// 把操作的根 Schema 提升到组件（已提升则直接返回）：名字取 Schema 的 <c>title</c>，没有则按操作 ID 拼。
+        /// 把操作的根 Schema 提升到组件（已提升则直接返回）。
         /// </summary>
+        /// <remarks>
+        /// 名字取 Schema 的 <c>title</c>，没有则按操作 ID 拼。
+        /// </remarks>
         private string Promote(OperationDescriptor descriptor, SchemaRole role)
         {
             if (_promoted.TryGetValue((descriptor.Id, role), out var existing))

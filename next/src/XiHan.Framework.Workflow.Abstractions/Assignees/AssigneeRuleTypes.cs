@@ -17,8 +17,11 @@ public static class AssigneeRuleTypes
     public const string User = "User";
 
     /// <summary>
-    /// 发起人；无参数。
+    /// 发起人。
     /// </summary>
+    /// <remarks>
+    /// 无参数。
+    /// </remarks>
     public const string Starter = "Starter";
 
     /// <summary>

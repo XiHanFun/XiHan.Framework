@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
 /// <summary>
-/// 调用上下文与协议 <c>InvocationMetadata</c> 之间的映射（RFC-0003、<c>spec/plugin/invocation.md</c>）。
+/// 调用上下文与协议 <c>InvocationMetadata</c> 之间的映射。
 /// </summary>
+/// <remarks>
+/// RFC-0003、<c>spec/plugin/invocation.md</c>。
+/// </remarks>
 internal static partial class PluginMetadata
 {
     /// <summary>
@@ -45,8 +48,11 @@ internal static partial class PluginMetadata
         => new(deadline: context.Deadline?.UtcDateTime, cancellationToken: context.CancellationToken);
 
     /// <summary>
-    /// 元数据 → 新的调用上下文（宿主回调时使用）：不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。
+    /// 元数据 → 新的调用上下文（宿主回调时使用）。
     /// </summary>
+    /// <remarks>
+    /// 不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。
+    /// </remarks>
     public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string principalId, CancellationToken cancellationToken)
     {
         string? traceId = null;

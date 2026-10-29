@@ -7,9 +7,11 @@ using System.Globalization;
 namespace XiHan.Framework.Primitives.Tests.Messages;
 
 /// <summary>
-/// 消息作用域：<c>key.L()</c> 按当前作用域解析，<see cref="Error.Message"/> 按进程默认解析，都没有时退回键与参数的描述。
-/// 本类会设置进程默认作用域，所以把依赖默认作用域的断言集中在这里并在结束时清除。
+/// 消息作用域。
 /// </summary>
+/// <remarks>
+/// <c>key.L()</c> 按当前作用域解析，<see cref="Error.Message"/> 按进程默认解析，都没有时退回键与参数的描述。本类会设置进程默认作用域，所以把依赖默认作用域的断言集中在这里并在结束时清除。
+/// </remarks>
 public sealed class MessageScopeTests
 {
     /// <summary>

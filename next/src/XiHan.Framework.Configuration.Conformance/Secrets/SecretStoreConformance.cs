@@ -9,19 +9,28 @@ using Xunit;
 namespace XiHan.Framework.Configuration.Conformance.Secrets;
 
 /// <summary>
-/// <see cref="ISecretStore"/> 的一致性套件。继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。
+/// <see cref="ISecretStore"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class SecretStoreConformance
 {
     /// <summary>
-    /// 创建夹具。每个用例调用一次。
+    /// 创建夹具。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract Task<SecretStoreFixture> CreateFixtureAsync();
 
     /// <summary>
-    /// 用例 1：批量读取逐项返回且顺序一致，重复项各自作答，不存在的项是 NOTFOUND，空集合返回空；值的文本表示被遮蔽。
+    /// 用例 1：批量读取逐项返回且顺序一致。
     /// </summary>
+    /// <remarks>
+    /// 重复项各自作答，不存在的项是 NOTFOUND，空集合返回空。值的文本表示被遮蔽。
+    /// </remarks>
     [Fact]
     public async Task Get_ReturnsPerItemInOrder_AndMissingIsNotFound()
     {

@@ -22,9 +22,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.OutOfProcess;
 
 /// <summary>
-/// 进程外插件宿主（<c>isolation: out-of-process</c>，RFC-0017）：按目录发现插件、启动并握手、把声明的操作与订阅接进宿主、监视健康与崩溃重启、
-/// 运行宿主回调服务，并把每个插件作为健康条目上报。通常由 <see cref="OutOfProcessPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载。
+/// 进程外插件宿主（<c>isolation: out-of-process</c>，RFC-0017）。
 /// </summary>
+/// <remarks>
+/// 按目录发现插件、启动并握手、把声明的操作与订阅接进宿主、监视健康与崩溃重启、运行宿主回调服务，并把每个插件作为健康条目上报。通常由 <see cref="OutOfProcessPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContributor, IAsyncDisposable
 {
@@ -79,8 +81,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private readonly PluginHostContext _context;
 
     /// <summary>
-    /// 日志工厂；附着到容器后换成宿主的。
+    /// 日志工厂。
     /// </summary>
+    /// <remarks>
+    /// 附着到容器后换成宿主的。
+    /// </remarks>
     private ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -89,18 +94,27 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private ILogger _logger;
 
     /// <summary>
-    /// 代理操作登记到的登记表；由特性在配置阶段提供。
+    /// 代理操作登记到的登记表。
     /// </summary>
+    /// <remarks>
+    /// 由特性在配置阶段提供。
+    /// </remarks>
     private OperationRegistry? _registry;
 
     /// <summary>
-    /// 回调服务器；附着后启动。
+    /// 回调服务器。
     /// </summary>
+    /// <remarks>
+    /// 附着后启动。
+    /// </remarks>
     private PluginCallbackServer? _server;
 
     /// <summary>
-    /// 创建宿主。回调端点在此刻选定（启动插件时经环境变量下发），服务器在 <see cref="AttachAsync"/> 时才监听。
+    /// 创建宿主。
     /// </summary>
+    /// <remarks>
+    /// 回调端点在此刻选定（启动插件时经环境变量下发），服务器在 <see cref="AttachAsync"/> 时才监听。
+    /// </remarks>
     /// <param name="options">选项。</param>
     /// <param name="configuration">宿主配置（插件配置节与绑定从中读取）。</param>
     /// <param name="clock">时钟。</param>
@@ -138,8 +152,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 一个插件的诊断快照；未加载为空。
+    /// 一个插件的诊断快照。
     /// </summary>
+    /// <remarks>
+    /// 未加载为空。
+    /// </remarks>
     public OutOfProcessPluginStatus? Describe(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
@@ -157,8 +174,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     internal void UseRegistry(OperationRegistry registry) => _registry = registry;
 
     /// <summary>
-    /// 同步发现一个插件目录（配置阶段使用）：读清单、按选项授予权限、启动并握手。失败的插件仍登记在宿主里以 Failed 上报。
+    /// 同步发现一个插件目录（配置阶段使用）。
     /// </summary>
+    /// <remarks>
+    /// 读清单、按选项授予权限、启动并握手。失败的插件仍登记在宿主里以 Failed 上报。
+    /// </remarks>
     internal Result<PluginRuntime> Discover(string directory)
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
 
@@ -217,8 +237,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 附着到已构建的宿主容器：换用宿主日志、启动回调服务器、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 附着到已构建的宿主容器。
     /// </summary>
+    /// <remarks>
+    /// 换用宿主日志、启动回调服务器、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -261,8 +284,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 把一条消息投递给订阅了该主题与类型的插件；第一个失败即为结果。
+    /// 把一条消息投递给订阅了该主题与类型的插件。
     /// </summary>
+    /// <remarks>
+    /// 第一个失败即为结果。
+    /// </remarks>
     internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
         foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type)))
@@ -420,8 +446,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 入口相对插件目录；Windows 上没有扩展名时补 <c>.exe</c>。不存在返回空。
+    /// 入口相对插件目录。
     /// </summary>
+    /// <remarks>
+    /// Windows 上没有扩展名时补 <c>.exe</c>。不存在返回空。
+    /// </remarks>
     internal static string? ResolveExecutable(string directory, string entry)
     {
         var path = Path.GetFullPath(Path.Combine(directory, entry));

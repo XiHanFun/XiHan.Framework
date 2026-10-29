@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// 向量存储里的知识块：元数据以 JSON 字符串保存；集合定义由 <see cref="Definition"/> 按维度构造（余弦相似度）。
+/// 向量存储里的知识块。
 /// </summary>
+/// <remarks>
+/// 元数据以 JSON 字符串保存；集合定义由 <see cref="Definition"/> 按维度构造（余弦相似度）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeVectorRecord
 {

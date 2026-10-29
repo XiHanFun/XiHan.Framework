@@ -9,8 +9,11 @@ using Xunit;
 namespace XiHan.Framework.Configuration.Conformance.Remote;
 
 /// <summary>
-/// <see cref="IRemoteConfigurationClient"/> 的一致性套件。继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。
+/// <see cref="IRemoteConfigurationClient"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class RemoteConfigurationClientConformance
 {
@@ -20,13 +23,19 @@ public abstract class RemoteConfigurationClientConformance
     protected virtual TimeSpan UnchangedWait => TimeSpan.FromSeconds(3);
 
     /// <summary>
-    /// 创建夹具。每个用例调用一次。
+    /// 创建夹具。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract Task<RemoteConfigurationFixture> CreateFixtureAsync();
 
     /// <summary>
-    /// 用例 1：发布后取到整份文档与非空版本；再次以该版本取值返回无值。
+    /// 用例 1：发布后取到整份文档与非空版本。
     /// </summary>
+    /// <remarks>
+    /// 再次以该版本取值返回无值。
+    /// </remarks>
     [Fact]
     public async Task Fetch_ReturnsPublishedDocument_AndUnchangedForKnownVersion()
     {
@@ -47,8 +56,11 @@ public abstract class RemoteConfigurationClientConformance
     }
 
     /// <summary>
-    /// 用例 2：再次发布后以旧版本取值得到新文档与不同的版本；以空版本取值总是返回文档。
+    /// 用例 2：再次发布后以旧版本取值得到新文档与不同的版本。
     /// </summary>
+    /// <remarks>
+    /// 以空版本取值总是返回文档。
+    /// </remarks>
     [Fact]
     public async Task Fetch_AfterRepublish_ReturnsNewVersion()
     {

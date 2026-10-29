@@ -13,8 +13,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Tests;
 
 /// <summary>
-/// 对着真实数据库（SQLite，<c>Persistence.SqlSugar</c>）：实体映射、<see cref="DateTimeOffset"/> 按 UTC 往返、各过滤项与续页都是 SQL 条件，停止时刷完的事件另一个宿主能读到。
+/// 对着真实数据库（SQLite，<c>Persistence.SqlSugar</c>）。
 /// </summary>
+/// <remarks>
+/// 实体映射、<see cref="DateTimeOffset"/> 按 UTC 往返、各过滤项与续页都是 SQL 条件，停止时刷完的事件另一个宿主能读到。
+/// </remarks>
 public sealed class SqliteAuditTrailTests
 {
     /// <summary>

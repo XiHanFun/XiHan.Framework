@@ -13,8 +13,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 分表：带 <c>[SplitTable]</c> 的实体经仓储写入按分表字段落到各月的表，查找跨表、列表与计数按 <c>Within</c> 的时间范围只扫范围内的表，更新 / 删除与批量方法在分表上同样成立。
+/// 分表。
 /// </summary>
+/// <remarks>
+/// 带 <c>[SplitTable]</c> 的实体经仓储写入按分表字段落到各月的表，查找跨表、列表与计数按 <c>Within</c> 的时间范围只扫范围内的表，更新 / 删除与批量方法在分表上同样成立。
+/// </remarks>
 public sealed class SqlSugarSplitTableTests : IDisposable
 {
     /// <summary>

@@ -23,16 +23,20 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Hosting.AspNetCore;
 
 /// <summary>
-/// ASP.NET Core 管道与端点的接入点。<c>AddXiHan()</c> 由内核的 <c>IHostApplicationBuilder</c> 扩展提供。
+/// ASP.NET Core 管道与端点的接入点。
 /// </summary>
+/// <remarks>
+/// <c>AddXiHan()</c> 由内核的 <c>IHostApplicationBuilder</c> 扩展提供。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
-    /// 让其余 ASP.NET Core 管道在内核管道内执行：请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），
-    /// 失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；应用未就绪时返回 503。
-    /// 带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
+    /// 让其余 ASP.NET Core 管道在内核管道内执行。
     /// </summary>
+    /// <remarks>
+    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
+    /// </remarks>
     public static IApplicationBuilder UseXiHan(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -91,8 +95,11 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 映射探针端点：<c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道。
+    /// 映射探针端点。
     /// </summary>
+    /// <remarks>
+    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道。
+    /// </remarks>
     public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix = "/health")
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -123,8 +130,11 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射；装配了本地化时 <c>detail</c> 与字段级 <c>errors</c> 按调用方区域翻译并带 <c>Content-Language</c>。
+    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射。
     /// </summary>
+    /// <remarks>
+    /// 装配了本地化时 <c>detail</c> 与字段级 <c>errors</c> 按调用方区域翻译并带 <c>Content-Language</c>。
+    /// </remarks>
     private static async Task WriteProblemAsync(HttpContext httpContext, Error error, string traceId, InvocationContext? context)
     {
         string? detail = null;

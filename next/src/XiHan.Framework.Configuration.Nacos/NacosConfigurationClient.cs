@@ -13,9 +13,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Nacos;
 
 /// <summary>
-/// Nacos 远程配置客户端：命名空间即 <c>dataId</c>，版本是服务端给出的内容 MD5（响应头 <c>Content-MD5</c>）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。
-/// 直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。
+/// Nacos 远程配置客户端。
 /// </summary>
+/// <remarks>
+/// 命名空间即 <c>dataId</c>，版本是服务端给出的内容 MD5（响应头 <c>Content-MD5</c>）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisposable
 {
@@ -162,8 +164,11 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 取整份内容；不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；没有时退到内容的 SHA-256，此时监听接口认不出这个版本、每个窗口都会报告变化，退化成普通轮询但仍然正确。
+    /// 取整份内容。
     /// </summary>
+    /// <remarks>
+    /// 不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；没有时退到内容的 SHA-256，此时监听接口认不出这个版本、每个窗口都会报告变化，退化成普通轮询但仍然正确。
+    /// </remarks>
     private async Task<Maybe<(string Text, string Version)>> GetContentAsync(string dataId, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(address => new HttpRequestMessage(HttpMethod.Get, ConfigsUri(address, dataId)), _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
@@ -202,8 +207,11 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 按地址顺序发送：连接失败换下一个地址，全部失败抛出最后一个异常；每次请求各自计超时。
+    /// 按地址顺序发送。
     /// </summary>
+    /// <remarks>
+    /// 连接失败换下一个地址，全部失败抛出最后一个异常；每次请求各自计超时。
+    /// </remarks>
     private async Task<HttpResponseMessage> SendAsync(Func<Uri, HttpRequestMessage> build, TimeSpan timeout, CancellationToken cancellationToken)
     {
         await EnsureTokenAsync(cancellationToken).ConfigureAwait(false);

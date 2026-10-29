@@ -11,8 +11,11 @@ using Microsoft.IdentityModel.Tokens;
 namespace XiHan.Framework.Security.OpenIdConnect.Tests;
 
 /// <summary>
-/// 桩签发者：以 HTTP 处理器身份应答发现文档与 JWKS，并用当前 RSA 密钥签发令牌；可轮换密钥、下线、改签发者。
+/// 桩签发者。
 /// </summary>
+/// <remarks>
+/// 以 HTTP 处理器身份应答发现文档与 JWKS，并用当前 RSA 密钥签发令牌；可轮换密钥、下线、改签发者。
+/// </remarks>
 internal sealed class FakeIssuer : HttpMessageHandler
 {
     /// <summary>
@@ -26,8 +29,11 @@ internal sealed class FakeIssuer : HttpMessageHandler
     public const string Audience = "api";
 
     /// <summary>
-    /// JWKS 当前公开的密钥；最后一个是签发用的当前密钥。
+    /// JWKS 当前公开的密钥。
     /// </summary>
+    /// <remarks>
+    /// 最后一个是签发用的当前密钥。
+    /// </remarks>
     private readonly List<RsaSecurityKey> _keys = [];
 
     /// <summary>
@@ -72,8 +78,11 @@ internal sealed class FakeIssuer : HttpMessageHandler
     }
 
     /// <summary>
-    /// 签发 RS256 令牌；默认用当前密钥、主体 alice、签发者取发现文档的、十分钟有效期。
+    /// 签发 RS256 令牌。
     /// </summary>
+    /// <remarks>
+    /// 默认用当前密钥、主体 alice、签发者取发现文档的、十分钟有效期。
+    /// </remarks>
     public string CreateToken(string? subject = "alice", RsaSecurityKey? key = null, string? issuer = null, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
     {
         var identity = new ClaimsIdentity();

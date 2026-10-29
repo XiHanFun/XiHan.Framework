@@ -15,8 +15,11 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// Kubernetes 领导选举的能力包入口：提供 <c>scheduling.leader@1</c>，顶替内存实现的选举；作业调度仍由抽象包的引擎承担，不共享的存储下它用这里的选举决定哪个 Pod 按计划运行集群唯一的作业。
+/// Kubernetes 领导选举的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>scheduling.leader@1</c>，顶替内存实现的选举；作业调度仍由抽象包的引擎承担，不共享的存储下它用这里的选举决定哪个 Pod 按计划运行集群唯一的作业。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KubernetesSchedulingFeature : IFeature
 {

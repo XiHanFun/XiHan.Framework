@@ -30,8 +30,11 @@ public static partial class HttpInvocation
     public const string DeadlineHeader = "xihan-deadline";
 
     /// <summary>
-    /// gRPC 的相对超时头：<c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间。
+    /// gRPC 的相对超时头。
     /// </summary>
+    /// <remarks>
+    /// <c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间。
+    /// </remarks>
     public const string GrpcTimeoutHeader = "grpc-timeout";
 
     /// <summary>
@@ -40,10 +43,11 @@ public static partial class HttpInvocation
     private const string ContextItemKey = "xihan.invocation-context";
 
     /// <summary>
-    /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、
-    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；
-    /// 调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
+    /// 从请求头构造调用上下文。
     /// </summary>
+    /// <remarks>
+    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
+    /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -53,10 +57,11 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 以同一请求的头部构造另一个调用上下文：服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。
-    /// 供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道；
-    /// 也供绕过管道的端点（如 SignalR Hub 以连接的 <c>HttpContext</c>）发起内核调用，凭据随之带上，调用经管道时照常重新认证。
+    /// 以同一请求的头部构造另一个调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道；也供绕过管道的端点（如 SignalR Hub 以连接的 <c>HttpContext</c>）发起内核调用，凭据随之带上，调用经管道时照常重新认证。
+    /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext, IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -122,9 +127,11 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// HTTP 请求的调用来源：方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer，以及路由匹配到的端点的路由模板与名字（<c>UseXiHan()</c> 在路由之后，端点已选定）。
-    /// 远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4。
+    /// HTTP 请求的调用来源。
     /// </summary>
+    /// <remarks>
+    /// 方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer，以及路由匹配到的端点的路由模板与名字（<c>UseXiHan()</c> 在路由之后，端点已选定）。远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4。
+    /// </remarks>
     private static InvocationOrigin OriginOf(HttpContext httpContext)
     {
         var request = httpContext.Request;
@@ -149,9 +156,11 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 请求出示的凭据：先取 <c>Authorization</c> 头；没有时，请求路径（不含 PathBase）按路径段落在登记的查询串令牌路径前缀下，且查询串 <c>access_token</c> 只有一个非空值，才作为 <c>Bearer</c> 凭据。
-    /// 其他路径的查询串令牌一律忽略。认证方案 <c>XiHan</c> 与 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 共用这一条规则。
+    /// 请求出示的凭据。
     /// </summary>
+    /// <remarks>
+    /// 先取 <c>Authorization</c> 头；没有时，请求路径（不含 PathBase）按路径段落在登记的查询串令牌路径前缀下，且查询串 <c>access_token</c> 只有一个非空值，才作为 <c>Bearer</c> 凭据。其他路径的查询串令牌一律忽略。认证方案 <c>XiHan</c> 与 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 共用这一条规则。
+    /// </remarks>
     internal static Maybe<AuthenticationCredential> CredentialOf(HttpContext httpContext)
     {
         var request = httpContext.Request;
@@ -179,8 +188,11 @@ public static partial class HttpInvocation
     private static string? HeaderOrNull(string value) => value.Length > 0 ? value : null;
 
     /// <summary>
-    /// 取当前请求的调用上下文；请求未经过 <c>UseXiHan()</c> 时为无值。
+    /// 取当前请求的调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 请求未经过 <c>UseXiHan()</c> 时为无值。
+    /// </remarks>
     public static Maybe<InvocationContext> GetXiHanContext(this HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -188,8 +200,11 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 从 <c>Accept-Language</c> 头取候选区域：按权重降序（同权重保持原顺序），跳过 <c>*</c>、权重为 0 与格式不合法的项。
+    /// 从 <c>Accept-Language</c> 头取候选区域。
     /// </summary>
+    /// <remarks>
+    /// 按权重降序（同权重保持原顺序），跳过 <c>*</c>、权重为 0 与格式不合法的项。
+    /// </remarks>
     public static IReadOnlyList<string> AcceptedLocales(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -209,8 +224,11 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 解析 W3C <c>baggage</c> 头，只保留格式合法的 <c>xihan.</c> 键；值按 URL 解码。
+    /// 解析 W3C <c>baggage</c> 头，只保留格式合法的 <c>xihan.</c> 键。
     /// </summary>
+    /// <remarks>
+    /// 值按 URL 解码。
+    /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
 
     /// <summary>

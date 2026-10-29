@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// XGI 请求消息：协议适配器把线上请求翻译成它交给 <see cref="IOperationInvoker"/>。载荷是请求类型的 UTF-8 JSON；空载荷等价于 <c>{}</c>。
+/// XGI 请求消息。
 /// </summary>
+/// <remarks>
+/// 协议适配器把线上请求翻译成它交给 <see cref="IOperationInvoker"/>。载荷是请求类型的 UTF-8 JSON；空载荷等价于 <c>{}</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationRequest
 {

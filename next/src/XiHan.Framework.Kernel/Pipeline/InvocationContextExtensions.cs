@@ -45,28 +45,43 @@ public static class InvocationContextExtensions
     }
 
     /// <summary>
-    /// 读取本次调用的结果；尚未设置时为无值。
+    /// 读取本次调用的结果。
     /// </summary>
+    /// <remarks>
+    /// 尚未设置时为无值。
+    /// </remarks>
     public static Maybe<Result> GetOutcome(this InvocationContext context) => context.Get(_outcomeKey);
 
     /// <summary>
-    /// 设置本次调用的结果。Egress 阶段据此翻译响应。
+    /// 设置本次调用的结果。
     /// </summary>
+    /// <remarks>
+    /// Egress 阶段据此翻译响应。
+    /// </remarks>
     public static void SetOutcome(this InvocationContext context, Result outcome) => context.Set(_outcomeKey, outcome);
 
     /// <summary>
-    /// 读取调用来源；内部发起、没有经协议适配器的调用为无值。派生上下文共享同一个来源。
+    /// 读取调用来源。
     /// </summary>
+    /// <remarks>
+    /// 内部发起、没有经协议适配器的调用为无值。派生上下文共享同一个来源。
+    /// </remarks>
     public static Maybe<InvocationOrigin> GetOrigin(this InvocationContext context) => context.Get(_originKey);
 
     /// <summary>
-    /// 写入调用来源。协议适配器建上下文时调用；之后的阶段只读。
+    /// 写入调用来源。
     /// </summary>
+    /// <remarks>
+    /// 协议适配器建上下文时调用；之后的阶段只读。
+    /// </remarks>
     public static void SetOrigin(this InvocationContext context, InvocationOrigin origin) => context.Set(_originKey, origin);
 
     /// <summary>
-    /// 若尚未设置结果，则设置为 <paramref name="outcome"/>；已设置时保留原值。
+    /// 若尚未设置结果，则设置为 <paramref name="outcome"/>。
     /// </summary>
+    /// <remarks>
+    /// 已设置时保留原值。
+    /// </remarks>
     public static void SetOutcomeIfMissing(this InvocationContext context, Result outcome)
     {
         if (!context.GetOutcome().HasValue)

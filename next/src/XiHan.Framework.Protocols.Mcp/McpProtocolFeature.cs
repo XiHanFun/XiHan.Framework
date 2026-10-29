@@ -17,8 +17,11 @@ using XiHan.Framework.Protocols.Mcp.Transports;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的能力包入口：提供 <c>protocols.mcp@1</c>，注册选项、消息目录、<see cref="McpServer"/> 与命令行宿主的 <c>mcp</c> 命令（stdio 传输）；HTTP 端点由应用在路由阶段调用 <c>MapXiHanMcp()</c> 映射。
+/// MCP 协议适配器的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>protocols.mcp@1</c>，注册选项、消息目录、<see cref="McpServer"/> 与命令行宿主的 <c>mcp</c> 命令（stdio 传输）；HTTP 端点由应用在路由阶段调用 <c>MapXiHanMcp()</c> 映射。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class McpProtocolFeature : IFeature
 {

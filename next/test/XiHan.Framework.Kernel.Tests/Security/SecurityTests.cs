@@ -9,13 +9,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Security;
 
 /// <summary>
-/// 安全原语的行为：资源名解析、主体声明查询、上下文中的安全上下文读写、有界权限注册表与授权结果转换。
+/// 安全原语的行为。
 /// </summary>
+/// <remarks>
+/// 资源名解析、主体声明查询、上下文中的安全上下文读写、有界权限注册表与授权结果转换。
+/// </remarks>
 public sealed class SecurityTests
 {
     /// <summary>
-    /// 空容器；这些测试只需要一个服务提供器来创建上下文。
+    /// 空容器。
     /// </summary>
+    /// <remarks>
+    /// 这些测试只需要一个服务提供器来创建上下文。
+    /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]

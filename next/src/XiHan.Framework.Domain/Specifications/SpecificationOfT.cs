@@ -14,8 +14,11 @@ namespace XiHan.Framework.Domain.Specifications;
 public class Specification<T> : ISpecification<T>
 {
     /// <summary>
-    /// <see cref="Criteria"/> 编译后的委托；首次内存判定时才编译，只交给查询提供器翻译的规约不付编译代价。
+    /// <see cref="Criteria"/> 编译后的委托。
     /// </summary>
+    /// <remarks>
+    /// 首次内存判定时才编译，只交给查询提供器翻译的规约不付编译代价。
+    /// </remarks>
     private Func<T, bool>? _predicate;
 
     /// <summary>

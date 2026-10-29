@@ -9,8 +9,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 健康项 <c>persistence.sqlsugar.database</c>：选项里的探测间隔解析；数据库可达时 Ready，连接串指向不存在的目录时 Degraded 并带 <see cref="PersistenceErrors.StoreUnavailable"/>，应用仍就绪。
+/// 健康项 <c>persistence.sqlsugar.database</c>。
 /// </summary>
+/// <remarks>
+/// 选项里的探测间隔解析；数据库可达时 Ready，连接串指向不存在的目录时 Degraded 并带 <see cref="PersistenceErrors.StoreUnavailable"/>，应用仍就绪。
+/// </remarks>
 public sealed class SqlSugarHealthTests : IDisposable
 {
     /// <summary>

@@ -10,8 +10,11 @@ using XiHan.Framework.Security.Database.Tests.Fixtures;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 授予实体在真实数据库（SQLite，经 <c>Persistence.SqlSugar</c> 建表）上的映射：授予 → 查询（含空字符串租户列）→ 撤销。
+/// 授予实体在真实数据库（SQLite，经 <c>Persistence.SqlSugar</c> 建表）上的映射。
 /// </summary>
+/// <remarks>
+/// 授予 → 查询（含空字符串租户列）→ 撤销。
+/// </remarks>
 public sealed class SqlitePermissionGrantStoreTests
 {
     [Fact]

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 
 /// <summary>
-/// 指派规则的解析器：按规则类型登记（<c>AddAssigneeProvider&lt;T&gt;()</c>，同类型只能一个）。只读，在实例锁内运行；数据不可用时返回失败，不得以空列表掩盖。
+/// 指派规则的解析器。
 /// </summary>
+/// <remarks>
+/// 按规则类型登记（<c>AddAssigneeProvider&lt;T&gt;()</c>，同类型只能一个）。只读，在实例锁内运行；数据不可用时返回失败，不得以空列表掩盖。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IAssigneeProvider
 {

@@ -14,8 +14,11 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// 缓存契约层的单元测试：键与选项的校验、JSON 序列化器、序列化缓存、基于存储的锁、序列化器注册与幂等选项。
+/// 缓存契约层的单元测试。
 /// </summary>
+/// <remarks>
+/// 键与选项的校验、JSON 序列化器、序列化缓存、基于存储的锁、序列化器注册与幂等选项。
+/// </remarks>
 public sealed class CacheContractTests
 {
     /// <summary>

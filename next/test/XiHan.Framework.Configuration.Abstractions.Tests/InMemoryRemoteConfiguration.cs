@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 进程内的远程配置：发布即换版本；可让取值失败或抛出。
+/// 进程内的远程配置。
 /// </summary>
+/// <remarks>
+/// 发布即换版本；可让取值失败或抛出。
+/// </remarks>
 internal sealed class InMemoryRemoteConfiguration : IRemoteConfigurationClient
 {
     /// <summary>

@@ -7,8 +7,11 @@ using Google.Protobuf;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// 协议消息的 proto3 JSON 映射（Wasm 载体的编码，<c>spec/plugin/wasm.md</c> §2）：字段名 lowerCamelCase、枚举为名字、缺省值省略、未知字段忽略。
+/// 协议消息的 proto3 JSON 映射（Wasm 载体的编码，<c>spec/plugin/wasm.md</c> §2）。
 /// </summary>
+/// <remarks>
+/// 字段名 lowerCamelCase、枚举为名字、缺省值省略、未知字段忽略。
+/// </remarks>
 internal static class PluginJsonCodec
 {
     /// <summary>
@@ -27,8 +30,11 @@ internal static class PluginJsonCodec
     public static byte[] Encode(IMessage message) => Encoding.UTF8.GetBytes(_formatter.Format(message));
 
     /// <summary>
-    /// UTF-8 JSON → 消息；不是合法 JSON 或与消息不符返回空。
+    /// UTF-8 JSON → 消息。
     /// </summary>
+    /// <remarks>
+    /// 不是合法 JSON 或与消息不符返回空。
+    /// </remarks>
     public static TMessage? Decode<TMessage>(ReadOnlySpan<byte> utf8)
         where TMessage : IMessage<TMessage>, new()
     {

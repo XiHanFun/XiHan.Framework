@@ -8,8 +8,11 @@ using XiHan.Framework.Persistence.Abstractions;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 声明了列长的实体：框架的 <c>[LongText]</c>、DataAnnotations 的 <c>[MaxLength(n)]</c> / 无参 <c>[MaxLength]</c> / <c>[StringLength(n)]</c>，以及没有注解的字符串列。
+/// 声明了列长的实体。
 /// </summary>
+/// <remarks>
+/// 框架的 <c>[LongText]</c>、DataAnnotations 的 <c>[MaxLength(n)]</c> / 无参 <c>[MaxLength]</c> / <c>[StringLength(n)]</c>，以及没有注解的字符串列。
+/// </remarks>
 internal sealed class LengthAnnotatedRecord : IEntity<Guid>
 {
     /// <inheritdoc />
@@ -22,8 +25,11 @@ internal sealed class LengthAnnotatedRecord : IEntity<Guid>
     public string Code { get; set; } = string.Empty;
 
     /// <summary>
-    /// 以无参 <c>[MaxLength]</c> 声明的长文本（应用实体可用；正式包里 AOT 分析器不放行）。
+    /// 以无参 <c>[MaxLength]</c> 声明的长文本。
     /// </summary>
+    /// <remarks>
+    /// 应用实体可用；正式包里 AOT 分析器不放行。
+    /// </remarks>
     [MaxLength]
     public string Body { get; set; } = string.Empty;
 

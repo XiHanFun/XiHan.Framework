@@ -13,9 +13,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Localization.InMemory;
 
 /// <summary>
-/// 内存本地化的能力包入口：默认提供 <c>localization.resources@1</c>，注册选项、原语层与内核的语言文件目录与本地化器；
-/// 启动时把本地化器设为进程默认的 <see cref="MessageScope"/>，让 <c>key.L()</c> 与 <see cref="Error.Message"/> 在任何地方都有默认语言文案。
+/// 内存本地化的能力包入口。
 /// </summary>
+/// <remarks>
+/// 默认提供 <c>localization.resources@1</c>，注册选项、原语层与内核的语言文件目录与本地化器；启动时把本地化器设为进程默认的 <see cref="MessageScope"/>，让 <c>key.L()</c> 与 <see cref="Error.Message"/> 在任何地方都有默认语言文案。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryLocalizationFeature : IHostedFeature
 {

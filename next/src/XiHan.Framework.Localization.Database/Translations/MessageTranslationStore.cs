@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 翻译的批量读写（作用域服务，须在调用的 Transaction 阶段内使用）：一次查询取回已有行，再用仓储的批量方法一次写入。写入后调用 <see cref="MessageTranslationLoader.ReloadAsync"/> 或等待周期刷新才会生效。
+/// 翻译的批量读写（作用域服务，须在调用的 Transaction 阶段内使用）。
 /// </summary>
+/// <remarks>
+/// 一次查询取回已有行，再用仓储的批量方法一次写入。写入后调用 <see cref="MessageTranslationLoader.ReloadAsync"/> 或等待周期刷新才会生效。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MessageTranslationStore
 {
@@ -43,8 +46,11 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 新增或覆盖，按顺序逐项返回；重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。
+    /// 新增或覆盖，按顺序逐项返回。
     /// </summary>
+    /// <remarks>
+    /// 重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。
+    /// </remarks>
     public async ValueTask<IReadOnlyList<MessageTranslationResult>> UpsertAsync(IReadOnlyList<MessageTranslationEntry> entries, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entries);
@@ -103,8 +109,11 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 删除，按顺序逐项返回；不存在 → <see cref="LocalizationErrors.TranslationNotFound"/>，同一批里同一键第二次同样不存在。
+    /// 删除，按顺序逐项返回。
     /// </summary>
+    /// <remarks>
+    /// 不存在 → <see cref="LocalizationErrors.TranslationNotFound"/>，同一批里同一键第二次同样不存在。
+    /// </remarks>
     public async ValueTask<IReadOnlyList<MessageTranslationResult>> RemoveAsync(IReadOnlyList<MessageTranslationKey> keys, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(keys);
@@ -160,8 +169,11 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 按自然键集合一次查询：键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。
+    /// 按自然键集合一次查询。
     /// </summary>
+    /// <remarks>
+    /// 键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。
+    /// </remarks>
     private async Task<Dictionary<MessageTranslationKey, MessageTranslation>> FindManyAsync(IReadOnlyList<MessageTranslationKey> keys, CancellationToken cancellationToken)
     {
         var names = keys.Select(static k => k.Key).Distinct(StringComparer.Ordinal).ToList();

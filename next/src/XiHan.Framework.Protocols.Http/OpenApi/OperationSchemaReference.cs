@@ -6,10 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 普通端点的元数据：它的 JSON 请求体与 JSON 响应正文各"同某个已登记操作的请求 / 响应 Schema"。
-/// 普通端点不做第二套 Schema 推导，JSON 类型只能引用已登记操作的根 Schema：显式声明用这个元数据（<c>WithXiHanOperationSchema</c>），
-/// 没有声明时按 <c>Accepts&lt;T&gt;</c> / <c>Produces&lt;T&gt;</c> 的类型与已登记操作的请求 / 响应类型自动匹配。
+/// 普通端点的元数据。
 /// </summary>
+/// <remarks>
+/// 它的 JSON 请求体与 JSON 响应正文各"同某个已登记操作的请求 / 响应 Schema"。普通端点不做第二套 Schema 推导，JSON 类型只能引用已登记操作的根 Schema：显式声明用这个元数据（<c>WithXiHanOperationSchema</c>），没有声明时按 <c>Accepts&lt;T&gt;</c> / <c>Produces&lt;T&gt;</c> 的类型与已登记操作的请求 / 响应类型自动匹配。
+/// </remarks>
 /// <param name="RequestOperationId">请求体同哪个操作的请求 Schema；为空按类型匹配。</param>
 /// <param name="ResponseOperationId">响应正文同哪个操作的响应 Schema；为空按类型匹配。</param>
 [ApiLevel(Stability.Preview, "5.0")]

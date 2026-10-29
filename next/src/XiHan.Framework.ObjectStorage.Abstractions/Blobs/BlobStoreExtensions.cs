@@ -33,8 +33,11 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 删除一个对象；返回是否存在过。
+    /// 删除一个对象。
     /// </summary>
+    /// <remarks>
+    /// 返回是否存在过。
+    /// </remarks>
     public static async ValueTask<Result<bool>> DeleteAsync(this IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(store);
@@ -43,8 +46,11 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 对象是否存在；不存在是成功的 <see langword="false"/>，其他失败原样返回。
+    /// 对象是否存在。
     /// </summary>
+    /// <remarks>
+    /// 不存在是成功的 <see langword="false"/>，其他失败原样返回。
+    /// </remarks>
     public static async ValueTask<Result<bool>> ExistsAsync(this IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(store);

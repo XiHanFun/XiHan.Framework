@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Hosting;
 
 /// <summary>
-/// <see cref="App"/> 与 <see cref="AppBuilder"/> 的端到端行为：生命周期顺序、失败策略、停止超时、管道调用、绑定与提供者选择、构建期约束。
+/// <see cref="App"/> 与 <see cref="AppBuilder"/> 的端到端行为。
 /// </summary>
+/// <remarks>
+/// 生命周期顺序、失败策略、停止超时、管道调用、绑定与提供者选择、构建期约束。
+/// </remarks>
 public sealed class AppTests
 {
     [Fact]

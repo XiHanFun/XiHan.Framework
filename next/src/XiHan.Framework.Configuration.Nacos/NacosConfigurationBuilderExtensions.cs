@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Nacos;
 
 /// <summary>
-/// 把 Nacos 接进 <see cref="IConfigurationBuilder"/>：按选项自建客户端，交给 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration"/>（首次同步加载、按间隔轮询重载）。
+/// 把 Nacos 接进 <see cref="IConfigurationBuilder"/>。
 /// </summary>
+/// <remarks>
+/// 按选项自建客户端，交给 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration"/>（首次同步加载、按间隔轮询重载）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class NacosConfigurationBuilderExtensions
 {

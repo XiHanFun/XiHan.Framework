@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 工作流子系统的错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 工作流子系统的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowErrors
 {
@@ -17,8 +20,11 @@ public static class WorkflowErrors
     public const string DefinitionInvalid = "WORKFLOW_VALIDATION_001";
 
     /// <summary>
-    /// 启动或恢复的输入不合法（缺必填变量、子流程深度超限、任务结果不在允许范围、跳转目标不存在、迁移目标不兼容）。
+    /// 启动或恢复的输入不合法。
     /// </summary>
+    /// <remarks>
+    /// 缺必填变量、子流程深度超限、任务结果不在允许范围、跳转目标不存在、迁移目标不兼容。
+    /// </remarks>
     public const string InputInvalid = "WORKFLOW_VALIDATION_002";
 
     /// <summary>

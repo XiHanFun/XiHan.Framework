@@ -16,8 +16,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 内存多租户的能力包入口：默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。健康项 <see cref="HealthName"/> 在租户存储满时 Degraded。
+/// 内存多租户的能力包入口。
 /// </summary>
+/// <remarks>
+/// 默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。健康项 <see cref="HealthName"/> 在租户存储满时 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMultiTenancyFeature : IFeature
 {

@@ -6,14 +6,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 
 /// <summary>
-/// CloudEvents 1.0 信封。数据是字节；<see cref="DataContentType"/> 说明其格式，JSON 数据在结构化编码里内联，其他数据按 Base64 编码。
+/// CloudEvents 1.0 信封。
 /// </summary>
+/// <remarks>
+/// 数据是字节；<see cref="DataContentType"/> 说明其格式，JSON 数据在结构化编码里内联，其他数据按 Base64 编码。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MessageEnvelope
 {
     /// <summary>
-    /// 共享的空扩展表；没有扩展的信封都指向它。
+    /// 共享的空扩展表。
     /// </summary>
+    /// <remarks>
+    /// 没有扩展的信封都指向它。
+    /// </remarks>
     private static readonly IReadOnlyDictionary<string, string> _noExtensions = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
@@ -22,8 +28,11 @@ public sealed record MessageEnvelope
     public const string SpecVersion = "1.0";
 
     /// <summary>
-    /// 事件 ID；与 <see cref="Source"/> 一起唯一。
+    /// 事件 ID。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="Source"/> 一起唯一。
+    /// </remarks>
     public required string Id
     {
         get => field;
@@ -59,8 +68,11 @@ public sealed record MessageEnvelope
     public string? Subject { get; init; }
 
     /// <summary>
-    /// 数据内容类型；默认 <c>application/json</c>。
+    /// 数据内容类型。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>application/json</c>。
+    /// </remarks>
     public string DataContentType
     {
         get => field;
@@ -73,8 +85,11 @@ public sealed record MessageEnvelope
     public ReadOnlyMemory<byte> Data { get; init; }
 
     /// <summary>
-    /// 扩展属性；名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>。
+    /// 扩展属性。
     /// </summary>
+    /// <remarks>
+    /// 名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>。
+    /// </remarks>
     public IReadOnlyDictionary<string, string> Extensions
     {
         get => field;

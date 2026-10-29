@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Stores;
 
 /// <summary>
-/// 缓存键：非空、不含空白与控制字符、不超过 <see cref="MaxLength"/>。区分大小写。
+/// 缓存键。
 /// </summary>
+/// <remarks>
+/// 非空、不含空白与控制字符、不超过 <see cref="MaxLength"/>。区分大小写。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct CacheKey
 {
@@ -17,8 +20,11 @@ public readonly record struct CacheKey
     public const int MaxLength = 512;
 
     /// <summary>
-    /// 创建键；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建键。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public CacheKey(string value)
     {
         Value = Validate(value);
@@ -57,8 +63,11 @@ public readonly record struct CacheKey
     }
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

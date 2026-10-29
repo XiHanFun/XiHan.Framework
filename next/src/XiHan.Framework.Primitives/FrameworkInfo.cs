@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 框架身份信息。版本由构建期生成的常量提供，不经反射读取。
+/// 框架身份信息。
 /// </summary>
+/// <remarks>
+/// 版本由构建期生成的常量提供，不经反射读取。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class FrameworkInfo
 {

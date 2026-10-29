@@ -10,15 +10,20 @@ using XiHan.Framework.Security.Abstractions;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// 签发者元数据的缓存：首次按需取发现文档与 JWKS，按 <see cref="OpenIdConnectOptions.RefreshInterval"/> 自动刷新，
-/// 未知签名密钥时按需刷新但不快于 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/>；刷新失败沿用最后一份成功结果。
+/// 签发者元数据的缓存。
 /// </summary>
+/// <remarks>
+/// 首次按需取发现文档与 JWKS，按 <see cref="OpenIdConnectOptions.RefreshInterval"/> 自动刷新，未知签名密钥时按需刷新但不快于 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/>；刷新失败沿用最后一份成功结果。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class OpenIdConnectMetadataCache : IDisposable
 {
     /// <summary>
-    /// 尚无任何元数据时，两次失败尝试之间的间隔；避免签发者故障期间每次认证都发起请求。
+    /// 尚无任何元数据时，两次失败尝试之间的间隔。
     /// </summary>
+    /// <remarks>
+    /// 避免签发者故障期间每次认证都发起请求。
+    /// </remarks>
     public static readonly TimeSpan FailureRetryDelay = TimeSpan.FromSeconds(5);
 
     /// <summary>
@@ -47,8 +52,11 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     private readonly Uri _address;
 
     /// <summary>
-    /// 同一时刻只允许一次取数；并发的调用方等待同一次结果。
+    /// 同一时刻只允许一次取数。
     /// </summary>
+    /// <remarks>
+    /// 并发的调用方等待同一次结果。
+    /// </remarks>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
@@ -67,13 +75,19 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     private DateTimeOffset _syncAfter = DateTimeOffset.MinValue;
 
     /// <summary>
-    /// 上一次按需刷新的时刻；空表示还没有过。
+    /// 上一次按需刷新的时刻。
     /// </summary>
+    /// <remarks>
+    /// 空表示还没有过。
+    /// </remarks>
     private DateTimeOffset? _lastRequestedRefresh;
 
     /// <summary>
-    /// 创建；<paramref name="http"/> 的生命周期由调用方掌握。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="http"/> 的生命周期由调用方掌握。
+    /// </remarks>
     public OpenIdConnectMetadataCache(OpenIdConnectOptions options, HttpClient http, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -85,13 +99,19 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 最后一份成功取得的元数据；尚未取得为空。
+    /// 最后一份成功取得的元数据。
     /// </summary>
+    /// <remarks>
+    /// 尚未取得为空。
+    /// </remarks>
     public OpenIdConnectMetadata? Current => _current;
 
     /// <summary>
-    /// 取元数据：缓存未到期直接返回；否则取数，失败时有缓存就沿用缓存，没有缓存返回 <c>SECURITY_UNAVAILABLE_003</c>。
+    /// 取元数据。
     /// </summary>
+    /// <remarks>
+    /// 缓存未到期直接返回；否则取数，失败时有缓存就沿用缓存，没有缓存返回 <c>SECURITY_UNAVAILABLE_003</c>。
+    /// </remarks>
     public ValueTask<Result<OpenIdConnectMetadata>> GetAsync(CancellationToken cancellationToken)
     {
         var current = _current;
@@ -101,8 +121,11 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 按需刷新（签名密钥未知时调用）：距上次按需刷新不足 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/> 时不取数，直接返回当前结果。
+    /// 按需刷新（签名密钥未知时调用）。
     /// </summary>
+    /// <remarks>
+    /// 距上次按需刷新不足 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/> 时不取数，直接返回当前结果。
+    /// </remarks>
     public ValueTask<Result<OpenIdConnectMetadata>> RefreshAsync(CancellationToken cancellationToken)
     {
         var now = _clock.GetUtcNow();
@@ -131,8 +154,11 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
         => new(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }) { Timeout = options.BackchannelTimeout };
 
     /// <summary>
-    /// 在门内取数；<paramref name="force"/> 为假时先复查别的调用方是否已经取好。
+    /// 在门内取数。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="force"/> 为假时先复查别的调用方是否已经取好。
+    /// </remarks>
     private async Task<Result<OpenIdConnectMetadata>> FetchAsync(bool force, CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);

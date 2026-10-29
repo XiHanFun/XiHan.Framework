@@ -12,13 +12,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 
 /// <summary>
-/// 内置中间件与上下文扩展的行为：<see cref="DeadlineMiddleware"/> 对超时与取消的翻译、<see cref="ObserveMiddleware"/> 对异常的收敛、强类型 Items 与结果槽。
+/// 内置中间件与上下文扩展的行为。
 /// </summary>
+/// <remarks>
+/// <see cref="DeadlineMiddleware"/> 对超时与取消的翻译、<see cref="ObserveMiddleware"/> 对异常的收敛、强类型 Items 与结果槽。
+/// </remarks>
 public sealed class MiddlewareTests
 {
     /// <summary>
-    /// 空容器；这些测试直接调用中间件，不经过容器解析。
+    /// 空容器。
     /// </summary>
+    /// <remarks>
+    /// 这些测试直接调用中间件，不经过容器解析。
+    /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     [Fact]

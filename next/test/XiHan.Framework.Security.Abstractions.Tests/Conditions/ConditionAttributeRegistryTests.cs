@@ -6,8 +6,11 @@ using XiHan.Framework.Security.Abstractions.Conditions;
 namespace XiHan.Framework.Security.Abstractions.Tests.Conditions;
 
 /// <summary>
-/// 条件属性登记表：查找顺序是契约——精确名 → 别名 → 最长匹配的族；登记冲突在构造时就抛出，不留到求值时静默选一个。
+/// 条件属性登记表。
 /// </summary>
+/// <remarks>
+/// 查找顺序是契约——精确名 → 别名 → 最长匹配的族；登记冲突在构造时就抛出，不留到求值时静默选一个。
+/// </remarks>
 public sealed class ConditionAttributeRegistryTests
 {
     [Fact]

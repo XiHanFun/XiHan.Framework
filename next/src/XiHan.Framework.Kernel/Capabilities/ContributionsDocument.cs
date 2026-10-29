@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>contributes</c> 的 JSON 形态。各列表缺省表示没有对应贡献。
+/// <c>xihan.manifest.json</c> 中 <c>contributes</c> 的 JSON 形态。
 /// </summary>
+/// <remarks>
+/// 各列表缺省表示没有对应贡献。
+/// </remarks>
 internal sealed class ContributionsDocument
 {
     /// <summary>

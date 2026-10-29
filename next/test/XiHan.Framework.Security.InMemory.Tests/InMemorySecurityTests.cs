@@ -21,8 +21,11 @@ namespace XiHan.Framework.Security.InMemory.Tests;
 public sealed class InMemorySecurityTests
 {
     /// <summary>
-    /// 两个主体（alice 带角色、租户与附加声明，bob 只有 API Key）与角色、用户授予的配置。
+    /// 两个主体与角色、用户授予的配置。
     /// </summary>
+    /// <remarks>
+    /// alice 带角色、租户与附加声明，bob 只有 API Key。
+    /// </remarks>
     private static readonly KeyValuePair<string, string?>[] _configuration =
     [
         new("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
@@ -194,8 +197,11 @@ public sealed class InMemorySecurityTests
     }
 
     /// <summary>
-    /// 在新作用域里经完整管道调用：可选放入 Authorization 头形式的凭据与授权要求，返回结果与处理器看到的主体。
+    /// 在新作用域里经完整管道调用。
     /// </summary>
+    /// <remarks>
+    /// 可选放入 Authorization 头形式的凭据与授权要求，返回结果与处理器看到的主体。
+    /// </remarks>
     private static async Task<(Result Result, Principal? Principal)> InvokeAsync(TestHost host, string? authorization, AuthorizationRequirement? requirement)
     {
         await using var scope = host.Services.CreateAsyncScope();

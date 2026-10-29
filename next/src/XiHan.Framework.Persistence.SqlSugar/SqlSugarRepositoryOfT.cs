@@ -13,14 +13,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// SqlSugar 仓储：读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。
-/// 实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。
-/// 批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。
-/// SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。
-/// 实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。
-/// 带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。
-/// <see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
+/// SqlSugar 仓储。
 /// </summary>
+/// <remarks>
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。<see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
+/// </remarks>
 /// <param name="unitOfWork">本作用域的工作单元。</param>
 /// <param name="timeProvider">审计字段使用的时间源。</param>
 /// <param name="options">Provider 选项；据此决定本实体是否带差异日志。</param>
@@ -31,28 +28,43 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     where TKey : notnull, IEquatable<TKey>
 {
     /// <summary>
-    /// 实体是否实现 <see cref="ISoftDeletable"/>；按闭合泛型只判断一次，查询据此决定是否追加删除标记条件。
+    /// 实体是否实现 <see cref="ISoftDeletable"/>。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，查询据此决定是否追加删除标记条件。
+    /// </remarks>
     private static readonly bool _isSoftDeletable = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 实体是否实现 <see cref="IMultiTenant"/>；按闭合泛型只判断一次，查询据此决定是否追加租户条件。
+    /// 实体是否实现 <see cref="IMultiTenant"/>。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，查询据此决定是否追加租户条件。
+    /// </remarks>
     private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 实体是否带 SqlSugar <see cref="SplitTableAttribute"/>（分表）；按闭合泛型只判断一次，读写据此切换到分表入口。
+    /// 实体是否带 SqlSugar <see cref="SplitTableAttribute"/>（分表）。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，读写据此切换到分表入口。
+    /// </remarks>
     private static readonly bool _isSplitTable = typeof(TEntity).IsDefined(typeof(SplitTableAttribute), inherit: false);
 
     /// <summary>
-    /// 本实体带差异日志的写入入口；按闭合泛型在首次需要时构造一次。
+    /// 本实体带差异日志的写入入口。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型在首次需要时构造一次。
+    /// </remarks>
     private static IDiffLoggedWrites? _diffLoggedWrites;
 
     /// <summary>
-    /// 本作用域的工作单元；提供客户端、事务与当前租户。
+    /// 本作用域的工作单元。
     /// </summary>
+    /// <remarks>
+    /// 提供客户端、事务与当前租户。
+    /// </remarks>
     private readonly SqlSugarUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -61,15 +73,21 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <summary>
-    /// 差异日志的业务数据；本实体没有开启差异日志时为 <see langword="null"/>。
+    /// 差异日志的业务数据。
     /// </summary>
+    /// <remarks>
+    /// 本实体没有开启差异日志时为 <see langword="null"/>。
+    /// </remarks>
     private readonly SqlSugarDiffLogData? _diffLog = (options ?? throw new ArgumentNullException(nameof(options))).DiffLog(typeof(TEntity))
         ? new SqlSugarDiffLogData(typeof(TEntity), services ?? throw new ArgumentNullException(nameof(services)))
         : null;
 
     /// <summary>
-    /// 本实体所用的连接；首次使用时由工作单元按落点规则选出，之后复用（同一工作单元内落点稳定）。
+    /// 本实体所用的连接。
     /// </summary>
+    /// <remarks>
+    /// 首次使用时由工作单元按落点规则选出，之后复用（同一工作单元内落点稳定）。
+    /// </remarks>
     private ISqlSugarClient? _connection;
 
     /// <inheritdoc />
@@ -408,8 +426,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 本实体在活动工作单元里的连接；工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 本实体在活动工作单元里的连接。
     /// </summary>
+    /// <remarks>
+    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// </remarks>
     private ISqlSugarClient Client => _unitOfWork.State == UnitOfWorkState.Active
         ? _connection ??= _unitOfWork.ConnectionFor(typeof(TEntity))
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
@@ -430,8 +451,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     private static Error StaleStamp(TKey id) => Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.StaleStamp, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
-    /// 调用方实例的并发戳是否与当前行不同；同一实例或不带并发戳的实体不算过期。
+    /// 调用方实例的并发戳是否与当前行不同。
     /// </summary>
+    /// <remarks>
+    /// 同一实例或不带并发戳的实体不算过期。
+    /// </remarks>
     private static bool Stale(TEntity existing, TEntity entity)
         => !ReferenceEquals(existing, entity)
             && existing is IHasConcurrencyStamp current && entity is IHasConcurrencyStamp incoming
@@ -503,9 +527,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 写入路径的读取：在可见行上施加 <paramref name="filter"/> 后加事务内行锁（<c>FOR UPDATE</c> / <c>UPDLOCK</c>），读取与写入之间别人改不了这些行。
-    /// SQLite 不支持行锁，由其数据库级写锁保证；分表实体的查询是多表 <c>UNION ALL</c>，不能加行锁，靠并发戳。
+    /// 写入路径的读取。
     /// </summary>
+    /// <remarks>
+    /// 在可见行上施加 <paramref name="filter"/> 后加事务内行锁（<c>FOR UPDATE</c> / <c>UPDLOCK</c>），读取与写入之间别人改不了这些行。SQLite 不支持行锁，由其数据库级写锁保证；分表实体的查询是多表 <c>UNION ALL</c>，不能加行锁，靠并发戳。
+    /// </remarks>
     private ISugarQueryable<TEntity> Locked(Func<ISugarQueryable<TEntity>, ISugarQueryable<TEntity>> filter)
     {
         var source = Split(filter(Visible(includeDeleted: false)));
@@ -513,9 +539,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 分表实体的查询在全部过滤条件之后切到分表入口：有时间范围提示只扫范围内的表（按 UTC 时刻），没有就扫全部分表；不分表的实体原样返回。
-    /// 必须在 <c>Where</c> / <c>In</c> 之后、排序与分页之前调用，SqlSugar 把它之前的条件下推到每张分表再 <c>UNION ALL</c>。
+    /// 分表实体的查询在全部过滤条件之后切到分表入口。
     /// </summary>
+    /// <remarks>
+    /// 有时间范围提示只扫范围内的表（按 UTC 时刻），没有就扫全部分表；不分表的实体原样返回。必须在 <c>Where</c> / <c>In</c> 之后、排序与分页之前调用，SqlSugar 把它之前的条件下推到每张分表再 <c>UNION ALL</c>。
+    /// </remarks>
     private static ISugarQueryable<TEntity> Split(ISugarQueryable<TEntity> source, TimeRange? range = null)
     {
         if (!_isSplitTable)
@@ -527,8 +555,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 插入单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值落表（列表按表分组，缺少的分表由 SqlSugar 建出）。
+    /// 插入单个实体或实体列表。
     /// </summary>
+    /// <remarks>
+    /// 分表实体按 <c>[SplitField]</c> 的值落表（列表按表分组，缺少的分表由 SqlSugar 建出）。
+    /// </remarks>
     private Task<int> InsertAsync(object entityOrList)
     {
         if (_diffLog is { } diffLog)
@@ -540,8 +571,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 按主键整行更新单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表，所以分表字段写入后不要再改。
+    /// 按主键整行更新单个实体或实体列表。
     /// </summary>
+    /// <remarks>
+    /// 分表实体按 <c>[SplitField]</c> 的值定位所在的表，所以分表字段写入后不要再改。
+    /// </remarks>
     private Task<int> UpdateAsync(object entityOrList)
     {
         if (_diffLog is { } diffLog)
@@ -553,8 +587,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 按主键物理删除单个实体或实体列表；分表实体按 <c>[SplitField]</c> 的值定位所在的表。
+    /// 按主键物理删除单个实体或实体列表。
     /// </summary>
+    /// <remarks>
+    /// 分表实体按 <c>[SplitField]</c> 的值定位所在的表。
+    /// </remarks>
     private Task<int> DeleteAsync(object entityOrList)
     {
         if (_diffLog is { } diffLog)
@@ -566,8 +603,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 本实体带差异日志的写入入口：按闭合类型构造 <see cref="DiffLoggedWrites{T}"/>，实体没有公开无参构造函数时抛出（SqlSugar 的按对象入口同样要求）。
+    /// 本实体带差异日志的写入入口。
     /// </summary>
+    /// <remarks>
+    /// 按闭合类型构造 <see cref="DiffLoggedWrites{T}"/>，实体没有公开无参构造函数时抛出（SqlSugar 的按对象入口同样要求）。
+    /// </remarks>
     private static IDiffLoggedWrites DiffLogged
         => _diffLoggedWrites ??= (IDiffLoggedWrites)Activator.CreateInstance(typeof(DiffLoggedWrites<>).MakeGenericType(typeof(TEntity)))!;
 
@@ -588,8 +628,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 在可见性过滤之上追加查询自身的过滤规约；规约先经 <see cref="NullableComparisonRewriter"/>，可空值类型与 null 的比较按 <c>IS NULL</c> 语义翻译。
+    /// 在可见性过滤之上追加查询自身的过滤规约。
     /// </summary>
+    /// <remarks>
+    /// 规约先经 <see cref="NullableComparisonRewriter"/>，可空值类型与 null 的比较按 <c>IS NULL</c> 语义翻译。
+    /// </remarks>
     private ISugarQueryable<TEntity> Filtered(EntityQuery<TEntity> query)
     {
         var source = Visible(query.IncludeDeleted);
@@ -597,8 +640,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 软删除与租户过滤显式施加在查询上，与写入路径对取回行的判定一致；无租户（null）的调用匹配不到任何多租户实体。
+    /// 软删除与租户过滤显式施加在查询上，与写入路径对取回行的判定一致。
     /// </summary>
+    /// <remarks>
+    /// 无租户（null）的调用匹配不到任何多租户实体。
+    /// </remarks>
     private ISugarQueryable<TEntity> Visible(bool includeDeleted)
     {
         var source = Client.Queryable<TEntity>();

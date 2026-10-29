@@ -6,8 +6,11 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 请求与响应的源生成序列化上下文：camelCase，允许从字符串读数字（命令行选项都是字符串）。
+/// 请求与响应的源生成序列化上下文。
 /// </summary>
+/// <remarks>
+/// camelCase，允许从字符串读数字（命令行选项都是字符串）。
+/// </remarks>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
 [JsonSerializable(typeof(EchoRequest))]
 [JsonSerializable(typeof(EchoReply))]

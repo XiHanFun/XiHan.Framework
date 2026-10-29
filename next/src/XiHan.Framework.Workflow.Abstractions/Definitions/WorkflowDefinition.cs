@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 工作流定义：一张有向图加变量声明；同名多版本，只有已发布的版本能启动实例。
+/// 工作流定义。
 /// </summary>
+/// <remarks>
+/// 一张有向图加变量声明；同名多版本，只有已发布的版本能启动实例。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowDefinition
 {
@@ -22,8 +25,11 @@ public sealed record WorkflowDefinition
     }
 
     /// <summary>
-    /// 定义名；一个名字下多个版本。
+    /// 定义名。
     /// </summary>
+    /// <remarks>
+    /// 一个名字下多个版本。
+    /// </remarks>
     public required WorkflowName Name { get; init; }
 
     /// <summary>
@@ -66,8 +72,11 @@ public sealed record WorkflowDefinition
     public bool CompensateOnFault { get; init; }
 
     /// <summary>
-    /// 实例级超时：启动后超过它即按 <see cref="TimeoutAction"/> 处理；空为不限。
+    /// 实例级超时。
     /// </summary>
+    /// <remarks>
+    /// 启动后超过它即按 <see cref="TimeoutAction"/> 处理；空为不限。
+    /// </remarks>
     public TimeSpan? Timeout
     {
         get => field;
@@ -75,8 +84,11 @@ public sealed record WorkflowDefinition
     }
 
     /// <summary>
-    /// 实例级超时到期的处理；默认故障。
+    /// 实例级超时到期的处理。
     /// </summary>
+    /// <remarks>
+    /// 默认故障。
+    /// </remarks>
     public WorkflowTimeoutAction TimeoutAction { get; init; }
 
     /// <summary>
@@ -116,8 +128,11 @@ public sealed record WorkflowDefinition
     } = [];
 
     /// <summary>
-    /// 所属租户；平台级为 <see langword="null"/>。
+    /// 所属租户。
     /// </summary>
+    /// <remarks>
+    /// 平台级为 <see langword="null"/>。
+    /// </remarks>
     public string? TenantId { get; init; }
 
     /// <summary>

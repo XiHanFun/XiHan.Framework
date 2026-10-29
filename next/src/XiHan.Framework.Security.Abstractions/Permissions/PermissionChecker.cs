@@ -7,35 +7,52 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Permissions;
 
 /// <summary>
-/// RBAC 检查器：用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。
-/// 授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。
+/// RBAC 检查器。
 /// </summary>
+/// <remarks>
+/// 用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionChecker : IPermissionChecker
 {
     /// <summary>
-    /// 授予存储；每次判定按主体与租户查询。
+    /// 授予存储。
     /// </summary>
+    /// <remarks>
+    /// 每次判定按主体与租户查询。
+    /// </remarks>
     private readonly IPermissionGrantStore _store;
 
     /// <summary>
-    /// 安全选项；提供承载角色的声明类型。
+    /// 安全选项。
     /// </summary>
+    /// <remarks>
+    /// 提供承载角色的声明类型。
+    /// </remarks>
     private readonly SecurityOptions _options;
 
     /// <summary>
-    /// 收窄过滤器，按登记顺序；没有登记时为空。
+    /// 收窄过滤器，按登记顺序。
     /// </summary>
+    /// <remarks>
+    /// 没有登记时为空。
+    /// </remarks>
     private readonly IPermissionFilter[] _filters;
 
     /// <summary>
-    /// 存储之外的授予来源，按登记顺序；没有登记时为空。
+    /// 存储之外的授予来源，按登记顺序。
     /// </summary>
+    /// <remarks>
+    /// 没有登记时为空。
+    /// </remarks>
     private readonly IPermissionGrantSource[] _sources;
 
     /// <summary>
-    /// 创建检查器。容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）。
+    /// 创建检查器。
     /// </summary>
+    /// <remarks>
+    /// 容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）。
+    /// </remarks>
     /// <param name="store">授予存储。</param>
     /// <param name="options">安全选项。</param>
     /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有。</param>
@@ -86,8 +103,11 @@ public sealed class PermissionChecker : IPermissionChecker
     }
 
     /// <summary>
-    /// 授予是否命中：先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。
+    /// 授予是否命中。
     /// </summary>
+    /// <remarks>
+    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。
+    /// </remarks>
     private async ValueTask<bool> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
         var tenantId = security.Tenant?.Id;

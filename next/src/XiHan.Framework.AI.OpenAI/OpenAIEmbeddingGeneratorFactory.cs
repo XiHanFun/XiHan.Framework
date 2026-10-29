@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.OpenAI;
 
 /// <summary>
-/// <c>Kind = openai</c> 的嵌入生成器工厂：<c>OpenAIClient.GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)</c>。
+/// <c>Kind = openai</c> 的嵌入生成器工厂。
 /// </summary>
+/// <remarks>
+/// <c>OpenAIClient.GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenAIEmbeddingGeneratorFactory : IEmbeddingGeneratorFactory
 {

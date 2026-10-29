@@ -4,9 +4,11 @@
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 写入序号：同刻写入的行按它排序。取时钟的 UTC 刻度与上一个序号加一的较大者——同一进程内严格递增，不同进程间按时刻大致有序；
-/// 同一实例的写入由实例锁串行化，所以同一实例的行按它排就是写入顺序。UUID v7 只到毫秒单调，同一毫秒内的 ID 不能当写入顺序用。
+/// 写入序号。
 /// </summary>
+/// <remarks>
+/// 同刻写入的行按它排序。取时钟的 UTC 刻度与上一个序号加一的较大者——同一进程内严格递增，不同进程间按时刻大致有序；同一实例的写入由实例锁串行化，所以同一实例的行按它排就是写入顺序。UUID v7 只到毫秒单调，同一毫秒内的 ID 不能当写入顺序用。
+/// </remarks>
 internal sealed class WriteSequence
 {
     /// <summary>

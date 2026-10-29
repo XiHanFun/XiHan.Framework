@@ -7,8 +7,11 @@ using XiHan.Framework.Caching.Conformance;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 让远程适配器 + Go 写的 cache-go 插件跑完整套 <see cref="CacheStoreConformance"/> 用例（P4-07）；本机没有 go 时跳过。
+/// 让远程适配器 + Go 写的 cache-go 插件跑完整套 <see cref="CacheStoreConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// P4-07。本机没有 go 时跳过。
+/// </remarks>
 public sealed class RemoteCacheStoreConformanceTests(RemoteHostFixture fixture) : CacheStoreConformance, IClassFixture<RemoteHostFixture>
 {
     /// <summary>

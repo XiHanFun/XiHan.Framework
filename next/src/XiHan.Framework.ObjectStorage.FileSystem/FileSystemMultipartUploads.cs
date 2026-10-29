@@ -13,10 +13,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统的分片上传：每次上传一个目录 <c>&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，<c>manifest.json</c> 记完成后对象的键与写入选项，
-/// 分片文件名带编号与内容的 SHA-256（<c>00001.&lt;etag&gt;.part</c>），同一编号再传先落新文件再删旧的，所以 ETag 与内容永远对得上。
-/// 完成时按清单拼接成对象同目录的临时文件，经存储的提交路径原子替换并计入用量，然后删掉上传目录；暂存的分片不计入配额，单片与拼接后的对象都受单对象上限约束。
+/// 文件系统的分片上传。
 /// </summary>
+/// <remarks>
+/// 每次上传一个目录 <c>&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，<c>manifest.json</c> 记完成后对象的键与写入选项，分片文件名带编号与内容的 SHA-256（<c>00001.&lt;etag&gt;.part</c>），同一编号再传先落新文件再删旧的，所以 ETag 与内容永远对得上。完成时按清单拼接成对象同目录的临时文件，经存储的提交路径原子替换并计入用量，然后删掉上传目录；暂存的分片不计入配额，单片与拼接后的对象都受单对象上限约束。
+/// </remarks>
 internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, FileSystemObjectStorageOptions options, TimeProvider clock)
 {
     /// <summary>
@@ -35,8 +36,11 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     private const string PartSuffix = ".part";
 
     /// <summary>
-    /// 发起：不覆盖且对象已存在即冲突；建上传目录并原子写入清单。
+    /// 发起。
     /// </summary>
+    /// <remarks>
+    /// 不覆盖且对象已存在即冲突；建上传目录并原子写入清单。
+    /// </remarks>
     public async ValueTask<Result<BlobMultipartUpload>> StartAsync(ContainerName container, BlobKey key, BlobPutOptions putOptions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(putOptions);
@@ -71,8 +75,11 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     }
 
     /// <summary>
-    /// 上传一片：流式落临时文件并算 SHA-256（超过单对象上限即停），改名为带 ETag 的分片文件，再删掉同编号的旧版本。
+    /// 上传一片。
     /// </summary>
+    /// <remarks>
+    /// 流式落临时文件并算 SHA-256（超过单对象上限即停），改名为带 ETag 的分片文件，再删掉同编号的旧版本。
+    /// </remarks>
     public async ValueTask<Result<BlobPart>> UploadPartAsync(BlobMultipartUpload upload, int partNumber, Stream content, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(upload);
@@ -169,8 +176,11 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     }
 
     /// <summary>
-    /// 完成：校验清单（非空、严格升序、每片已上传且 ETag 相符、非末片不小于最小分片），校验覆盖选项与配额，拼接后经存储提交，再删上传目录。清单不合法时上传保留。
+    /// 完成。
     /// </summary>
+    /// <remarks>
+    /// 校验清单（非空、严格升序、每片已上传且 ETag 相符、非末片不小于最小分片），校验覆盖选项与配额，拼接后经存储提交，再删上传目录。清单不合法时上传保留。
+    /// </remarks>
     public async ValueTask<Result<BlobMetadata>> CompleteAsync(BlobMultipartUpload upload, IReadOnlyList<BlobPart> parts, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(upload);
@@ -276,8 +286,11 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     }
 
     /// <summary>
-    /// 放弃：删掉上传目录；不存在也成功。
+    /// 放弃。
     /// </summary>
+    /// <remarks>
+    /// 删掉上传目录；不存在也成功。
+    /// </remarks>
     public Result Abort(BlobMultipartUpload upload)
     {
         ArgumentNullException.ThrowIfNull(upload);
@@ -302,8 +315,11 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     }
 
     /// <summary>
-    /// 清掉一个容器里发起时间早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/> 的上传（清单损坏或缺失的按目录修改时间判断）。
+    /// 清掉一个容器里发起时间早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/> 的上传。
     /// </summary>
+    /// <remarks>
+    /// 清单损坏或缺失的按目录修改时间判断。
+    /// </remarks>
     public void RemoveExpired(string containerPath, CancellationToken cancellationToken)
     {
         var uploads = Path.Combine(containerPath, UploadsDirectory);

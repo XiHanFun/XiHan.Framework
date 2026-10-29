@@ -12,8 +12,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
 /// <summary>
-/// 租户分库：存储解析器的缓存与容量、存储故障的错误码、Tenant 阶段把分片写进调用上下文，以及分片绑定的合成。
+/// 租户分库。
 /// </summary>
+/// <remarks>
+/// 存储解析器的缓存与容量、存储故障的错误码、Tenant 阶段把分片写进调用上下文，以及分片绑定的合成。
+/// </remarks>
 public sealed class TenantShardingTests
 {
     /// <summary>

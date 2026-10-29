@@ -14,15 +14,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Configuration.Nacos;
 
 /// <summary>
-/// Nacos 远程配置的能力包入口：显式 Provider，提供 <c>configuration.remote@1</c>，把 <see cref="NacosConfigurationClient"/> 登记为 <see cref="IRemoteConfigurationClient"/> 供运行期取用。
-/// 配置构建期（没有容器）接进 <c>IConfigurationBuilder</c> 用 <see cref="NacosConfigurationBuilderExtensions.AddXiHanNacos"/>。
+/// Nacos 远程配置的能力包入口。
 /// </summary>
+/// <remarks>
+/// 显式 Provider，提供 <c>configuration.remote@1</c>，把 <see cref="NacosConfigurationClient"/> 登记为 <see cref="IRemoteConfigurationClient"/> 供运行期取用。配置构建期（没有容器）接进 <c>IConfigurationBuilder</c> 用 <see cref="NacosConfigurationBuilderExtensions.AddXiHanNacos"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class NacosConfigurationFeature : IFeature
 {
     /// <summary>
-    /// 连接绑定名：<c>nacos</c>，类型 <c>configuration:remote</c>，可选；值是服务地址。
+    /// 连接绑定名。
     /// </summary>
+    /// <remarks>
+    /// <c>nacos</c>，类型 <c>configuration:remote</c>，可选；值是服务地址。
+    /// </remarks>
     public const string ConnectionBinding = "nacos";
 
     /// <inheritdoc />

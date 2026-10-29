@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Runtime;
 
 /// <summary>
-/// 把失败写到 stderr：一行 JSON <c>{"code", "detail", "traceId"}</c>，<c>detail</c> 在装配了本地化时按调用区域翻译。
+/// 把失败写到 stderr。
 /// </summary>
+/// <remarks>
+/// 一行 JSON <c>{"code", "detail", "traceId"}</c>，<c>detail</c> 在装配了本地化时按调用区域翻译。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineFailure
 {

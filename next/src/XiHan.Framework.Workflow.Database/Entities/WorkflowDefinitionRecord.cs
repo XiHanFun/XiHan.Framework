@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 工作流定义的存储行：过滤与排序用的列加整份定义的 JSON 文档（<c>WorkflowJson.Serialize</c>）。不实现 <c>IMultiTenant</c>，租户只是普通列，存储不按租户过滤。
+/// 工作流定义的存储行。
 /// </summary>
+/// <remarks>
+/// 过滤与排序用的列加整份定义的 JSON 文档（<c>WorkflowJson.Serialize</c>）。不实现 <c>IMultiTenant</c>，租户只是普通列，存储不按租户过滤。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionRecord : IEntity<string>
 {
@@ -52,8 +55,11 @@ public sealed class WorkflowDefinitionRecord : IEntity<string>
     public DateTimeOffset? PublishedAt { get; set; }
 
     /// <summary>
-    /// 整份定义的 JSON；长文本列。
+    /// 整份定义的 JSON。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Document { get; set; } = string.Empty;
 }

@@ -10,14 +10,20 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 到期书签轮询：每个周期取一批到期书签逐条经引擎恢复；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。由 Provider 的特性在应用进入服务状态后启动，多实例部署时由 Provider 保证只有一个节点在轮询。
+/// 到期书签轮询。
 /// </summary>
+/// <remarks>
+/// 每个周期取一批到期书签逐条经引擎恢复；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。由 Provider 的特性在应用进入服务状态后启动，多实例部署时由 Provider 保证只有一个节点在轮询。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPoller : IDisposable
 {
     /// <summary>
-    /// 根服务提供者；每次轮询开新作用域取引擎。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次轮询开新作用域取引擎。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
@@ -123,8 +129,11 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 轮询一次；返回成功恢复的书签数。
+    /// 轮询一次。
     /// </summary>
+    /// <remarks>
+    /// 返回成功恢复的书签数。
+    /// </remarks>
     public async ValueTask<int> PollOnceAsync(int batchSize, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);

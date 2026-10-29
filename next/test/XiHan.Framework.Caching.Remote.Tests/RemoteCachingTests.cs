@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 远程缓存 Provider 的装配：胜过内存默认实现、共享缓存与分布式锁经 Go 插件工作、插件缺席时按不可用失败。
+/// 远程缓存 Provider 的装配。
 /// </summary>
+/// <remarks>
+/// 胜过内存默认实现、共享缓存与分布式锁经 Go 插件工作、插件缺席时按不可用失败。
+/// </remarks>
 public sealed class RemoteCachingTests
 {
     [Fact]

@@ -8,9 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Repositories;
 
 /// <summary>
-/// Provider 注册闭合泛型仓储的入口。应用通过 <see cref="RepositoryServiceCollectionExtensions.AddRepository{TEntity, TKey}"/> 登记实体，
-/// Provider 的特性在配置阶段逐一调用本接口，因此换 Provider 不改业务代码，也不需要开放泛型或反射。
+/// Provider 注册闭合泛型仓储的入口。
 /// </summary>
+/// <remarks>
+/// 应用通过 <see cref="RepositoryServiceCollectionExtensions.AddRepository{TEntity, TKey}"/> 登记实体，Provider 的特性在配置阶段逐一调用本接口，因此换 Provider 不改业务代码，也不需要开放泛型或反射。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IRepositoryRegistrar
 {

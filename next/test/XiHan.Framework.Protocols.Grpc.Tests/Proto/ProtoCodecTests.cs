@@ -18,8 +18,11 @@ namespace XiHan.Framework.Protocols.Grpc.Tests.Proto;
 public sealed class ProtoCodecTests
 {
     /// <summary>
-    /// 覆盖全部映射的 Schema：标量与格式、可空、字节、枚举、数组、嵌套与可空嵌套、映射、任意 JSON、snake_case 的 JSON 名。
+    /// 覆盖全部映射的 Schema。
     /// </summary>
+    /// <remarks>
+    /// 标量与格式、可空、字节、枚举、数组、嵌套与可空嵌套、映射、任意 JSON、snake_case 的 JSON 名。
+    /// </remarks>
     private const string RichSchema = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Rich","type":"object","properties":{
           "s":{"type":"string"},"ns":{"type":["string","null"]},"b":{"type":"boolean"},"i":{"type":"integer","format":"int32"},"l":{"type":"integer","format":"int64"},

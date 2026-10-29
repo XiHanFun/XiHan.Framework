@@ -13,8 +13,11 @@ namespace XiHan.Framework.Localization.Database.Translations;
 public sealed record MessageTranslationKey
 {
     /// <summary>
-    /// 创建；区域会规范化大小写。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 区域会规范化大小写。
+    /// </remarks>
     public MessageTranslationKey(string key, string locale)
     {
         ArgumentNullException.ThrowIfNull(key);

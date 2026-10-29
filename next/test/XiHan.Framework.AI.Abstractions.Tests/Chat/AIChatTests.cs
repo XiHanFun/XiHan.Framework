@@ -13,8 +13,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Chat;
 
 /// <summary>
-/// 聊天入口：提示词成系统消息、工具绑定、护栏、Provider 解析与缓存、异常映射、流式。
+/// 聊天入口。
 /// </summary>
+/// <remarks>
+/// 提示词成系统消息、工具绑定、护栏、Provider 解析与缓存、异常映射、流式。
+/// </remarks>
 public sealed class AIChatTests
 {
     /// <summary>

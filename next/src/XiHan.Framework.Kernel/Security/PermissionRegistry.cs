@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 权限码注册表。有界、线程安全；特性在配置阶段登记自己定义的权限，安全子系统与插件权限复用。
+/// 权限码注册表。
 /// </summary>
+/// <remarks>
+/// 有界、线程安全；特性在配置阶段登记自己定义的权限，安全子系统与插件权限复用。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionRegistry
 {
@@ -43,8 +46,11 @@ public sealed class PermissionRegistry
     public int Count => _permissions.Count;
 
     /// <summary>
-    /// 登记权限。重复的权限码返回 <see cref="KernelErrors.DuplicatePermission"/>，超出容量返回 <see cref="KernelErrors.PermissionRegistryFull"/>。
+    /// 登记权限。
     /// </summary>
+    /// <remarks>
+    /// 重复的权限码返回 <see cref="KernelErrors.DuplicatePermission"/>，超出容量返回 <see cref="KernelErrors.PermissionRegistryFull"/>。
+    /// </remarks>
     public Result Add(PermissionDefinition permission)
     {
         ArgumentNullException.ThrowIfNull(permission);

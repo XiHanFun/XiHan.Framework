@@ -15,8 +15,11 @@ namespace XiHan.Framework.Kernel.Analyzers;
 public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
-    /// <c>System.Type</c> 上按名查找成员、动态构造泛型与取程序集/模块的成员；命中即视为反射。
+    /// <c>System.Type</c> 上按名查找成员、动态构造泛型与取程序集/模块的成员。
     /// </summary>
+    /// <remarks>
+    /// 命中即视为反射。
+    /// </remarks>
     private static readonly ImmutableHashSet<string> _reflectiveTypeMembers = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         "GetMethod", "GetMethods", "GetProperty", "GetProperties", "GetField", "GetFields", "GetConstructor", "GetConstructors",
@@ -82,9 +85,11 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 判定成员是否属于反射 API：<c>System.Reflection</c> 命名空间（MemberInfo 的只读元数据除外）、<c>Activator</c>，
-    /// 以及 <c>System.Type</c> 上的成员查找与动态构造。
+    /// 判定成员是否属于反射 API。
     /// </summary>
+    /// <remarks>
+    /// <c>System.Reflection</c> 命名空间（MemberInfo 的只读元数据除外）、<c>Activator</c>，以及 <c>System.Type</c> 上的成员查找与动态构造。
+    /// </remarks>
     private static bool IsReflective(ISymbol member)
     {
         var containingType = member.ContainingType;

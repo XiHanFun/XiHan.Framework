@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 命名存储实例的注册表：配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例，以及特性装配后注册表与健康项可用。
+/// 命名存储实例的注册表。
 /// </summary>
+/// <remarks>
+/// 配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例，以及特性装配后注册表与健康项可用。
+/// </remarks>
 public sealed class BlobStoresTests : IDisposable
 {
     /// <summary>
@@ -157,8 +160,11 @@ public sealed class BlobStoresTests : IDisposable
     }
 
     /// <summary>
-    /// 只记录释放次数的存储；读写不会被调用。
+    /// 只记录释放次数的存储。
     /// </summary>
+    /// <remarks>
+    /// 读写不会被调用。
+    /// </remarks>
     private sealed class CountingStore : IBlobStore, IDisposable
     {
         /// <summary>

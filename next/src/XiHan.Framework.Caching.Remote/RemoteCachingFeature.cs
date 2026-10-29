@@ -18,9 +18,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// 远程缓存 Provider 的能力包入口（RFC-0019）：提供 <c>caching.distributed@1</c>，存储由实现了操作集 <c>cache-entries.*</c> 的进程外插件承担；
-/// 本包注册共享缓存、分布式锁与幂等中间件。插件由 <c>Plugins.OutOfProcess</c> 等插件宿主按目录发现并登记代理操作，本包不启动进程。
+/// 远程缓存 Provider 的能力包入口（RFC-0019）。
 /// </summary>
+/// <remarks>
+/// 提供 <c>caching.distributed@1</c>，存储由实现了操作集 <c>cache-entries.*</c> 的进程外插件承担；本包注册共享缓存、分布式锁与幂等中间件。插件由 <c>Plugins.OutOfProcess</c> 等插件宿主按目录发现并登记代理操作，本包不启动进程。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCachingFeature : IFeature
 {

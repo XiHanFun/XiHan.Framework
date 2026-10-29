@@ -14,15 +14,20 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Hosting.CommandLine.Runtime;
 
 /// <summary>
-/// 命令行选项与调用上下文之间的翻译（RFC-0003 的命令行载体映射）：<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c> 进 Baggage，
-/// <c>--timeout</c>（秒）换算为截止时间，<c>--authorization</c>（或环境变量 <c>XIHAN_AUTHORIZATION</c>）原样进入凭据由 Authenticate 阶段解释。
+/// 命令行选项与调用上下文之间的翻译（RFC-0003 的命令行载体映射）。
 /// </summary>
+/// <remarks>
+/// <c>--tenant</c>、<c>--correlation</c>、<c>--locale</c> 进 Baggage，<c>--timeout</c>（秒）换算为截止时间，<c>--authorization</c>（或环境变量 <c>XIHAN_AUTHORIZATION</c>）原样进入凭据由 Authenticate 阶段解释。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineInvocation
 {
     /// <summary>
-    /// 凭据的环境变量；<c>--authorization</c> 优先。
+    /// 凭据的环境变量。
     /// </summary>
+    /// <remarks>
+    /// <c>--authorization</c> 优先。
+    /// </remarks>
     public const string AuthorizationVariable = "XIHAN_AUTHORIZATION";
 
     /// <summary>
@@ -31,8 +36,11 @@ public static class CommandLineInvocation
     public static readonly IReadOnlySet<string> ReservedOptions = new HashSet<string>(StringComparer.Ordinal) { "json", "data", "authorization", "tenant", "correlation", "locale", "timeout", "help" };
 
     /// <summary>
-    /// 从命令环境构造调用上下文；选项不合法返回 <see cref="CommandLineErrors.UsageInvalid"/>。调用来源记命令行与被调用的操作 ID，没有远端地址与 User-Agent。
+    /// 从命令环境构造调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 选项不合法返回 <see cref="CommandLineErrors.UsageInvalid"/>。调用来源记命令行与被调用的操作 ID，没有远端地址与 User-Agent。
+    /// </remarks>
     /// <param name="context">命令环境。</param>
     /// <param name="operationId">被调用的操作 ID，记为调用来源的请求目标。</param>
     public static Result<InvocationContext> Create(CommandContext context, string operationId)

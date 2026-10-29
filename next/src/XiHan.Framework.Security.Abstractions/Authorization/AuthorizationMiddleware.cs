@@ -10,9 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authorization;
 
 /// <summary>
-/// Authorize 阶段的中间件：调用带 <see cref="AuthorizationRequirement"/> 时按名取策略判定；没有要求则放行。
-/// 策略不存在以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝（宁可拒绝，不可放行）。
+/// Authorize 阶段的中间件。
 /// </summary>
+/// <remarks>
+/// 调用带 <see cref="AuthorizationRequirement"/> 时按名取策略判定；没有要求则放行。策略不存在以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝（宁可拒绝，不可放行）。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AuthorizationMiddleware : IPipelineMiddleware
 {
@@ -51,8 +53,11 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 由操作契约推导授权要求：权限码优先于策略名；都没有则无要求。
+    /// 由操作契约推导授权要求。
     /// </summary>
+    /// <remarks>
+    /// 权限码优先于策略名；都没有则无要求。
+    /// </remarks>
     private static Maybe<AuthorizationRequirement> RequirementOf(OperationContract contract)
     {
         if (contract.Permission is not null)

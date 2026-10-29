@@ -11,14 +11,19 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 每个测试一个临时 SQLite 文件，宿主装配 SqlSugar 持久化（应用自注册客户端）与数据库调度特性；同一个文件可以启动多个宿主（多节点）。释放时停止全部宿主并删除文件。
-/// 文件用 WAL 日志且每个连接关掉同步写盘：测试库不需要崩溃安全，省掉每次提交的 fsync 让存储延迟接近内存实现，套件里按内存实现节奏写的等待才不会被磁盘拖慢。
+/// 每个测试一个临时 SQLite 文件。
 /// </summary>
+/// <remarks>
+/// 宿主装配 SqlSugar 持久化（应用自注册客户端）与数据库调度特性。同一个文件可以启动多个宿主（多节点）。释放时停止全部宿主并删除文件。文件用 WAL 日志且每个连接关掉同步写盘：测试库不需要崩溃安全，省掉每次提交的 fsync 让存储延迟接近内存实现，套件里按内存实现节奏写的等待才不会被磁盘拖慢。
+/// </remarks>
 internal sealed class SqliteDatabase : IAsyncDisposable
 {
     /// <summary>
-    /// 已启动的宿主；释放时一并停止。
+    /// 已启动的宿主。
     /// </summary>
+    /// <remarks>
+    /// 释放时一并停止。
+    /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <summary>
@@ -27,8 +32,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     private bool _journaled;
 
     /// <summary>
-    /// 数据库文件的完整路径；位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// 数据库文件的完整路径。
     /// </summary>
+    /// <remarks>
+    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// </remarks>
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-scheduling-{Guid.NewGuid():N}.db");
 
     /// <summary>
@@ -37,8 +45,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     public string ConnectionString => $"Data Source={Path}";
 
     /// <summary>
-    /// 宿主配置：开启 <c>InitTables</c> 建表、轮询周期 1 小时（引擎不自行动作，由用例按需覆盖）。
+    /// 宿主配置。
     /// </summary>
+    /// <remarks>
+    /// 开启 <c>InitTables</c> 建表、轮询周期 1 小时（引擎不自行动作，由用例按需覆盖）。
+    /// </remarks>
     public static IEnumerable<KeyValuePair<string, string?>> Configuration =>
     [
         new("XiHan:Persistence:SqlSugar:InitTables", "true"),
@@ -46,8 +57,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     ];
 
     /// <summary>
-    /// 启动装配了本数据库与 <see cref="DatabaseSchedulingFeature"/> 的宿主；后给的配置覆盖默认配置。
+    /// 启动装配了本数据库与 <see cref="DatabaseSchedulingFeature"/> 的宿主。
     /// </summary>
+    /// <remarks>
+    /// 后给的配置覆盖默认配置。
+    /// </remarks>
     public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null)
     {
         EnsureWriteAheadLog();

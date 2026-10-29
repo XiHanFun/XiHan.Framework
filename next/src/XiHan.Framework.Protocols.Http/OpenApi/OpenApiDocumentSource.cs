@@ -36,8 +36,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     public HttpProtocolOptions Options { get; } = Options ?? throw new ArgumentNullException(nameof(Options));
 
     /// <summary>
-    /// 文档标题；缺省是框架名。
+    /// 文档标题。
     /// </summary>
+    /// <remarks>
+    /// 缺省是框架名。
+    /// </remarks>
     public string Title
     {
         get => field;
@@ -45,8 +48,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     } = FrameworkInfo.Name;
 
     /// <summary>
-    /// 文档版本；缺省是框架版本。
+    /// 文档版本。
     /// </summary>
+    /// <remarks>
+    /// 缺省是框架版本。
+    /// </remarks>
     public string Version
     {
         get => field;
@@ -54,8 +60,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     } = FrameworkInfo.Version;
 
     /// <summary>
-    /// <c>servers</c>；空列表不写。
+    /// <c>servers</c>。
     /// </summary>
+    /// <remarks>
+    /// 空列表不写。
+    /// </remarks>
     public IReadOnlyList<OpenApiServer> Servers
     {
         get => field;
@@ -63,8 +72,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     } = [];
 
     /// <summary>
-    /// 已装配的认证处理器的方案名；含 <c>Bearer</c> 时发布 <c>components.securitySchemes.bearer</c> 与全局 <c>security</c>。
+    /// 已装配的认证处理器的方案名。
     /// </summary>
+    /// <remarks>
+    /// 含 <c>Bearer</c> 时发布 <c>components.securitySchemes.bearer</c> 与全局 <c>security</c>。
+    /// </remarks>
     public IReadOnlyCollection<string> AuthenticationSchemes
     {
         get => field;
@@ -72,8 +84,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     } = [];
 
     /// <summary>
-    /// 候选的普通端点（通常是宿主全部 <c>EndpointDataSource</c> 的端点）；按收录规则筛选，操作端点与没有描述元数据的端点不进文档。
+    /// 候选的普通端点（通常是宿主全部 <c>EndpointDataSource</c> 的端点）。
     /// </summary>
+    /// <remarks>
+    /// 按收录规则筛选，操作端点与没有描述元数据的端点不进文档。
+    /// </remarks>
     public IReadOnlyList<Endpoint> Endpoints
     {
         get => field;
@@ -89,8 +104,11 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     public Func<string, IReadOnlyDictionary<string, object?>?, string?>? Localize { get; init; }
 
     /// <summary>
-    /// 分组；为空列表时没有 <c>x-tagGroups</c>。
+    /// 分组。
     /// </summary>
+    /// <remarks>
+    /// 为空列表时没有 <c>x-tagGroups</c>。
+    /// </remarks>
     public IReadOnlyList<OpenApiGroup> Groups
     {
         get => field;
@@ -98,9 +116,10 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
     } = [];
 
     /// <summary>
-    /// 只出这一组的文档；为 <see langword="null"/> 时出全量文档。
+    /// 只出这一组的文档。
     /// </summary>
     /// <remarks>
+    /// 为 <see langword="null"/> 时出全量文档。
     /// 必须是 <see cref="Groups"/> 里的组名，否则生成时抛出 <see cref="ArgumentException"/>。
     /// </remarks>
     public string? Group { get; init; }

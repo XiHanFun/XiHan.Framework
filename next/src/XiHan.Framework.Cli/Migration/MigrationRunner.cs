@@ -6,9 +6,11 @@ using System.Text;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 一次 <c>xihan migrate</c> 的编排（<c>spec/migration/README.md</c>）：枚举文件、第一遍扫描、跨文件决定、按顺序施加规则并回写，
-/// 再写生成文件、删除与改名，最后汇总报告。
+/// 一次 <c>xihan migrate</c> 的编排（<c>spec/migration/README.md</c>）。
 /// </summary>
+/// <remarks>
+/// 枚举文件、第一遍扫描、跨文件决定、按顺序施加规则并回写，再写生成文件、删除与改名，最后汇总报告。
+/// </remarks>
 /// <param name="path">目录、<c>.csproj</c> 或 <c>.slnx</c>；文件取其所在目录。</param>
 /// <param name="version">来源版本，原样写进报告。</param>
 /// <param name="fixers">要执行的规则，按顺序。</param>
@@ -128,8 +130,11 @@ internal sealed class MigrationRunner(string path, string version, IReadOnlyList
     }
 
     /// <summary>
-    /// 递归枚举文件，跳过 bin / obj / .git / .vs / node_modules 与生成的 <c>*.g.cs</c>、<c>*.Designer.cs</c>。
+    /// 递归枚举文件。
     /// </summary>
+    /// <remarks>
+    /// 跳过 bin / obj / .git / .vs / node_modules 与生成的 <c>*.g.cs</c>、<c>*.Designer.cs</c>。
+    /// </remarks>
     private static IEnumerable<string> Enumerate(string directory)
     {
         foreach (var file in Directory.EnumerateFiles(directory))
@@ -156,8 +161,11 @@ internal sealed class MigrationRunner(string path, string version, IReadOnlyList
     }
 
     /// <summary>
-    /// 最近的含 <c>.csproj</c> 的祖先目录（不越过根）；按目录缓存。
+    /// 最近的含 <c>.csproj</c> 的祖先目录（不越过根）。
     /// </summary>
+    /// <remarks>
+    /// 按目录缓存。
+    /// </remarks>
     private static string? ProjectDirectoryOf(string directory, string root, Dictionary<string, string?> cache)
     {
         if (cache.TryGetValue(directory, out var cached))

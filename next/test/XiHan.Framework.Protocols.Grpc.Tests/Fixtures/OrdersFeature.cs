@@ -12,9 +12,11 @@ using XiHan.Framework.Protocols.Grpc.Proto;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 登记测试操作的特性：<c>orders.create</c>（带 <c>orders.write</c> 权限）、<c>orders.get</c>、<c>orders.list</c>、<c>order-lines.list</c> 暴露给 gRPC，<c>orders.secret</c> 只给 HTTP，<c>orders.audit</c> 标为内部。
-/// 请求与响应的 Schema 与 <see cref="OrderRequest"/> / <see cref="OrderReply"/> 一一对应。
+/// 登记测试操作的特性。
 /// </summary>
+/// <remarks>
+/// <c>orders.create</c>（带 <c>orders.write</c> 权限）、<c>orders.get</c>、<c>orders.list</c>、<c>order-lines.list</c> 暴露给 gRPC，<c>orders.secret</c> 只给 HTTP，<c>orders.audit</c> 标为内部。请求与响应的 Schema 与 <see cref="OrderRequest"/> / <see cref="OrderReply"/> 一一对应。
+/// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>

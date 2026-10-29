@@ -19,9 +19,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.MultiTenancy.Database;
 
 /// <summary>
-/// 数据库租户目录的能力包入口：提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，需要 <c>persistence.relational@1</c>（启动时核对，见 <see cref="StartAsync"/>）；
-/// 注册租户目录、解析器（先声明后 Baggage）与 Tenant 阶段中间件。装配后顶替默认的 <c>MultiTenancy.InMemory</c>。
+/// 数据库租户目录的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，需要 <c>persistence.relational@1</c>（启动时核对，见 <see cref="StartAsync"/>）；注册租户目录、解析器（先声明后 Baggage）与 Tenant 阶段中间件。装配后顶替默认的 <c>MultiTenancy.InMemory</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseMultiTenancyFeature : IHostedFeature
 {

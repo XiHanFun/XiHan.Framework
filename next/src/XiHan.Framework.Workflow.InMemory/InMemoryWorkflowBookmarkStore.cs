@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的书签存储：保存与返回都是深拷贝；按实例建索引。
+/// 有界内存的书签存储。
 /// </summary>
+/// <remarks>
+/// 保存与返回都是深拷贝；按实例建索引。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
 {

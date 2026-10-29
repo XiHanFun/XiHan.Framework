@@ -20,8 +20,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 以真实的 EchoPlugin 子进程验证发现、握手、调用、本地化、回调、事件、崩溃重启、停止与运行期加载。
+/// 进程外插件宿主的端到端用例。
 /// </summary>
+/// <remarks>
+/// 以真实的 EchoPlugin 子进程验证发现、握手、调用、本地化、回调、事件、崩溃重启、停止与运行期加载。
+/// </remarks>
 public sealed class OutOfProcessPluginHostTests
 {
     [Fact]

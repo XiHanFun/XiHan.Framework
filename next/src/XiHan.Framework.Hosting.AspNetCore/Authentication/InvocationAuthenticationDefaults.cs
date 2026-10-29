@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Authentication;
 
 /// <summary>
-/// ASP.NET Core 认证方案 <c>XiHan</c> 的常量：给绕过内核管道的端点（SignalR Hub、Server-Sent Events 等）用，认证交给内核已装配的认证处理器（RFC-0008，ADR-0051）。
+/// ASP.NET Core 认证方案 <c>XiHan</c> 的常量。
 /// </summary>
+/// <remarks>
+/// 给绕过内核管道的端点（SignalR Hub、Server-Sent Events 等）用，认证交给内核已装配的认证处理器（RFC-0008，ADR-0051）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class InvocationAuthenticationDefaults
 {

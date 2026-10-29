@@ -6,8 +6,11 @@ using XiHan.Framework.Messaging.Abstractions.Handlers;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 记录处理器收到的投递与当时的 Baggage；发布模式下投递是异步的，用 <see cref="WaitAsync"/> 等待。
+/// 记录处理器收到的投递与当时的 Baggage。
 /// </summary>
+/// <remarks>
+/// 发布模式下投递是异步的，用 <see cref="WaitAsync"/> 等待。
+/// </remarks>
 internal sealed class DeliveryLog
 {
     /// <summary>
@@ -46,8 +49,11 @@ internal sealed class DeliveryLog
     }
 
     /// <summary>
-    /// 等到记录数达到 <paramref name="count"/>；超时抛出。
+    /// 等到记录数达到 <paramref name="count"/>。
     /// </summary>
+    /// <remarks>
+    /// 超时抛出。
+    /// </remarks>
     public async Task WaitAsync(int count, TimeSpan timeout)
     {
         var deadline = DateTimeOffset.UtcNow + timeout;

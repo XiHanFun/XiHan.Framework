@@ -12,8 +12,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="TenantResolutionMiddleware"/> 的单元测试：解析、格式与存储校验、默认租户、必须带租户，以及解析器顺序。
+/// <see cref="TenantResolutionMiddleware"/> 的单元测试。
 /// </summary>
+/// <remarks>
+/// 解析、格式与存储校验、默认租户、必须带租户，以及解析器顺序。
+/// </remarks>
 public sealed class TenantResolutionMiddlewareTests
 {
     /// <summary>
@@ -40,8 +43,11 @@ public sealed class TenantResolutionMiddlewareTests
     }
 
     /// <summary>
-    /// 总是返回固定租户 ID 的解析器；<see langword="null"/> 表示总是解析不到。
+    /// 总是返回固定租户 ID 的解析器。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示总是解析不到。
+    /// </remarks>
     private sealed class FixedResolver(string? tenantId) : ITenantResolver
     {
         /// <summary>
@@ -62,8 +68,11 @@ public sealed class TenantResolutionMiddlewareTests
     private static readonly TenantInfo _dormant = new() { Id = "dormant", IsEnabled = false };
 
     /// <summary>
-    /// 装配带存储、选项与给定解析器的上下文；<paramref name="baggageTenant"/> 不为 <see langword="null"/> 时放入租户 Baggage。返回的数组用于记录处理器是否被执行。
+    /// 装配带存储、选项与给定解析器的上下文。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="baggageTenant"/> 不为 <see langword="null"/> 时放入租户 Baggage。返回的数组用于记录处理器是否被执行。
+    /// </remarks>
     private static (InvocationContext Context, bool[] Reached) Arrange(MultiTenancyOptions options, string? baggageTenant = null, params ITenantResolver[] resolvers)
     {
         var services = new ServiceCollection();

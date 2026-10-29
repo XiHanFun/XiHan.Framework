@@ -11,8 +11,11 @@ namespace XiHan.Framework.Cli.Packaging;
 internal static class ComposeGenerator
 {
     /// <summary>
-    /// 生成 <c>compose.yaml</c>；<paramref name="buildContext"/> 与 <paramref name="dockerfile"/> 是相对 compose 文件与构建上下文的路径。
+    /// 生成 <c>compose.yaml</c>。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="buildContext"/> 与 <paramref name="dockerfile"/> 是相对 compose 文件与构建上下文的路径。
+    /// </remarks>
     public static PackOutput Generate(AppManifest manifest, string buildContext, string dockerfile)
     {
         ArgumentNullException.ThrowIfNull(manifest);

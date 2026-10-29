@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 两个只有标量字段的自定义动词：<c>orders.tree</c> 声明只读，<c>orders.archive</c> 没声明——前者走 GET，后者照旧 POST。
+/// 两个只有标量字段的自定义动词。
 /// </summary>
+/// <remarks>
+/// <c>orders.tree</c> 声明只读，<c>orders.archive</c> 没声明——前者走 GET，后者照旧 POST。
+/// </remarks>
 internal sealed class ReadOnlyVerbFeature : IFeature
 {
     /// <inheritdoc />

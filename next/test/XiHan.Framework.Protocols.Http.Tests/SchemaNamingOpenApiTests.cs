@@ -14,9 +14,11 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// 生成器按实参给封闭泛型起名、把字符串枚举放进 <c>$defs</c> 之后，OpenAPI 的组件提升不再串型：
-/// 两个 <c>PageResult&lt;T&gt;</c> 各是一份组件，枚举是独立组件并被属性与查询参数以 <c>$ref</c> 引用。
+/// 生成器按实参给封闭泛型起名、把字符串枚举放进 <c>$defs</c> 之后。
 /// </summary>
+/// <remarks>
+/// OpenAPI 的组件提升不再串型。两个 <c>PageResult&lt;T&gt;</c> 各是一份组件，枚举是独立组件并被属性与查询参数以 <c>$ref</c> 引用。
+/// </remarks>
 public sealed class SchemaNamingOpenApiTests
 {
     [Fact]

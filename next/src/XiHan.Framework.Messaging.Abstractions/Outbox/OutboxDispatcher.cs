@@ -15,8 +15,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 发件箱投递循环：按创建时间取未投递的消息，按主题分组批量发布到代理，成功记投递时间，失败记次数与原因，最后批量更新；每轮一个工作单元。
+/// 发件箱投递循环。
 /// </summary>
+/// <remarks>
+/// 按创建时间取未投递的消息，按主题分组批量发布到代理，成功记投递时间，失败记次数与原因，最后批量更新；每轮一个工作单元。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class OutboxDispatcher(IServiceProvider services, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
 {
@@ -26,8 +29,11 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     private static readonly Specification<OutboxMessage> _pending = new(static m => m.DispatchedAt == null);
 
     /// <summary>
-    /// 根服务提供者；每轮从它创建新作用域以取得工作单元与仓储。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每轮从它创建新作用域以取得工作单元与仓储。
+    /// </remarks>
     private readonly IServiceProvider _services = services ?? throw new ArgumentNullException(nameof(services));
 
     /// <summary>
@@ -41,8 +47,11 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     private readonly OutboxOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 时间源；记投递时间与驱动轮询延迟。
+    /// 时间源。
     /// </summary>
+    /// <remarks>
+    /// 记投递时间与驱动轮询延迟。
+    /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <summary>
@@ -51,8 +60,11 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     private readonly ILogger _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<OutboxDispatcher>();
 
     /// <summary>
-    /// 投递一轮；返回成功投递的条数。
+    /// 投递一轮。
     /// </summary>
+    /// <remarks>
+    /// 返回成功投递的条数。
+    /// </remarks>
     public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
     {
         await using var scope = _services.CreateAsyncScope();
@@ -81,8 +93,11 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     }
 
     /// <summary>
-    /// 按轮询间隔持续投递，直到取消。单轮异常记录后继续。
+    /// 按轮询间隔持续投递，直到取消。
     /// </summary>
+    /// <remarks>
+    /// 单轮异常记录后继续。
+    /// </remarks>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -113,8 +128,11 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     }
 
     /// <summary>
-    /// 投递一批：解码每条消息，解码成功的按主题分组、各组一次批量发布（组内保持创建顺序），再把全部消息的尝试次数与结果一次批量更新。
+    /// 投递一批。
     /// </summary>
+    /// <remarks>
+    /// 解码每条消息，解码成功的按主题分组、各组一次批量发布（组内保持创建顺序），再把全部消息的尝试次数与结果一次批量更新。
+    /// </remarks>
     private async Task<int> DispatchAsync(IReadOnlyList<OutboxMessage> pending, IRepository<OutboxMessage, Guid> outbox, CancellationToken cancellationToken)
     {
         var outcomes = new Result[pending.Count];

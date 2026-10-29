@@ -31,8 +31,11 @@ public sealed class OutboxMessage : IEntity<Guid>, IHasCreationTime
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
-    /// 投递成功时间；未投递为 <see langword="null"/>。
+    /// 投递成功时间。
     /// </summary>
+    /// <remarks>
+    /// 未投递为 <see langword="null"/>。
+    /// </remarks>
     public DateTimeOffset? DispatchedAt { get; set; }
 
     /// <summary>

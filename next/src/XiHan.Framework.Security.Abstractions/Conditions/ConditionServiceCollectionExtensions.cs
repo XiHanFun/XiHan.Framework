@@ -14,9 +14,11 @@ namespace XiHan.Framework.Security.Abstractions.Conditions;
 public static class ConditionServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记条件属性，并确保 <see cref="IConditionAttributeRegistry"/>、<see cref="IConditionCompiler"/>、<see cref="IConditionEvaluator"/> 已登记。
-    /// 各模块可各自调用；登记表在首次解析时一次建好，重名、别名冲突即抛出。不带参数时只登记三项服务。
+    /// 登记条件属性。
     /// </summary>
+    /// <remarks>
+    /// 并确保 <see cref="IConditionAttributeRegistry"/>、<see cref="IConditionCompiler"/>、<see cref="IConditionEvaluator"/> 已登记。各模块可各自调用；登记表在首次解析时一次建好，重名、别名冲突即抛出。不带参数时只登记三项服务。
+    /// </remarks>
     public static IServiceCollection AddConditionAttributes(this IServiceCollection services, params ConditionAttributeDescriptor[] attributes)
     {
         ArgumentNullException.ThrowIfNull(services);

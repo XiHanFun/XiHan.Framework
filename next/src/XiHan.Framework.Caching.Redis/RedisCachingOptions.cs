@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// Redis Provider 选项。从配置节 <c>XiHan:Caching:Redis</c> 与绑定 <c>cache</c> 显式读取。
+/// Redis Provider 选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Caching:Redis</c> 与绑定 <c>cache</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record RedisCachingOptions
 {
@@ -29,13 +32,19 @@ public sealed record RedisCachingOptions
     }
 
     /// <summary>
-    /// 键前缀；默认 <c>xihan:</c>。
+    /// 键前缀。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan:</c>。
+    /// </remarks>
     public string KeyPrefix { get; init; } = "xihan:";
 
     /// <summary>
-    /// 未指定过期时的存活时间；默认 5 分钟。
+    /// 未指定过期时的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟。
+    /// </remarks>
     public TimeSpan DefaultTimeToLive
     {
         get => field;
@@ -43,8 +52,11 @@ public sealed record RedisCachingOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 健康项 <c>caching.redis.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>caching.redis.connection</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -52,8 +64,11 @@ public sealed record RedisCachingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// 从配置与绑定读取。
     /// </summary>
+    /// <remarks>
+    /// <c>Configuration</c>（配置优先于绑定值）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// </remarks>
     public static RedisCachingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);

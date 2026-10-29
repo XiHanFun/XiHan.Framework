@@ -9,8 +9,11 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库工作流特性对 SQLite 通过引擎套件；后台轮询周期设得很长，由用例主动 <c>PollAsync</c>。
+/// 数据库工作流特性对 SQLite 通过引擎套件。
 /// </summary>
+/// <remarks>
+/// 后台轮询周期设得很长，由用例主动 <c>PollAsync</c>。
+/// </remarks>
 public sealed class DatabaseWorkflowEngineConformanceTests : WorkflowEngineConformance
 {
     /// <inheritdoc />

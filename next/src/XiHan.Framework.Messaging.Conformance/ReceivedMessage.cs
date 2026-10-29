@@ -14,7 +14,10 @@ namespace XiHan.Framework.Messaging.Conformance;
 public sealed record ReceivedMessage(MessageDelivery Delivery, IReadOnlyDictionary<string, string> Baggage, string TraceId)
 {
     /// <summary>
-    /// 派发时调用上下文里的来源（RFC-0003）；没有时为 <see langword="null"/>。
+    /// 派发时调用上下文里的来源（RFC-0003）。
     /// </summary>
+    /// <remarks>
+    /// 没有时为 <see langword="null"/>。
+    /// </remarks>
     public InvocationOrigin? Origin { get; init; }
 }

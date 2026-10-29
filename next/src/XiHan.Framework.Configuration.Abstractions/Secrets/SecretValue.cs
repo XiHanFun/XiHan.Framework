@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 一个密钥的值与版本。<see cref="ToString"/> 固定返回遮蔽文本，防止值进入日志或异常消息。
+/// 一个密钥的值与版本。
 /// </summary>
+/// <remarks>
+/// <see cref="ToString"/> 固定返回遮蔽文本，防止值进入日志或异常消息。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SecretValue
 {
@@ -31,8 +34,11 @@ public sealed class SecretValue
     public string Value { get; }
 
     /// <summary>
-    /// 版本；密钥库不提供时为 <see langword="null"/>。
+    /// 版本。
     /// </summary>
+    /// <remarks>
+    /// 密钥库不提供时为 <see langword="null"/>。
+    /// </remarks>
     public string? Version { get; }
 
     /// <inheritdoc />

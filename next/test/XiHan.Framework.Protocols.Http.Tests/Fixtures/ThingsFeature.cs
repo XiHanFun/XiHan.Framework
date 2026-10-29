@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 登记两个请求都不含 <c>id</c> 的操作 <c>things.list</c> 与 <c>things.get</c>：按约定都推导为 <c>GET /things</c>，映射端点时必须报路由冲突。
+/// 登记两个请求都不含 <c>id</c> 的操作 <c>things.list</c> 与 <c>things.get</c>。
 /// </summary>
+/// <remarks>
+/// 按约定都推导为 <c>GET /things</c>，映射端点时必须报路由冲突。
+/// </remarks>
 internal sealed class ThingsFeature : IFeature
 {
     /// <inheritdoc />

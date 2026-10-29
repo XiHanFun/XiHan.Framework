@@ -22,8 +22,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 以 Rust 写的 EchoWasmPlugin 验证发现、握手、调用、中间件、本地化、回调、事件、陷阱重建、截止时间与运行期加载。
+/// Wasm 插件宿主的端到端用例。
 /// </summary>
+/// <remarks>
+/// 以 Rust 写的 EchoWasmPlugin 验证发现、握手、调用、中间件、本地化、回调、事件、陷阱重建、截止时间与运行期加载。
+/// </remarks>
 public sealed class WasmPluginHostTests
 {
     [Fact]

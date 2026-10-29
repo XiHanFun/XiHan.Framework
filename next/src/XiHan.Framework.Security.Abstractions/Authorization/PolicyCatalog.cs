@@ -8,8 +8,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Abstractions.Authorization;
 
 /// <summary>
-/// 策略目录：注册的 <see cref="IPolicy"/> 按名查找；<c>permission:&lt;code&gt;</c> 在权限已登记于 <see cref="PermissionRegistry"/> 时动态创建权限策略。
+/// 策略目录。
 /// </summary>
+/// <remarks>
+/// 注册的 <see cref="IPolicy"/> 按名查找；<c>permission:&lt;code&gt;</c> 在权限已登记于 <see cref="PermissionRegistry"/> 时动态创建权限策略。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PolicyCatalog
 {
@@ -19,8 +22,11 @@ public sealed class PolicyCatalog
     private readonly Dictionary<string, IPolicy> _policies = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 权限登记表；只为已登记的权限码动态创建权限策略。
+    /// 权限登记表。
     /// </summary>
+    /// <remarks>
+    /// 只为已登记的权限码动态创建权限策略。
+    /// </remarks>
     private readonly PermissionRegistry _permissions;
 
     /// <summary>
@@ -29,8 +35,11 @@ public sealed class PolicyCatalog
     private readonly IPermissionChecker _checker;
 
     /// <summary>
-    /// 创建目录；策略名重复抛出 <see cref="ArgumentException"/>。
+    /// 创建目录。
     /// </summary>
+    /// <remarks>
+    /// 策略名重复抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public PolicyCatalog(IEnumerable<IPolicy> policies, PermissionRegistry permissions, IPermissionChecker checker)
     {
         ArgumentNullException.ThrowIfNull(policies);

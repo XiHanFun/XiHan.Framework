@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 一次迁移运行的共享状态：结果，规则自己的跨文件事实，以及规则登记、由编排器在改写回写之后执行的生成、删除与改名。
+/// 一次迁移运行的共享状态。
 /// </summary>
+/// <remarks>
+/// 结果，规则自己的跨文件事实，以及规则登记、由编排器在改写回写之后执行的生成、删除与改名。
+/// </remarks>
 internal sealed class MigrationSession
 {
     /// <summary>
@@ -19,23 +22,35 @@ internal sealed class MigrationSession
     public List<MigrationFinding> Findings { get; } = [];
 
     /// <summary>
-    /// 要写出的生成文件：绝对路径 → 文本；经 <see cref="Generate"/> 登记。
+    /// 要写出的生成文件。
     /// </summary>
+    /// <remarks>
+    /// 绝对路径 → 文本；经 <see cref="Generate"/> 登记。
+    /// </remarks>
     public Dictionary<string, string> GeneratedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 运行结束时要删除的文件（已转换的旧文件）；与生成文件同路径的不删。
+    /// 运行结束时要删除的文件（已转换的旧文件）。
     /// </summary>
+    /// <remarks>
+    /// 与生成文件同路径的不删。
+    /// </remarks>
     public HashSet<string> Deletions { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 要改名的文件：原绝对路径 → 新绝对路径；目标已存在时不改。
+    /// 要改名的文件。
     /// </summary>
+    /// <remarks>
+    /// 原绝对路径 → 新绝对路径；目标已存在时不改。
+    /// </remarks>
     public Dictionary<string, string> Renames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 迁移根目录（由编排器设置）；报告里的相对路径据此计算。
+    /// 迁移根目录（由编排器设置）。
     /// </summary>
+    /// <remarks>
+    /// 报告里的相对路径据此计算。
+    /// </remarks>
     public string Root { get; set; } = string.Empty;
 
     /// <summary>
@@ -44,8 +59,11 @@ internal sealed class MigrationSession
     public Dictionary<string, string> ProjectNewLines { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 项目的换行符；没记录过用环境默认。生成文件按它写换行。
+    /// 项目的换行符。
     /// </summary>
+    /// <remarks>
+    /// 没记录过用环境默认。生成文件按它写换行。
+    /// </remarks>
     public string ProjectNewLine(string projectDirectory) => ProjectNewLines.GetValueOrDefault(projectDirectory, Environment.NewLine);
 
     /// <summary>
@@ -80,8 +98,11 @@ internal sealed class MigrationSession
     public void Marked(string rule, MigrationFile file, int line, string message) => Findings.Add(new MigrationFinding(rule, file.RelativePath, line, message, IsMarker: true));
 
     /// <summary>
-    /// 登记一个生成文件；磁盘上已有完全相同的内容时不登记、不算改动（再跑一遍零改动），否则记在该规则下一次改动（行号 0）。
+    /// 登记一个生成文件。
     /// </summary>
+    /// <remarks>
+    /// 磁盘上已有完全相同的内容时不登记、不算改动（再跑一遍零改动），否则记在该规则下一次改动（行号 0）。
+    /// </remarks>
     /// <returns>是否登记（内容有变化）。</returns>
     public bool Generate(string rule, string absolutePath, string content)
     {

@@ -6,8 +6,11 @@ using System.Buffers.Binary;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// 值的线上编码：1 字节头（0 绝对、1 滑动），滑动时跟 8 字节窗口毫秒数（小端），其后是载荷。
+/// 值的线上编码。
 /// </summary>
+/// <remarks>
+/// 1 字节头（0 绝对、1 滑动），滑动时跟 8 字节窗口毫秒数（小端），其后是载荷。
+/// </remarks>
 internal static class RedisValueCodec
 {
     /// <summary>
@@ -21,8 +24,11 @@ internal static class RedisValueCodec
     private const byte Sliding = 1;
 
     /// <summary>
-    /// 编码：给载荷加上头部；<paramref name="sliding"/> 不为 <see langword="null"/> 时一并写入窗口。
+    /// 编码。
     /// </summary>
+    /// <remarks>
+    /// 给载荷加上头部；<paramref name="sliding"/> 不为 <see langword="null"/> 时一并写入窗口。
+    /// </remarks>
     public static byte[] Encode(ReadOnlyMemory<byte> payload, TimeSpan? sliding)
     {
         if (sliding is null)
@@ -41,8 +47,11 @@ internal static class RedisValueCodec
     }
 
     /// <summary>
-    /// 解码：按头部拆出载荷与滑动窗口；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// 解码。
     /// </summary>
+    /// <remarks>
+    /// 按头部拆出载荷与滑动窗口；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// </remarks>
     public static (ReadOnlyMemory<byte> Payload, TimeSpan? Sliding) Decode(byte[] encoded)
     {
         ArgumentNullException.ThrowIfNull(encoded);

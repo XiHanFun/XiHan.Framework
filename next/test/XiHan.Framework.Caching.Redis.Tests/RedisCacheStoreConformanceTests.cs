@@ -7,8 +7,11 @@ using XiHan.Framework.Caching.Conformance;
 namespace XiHan.Framework.Caching.Redis.Tests;
 
 /// <summary>
-/// 让 <see cref="RedisCacheStore"/> 跑完整套 <see cref="CacheStoreConformance"/> 用例；没有真实 Redis 时跳过。
+/// 让 <see cref="RedisCacheStore"/> 跑完整套 <see cref="CacheStoreConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 没有真实 Redis 时跳过。
+/// </remarks>
 public sealed class RedisCacheStoreConformanceTests : CacheStoreConformance
 {
     /// <summary>

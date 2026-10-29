@@ -7,14 +7,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 挂起点：节点在等什么（种类与键），到期时间与载荷；被消费（删除）时恢复节点。
+/// 挂起点。
 /// </summary>
+/// <remarks>
+/// 节点在等什么（种类与键），到期时间与载荷；被消费（删除）时恢复节点。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowBookmark
 {
     /// <summary>
-    /// 书签 ID；用户任务的任务 ID就是它。
+    /// 书签 ID。
     /// </summary>
+    /// <remarks>
+    /// 用户任务的任务 ID就是它。
+    /// </remarks>
     public required string Id { get; set; }
 
     /// <summary>

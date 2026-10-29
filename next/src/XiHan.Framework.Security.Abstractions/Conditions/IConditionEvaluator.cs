@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件求值器：组内且、组间或；子句无法判定按不命中计且取反不翻转，待定让所在组待定。
-/// 条件集任一组命中即命中；否则任一组待定即待定；否则不命中。无条件（空集）恒为命中。
+/// 条件求值器。
 /// </summary>
+/// <remarks>
+/// 组内且、组间或；子句无法判定按不命中计且取反不翻转，待定让所在组待定。条件集任一组命中即命中；否则任一组待定即待定；否则不命中。无条件（空集）恒为命中。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IConditionEvaluator
 {

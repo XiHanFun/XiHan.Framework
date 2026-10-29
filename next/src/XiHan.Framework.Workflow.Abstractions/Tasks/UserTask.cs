@@ -9,8 +9,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 用户任务视图：一个 <c>UserTask</c> 书签加所属实例的信息；任务 ID 就是书签 ID。
+/// 用户任务视图。
 /// </summary>
+/// <remarks>
+/// 一个 <c>UserTask</c> 书签加所属实例的信息；任务 ID 就是书签 ID。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTask
 {
@@ -100,8 +103,11 @@ public sealed record UserTask
     public string? TenantId { get; init; }
 
     /// <summary>
-    /// 载荷里的字符串值；没有或不是字符串为空。
+    /// 载荷里的字符串值。
     /// </summary>
+    /// <remarks>
+    /// 没有或不是字符串为空。
+    /// </remarks>
     private static string? Text(JsonObject payload, string key)
         => payload.TryGetPropertyValue(key, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
 

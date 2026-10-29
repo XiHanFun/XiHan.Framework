@@ -16,8 +16,11 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <c>scheduling.jobs@1</c> 的一致性套件：Provider 的测试项目继承并实现 <see cref="StartAsync"/>，装配被测 Provider（轮询周期取 50 毫秒左右）。
+/// <c>scheduling.jobs@1</c> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// Provider 的测试项目继承并实现 <see cref="StartAsync"/>，装配被测 Provider（轮询周期取 50 毫秒左右）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class JobSchedulerConformance
 {
@@ -42,8 +45,11 @@ public abstract class JobSchedulerConformance
     protected virtual TimeSpan WaitTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主；<paramref name="configuration"/> 里是用例要求的引擎配置（如 misfire 阈值）。
+    /// 启动装配了被测 Provider 的宿主。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="configuration"/> 里是用例要求的引擎配置（如 misfire 阈值）。
+    /// </remarks>
     protected abstract Task<JobSchedulerHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
@@ -80,8 +86,11 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 批量触发逐项结果；未登记的作业；手动触发的数据覆盖作业数据。
+    /// 批量触发逐项结果。
     /// </summary>
+    /// <remarks>
+    /// 未登记的作业；手动触发的数据覆盖作业数据。
+    /// </remarks>
     [Fact]
     public async Task Trigger_UnknownJob_IsNotFound_AndBatchReturnsPerItem()
     {
@@ -122,8 +131,11 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 不允许并发的作业运行中再触发返回冲突；允许并发的可以同时运行。
+    /// 不允许并发的作业运行中再触发返回冲突。
     /// </summary>
+    /// <remarks>
+    /// 允许并发的可以同时运行。
+    /// </remarks>
     [Fact]
     public async Task ConcurrentTrigger_ConflictsUnlessAllowed()
     {
@@ -157,8 +169,11 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 运行时登记、暂停与恢复、替换与删除；类型未登记、触发器名重复、日历未登记被拒绝。
+    /// 运行时登记、暂停与恢复、替换与删除。
     /// </summary>
+    /// <remarks>
+    /// 类型未登记、触发器名重复、日历未登记被拒绝。
+    /// </remarks>
     [Fact]
     public async Task Schedule_AddsRuntimeJob_PauseResume_AndUnschedule()
     {
@@ -349,8 +364,11 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 本地作业在每个实例上运行；排除一切的日历让触发器没有下一次。
+    /// 本地作业在每个实例上运行。
     /// </summary>
+    /// <remarks>
+    /// 排除一切的日历让触发器没有下一次。
+    /// </remarks>
     [Fact]
     public async Task LocalJob_RunsOnEveryInstance_AndCalendarExcludes()
     {

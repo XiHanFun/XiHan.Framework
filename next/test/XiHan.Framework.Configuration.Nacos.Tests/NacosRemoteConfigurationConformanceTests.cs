@@ -7,8 +7,12 @@ using XiHan.Framework.Configuration.Conformance.Remote;
 namespace XiHan.Framework.Configuration.Nacos.Tests;
 
 /// <summary>
-/// 让 <see cref="NacosConfigurationClient"/> 对真实 Nacos 跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例；未设置 <c>XIHAN_TEST_NACOS</c> 时跳过。
+/// Nacos 配置客户端的一致性用例。
 /// </summary>
+/// <remarks>
+/// 让 <see cref="NacosConfigurationClient"/> 对真实 Nacos 跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例。
+/// 未设置 <c>XIHAN_TEST_NACOS</c> 时跳过。
+/// </remarks>
 public sealed class NacosRemoteConfigurationConformanceTests : RemoteConfigurationClientConformance
 {
     /// <summary>

@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 存储共用的仓储读写：按标识批量查找与查询都以 <see cref="EntityQuery.DefaultMaxTake"/> 为一批，超过的分批或分页循环；批量写入把逐项结果汇总成一个结果，与别的节点撞上的项按调用方要求重试或跳过。
+/// 存储共用的仓储读写。
 /// </summary>
+/// <remarks>
+/// 按标识批量查找与查询都以 <see cref="EntityQuery.DefaultMaxTake"/> 为一批，超过的分批或分页循环；批量写入把逐项结果汇总成一个结果，与别的节点撞上的项按调用方要求重试或跳过。
+/// </remarks>
 internal static class RecordQueries
 {
     /// <summary>
@@ -56,8 +59,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 按查询的过滤与排序分页读完：每页 <see cref="EntityQuery.DefaultMaxTake"/> 条，直到不足一页。查询的排序必须是全序，分页才不重不漏。
+    /// 按查询的过滤与排序分页读完。
     /// </summary>
+    /// <remarks>
+    /// 每页 <see cref="EntityQuery.DefaultMaxTake"/> 条，直到不足一页。查询的排序必须是全序，分页才不重不漏。
+    /// </remarks>
     public static async Task<List<TEntity>> ListAllAsync<TEntity>(IRepository<TEntity, string> repository, EntityQuery<TEntity> query, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -77,9 +83,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 新增或整体替换：已有的行整行更新，没有的新增；同一批里同一标识后者覆盖前者。
-    /// 与别的节点撞上的项（戳冲突、刚被删、刚被插入）重读后再写，最多 <see cref="MaxAttempts"/> 轮；其余失败立即整体失败（由调用方据此回滚）。
+    /// 新增或整体替换。
     /// </summary>
+    /// <remarks>
+    /// 已有的行整行更新，没有的新增；同一批里同一标识后者覆盖前者。与别的节点撞上的项（戳冲突、刚被删、刚被插入）重读后再写，最多 <see cref="MaxAttempts"/> 轮；其余失败立即整体失败（由调用方据此回滚）。
+    /// </remarks>
     public static async ValueTask<Result> UpsertAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, Action<TEntity, TEntity> copy, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -133,8 +141,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 批量更新这些行：与别的节点撞上的行（已被改走或删掉）跳过——它的新状态由改它的那个节点负责；其余失败整体失败。返回更新成功的行。
+    /// 批量更新这些行。
     /// </summary>
+    /// <remarks>
+    /// 与别的节点撞上的行（已被改走或删掉）跳过——它的新状态由改它的那个节点负责；其余失败整体失败。返回更新成功的行。
+    /// </remarks>
     public static async ValueTask<Result<List<TEntity>>> UpdateManyAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -159,8 +170,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 批量删除这些行；已经不存在的忽略，其余失败整体失败。返回实际删除的条数。
+    /// 批量删除这些行。
     /// </summary>
+    /// <remarks>
+    /// 已经不存在的忽略，其余失败整体失败。返回实际删除的条数。
+    /// </remarks>
     public static async ValueTask<Result<int>> RemoveManyAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -184,8 +198,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 分批写入并收集逐项结果：与别的写入者撞上的项把标识放进 <paramref name="retry"/>、错误放进 <paramref name="races"/>；返回第一个非竞争的失败，没有为 <see langword="null"/>。
+    /// 分批写入并收集逐项结果。
     /// </summary>
+    /// <remarks>
+    /// 与别的写入者撞上的项把标识放进 <paramref name="retry"/>、错误放进 <paramref name="races"/>；返回第一个非竞争的失败，没有为 <see langword="null"/>。
+    /// </remarks>
     private static async ValueTask<Error?> WriteAsync<TEntity>(Func<IReadOnlyList<TEntity>, CancellationToken, Task<IReadOnlyList<Result>>> write, List<TEntity> rows, List<string> retry, List<Error> races, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {

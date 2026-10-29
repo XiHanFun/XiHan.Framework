@@ -9,8 +9,11 @@ using XiHan.Framework.Scheduling.Abstractions.Leadership;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 进程内租约式领导选举：每个资源一条记录（持有者、存活时间、到期时刻），过期视为空闲。单实例下正确；多实例换数据库或 Kubernetes Lease 的 Provider。
+/// 进程内租约式领导选举。
 /// </summary>
+/// <remarks>
+/// 每个资源一条记录（持有者、存活时间、到期时刻），过期视为空闲。单实例下正确；多实例换数据库或 Kubernetes Lease 的 Provider。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryLeaderElection : ILeaderElection
 {
@@ -80,8 +83,11 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 持有者的到期时刻；不是持有者时为 <see cref="DateTimeOffset.MinValue"/>。
+    /// 持有者的到期时刻。
     /// </summary>
+    /// <remarks>
+    /// 不是持有者时为 <see cref="DateTimeOffset.MinValue"/>。
+    /// </remarks>
     internal DateTimeOffset ExpiresAt(JobName resource, string holder)
     {
         lock (_lock)
@@ -109,8 +115,11 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 释放：仍是持有者才删除记录；幂等。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 仍是持有者才删除记录；幂等。
+    /// </remarks>
     internal void Release(JobName resource, string holder)
     {
         lock (_lock)

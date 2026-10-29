@@ -22,9 +22,11 @@ internal static class GrpcStatusMapping
     private const string InvalidCredential = "SECURITY_DENIED_003";
 
     /// <summary>
-    /// 映射：VALIDATION → InvalidArgument，NOTFOUND → NotFound，CONFLICT → Aborted，DENIED → PermissionDenied（未认证与凭据无效 → Unauthenticated），
-    /// UNAVAILABLE → Unavailable，TIMEOUT → DeadlineExceeded，CANCELLED → Cancelled，其他 → Internal。
+    /// 映射。
     /// </summary>
+    /// <remarks>
+    /// VALIDATION → InvalidArgument，NOTFOUND → NotFound，CONFLICT → Aborted，DENIED → PermissionDenied（未认证与凭据无效 → Unauthenticated），UNAVAILABLE → Unavailable，TIMEOUT → DeadlineExceeded，CANCELLED → Cancelled，其他 → Internal。
+    /// </remarks>
     public static StatusCode StatusCodeFor(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);

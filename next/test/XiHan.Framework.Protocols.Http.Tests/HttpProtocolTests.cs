@@ -19,13 +19,19 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 协议适配器：路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作、OpenAPI 文档与权限扩展。
+/// HTTP 协议适配器。
 /// </summary>
+/// <remarks>
+/// 路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作、OpenAPI 文档与权限扩展。
+/// </remarks>
 public sealed class HttpProtocolTests
 {
     /// <summary>
-    /// 启动测试宿主；返回映射的端点数。
+    /// 启动测试宿主。
     /// </summary>
+    /// <remarks>
+    /// 返回映射的端点数。
+    /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client, int Mapped)> StartAsync(params (string Key, string Value)[] configuration)
     {
         var builder = WebApplication.CreateBuilder();

@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 等待信号：以 <c>Signal</c> 书签（键 = <c>SignalName</c>，关联 = 实例关联 ID，<c>AcceptAnyCorrelation</c> 时不限）挂起；信号载荷成为节点输出。
+/// 等待信号。
 /// </summary>
+/// <remarks>
+/// 以 <c>Signal</c> 书签（键 = <c>SignalName</c>，关联 = 实例关联 ID，<c>AcceptAnyCorrelation</c> 时不限）挂起；信号载荷成为节点输出。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WaitSignalActivity : IActivity
 {

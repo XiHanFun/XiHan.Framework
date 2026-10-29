@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 对着真实的 SQLite（<c>Persistence.SqlSugar</c>，应用自注册客户端）验证 <see cref="TenantRecord"/> 的映射：写入 → 另一个宿主读取 → 属性 JSON 往返 → Tenant 阶段解析与分片 → 改与删。
+/// 对着真实的 SQLite验证 <see cref="TenantRecord"/> 的映射。
 /// </summary>
+/// <remarks>
+/// <c>Persistence.SqlSugar</c>，应用自注册客户端。写入 → 另一个宿主读取 → 属性 JSON 往返 → Tenant 阶段解析与分片 → 改与删。
+/// </remarks>
 public sealed class SqliteTenantStoreTests
 {
     [Fact]

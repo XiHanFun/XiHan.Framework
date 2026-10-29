@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件属性登记表（不可变，线程安全）。容器解析时收到全部经 <see cref="ConditionServiceCollectionExtensions.AddConditionAttributes"/> 登记的项；重名、别名冲突即抛出。
+/// 条件属性登记表（不可变，线程安全）。
 /// </summary>
+/// <remarks>
+/// 容器解析时收到全部经 <see cref="ConditionServiceCollectionExtensions.AddConditionAttributes"/> 登记的项；重名、别名冲突即抛出。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConditionAttributeRegistry : IConditionAttributeRegistry
 {

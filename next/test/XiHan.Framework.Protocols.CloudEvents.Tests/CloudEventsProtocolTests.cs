@@ -27,8 +27,11 @@ namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 public sealed class CloudEventsProtocolTests
 {
     /// <summary>
-    /// 启动测试宿主：Minimal 组合 + 内存消息 + CloudEvents 适配器 + 订阅 orders 的特性；出站请求交给捕获处理器。
+    /// 启动测试宿主。
     /// </summary>
+    /// <remarks>
+    /// Minimal 组合 + 内存消息 + CloudEvents 适配器 + 订阅 orders 的特性；出站请求交给捕获处理器。
+    /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client, DeliveryLog Log, CapturingHandler Outbound)> StartAsync(params (string Key, string Value)[] configuration)
     {
         var log = new DeliveryLog();

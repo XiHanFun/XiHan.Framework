@@ -7,8 +7,10 @@ namespace XiHan.Framework.Primitives.Manifests;
 
 /// <summary>
 /// <c>xihan.manifest.json</c> 的对象模型，与 <c>spec/manifest/manifest.schema.json</c> 一一对应。
-/// 只做数据与格式校验；收集、解析与求解是内核的职责。
 /// </summary>
+/// <remarks>
+/// 只做数据与格式校验；收集、解析与求解是内核的职责。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record Manifest
 {
@@ -66,8 +68,11 @@ public sealed partial record Manifest
     public ManifestRole Role { get; init; } = ManifestRole.Provider;
 
     /// <summary>
-    /// 插件隔离边界；仅 <see cref="ManifestKind.Plugin"/> 需要。
+    /// 插件隔离边界。
     /// </summary>
+    /// <remarks>
+    /// 仅 <see cref="ManifestKind.Plugin"/> 需要。
+    /// </remarks>
     public PluginIsolation? Isolation { get; init; }
 
     /// <summary>
@@ -91,8 +96,11 @@ public sealed partial record Manifest
     public Contributions Contributes { get; init; } = Contributions.Empty;
 
     /// <summary>
-    /// 激活事件；默认 <c>onStartup</c>。
+    /// 激活事件。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>onStartup</c>。
+    /// </remarks>
     public IReadOnlyList<string> Activation
     {
         get => field;
@@ -100,8 +108,11 @@ public sealed partial record Manifest
     } = ["onStartup"];
 
     /// <summary>
-    /// 插件所需权限；由宿主配置授予。
+    /// 插件所需权限。
     /// </summary>
+    /// <remarks>
+    /// 由宿主配置授予。
+    /// </remarks>
     public IReadOnlyList<string> Permissions
     {
         get => field;
@@ -114,8 +125,11 @@ public sealed partial record Manifest
     public string? Entry { get; init; }
 
     /// <summary>
-    /// 检查跨字段约束：插件必须声明隔离边界；非插件不得声明隔离边界或权限；同一能力不得重复提供或重复依赖。
+    /// 检查跨字段约束。
     /// </summary>
+    /// <remarks>
+    /// 插件必须声明隔离边界；非插件不得声明隔离边界或权限；同一能力不得重复提供或重复依赖。
+    /// </remarks>
     public Result Validate()
     {
         // 单字段格式在 init 访问器里已经拦截，这里只做字段之间的组合约束。
@@ -148,8 +162,11 @@ public sealed partial record Manifest
     }
 
     /// <summary>
-    /// 校验列表中每一项都匹配 <paramref name="pattern"/>；通过时原样返回列表。
+    /// 校验列表中每一项都匹配 <paramref name="pattern"/>。
     /// </summary>
+    /// <remarks>
+    /// 通过时原样返回列表。
+    /// </remarks>
     /// <param name="values">待校验的值。</param>
     /// <param name="pattern">每一项必须匹配的正则。</param>
     /// <param name="what">出错时用于描述该项的名词，例如 <c>Activation event</c>。</param>

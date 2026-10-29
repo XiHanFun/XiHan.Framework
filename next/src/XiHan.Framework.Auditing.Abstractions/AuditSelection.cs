@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions;
 
 /// <summary>
-/// 没有显式声明动作时，哪些操作调用要记审计。显式 <c>SetAuditAction</c> 的调用总是记录。
+/// 没有显式声明动作时，哪些操作调用要记审计。
 /// </summary>
+/// <remarks>
+/// 显式 <c>SetAuditAction</c> 的调用总是记录。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum AuditSelection
 {

@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Resilience;
 
 /// <summary>
-/// Resilience 阶段的选项：默认策略与按操作 ID 的覆盖。从配置节 <c>XiHan:Kernel:Resilience</c> 显式读取，不经反射绑定：
-/// 节本身的键是默认策略，<c>Operations:&lt;操作 ID&gt;</c> 下同名键覆盖该操作（缺省键沿用默认策略）。没有任何限制时中间件直接透传。
+/// Resilience 阶段的选项。
 /// </summary>
+/// <remarks>
+/// 默认策略与按操作 ID 的覆盖。从配置节 <c>XiHan:Kernel:Resilience</c> 显式读取，不经反射绑定：节本身的键是默认策略，<c>Operations:&lt;操作 ID&gt;</c> 下同名键覆盖该操作（缺省键沿用默认策略）。没有任何限制时中间件直接透传。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ResilienceOptions
 {
@@ -24,8 +26,11 @@ public sealed record ResilienceOptions
     public const string OperationsSection = "Operations";
 
     /// <summary>
-    /// 默认策略；没有配置时没有任何限制。
+    /// 默认策略。
     /// </summary>
+    /// <remarks>
+    /// 没有配置时没有任何限制。
+    /// </remarks>
     public ResiliencePolicy Defaults
     {
         get => field;
@@ -51,8 +56,11 @@ public sealed record ResilienceOptions
     }
 
     /// <summary>
-    /// 从配置读取；操作 ID 须符合 <see cref="OperationId"/> 文法。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// 操作 ID 须符合 <see cref="OperationId"/> 文法。
+    /// </remarks>
     public static ResilienceOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

@@ -12,8 +12,11 @@ using XiHan.Framework.Security.Abstractions.Network;
 namespace XiHan.Framework.Security.Ip2Region;
 
 /// <summary>
-/// ip2region 归属地的能力包入口：提供 <c>security.ip-region@1</c>，以 <see cref="Ip2RegionResolver"/> 单例实现 <see cref="IIpRegionResolver"/>。xdb 文件由宿主提供，路径见 <see cref="Ip2RegionOptions"/>。
+/// ip2region 归属地的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>security.ip-region@1</c>，以 <see cref="Ip2RegionResolver"/> 单例实现 <see cref="IIpRegionResolver"/>。xdb 文件由宿主提供，路径见 <see cref="Ip2RegionOptions"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class Ip2RegionSecurityFeature : IFeature
 {

@@ -32,8 +32,11 @@ public sealed record JobStatus(JobRecord Job, IReadOnlyList<JobTriggerStatus> Tr
     public bool IsRunning => RunningCount > 0;
 
     /// <summary>
-    /// 最早的下一次运行时刻（等待中或已抢占的触发器里取最小）；没有为空。
+    /// 最早的下一次运行时刻（等待中或已抢占的触发器里取最小）。
     /// </summary>
+    /// <remarks>
+    /// 没有为空。
+    /// </remarks>
     public DateTimeOffset? NextRun
     {
         get

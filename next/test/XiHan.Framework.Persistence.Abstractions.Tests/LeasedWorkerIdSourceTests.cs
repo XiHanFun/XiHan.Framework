@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="LeasedWorkerIdSource"/>：多个实例共用一个锁存储时取最小空位、本地到期、续约保持机器位、空位被抢后重新分配、存储不可达按丢失处理、机器位全被占时启动失败、后台循环按周期续约。
+/// <see cref="LeasedWorkerIdSource"/>。
 /// </summary>
+/// <remarks>
+/// 多个实例共用一个锁存储时取最小空位、本地到期、续约保持机器位、空位被抢后重新分配、存储不可达按丢失处理、机器位全被占时启动失败、后台循环按周期续约。
+/// </remarks>
 public sealed class LeasedWorkerIdSourceTests
 {
     /// <summary>
@@ -22,8 +25,11 @@ public sealed class LeasedWorkerIdSourceTests
     private static readonly DateTimeOffset _start = new(2026, 10, 27, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 租约存活时间；续约间隔是它的三分之一。
+    /// 租约存活时间。
     /// </summary>
+    /// <remarks>
+    /// 续约间隔是它的三分之一。
+    /// </remarks>
     private static readonly TimeSpan _timeToLive = TimeSpan.FromSeconds(30);
 
     [Fact]

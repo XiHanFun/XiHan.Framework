@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database;
 
 /// <summary>
-/// 数据库工作流选项（配置节 <c>XiHan:Workflow:Database</c>）：到期书签的轮询周期与批大小、租约时长、本节点的持有者标识。
+/// 数据库工作流选项（配置节 <c>XiHan:Workflow:Database</c>）。
 /// </summary>
+/// <remarks>
+/// 到期书签的轮询周期与批大小、租约时长、本节点的持有者标识。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseWorkflowOptions
 {
@@ -19,13 +22,19 @@ public sealed record DatabaseWorkflowOptions
     public const string ConfigurationSection = "XiHan:Workflow:Database";
 
     /// <summary>
-    /// 本进程默认的持有者标识：机器名、进程 ID 与 8 位随机十六进制；进程内所有选项实例共用，同一进程的锁与领导权由它识别。
+    /// 本进程默认的持有者标识。
     /// </summary>
+    /// <remarks>
+    /// 机器名、进程 ID 与 8 位随机十六进制；进程内所有选项实例共用，同一进程的锁与领导权由它识别。
+    /// </remarks>
     private static readonly string _defaultHolderId = $"{Environment.MachineName}:{Environment.ProcessId}:{Guid.NewGuid().ToString("N")[..8]}";
 
     /// <summary>
-    /// 到期书签的轮询周期；默认 1 秒。
+    /// 到期书签的轮询周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 秒。
+    /// </remarks>
     public TimeSpan PollInterval
     {
         get => field;
@@ -33,8 +42,11 @@ public sealed record DatabaseWorkflowOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 每次轮询最多恢复的书签数；默认 100。
+    /// 每次轮询最多恢复的书签数。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int BatchSize
     {
         get => field;
@@ -42,8 +54,11 @@ public sealed record DatabaseWorkflowOptions
     } = 100;
 
     /// <summary>
-    /// 实例锁与轮询领导权的租约时长：持有者每三分之一租约续约一次，持有者消失后别的节点在租约到期后接管；默认 60 秒。
+    /// 实例锁与轮询领导权的租约时长。
     /// </summary>
+    /// <remarks>
+    /// 持有者每三分之一租约续约一次，持有者消失后别的节点在租约到期后接管；默认 60 秒。
+    /// </remarks>
     public TimeSpan LockLease
     {
         get => field;
@@ -51,8 +66,11 @@ public sealed record DatabaseWorkflowOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 本节点的持有者标识，写进租约行的 <c>Holder</c>；默认 <c>机器名:进程 ID:8 位随机十六进制</c>。
+    /// 本节点的持有者标识，写进租约行的 <c>Holder</c>。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>机器名:进程 ID:8 位随机十六进制</c>。
+    /// </remarks>
     public string HolderId
     {
         get => field;
@@ -60,8 +78,11 @@ public sealed record DatabaseWorkflowOptions
     } = _defaultHolderId;
 
     /// <summary>
-    /// 健康项 <c>workflow.database.poller</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>workflow.database.poller</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -69,8 +90,11 @@ public sealed record DatabaseWorkflowOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置读取：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// </remarks>
     public static DatabaseWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

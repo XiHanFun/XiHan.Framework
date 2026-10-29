@@ -16,9 +16,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库本地化的能力包入口：提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。
-/// 健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded。
+/// 数据库本地化的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseLocalizationFeature : IHostedFeature
 {

@@ -8,8 +8,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 健康项 <c>objectstorage.s3.connection</c>：选项里的健康桶与探测间隔解析；真实服务可用时宿主启动后条目 Ready——不配健康桶时列桶，配了就 HEAD 它（未设置 <c>XIHAN_TEST_S3</c> 时跳过）。
+/// 健康项 <c>objectstorage.s3.connection</c>。
 /// </summary>
+/// <remarks>
+/// 选项里的健康桶与探测间隔解析；真实服务可用时宿主启动后条目 Ready——不配健康桶时列桶，配了就 HEAD 它（未设置 <c>XIHAN_TEST_S3</c> 时跳过）。
+/// </remarks>
 public sealed class S3ObjectStorageHealthTests
 {
     [Fact]

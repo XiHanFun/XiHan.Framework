@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Providers;
 
 /// <summary>
-/// 按 Provider 配置创建 <see cref="IChatClient"/> 的工厂（<c>ai.chat@1</c> 的 Provider 契约）；以 <c>AddAIChatClientFactory&lt;T&gt;()</c> 登记。
+/// 按 Provider 配置创建 <see cref="IChatClient"/> 的工厂（<c>ai.chat@1</c> 的 Provider 契约）。
 /// </summary>
+/// <remarks>
+/// 以 <c>AddAIChatClientFactory&lt;T&gt;()</c> 登记。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IChatClientFactory
 {
@@ -18,7 +21,10 @@ public interface IChatClientFactory
     string Kind { get; }
 
     /// <summary>
-    /// 创建客户端；配置缺必填项 → <see cref="AIErrors.RequestInvalid"/>。
+    /// 创建客户端。
     /// </summary>
+    /// <remarks>
+    /// 配置缺必填项 → <see cref="AIErrors.RequestInvalid"/>。
+    /// </remarks>
     Result<IChatClient> Create(AIProviderOptions options);
 }

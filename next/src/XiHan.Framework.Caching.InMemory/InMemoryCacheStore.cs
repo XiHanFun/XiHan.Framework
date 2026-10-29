@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 有界 LRU 的字节存储。写入复制字节，读取返回不可修改的视图；批量方法一次加锁逐项处理。
+/// 有界 LRU 的字节存储。
 /// </summary>
+/// <remarks>
+/// 写入复制字节，读取返回不可修改的视图；批量方法一次加锁逐项处理。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCacheStore : ICacheStore
 {

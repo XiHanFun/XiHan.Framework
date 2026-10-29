@@ -23,8 +23,11 @@ public static partial class TopicName
     public static bool IsValid(string? topic) => topic is not null && Pattern().IsMatch(topic);
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string topic)
     {
         ArgumentNullException.ThrowIfNull(topic);

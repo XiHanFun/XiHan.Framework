@@ -18,10 +18,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 内存缓存的能力包入口：默认提供 <c>caching.local@1</c> 与 <c>caching.distributed@1</c>。
-/// 只为被选中的能力注册服务：另有显式 Provider 提供共享缓存时，本包只注册 <see cref="ICache"/>。
-/// 类型化缓存直接存对象，不需要序列化器。健康项 <see cref="HealthName"/> 在任一张表满时 Degraded。
+/// 内存缓存的能力包入口。
 /// </summary>
+/// <remarks>
+/// 默认提供 <c>caching.local@1</c> 与 <c>caching.distributed@1</c>。只为被选中的能力注册服务：另有显式 Provider 提供共享缓存时，本包只注册 <see cref="ICache"/>。类型化缓存直接存对象，不需要序列化器。健康项 <see cref="HealthName"/> 在任一张表满时 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCachingFeature : IFeature
 {

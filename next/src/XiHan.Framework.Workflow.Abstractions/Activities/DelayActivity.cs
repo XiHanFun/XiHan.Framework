@@ -11,8 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 延时：<c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（时刻，或求值为时刻的表达式）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻。
+/// 延时。
 /// </summary>
+/// <remarks>
+/// <c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（时刻，或求值为时刻的表达式）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DelayActivity : IResumableActivity
 {

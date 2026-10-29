@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 带记忆的属性来源：同一属性只向内层取一次。按单次调用使用，不是线程安全的；<see cref="ConditionAttributeValueState.Deferred"/> 不记忆，补齐后再取能拿到值。
+/// 带记忆的属性来源。
 /// </summary>
+/// <remarks>
+/// 同一属性只向内层取一次。按单次调用使用，不是线程安全的；<see cref="ConditionAttributeValueState.Deferred"/> 不记忆，补齐后再取能拿到值。
+/// </remarks>
 /// <param name="inner">内层来源。</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MemoizingConditionAttributeSource(IConditionAttributeSource inner) : IConditionAttributeSource

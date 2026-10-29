@@ -18,13 +18,19 @@ public static class SecurityContextExtensions
     private static readonly ContextItemKey<SecurityContext> _key = new("xihan.security");
 
     /// <summary>
-    /// 读取安全上下文；未设置时为 <see cref="SecurityContext.Anonymous"/>。
+    /// 读取安全上下文。
     /// </summary>
+    /// <remarks>
+    /// 未设置时为 <see cref="SecurityContext.Anonymous"/>。
+    /// </remarks>
     public static SecurityContext GetSecurity(this InvocationContext context) => context.Get(_key).ValueOr(SecurityContext.Anonymous);
 
     /// <summary>
-    /// 写入安全上下文。Authenticate 与 Tenant 阶段调用；之后的阶段不应再改。
+    /// 写入安全上下文。
     /// </summary>
+    /// <remarks>
+    /// Authenticate 与 Tenant 阶段调用；之后的阶段不应再改。
+    /// </remarks>
     public static void SetSecurity(this InvocationContext context, SecurityContext security) => context.Set(_key, security);
 
     /// <summary>

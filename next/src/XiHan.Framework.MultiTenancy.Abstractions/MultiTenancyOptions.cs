@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions;
 
 /// <summary>
-/// 多租户选项。从配置节 <c>XiHan:MultiTenancy</c> 显式读取。
+/// 多租户选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:MultiTenancy</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MultiTenancyOptions
 {
@@ -19,8 +22,11 @@ public sealed record MultiTenancyOptions
     public const string ConfigurationSection = "XiHan:MultiTenancy";
 
     /// <summary>
-    /// 没有解析到租户时使用的默认租户；<see langword="null"/> 表示没有默认租户。
+    /// 没有解析到租户时使用的默认租户。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示没有默认租户。
+    /// </remarks>
     public string? DefaultTenant
     {
         get => field;
@@ -28,18 +34,27 @@ public sealed record MultiTenancyOptions
     }
 
     /// <summary>
-    /// 调用必须带租户：没有解析到且没有默认租户时返回 <see cref="MultiTenancyErrors.MissingTenant"/>。默认 <see langword="false"/>。
+    /// 调用必须带租户。
     /// </summary>
+    /// <remarks>
+    /// 没有解析到且没有默认租户时返回 <see cref="MultiTenancyErrors.MissingTenant"/>。默认 <see langword="false"/>。
+    /// </remarks>
     public bool RequireTenant { get; init; }
 
     /// <summary>
-    /// 解析出的租户必须在存储中存在且启用。默认 <see langword="true"/>；关闭后只校验格式。
+    /// 解析出的租户必须在存储中存在且启用。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="true"/>；关闭后只校验格式。
+    /// </remarks>
     public bool ValidateAgainstStore { get; init; } = true;
 
     /// <summary>
-    /// <see cref="Sharding.TenantStoreShardResolver"/> 的缓存容量（租户数）；默认 10000，满时整体清空。
+    /// <see cref="Sharding.TenantStoreShardResolver"/> 的缓存容量（租户数）。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000，满时整体清空。
+    /// </remarks>
     public int ShardCacheSize
     {
         get => field;
@@ -47,8 +62,11 @@ public sealed record MultiTenancyOptions
     } = 10_000;
 
     /// <summary>
-    /// 承载租户 ID 的声明类型；默认 <c>tenant</c>。
+    /// 承载租户 ID 的声明类型。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>tenant</c>。
+    /// </remarks>
     public string TenantClaim
     {
         get => field;
@@ -87,8 +105,11 @@ public sealed record MultiTenancyOptions
     }
 
     /// <summary>
-    /// 读取配置节下的布尔值；未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>。
+    /// 读取配置节下的布尔值。
     /// </summary>
+    /// <remarks>
+    /// 未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     private static bool? ReadBool(IConfiguration configuration, string name)
     {
         var raw = configuration[$"{ConfigurationSection}:{name}"];

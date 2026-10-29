@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions;
 
 /// <summary>
-/// 审计中间件的选项。从配置节 <c>XiHan:Auditing</c> 显式读取：<c>Selection</c>、<c>IncludeSuccesses</c>。
+/// 审计中间件的选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Auditing</c> 显式读取：<c>Selection</c>、<c>IncludeSuccesses</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AuditingOptions
 {
@@ -18,13 +21,19 @@ public sealed record AuditingOptions
     public const string ConfigurationSection = "XiHan:Auditing";
 
     /// <summary>
-    /// 没有显式动作时记哪些操作；默认只记声明了权限的操作。
+    /// 没有显式动作时记哪些操作。
     /// </summary>
+    /// <remarks>
+    /// 默认只记声明了权限的操作。
+    /// </remarks>
     public AuditSelection Selection { get; init; } = AuditSelection.Protected;
 
     /// <summary>
-    /// 是否记录成功的调用；默认 <see langword="true"/>，为假时只记失败。
+    /// 是否记录成功的调用。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="true"/>，为假时只记失败。
+    /// </remarks>
     public bool IncludeSuccesses { get; init; } = true;
 
     /// <summary>

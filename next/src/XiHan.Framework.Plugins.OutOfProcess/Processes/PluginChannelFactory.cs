@@ -9,8 +9,11 @@ using XiHan.Framework.Plugins.Protocol.Handshake;
 namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 
 /// <summary>
-/// 为本机端点创建 gRPC 通道：Unix 域套接字与命名管道经 <see cref="SocketsHttpHandler.ConnectCallback"/> 连接，TCP 直接连接回环地址。
+/// 为本机端点创建 gRPC 通道。
 /// </summary>
+/// <remarks>
+/// Unix 域套接字与命名管道经 <see cref="SocketsHttpHandler.ConnectCallback"/> 连接，TCP 直接连接回环地址。
+/// </remarks>
 internal static class PluginChannelFactory
 {
     /// <summary>

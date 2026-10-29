@@ -12,8 +12,11 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 public static class TenantShardKeys
 {
     /// <summary>
-    /// 租户专属连接串；有值即表示该租户分库。
+    /// 租户专属连接串。
     /// </summary>
+    /// <remarks>
+    /// 有值即表示该租户分库。
+    /// </remarks>
     public const string ConnectionString = "ConnectionString";
 
     /// <summary>
@@ -22,8 +25,11 @@ public static class TenantShardKeys
     public const string DatabaseProvider = "DatabaseProvider";
 
     /// <summary>
-    /// 透传属性的前缀：<c>Shard.&lt;key&gt;</c> 进 <see cref="TenantShard.Properties"/> 的 <c>&lt;key&gt;</c>（用点不用冒号：租户属性来自配置时冒号会被当作节分隔符）。
+    /// 透传属性的前缀。
     /// </summary>
+    /// <remarks>
+    /// <c>Shard.&lt;key&gt;</c> 进 <see cref="TenantShard.Properties"/> 的 <c>&lt;key&gt;</c>（用点不用冒号：租户属性来自配置时冒号会被当作节分隔符）。
+    /// </remarks>
     public const string PropertyPrefix = "Shard.";
 
     /// <summary>

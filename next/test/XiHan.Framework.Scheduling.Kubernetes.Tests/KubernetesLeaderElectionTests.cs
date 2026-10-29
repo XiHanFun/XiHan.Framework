@@ -16,8 +16,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// Lease 语义：创建即获取、接管过期租约并累加交接次数、续约带版本、释放清空持有者、API 失败翻译为不可达；选项解析与特性装配。
+/// Lease 语义。
 /// </summary>
+/// <remarks>
+/// 创建即获取、接管过期租约并累加交接次数、续约带版本、释放清空持有者、API 失败翻译为不可达；选项解析与特性装配。
+/// </remarks>
 public sealed class KubernetesLeaderElectionTests
 {
     /// <summary>

@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储选项。从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键。
+/// 文件系统对象存储选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record FileSystemObjectStorageOptions
 {
@@ -19,8 +22,11 @@ public sealed record FileSystemObjectStorageOptions
     public const string ConfigurationSection = "XiHan:ObjectStorage:FileSystem";
 
     /// <summary>
-    /// 根目录；默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析。
+    /// 根目录。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析。
+    /// </remarks>
     public string RootPath
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record FileSystemObjectStorageOptions
     } = Path.Combine(AppContext.BaseDirectory, "blobs");
 
     /// <summary>
-    /// 全部对象的总字节上限；默认 1 GiB。
+    /// 全部对象的总字节上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 GiB。
+    /// </remarks>
     public long MaxTotalBytes
     {
         get => field;
@@ -37,8 +46,11 @@ public sealed record FileSystemObjectStorageOptions
     } = 1L << 30;
 
     /// <summary>
-    /// 单个对象的字节上限；默认 256 MiB。
+    /// 单个对象的字节上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 256 MiB。
+    /// </remarks>
     public long MaxBlobBytes
     {
         get => field;
@@ -46,8 +58,11 @@ public sealed record FileSystemObjectStorageOptions
     } = 256L << 20;
 
     /// <summary>
-    /// 未完成的分片上传保留多久；启动扫描时清掉更早发起的上传。默认 7 天。
+    /// 未完成的分片上传保留多久。
     /// </summary>
+    /// <remarks>
+    /// 启动扫描时清掉更早发起的上传。默认 7 天。
+    /// </remarks>
     public TimeSpan MultipartExpiry
     {
         get => field;
@@ -89,8 +104,11 @@ public sealed record FileSystemObjectStorageOptions
     }
 
     /// <summary>
-    /// 按名读取各项；<paramref name="prefix"/> 只用于报错。
+    /// 按名读取各项。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="prefix"/> 只用于报错。
+    /// </remarks>
     private static FileSystemObjectStorageOptions Parse(Func<string, string?> read, string prefix)
     {
         var options = new FileSystemObjectStorageOptions();

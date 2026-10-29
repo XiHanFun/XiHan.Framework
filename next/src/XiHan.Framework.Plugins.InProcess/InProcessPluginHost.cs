@@ -13,14 +13,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.InProcess;
 
 /// <summary>
-/// 进程内插件宿主。每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
+/// 进程内插件宿主。
 /// </summary>
+/// <remarks>
+/// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
 {
     /// <summary>
-    /// 宿主配置；以只读视图传给每个插件的 <see cref="PluginContext"/>。
+    /// 宿主配置。
     /// </summary>
+    /// <remarks>
+    /// 以只读视图传给每个插件的 <see cref="PluginContext"/>。
+    /// </remarks>
     private readonly IConfiguration _configuration;
 
     /// <summary>
@@ -29,8 +35,11 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 已加载插件，按清单 ID 索引；读写都在 <see cref="_gate"/> 内进行。
+    /// 已加载插件，按清单 ID 索引。
     /// </summary>
+    /// <remarks>
+    /// 读写都在 <see cref="_gate"/> 内进行。
+    /// </remarks>
     private readonly Dictionary<string, LoadedPlugin> _plugins = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -39,8 +48,11 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 创建插件宿主。进程内插件按清单中的类型名实例化，需要运行期反射与动态代码。
+    /// 创建插件宿主。
     /// </summary>
+    /// <remarks>
+    /// 进程内插件按清单中的类型名实例化，需要运行期反射与动态代码。
+    /// </remarks>
     /// <param name="configuration">宿主配置（只读视图传给插件）。</param>
     /// <param name="loggerFactory">日志工厂。</param>
     [RequiresUnreferencedCode("In-process plugins load assemblies and instantiate entry types by the names in the manifest; trimmed types may not be found.")]
@@ -180,8 +192,10 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
 
     /// <summary>
     /// 在独立加载上下文里加载程序集、实例化入口类型、配置并启动插件。
-    /// 任一步失败都释放已建的容器并卸载上下文，以 <see cref="Result{T}"/> 返回错误；取消异常原样向上传播。
     /// </summary>
+    /// <remarks>
+    /// 任一步失败都释放已建的容器并卸载上下文，以 <see cref="Result{T}"/> 返回错误；取消异常原样向上传播。
+    /// </remarks>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "构造函数已声明 RequiresUnreferencedCode。")]
     [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "构造函数已声明 RequiresUnreferencedCode。")]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "构造函数已声明 RequiresDynamicCode。")]
@@ -251,13 +265,19 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     private sealed class LoadedPlugin(Manifest manifest, IPlugin plugin, ServiceProvider provider, PluginLoadContext context)
     {
         /// <summary>
-        /// 当前生命周期状态；加载成功即为 <see cref="LifecycleState.Ready"/>。
+        /// 当前生命周期状态。
         /// </summary>
+        /// <remarks>
+        /// 加载成功即为 <see cref="LifecycleState.Ready"/>。
+        /// </remarks>
         public LifecycleState State { get; private set; } = LifecycleState.Ready;
 
         /// <summary>
-        /// 停止失败时的错误；正常情况下为 <c>null</c>。
+        /// 停止失败时的错误。
         /// </summary>
+        /// <remarks>
+        /// 正常情况下为 <c>null</c>。
+        /// </remarks>
         public Error? Error { get; private set; }
 
         /// <summary>
@@ -266,8 +286,11 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
         public PluginStatus Status => new(manifest, State, Error);
 
         /// <summary>
-        /// 停止插件并释放其容器与加载上下文。停止抛出的异常记为 <see cref="LifecycleState.Failed"/>，资源仍然释放。
+        /// 停止插件并释放其容器与加载上下文。
         /// </summary>
+        /// <remarks>
+        /// 停止抛出的异常记为 <see cref="LifecycleState.Failed"/>，资源仍然释放。
+        /// </remarks>
         public async Task ShutdownAsync(CancellationToken cancellationToken)
         {
             State = LifecycleState.Draining;

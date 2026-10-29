@@ -11,9 +11,11 @@ using XiHan.Framework.Scheduling.Abstractions;
 namespace XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 /// <summary>
-/// 对 API Server 的 Lease 读写：GET / POST / PUT <c>/apis/coordination.k8s.io/v1/namespaces/{ns}/leases[/{name}]</c>，带 ServiceAccount 的 Bearer 令牌。
-/// 409 翻译为 <see cref="SchedulingErrors.LeaseHeld"/>，其他失败翻译为 <see cref="SchedulingErrors.LeaseUnavailable"/>。
+/// 对 API Server 的 Lease 读写。
 /// </summary>
+/// <remarks>
+/// GET / POST / PUT <c>/apis/coordination.k8s.io/v1/namespaces/{ns}/leases[/{name}]</c>，带 ServiceAccount 的 Bearer 令牌。409 翻译为 <see cref="SchedulingErrors.LeaseHeld"/>，其他失败翻译为 <see cref="SchedulingErrors.LeaseUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KubernetesLeaseClient
 {
@@ -28,8 +30,11 @@ public sealed class KubernetesLeaseClient
     private readonly KubernetesSchedulingOptions _options;
 
     /// <summary>
-    /// 创建；<paramref name="http"/> 的 <see cref="HttpClient.BaseAddress"/> 为 API Server。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="http"/> 的 <see cref="HttpClient.BaseAddress"/> 为 API Server。
+    /// </remarks>
     public KubernetesLeaseClient(HttpClient http, KubernetesSchedulingOptions options)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
@@ -43,8 +48,11 @@ public sealed class KubernetesLeaseClient
     public string Namespace { get; }
 
     /// <summary>
-    /// 按 Pod 内约定创建：API Server 地址、ServiceAccount 的 CA（存在时作为唯一信任根）与令牌。
+    /// 按 Pod 内约定创建。
     /// </summary>
+    /// <remarks>
+    /// API Server 地址、ServiceAccount 的 CA（存在时作为唯一信任根）与令牌。
+    /// </remarks>
     public static KubernetesLeaseClient CreateInCluster(KubernetesSchedulingOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -72,8 +80,11 @@ public sealed class KubernetesLeaseClient
     }
 
     /// <summary>
-    /// 读取；不存在为无值。
+    /// 读取。
     /// </summary>
+    /// <remarks>
+    /// 不存在为无值。
+    /// </remarks>
     internal async ValueTask<Result<Maybe<LeaseDocument>>> GetAsync(string name, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Path(name));
@@ -96,8 +107,11 @@ public sealed class KubernetesLeaseClient
     }
 
     /// <summary>
-    /// 创建；已存在 → <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 已存在 → <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// </remarks>
     internal async ValueTask<Result<LeaseDocument>> CreateAsync(LeaseDocument lease, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(lease);
@@ -115,8 +129,11 @@ public sealed class KubernetesLeaseClient
     }
 
     /// <summary>
-    /// 整体替换（带 resourceVersion）；版本过期或不存在 → <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// 整体替换（带 resourceVersion）。
     /// </summary>
+    /// <remarks>
+    /// 版本过期或不存在 → <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// </remarks>
     internal async ValueTask<Result<LeaseDocument>> ReplaceAsync(LeaseDocument lease, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(lease);
@@ -168,8 +185,11 @@ public sealed class KubernetesLeaseClient
     }
 
     /// <summary>
-    /// 读取应答：成功解析 Lease；409 为被占用；其余为不可达并带上 Status 的消息。
+    /// 读取应答。
     /// </summary>
+    /// <remarks>
+    /// 成功解析 Lease；409 为被占用；其余为不可达并带上 Status 的消息。
+    /// </remarks>
     private static async ValueTask<Result<LeaseDocument>> ReadAsync(HttpResponseMessage message, string name, CancellationToken cancellationToken)
     {
         if (message.StatusCode == HttpStatusCode.Conflict)

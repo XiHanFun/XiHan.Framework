@@ -55,8 +55,11 @@ internal static class NamingPolicies
     }
 
     /// <summary>
-    /// 按单词边界插入分隔符：小写后接大写、大写后接"大写+小写"、字母与数字之间都算边界。
+    /// 按单词边界插入分隔符。
     /// </summary>
+    /// <remarks>
+    /// 小写后接大写、大写后接"大写+小写"、字母与数字之间都算边界。
+    /// </remarks>
     private static string Separate(string name, char separator, bool upper)
     {
         var builder = new StringBuilder(name.Length + 4);

@@ -15,8 +15,11 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 在新作用域、新调用上下文里经完整内核管道执行一个活动（执行、恢复或补偿）：关联 ID = 实例 ID，租户 = 实例租户；异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>。
+/// 在新作用域、新调用上下文里经完整内核管道执行一个活动（执行、恢复或补偿）。
 /// </summary>
+/// <remarks>
+/// 关联 ID = 实例 ID，租户 = 实例租户；异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>。
+/// </remarks>
 internal sealed class ActivityExecutor
 {
     /// <summary>
@@ -57,8 +60,11 @@ internal sealed class ActivityExecutor
     }
 
     /// <summary>
-    /// 执行或恢复（给了书签即恢复）。不实现 <see cref="IResumableActivity"/> 的活动：超时书签即故障，其他书签以输入作输出完成。
+    /// 执行或恢复（给了书签即恢复）。
     /// </summary>
+    /// <remarks>
+    /// 不实现 <see cref="IResumableActivity"/> 的活动：超时书签即故障，其他书签以输入作输出完成。
+    /// </remarks>
     public ValueTask<Result<ActivityOutcome>> RunAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, WorkflowBookmark? bookmark, JsonObject? inputs, CancellationToken cancellationToken)
         => InvokeAsync(session, node, nodeInstance, async (activity, context) =>
         {
@@ -82,8 +88,11 @@ internal sealed class ActivityExecutor
         }, cancellationToken);
 
     /// <summary>
-    /// 补偿；活动不可补偿时返回成功（不做事）。
+    /// 补偿。
     /// </summary>
+    /// <remarks>
+    /// 活动不可补偿时返回成功（不做事）。
+    /// </remarks>
     public async ValueTask<Result> CompensateAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, CancellationToken cancellationToken)
     {
         var result = await InvokeAsync(session, node, nodeInstance, async (activity, context) =>

@@ -7,8 +7,11 @@ using Microsoft.CodeAnalysis.CSharp;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 留给人的标记：<c>// xihan-migrate(&lt;规则&gt;): &lt;说明&gt;</c>，插在节点前的独立一行，沿用节点缩进；同一节点同一规则只插一次。
+/// 留给人的标记。
 /// </summary>
+/// <remarks>
+/// <c>// xihan-migrate(&lt;规则&gt;): &lt;说明&gt;</c>，插在节点前的独立一行，沿用节点缩进；同一节点同一规则只插一次。
+/// </remarks>
 internal static class Markers
 {
     /// <summary>
@@ -23,8 +26,11 @@ internal static class Markers
         => node.GetLeadingTrivia().Any(trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && trivia.ToString() == Line(rule, message));
 
     /// <summary>
-    /// 标记正文（不带注释前缀；XML 注释里用）。
+    /// 标记正文。
     /// </summary>
+    /// <remarks>
+    /// 不带注释前缀；XML 注释里用。
+    /// </remarks>
     public static string Text(string rule, string message) => $"{Prefix}({rule}): {message}";
 
     /// <summary>
@@ -33,8 +39,11 @@ internal static class Markers
     public static string Line(string rule, string message) => "// " + Text(rule, message);
 
     /// <summary>
-    /// 在节点前插入标记；已有同规则同文案的标记时原样返回。
+    /// 在节点前插入标记。
     /// </summary>
+    /// <remarks>
+    /// 已有同规则同文案的标记时原样返回。
+    /// </remarks>
     public static TNode With<TNode>(TNode node, string rule, string message, string newLine)
         where TNode : SyntaxNode
     {

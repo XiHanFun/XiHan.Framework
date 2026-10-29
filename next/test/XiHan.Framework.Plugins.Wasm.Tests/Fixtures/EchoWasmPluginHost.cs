@@ -11,8 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 
 /// <summary>
-/// 以仓库里提交的 EchoWasmPlugin 产物目录（samples/EchoWasmPlugin/plugin）启动测试宿主的辅助。
+/// 以仓库里提交的 EchoWasmPlugin 产物目录启动测试宿主的辅助。
 /// </summary>
+/// <remarks>
+/// samples/EchoWasmPlugin/plugin。
+/// </remarks>
 internal static class EchoWasmPluginHost
 {
     /// <summary>

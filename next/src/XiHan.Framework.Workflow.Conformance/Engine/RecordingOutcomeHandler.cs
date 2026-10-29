@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 套件的结果处理器：记录收到的结果；结果为 <c>fail</c> 时返回失败。
+/// 套件的结果处理器。
 /// </summary>
+/// <remarks>
+/// 记录收到的结果；结果为 <c>fail</c> 时返回失败。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordingOutcomeHandler : IWorkflowOutcomeHandler
 {

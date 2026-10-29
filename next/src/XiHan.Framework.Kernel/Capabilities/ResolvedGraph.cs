@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// 能力解析的结果：拓扑有序的节点与每个能力选中的提供者。<c>xihan graph</c> 与启动日志打印同一份。
+/// 能力解析的结果。
 /// </summary>
+/// <remarks>
+/// 拓扑有序的节点与每个能力选中的提供者。<c>xihan graph</c> 与启动日志打印同一份。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ResolvedGraph
 {
@@ -19,8 +22,11 @@ public sealed class ResolvedGraph
     private readonly Dictionary<string, ResolvedNode> _byId;
 
     /// <summary>
-    /// 创建已解析图。只由 <see cref="CapabilityResolver"/> 调用，节点必须已拓扑排序。
+    /// 创建已解析图。
     /// </summary>
+    /// <remarks>
+    /// 只由 <see cref="CapabilityResolver"/> 调用，节点必须已拓扑排序。
+    /// </remarks>
     /// <param name="nodes">拓扑有序的节点。</param>
     /// <param name="providers">每个能力 ID 选中的提供者。</param>
     internal ResolvedGraph(IReadOnlyList<ResolvedNode> nodes, IReadOnlyDictionary<string, ResolvedNode> providers)

@@ -7,8 +7,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>scheduling.inmemory.leader</c>：引擎在跑时 Ready（进程内租约持有与否都不影响），应用停止后 Stopped。
+/// 健康项 <c>scheduling.inmemory.leader</c>。
 /// </summary>
+/// <remarks>
+/// 引擎在跑时 Ready（进程内租约持有与否都不影响），应用停止后 Stopped。
+/// </remarks>
 public sealed class InMemorySchedulingHealthTests
 {
     [Fact]

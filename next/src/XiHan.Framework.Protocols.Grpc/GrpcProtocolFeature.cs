@@ -16,8 +16,11 @@ using XiHan.Framework.Protocols.Grpc.Services;
 namespace XiHan.Framework.Protocols.Grpc;
 
 /// <summary>
-/// gRPC 协议适配器的能力包入口：提供 <c>protocols.grpc@1</c>，注册 gRPC 服务端、选项、消息目录、操作表与方法绑定；端点由应用在路由阶段调用 <c>MapXiHanGrpc()</c>（与 <c>MapXiHanProto()</c>）映射。
+/// gRPC 协议适配器的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>protocols.grpc@1</c>，注册 gRPC 服务端、选项、消息目录、操作表与方法绑定；端点由应用在路由阶段调用 <c>MapXiHanGrpc()</c>（与 <c>MapXiHanProto()</c>）映射。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class GrpcProtocolFeature : IFeature
 {

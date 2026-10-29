@@ -29,8 +29,11 @@ internal static class DocumentationText
         => Text(Load(type)?.Descendants("param").FirstOrDefault(p => string.Equals((string?)p.Attribute("name"), name, StringComparison.Ordinal)));
 
     /// <summary>
-    /// 解析符号的文档注释；没有或不合法时为 <see langword="null"/>。
+    /// 解析符号的文档注释。
     /// </summary>
+    /// <remarks>
+    /// 没有或不合法时为 <see langword="null"/>。
+    /// </remarks>
     private static XElement? Load(ISymbol symbol)
     {
         var xml = symbol.GetDocumentationCommentXml(expandIncludes: false);
@@ -51,8 +54,11 @@ internal static class DocumentationText
     }
 
     /// <summary>
-    /// 元素的纯文本；为空时为 <see langword="null"/>。
+    /// 元素的纯文本。
     /// </summary>
+    /// <remarks>
+    /// 为空时为 <see langword="null"/>。
+    /// </remarks>
     private static string? Text(XElement? element)
     {
         if (element is null)

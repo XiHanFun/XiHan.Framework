@@ -21,9 +21,11 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database;
 
 /// <summary>
-/// 数据库工作流特性（<c>role: provider</c>）：提供 <c>workflow.execution@1</c>，依赖 <c>persistence.relational@1</c>——定义、实例、节点实例与书签经仓储读写，实例锁与轮询领导权以租约行实现，应用进入服务状态后由持有领导权的节点轮询到期书签。装配后顶替默认的内存工作流。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="DatabaseWorkflowOptions.HealthProbeInterval"/> 周期读一次轮询领导权的租约行，租约表不可达时条目 Degraded。
+/// 数据库工作流特性（<c>role: provider</c>）。
 /// </summary>
+/// <remarks>
+/// 提供 <c>workflow.execution@1</c>，依赖 <c>persistence.relational@1</c>——定义、实例、节点实例与书签经仓储读写，实例锁与轮询领导权以租约行实现，应用进入服务状态后由持有领导权的节点轮询到期书签。装配后顶替默认的内存工作流。健康项 <see cref="HealthName"/> 按 <see cref="DatabaseWorkflowOptions.HealthProbeInterval"/> 周期读一次轮询领导权的租约行，租约表不可达时条目 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowFeature : IHostedFeature
 {

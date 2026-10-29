@@ -11,20 +11,28 @@ using XiHan.Framework.Security.Abstractions.Network;
 namespace XiHan.Framework.Security.Ip2Region;
 
 /// <summary>
-/// 基于 ip2region 离线库的归属地解析：IPv4 与 IPv6 各一个 xdb，首次用到时整库读进内存（<c>CachePolicy.Content</c>，线程安全，单次查询约百纳秒）。
-/// 某个地址族的库文件不存在或加载失败时记一条警告，之后该族一律无值；回环、私有网段（IPv4 的 10/8、172.16/12、192.168/16，IPv6 的链路本地、站点本地、组播）不查。
+/// 基于 ip2region 离线库的归属地解析。
 /// </summary>
+/// <remarks>
+/// IPv4 与 IPv6 各一个 xdb，首次用到时整库读进内存（<c>CachePolicy.Content</c>，线程安全，单次查询约百纳秒）。某个地址族的库文件不存在或加载失败时记一条警告，之后该族一律无值；回环、私有网段（IPv4 的 10/8、172.16/12、192.168/16，IPv6 的链路本地、站点本地、组播）不查。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
 {
     /// <summary>
-    /// IPv4 查询：地址文本 → 记录文本；库不可用时值为 <see langword="null"/>。
+    /// IPv4 查询。
     /// </summary>
+    /// <remarks>
+    /// 地址文本 → 记录文本；库不可用时值为 <see langword="null"/>。
+    /// </remarks>
     private readonly Lazy<Func<string, string?>?> _v4;
 
     /// <summary>
-    /// IPv6 查询：地址文本 → 记录文本；库不可用时值为 <see langword="null"/>。
+    /// IPv6 查询。
     /// </summary>
+    /// <remarks>
+    /// 地址文本 → 记录文本；库不可用时值为 <see langword="null"/>。
+    /// </remarks>
     private readonly Lazy<Func<string, string?>?> _v6;
 
     /// <summary>
@@ -38,8 +46,11 @@ public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 按选项里的库文件创建；文件在首次解析该地址族时才加载。
+    /// 按选项里的库文件创建。
     /// </summary>
+    /// <remarks>
+    /// 文件在首次解析该地址族时才加载。
+    /// </remarks>
     /// <param name="options">选项。</param>
     /// <param name="loggerFactory">日志工厂；内核总会登记一个（没有日志时为空实现）。</param>
     public Ip2RegionResolver(Ip2RegionOptions options, ILoggerFactory loggerFactory)
@@ -52,8 +63,11 @@ public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
     }
 
     /// <summary>
-    /// 以给定查询创建（测试用）；为 <see langword="null"/> 表示该地址族的库不可用。
+    /// 以给定查询创建（测试用）。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示该地址族的库不可用。
+    /// </remarks>
     internal Ip2RegionResolver(Func<string, string?>? v4, Func<string, string?>? v6, ILogger logger)
     {
         _logger = logger;
@@ -111,8 +125,11 @@ public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
     }
 
     /// <summary>
-    /// 是否私有网段：IPv4 的 10/8、172.16/12、192.168/16，IPv6 的链路本地、站点本地与组播。
+    /// 是否私有网段。
     /// </summary>
+    /// <remarks>
+    /// IPv4 的 10/8、172.16/12、192.168/16，IPv6 的链路本地、站点本地与组播。
+    /// </remarks>
     private static bool IsPrivate(IPAddress address)
     {
         if (address.AddressFamily == AddressFamily.InterNetworkV6)
@@ -125,8 +142,11 @@ public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
     }
 
     /// <summary>
-    /// 加载一个地址族的库；文件不存在或加载失败时记警告并返回 <see langword="null"/>。
+    /// 加载一个地址族的库。
     /// </summary>
+    /// <remarks>
+    /// 文件不存在或加载失败时记警告并返回 <see langword="null"/>。
+    /// </remarks>
     private Func<string, string?>? Load(string family, string path)
     {
         if (!File.Exists(path))
@@ -168,8 +188,11 @@ public sealed partial class Ip2RegionResolver : IIpRegionResolver, IDisposable
     private static partial void LogDatabaseUnloadable(ILogger logger, Exception exception, string family, string path);
 
     /// <summary>
-    /// 单次查询失败；地址不进日志。
+    /// 单次查询失败。
     /// </summary>
+    /// <remarks>
+    /// 地址不进日志。
+    /// </remarks>
     [LoggerMessage(Level = LogLevel.Debug, Message = "An ip2region lookup failed; the address is treated as having no region.")]
     private static partial void LogLookupFailed(ILogger logger, Exception exception);
 }

@@ -13,8 +13,11 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 命令行运行器：帮助、内置命令、invoke 与简写、载荷来源、上下文选项、失败映射与退出码。
+/// 命令行运行器。
 /// </summary>
+/// <remarks>
+/// 帮助、内置命令、invoke 与简写、载荷来源、上下文选项、失败映射与退出码。
+/// </remarks>
 public sealed class CommandLineRunnerTests : IAsyncLifetime
 {
     /// <summary>

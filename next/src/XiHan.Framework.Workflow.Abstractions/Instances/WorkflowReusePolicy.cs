@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 同一定义名与关联 ID 下已有未结束实例时的启动策略；没有关联 ID 时不生效。
+/// 同一定义名与关联 ID 下已有未结束实例时的启动策略。
 /// </summary>
+/// <remarks>
+/// 没有关联 ID 时不生效。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum WorkflowReusePolicy
 {

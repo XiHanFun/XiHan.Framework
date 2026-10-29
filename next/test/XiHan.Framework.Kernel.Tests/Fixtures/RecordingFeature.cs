@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 记录生命周期事件的特性；可注入启动与停止行为。
+/// 记录生命周期事件的特性。
 /// </summary>
+/// <remarks>
+/// 可注入启动与停止行为。
+/// </remarks>
 /// <param name="manifest">特性清单。</param>
 /// <param name="log">事件日志，每个事件写一行 <c>configure:</c>、<c>start:</c> 或 <c>stop:</c> 加清单 ID。</param>
 internal sealed class RecordingFeature(Manifest manifest, List<string> log) : IHostedFeature
@@ -19,18 +22,27 @@ internal sealed class RecordingFeature(Manifest manifest, List<string> log) : IH
     public Manifest Manifest { get; } = manifest;
 
     /// <summary>
-    /// 启动时在记录事件之后执行的行为；用于注入失败或挂起。
+    /// 启动时在记录事件之后执行的行为。
     /// </summary>
+    /// <remarks>
+    /// 用于注入失败或挂起。
+    /// </remarks>
     public Func<CancellationToken, Task>? OnStart { get; init; }
 
     /// <summary>
-    /// 停止时在记录事件之后执行的行为；用于注入超时。
+    /// 停止时在记录事件之后执行的行为。
     /// </summary>
+    /// <remarks>
+    /// 用于注入超时。
+    /// </remarks>
     public Func<CancellationToken, Task>? OnStop { get; init; }
 
     /// <summary>
-    /// 配置时在记录事件之后执行的行为；用于注册服务、贡献中间件或读取绑定。
+    /// 配置时在记录事件之后执行的行为。
     /// </summary>
+    /// <remarks>
+    /// 用于注册服务、贡献中间件或读取绑定。
+    /// </remarks>
     public Action<FeatureContext>? OnConfigure { get; init; }
 
     /// <summary>

@@ -14,11 +14,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 
 /// <summary>
-/// 宿主代收发的预签名地址：给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。
-/// 地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，
-/// 签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。
-/// 容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例。
+/// 宿主代收发的预签名地址。
 /// </summary>
+/// <remarks>
+/// 给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例。
+/// </remarks>
 /// <param name="options">选项。</param>
 /// <param name="clock">时钟；过期时刻按它计算与判定。</param>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -75,8 +75,11 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     private readonly TimeProvider _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
     /// <summary>
-    /// 绑定的命名实例；缺省实例为 <see langword="null"/>。
+    /// 绑定的命名实例。
     /// </summary>
+    /// <remarks>
+    /// 缺省实例为 <see langword="null"/>。
+    /// </remarks>
     private readonly string? _store;
 
     /// <summary>
@@ -94,13 +97,19 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     public HostedBlobUrlOptions Options => _options;
 
     /// <summary>
-    /// 绑定的命名实例；对缺省实例签名时为 <see langword="null"/>。
+    /// 绑定的命名实例。
     /// </summary>
+    /// <remarks>
+    /// 对缺省实例签名时为 <see langword="null"/>。
+    /// </remarks>
     public string? Store => _store;
 
     /// <summary>
-    /// 对命名实例签名的签名器（同一密钥、同一端点）：签出的地址带 <c>x-store</c>，端点经 <see cref="BlobStores.GetAsync"/> 取实例收发。实例名不合法时抛出 <see cref="ArgumentException"/>；实例是否存在在端点收到请求时判定。
+    /// 对命名实例签名的签名器（同一密钥、同一端点）。
     /// </summary>
+    /// <remarks>
+    /// 签出的地址带 <c>x-store</c>，端点经 <see cref="BlobStores.GetAsync"/> 取实例收发。实例名不合法时抛出 <see cref="ArgumentException"/>；实例是否存在在端点收到请求时判定。
+    /// </remarks>
     public HostedBlobUrlSigner ForStore(string name)
         => BlobStoreDefinition.IsValidName(name)
             ? new HostedBlobUrlSigner(_options, _clock, name)
@@ -151,8 +160,11 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// 验签：方法相符、参数齐全、签名一致（定时比较），再看是否过期；签名不符先于过期判定，篡改过期时刻即签名不符。
+    /// 验签。
     /// </summary>
+    /// <remarks>
+    /// 方法相符、参数齐全、签名一致（定时比较），再看是否过期；签名不符先于过期判定，篡改过期时刻即签名不符。
+    /// </remarks>
     internal Result<VerifiedBlobUrl> Verify(BlobUrlMethod method, ContainerName container, BlobKey key, IQueryCollection query)
     {
         var expected = MethodName(method);
@@ -203,8 +215,11 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// HMAC-SHA256（Base64Url，无填充）：规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行）。
+    /// HMAC-SHA256（Base64Url，无填充）。
     /// </summary>
+    /// <remarks>
+    /// 规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行）。
+    /// </remarks>
     private string Sign(string method, string? store, string container, string key, long expires, string? contentType, string? fileName, string? upload, string? part)
     {
         var canonical = string.Join('\n', "xihan-blob-v1", method, store ?? string.Empty, container, key, expires.ToString(CultureInfo.InvariantCulture), contentType ?? string.Empty, fileName ?? string.Empty, upload ?? string.Empty, part ?? string.Empty);

@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 类型化的操作描述：用源生成的 <see cref="JsonTypeInfo{T}"/> 编解码载荷，从作用域容器解析 <typeparamref name="TOperation"/> 执行；全程不经反射，可 AOT。
+/// 类型化的操作描述。
 /// </summary>
+/// <remarks>
+/// 用源生成的 <see cref="JsonTypeInfo{T}"/> 编解码载荷，从作用域容器解析 <typeparamref name="TOperation"/> 执行；全程不经反射，可 AOT。
+/// </remarks>
 /// <typeparam name="TOperation">操作实现。</typeparam>
 /// <typeparam name="TRequest">请求类型。</typeparam>
 /// <typeparam name="TResponse">响应类型。</typeparam>

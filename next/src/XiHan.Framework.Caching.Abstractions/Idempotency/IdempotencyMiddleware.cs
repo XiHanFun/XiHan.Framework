@@ -12,10 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// Idempotency 阶段的中间件：Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。
-/// 首次调用写入"处理中"标记并执行，完成后用调用结果替换标记；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；
-/// 已完成的重复调用直接回放结果，不执行处理器。处理器抛出异常时清除标记，允许重试。
+/// Idempotency 阶段的中间件。
 /// </summary>
+/// <remarks>
+/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果，不执行处理器。处理器抛出异常时清除标记，允许重试。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
 {

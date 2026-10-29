@@ -12,8 +12,11 @@ namespace SimpleApp.Greetings;
 public sealed class CountingMiddleware(GreetingCounter counter) : IPipelineMiddleware
 {
     /// <summary>
-    /// 先计数再调用下一步；不改变调用结果。
+    /// 先计数再调用下一步。
     /// </summary>
+    /// <remarks>
+    /// 不改变调用结果。
+    /// </remarks>
     public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
         counter.Increment();

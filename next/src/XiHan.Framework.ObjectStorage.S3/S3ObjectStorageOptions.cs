@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储选项。从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；
-/// 绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
+/// S3 对象存储选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record S3ObjectStorageOptions
 {
@@ -21,8 +23,11 @@ public sealed record S3ObjectStorageOptions
     public const string ConfigurationSection = "XiHan:ObjectStorage:S3";
 
     /// <summary>
-    /// 服务端点（如 <c>http://localhost:9000</c>、<c>https://oss-cn-hangzhou.aliyuncs.com</c>）；空表示按 <see cref="Region"/> 访问 Amazon S3。
+    /// 服务端点（如 <c>http://localhost:9000</c>、<c>https://oss-cn-hangzhou.aliyuncs.com</c>）。
     /// </summary>
+    /// <remarks>
+    /// 空表示按 <see cref="Region"/> 访问 Amazon S3。
+    /// </remarks>
     public string? ServiceUrl
     {
         get => field;
@@ -32,8 +37,11 @@ public sealed record S3ObjectStorageOptions
     }
 
     /// <summary>
-    /// 区域；访问 Amazon S3 时选端点，访问兼容服务时作签名区域。默认 <c>us-east-1</c>。
+    /// 区域。
     /// </summary>
+    /// <remarks>
+    /// 访问 Amazon S3 时选端点，访问兼容服务时作签名区域。默认 <c>us-east-1</c>。
+    /// </remarks>
     public string Region
     {
         get => field;
@@ -41,8 +49,11 @@ public sealed record S3ObjectStorageOptions
     } = "us-east-1";
 
     /// <summary>
-    /// 访问密钥 ID；与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）。
+    /// 访问密钥 ID。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）。
+    /// </remarks>
     public string? AccessKey { get; init; }
 
     /// <summary>
@@ -51,23 +62,35 @@ public sealed record S3ObjectStorageOptions
     public string? SecretKey { get; init; }
 
     /// <summary>
-    /// 桶名放在路径而不是主机名里；兼容服务多数只支持路径式。默认开启。
+    /// 桶名放在路径而不是主机名里。
     /// </summary>
+    /// <remarks>
+    /// 兼容服务多数只支持路径式。默认开启。
+    /// </remarks>
     public bool ForcePathStyle { get; init; } = true;
 
     /// <summary>
-    /// 写入时桶不存在就创建；默认关闭，桶由基础设施预先创建。
+    /// 写入时桶不存在就创建。
     /// </summary>
+    /// <remarks>
+    /// 默认关闭，桶由基础设施预先创建。
+    /// </remarks>
     public bool EnsureBuckets { get; init; }
 
     /// <summary>
-    /// 健康项 <c>objectstorage.s3.connection</c> 探测的桶：有值时对它 HEAD（同时验证凭据对该桶的权限）；为 <see langword="null"/> 时列桶。
+    /// 健康项 <c>objectstorage.s3.connection</c> 探测的桶。
     /// </summary>
+    /// <remarks>
+    /// 有值时对它 HEAD（同时验证凭据对该桶的权限）；为 <see langword="null"/> 时列桶。
+    /// </remarks>
     public string? HealthBucket { get; init; }
 
     /// <summary>
-    /// 健康项 <c>objectstorage.s3.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>objectstorage.s3.connection</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -75,8 +98,11 @@ public sealed record S3ObjectStorageOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 命名实例的设置键；探测间隔由注册表统一（<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>），不在其中。
+    /// 命名实例的设置键。
     /// </summary>
+    /// <remarks>
+    /// 探测间隔由注册表统一（<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>），不在其中。
+    /// </remarks>
     private static readonly string[] _settingKeys = ["ServiceUrl", "Region", "AccessKey", "SecretKey", "ForcePathStyle", "EnsureBuckets", "HealthBucket"];
 
     /// <summary>
@@ -126,8 +152,11 @@ public sealed record S3ObjectStorageOptions
     }
 
     /// <summary>
-    /// 从命名实例的设置读取（键同配置节，不区分大小写；没有绑定覆盖）：未知的键抛出。
+    /// 从命名实例的设置读取。
     /// </summary>
+    /// <remarks>
+    /// 键同配置节，不区分大小写；没有绑定覆盖。未知的键抛出。
+    /// </remarks>
     public static S3ObjectStorageOptions FromSettings(IReadOnlyDictionary<string, string> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -141,8 +170,11 @@ public sealed record S3ObjectStorageOptions
     }
 
     /// <summary>
-    /// 按名读取连接与行为各项（不含探测间隔）；<paramref name="prefix"/> 只用于报错。
+    /// 按名读取连接与行为各项（不含探测间隔）。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="prefix"/> 只用于报错。
+    /// </remarks>
     private static S3ObjectStorageOptions Parse(Func<string, string?> read, string prefix)
     {
         var options = new S3ObjectStorageOptions
@@ -171,14 +203,20 @@ public sealed record S3ObjectStorageOptions
     }
 
     /// <summary>
-    /// 读一个非空文本值；缺失或空白为 <see langword="null"/>。
+    /// 读一个非空文本值。
     /// </summary>
+    /// <remarks>
+    /// 缺失或空白为 <see langword="null"/>。
+    /// </remarks>
     private static string? Text(Func<string, string?> read, string name)
         => read(name) is { } value && !string.IsNullOrWhiteSpace(value) ? value : null;
 
     /// <summary>
-    /// 解析布尔值；不是 <c>true</c> / <c>false</c> 时抛出，<paramref name="name"/> 是报错用的全名。
+    /// 解析布尔值。
     /// </summary>
+    /// <remarks>
+    /// 不是 <c>true</c> / <c>false</c> 时抛出，<paramref name="name"/> 是报错用的全名。
+    /// </remarks>
     private static bool ParseBoolean(string text, string name)
         => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{name} must be 'true' or 'false', but was '{text}'.");
 }

@@ -16,14 +16,20 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 登记活动、指派规则 Provider、结果处理器，以及 Provider 特性装配引擎用的 <see cref="AddWorkflowEngine"/>。
+/// 登记活动、指派规则 Provider、结果处理器。
 /// </summary>
+/// <remarks>
+/// 以及 Provider 特性装配引擎用的 <see cref="AddWorkflowEngine"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记活动：作用域服务加登记表；同一类型名登记两个不同的类是编程错误。
+    /// 登记活动。
     /// </summary>
+    /// <remarks>
+    /// 作用域服务加登记表；同一类型名登记两个不同的类是编程错误。
+    /// </remarks>
     public static IServiceCollection AddActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TActivity>(this IServiceCollection services, ActivityType type)
         where TActivity : class, IActivity
         => services.AddActivity<TActivity>(type, ActivityOutgoing.AllMatched, null);
@@ -83,8 +89,11 @@ public static class WorkflowServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 装配引擎：选项、内置活动与指派规则、求值器、校验、引擎、定义目录、任务服务与轮询器。Provider 特性在登记存储与锁后调用；重复调用无害。
+    /// 装配引擎。
     /// </summary>
+    /// <remarks>
+    /// 选项、内置活动与指派规则、求值器、校验、引擎、定义目录、任务服务与轮询器。Provider 特性在登记存储与锁后调用；重复调用无害。
+    /// </remarks>
     public static IServiceCollection AddWorkflowEngine(this IServiceCollection services, WorkflowOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);

@@ -20,8 +20,11 @@ namespace XiHan.Framework.Security.Jwt.Tests;
 public sealed class JwtAuthenticationTests
 {
     /// <summary>
-    /// 测试用对称密钥；满足最小长度。
+    /// 测试用对称密钥。
     /// </summary>
+    /// <remarks>
+    /// 满足最小长度。
+    /// </remarks>
     private const string Secret = JwtTokens.Secret;
 
     /// <summary>
@@ -40,8 +43,11 @@ public sealed class JwtAuthenticationTests
     private static readonly JwtOptions _options = new() { Secret = Secret, Issuer = Issuer, Audience = Audience, ClockSkew = TimeSpan.Zero };
 
     /// <summary>
-    /// 签发 HS256 令牌；默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// 签发 HS256 令牌。
     /// </summary>
+    /// <remarks>
+    /// 默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// </remarks>
     private static string CreateToken(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
         => JwtTokens.Create(subject, secret, issuer, audience, lifetime, claims);
 

@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// S3 Provider 独有的行为：选项解析与绑定覆盖、客户端创建、特性在宿主里的装配、桶不存在的语义与 <c>EnsureBuckets</c>。一致性套件覆盖的通用行为不在此重复。
+/// S3 Provider 独有的行为。
 /// </summary>
+/// <remarks>
+/// 选项解析与绑定覆盖、客户端创建、特性在宿主里的装配、桶不存在的语义与 <c>EnsureBuckets</c>。一致性套件覆盖的通用行为不在此重复。
+/// </remarks>
 public sealed class S3ObjectStorageTests
 {
     /// <summary>

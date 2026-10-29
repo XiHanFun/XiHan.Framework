@@ -14,9 +14,11 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// 按 <c>samples/SimpleApp/Program.cs</c> 的方式装配宿主（<c>AddXiHan</c> → <c>UseXiHan</c> → <c>MapXiHanOperations</c> → <c>MapXiHanOpenApi</c>），
-/// 验证 <c>/openapi.json</c> 把契约的权限码与特性登记的权限定义一起发布：前端据此隐藏入口并生成授权界面。
+/// 按 <c>samples/SimpleApp/Program.cs</c> 的方式装配宿主。
 /// </summary>
+/// <remarks>
+/// <c>AddXiHan</c> → <c>UseXiHan</c> → <c>MapXiHanOperations</c> → <c>MapXiHanOpenApi</c>。验证 <c>/openapi.json</c> 把契约的权限码与特性登记的权限定义一起发布。前端据此隐藏入口并生成授权界面。
+/// </remarks>
 public sealed class SimpleAppOpenApiTests
 {
     [Fact]

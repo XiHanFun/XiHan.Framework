@@ -16,8 +16,11 @@ namespace XiHan.Framework.Benchmarks;
 public class StartupBenchmarks
 {
     /// <summary>
-    /// 空配置；所有迭代共用，不计配置构建时间。
+    /// 空配置。
     /// </summary>
+    /// <remarks>
+    /// 所有迭代共用，不计配置构建时间。
+    /// </remarks>
     private static readonly IConfiguration _configuration = new ConfigurationBuilder().Build();
 
     /// <summary>

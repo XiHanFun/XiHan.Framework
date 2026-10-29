@@ -8,15 +8,20 @@ using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 健康项 <see cref="InMemorySchedulingFeature.HealthName"/>：报告领导权状态。进程内的租约没有别的竞争者，持有与未持有都是 Ready；引擎停止（或已停止）为 Stopped；
-/// 本包的作业能力被别的 Provider 顶替、没有引擎时也是 Ready。同步计算，不起后台循环。
+/// 健康项 <see cref="InMemorySchedulingFeature.HealthName"/>。
 /// </summary>
+/// <remarks>
+/// 报告领导权状态。进程内的租约没有别的竞争者，持有与未持有都是 Ready；引擎停止（或已停止）为 Stopped；本包的作业能力被别的 Provider 顶替、没有引擎时也是 Ready。同步计算，不起后台循环。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySchedulingHealthContributor : IHealthContributor
 {
     /// <summary>
-    /// 引擎；本包没被选中提供作业能力时为 <see langword="null"/>。
+    /// 引擎。
     /// </summary>
+    /// <remarks>
+    /// 本包没被选中提供作业能力时为 <see langword="null"/>。
+    /// </remarks>
     private readonly JobSchedulerEngine? _engine;
 
     /// <summary>

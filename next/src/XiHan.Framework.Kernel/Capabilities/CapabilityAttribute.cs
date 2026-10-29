@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// 标注特性入口类型的能力声明。源生成器据此生成 <see cref="Manifest"/> 并实现入口类型的 <c>Manifest</c> 属性；
-/// 内核运行期不读取本特性（零反射）。
+/// 标注特性入口类型的能力声明。
 /// </summary>
+/// <remarks>
+/// 源生成器据此生成 <see cref="Manifest"/> 并实现入口类型的 <c>Manifest</c> 属性；内核运行期不读取本特性（零反射）。
+/// </remarks>
 /// <param name="id">清单 ID，<c>xihan.&lt;领域&gt;.&lt;名称&gt;</c>。</param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
 [ApiLevel(Stability.Preview, "5.0")]

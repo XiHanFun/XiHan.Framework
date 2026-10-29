@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 默认求值器：<see cref="ExpressionCompiler"/> 的小语言，编译结果按表达式文本缓存（超过上限整体清空）。
+/// 默认求值器。
 /// </summary>
+/// <remarks>
+/// <see cref="ExpressionCompiler"/> 的小语言，编译结果按表达式文本缓存（超过上限整体清空）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
 {
@@ -160,8 +163,11 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <summary>
-    /// 取或编译；缓存超过上限整体清空（表达式集合通常很小，清空比淘汰便宜）。
+    /// 取或编译。
     /// </summary>
+    /// <remarks>
+    /// 缓存超过上限整体清空（表达式集合通常很小，清空比淘汰便宜）。
+    /// </remarks>
     private CompiledExpression Get(string expression)
     {
         if (_cache.TryGetValue(expression, out var compiled))

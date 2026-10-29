@@ -17,8 +17,11 @@ public enum ConditionAttributeValueState
     Present = 0,
 
     /// <summary>
-    /// 取不到：子句按无法判定计，取反不翻转；为空 / 不为空除外。
+    /// 取不到。
     /// </summary>
+    /// <remarks>
+    /// 子句按无法判定计，取反不翻转；为空 / 不为空除外。
+    /// </remarks>
     Missing = 1,
 
     /// <summary>

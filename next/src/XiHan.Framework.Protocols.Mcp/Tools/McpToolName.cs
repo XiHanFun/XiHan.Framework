@@ -24,8 +24,11 @@ public static partial class McpToolName
     public static bool IsValid([NotNullWhen(true)] string? name) => name is not null && Pattern().IsMatch(name);
 
     /// <summary>
-    /// 校验并原样返回；不合法时抛出 <see cref="ArgumentException"/>。
+    /// 校验并原样返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法时抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string name, string? paramName = null)
     {
         if (!IsValid(name))

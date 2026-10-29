@@ -17,8 +17,11 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 internal sealed class SqliteDatabase : IDisposable
 {
     /// <summary>
-    /// 数据库文件的完整路径；位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// 数据库文件的完整路径。
     /// </summary>
+    /// <remarks>
+    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// </remarks>
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-sqlsugar-{Guid.NewGuid():N}.db");
 
     /// <summary>
@@ -36,8 +39,11 @@ internal sealed class SqliteDatabase : IDisposable
     ];
 
     /// <summary>
-    /// 创建以 SQLite 装配的 SqlSugar 特性；连接串来自宿主解析的绑定。
+    /// 创建以 SQLite 装配的 SqlSugar 特性。
     /// </summary>
+    /// <remarks>
+    /// 连接串来自宿主解析的绑定。
+    /// </remarks>
     public static IFeature CreateFeature()
         => new SqlSugarPersistenceFeature(static (binding, config) =>
         {
@@ -46,8 +52,11 @@ internal sealed class SqliteDatabase : IDisposable
         });
 
     /// <summary>
-    /// 启动带本数据库、三种套件实体与指定时钟的宿主；不传时钟则用系统时钟。
+    /// 启动带本数据库、三种套件实体与指定时钟的宿主。
     /// </summary>
+    /// <remarks>
+    /// 不传时钟则用系统时钟。
+    /// </remarks>
     public Task<TestHost> StartHostAsync(TimeProvider? timeProvider = null) => TestHost.StartAsync(
         builder => builder.UseFeature(CreateFeature()),
         Configuration,

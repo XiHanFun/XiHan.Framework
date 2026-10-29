@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="IdempotencyMiddleware"/> 的单元测试：首次执行与回放、处理中冲突、异常清理、租户与主体隔离、键校验。
+/// <see cref="IdempotencyMiddleware"/> 的单元测试。
 /// </summary>
+/// <remarks>
+/// 首次执行与回放、处理中冲突、异常清理、租户与主体隔离、键校验。
+/// </remarks>
 public sealed class IdempotencyMiddlewareTests
 {
     /// <summary>
@@ -48,8 +51,11 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     /// <summary>
-    /// 创建调用上下文；<paramref name="key"/> 不为 <see langword="null"/> 时放入幂等键 Baggage，<paramref name="tenant"/> 不为 <see langword="null"/> 时设置租户。
+    /// 创建调用上下文。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="key"/> 不为 <see langword="null"/> 时放入幂等键 Baggage，<paramref name="tenant"/> 不为 <see langword="null"/> 时设置租户。
+    /// </remarks>
     private InvocationContext Context(string? key, string? tenant = null)
     {
         var context = TestInvocationContext.Create(_services, baggage: key is null ? null : new Dictionary<string, string> { [BaggageKeys.IdempotencyKey] = key });

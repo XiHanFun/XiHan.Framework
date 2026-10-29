@@ -6,8 +6,11 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 演进后的表结构：同一张表加了非可空的枚举、整数、长整数、小数、布尔、Guid 列，以及可空的字符串与时刻列。
+/// 演进后的表结构。
 /// </summary>
+/// <remarks>
+/// 同一张表加了非可空的枚举、整数、长整数、小数、布尔、Guid 列，以及可空的字符串与时刻列。
+/// </remarks>
 [SugarTable("evolving_record")]
 public sealed class EvolvingRecordV2
 {

@@ -8,8 +8,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 作用于 C# 语法树的规则：解析、改写、回写；语法树没变就不碰文件。
+/// 作用于 C# 语法树的规则。
 /// </summary>
+/// <remarks>
+/// 解析、改写、回写；语法树没变就不碰文件。
+/// </remarks>
 internal abstract class SyntaxFixer : MigrationFixer
 {
     /// <inheritdoc />
@@ -24,8 +27,11 @@ internal abstract class SyntaxFixer : MigrationFixer
     }
 
     /// <summary>
-    /// 改写语法树；没有改动时返回传入的根。
+    /// 改写语法树。
     /// </summary>
+    /// <remarks>
+    /// 没有改动时返回传入的根。
+    /// </remarks>
     protected abstract CompilationUnitSyntax Rewrite(CompilationUnitSyntax root, MigrationFile file, MigrationSession session);
 
     /// <summary>
@@ -34,8 +40,11 @@ internal abstract class SyntaxFixer : MigrationFixer
     protected static int LineOf(SyntaxNode node) => node.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
 
     /// <summary>
-    /// 补上缺少的顶层 <c>using</c>：按字典序插入，文件头注释留在第一条上；原来没有 using 时，后面的声明前空一行。
+    /// 补上缺少的顶层 <c>using</c>。
     /// </summary>
+    /// <remarks>
+    /// 按字典序插入，文件头注释留在第一条上；原来没有 using 时，后面的声明前空一行。
+    /// </remarks>
     protected static CompilationUnitSyntax WithUsings(CompilationUnitSyntax root, IEnumerable<string> namespaces, string newLine)
     {
         ArgumentNullException.ThrowIfNull(root);

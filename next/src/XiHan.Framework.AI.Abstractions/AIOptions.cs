@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// AI 子系统选项（配置节 <c>XiHan:AI</c>）：默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。
+/// AI 子系统选项（配置节 <c>XiHan:AI</c>）。
 /// </summary>
+/// <remarks>
+/// 默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AIOptions
 {
@@ -23,13 +26,19 @@ public sealed record AIOptions
     public const string ConfigurationSection = "XiHan:AI";
 
     /// <summary>
-    /// 默认聊天 Provider；空且只有一个 Provider 时取它。
+    /// 默认聊天 Provider。
     /// </summary>
+    /// <remarks>
+    /// 空且只有一个 Provider 时取它。
+    /// </remarks>
     public string? DefaultProvider { get; init; }
 
     /// <summary>
-    /// 默认嵌入 Provider；空时同 <see cref="DefaultProvider"/>。
+    /// 默认嵌入 Provider。
     /// </summary>
+    /// <remarks>
+    /// 空时同 <see cref="DefaultProvider"/>。
+    /// </remarks>
     public string? DefaultEmbeddingProvider { get; init; }
 
     /// <summary>

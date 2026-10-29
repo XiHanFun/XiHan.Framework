@@ -23,9 +23,11 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.Wasm;
 
 /// <summary>
-/// Wasm 插件宿主（<c>isolation: wasm</c>，RFC-0018，Experimental）：按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。
-/// 通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载（贡献中间件的插件除外）。
+/// Wasm 插件宿主（<c>isolation: wasm</c>，RFC-0018，Experimental）。
 /// </summary>
+/// <remarks>
+/// 按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载（贡献中间件的插件除外）。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IAsyncDisposable
 {
@@ -65,8 +67,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private readonly CancellationTokenSource _ticker = new();
 
     /// <summary>
-    /// 计时循环；释放时先等它退出，引擎才能安全释放。
+    /// 计时循环。
     /// </summary>
+    /// <remarks>
+    /// 释放时先等它退出，引擎才能安全释放。
+    /// </remarks>
     private readonly Task _ticking;
 
     /// <summary>
@@ -75,8 +80,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private bool _disposed;
 
     /// <summary>
-    /// 日志工厂；附着到容器后换成宿主的。
+    /// 日志工厂。
     /// </summary>
+    /// <remarks>
+    /// 附着到容器后换成宿主的。
+    /// </remarks>
     private ILoggerFactory _loggerFactory;
 
     /// <summary>
@@ -85,8 +93,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private ILogger _logger;
 
     /// <summary>
-    /// 代理操作登记到的登记表；由特性在配置阶段提供。
+    /// 代理操作登记到的登记表。
     /// </summary>
+    /// <remarks>
+    /// 由特性在配置阶段提供。
+    /// </remarks>
     private OperationRegistry? _registry;
 
     /// <summary>
@@ -125,8 +136,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 一个插件的诊断快照；未加载为空。
+    /// 一个插件的诊断快照。
     /// </summary>
+    /// <remarks>
+    /// 未加载为空。
+    /// </remarks>
     public WasmPluginStatus? Describe(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
@@ -144,8 +158,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     internal void UseRegistry(OperationRegistry registry) => _registry = registry;
 
     /// <summary>
-    /// 同步发现一个插件目录（配置阶段使用）：读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报。
+    /// 同步发现一个插件目录（配置阶段使用）。
     /// </summary>
+    /// <remarks>
+    /// 读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报。
+    /// </remarks>
     internal Result<WasmPluginRuntime> Discover(string directory)
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
 
@@ -209,8 +226,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 附着到已构建的宿主容器：换用宿主日志、开放回调、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 附着到已构建的宿主容器。
     /// </summary>
+    /// <remarks>
+    /// 换用宿主日志、开放回调、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -244,8 +264,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把一条消息投递给订阅了该主题与类型的插件；第一个失败即为结果。
+    /// 把一条消息投递给订阅了该主题与类型的插件。
     /// </summary>
+    /// <remarks>
+    /// 第一个失败即为结果。
+    /// </remarks>
     internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
         foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type)))
@@ -328,8 +351,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 校验权限（<c>capability:</c> 须授予、<c>fs.*</c> 须映射、<c>net.outbound:</c> 永不授予）与模块文件，登记运行时并探测启动。
+    /// 校验权限（<c>capability:</c> 须授予、<c>fs.*</c> 须映射、<c>net.outbound:</c> 永不授予）与模块文件。
     /// </summary>
+    /// <remarks>
+    /// 登记运行时并探测启动。
+    /// </remarks>
     private async Task<Result<WasmPluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, CancellationToken cancellationToken)
     {
         var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).ToList();
@@ -372,8 +398,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 一项清单权限是否被授予：<c>capability:</c> 看宿主授予，<c>fs.read:</c> / <c>fs.write:</c> 看是否映射，其余（含 <c>net.outbound:</c>）不授予。
+    /// 一项清单权限是否被授予。
     /// </summary>
+    /// <remarks>
+    /// <c>capability:</c> 看宿主授予，<c>fs.read:</c> / <c>fs.write:</c> 看是否映射，其余（含 <c>net.outbound:</c>）不授予。
+    /// </remarks>
     private static bool IsGranted(string permission, PermissionGrant granted, IReadOnlyDictionary<string, string> mounts)
     {
         if (permission.StartsWith("capability:", StringComparison.Ordinal))

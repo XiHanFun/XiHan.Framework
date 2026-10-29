@@ -8,16 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 /// <summary>
-/// cron 表达式，秒精度：5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。
-/// 每段支持 <c>*</c>、数值、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到上限每 n）与 <c>a-b/n</c>；
-/// 日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，均不区分大小写。
-/// 周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。
-/// 日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；
-/// 周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。
-/// 日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）。
-/// 下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。
-/// 向前最多搜索 5 年，没有匹配即无值。
+/// cron 表达式，秒精度。
 /// </summary>
+/// <remarks>
+/// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。每段支持 <c>*</c>、数值、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到上限每 n）与 <c>a-b/n</c>；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，均不区分大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。向前最多搜索 5 年，没有匹配即无值。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CronExpression
 {
@@ -32,8 +27,11 @@ public sealed class CronExpression
     private const int MaxYear = 2099;
 
     /// <summary>
-    /// <see cref="DateTime"/> 能表示的最大年份；游标越过它就不再构造日期。
+    /// <see cref="DateTime"/> 能表示的最大年份。
     /// </summary>
+    /// <remarks>
+    /// 游标越过它就不再构造日期。
+    /// </remarks>
     private const int MaxCalendarYear = 9999;
 
     /// <summary>
@@ -47,8 +45,11 @@ public sealed class CronExpression
     private static readonly char[] _whitespace = [' ', '\t'];
 
     /// <summary>
-    /// 秒 0 到 59 是否匹配；5 段表达式只有 0 匹配。
+    /// 秒 0 到 59 是否匹配。
     /// </summary>
+    /// <remarks>
+    /// 5 段表达式只有 0 匹配。
+    /// </remarks>
     private readonly bool[] _seconds;
 
     /// <summary>
@@ -67,8 +68,11 @@ public sealed class CronExpression
     private readonly bool[] _months;
 
     /// <summary>
-    /// 年 1970 到 2099 是否匹配（下标 = 年 − 1970）；没有年段时为 <see langword="null"/>，任何年都匹配。
+    /// 年 1970 到 2099 是否匹配（下标 = 年 − 1970）。
     /// </summary>
+    /// <remarks>
+    /// 没有年段时为 <see langword="null"/>，任何年都匹配。
+    /// </remarks>
     private readonly bool[]? _years;
 
     /// <summary>
@@ -115,8 +119,11 @@ public sealed class CronExpression
     public bool IncludesYears { get; }
 
     /// <summary>
-    /// 解析；不合法抛出 <see cref="ArgumentException"/>，消息说明具体原因（段数、段名、越界值或未知标记）。
+    /// 解析。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>，消息说明具体原因（段数、段名、越界值或未知标记）。
+    /// </remarks>
     /// <param name="expression">5、6 或 7 段的 cron 表达式。</param>
     public static CronExpression Parse(string expression)
     {
@@ -127,8 +134,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 尝试解析；不抛出。
+    /// 尝试解析。
     /// </summary>
+    /// <remarks>
+    /// 不抛出。
+    /// </remarks>
     /// <param name="expression">5、6 或 7 段的 cron 表达式。</param>
     /// <param name="parsed">解析结果；失败时为 <see langword="null"/>。</param>
     public static bool TryParse([NotNullWhen(true)] string? expression, [NotNullWhen(true)] out CronExpression? parsed)
@@ -137,8 +147,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// <paramref name="after"/> 之后（不含）的下一次匹配时刻（UTC，毫秒为 0）；5 年内没有匹配为无值。
+    /// <paramref name="after"/> 之后（不含）的下一次匹配时刻（UTC，毫秒为 0）。
     /// </summary>
+    /// <remarks>
+    /// 5 年内没有匹配为无值。
+    /// </remarks>
     /// <param name="after">起点，不含。</param>
     public Maybe<DateTimeOffset> Next(DateTimeOffset after)
     {
@@ -146,9 +159,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// <paramref name="after"/> 之后（不含）按 <paramref name="timeZone"/> 的墙上时间匹配的下一次时刻，带该时区在该时刻的偏移，毫秒为 0；5 年内没有匹配为无值。
-    /// 夏令时开始时被跳过的墙上时间不触发；夏令时结束时重复出现的墙上时间只取第一次出现。
+    /// <paramref name="after"/> 之后（不含）按 <paramref name="timeZone"/> 的墙上时间匹配的下一次时刻。
     /// </summary>
+    /// <remarks>
+    /// 带该时区在该时刻的偏移，毫秒为 0。5 年内没有匹配为无值。夏令时开始时被跳过的墙上时间不触发；夏令时结束时重复出现的墙上时间只取第一次出现。
+    /// </remarks>
     /// <param name="after">起点，不含。</param>
     /// <param name="timeZone">匹配墙上时间所用的时区。</param>
     public Maybe<DateTimeOffset> Next(DateTimeOffset after, TimeZoneInfo timeZone)
@@ -229,8 +244,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 把游标推进到年、月、日都匹配的第一天（时分秒归零或保持）；到搜索上限或年段用尽仍没有就返回 <see langword="false"/>。
+    /// 把游标推进到年、月、日都匹配的第一天（时分秒归零或保持）。
     /// </summary>
+    /// <remarks>
+    /// 到搜索上限或年段用尽仍没有就返回 <see langword="false"/>。
+    /// </remarks>
     private bool TryAdvanceDate(Cursor cursor, DateTime limit)
     {
         // 逐级跳过：年不匹配跳到下一个匹配年的 1 月 1 日，月不匹配跳到下一个匹配月的 1 日，日不匹配跳到当月下一个匹配日；永不逐秒遍历
@@ -280,8 +298,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 在当天内把游标推进到时、分、秒都匹配的时刻；当天剩余时间没有匹配就把游标推到下一个小时、分钟或天的起点并返回 <see langword="false"/>。
+    /// 在当天内把游标推进到时、分、秒都匹配的时刻。
     /// </summary>
+    /// <remarks>
+    /// 当天剩余时间没有匹配就把游标推到下一个小时、分钟或天的起点并返回 <see langword="false"/>。
+    /// </remarks>
     private bool TryAdvanceTime(Cursor cursor)
     {
         var hour = NextSet(_hours, cursor.Hour);
@@ -320,8 +341,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 不早于 <paramref name="from"/> 的第一个匹配年；没有年段时就是 <paramref name="from"/> 本身，年段用尽为 −1。
+    /// 不早于 <paramref name="from"/> 的第一个匹配年。
     /// </summary>
+    /// <remarks>
+    /// 没有年段时就是 <paramref name="from"/> 本身，年段用尽为 −1。
+    /// </remarks>
     private int NextMatchingYear(int from)
     {
         if (_years is null)
@@ -341,8 +365,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 某年某月匹配的日的位掩码（第 n 位表示 n 日）：日与周都限定时取并集（标准 cron），只限定一个时只看它，都不限定时整月都匹配。
+    /// 某年某月匹配的日的位掩码（第 n 位表示 n 日）。
     /// </summary>
+    /// <remarks>
+    /// 日与周都限定时取并集（标准 cron），只限定一个时只看它，都不限定时整月都匹配。
+    /// </remarks>
     private uint DayMask(int year, int month)
     {
         return (_monthDays.Restricted, _weekdays.Restricted) switch
@@ -355,8 +382,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// <paramref name="set"/> 中不小于 <paramref name="from"/> 的第一个匹配下标；没有为 −1。
+    /// <paramref name="set"/> 中不小于 <paramref name="from"/> 的第一个匹配下标。
     /// </summary>
+    /// <remarks>
+    /// 没有为 −1。
+    /// </remarks>
     private static int NextSet(bool[] set, int from)
     {
         for (var index = from; index < set.Length; index++)
@@ -371,8 +401,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 位掩码中不小于 <paramref name="from"/> 的第一个匹配日；没有为 −1。
+    /// 位掩码中不小于 <paramref name="from"/> 的第一个匹配日。
     /// </summary>
+    /// <remarks>
+    /// 没有为 −1。
+    /// </remarks>
     private static int NextDay(uint mask, int from)
     {
         for (var day = from; day <= 31; day++)
@@ -387,8 +420,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 墙上时间对应的 UTC 偏移；秋季回拨造成的重复墙上时间取偏移较大的那次，即第一次出现。
+    /// 墙上时间对应的 UTC 偏移。
     /// </summary>
+    /// <remarks>
+    /// 秋季回拨造成的重复墙上时间取偏移较大的那次，即第一次出现。
+    /// </remarks>
     private static TimeSpan ResolveOffset(DateTime wall, TimeZoneInfo timeZone)
     {
         if (!timeZone.IsAmbiguousTime(wall))
@@ -475,8 +511,11 @@ public sealed class CronExpression
         public bool LastWeekday { get; set; }
 
         /// <summary>
-        /// 某年某月匹配的日的位掩码（第 n 位表示 n 日）；不存在的日（如 4 月 31 日）不计入。
+        /// 某年某月匹配的日的位掩码（第 n 位表示 n 日）。
         /// </summary>
+        /// <remarks>
+        /// 不存在的日（如 4 月 31 日）不计入。
+        /// </remarks>
         public uint Resolve(int year, int month)
         {
             var daysInMonth = DateTime.DaysInMonth(year, month);
@@ -511,8 +550,11 @@ public sealed class CronExpression
         }
 
         /// <summary>
-        /// 离某日最近的工作日，不跨月：周六取前一天的周五（1 日除外，取 3 日周一），周日取后一天的周一（月末除外，取前两天的周五）。
+        /// 离某日最近的工作日，不跨月。
         /// </summary>
+        /// <remarks>
+        /// 周六取前一天的周五（1 日除外，取 3 日周一），周日取后一天的周一（月末除外，取前两天的周五）。
+        /// </remarks>
         private static int NearestWeekday(int year, int month, int day, int daysInMonth)
         {
             return new DateTime(year, month, day).DayOfWeek switch
@@ -525,8 +567,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 周段规则：普通周、<c>nL</c> 与 <c>n#k</c>；周 0 是周日。
+    /// 周段规则。
     /// </summary>
+    /// <remarks>
+    /// 普通周、<c>nL</c> 与 <c>n#k</c>；周 0 是周日。
+    /// </remarks>
     private sealed class WeekdayRule
     {
         /// <summary>
@@ -572,8 +617,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 搜索中的墙上时间游标；推进到某一级时把更细的字段归零，跨界时自动进位。年可能越过 9999，使用前先经 <see cref="IsBefore"/> 检查。
+    /// 搜索中的墙上时间游标。
     /// </summary>
+    /// <remarks>
+    /// 推进到某一级时把更细的字段归零，跨界时自动进位。年可能越过 9999，使用前先经 <see cref="IsBefore"/> 检查。
+    /// </remarks>
     private sealed class Cursor
     {
         /// <summary>
@@ -765,8 +813,11 @@ public sealed class CronExpression
     }
 
     /// <summary>
-    /// 把分好段的表达式解析成各段的匹配表；每个解析方法返回失败原因，<see langword="null"/> 表示成功。
+    /// 把分好段的表达式解析成各段的匹配表。
     /// </summary>
+    /// <remarks>
+    /// 每个解析方法返回失败原因，<see langword="null"/> 表示成功。
+    /// </remarks>
     private sealed class Parser
     {
         /// <summary>
@@ -805,8 +856,11 @@ public sealed class CronExpression
         private static readonly Field _monthField = new("month", 1, 12, _monthNames);
 
         /// <summary>
-        /// 周段；7 与 0 都是周日，解析后折叠。
+        /// 周段。
         /// </summary>
+        /// <remarks>
+        /// 7 与 0 都是周日，解析后折叠。
+        /// </remarks>
         private static readonly Field _dayOfWeekField = new("day-of-week", 0, 7, _weekdayNames);
 
         /// <summary>
@@ -878,8 +932,11 @@ public sealed class CronExpression
         public bool[] Months { get; } = new bool[12];
 
         /// <summary>
-        /// 年 1970 到 2099 的匹配表（下标 = 年 − 1970）；没有年段为 <see langword="null"/>。
+        /// 年 1970 到 2099 的匹配表（下标 = 年 − 1970）。
         /// </summary>
+        /// <remarks>
+        /// 没有年段为 <see langword="null"/>。
+        /// </remarks>
         public bool[]? Years { get; }
 
         /// <summary>
@@ -893,8 +950,11 @@ public sealed class CronExpression
         public WeekdayRule Weekdays { get; } = new();
 
         /// <summary>
-        /// 按顺序解析各段，返回第一个失败原因；全部成功为 <see langword="null"/>。
+        /// 按顺序解析各段，返回第一个失败原因。
         /// </summary>
+        /// <remarks>
+        /// 全部成功为 <see langword="null"/>。
+        /// </remarks>
         public string? Parse()
         {
             return (HasSeconds ? ParseSimple(_fields[0], _secondField, Seconds) : null)
@@ -1064,8 +1124,11 @@ public sealed class CronExpression
         }
 
         /// <summary>
-        /// 解析一个普通项：<c>*</c>、<c>*/n</c>、<c>a</c>、<c>a-b</c>、<c>a/n</c>（a 到上限每 n）或 <c>a-b/n</c>；命中的值写入 <paramref name="set"/>（下标 = 值 − 下限）。
+        /// 解析一个普通项。
         /// </summary>
+        /// <remarks>
+        /// <c>*</c>、<c>*/n</c>、<c>a</c>、<c>a-b</c>、<c>a/n</c>（a 到上限每 n）或 <c>a-b/n</c>；命中的值写入 <paramref name="set"/>（下标 = 值 − 下限）。
+        /// </remarks>
         private static string? ParseItem(ReadOnlySpan<char> item, Field field, bool[] set)
         {
             var step = 1;
@@ -1096,8 +1159,11 @@ public sealed class CronExpression
         }
 
         /// <summary>
-        /// 解析项中步长之前的部分：<c>*</c> 为全段，<c>a-b</c> 为范围，单值带步长时为 a 到上限，否则就是 a。
+        /// 解析项中步长之前的部分。
         /// </summary>
+        /// <remarks>
+        /// <c>*</c> 为全段，<c>a-b</c> 为范围，单值带步长时为 a 到上限，否则就是 a。
+        /// </remarks>
         private static string? ParseRange(ReadOnlySpan<char> text, Field field, bool hasStep, out int start, out int end)
         {
             if (text.Equals("*", StringComparison.Ordinal))

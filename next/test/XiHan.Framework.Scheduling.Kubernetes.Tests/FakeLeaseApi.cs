@@ -9,8 +9,11 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// 内存里的 API Server 桩：只实现 Lease 的 GET / POST / PUT，带 resourceVersion 乐观并发、令牌校验，可注入一次失败。
+/// 内存里的 API Server 桩。
 /// </summary>
+/// <remarks>
+/// 只实现 Lease 的 GET / POST / PUT，带 resourceVersion 乐观并发、令牌校验，可注入一次失败。
+/// </remarks>
 internal sealed class FakeLeaseApi : HttpMessageHandler
 {
     /// <summary>

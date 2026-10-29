@@ -14,13 +14,19 @@ using XiHan.Framework.Security.Abstractions;
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 订单能力包：按能力 ID 声明依赖，登记实体、权限与消息订阅。换 Provider 不改这里。
+/// 订单能力包。
 /// </summary>
+/// <remarks>
+/// 按能力 ID 声明依赖，登记实体、权限与消息订阅。换 Provider 不改这里。
+/// </remarks>
 public sealed class OrdersFeature : IFeature
 {
     /// <summary>
-    /// 订单消息的主题；发布与订阅共用。
+    /// 订单消息的主题。
     /// </summary>
+    /// <remarks>
+    /// 发布与订阅共用。
+    /// </remarks>
     public const string Topic = "orders";
 
     /// <summary>
@@ -47,8 +53,12 @@ public sealed class OrdersFeature : IFeature
     };
 
     /// <summary>
-    /// 登记订单仓储、<see cref="OrderPlaced"/> 领域事件的消息映射、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限，以及两个操作契约。
+    /// 登记订单特性的服务、消息处理与权限。
     /// </summary>
+    /// <remarks>
+    /// 登记订单仓储、<see cref="OrderPlaced"/> 领域事件的消息映射、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限。
+    /// 以及两个操作契约。
+    /// </remarks>
     public void Configure(FeatureContext context)
     {
         // 仓储登记由 Persistence.Generators 从实体类生成（Order : IAggregateRoot<Guid>）

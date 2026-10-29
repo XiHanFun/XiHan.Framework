@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Database.Entities;
 
 /// <summary>
-/// 触发器行：<c>Id</c> 是 <c>作业名/触发器名</c>（<c>TriggerKey.ToString()</c>），计划以 <c>JobSchedule.ToString()</c> 的文本持久化，数据是 JSON 文本，状态、misfire 策略与触发来源存枚举的整数值。
-/// 并发戳让多个节点对同一条触发器的抢占是原子的比较并交换：先改成功的拿到，其余得到冲突。
+/// 触发器行。
 /// </summary>
+/// <remarks>
+/// <c>Id</c> 是 <c>作业名/触发器名</c>（<c>TriggerKey.ToString()</c>），计划以 <c>JobSchedule.ToString()</c> 的文本持久化，数据是 JSON 文本，状态、misfire 策略与触发来源存枚举的整数值。并发戳让多个节点对同一条触发器的抢占是原子的比较并交换：先改成功的拿到，其余得到冲突。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
 {
@@ -38,8 +40,11 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     public string Schedule { get; set; } = string.Empty;
 
     /// <summary>
-    /// 覆盖作业数据的数据，JSON 对象文本；长文本列。
+    /// 覆盖作业数据的数据，JSON 对象文本。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Data { get; set; } = "{}";
 
@@ -65,8 +70,11 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     public int State { get; set; }
 
     /// <summary>
-    /// 下一次运行时刻；没有为空。
+    /// 下一次运行时刻。
     /// </summary>
+    /// <remarks>
+    /// 没有为空。
+    /// </remarks>
     public DateTimeOffset? NextFireAt { get; set; }
 
     /// <summary>

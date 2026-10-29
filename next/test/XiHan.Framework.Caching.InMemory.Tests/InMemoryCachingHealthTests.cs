@@ -11,8 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>caching.inmemory.capacity</c>：宿主启动后 Ready，任一张 LRU 表填满后 Degraded 并带 <see cref="CachingErrors.CapacityReached"/>。
+/// 健康项 <c>caching.inmemory.capacity</c>。
 /// </summary>
+/// <remarks>
+/// 宿主启动后 Ready，任一张 LRU 表填满后 Degraded 并带 <see cref="CachingErrors.CapacityReached"/>。
+/// </remarks>
 public sealed class InMemoryCachingHealthTests
 {
     [Fact]

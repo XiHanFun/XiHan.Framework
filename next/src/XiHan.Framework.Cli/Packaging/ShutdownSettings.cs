@@ -9,8 +9,11 @@ namespace XiHan.Framework.Cli.Packaging;
 internal sealed record ShutdownSettings
 {
     /// <summary>
-    /// 内核 Draining 的宽限（秒），写进 <c>XiHan:Kernel:StopTimeoutSeconds</c>；k8s 的 <c>terminationGracePeriodSeconds</c> 在此之上多 5 秒。
+    /// 内核 Draining 的宽限（秒），写进 <c>XiHan:Kernel:StopTimeoutSeconds</c>。
     /// </summary>
+    /// <remarks>
+    /// k8s 的 <c>terminationGracePeriodSeconds</c> 在此之上多 5 秒。
+    /// </remarks>
     public int GraceSeconds { get; set; } = 30;
 
     /// <summary>

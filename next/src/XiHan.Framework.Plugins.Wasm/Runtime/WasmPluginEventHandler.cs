@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
 /// <summary>
-/// 把订阅主题的消息转交给订阅了它的 Wasm 插件；按主题登记一次，实际路由由宿主按握手声明决定。
+/// 把订阅主题的消息转交给订阅了它的 Wasm 插件。
 /// </summary>
+/// <remarks>
+/// 按主题登记一次，实际路由由宿主按握手声明决定。
+/// </remarks>
 internal sealed class WasmPluginEventHandler(WasmPluginHost host) : IMessageHandler
 {
     /// <inheritdoc />

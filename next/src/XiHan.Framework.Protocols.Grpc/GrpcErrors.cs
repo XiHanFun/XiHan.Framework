@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc;
 
 /// <summary>
-/// gRPC 协议适配器的错误码；登记在 <c>spec/conventions/error-codes.md</c>。调用期错误随 gRPC 尾部元数据 <c>xihan-error-code</c> 返回，启动期错误以 <see cref="FrameworkException"/> 抛出。
+/// gRPC 协议适配器的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。调用期错误随 gRPC 尾部元数据 <c>xihan-error-code</c> 返回，启动期错误以 <see cref="FrameworkException"/> 抛出。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class GrpcErrors
 {

@@ -6,19 +6,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 知识库存储（<c>ai.knowledge@1</c> 的 Provider 契约）：按集合写入记录、按文档删除、按向量搜索。集合不存在：写入时创建，搜索返回空。
+/// 知识库存储（<c>ai.knowledge@1</c> 的 Provider 契约）。
 /// </summary>
+/// <remarks>
+/// 按集合写入记录、按文档删除、按向量搜索。集合不存在：写入时创建，搜索返回空。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IKnowledgeStore
 {
     /// <summary>
-    /// 写入或替换记录（按 ID）。不可达 → <see cref="AIErrors.KnowledgeUnavailable"/>。
+    /// 写入或替换记录（按 ID）。
     /// </summary>
+    /// <remarks>
+    /// 不可达 → <see cref="AIErrors.KnowledgeUnavailable"/>。
+    /// </remarks>
     ValueTask<Result> UpsertAsync(string collection, IReadOnlyList<KnowledgeRecord> records, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 删除这些文档的全部记录；不存在的文档忽略。
+    /// 删除这些文档的全部记录。
     /// </summary>
+    /// <remarks>
+    /// 不存在的文档忽略。
+    /// </remarks>
     ValueTask<Result> DeleteAsync(string collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken);
 
     /// <summary>

@@ -10,8 +10,11 @@ namespace XiHan.Framework.Primitives;
 public static class Maybe
 {
     /// <summary>
-    /// 创建有值的 <see cref="Maybe{T}"/>；值不能为 <see langword="null"/>。
+    /// 创建有值的 <see cref="Maybe{T}"/>。
     /// </summary>
+    /// <remarks>
+    /// 值不能为 <see langword="null"/>。
+    /// </remarks>
     public static Maybe<T> Some<T>(T value)
     {
         ArgumentNullException.ThrowIfNull(value);

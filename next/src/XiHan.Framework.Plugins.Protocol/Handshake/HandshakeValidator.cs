@@ -109,8 +109,11 @@ internal static class HandshakeValidator
     }
 
     /// <summary>
-    /// 声明 → 契约与 Schema；ID、稳定性、暴露面或 Schema 不合法即失败。
+    /// 声明 → 契约与 Schema。
     /// </summary>
+    /// <remarks>
+    /// ID、稳定性、暴露面或 Schema 不合法即失败。
+    /// </remarks>
     private static Result<ProxyOperation> ToOperation(OperationDeclaration declaration)
     {
         if (!OperationId.IsValid(declaration.Id))

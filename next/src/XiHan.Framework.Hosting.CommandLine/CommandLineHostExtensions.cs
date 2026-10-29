@@ -15,8 +15,11 @@ namespace XiHan.Framework.Hosting.CommandLine;
 public static class CommandLineHostExtensions
 {
     /// <summary>
-    /// 启动宿主、执行 <paramref name="args"/> 对应的命令、停止宿主。Ctrl+C 取消当前命令（退出码 <see cref="CommandLineExitCodes.Cancelled"/>）。
+    /// 启动宿主、执行 <paramref name="args"/> 对应的命令、停止宿主。
     /// </summary>
+    /// <remarks>
+    /// Ctrl+C 取消当前命令（退出码 <see cref="CommandLineExitCodes.Cancelled"/>）。
+    /// </remarks>
     public static async Task<int> RunXiHanCommandLineAsync(this IHost host, IReadOnlyList<string> args, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(host);

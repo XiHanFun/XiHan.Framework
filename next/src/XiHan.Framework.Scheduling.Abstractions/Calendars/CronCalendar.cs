@@ -7,8 +7,11 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 
 /// <summary>
-/// 排除与 cron 表达式匹配的时刻（秒粒度）的日历；时区缺省 UTC。例如 <c>* * 0-7 * * *</c> 排除每天 0 点到 8 点。
+/// 排除与 cron 表达式匹配的时刻（秒粒度）的日历。
 /// </summary>
+/// <remarks>
+/// 时区缺省 UTC。例如 <c>* * 0-7 * * *</c> 排除每天 0 点到 8 点。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CronCalendar : IJobCalendar
 {

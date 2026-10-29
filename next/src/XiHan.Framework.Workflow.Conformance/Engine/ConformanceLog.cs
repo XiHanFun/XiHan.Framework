@@ -61,8 +61,11 @@ public sealed class ConformanceLog : IMessagePublisher
     }
 
     /// <summary>
-    /// 活动执行时调用上下文里的来源（RFC-0003），按执行顺序；没有来源记 <see langword="null"/>。
+    /// 活动执行时调用上下文里的来源（RFC-0003），按执行顺序。
     /// </summary>
+    /// <remarks>
+    /// 没有来源记 <see langword="null"/>。
+    /// </remarks>
     public IReadOnlyList<InvocationOrigin?> Origins
     {
         get

@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 结束节点：没有 <c>Outcome</c> 时只完成本分支（没有剩余令牌与书签时实例完成）；有 <c>Outcome</c> 时先依次调用结果处理器，再以该结果结束实例。
+/// 结束节点。
 /// </summary>
+/// <remarks>
+/// 没有 <c>Outcome</c> 时只完成本分支（没有剩余令牌与书签时实例完成）；有 <c>Outcome</c> 时先依次调用结果处理器，再以该结果结束实例。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EndActivity : IActivity
 {

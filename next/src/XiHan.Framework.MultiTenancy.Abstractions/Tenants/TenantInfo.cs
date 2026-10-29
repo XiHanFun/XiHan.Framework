@@ -31,8 +31,11 @@ public sealed record TenantInfo
     public string? DisplayName { get; init; }
 
     /// <summary>
-    /// 是否启用；禁用的租户解析时被拒绝。默认启用。
+    /// 是否启用。
     /// </summary>
+    /// <remarks>
+    /// 禁用的租户解析时被拒绝。默认启用。
+    /// </remarks>
     public bool IsEnabled { get; init; } = true;
 
     /// <summary>

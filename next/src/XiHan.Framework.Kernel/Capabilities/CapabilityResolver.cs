@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// 能力图谱求解（RFC-0002）：按能力 ID 与接口版本把每个 <c>requires</c> 绑定到唯一提供者，拓扑排序，报错可解释。
+/// 能力图谱求解（RFC-0002）。
 /// </summary>
+/// <remarks>
+/// 按能力 ID 与接口版本把每个 <c>requires</c> 绑定到唯一提供者，拓扑排序，报错可解释。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CapabilityResolver
 {
@@ -75,8 +78,11 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 为一条 <c>requires</c> 选提供者。配置指定优先；无配置时按候选数与角色决定；可选依赖缺失返回 <see langword="null"/>。
+    /// 为一条 <c>requires</c> 选提供者。
     /// </summary>
+    /// <remarks>
+    /// 配置指定优先；无配置时按候选数与角色决定；可选依赖缺失返回 <see langword="null"/>。
+    /// </remarks>
     /// <param name="requester">声明该依赖的节点，仅用于错误信息。</param>
     /// <param name="requirement">待满足的依赖。</param>
     /// <param name="all">全部节点。</param>
@@ -127,8 +133,11 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 在候选里选一个：配置指定 → 唯一的显式 Provider → 唯一的 default → 否则多候选未指定。
+    /// 在候选里选一个。
     /// </summary>
+    /// <remarks>
+    /// 配置指定 → 唯一的显式 Provider → 唯一的 default → 否则多候选未指定。
+    /// </remarks>
     /// <param name="capabilityId">能力 ID。</param>
     /// <param name="candidates">提供该能力且版本匹配的节点。</param>
     /// <param name="selections">显式指定的提供者；<see langword="null"/> 表示调用方已处理过配置指定。</param>
@@ -179,8 +188,11 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 深度优先访问一个节点：先输出其全部依赖，再输出自身；沿当前路径再次遇到同一节点即为环。
+    /// 深度优先访问一个节点。
     /// </summary>
+    /// <remarks>
+    /// 先输出其全部依赖，再输出自身；沿当前路径再次遇到同一节点即为环。
+    /// </remarks>
     /// <param name="node">当前节点。</param>
     /// <param name="visited">已完成输出的节点。</param>
     /// <param name="path">当前递归路径，用于检测环并给出可读的环路。</param>
@@ -212,8 +224,11 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 把节点列表格式化为错误信息里的清单 ID 列表；空列表输出 <c>none</c>。
+    /// 把节点列表格式化为错误信息里的清单 ID 列表。
     /// </summary>
+    /// <remarks>
+    /// 空列表输出 <c>none</c>。
+    /// </remarks>
     private static string Describe(IEnumerable<ResolvedNode> nodes)
     {
         var ids = nodes.Select(static n => $"'{n.Manifest.Id}'").ToList();

@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 权限定义：权限码与说明。权限码格式 <c>&lt;领域&gt;.&lt;资源&gt;.&lt;动作&gt;</c>，小写点分。
+/// 权限定义。
 /// </summary>
+/// <remarks>
+/// 权限码与说明。权限码格式 <c>&lt;领域&gt;.&lt;资源&gt;.&lt;动作&gt;</c>，小写点分。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record PermissionDefinition
 {

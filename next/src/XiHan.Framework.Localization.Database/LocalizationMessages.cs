@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库本地化 Provider 的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。
+/// 数据库本地化 Provider 的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class LocalizationMessages
 {
@@ -18,8 +21,11 @@ public static class LocalizationMessages
     public const string CatalogName = "localization.database";
 
     /// <summary>
-    /// 数据库里没有这条翻译。参数：<c>key</c>、<c>locale</c>。
+    /// 数据库里没有这条翻译。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>key</c>、<c>locale</c>。
+    /// </remarks>
     public const string TranslationNotFound = "localization.translation.not_found";
 
     /// <summary>

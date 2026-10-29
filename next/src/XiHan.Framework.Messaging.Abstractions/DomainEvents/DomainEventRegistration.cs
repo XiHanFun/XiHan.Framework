@@ -10,14 +10,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.DomainEvents;
 
 /// <summary>
-/// 一种领域事件如何成为消息：发布到哪个主题、CloudEvents <c>type</c>、源生成的序列化元数据（不经反射）与可选的 <c>subject</c> 选择器。
+/// 一种领域事件如何成为消息。
 /// </summary>
+/// <remarks>
+/// 发布到哪个主题、CloudEvents <c>type</c>、源生成的序列化元数据（不经反射）与可选的 <c>subject</c> 选择器。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DomainEventRegistration
 {
     /// <summary>
-    /// 创建；主题须满足主题文法，类型不能为空。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 主题须满足主题文法，类型不能为空。
+    /// </remarks>
     /// <param name="eventType">事件的 CLR 类型。</param>
     /// <param name="topic">主题。</param>
     /// <param name="cloudEventType">CloudEvents <c>type</c>（如 <c>orders.placed</c>）。</param>
@@ -64,8 +70,11 @@ public sealed class DomainEventRegistration
     public Func<IDomainEvent, string?>? Subject { get; }
 
     /// <summary>
-    /// 把一个事件映射成信封：<c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。
+    /// 把一个事件映射成信封。
     /// </summary>
+    /// <remarks>
+    /// <c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。
+    /// </remarks>
     public MessageEnvelope ToEnvelope(IDomainEvent domainEvent, Guid id, string? tenantId)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);

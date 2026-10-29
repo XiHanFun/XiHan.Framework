@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
 /// <summary>
-/// 实际读到的范围：内容流从 <see cref="Offset"/> 起共 <see cref="Length"/> 个字节，对象总长 <see cref="TotalLength"/>（对应 HTTP 的 <c>Content-Range: bytes Offset-(Offset+Length-1)/TotalLength</c>）。
+/// 实际读到的范围。
 /// </summary>
+/// <remarks>
+/// 内容流从 <see cref="Offset"/> 起共 <see cref="Length"/> 个字节，对象总长 <see cref="TotalLength"/>（对应 HTTP 的 <c>Content-Range: bytes Offset-(Offset+Length-1)/TotalLength</c>）。
+/// </remarks>
 /// <param name="Offset">起点。</param>
 /// <param name="Length">长度（至少 1）。</param>
 /// <param name="TotalLength">对象总长。</param>

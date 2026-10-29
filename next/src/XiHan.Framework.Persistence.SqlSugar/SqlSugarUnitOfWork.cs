@@ -9,10 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 事务型工作单元：首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。
-/// 客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。
-/// 延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。
+/// 事务型工作单元。
 /// </summary>
+/// <remarks>
+/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
@@ -22,8 +23,11 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     private readonly IEntityConnectionSelector _selector;
 
     /// <summary>
-    /// 是否已在客户端连接上开启事务；为假表示本工作单元尚未写入。
+    /// 是否已在客户端连接上开启事务。
     /// </summary>
+    /// <remarks>
+    /// 为假表示本工作单元尚未写入。
+    /// </remarks>
     private bool _transactionOpen;
 
     /// <summary>
@@ -38,8 +42,11 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 本作用域的 SqlSugar 客户端（根连接；多连接时经 <c>AsTenant()</c> 取其他连接）。
+    /// 本作用域的 SqlSugar 客户端。
     /// </summary>
+    /// <remarks>
+    /// 根连接；多连接时经 <c>AsTenant()</c> 取其他连接。
+    /// </remarks>
     public ISqlSugarClient Client { get; }
 
     /// <inheritdoc />
@@ -55,8 +62,11 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     public DomainEventTracker DomainEvents { get; } = new();
 
     /// <summary>
-    /// 取实体类型应使用的连接；由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。
+    /// 取实体类型应使用的连接。
     /// </summary>
+    /// <remarks>
+    /// 由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。
+    /// </remarks>
     public ISqlSugarClient ConnectionFor(Type entityType)
     {
         ArgumentNullException.ThrowIfNull(entityType);
@@ -79,8 +89,11 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 确保数据库事务已开启。仓储在每次写入前调用；只读工作单元不会调用。
+    /// 确保数据库事务已开启。
     /// </summary>
+    /// <remarks>
+    /// 仓储在每次写入前调用；只读工作单元不会调用。
+    /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)

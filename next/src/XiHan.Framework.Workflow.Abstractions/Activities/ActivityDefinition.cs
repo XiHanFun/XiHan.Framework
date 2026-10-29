@@ -12,8 +12,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 public sealed record ActivityDefinition
 {
     /// <summary>
-    /// 创建；<paramref name="activityClass"/> 必须实现 <see cref="IActivity"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="activityClass"/> 必须实现 <see cref="IActivity"/>。
+    /// </remarks>
     public ActivityDefinition(ActivityType type, Type activityClass, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched, ActivityDescriptor? descriptor = null)
     {
         Type = type;

@@ -24,8 +24,11 @@ public sealed record ParsedCommandLine(string? Command, IReadOnlyList<string> Ar
     }
 
     /// <summary>
-    /// 选项的全部值；没有时为空。
+    /// 选项的全部值。
     /// </summary>
+    /// <remarks>
+    /// 没有时为空。
+    /// </remarks>
     public IReadOnlyList<string> OptionValues(string name)
     {
         ArgumentNullException.ThrowIfNull(name);

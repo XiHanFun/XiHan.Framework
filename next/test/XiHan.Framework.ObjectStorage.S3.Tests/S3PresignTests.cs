@@ -11,8 +11,11 @@ using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// S3 原生预签名：签出的地址不带凭据直连真实的 S3 兼容服务——下载（带保存文件名、可带 <c>Range</c>）、限定内容类型的上传、分片上传的每一片；未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// S3 原生预签名。
 /// </summary>
+/// <remarks>
+/// 签出的地址不带凭据直连真实的 S3 兼容服务——下载（带保存文件名、可带 <c>Range</c>）、限定内容类型的上传、分片上传的每一片；未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// </remarks>
 public sealed class S3PresignTests
 {
     /// <summary>

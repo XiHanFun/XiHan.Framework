@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 插件协议各载体共用的消息键；文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）。
+/// 插件协议各载体共用的消息键。
 /// </summary>
+/// <remarks>
+/// 文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginMessages
 {
@@ -18,73 +21,115 @@ public static class PluginMessages
     public const string CatalogName = "plugins.protocol";
 
     /// <summary>
-    /// 插件目录里的清单不合法。参数：<c>directory</c>、<c>reason</c>。
+    /// 插件目录里的清单不合法。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>directory</c>、<c>reason</c>。
+    /// </remarks>
     public const string ManifestInvalid = "plugins.process.manifest_invalid";
 
     /// <summary>
-    /// 清单描述的不是进程外插件。参数：<c>id</c>、<c>kind</c>、<c>isolation</c>。
+    /// 清单描述的不是进程外插件。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>kind</c>、<c>isolation</c>。
+    /// </remarks>
     public const string NotOutOfProcess = "plugins.process.not_out_of_process";
 
     /// <summary>
-    /// 清单没有声明入口可执行文件。参数：<c>id</c>。
+    /// 清单没有声明入口可执行文件。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string EntryRequired = "plugins.process.entry_required";
 
     /// <summary>
-    /// 入口可执行文件不存在。参数：<c>path</c>。
+    /// 入口可执行文件不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
     public const string ExecutableMissing = "plugins.process.executable_missing";
 
     /// <summary>
-    /// 插件声明的权限未被授予。参数：<c>id</c>、<c>permissions</c>。
+    /// 插件声明的权限未被授予。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>permissions</c>。
+    /// </remarks>
     public const string PermissionsNotGranted = "plugins.process.permissions_not_granted";
 
     /// <summary>
-    /// 插件已加载。参数：<c>id</c>。
+    /// 插件已加载。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string AlreadyLoaded = "plugins.process.already_loaded";
 
     /// <summary>
-    /// 插件未加载。参数：<c>id</c>。
+    /// 插件未加载。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string NotLoaded = "plugins.process.not_loaded";
 
     /// <summary>
-    /// 握手行不合法或协议版本没有交集。参数：<c>id</c>、<c>reason</c>。
+    /// 握手行不合法或协议版本没有交集。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>。
+    /// </remarks>
     public const string HandshakeInvalid = "plugins.handshake.invalid";
 
     /// <summary>
-    /// 握手响应与清单不一致。参数：<c>id</c>、<c>reason</c>。
+    /// 握手响应与清单不一致。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>。
+    /// </remarks>
     public const string HandshakeMismatch = "plugins.handshake.mismatch";
 
     /// <summary>
-    /// 某阶段超时。参数：<c>id</c>、<c>phase</c>。
+    /// 某阶段超时。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>phase</c>。
+    /// </remarks>
     public const string ProcessTimeout = "plugins.process.timeout";
 
     /// <summary>
-    /// 插件进程不可用。参数：<c>id</c>、<c>state</c>。
+    /// 插件进程不可用。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>state</c>。
+    /// </remarks>
     public const string ProcessUnavailable = "plugins.process.unavailable";
 
     /// <summary>
-    /// 插件进程异常退出。参数：<c>id</c>、<c>exitCode</c>。
+    /// 插件进程异常退出。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>exitCode</c>。
+    /// </remarks>
     public const string ProcessCrashed = "plugins.process.crashed";
 
     /// <summary>
-    /// 某阶段失败。参数：<c>id</c>、<c>phase</c>、<c>reason</c>。
+    /// 某阶段失败。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>phase</c>、<c>reason</c>。
+    /// </remarks>
     public const string ProcessFailed = "plugins.process.failed";
 
     /// <summary>
-    /// 插件回调需要的权限未授予。参数：<c>id</c>、<c>permission</c>。
+    /// 插件回调需要的权限未授予。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>permission</c>。
+    /// </remarks>
     public const string CallbackDenied = "plugins.callback.denied";
 
     /// <summary>
@@ -93,28 +138,43 @@ public static class PluginMessages
     public const string SessionInvalid = "plugins.callback.session_invalid";
 
     /// <summary>
-    /// 宿主没有消息发布器，无法代插件发布。参数：<c>id</c>。
+    /// 宿主没有消息发布器，无法代插件发布。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string MessagingUnavailable = "plugins.callback.messaging_unavailable";
 
     /// <summary>
-    /// Wasm 模块不合法。参数：<c>id</c>、<c>reason</c>。
+    /// Wasm 模块不合法。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>。
+    /// </remarks>
     public const string ModuleInvalid = "plugins.module.invalid";
 
     /// <summary>
-    /// Wasm 实例陷阱。参数：<c>id</c>、<c>trap</c>。
+    /// Wasm 实例陷阱。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>trap</c>。
+    /// </remarks>
     public const string ModuleTrapped = "plugins.module.trapped";
 
     /// <summary>
-    /// 沙箱资源不足。参数：<c>id</c>、<c>reason</c>。
+    /// 沙箱资源不足。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>。
+    /// </remarks>
     public const string SandboxExhausted = "plugins.sandbox.exhausted";
 
     /// <summary>
-    /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// 延迟装载的目录。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// </remarks>
     private static readonly Lazy<MessageCatalog> _catalog = new(static () => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(PluginMessages)));
 
     /// <summary>

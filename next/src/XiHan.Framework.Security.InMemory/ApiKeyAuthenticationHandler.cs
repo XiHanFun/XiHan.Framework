@@ -9,8 +9,11 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// <c>ApiKey</c> 方案的认证处理器：把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）。
+/// <c>ApiKey</c> 方案的认证处理器。
 /// </summary>
+/// <remarks>
+/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options) : IAuthenticationHandler
 {
@@ -20,13 +23,19 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
     public const string SchemeName = "ApiKey";
 
     /// <summary>
-    /// 主体存储；按 API Key 查找记录。
+    /// 主体存储。
     /// </summary>
+    /// <remarks>
+    /// 按 API Key 查找记录。
+    /// </remarks>
     private readonly InMemoryPrincipalStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <summary>
-    /// 安全选项；提供角色声明类型。
+    /// 安全选项。
     /// </summary>
+    /// <remarks>
+    /// 提供角色声明类型。
+    /// </remarks>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />

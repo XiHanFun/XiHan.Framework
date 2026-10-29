@@ -34,8 +34,11 @@ public sealed class GreetingFeature : IFeature
     };
 
     /// <summary>
-    /// 注册计数服务，并把计数中间件挂到 Observe 阶段；挂载的阶段必须与清单声明一致。
+    /// 注册计数服务，并把计数中间件挂到 Observe 阶段。
     /// </summary>
+    /// <remarks>
+    /// 挂载的阶段必须与清单声明一致。
+    /// </remarks>
     public void Configure(FeatureContext context)
     {
         context.Services.AddSingleton<GreetingCounter>();

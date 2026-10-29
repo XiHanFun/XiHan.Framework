@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 租户分库：带 <c>ConnectionString</c> 属性的租户在作用域内拿到带分片连接的客户端，租户实体落分片连接、平台实体仍落默认连接；其余租户与无租户调用只有默认连接。
+/// 租户分库。
 /// </summary>
+/// <remarks>
+/// 带 <c>ConnectionString</c> 属性的租户在作用域内拿到带分片连接的客户端，租户实体落分片连接、平台实体仍落默认连接；其余租户与无租户调用只有默认连接。
+/// </remarks>
 public sealed class SqlSugarTenantShardingTests : IDisposable
 {
     /// <summary>

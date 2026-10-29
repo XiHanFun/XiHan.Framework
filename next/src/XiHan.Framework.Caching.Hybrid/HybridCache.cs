@@ -8,10 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid;
 
 /// <summary>
-/// 两级缓存：L1 是进程内对象引用（有界 LRU，存活时间不超过 <see cref="HybridCachingOptions.LocalTimeToLive"/>），L2 是被选中的 <see cref="ISharedCache"/>。
-/// 读：L1 命中直接返回，未命中读 L2 并回填；批量读只把 L1 未命中的键一次交给 L2。写与删：先 L2 再 L1。别的实例的写入与删除不会主动失效本实例的 L1。
-/// L1 直接存对象引用，调用方不得修改取回的对象。
+/// 两级缓存。
 /// </summary>
+/// <remarks>
+/// L1 是进程内对象引用（有界 LRU，存活时间不超过 <see cref="HybridCachingOptions.LocalTimeToLive"/>），L2 是被选中的 <see cref="ISharedCache"/>。读：L1 命中直接返回，未命中读 L2 并回填；批量读只把 L1 未命中的键一次交给 L2。写与删：先 L2 再 L1。别的实例的写入与删除不会主动失效本实例的 L1。L1 直接存对象引用，调用方不得修改取回的对象。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HybridCache : ICache
 {
@@ -186,8 +187,11 @@ public sealed class HybridCache : ICache
     }
 
     /// <summary>
-    /// L1 的过期时刻：条目自己的存活或滑动时长与 <see cref="HybridCachingOptions.LocalTimeToLive"/> 的较小者（滑动在 L1 里按绝对时间处理）。
+    /// L1 的过期时刻。
     /// </summary>
+    /// <remarks>
+    /// 条目自己的存活或滑动时长与 <see cref="HybridCachingOptions.LocalTimeToLive"/> 的较小者（滑动在 L1 里按绝对时间处理）。
+    /// </remarks>
     private DateTimeOffset ExpiresAt(CacheEntryOptions options)
     {
         var limit = _options.LocalTimeToLive;

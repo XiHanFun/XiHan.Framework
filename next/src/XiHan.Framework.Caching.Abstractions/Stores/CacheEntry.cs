@@ -12,8 +12,11 @@ namespace XiHan.Framework.Caching.Abstractions.Stores;
 public sealed record CacheEntry
 {
     /// <summary>
-    /// 创建条目；不给选项时用 Provider 的默认存活时间。
+    /// 创建条目。
     /// </summary>
+    /// <remarks>
+    /// 不给选项时用 Provider 的默认存活时间。
+    /// </remarks>
     public CacheEntry(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions? options = null)
     {
         Key = key;
@@ -27,8 +30,11 @@ public sealed record CacheEntry
     public CacheKey Key { get; }
 
     /// <summary>
-    /// 值；存储在写入时复制，之后调用方修改自己的缓冲区不影响缓存。
+    /// 值。
     /// </summary>
+    /// <remarks>
+    /// 存储在写入时复制，之后调用方修改自己的缓冲区不影响缓存。
+    /// </remarks>
     public ReadOnlyMemory<byte> Value { get; }
 
     /// <summary>

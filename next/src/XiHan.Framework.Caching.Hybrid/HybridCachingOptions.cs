@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid;
 
 /// <summary>
-/// 两级缓存的选项。配置节 <c>XiHan:Caching:Hybrid</c>：<c>LocalCapacity</c>（L1 条目上限，默认 10000）、<c>LocalTimeToLiveSeconds</c>（L1 存活时间上限，默认 30 秒）。
+/// 两级缓存的选项。
 /// </summary>
+/// <remarks>
+/// 配置节 <c>XiHan:Caching:Hybrid</c>：<c>LocalCapacity</c>（L1 条目上限，默认 10000）、<c>LocalTimeToLiveSeconds</c>（L1 存活时间上限，默认 30 秒）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record HybridCachingOptions
 {
@@ -19,8 +22,11 @@ public sealed record HybridCachingOptions
     public const string ConfigurationSection = "XiHan:Caching:Hybrid";
 
     /// <summary>
-    /// L1 条目上限；满时淘汰最久未访问的条目。
+    /// L1 条目上限。
     /// </summary>
+    /// <remarks>
+    /// 满时淘汰最久未访问的条目。
+    /// </remarks>
     public int LocalCapacity
     {
         get => field;

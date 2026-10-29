@@ -11,9 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 
 /// <summary>
-/// 租户目录的批量读写（作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元）：一次查询取回已有行，再用仓储的批量方法一次写入。
-/// 写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存；写入在事务提交后才可见，失效与提交之间的窗口由缓存存活时间收敛。
+/// 租户目录的批量读写。
 /// </summary>
+/// <remarks>
+/// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存；写入在事务提交后才可见，失效与提交之间的窗口由缓存存活时间收敛。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TenantRecordStore
 {
@@ -23,18 +25,27 @@ public sealed class TenantRecordStore
     private readonly IRepository<TenantRecord, string> _repository;
 
     /// <summary>
-    /// 单例目录；写入后失效其缓存。
+    /// 单例目录。
     /// </summary>
+    /// <remarks>
+    /// 写入后失效其缓存。
+    /// </remarks>
     private readonly DatabaseTenantStore _catalog;
 
     /// <summary>
-    /// 分片解析器；没有装配分片能力时为 <see langword="null"/>。
+    /// 分片解析器。
     /// </summary>
+    /// <remarks>
+    /// 没有装配分片能力时为 <see langword="null"/>。
+    /// </remarks>
     private readonly ITenantShardResolver? _shards;
 
     /// <summary>
-    /// 创建；<paramref name="shards"/> 是可选依赖，容器里没有时为 <see langword="null"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="shards"/> 是可选依赖，容器里没有时为 <see langword="null"/>。
+    /// </remarks>
     public TenantRecordStore(IRepository<TenantRecord, string> repository, DatabaseTenantStore catalog, ITenantShardResolver? shards = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -43,8 +54,11 @@ public sealed class TenantRecordStore
     }
 
     /// <summary>
-    /// 新增或整体覆盖，按顺序逐项返回；同一租户在同一批里后者覆盖前者（同一行只写一次，各项结果相同）。
+    /// 新增或整体覆盖，按顺序逐项返回。
     /// </summary>
+    /// <remarks>
+    /// 同一租户在同一批里后者覆盖前者（同一行只写一次，各项结果相同）。
+    /// </remarks>
     public async ValueTask<IReadOnlyList<TenantRecordResult>> UpsertAsync(IReadOnlyList<TenantInfo> tenants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenants);
@@ -100,8 +114,11 @@ public sealed class TenantRecordStore
     }
 
     /// <summary>
-    /// 删除，按顺序逐项返回；不存在 → <see cref="MultiTenancyErrors.NotFound"/>，同一批里同一 ID 第二次同样不存在。ID 不合法是编程错误，整批在触库前抛出。
+    /// 删除，按顺序逐项返回。
     /// </summary>
+    /// <remarks>
+    /// 不存在 → <see cref="MultiTenancyErrors.NotFound"/>，同一批里同一 ID 第二次同样不存在。ID 不合法是编程错误，整批在触库前抛出。
+    /// </remarks>
     public async ValueTask<IReadOnlyList<TenantRecordResult>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
@@ -144,8 +161,11 @@ public sealed class TenantRecordStore
     }
 
     /// <summary>
-    /// 按 ID 排序分页列出租户，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页；不走缓存。
+    /// 按 ID 排序分页列出租户，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
     /// </summary>
+    /// <remarks>
+    /// 不走缓存。
+    /// </remarks>
     public async Task<IReadOnlyList<TenantInfo>> ListAsync(int skip, int take, CancellationToken cancellationToken)
     {
         var records = await _repository.ListAsync(EntityQuery.All<TenantRecord>().OrderBy(static t => t.Id).Page(skip, take), cancellationToken).ConfigureAwait(false);

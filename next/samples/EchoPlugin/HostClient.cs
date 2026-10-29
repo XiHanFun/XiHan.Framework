@@ -32,8 +32,11 @@ internal sealed class HostClient : IDisposable
     private readonly Lazy<GrpcChannel> _channel = new(CreateChannel);
 
     /// <summary>
-    /// 经宿主管道调用一个操作；返回宿主的结果与载荷。
+    /// 经宿主管道调用一个操作。
     /// </summary>
+    /// <remarks>
+    /// 返回宿主的结果与载荷。
+    /// </remarks>
     public async Task<InvokeResponse> InvokeAsync(string operation, ByteString payload, InvocationMetadata? metadata, CancellationToken cancellationToken)
     {
         var client = new PluginHost.HostClient(_channel.Value);

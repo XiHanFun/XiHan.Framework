@@ -6,10 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 雪花 <see cref="long"/> 标识生成器（RFC-0005「标识生成」）：41 位自 epoch 起的毫秒、10 位机器位、12 位序列。
-/// 线程安全；同一毫秒序列用尽时等待下一毫秒；时钟回拨不超过 <see cref="SnowflakeOptions.ClockDriftTolerance"/> 时等待追平，
-/// 超过时抛出携带 <see cref="PersistenceErrors.ClockMovedBackwards"/> 的 <see cref="FrameworkException"/>；没有机器位时抛出携带 <see cref="PersistenceErrors.WorkerIdUnavailable"/> 的异常。
+/// 雪花 <see cref="long"/> 标识生成器（RFC-0005「标识生成」）。
 /// </summary>
+/// <remarks>
+/// 41 位自 epoch 起的毫秒、10 位机器位、12 位序列。线程安全；同一毫秒序列用尽时等待下一毫秒；时钟回拨不超过 <see cref="SnowflakeOptions.ClockDriftTolerance"/> 时等待追平，超过时抛出携带 <see cref="PersistenceErrors.ClockMovedBackwards"/> 的 <see cref="FrameworkException"/>；没有机器位时抛出携带 <see cref="PersistenceErrors.WorkerIdUnavailable"/> 的异常。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SnowflakeIdGenerator : IIdGenerator<long>
 {
@@ -34,13 +35,19 @@ public sealed class SnowflakeIdGenerator : IIdGenerator<long>
     private readonly long _tolerance;
 
     /// <summary>
-    /// 保护 <see cref="_last"/> 与 <see cref="_sequence"/>；等待时钟的线程也持有它，其余线程排队而不是各自等。
+    /// 保护 <see cref="_last"/> 与 <see cref="_sequence"/>。
     /// </summary>
+    /// <remarks>
+    /// 等待时钟的线程也持有它，其余线程排队而不是各自等。
+    /// </remarks>
     private readonly object _gate = new();
 
     /// <summary>
-    /// 上一个标识的时间戳（自 epoch 起的毫秒）；还没生成过为 -1。
+    /// 上一个标识的时间戳（自 epoch 起的毫秒）。
     /// </summary>
+    /// <remarks>
+    /// 还没生成过为 -1。
+    /// </remarks>
     private long _last = -1;
 
     /// <summary>
@@ -49,8 +56,11 @@ public sealed class SnowflakeIdGenerator : IIdGenerator<long>
     private int _sequence;
 
     /// <summary>
-    /// 创建；时钟早于 epoch 是配置错误，抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 时钟早于 epoch 是配置错误，抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     /// <param name="options">选项。</param>
     /// <param name="workerIds">机器位来源。</param>
     /// <param name="clock">时钟。</param>
@@ -77,8 +87,11 @@ public sealed class SnowflakeIdGenerator : IIdGenerator<long>
     public DateTimeOffset Epoch { get; }
 
     /// <summary>
-    /// 当前机器位；无值表示此刻生成会失败。
+    /// 当前机器位。
     /// </summary>
+    /// <remarks>
+    /// 无值表示此刻生成会失败。
+    /// </remarks>
     public Maybe<int> WorkerId => _workerIds.Current;
 
     /// <inheritdoc />
@@ -135,13 +148,19 @@ public sealed class SnowflakeIdGenerator : IIdGenerator<long>
     public SnowflakeId Parse(long value) => SnowflakeId.Parse(value, Epoch);
 
     /// <summary>
-    /// 自 epoch 起的毫秒数。早于 epoch 时为负。
+    /// 自 epoch 起的毫秒数。
     /// </summary>
+    /// <remarks>
+    /// 早于 epoch 时为负。
+    /// </remarks>
     private long Now() => (_clock.GetUtcNow().UtcTicks - _epochTicks) / TimeSpan.TicksPerMillisecond;
 
     /// <summary>
-    /// 自旋等待时钟到达 <paramref name="target"/>，返回到达时的时间戳。等待期间时钟再次回拨超过容忍上限时放弃。
+    /// 自旋等待时钟到达 <paramref name="target"/>，返回到达时的时间戳。
     /// </summary>
+    /// <remarks>
+    /// 等待期间时钟再次回拨超过容忍上限时放弃。
+    /// </remarks>
     private long WaitUntil(long target)
     {
         var spin = new SpinWait();

@@ -14,16 +14,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 雪花标识特性：应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。
-/// 配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册，应装配在本特性之前）租约分配，
-/// 没有锁或机器位已满即启动失败，不做随机机器位。
+/// 雪花标识特性。
 /// </summary>
+/// <remarks>
+/// 应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册，应装配在本特性之前）租约分配，没有锁或机器位已满即启动失败，不做随机机器位。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SnowflakeIdFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动时解析出的租约来源；固定机器位时为 <see langword="null"/>。
+    /// 启动时解析出的租约来源。
     /// </summary>
+    /// <remarks>
+    /// 固定机器位时为 <see langword="null"/>。
+    /// </remarks>
     private LeasedWorkerIdSource? _leased;
 
     /// <summary>

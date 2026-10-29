@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 内存租户存储选项：容量与从配置装载的租户。配置节 <c>XiHan:MultiTenancy:InMemory</c> 与 <c>XiHan:MultiTenancy:Tenants</c>。
+/// 内存租户存储选项。
 /// </summary>
+/// <remarks>
+/// 容量与从配置装载的租户。配置节 <c>XiHan:MultiTenancy:InMemory</c> 与 <c>XiHan:MultiTenancy:Tenants</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryMultiTenancyOptions
 {
@@ -25,8 +28,11 @@ public sealed record InMemoryMultiTenancyOptions
     public const string TenantsSection = "XiHan:MultiTenancy:Tenants";
 
     /// <summary>
-    /// 租户上限；默认 1000。
+    /// 租户上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int MaxTenants
     {
         get => field;
@@ -43,8 +49,11 @@ public sealed record InMemoryMultiTenancyOptions
     } = [];
 
     /// <summary>
-    /// 从配置读取。每个租户是 <c>Tenants:&lt;id&gt;</c> 下的节：<c>DisplayName</c>、<c>IsEnabled</c>、<c>Properties:*</c>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// 每个租户是 <c>Tenants:&lt;id&gt;</c> 下的节：<c>DisplayName</c>、<c>IsEnabled</c>、<c>Properties:*</c>。
+    /// </remarks>
     public static InMemoryMultiTenancyOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

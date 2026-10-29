@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Providers;
 
 /// <summary>
-/// 一个模型 Provider 的配置（<c>XiHan:AI:Providers:&lt;name&gt;</c>）：种类、端点、凭据、模型与透传属性。
+/// 一个模型 Provider 的配置（<c>XiHan:AI:Providers:&lt;name&gt;</c>）。
 /// </summary>
+/// <remarks>
+/// 种类、端点、凭据、模型与透传属性。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AIProviderOptions
 {
@@ -37,13 +40,19 @@ public sealed record AIProviderOptions
     public string Kind { get; }
 
     /// <summary>
-    /// 端点；空表示 Provider 的官方端点。
+    /// 端点。
     /// </summary>
+    /// <remarks>
+    /// 空表示 Provider 的官方端点。
+    /// </remarks>
     public Uri? Endpoint { get; init; }
 
     /// <summary>
-    /// API 密钥；空时由 Provider 决定（本地兼容端点通常不需要）。
+    /// API 密钥。
     /// </summary>
+    /// <remarks>
+    /// 空时由 Provider 决定（本地兼容端点通常不需要）。
+    /// </remarks>
     public string? ApiKey { get; init; }
 
     /// <summary>
@@ -57,8 +66,11 @@ public sealed record AIProviderOptions
     public string? EmbeddingModel { get; init; }
 
     /// <summary>
-    /// 嵌入维度；空表示用模型默认维度。
+    /// 嵌入维度。
     /// </summary>
+    /// <remarks>
+    /// 空表示用模型默认维度。
+    /// </remarks>
     public int? EmbeddingDimensions
     {
         get => field;
@@ -66,8 +78,11 @@ public sealed record AIProviderOptions
     }
 
     /// <summary>
-    /// 单次调用超时；默认 100 秒。
+    /// 单次调用超时。
     /// </summary>
+    /// <remarks>
+    /// 默认 100 秒。
+    /// </remarks>
     public TimeSpan Timeout
     {
         get => field;

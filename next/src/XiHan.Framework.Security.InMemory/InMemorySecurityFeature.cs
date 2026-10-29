@@ -17,9 +17,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 内存安全的能力包入口：默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。
-/// 只为被选中的能力注册服务与中间件。
+/// 内存安全的能力包入口。
 /// </summary>
+/// <remarks>
+/// 默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。只为被选中的能力注册服务与中间件。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySecurityFeature : IFeature
 {

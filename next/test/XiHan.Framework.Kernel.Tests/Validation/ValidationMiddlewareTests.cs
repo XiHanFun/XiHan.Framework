@@ -12,8 +12,11 @@ using XiHan.Framework.Kernel.Validation;
 namespace XiHan.Framework.Kernel.Tests.Validation;
 
 /// <summary>
-/// Validate 阶段的内置中间件：按请求 Schema 拒绝载荷、按 <c>IValidatableObject</c> 拒绝请求对象、合法请求进 Handle、类型化调用同样校验、关闭内置中间件时不校验、非操作调用透传。
+/// Validate 阶段的内置中间件。
 /// </summary>
+/// <remarks>
+/// 按请求 Schema 拒绝载荷、按 <c>IValidatableObject</c> 拒绝请求对象、合法请求进 Handle、类型化调用同样校验、关闭内置中间件时不校验、非操作调用透传。
+/// </remarks>
 public sealed class ValidationMiddlewareTests
 {
     /// <summary>

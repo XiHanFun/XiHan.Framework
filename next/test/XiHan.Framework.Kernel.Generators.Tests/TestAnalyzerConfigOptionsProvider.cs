@@ -7,8 +7,11 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Kernel.Generators.Tests;
 
 /// <summary>
-/// 只提供 <c>build_property.RootNamespace</c> 的分析器配置，模拟 MSBuild 的 CompilerVisibleProperty。
+/// 只提供 <c>build_property.RootNamespace</c> 的分析器配置。
 /// </summary>
+/// <remarks>
+/// 模拟 MSBuild 的 CompilerVisibleProperty。
+/// </remarks>
 /// <param name="rootNamespace">根命名空间。</param>
 internal sealed class TestAnalyzerConfigOptionsProvider(string rootNamespace) : AnalyzerConfigOptionsProvider
 {

@@ -12,7 +12,10 @@ namespace XiHan.Framework.Security.Abstractions.Permissions;
 public interface IPermissionGrantStore
 {
     /// <summary>
-    /// 取主体在租户下的有效授予：全局授予加该租户的授予；<paramref name="tenantId"/> 为 <see langword="null"/> 时只有全局授予。
+    /// 取主体在租户下的有效授予。
     /// </summary>
+    /// <remarks>
+    /// 全局授予加该租户的授予；<paramref name="tenantId"/> 为 <see langword="null"/> 时只有全局授予。
+    /// </remarks>
     ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken);
 }

@@ -17,7 +17,10 @@ public enum FailurePolicy
     TerminateStartup = 0,
 
     /// <summary>
-    /// 隔离该特性（<see cref="LifecycleState.Failed"/>），继续启动其余特性；应用不就绪。
+    /// 隔离该特性（<see cref="LifecycleState.Failed"/>），继续启动其余特性。
     /// </summary>
+    /// <remarks>
+    /// 应用不就绪。
+    /// </remarks>
     IsolateFeature = 1,
 }

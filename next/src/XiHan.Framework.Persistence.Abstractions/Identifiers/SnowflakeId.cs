@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 雪花标识的位布局与解析结果（RFC-0005「标识生成」）：符号位恒为 0，其后 41 位是自 epoch 起的毫秒数、10 位机器位、12 位同一毫秒内的序列。
+/// 雪花标识的位布局与解析结果（RFC-0005「标识生成」）。
 /// </summary>
+/// <remarks>
+/// 符号位恒为 0，其后 41 位是自 epoch 起的毫秒数、10 位机器位、12 位同一毫秒内的序列。
+/// </remarks>
 /// <param name="Value">标识本身。</param>
 /// <param name="Timestamp">生成时刻（毫秒精度，UTC）。</param>
 /// <param name="WorkerId">机器位。</param>
@@ -56,8 +59,11 @@ public readonly record struct SnowflakeId(long Value, DateTimeOffset Timestamp, 
     public const int TimestampShift = SequenceBits + WorkerIdBits;
 
     /// <summary>
-    /// 按布局拼出标识；任一段越界抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// 按布局拼出标识。
     /// </summary>
+    /// <remarks>
+    /// 任一段越界抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// </remarks>
     /// <param name="timestamp">自 epoch 起的毫秒数。</param>
     /// <param name="workerId">机器位。</param>
     /// <param name="sequence">序列。</param>
@@ -73,8 +79,11 @@ public readonly record struct SnowflakeId(long Value, DateTimeOffset Timestamp, 
     }
 
     /// <summary>
-    /// 按 <paramref name="epoch"/> 还原标识的时间戳、机器位与序列；负数不是雪花标识，抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// 按 <paramref name="epoch"/> 还原标识的时间戳、机器位与序列。
     /// </summary>
+    /// <remarks>
+    /// 负数不是雪花标识，抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// </remarks>
     /// <param name="value">标识。</param>
     /// <param name="epoch">生成它的生成器所用的 epoch。</param>
     public static SnowflakeId Parse(long value, DateTimeOffset epoch)

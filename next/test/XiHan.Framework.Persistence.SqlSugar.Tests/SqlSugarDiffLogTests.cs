@@ -13,9 +13,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 差异日志：<see cref="SqlSugarPersistenceFeature.DiffLog"/> 开启的实体，仓储的插入、更新、软删除、物理删除与批量方法（含分表实体）都经 SqlSugar 差异日志，
-/// 回调拿到操作类型、主键与前后值，业务数据是 <see cref="SqlSugarDiffLogData"/>，并在调用方的执行流里同步触发；没开启的实体不触发。SQLite 必跑，PostgreSQL 按环境变量跑。
+/// 差异日志。
 /// </summary>
+/// <remarks>
+/// <see cref="SqlSugarPersistenceFeature.DiffLog"/> 开启的实体，仓储的插入、更新、软删除、物理删除与批量方法（含分表实体）都经 SqlSugar 差异日志，回调拿到操作类型、主键与前后值，业务数据是 <see cref="SqlSugarDiffLogData"/>，并在调用方的执行流里同步触发；没开启的实体不触发。SQLite 必跑，PostgreSQL 按环境变量跑。
+/// </remarks>
 public sealed class SqlSugarDiffLogTests : IDisposable
 {
     /// <summary>
@@ -166,8 +168,11 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     }
 
     /// <summary>
-    /// 启动宿主：给定数据库（PostgreSQL 没有配置时跳过）、差异日志回调接到 <paramref name="sink"/>、按 <paramref name="diffLog"/> 开启的实体，以及订单、条目与分表三种实体。
+    /// 启动宿主。
     /// </summary>
+    /// <remarks>
+    /// 给定数据库（PostgreSQL 没有配置时跳过）、差异日志回调接到 <paramref name="sink"/>、按 <paramref name="diffLog"/> 开启的实体，以及订单、条目与分表三种实体。
+    /// </remarks>
     private Task<TestHost> StartHostAsync(DbType dbType, DiffLogSink sink, Func<Type, bool> diffLog)
     {
         IEnumerable<KeyValuePair<string, string?>> configuration;

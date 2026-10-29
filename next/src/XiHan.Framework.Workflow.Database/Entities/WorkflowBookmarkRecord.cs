@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 书签的存储行：按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。
+/// 书签的存储行。
 /// </summary>
+/// <remarks>
+/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowBookmarkRecord : IEntity<string>
 {
@@ -70,8 +73,11 @@ public sealed class WorkflowBookmarkRecord : IEntity<string>
     public long Sequence { get; set; }
 
     /// <summary>
-    /// 整份书签的 JSON；长文本列。
+    /// 整份书签的 JSON。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Document { get; set; } = string.Empty;
 }

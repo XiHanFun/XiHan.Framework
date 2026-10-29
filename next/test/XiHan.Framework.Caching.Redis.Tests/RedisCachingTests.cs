@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Redis.Tests;
 
 /// <summary>
-/// Redis Provider 的单元与宿主级测试：值编码、选项解析，以及与内存包并存时的服务分工。
+/// Redis Provider 的单元与宿主级测试。
 /// </summary>
+/// <remarks>
+/// 值编码、选项解析，以及与内存包并存时的服务分工。
+/// </remarks>
 public sealed class RedisCachingTests
 {
     [Fact]

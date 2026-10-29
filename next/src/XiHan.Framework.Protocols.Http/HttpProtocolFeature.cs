@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http;
 
 /// <summary>
-/// HTTP 协议适配器的能力包入口：提供 <c>protocols.http@1</c>，注册选项；端点由应用在路由阶段调用 <c>MapXiHanOperations()</c> 映射。
+/// HTTP 协议适配器的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>protocols.http@1</c>，注册选项；端点由应用在路由阶段调用 <c>MapXiHanOperations()</c> 映射。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class HttpProtocolFeature : IFeature
 {

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions;
 
 /// <summary>
-/// 缓存错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 缓存错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CachingErrors
 {
@@ -37,7 +40,10 @@ public static class CachingErrors
     public const string IdempotentInProgress = "CACHING_CONFLICT_002";
 
     /// <summary>
-    /// 内存缓存已达容量上限（健康项 Degraded；LRU 继续淘汰最久未访问的条目）。
+    /// 内存缓存已达容量上限。
     /// </summary>
+    /// <remarks>
+    /// 健康项 Degraded；LRU 继续淘汰最久未访问的条目。
+    /// </remarks>
     public const string CapacityReached = "CACHING_UNAVAILABLE_002";
 }

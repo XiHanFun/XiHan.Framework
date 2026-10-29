@@ -10,8 +10,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>messaging.inmemory.capacity</c>：宿主启动后 Ready，某个主题的有界队列排满后 Degraded 并带 <see cref="MessagingErrors.QueueFull"/>。
+/// 健康项 <c>messaging.inmemory.capacity</c>。
 /// </summary>
+/// <remarks>
+/// 宿主启动后 Ready，某个主题的有界队列排满后 Degraded 并带 <see cref="MessagingErrors.QueueFull"/>。
+/// </remarks>
 public sealed class InMemoryMessagingHealthTests
 {
     [Fact]

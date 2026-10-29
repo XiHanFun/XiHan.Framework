@@ -7,8 +7,11 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="PersistenceConventions"/> 对各协议字段的写入、软删除、租户可见性，以及 <see cref="GuidV7IdGenerator"/> 的时序。
+/// <see cref="PersistenceConventions"/> 对各协议字段的写入、软删除、租户可见性。
 /// </summary>
+/// <remarks>
+/// 以及 <see cref="GuidV7IdGenerator"/> 的时序。
+/// </remarks>
 public sealed class PersistenceConventionsTests
 {
     /// <summary>

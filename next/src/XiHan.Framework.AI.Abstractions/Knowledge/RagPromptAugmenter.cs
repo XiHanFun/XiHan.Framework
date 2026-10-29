@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// <see cref="IRagPromptAugmenter"/> 的实现：<see cref="KnowledgeOptions.PromptName"/> 指向的模板（占位符 <c>{context}</c>、<c>{question}</c>）优先，否则内置英文模板。
+/// <see cref="IRagPromptAugmenter"/> 的实现。
 /// </summary>
+/// <remarks>
+/// <see cref="KnowledgeOptions.PromptName"/> 指向的模板（占位符 <c>{context}</c>、<c>{question}</c>）优先，否则内置英文模板。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RagPromptAugmenter : IRagPromptAugmenter
 {

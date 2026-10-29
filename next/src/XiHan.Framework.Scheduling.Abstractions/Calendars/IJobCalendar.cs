@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 
 /// <summary>
-/// 排除日历：判断某个时刻是否不允许运行；推算下一次运行时跳过被排除的时刻。按名登记（<c>services.AddJobCalendar</c>），计划以 <c>Calendar</c> 引用。
+/// 排除日历。
 /// </summary>
+/// <remarks>
+/// 判断某个时刻是否不允许运行；推算下一次运行时跳过被排除的时刻。按名登记（<c>services.AddJobCalendar</c>），计划以 <c>Calendar</c> 引用。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IJobCalendar
 {

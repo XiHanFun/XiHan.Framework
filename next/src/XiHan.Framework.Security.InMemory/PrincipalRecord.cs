@@ -21,8 +21,11 @@ public sealed record PrincipalRecord
     }
 
     /// <summary>
-    /// API Key；至少 8 个字符。
+    /// API Key。
     /// </summary>
+    /// <remarks>
+    /// 至少 8 个字符。
+    /// </remarks>
     public required string ApiKey
     {
         get => field;

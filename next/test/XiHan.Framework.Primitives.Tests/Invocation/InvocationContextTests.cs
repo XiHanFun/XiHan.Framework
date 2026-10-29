@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives.Tests.Invocation;
 
 /// <summary>
-/// <see cref="InvocationContext"/> 与 <see cref="BaggageKeys"/> 的行为：Trace 格式、Baggage 键校验、派生上下文的共享语义与截止时间计算。
+/// <see cref="InvocationContext"/> 与 <see cref="BaggageKeys"/> 的行为。
 /// </summary>
+/// <remarks>
+/// Trace 格式、Baggage 键校验、派生上下文的共享语义与截止时间计算。
+/// </remarks>
 public sealed class InvocationContextTests
 {
     /// <summary>
@@ -35,8 +38,11 @@ public sealed class InvocationContextTests
     }
 
     /// <summary>
-    /// 创建一个字段合法的上下文；各参数缺省时用样例值。
+    /// 创建一个字段合法的上下文。
     /// </summary>
+    /// <remarks>
+    /// 各参数缺省时用样例值。
+    /// </remarks>
     private static InvocationContext Create(
         DateTimeOffset? deadline = null,
         IReadOnlyDictionary<string, string>? baggage = null,

@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 
 /// <summary>
-/// Transaction 阶段的中间件：用当前租户开启作用域内的 <see cref="IUnitOfWork"/>，调用成功时先派发工作单元里聚合的领域事件（经 <see cref="IDomainEventDispatcher"/>，装配了发件箱时随业务写入同一事务），再提交；失败或异常回滚。
+/// Transaction 阶段的中间件。
 /// </summary>
+/// <remarks>
+/// 用当前租户开启作用域内的 <see cref="IUnitOfWork"/>，调用成功时先派发工作单元里聚合的领域事件（经 <see cref="IDomainEventDispatcher"/>，装配了发件箱时随业务写入同一事务），再提交；失败或异常回滚。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
 {
@@ -60,8 +63,11 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 把工作单元里带有未派发事件的聚合交给派发器；有事件却没有注册派发器是装配错误，返回 <see cref="PersistenceErrors.EventsUndispatched"/> 而不是静默丢弃。
+    /// 把工作单元里带有未派发事件的聚合交给派发器。
     /// </summary>
+    /// <remarks>
+    /// 有事件却没有注册派发器是装配错误，返回 <see cref="PersistenceErrors.EventsUndispatched"/> 而不是静默丢弃。
+    /// </remarks>
     private static async ValueTask<Result> DispatchDomainEventsAsync(InvocationContext context, IUnitOfWork unitOfWork)
     {
         var aggregates = unitOfWork.DomainEvents.Pending();

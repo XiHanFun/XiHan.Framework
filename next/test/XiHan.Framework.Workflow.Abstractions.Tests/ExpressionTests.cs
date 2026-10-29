@@ -9,8 +9,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 表达式语言：算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误。
+/// 表达式语言。
 /// </summary>
+/// <remarks>
+/// 算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误。
+/// </remarks>
 public sealed class ExpressionTests
 {
     /// <summary>

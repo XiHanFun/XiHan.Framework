@@ -14,11 +14,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 用户任务：解析指派人（<c>Assignees</c>、<c>AssigneesExpression</c>、<c>AssigneeRules</c> 合并去重，<c>ExcludeStarter</c>），
-/// 按 <c>CompletionPolicy</c>（Any / All / Sequential）给每个指派人一个 <c>UserTask</c> 书签（载荷 <c>title</c>、<c>formData</c>、<c>formKey</c>、<c>priority</c>、<c>dueAt</c>、<c>ccUserIds</c>），
-/// 没有指派人时按 <c>EmptyAssigneeStrategy</c> 处理；<c>ReminderAfterSeconds</c> 另插一个 <c>Reminder</c> 书签由引擎周期发布提醒。
-/// 完成时校验操作者与 <c>AllowedOutcomes</c>：<c>All</c> 按 <c>ApprovalThreshold</c>（人数或百分比，缺省全部）判定通过或拒绝，其他策略下非 <c>approved</c> 的结果立即完成节点；节点超时以 <c>timeout</c> 完成。
+/// 用户任务。
 /// </summary>
+/// <remarks>
+/// 解析指派人（<c>Assignees</c>、<c>AssigneesExpression</c>、<c>AssigneeRules</c> 合并去重，<c>ExcludeStarter</c>），按 <c>CompletionPolicy</c>（Any / All / Sequential）给每个指派人一个 <c>UserTask</c> 书签（载荷 <c>title</c>、<c>formData</c>、<c>formKey</c>、<c>priority</c>、<c>dueAt</c>、<c>ccUserIds</c>），没有指派人时按 <c>EmptyAssigneeStrategy</c> 处理；<c>ReminderAfterSeconds</c> 另插一个 <c>Reminder</c> 书签由引擎周期发布提醒。完成时校验操作者与 <c>AllowedOutcomes</c>：<c>All</c> 按 <c>ApprovalThreshold</c>（人数或百分比，缺省全部）判定通过或拒绝，其他策略下非 <c>approved</c> 的结果立即完成节点；节点超时以 <c>timeout</c> 完成。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class UserTaskActivity : IResumableActivity
 {
@@ -58,8 +58,11 @@ public sealed class UserTaskActivity : IResumableActivity
     public const string CompletionPolicyProperty = "CompletionPolicy";
 
     /// <summary>
-    /// 属性：<c>All</c> 策略的通过阈值：正整数（人数）或 <c>"60%"</c>（百分比，按指派人数向上取整）；缺省全部指派人。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// <c>All</c> 策略的通过阈值：正整数（人数）或 <c>"60%"</c>（百分比，按指派人数向上取整）；缺省全部指派人。
+    /// </remarks>
     public const string ApprovalThresholdProperty = "ApprovalThreshold";
 
     /// <summary>
@@ -88,8 +91,11 @@ public sealed class UserTaskActivity : IResumableActivity
     public const string DueAfterSecondsProperty = "DueAfterSeconds";
 
     /// <summary>
-    /// 属性：截止时刻（ISO-8601 字符串，或求值为时刻的表达式）；优先于 <see cref="DueAfterSecondsProperty"/>。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// 截止时刻（ISO-8601 字符串，或求值为时刻的表达式）；优先于 <see cref="DueAfterSecondsProperty"/>。
+    /// </remarks>
     public const string DueAtProperty = "DueAt";
 
     /// <summary>
@@ -108,8 +114,11 @@ public sealed class UserTaskActivity : IResumableActivity
     public const string CcRulesProperty = "CcRules";
 
     /// <summary>
-    /// 属性：允许的结果；缺省 <c>approved</c> / <c>rejected</c>。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// 允许的结果；缺省 <c>approved</c> / <c>rejected</c>。
+    /// </remarks>
     public const string AllowedOutcomesProperty = "AllowedOutcomes";
 
     /// <inheritdoc />
@@ -338,8 +347,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 给一个指派人的书签：载荷取节点状态里的标题、表单、表单键、优先级、截止时刻与抄送。
+    /// 给一个指派人的书签。
     /// </summary>
+    /// <remarks>
+    /// 载荷取节点状态里的标题、表单、表单键、优先级、截止时刻与抄送。
+    /// </remarks>
     internal static BookmarkRequest Bookmark(ActivityContext context, string assignee)
     {
         var state = context.State;
@@ -399,8 +411,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 解析秒数属性（<see cref="DueAfterSecondsProperty"/>、<see cref="ReminderAfterSecondsProperty"/>）：有限正数。
+    /// 解析秒数属性（<see cref="DueAfterSecondsProperty"/>、<see cref="ReminderAfterSecondsProperty"/>）。
     /// </summary>
+    /// <remarks>
+    /// 有限正数。
+    /// </remarks>
     internal static bool TryParseSeconds(JsonNode? node, out double seconds)
     {
         seconds = 0;
@@ -408,8 +423,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 会签判定：通过数达到阈值即通过；剩下未表态的人全部通过也到不了阈值即拒绝；否则继续挂起（合并本次变量、保留其余书签）。
+    /// 会签判定。
     /// </summary>
+    /// <remarks>
+    /// 通过数达到阈值即通过；剩下未表态的人全部通过也到不了阈值即拒绝；否则继续挂起（合并本次变量、保留其余书签）。
+    /// </remarks>
     private static Result<ActivityOutcome> DecideAll(ActivityResumeContext context, IReadOnlyList<string> assignees, IReadOnlyList<string> approved, IReadOnlyList<string> rejected, JsonObject outputs)
     {
         var threshold = RequiredApprovals(context.Property(ApprovalThresholdProperty), assignees.Count);
@@ -432,8 +450,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 按阈值属性与当前指派人数算出需要的通过人数：缺省全部；百分比向上取整；人数阈值不超过指派人数、至少 1。
+    /// 按阈值属性与当前指派人数算出需要的通过人数。
     /// </summary>
+    /// <remarks>
+    /// 缺省全部；百分比向上取整；人数阈值不超过指派人数、至少 1。
+    /// </remarks>
     private static Result<int> RequiredApprovals(JsonNode? property, int assigneeCount)
     {
         if (property is null)
@@ -452,8 +473,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 按属性算出截止时刻：<see cref="DueAtProperty"/> 优先（ISO-8601 字面值，否则按表达式求值），其次 <see cref="DueAfterSecondsProperty"/> 相对现在；都没有为空。属性不合法返回错误。
+    /// 按属性算出截止时刻。
     /// </summary>
+    /// <remarks>
+    /// <see cref="DueAtProperty"/> 优先（ISO-8601 字面值，否则按表达式求值），其次 <see cref="DueAfterSecondsProperty"/> 相对现在；都没有为空。属性不合法返回错误。
+    /// </remarks>
     private static Error? DueAt(ActivityContext context, out DateTimeOffset? dueAt)
     {
         dueAt = null;
@@ -494,8 +518,11 @@ public sealed class UserTaskActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 合并三个来源的指派人：列表属性、表达式属性、规则属性；裁剪、去重、保序。
+    /// 合并三个来源的指派人。
     /// </summary>
+    /// <remarks>
+    /// 列表属性、表达式属性、规则属性；裁剪、去重、保序。
+    /// </remarks>
     private static async ValueTask<Result<IReadOnlyList<string>>> ResolveAssigneesAsync(ActivityContext context, AssigneeResolver resolver, string? listProperty, string? expressionProperty, string? rulesProperty, CancellationToken cancellationToken)
     {
         var result = new List<string>();

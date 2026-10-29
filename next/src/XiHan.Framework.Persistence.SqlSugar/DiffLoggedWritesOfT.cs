@@ -6,10 +6,11 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 带差异日志的写入：SqlSugar 的按对象入口（<c>InsertableByObject</c> 等）不能同时带差异日志与分表，这里走泛型构建器并调 <c>EnableDiffLogEvent</c>。
-/// 插入与更新的分表入口沿用差异日志开关；分表删除（<c>Deleteable().SplitTable()</c>）按表重建删除构建器、丢掉开关，所以由这里按 <c>[SplitField]</c> 的值分组到表，每张表一次按主键删除。
-/// 实体须有公开无参构造函数，与 SqlSugar 按对象入口的要求相同。
+/// 带差异日志的写入。
 /// </summary>
+/// <remarks>
+/// SqlSugar 的按对象入口（<c>InsertableByObject</c> 等）不能同时带差异日志与分表，这里走泛型构建器并调 <c>EnableDiffLogEvent</c>。插入与更新的分表入口沿用差异日志开关；分表删除（<c>Deleteable().SplitTable()</c>）按表重建删除构建器、丢掉开关，所以由这里按 <c>[SplitField]</c> 的值分组到表，每张表一次按主键删除。实体须有公开无参构造函数，与 SqlSugar 按对象入口的要求相同。
+/// </remarks>
 /// <typeparam name="T">实体类型。</typeparam>
 internal sealed class DiffLoggedWrites<T> : IDiffLoggedWrites
     where T : class, new()

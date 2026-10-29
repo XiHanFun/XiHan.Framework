@@ -14,8 +14,11 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库定义存储（单例）：每个操作在新作用域里经完整管道执行；定义以 JSON 文档存储，读出来的对象天然是快照。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// 数据库定义存储（单例）。
 /// </summary>
+/// <remarks>
+/// 每个操作在新作用域里经完整管道执行；定义以 JSON 文档存储，读出来的对象天然是快照。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
@@ -187,13 +190,19 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 行 → 定义；文档不合法视为存储损坏。
+    /// 行 → 定义。
     /// </summary>
+    /// <remarks>
+    /// 文档不合法视为存储损坏。
+    /// </remarks>
     private static Result<WorkflowDefinition> ToDefinition(WorkflowDefinitionRecord record) => WorkflowJson.DeserializeDefinition(record.Document);
 
     /// <summary>
-    /// 多行 → 定义；任一行不合法即失败。
+    /// 多行 → 定义。
     /// </summary>
+    /// <remarks>
+    /// 任一行不合法即失败。
+    /// </remarks>
     private static Result<IReadOnlyList<WorkflowDefinition>> ToDefinitions(List<WorkflowDefinitionRecord> records)
     {
         var definitions = new List<WorkflowDefinition>(records.Count);

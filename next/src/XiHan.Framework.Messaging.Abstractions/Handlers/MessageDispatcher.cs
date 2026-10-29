@@ -11,9 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 
 /// <summary>
-/// 把投递变成一次内核调用：新作用域、从扩展属性构造 Baggage（租户、关联）与追踪（<c>traceparent</c>），
-/// 经完整管道执行该主题的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
+/// 把投递变成一次内核调用。
 /// </summary>
+/// <remarks>
+/// 新作用域、从扩展属性构造 Baggage（租户、关联）与追踪（<c>traceparent</c>），经完整管道执行该主题的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class MessageDispatcher(IServiceProvider services, App app, MessageSubscriptions subscriptions)
 {
@@ -23,18 +25,27 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     private static readonly ContextItemKey<MessageDelivery> _deliveryKey = new("xihan.messaging.delivery");
 
     /// <summary>
-    /// 根服务提供者；每次投递从它创建新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次投递从它创建新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services = services ?? throw new ArgumentNullException(nameof(services));
 
     /// <summary>
-    /// 应用；投递经它的完整管道执行。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 投递经它的完整管道执行。
+    /// </remarks>
     private readonly App _app = app ?? throw new ArgumentNullException(nameof(app));
 
     /// <summary>
-    /// 订阅表；决定主题有哪些处理器。
+    /// 订阅表。
     /// </summary>
+    /// <remarks>
+    /// 决定主题有哪些处理器。
+    /// </remarks>
     private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
 
     /// <summary>
@@ -47,8 +58,11 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 派发。没有处理器的主题直接成功。
+    /// 派发。
     /// </summary>
+    /// <remarks>
+    /// 没有处理器的主题直接成功。
+    /// </remarks>
     public async ValueTask<Result> DispatchAsync(MessageDelivery delivery, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(delivery);
@@ -100,16 +114,22 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 从 <c>traceparent</c> 扩展取追踪 ID；缺失或格式不符返回 <see langword="null"/>。
+    /// 从 <c>traceparent</c> 扩展取追踪 ID。
     /// </summary>
+    /// <remarks>
+    /// 缺失或格式不符返回 <see langword="null"/>。
+    /// </remarks>
     private static string? TraceIdOf(MessageEnvelope envelope)
         => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
             ? match.Groups["trace"].Value
             : null;
 
     /// <summary>
-    /// 从 <c>traceparent</c> 扩展取父跨度 ID；缺失或格式不符返回 <see langword="null"/>。
+    /// 从 <c>traceparent</c> 扩展取父跨度 ID。
     /// </summary>
+    /// <remarks>
+    /// 缺失或格式不符返回 <see langword="null"/>。
+    /// </remarks>
     private static string? SpanIdOf(MessageEnvelope envelope)
         => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
             ? match.Groups["span"].Value

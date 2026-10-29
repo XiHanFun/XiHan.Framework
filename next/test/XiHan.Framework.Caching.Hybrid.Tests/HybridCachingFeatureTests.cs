@@ -10,8 +10,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 能力包在宿主里的装配：顶替内存实现提供 <c>caching.local</c>，L2 取被选中的共享缓存（这里是内存实现的 <c>caching.distributed</c>）。
+/// 能力包在宿主里的装配。
 /// </summary>
+/// <remarks>
+/// 顶替内存实现提供 <c>caching.local</c>，L2 取被选中的共享缓存（这里是内存实现的 <c>caching.distributed</c>）。
+/// </remarks>
 public sealed class HybridCachingFeatureTests
 {
     [Fact]

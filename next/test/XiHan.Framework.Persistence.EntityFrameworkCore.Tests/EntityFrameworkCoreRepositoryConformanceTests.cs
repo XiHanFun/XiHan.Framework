@@ -7,8 +7,11 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// EF Core Provider 以 SQLite 跑一致性套件；每个用例一个临时数据库文件。
+/// EF Core Provider 以 SQLite 跑一致性套件。
 /// </summary>
+/// <remarks>
+/// 每个用例一个临时数据库文件。
+/// </remarks>
 public sealed class EntityFrameworkCoreRepositoryConformanceTests : RepositoryConformance, IDisposable
 {
     /// <summary>

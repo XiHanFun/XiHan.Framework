@@ -11,8 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 套件活动 <c>Record</c>：记录执行，以 <c>Outputs</c> 属性为输出、<c>Label</c> 属性为结果标签完成；<c>FailTimes</c> 属性让前几次尝试失败。
+/// 套件活动 <c>Record</c>。
 /// </summary>
+/// <remarks>
+/// 记录执行，以 <c>Outputs</c> 属性为输出、<c>Label</c> 属性为结果标签完成；<c>FailTimes</c> 属性让前几次尝试失败。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordActivity : ICompensableActivity
 {

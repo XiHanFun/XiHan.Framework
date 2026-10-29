@@ -11,16 +11,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 默认的实体落点规则，按顺序：实体带 SqlSugar <see cref="TenantAttribute"/>（<c>[Tenant(configId)]</c>）→ 客户端里该 <c>ConfigId</c> 的连接；
-/// 实体实现 <see cref="IMultiTenant"/> 且客户端有 <see cref="SqlSugarConnections.Shard"/> 连接 → 分片连接；其余 → 根（默认）连接。
-/// 平台目录表因此始终落默认连接，租户表在带分片的调用里落分片连接。
+/// 默认的实体落点规则，按顺序。
 /// </summary>
+/// <remarks>
+/// 实体带 SqlSugar <see cref="TenantAttribute"/>（<c>[Tenant(configId)]</c>）→ 客户端里该 <c>ConfigId</c> 的连接；实体实现 <see cref="IMultiTenant"/> 且客户端有 <see cref="SqlSugarConnections.Shard"/> 连接 → 分片连接；其余 → 根（默认）连接。平台目录表因此始终落默认连接，租户表在带分片的调用里落分片连接。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarConnectionSelector : IEntityConnectionSelector
 {
     /// <summary>
-    /// 实体类型 → <c>[Tenant]</c> 特性指定的 <c>ConfigId</c>（没有特性为 <see langword="null"/>）；特性查找只做一次。
+    /// 实体类型 → <c>[Tenant]</c> 特性指定的 <c>ConfigId</c>（没有特性为 <see langword="null"/>）。
     /// </summary>
+    /// <remarks>
+    /// 特性查找只做一次。
+    /// </remarks>
     private static readonly ConcurrentDictionary<Type, string?> _pinned = new();
 
     /// <inheritdoc />

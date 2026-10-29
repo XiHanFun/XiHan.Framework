@@ -12,8 +12,11 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed record ChunkingOptions
 {
     /// <summary>
-    /// 块大小；默认 1000。
+    /// 块大小。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int MaxChunkSize
     {
         get => field;
@@ -21,8 +24,11 @@ public sealed record ChunkingOptions
     } = 1000;
 
     /// <summary>
-    /// 重叠；默认 100，实际裁到 <c>[0, MaxChunkSize − 1]</c>。
+    /// 重叠。
     /// </summary>
+    /// <remarks>
+    /// 默认 100，实际裁到 <c>[0, MaxChunkSize − 1]</c>。
+    /// </remarks>
     public int Overlap
     {
         get => field;

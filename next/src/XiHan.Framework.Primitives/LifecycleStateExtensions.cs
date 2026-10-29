@@ -11,9 +11,10 @@ public static class LifecycleStateExtensions
 {
     /// <summary>
     /// 判断从 <paramref name="from"/> 迁移到 <paramref name="to"/> 是否合法。
-    /// 任何非终态都可以迁移到 <see cref="LifecycleState.Failed"/>；<see cref="LifecycleState.Failed"/> 只能回到
-    /// <see cref="LifecycleState.Resolved"/>（重启）；<see cref="LifecycleState.Stopped"/> 是终态。
     /// </summary>
+    /// <remarks>
+    /// 任何非终态都可以迁移到 <see cref="LifecycleState.Failed"/>；<see cref="LifecycleState.Failed"/> 只能回到<see cref="LifecycleState.Resolved"/>（重启）；<see cref="LifecycleState.Stopped"/> 是终态。
+    /// </remarks>
     public static bool CanTransitionTo(this LifecycleState from, LifecycleState to)
     {
         // 自迁移不算迁移，避免状态机把重复进入同一状态当作合法事件。

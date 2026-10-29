@@ -12,8 +12,11 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 public sealed record SecretsConfigurationOptions
 {
     /// <summary>
-    /// 创建；映射不能为空。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 映射不能为空。
+    /// </remarks>
     public SecretsConfigurationOptions(IReadOnlyDictionary<string, SecretName> mappings)
     {
         ArgumentNullException.ThrowIfNull(mappings);
@@ -39,8 +42,11 @@ public sealed record SecretsConfigurationOptions
     public IReadOnlyDictionary<string, SecretName> Mappings { get; }
 
     /// <summary>
-    /// 构建配置时读取的超时；默认 10 秒。
+    /// 构建配置时读取的超时。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan LoadTimeout
     {
         get => field;
@@ -48,8 +54,11 @@ public sealed record SecretsConfigurationOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 周期性重读的间隔；默认 <see langword="null"/> 不重读。
+    /// 周期性重读的间隔。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="null"/> 不重读。
+    /// </remarks>
     public TimeSpan? RefreshInterval
     {
         get => field;
@@ -57,8 +66,11 @@ public sealed record SecretsConfigurationOptions
     }
 
     /// <summary>
-    /// 首次读取缺失或失败的项是否跳过；默认 <see langword="false"/>：抛出让启动失败。
+    /// 首次读取缺失或失败的项是否跳过。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>：抛出让启动失败。
+    /// </remarks>
     public bool Optional { get; init; }
 
     /// <summary>

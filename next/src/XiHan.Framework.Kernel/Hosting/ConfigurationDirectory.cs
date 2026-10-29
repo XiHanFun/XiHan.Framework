@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 挂载的配置目录约定（RFC-0016）：环境变量 <c>XIHAN_CONFIG_PATH</c> 指向一个目录（k8s 里是 ConfigMap 的挂载点），宿主把其中的 JSON 文件追加为配置源并监听变化。
-/// 内核只负责找文件；装载由各宿主（<c>Hosting.AspNetCore</c>、<c>Hosting.CommandLine</c>）的 <c>AddXiHan</c> 完成。
+/// 挂载的配置目录约定（RFC-0016）。
 /// </summary>
+/// <remarks>
+/// 环境变量 <c>XIHAN_CONFIG_PATH</c> 指向一个目录（k8s 里是 ConfigMap 的挂载点），宿主把其中的 JSON 文件追加为配置源并监听变化。内核只负责找文件；装载由各宿主（<c>Hosting.AspNetCore</c>、<c>Hosting.CommandLine</c>）的 <c>AddXiHan</c> 完成。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ConfigurationDirectory
 {
@@ -23,8 +25,11 @@ public static class ConfigurationDirectory
     public const string BaseFileName = "appsettings.json";
 
     /// <summary>
-    /// 列出目录里要装载的 JSON 文件（完整路径，装载顺序）；<paramref name="directory"/> 为空时读环境变量；没有目录或目录不存在时为空。
+    /// 列出目录里要装载的 JSON 文件（完整路径，装载顺序）。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="directory"/> 为空时读环境变量；没有目录或目录不存在时为空。
+    /// </remarks>
     public static IReadOnlyList<string> Resolve(string? directory = null)
     {
         directory ??= Environment.GetEnvironmentVariable(Variable);

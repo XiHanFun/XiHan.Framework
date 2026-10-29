@@ -8,14 +8,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Resilience;
 
 /// <summary>
-/// 一组 Resilience 阶段的限制：固定窗口限流、并发上限与熔断；每项为空表示不启用。默认策略与按操作 ID 的覆盖都是它。
+/// 一组 Resilience 阶段的限制。
 /// </summary>
+/// <remarks>
+/// 固定窗口限流、并发上限与熔断；每项为空表示不启用。默认策略与按操作 ID 的覆盖都是它。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ResiliencePolicy
 {
     /// <summary>
-    /// 固定窗口内允许的调用数；<see langword="null"/> 不限流。
+    /// 固定窗口内允许的调用数。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 不限流。
+    /// </remarks>
     public int? PermitLimit
     {
         get => field;
@@ -23,8 +29,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 限流窗口；默认 1 秒。
+    /// 限流窗口。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 秒。
+    /// </remarks>
     public TimeSpan Window
     {
         get => field;
@@ -32,8 +41,11 @@ public sealed record ResiliencePolicy
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 窗口用尽时最多排队等待下一窗口的调用数；默认 0，超出直接拒绝。
+    /// 窗口用尽时最多排队等待下一窗口的调用数。
     /// </summary>
+    /// <remarks>
+    /// 默认 0，超出直接拒绝。
+    /// </remarks>
     public int QueueLimit
     {
         get => field;
@@ -41,8 +53,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 同时执行的调用数上限；<see langword="null"/> 不限。
+    /// 同时执行的调用数上限。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 不限。
+    /// </remarks>
     public int? ConcurrencyLimit
     {
         get => field;
@@ -50,8 +65,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 并发用尽时最多排队等待的调用数；默认 0，超出直接拒绝。
+    /// 并发用尽时最多排队等待的调用数。
     /// </summary>
+    /// <remarks>
+    /// 默认 0，超出直接拒绝。
+    /// </remarks>
     public int ConcurrencyQueueLimit
     {
         get => field;
@@ -59,8 +77,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 连续失败（UNAVAILABLE / TIMEOUT / UNEXPECTED 结果或未处理异常）多少次后熔断；<see langword="null"/> 不熔断。
+    /// 连续失败（UNAVAILABLE / TIMEOUT / UNEXPECTED 结果或未处理异常）多少次后熔断。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 不熔断。
+    /// </remarks>
     public int? FailureThreshold
     {
         get => field;
@@ -68,8 +89,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 熔断后拒绝调用的时长，到期放一次试探；默认 30 秒。
+    /// 熔断后拒绝调用的时长，到期放一次试探。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒。
+    /// </remarks>
     public TimeSpan BreakDuration
     {
         get => field;
@@ -82,9 +106,11 @@ public sealed record ResiliencePolicy
     public bool IsEmpty => PermitLimit is null && ConcurrencyLimit is null && FailureThreshold is null;
 
     /// <summary>
-    /// 从配置节读取：<c>PermitLimit</c>、<c>WindowSeconds</c>、<c>QueueLimit</c>、<c>ConcurrencyLimit</c>、<c>ConcurrencyQueueLimit</c>、<c>FailureThreshold</c>、<c>BreakSeconds</c>；
-    /// 缺省的键沿用 <paramref name="fallback"/>（按操作覆盖时是默认策略，否则是无限制）；非法值抛出 <see cref="ArgumentException"/>。
+    /// 从配置节读取。
     /// </summary>
+    /// <remarks>
+    /// <c>PermitLimit</c>、<c>WindowSeconds</c>、<c>QueueLimit</c>、<c>ConcurrencyLimit</c>、<c>ConcurrencyQueueLimit</c>、<c>FailureThreshold</c>、<c>BreakSeconds</c>；缺省的键沿用 <paramref name="fallback"/>（按操作覆盖时是默认策略，否则是无限制）；非法值抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static ResiliencePolicy FromConfiguration(IConfigurationSection section, ResiliencePolicy? fallback = null)
     {
         ArgumentNullException.ThrowIfNull(section);
@@ -102,8 +128,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 读正整数键；缺省返回 <see langword="null"/>。
+    /// 读正整数键。
     /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>。
+    /// </remarks>
     private static int? ReadPositive(IConfigurationSection section, string key)
     {
         var raw = section[key];
@@ -118,8 +147,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 读非负整数键；缺省返回 <see langword="null"/>。
+    /// 读非负整数键。
     /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>。
+    /// </remarks>
     private static int? ReadCount(IConfigurationSection section, string key)
     {
         var raw = section[key];
@@ -134,8 +166,11 @@ public sealed record ResiliencePolicy
     }
 
     /// <summary>
-    /// 读以秒计的正时长键；缺省返回 <see langword="null"/>。
+    /// 读以秒计的正时长键。
     /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>。
+    /// </remarks>
     private static TimeSpan? ReadSeconds(IConfigurationSection section, string key)
     {
         var raw = section[key];

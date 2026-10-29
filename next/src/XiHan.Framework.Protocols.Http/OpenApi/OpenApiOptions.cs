@@ -15,8 +15,11 @@ namespace XiHan.Framework.Protocols.Http.OpenApi;
 public sealed record OpenApiOptions
 {
     /// <summary>
-    /// 文档标题（<c>info.title</c>）；为空取宿主的应用名。
+    /// 文档标题（<c>info.title</c>）。
     /// </summary>
+    /// <remarks>
+    /// 为空取宿主的应用名。
+    /// </remarks>
     public string? Title
     {
         get => field;
@@ -24,8 +27,11 @@ public sealed record OpenApiOptions
     }
 
     /// <summary>
-    /// 文档版本（<c>info.version</c>）；为空取框架版本。
+    /// 文档版本（<c>info.version</c>）。
     /// </summary>
+    /// <remarks>
+    /// 为空取框架版本。
+    /// </remarks>
     public string? Version
     {
         get => field;
@@ -33,8 +39,11 @@ public sealed record OpenApiOptions
     }
 
     /// <summary>
-    /// <c>servers</c>；为空列表不写。
+    /// <c>servers</c>。
     /// </summary>
+    /// <remarks>
+    /// 为空列表不写。
+    /// </remarks>
     public IReadOnlyList<OpenApiServer> Servers
     {
         get => field;
@@ -42,9 +51,10 @@ public sealed record OpenApiOptions
     } = [];
 
     /// <summary>
-    /// 分组；为空列表时只有全量文档。
+    /// 分组。
     /// </summary>
     /// <remarks>
+    /// 为空列表时只有全量文档。
     /// 组名唯一，不能是 <c>all</c>（全量文档的名字）；一个特性只能属于一个组。
     /// </remarks>
     public IReadOnlyList<OpenApiGroup> Groups

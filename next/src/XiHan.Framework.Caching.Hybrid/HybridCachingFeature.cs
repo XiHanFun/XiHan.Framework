@@ -14,8 +14,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Hybrid;
 
 /// <summary>
-/// 两级缓存的能力包入口：显式 Provider，提供 <c>caching.local@1</c>（顶替内存实现的进程内缓存），依赖 <c>caching.distributed@1</c> 作为 L2。
+/// 两级缓存的能力包入口。
 /// </summary>
+/// <remarks>
+/// 显式 Provider，提供 <c>caching.local@1</c>（顶替内存实现的进程内缓存），依赖 <c>caching.distributed@1</c> 作为 L2。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HybridCachingFeature : IFeature
 {

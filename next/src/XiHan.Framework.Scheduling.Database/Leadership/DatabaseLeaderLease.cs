@@ -9,8 +9,11 @@ using XiHan.Framework.Scheduling.Abstractions.Leadership;
 namespace XiHan.Framework.Scheduling.Database.Leadership;
 
 /// <summary>
-/// 以租约行承载的租约：到期时刻记在本地，持有与否按本地时钟判断；续约与释放回到表里比对本次获取的令牌，令牌不符即视为已被他人接管。
+/// 以租约行承载的租约。
 /// </summary>
+/// <remarks>
+/// 到期时刻记在本地，持有与否按本地时钟判断；续约与释放回到表里比对本次获取的令牌，令牌不符即视为已被他人接管。
+/// </remarks>
 internal sealed partial class DatabaseLeaderLease : LeaderLease
 {
     /// <summary>

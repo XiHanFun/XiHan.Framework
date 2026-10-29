@@ -62,8 +62,11 @@ public static class PluginProtocol
     public static IReadOnlyList<uint> SupportedVersions { get; } = [Version];
 
     /// <summary>
-    /// 版本协商：取双方都支持的最高版本；没有交集为无值。
+    /// 版本协商。
     /// </summary>
+    /// <remarks>
+    /// 取双方都支持的最高版本；没有交集为无值。
+    /// </remarks>
     public static Maybe<uint> Negotiate(IEnumerable<uint> hostVersions, IEnumerable<uint> pluginVersions)
     {
         ArgumentNullException.ThrowIfNull(hostVersions);

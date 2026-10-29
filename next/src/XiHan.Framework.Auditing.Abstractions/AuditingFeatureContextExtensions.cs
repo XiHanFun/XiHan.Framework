@@ -17,8 +17,11 @@ namespace XiHan.Framework.Auditing.Abstractions;
 public static class AuditingFeatureContextExtensions
 {
     /// <summary>
-    /// 注册消息目录与选项（从 <c>XiHan:Auditing</c> 读取），并把 <see cref="AuditMiddleware"/> 挂到 Observe 阶段末尾。被选中提供 <c>auditing.trail</c> 的 Provider 在注册接收器后调用一次。
+    /// 注册消息目录与选项（从 <c>XiHan:Auditing</c> 读取）。
     /// </summary>
+    /// <remarks>
+    /// 并把 <see cref="AuditMiddleware"/> 挂到 Observe 阶段末尾。被选中提供 <c>auditing.trail</c> 的 Provider 在注册接收器后调用一次。
+    /// </remarks>
     public static FeatureContext AddAuditing(this FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

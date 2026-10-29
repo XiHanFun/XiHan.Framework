@@ -32,8 +32,11 @@ public sealed partial record BlobPutOptions
     } = DefaultContentType;
 
     /// <summary>
-    /// 自定义元数据；名须满足 <see cref="IsValidMetadataName"/>。
+    /// 自定义元数据。
     /// </summary>
+    /// <remarks>
+    /// 名须满足 <see cref="IsValidMetadataName"/>。
+    /// </remarks>
     public IReadOnlyDictionary<string, string> Metadata
     {
         get => field;
@@ -55,8 +58,11 @@ public sealed partial record BlobPutOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 已存在时是否覆盖；为 <see langword="false"/> 时已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>。
+    /// 已存在时是否覆盖。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="false"/> 时已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>。
+    /// </remarks>
     public bool Overwrite { get; init; } = true;
 
     /// <summary>

@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Database;
 
 /// <summary>
-/// 数据库授权选项。从配置节 <c>XiHan:Security:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）。
+/// 数据库授权选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Security:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseSecurityOptions
 {
@@ -19,8 +22,11 @@ public sealed record DatabaseSecurityOptions
     public const string ConfigurationSection = "XiHan:Security:Database";
 
     /// <summary>
-    /// 授予缓存的条目上限（每个主体与租户的组合一条）；默认 10000，满时整体清空。
+    /// 授予缓存的条目上限（每个主体与租户的组合一条）。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000，满时整体清空。
+    /// </remarks>
     public int CacheSize
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record DatabaseSecurityOptions
     } = 10_000;
 
     /// <summary>
-    /// 缓存条目的存活时间；默认 30 秒，<see langword="null"/> 不过期（只靠失效与容量清空）。
+    /// 缓存条目的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒，<see langword="null"/> 不过期（只靠失效与容量清空）。
+    /// </remarks>
     public TimeSpan? CacheTimeToLive
     {
         get => field;

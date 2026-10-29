@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 登记测试操作的特性：<c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）。
+/// 登记测试操作的特性。
 /// </summary>
+/// <remarks>
+/// <c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）。
+/// </remarks>
 internal sealed class EchoFeature : IFeature
 {
     /// <inheritdoc />

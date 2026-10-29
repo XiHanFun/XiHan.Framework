@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 
 /// <summary>
-/// 宿主代收发的预签名地址选项。从配置节 <c>XiHan:ObjectStorage:SignedUrls</c> 显式读取：<c>BaseUrl</c>（缺省 <c>/blobs</c>）、<c>Secret</c>（必填，UTF-8 至少 32 字节；多实例部署须一致）。
+/// 宿主代收发的预签名地址选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:ObjectStorage:SignedUrls</c> 显式读取：<c>BaseUrl</c>（缺省 <c>/blobs</c>）、<c>Secret</c>（必填，UTF-8 至少 32 字节；多实例部署须一致）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record HostedBlobUrlOptions
 {
@@ -24,8 +27,11 @@ public sealed record HostedBlobUrlOptions
     public const int MinSecretBytes = 32;
 
     /// <summary>
-    /// 地址前缀：绝对地址（<c>https://files.example.com/blobs</c>）或以 <c>/</c> 开头的路径（相对应用的源，缺省 <c>/blobs</c>）；末尾的 <c>/</c> 去掉。
+    /// 地址前缀。
     /// </summary>
+    /// <remarks>
+    /// 绝对地址（<c>https://files.example.com/blobs</c>）或以 <c>/</c> 开头的路径（相对应用的源，缺省 <c>/blobs</c>）；末尾的 <c>/</c> 去掉。
+    /// </remarks>
     public string BaseUrl
     {
         get => field;
@@ -53,8 +59,11 @@ public sealed record HostedBlobUrlOptions
     public string BasePath => BaseUrl.StartsWith('/') ? BaseUrl : new Uri(BaseUrl).AbsolutePath.TrimEnd('/');
 
     /// <summary>
-    /// 从配置读取；<c>Secret</c> 缺失或太短时抛出。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>Secret</c> 缺失或太短时抛出。
+    /// </remarks>
     public static HostedBlobUrlOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

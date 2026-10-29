@@ -19,11 +19,11 @@ using CredentialHandler = XiHan.Framework.Security.Abstractions.Authentication.I
 namespace XiHan.Framework.Hosting.AspNetCore.Authentication;
 
 /// <summary>
-/// 认证方案 <c>XiHan</c> 的处理器：凭据按 <see cref="HttpInvocation.CreateContext(HttpContext, IServiceProvider)"/> 的同一规则取（<c>Authorization</c> 头，或登记路径下的查询串令牌），
-/// 以本次请求建调用上下文，交给方案匹配的内核 <see cref="CredentialHandler"/>（与管道的 Authenticate 阶段同一个处理器），再依次过 <see cref="IInvocationAuthenticationFilter"/>。
-/// 只认带 <see cref="PipelineBypassMetadata"/> 的端点（其余请求由管道认证，这里为未认证）；没有凭据为未认证；方案不支持、凭据无效或挂点拒绝为认证失败，质询与管道一致（401 带 <c>WWW-Authenticate</c>）。主体转成 <see cref="ClaimsPrincipal"/>：声明按原始类型名保留，
-/// 另加 <see cref="ClaimTypes.NameIdentifier"/> 承载主体 ID 并作为名称声明，角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>。
+/// 认证方案 <c>XiHan</c> 的处理器。
 /// </summary>
+/// <remarks>
+/// 凭据按 <see cref="HttpInvocation.CreateContext(HttpContext, IServiceProvider)"/> 的同一规则取（<c>Authorization</c> 头，或登记路径下的查询串令牌），以本次请求建调用上下文，交给方案匹配的内核 <see cref="CredentialHandler"/>（与管道的 Authenticate 阶段同一个处理器），再依次过 <see cref="IInvocationAuthenticationFilter"/>。只认带 <see cref="PipelineBypassMetadata"/> 的端点（其余请求由管道认证，这里为未认证）；没有凭据为未认证；方案不支持、凭据无效或挂点拒绝为认证失败，质询与管道一致（401 带 <c>WWW-Authenticate</c>）。主体转成 <see cref="ClaimsPrincipal"/>：声明按原始类型名保留，另加 <see cref="ClaimTypes.NameIdentifier"/> 承载主体 ID 并作为名称声明，角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>。
+/// </remarks>
 /// <param name="options">方案选项。</param>
 /// <param name="logger">日志工厂。</param>
 /// <param name="encoder">URL 编码器。</param>
@@ -32,13 +32,19 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
     : AuthenticationHandler<InvocationAuthenticationOptions>(options, logger, encoder)
 {
     /// <summary>
-    /// 本次请求出示的凭据；质询时用。
+    /// 本次请求出示的凭据。
     /// </summary>
+    /// <remarks>
+    /// 质询时用。
+    /// </remarks>
     private Maybe<AuthenticationCredential> _presented;
 
     /// <summary>
-    /// 本次请求认证失败的错误；质询时用。
+    /// 本次请求认证失败的错误。
     /// </summary>
+    /// <remarks>
+    /// 质询时用。
+    /// </remarks>
     private Error? _failure;
 
     /// <inheritdoc />
@@ -114,8 +120,11 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
     }
 
     /// <summary>
-    /// 记下错误并返回失败；失败原因只进日志，响应只有状态码与质询。
+    /// 记下错误并返回失败。
     /// </summary>
+    /// <remarks>
+    /// 失败原因只进日志，响应只有状态码与质询。
+    /// </remarks>
     private AuthenticateResult Fail(Error error)
     {
         _failure = error;

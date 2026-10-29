@@ -18,8 +18,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// AI 子系统的服务登记：所有 AI 特性共用的 <see cref="AddAI(IServiceCollection, IConfiguration)"/>（幂等），以及工厂、护栏、提示词与工具的登记。
+/// AI 子系统的服务登记。
 /// </summary>
+/// <remarks>
+/// 所有 AI 特性共用的 <see cref="AddAI(IServiceCollection, IConfiguration)"/>（幂等），以及工厂、护栏、提示词与工具的登记。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AIServiceCollectionExtensions
 {
@@ -33,8 +36,11 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记 AI 核心服务：选项、消息目录、Provider 目录、聊天入口、提示词目录、工具目录、知识库流水线；已登记的不重复。
+    /// 登记 AI 核心服务。
     /// </summary>
+    /// <remarks>
+    /// 选项、消息目录、Provider 目录、聊天入口、提示词目录、工具目录、知识库流水线；已登记的不重复。
+    /// </remarks>
     public static IServiceCollection AddAI(this IServiceCollection services, AIOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -79,8 +85,11 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记护栏；按登记顺序执行。
+    /// 登记护栏。
     /// </summary>
+    /// <remarks>
+    /// 按登记顺序执行。
+    /// </remarks>
     public static IServiceCollection AddAIGuardrail<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TGuardrail>(this IServiceCollection services) where TGuardrail : class, IAIGuardrail
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -89,8 +98,11 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记提示词模板；同名覆盖配置里的。
+    /// 登记提示词模板。
     /// </summary>
+    /// <remarks>
+    /// 同名覆盖配置里的。
+    /// </remarks>
     public static IServiceCollection AddAIPrompt(this IServiceCollection services, AIPromptTemplate template)
     {
         ArgumentNullException.ThrowIfNull(services);

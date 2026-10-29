@@ -10,9 +10,11 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Locking;
 
 /// <summary>
-/// 租约行的三个原子步骤，每一步都是一次独立的管道调用（返回即提交，别的节点立刻看得见）：获取、续约、释放。
-/// 跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>。
+/// 租约行的三个原子步骤。
 /// </summary>
+/// <remarks>
+/// 每一步都是一次独立的管道调用（返回即提交，别的节点立刻看得见）。获取、续约、释放。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>。
+/// </remarks>
 internal sealed class LeaseTable
 {
     /// <summary>
@@ -35,8 +37,11 @@ internal sealed class LeaseTable
     }
 
     /// <summary>
-    /// 尝试一次：行不存在就插入；存在且已过期就接管；否则 <see cref="LeaseAttempt.Held"/>。持久化冲突归为 <see cref="LeaseAttempt.Contended"/>，其余失败原样返回。
+    /// 尝试一次。
     /// </summary>
+    /// <remarks>
+    /// 行不存在就插入；存在且已过期就接管；否则 <see cref="LeaseAttempt.Held"/>。持久化冲突归为 <see cref="LeaseAttempt.Contended"/>，其余失败原样返回。
+    /// </remarks>
     public ValueTask<Result<LeaseAttempt>> TryAcquireAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
         => _invocation.RunAsync<LeaseAttempt>(async ctx =>
         {
@@ -72,8 +77,11 @@ internal sealed class LeaseTable
         }, cancellationToken);
 
     /// <summary>
-    /// 续约：行仍由 <paramref name="holder"/> 持有时把到期时间推到现在加租约并返回 <see langword="true"/>；行没了或持有者变了返回 <see langword="false"/>。
+    /// 续约。
     /// </summary>
+    /// <remarks>
+    /// 行仍由 <paramref name="holder"/> 持有时把到期时间推到现在加租约并返回 <see langword="true"/>；行没了或持有者变了返回 <see langword="false"/>。
+    /// </remarks>
     public ValueTask<Result<bool>> RenewAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
         => _invocation.RunAsync<bool>(async ctx =>
         {
@@ -95,8 +103,11 @@ internal sealed class LeaseTable
         }, cancellationToken);
 
     /// <summary>
-    /// 释放：只删自己持有的行；行没了或持有者变了视为已释放。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 只删自己持有的行；行没了或持有者变了视为已释放。
+    /// </remarks>
     public ValueTask<Result> ReleaseAsync(string id, string holder, CancellationToken cancellationToken)
         => _invocation.RunAsync(async ctx =>
         {

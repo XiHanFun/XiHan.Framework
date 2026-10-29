@@ -18,7 +18,10 @@ public abstract class RemoteConfigurationFixture
     public abstract IRemoteConfigurationClient Client { get; }
 
     /// <summary>
-    /// 向远端发布（创建或整体替换）命名空间的键值；返回后客户端应能取到新版本。
+    /// 向远端发布（创建或整体替换）命名空间的键值。
     /// </summary>
+    /// <remarks>
+    /// 返回后客户端应能取到新版本。
+    /// </remarks>
     public abstract Task PublishAsync(string namespaceName, IReadOnlyDictionary<string, string?> values, CancellationToken cancellationToken);
 }

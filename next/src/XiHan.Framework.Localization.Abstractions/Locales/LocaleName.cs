@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Locales;
 
 /// <summary>
-/// 区域名文法（BCP 47 的常用子集）：2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字的子标签，用 <c>-</c> 连接。
-/// 比较不区分大小写；<see cref="Normalize"/> 给出规范大小写（语言小写、两位地区大写、四位文字首字母大写）。
+/// 区域名文法（BCP 47 的常用子集）。
 /// </summary>
+/// <remarks>
+/// 2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字的子标签，用 <c>-</c> 连接。比较不区分大小写；<see cref="Normalize"/> 给出规范大小写（语言小写、两位地区大写、四位文字首字母大写）。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class LocaleName
 {
@@ -27,8 +29,11 @@ public static partial class LocaleName
         => locale is not null && locale.Length <= MaxLength && Pattern().IsMatch(locale);
 
     /// <summary>
-    /// 校验并规范化；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并规范化。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string locale)
     {
         ArgumentNullException.ThrowIfNull(locale);
@@ -38,8 +43,11 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 规范化大小写：<c>zh-cn</c> → <c>zh-CN</c>，<c>ZH-hant-tw</c> → <c>zh-Hant-TW</c>。输入必须已合法。
+    /// 规范化大小写。
     /// </summary>
+    /// <remarks>
+    /// <c>zh-cn</c> → <c>zh-CN</c>，<c>ZH-hant-tw</c> → <c>zh-Hant-TW</c>。输入必须已合法。
+    /// </remarks>
     public static string Normalize(string locale)
     {
         ArgumentNullException.ThrowIfNull(locale);
@@ -72,8 +80,11 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 区域对应的文化；运行时不认识的区域（或不变全球化模式）用不变文化。
+    /// 区域对应的文化。
     /// </summary>
+    /// <remarks>
+    /// 运行时不认识的区域（或不变全球化模式）用不变文化。
+    /// </remarks>
     public static CultureInfo CultureOf(string locale)
     {
         ArgumentNullException.ThrowIfNull(locale);

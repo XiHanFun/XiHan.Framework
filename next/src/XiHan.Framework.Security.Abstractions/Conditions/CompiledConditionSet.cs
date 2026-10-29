@@ -32,8 +32,11 @@ public sealed class CompiledConditionSet
     public IReadOnlyList<CompiledConditionGroup> Groups { get; }
 
     /// <summary>
-    /// 编译错误；为空表示全部子句编译成功（保存前据此拒绝）。
+    /// 编译错误。
     /// </summary>
+    /// <remarks>
+    /// 为空表示全部子句编译成功（保存前据此拒绝）。
+    /// </remarks>
     public IReadOnlyList<ConditionCompileError> Errors { get; }
 
     /// <summary>
@@ -42,8 +45,11 @@ public sealed class CompiledConditionSet
     public bool IsEmpty => Groups.Count == 0;
 
     /// <summary>
-    /// 被引用到的属性规范名（不区分大小写；可据此预取属性、判断求值时机）。
+    /// 被引用到的属性规范名。
     /// </summary>
+    /// <remarks>
+    /// 不区分大小写；可据此预取属性、判断求值时机。
+    /// </remarks>
     public IReadOnlySet<string> ReferencedAttributes { get; }
 
     /// <summary>

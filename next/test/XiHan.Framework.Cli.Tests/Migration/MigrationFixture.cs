@@ -4,14 +4,19 @@
 namespace XiHan.Framework.Cli.Tests.Migration;
 
 /// <summary>
-/// 一个最小的待迁移项目：项目文件、两份 C# 源码（一份 LF、一份 CRLF 带 BOM）、一份待转换的 JSON，
-/// 以及 bin 下与生成的、不该被碰的文件；用完删掉。
+/// 一个最小的待迁移项目。
 /// </summary>
+/// <remarks>
+/// 项目文件、两份 C# 源码（一份 LF、一份 CRLF 带 BOM）、一份待转换的 JSON，以及 bin 下与生成的、不该被碰的文件；用完删掉。
+/// </remarks>
 internal sealed class MigrationFixture : IDisposable
 {
     /// <summary>
-    /// 不该被碰的文件内容；迁移后应原样。
+    /// 不该被碰的文件内容。
     /// </summary>
+    /// <remarks>
+    /// 迁移后应原样。
+    /// </remarks>
     public const string UntouchedSource = "public sealed class LegacyClock { }\n";
 
     /// <summary>

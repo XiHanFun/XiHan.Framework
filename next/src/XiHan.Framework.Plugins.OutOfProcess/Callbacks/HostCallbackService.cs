@@ -19,8 +19,11 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务 <c>xihan.plugin.v1.Host</c>：以插件身份经完整管道调用操作、经消息发布器发布消息；权限按清单授予判定（<c>spec/plugin/invocation.md</c> §5）。
+/// 宿主回调服务 <c>xihan.plugin.v1.Host</c>。
 /// </summary>
+/// <remarks>
+/// 以插件身份经完整管道调用操作、经消息发布器发布消息；权限按清单授予判定（<c>spec/plugin/invocation.md</c> §5）。
+/// </remarks>
 internal sealed class HostCallbackService(HostServices host) : Host.HostBase
 {
     /// <inheritdoc />

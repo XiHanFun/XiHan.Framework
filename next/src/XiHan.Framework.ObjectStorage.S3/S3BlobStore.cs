@@ -17,12 +17,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储：容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；
-/// 批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。
-/// 范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。
-/// 不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。
-/// 经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
+/// S3 对象存储。
 /// </summary>
+/// <remarks>
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable
 {
@@ -47,8 +46,11 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private readonly S3ObjectStorageOptions _options;
 
     /// <summary>
-    /// 时钟；写入结果的修改时间来自它（PutObject 的响应不带修改时间）。
+    /// 时钟。
     /// </summary>
+    /// <remarks>
+    /// 写入结果的修改时间来自它（PutObject 的响应不带修改时间）。
+    /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
@@ -57,16 +59,22 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private readonly bool _ownsClient;
 
     /// <summary>
-    /// 创建；客户端归调用方（或容器）所有。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 客户端归调用方（或容器）所有。
+    /// </remarks>
     public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
         : this(client, options, clock, ownsClient: false)
     {
     }
 
     /// <summary>
-    /// 创建；<paramref name="ownsClient"/> 为真时释放实例即释放客户端。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="ownsClient"/> 为真时释放实例即释放客户端。
+    /// </remarks>
     internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, bool ownsClient)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -626,8 +634,11 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private static IReadOnlyDictionary<string, string> EmptyMetadata { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 写一个对象：不覆盖时先 HEAD 再带条件写入（服务端支持条件写入时由它保证原子）；桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
+    /// 写一个对象。
     /// </summary>
+    /// <remarks>
+    /// 不覆盖时先 HEAD 再带条件写入（服务端支持条件写入时由它保证原子）；桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
+    /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
         if (!upload.Options.Overwrite)
@@ -730,8 +741,11 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private static string Unquote(string? etag) => (etag ?? string.Empty).Trim('"');
 
     /// <summary>
-    /// 把 SDK 的修改时间（UTC）转成带偏移的时刻；缺失时为最小值。
+    /// 把 SDK 的修改时间（UTC）转成带偏移的时刻。
     /// </summary>
+    /// <remarks>
+    /// 缺失时为最小值。
+    /// </remarks>
     private static DateTimeOffset ToTimestamp(DateTime? value)
         => value is { } time ? new DateTimeOffset(DateTime.SpecifyKind(time, DateTimeKind.Utc)) : DateTimeOffset.MinValue;
 

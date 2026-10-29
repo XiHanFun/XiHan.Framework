@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件自带的特性：在 Tenant 阶段把 Baggage 里的 <c>xihan.tenant</c> 写入安全上下文，让用例不依赖 MultiTenancy 子系统。
+/// 套件自带的特性。
 /// </summary>
+/// <remarks>
+/// 在 Tenant 阶段把 Baggage 里的 <c>xihan.tenant</c> 写入安全上下文，让用例不依赖 MultiTenancy 子系统。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConformanceFeature : IFeature
 {

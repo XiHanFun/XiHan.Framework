@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 知识库选项（<c>XiHan:AI:Knowledge</c>）：默认集合、嵌入维度、切块、检索条数、嵌入 Provider 与增强提示词。
+/// 知识库选项（<c>XiHan:AI:Knowledge</c>）。
 /// </summary>
+/// <remarks>
+/// 默认集合、嵌入维度、切块、检索条数、嵌入 Provider 与增强提示词。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KnowledgeOptions
 {
@@ -17,8 +20,11 @@ public sealed record KnowledgeOptions
     public const string DefaultCollection = "knowledge";
 
     /// <summary>
-    /// 默认集合；默认 <c>knowledge</c>。
+    /// 默认集合。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>knowledge</c>。
+    /// </remarks>
     public string Collection
     {
         get => field;
@@ -26,8 +32,11 @@ public sealed record KnowledgeOptions
     } = DefaultCollection;
 
     /// <summary>
-    /// 嵌入维度；默认 1536。
+    /// 嵌入维度。
     /// </summary>
+    /// <remarks>
+    /// 默认 1536。
+    /// </remarks>
     public int Dimensions
     {
         get => field;
@@ -35,8 +44,11 @@ public sealed record KnowledgeOptions
     } = 1536;
 
     /// <summary>
-    /// 切块大小（字符）；默认 1000。
+    /// 切块大小（字符）。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int ChunkSize
     {
         get => field;
@@ -44,8 +56,11 @@ public sealed record KnowledgeOptions
     } = 1000;
 
     /// <summary>
-    /// 相邻块的重叠（字符）；默认 100。
+    /// 相邻块的重叠（字符）。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int ChunkOverlap
     {
         get => field;
@@ -53,8 +68,11 @@ public sealed record KnowledgeOptions
     } = 100;
 
     /// <summary>
-    /// 默认检索条数；默认 5。
+    /// 默认检索条数。
     /// </summary>
+    /// <remarks>
+    /// 默认 5。
+    /// </remarks>
     public int Top
     {
         get => field;
@@ -62,13 +80,19 @@ public sealed record KnowledgeOptions
     } = 5;
 
     /// <summary>
-    /// 嵌入 Provider 名；空表示默认嵌入 Provider。
+    /// 嵌入 Provider 名。
     /// </summary>
+    /// <remarks>
+    /// 空表示默认嵌入 Provider。
+    /// </remarks>
     public string? EmbeddingProvider { get; init; }
 
     /// <summary>
-    /// 提示增强用的提示词模板名（占位符 <c>{context}</c>、<c>{question}</c>）；空表示内置模板。
+    /// 提示增强用的提示词模板名（占位符 <c>{context}</c>、<c>{question}</c>）。
     /// </summary>
+    /// <remarks>
+    /// 空表示内置模板。
+    /// </remarks>
     public string? PromptName { get; init; }
 
     /// <summary>

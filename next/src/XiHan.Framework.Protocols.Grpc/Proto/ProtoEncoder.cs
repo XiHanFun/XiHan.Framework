@@ -10,9 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 按消息描述把 JSON 对象编码为 protobuf 线格式。JSON 里的 <c>null</c> 与描述里没有的属性不上线；非空值都写出（含 proto3 默认值）；
-/// repeated 的数值与布尔打包写出；映射写成 <c>{1: key, 2: value}</c> 的条目。值与 Schema 不符时抛出 <see cref="ProtoException"/>。
+/// 按消息描述把 JSON 对象编码为 protobuf 线格式。
 /// </summary>
+/// <remarks>
+/// JSON 里的 <c>null</c> 与描述里没有的属性不上线；非空值都写出（含 proto3 默认值）；repeated 的数值与布尔打包写出；映射写成 <c>{1: key, 2: value}</c> 的条目。值与 Schema 不符时抛出 <see cref="ProtoException"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoEncoder
 {

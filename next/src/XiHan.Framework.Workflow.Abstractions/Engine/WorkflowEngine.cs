@@ -23,8 +23,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 引擎（RFC-0021）：在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：当前租户取自本次调用。
+/// 引擎（RFC-0021）。
 /// </summary>
+/// <remarks>
+/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：当前租户取自本次调用。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class WorkflowEngine : IWorkflowEngine
 {
@@ -702,8 +705,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 已发布定义的下一次定时启动书签；没有 <c>Start.Cron</c> 或没有下一次为空。
+    /// 已发布定义的下一次定时启动书签。
     /// </summary>
+    /// <remarks>
+    /// 没有 <c>Start.Cron</c> 或没有下一次为空。
+    /// </remarks>
     public static WorkflowBookmark? DefinitionTimerBookmark(WorkflowDefinition definition, DateTimeOffset after)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -735,8 +741,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例级超时到期：按定义的超时动作故障或终止；已结束的实例只消费书签。
+    /// 实例级超时到期。
     /// </summary>
+    /// <remarks>
+    /// 按定义的超时动作故障或终止；已结束的实例只消费书签。
+    /// </remarks>
     private async ValueTask<Result> TimeOutInstanceAsync(WorkflowSession session, WorkflowBookmark bookmark)
     {
         session.RemoveBookmark(bookmark.Id);
@@ -816,8 +825,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 解锁 → 锁外动作；返回写回后的实例。
+    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 解锁 → 锁外动作。
     /// </summary>
+    /// <remarks>
+    /// 返回写回后的实例。
+    /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> RunLockedAsync(string instanceId, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
         var acquired = await _lock.AcquireAsync(instanceId, cancellationToken).ConfigureAwait(false);
@@ -988,8 +1000,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 以子流程书签回调父实例；等锁超时重试几次。
+    /// 以子流程书签回调父实例。
     /// </summary>
+    /// <remarks>
+    /// 等锁超时重试几次。
+    /// </remarks>
     private async ValueTask NotifyParentAsync(string parentInstanceId, string parentNodeInstanceId, JsonObject inputs, CancellationToken cancellationToken)
     {
         var found = await _bookmarks.ByKindAndKeyAsync(BookmarkKinds.SubWorkflow, parentNodeInstanceId, cancellationToken).ConfigureAwait(false);
@@ -1022,8 +1037,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次：在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾；故障要求了补偿就在收尾后补偿。
+    /// 波次。
     /// </summary>
+    /// <remarks>
+    /// 在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾；故障要求了补偿就在收尾后补偿。
+    /// </remarks>
     private async ValueTask RunBurstAsync(WorkflowSession session)
     {
         while (session.Queue.Count > 0 && session.Instance.Status == WorkflowInstanceStatus.Running)
@@ -1127,8 +1145,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 节点完成：记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误。
+    /// 节点完成。
     /// </summary>
+    /// <remarks>
+    /// 记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误。
+    /// </remarks>
     private Error? CompleteNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome)
     {
         nodeInstance.Status = WorkflowNodeInstanceStatus.Completed;
@@ -1165,8 +1186,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 节点挂起：建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签。
+    /// 节点挂起。
     /// </summary>
+    /// <remarks>
+    /// 建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签。
+    /// </remarks>
     private static void SuspendNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome, bool resumed)
     {
         nodeInstance.Status = WorkflowNodeInstanceStatus.Suspended;
@@ -1236,8 +1260,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例故障：记录故障与位置，清空队列，发事件，通知父实例；定义要求故障补偿时记下，波次结束后补偿。
+    /// 实例故障。
     /// </summary>
+    /// <remarks>
+    /// 记录故障与位置，清空队列，发事件，通知父实例；定义要求故障补偿时记下，波次结束后补偿。
+    /// </remarks>
     private static void FaultInstance(WorkflowSession session, Error error, string? nodeId, string? nodeInstanceId)
     {
         var instance = session.Instance;
@@ -1339,8 +1366,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 把转移的目标入队；目标是汇合节点时按模式计数。返回 <see langword="false"/> 表示实例已故障。
+    /// 把转移的目标入队。
     /// </summary>
+    /// <remarks>
+    /// 目标是汇合节点时按模式计数。返回 <see langword="false"/> 表示实例已故障。
+    /// </remarks>
     private static bool EnqueueTarget(WorkflowSession session, WorkflowTransition transition)
     {
         var target = session.Graph.Node(transition.TargetNodeId);
@@ -1403,8 +1433,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次收尾：结束请求或没有节点在等待时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理。
+    /// 波次收尾。
     /// </summary>
+    /// <remarks>
+    /// 结束请求或没有节点在等待时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理。
+    /// </remarks>
     private static void FinalizeBurst(WorkflowSession session)
     {
         var instance = session.Instance;
@@ -1460,8 +1493,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 强制结束（取消或终止）：已结束的幂等返回，故障的允许；清非终态节点与全部书签；取消且启用补偿时补偿；级联子实例。
+    /// 强制结束（取消或终止）。
     /// </summary>
+    /// <remarks>
+    /// 已结束的幂等返回，故障的允许；清非终态节点与全部书签；取消且启用补偿时补偿；级联子实例。
+    /// </remarks>
     private async ValueTask<Result> FinishForciblyAsync(WorkflowSession session, WorkflowInstanceStatus status, string? reason)
     {
         var instance = session.Instance;
@@ -1487,8 +1523,11 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按完成顺序逆序补偿已完成的节点（<paramref name="nodeIds"/> 为空取全部）；单个补偿失败只记日志、继续。返回被补偿的节点实例 ID。
+    /// 按完成顺序逆序补偿已完成的节点（<paramref name="nodeIds"/> 为空取全部）。
     /// </summary>
+    /// <remarks>
+    /// 单个补偿失败只记日志、继续。返回被补偿的节点实例 ID。
+    /// </remarks>
     private async ValueTask<IReadOnlyList<string>> CompensateAsync(WorkflowSession session, IReadOnlyList<string>? nodeIds)
     {
         var compensated = new List<string>();

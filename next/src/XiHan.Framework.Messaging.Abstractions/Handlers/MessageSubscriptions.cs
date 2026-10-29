@@ -13,8 +13,11 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 public sealed class MessageSubscriptions
 {
     /// <summary>
-    /// 主题到处理器类型列表的映射；列表保持订阅顺序。
+    /// 主题到处理器类型列表的映射。
     /// </summary>
+    /// <remarks>
+    /// 列表保持订阅顺序。
+    /// </remarks>
     private readonly Dictionary<string, List<Type>> _handlers = new(StringComparer.Ordinal);
 
     /// <summary>

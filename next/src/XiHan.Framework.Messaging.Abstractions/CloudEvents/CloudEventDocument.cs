@@ -12,8 +12,11 @@ namespace XiHan.Framework.Messaging.Abstractions.CloudEvents;
 internal sealed class CloudEventDocument
 {
     /// <summary>
-    /// 规范版本 <c>specversion</c>；必须是 <c>1.0</c>。
+    /// 规范版本 <c>specversion</c>。
     /// </summary>
+    /// <remarks>
+    /// 必须是 <c>1.0</c>。
+    /// </remarks>
     [JsonPropertyName("specversion")]
     public string? SpecVersion { get; set; }
 
@@ -54,14 +57,20 @@ internal sealed class CloudEventDocument
     public string? DataContentType { get; set; }
 
     /// <summary>
-    /// 内联的 JSON 数据 <c>data</c>；与 <see cref="DataBase64"/> 互斥。
+    /// 内联的 JSON 数据 <c>data</c>。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="DataBase64"/> 互斥。
+    /// </remarks>
     [JsonPropertyName("data")]
     public JsonElement? Data { get; set; }
 
     /// <summary>
-    /// Base64 编码的二进制数据 <c>data_base64</c>；与 <see cref="Data"/> 互斥。
+    /// Base64 编码的二进制数据 <c>data_base64</c>。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="Data"/> 互斥。
+    /// </remarks>
     [JsonPropertyName("data_base64")]
     public string? DataBase64 { get; set; }
 

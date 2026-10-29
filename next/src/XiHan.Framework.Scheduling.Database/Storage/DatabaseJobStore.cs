@@ -14,9 +14,11 @@ using XiHan.Framework.Scheduling.Database.Entities;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 数据库作业存储（单例，跨实例共享）：作业、触发器、运行历史与节点各一张表，每个操作在根提供者的新作用域里经完整管道执行、返回即提交。
-/// 抢占与独占占用靠并发戳做比较并交换：多个节点同时抢占同一条触发器只有先改成功的拿到。管道失败 → <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// 数据库作业存储（单例，跨实例共享）。
 /// </summary>
+/// <remarks>
+/// 作业、触发器、运行历史与节点各一张表，每个操作在根提供者的新作用域里经完整管道执行、返回即提交。抢占与独占占用靠并发戳做比较并交换：多个节点同时抢占同一条触发器只有先改成功的拿到。管道失败 → <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseJobStore : IJobStore
 {
@@ -504,8 +506,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 独占占用：作业不存在 → 作业未登记；作业上已有未结束的运行 → <see langword="false"/>；否则带并发戳把占用换成本次运行，撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。
+    /// 独占占用。
     /// </summary>
+    /// <remarks>
+    /// 作业不存在 → 作业未登记；作业上已有未结束的运行 → <see langword="false"/>；否则带并发戳把占用换成本次运行，撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。
+    /// </remarks>
     private static async ValueTask<Result<bool>> OccupyAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobRunRecord run, CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
@@ -520,8 +525,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 一次占用尝试：读作业行，占用指向的运行还在进行才算被占（结束了但没清掉的占用视为空闲），否则带并发戳写入本次运行。
+    /// 一次占用尝试。
     /// </summary>
+    /// <remarks>
+    /// 读作业行，占用指向的运行还在进行才算被占（结束了但没清掉的占用视为空闲），否则带并发戳写入本次运行。
+    /// </remarks>
     private static async ValueTask<Result<bool>> TryOccupyOnceAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobRunRecord run, CancellationToken cancellationToken)
     {
         var found = await jobs.FindAsync(run.Job.Value, cancellationToken).ConfigureAwait(false);
@@ -550,8 +558,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业的占用指向该运行时清掉；撞上别的节点就重读再试，最多 <see cref="MaxAttempts"/> 次。作业不存在或占用已不是它都视为已释放。
+    /// 作业的占用指向该运行时清掉。
     /// </summary>
+    /// <remarks>
+    /// 撞上别的节点就重读再试，最多 <see cref="MaxAttempts"/> 次。作业不存在或占用已不是它都视为已释放。
+    /// </remarks>
     private static async ValueTask<Result> ReleaseJobAsync(IRepository<JobEntity, string> jobs, string job, string runId, CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
@@ -597,8 +608,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 失联节点上运行中的记录改为 Lost、结束时刻为 <paramref name="now"/>；返回改成功的行。
+    /// 失联节点上运行中的记录改为 Lost、结束时刻为 <paramref name="now"/>。
     /// </summary>
+    /// <remarks>
+    /// 返回改成功的行。
+    /// </remarks>
     private static async ValueTask<Result<List<JobRunEntity>>> MarkLostAsync(IRepository<JobRunEntity, string> runs, List<string> dead, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var lost = new List<JobRunEntity>();
@@ -658,8 +672,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业没有占用（或作业已不存在）的阻塞触发器改回等待：占用它们的运行已被记为 Lost 或早已结束。
+    /// 作业没有占用（或作业已不存在）的阻塞触发器改回等待。
     /// </summary>
+    /// <remarks>
+    /// 占用它们的运行已被记为 Lost 或早已结束。
+    /// </remarks>
     private static async ValueTask<Result> UnblockOrphansAsync(IRepository<JobEntity, string> jobs, IRepository<TriggerEntity, string> triggers, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<TriggerEntity>()
@@ -688,8 +705,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 请求取消一条运行：不存在或不在运行中 → 运行不存在；运行记录没有并发戳，更新冲突只可能是行刚被删，同样按不在运行中报告。
+    /// 请求取消一条运行。
     /// </summary>
+    /// <remarks>
+    /// 不存在或不在运行中 → 运行不存在；运行记录没有并发戳，更新冲突只可能是行刚被删，同样按不在运行中报告。
+    /// </remarks>
     private static async ValueTask<Result> RequestCancelOneAsync(IRepository<JobRunEntity, string> repository, string id, CancellationToken cancellationToken)
     {
         var found = await repository.FindAsync(id, cancellationToken).ConfigureAwait(false);

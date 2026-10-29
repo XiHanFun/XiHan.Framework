@@ -19,9 +19,11 @@ using XiHan.Framework.Security.Database.Grants;
 namespace XiHan.Framework.Security.Database;
 
 /// <summary>
-/// 数据库授权的能力包入口：只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c>；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。
-/// 装配后顶替默认内存实现的授权部分，内存实现只剩认证。
+/// 数据库授权的能力包入口。
 /// </summary>
+/// <remarks>
+/// 只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c>；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。装配后顶替默认内存实现的授权部分，内存实现只剩认证。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseSecurityFeature : IFeature
 {

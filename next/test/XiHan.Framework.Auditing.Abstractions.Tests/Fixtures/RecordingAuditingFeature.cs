@@ -10,8 +10,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 以记录接收器提供 <c>auditing.trail@1</c> 的测试 Provider，按 Provider 的方式调用 <see cref="AuditingFeatureContextExtensions.AddAuditing"/>。
+/// 以记录接收器提供 <c>auditing.trail@1</c> 的测试 Provider。
 /// </summary>
+/// <remarks>
+/// 按 Provider 的方式调用 <see cref="AuditingFeatureContextExtensions.AddAuditing"/>。
+/// </remarks>
 internal sealed class RecordingAuditingFeature : IFeature
 {
     /// <inheritdoc />

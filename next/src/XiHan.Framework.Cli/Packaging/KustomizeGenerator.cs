@@ -6,8 +6,11 @@ using System.Globalization;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成 Kustomize 清单：Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization。
+/// 生成 Kustomize 清单。
 /// </summary>
+/// <remarks>
+/// Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization。
+/// </remarks>
 internal static class KustomizeGenerator
 {
     /// <summary>
@@ -21,8 +24,11 @@ internal static class KustomizeGenerator
     private const string BindingRoot = "/bindings";
 
     /// <summary>
-    /// 生成全部文件；<paramref name="manifestDirectory"/> 用来读取配置文件内容。
+    /// 生成全部文件。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="manifestDirectory"/> 用来读取配置文件内容。
+    /// </remarks>
     public static IEnumerable<PackOutput> Generate(AppManifest manifest, string manifestDirectory)
     {
         ArgumentNullException.ThrowIfNull(manifest);

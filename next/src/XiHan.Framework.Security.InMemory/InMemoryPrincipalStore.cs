@@ -25,8 +25,11 @@ public sealed class InMemoryPrincipalStore
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建并装载选项里的主体；超出容量抛出 <see cref="FrameworkException"/>。
+    /// 创建并装载选项里的主体。
     /// </summary>
+    /// <remarks>
+    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// </remarks>
     public InMemoryPrincipalStore(InMemorySecurityOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -57,8 +60,11 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 新增或替换；新增超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// 新增或替换。
     /// </summary>
+    /// <remarks>
+    /// 新增超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// </remarks>
     public Result Set(PrincipalRecord principal)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -88,8 +94,11 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 按 API Key 查找；比较为常量时间。
+    /// 按 API Key 查找。
     /// </summary>
+    /// <remarks>
+    /// 比较为常量时间。
+    /// </remarks>
     public Maybe<PrincipalRecord> FindByApiKey(string apiKey)
     {
         ArgumentNullException.ThrowIfNull(apiKey);

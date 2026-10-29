@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 一个已编译并按 ABI v1 校验过导出 / 导入表的模块（<c>spec/plugin/wasm.md</c> §1、§3、§4）。
+/// 一个已编译并按 ABI v1 校验过导出 / 导入表的模块。
 /// </summary>
+/// <remarks>
+/// <c>spec/plugin/wasm.md</c> §1、§3、§4。
+/// </remarks>
 internal sealed class WasmModule : IDisposable
 {
     /// <summary>
@@ -68,8 +71,11 @@ internal sealed class WasmModule : IDisposable
     public bool HasMiddleware => Calls.Contains("xihan_middleware", StringComparer.Ordinal);
 
     /// <summary>
-    /// 编译文件（<c>.wasm</c> 二进制；<c>.wat</c> 文本只为示例与测试）并校验导出 / 导入表。
+    /// 编译文件并校验导出 / 导入表。
     /// </summary>
+    /// <remarks>
+    /// <c>.wasm</c> 二进制；<c>.wat</c> 文本只为示例与测试。
+    /// </remarks>
     public static Result<WasmModule> Load(Engine engine, string path, string pluginId)
     {
         Module module;

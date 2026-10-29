@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 多库：一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误。
+/// 多库。
 /// </summary>
+/// <remarks>
+/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误。
+/// </remarks>
 public sealed class SqlSugarMultiConnectionTests : IDisposable
 {
     /// <summary>
@@ -141,8 +144,11 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     }
 
     /// <summary>
-    /// 启动带默认库、租户 <c>acme</c> 分片到第二个库的宿主；默认库建两种套件实体的表。
+    /// 启动带默认库、租户 <c>acme</c> 分片到第二个库的宿主。
     /// </summary>
+    /// <remarks>
+    /// 默认库建两种套件实体的表。
+    /// </remarks>
     private Task<TestHost> StartShardedHostAsync() => TestHost.StartAsync(
         static b => b.UseFeature<InMemoryMultiTenancyFeature>().UseFeature(SqliteDatabase.CreateFeature()),
         [

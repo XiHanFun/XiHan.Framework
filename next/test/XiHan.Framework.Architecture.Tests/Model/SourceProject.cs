@@ -19,8 +19,11 @@ internal sealed record SourceProject(
     IReadOnlyList<PackageReference> PackageReferences)
 {
     /// <summary>
-    /// 从项目文件读取事实。只读 XML，不求值 MSBuild 属性，因此引用必须在项目文件里显式写出。
+    /// 从项目文件读取事实。
     /// </summary>
+    /// <remarks>
+    /// 只读 XML，不求值 MSBuild 属性，因此引用必须在项目文件里显式写出。
+    /// </remarks>
     /// <param name="csprojPath">项目文件路径。</param>
     public static SourceProject Load(string csprojPath)
     {

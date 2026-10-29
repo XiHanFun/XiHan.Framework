@@ -27,8 +27,11 @@ public enum TriggerState
     Acquired = 2,
 
     /// <summary>
-    /// 到期但作业不允许并发且上一次未结束；上一次结束时回到 <see cref="Waiting"/>。
+    /// 到期但作业不允许并发且上一次未结束。
     /// </summary>
+    /// <remarks>
+    /// 上一次结束时回到 <see cref="Waiting"/>。
+    /// </remarks>
     Blocked = 3,
 
     /// <summary>

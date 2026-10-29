@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions;
 
 /// <summary>
-/// 本地化选项。从配置节 <c>XiHan:Localization</c> 显式读取。
+/// 本地化选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Localization</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record LocalizationOptions
 {
@@ -19,8 +22,11 @@ public sealed record LocalizationOptions
     public const string ConfigurationSection = "XiHan:Localization";
 
     /// <summary>
-    /// 默认区域；协商不到时使用。默认 <see cref="SupportedLocales.Default"/>（英文）。
+    /// 默认区域。
     /// </summary>
+    /// <remarks>
+    /// 协商不到时使用。默认 <see cref="SupportedLocales.Default"/>（英文）。
+    /// </remarks>
     public string DefaultLocale
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record LocalizationOptions
     } = SupportedLocales.Default;
 
     /// <summary>
-    /// 启用的区域，按优先级排列；默认是内置的 10 种。
+    /// 启用的区域，按优先级排列。
     /// </summary>
+    /// <remarks>
+    /// 默认是内置的 10 种。
+    /// </remarks>
     public IReadOnlyList<string> Locales
     {
         get => field;
@@ -46,8 +55,11 @@ public sealed record LocalizationOptions
     } = SupportedLocales.All;
 
     /// <summary>
-    /// 回退链：请求的区域（规范化，非法时取默认区域）→ 启用列表里同语言的其他区域 → 默认区域 → 源语言；去重并保持顺序。
+    /// 回退链。
     /// </summary>
+    /// <remarks>
+    /// 请求的区域（规范化，非法时取默认区域）→ 启用列表里同语言的其他区域 → 默认区域 → 源语言；去重并保持顺序。
+    /// </remarks>
     public IReadOnlyList<string> FallbackChain(string locale)
     {
         ArgumentNullException.ThrowIfNull(locale);
@@ -83,8 +95,11 @@ public sealed record LocalizationOptions
     }
 
     /// <summary>
-    /// 从配置读取：<c>DefaultLocale</c>、<c>Locales</c>（逗号分隔）。默认区域必须在启用列表里。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>DefaultLocale</c>、<c>Locales</c>（逗号分隔）。默认区域必须在启用列表里。
+    /// </remarks>
     public static LocalizationOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -111,8 +126,11 @@ public sealed record LocalizationOptions
             : throw new ArgumentException($"Default locale '{DefaultLocale}' is not in the enabled locales.");
 
     /// <summary>
-    /// 从候选区域（按偏好顺序）协商出启用的区域：先精确匹配，再按语言匹配（<c>zh</c> 或 <c>zh-HK</c> 命中第一个 <c>zh-*</c>），都没有则用默认区域。
+    /// 从候选区域（按偏好顺序）协商出启用的区域。
     /// </summary>
+    /// <remarks>
+    /// 先精确匹配，再按语言匹配（<c>zh</c> 或 <c>zh-HK</c> 命中第一个 <c>zh-*</c>），都没有则用默认区域。
+    /// </remarks>
     public string Negotiate(IEnumerable<string?> candidates)
     {
         ArgumentNullException.ThrowIfNull(candidates);

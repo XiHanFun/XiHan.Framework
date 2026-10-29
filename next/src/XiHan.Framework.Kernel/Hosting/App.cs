@@ -11,14 +11,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 应用实例：持有已解析图、特性运行时与管道；按拓扑顺序启动、逆序停止；聚合健康状态。
+/// 应用实例。
 /// </summary>
+/// <remarks>
+/// 持有已解析图、特性运行时与管道；按拓扑顺序启动、逆序停止；聚合健康状态。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class App : IDisposable
 {
     /// <summary>
-    /// 调用处理器在 <see cref="InvocationContext.Items"/> 中的键；<see cref="InvokeAsync"/> 写入，<see cref="Terminal"/> 读取。
+    /// 调用处理器在 <see cref="InvocationContext.Items"/> 中的键。
     /// </summary>
+    /// <remarks>
+    /// <see cref="InvokeAsync"/> 写入，<see cref="Terminal"/> 读取。
+    /// </remarks>
     private static readonly ContextItemKey<PipelineStep> _handlerKey = new("xihan.handler");
 
     /// <summary>
@@ -42,13 +48,19 @@ public sealed partial class App : IDisposable
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
 
     /// <summary>
-    /// 延迟构建的管道委托；首次访问 <see cref="Pipeline"/> 时构建并缓存。
+    /// 延迟构建的管道委托。
     /// </summary>
+    /// <remarks>
+    /// 首次访问 <see cref="Pipeline"/> 时构建并缓存。
+    /// </remarks>
     private readonly Lazy<PipelineStep> _pipeline;
 
     /// <summary>
-    /// 创建应用实例。供公开构造函数与测试直接传入已构建的模型。
+    /// 创建应用实例。
     /// </summary>
+    /// <remarks>
+    /// 供公开构造函数与测试直接传入已构建的模型。
+    /// </remarks>
     /// <param name="services">根服务提供器。</param>
     /// <param name="model">构建产物。</param>
     /// <param name="loggerFactory">日志工厂。</param>
@@ -61,8 +73,11 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 创建应用实例。由容器调用。
+    /// 创建应用实例。
     /// </summary>
+    /// <remarks>
+    /// 由容器调用。
+    /// </remarks>
     public App(IServiceProvider services, ILoggerFactory loggerFactory)
         : this(services, (services ?? throw new ArgumentNullException(nameof(services))).GetRequiredService<AppModel>(), loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)))
     {
@@ -94,8 +109,11 @@ public sealed partial class App : IDisposable
     public LifecycleState State => Degrade(Aggregate(_model.Features.Select(static f => f.State).ToList(), _model.Options.FailurePolicy), Contributions);
 
     /// <summary>
-    /// 各 <see cref="IHealthContributor"/> 的条目状态；贡献者抛出的异常不传播，记为该贡献者整体 Failed。
+    /// 各 <see cref="IHealthContributor"/> 的条目状态。
     /// </summary>
+    /// <remarks>
+    /// 贡献者抛出的异常不传播，记为该贡献者整体 Failed。
+    /// </remarks>
     public IReadOnlyList<ContributorStatus> Contributions
     {
         get
@@ -131,16 +149,22 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 贡献条目只把 Ready 压成 Degraded：条目 Degraded / Failed 表示应用仍在服务但有部件不健康，不改变其他聚合状态。
+    /// 贡献条目只把 Ready 压成 Degraded。
     /// </summary>
+    /// <remarks>
+    /// 条目 Degraded / Failed 表示应用仍在服务但有部件不健康，不改变其他聚合状态。
+    /// </remarks>
     private static LifecycleState Degrade(LifecycleState state, IReadOnlyList<ContributorStatus> contributions)
         => state == LifecycleState.Ready && contributions.Any(static c => c.State is LifecycleState.Degraded or LifecycleState.Failed)
             ? LifecycleState.Degraded
             : state;
 
     /// <summary>
-    /// 已构建的管道委托；首次访问时构建。
+    /// 已构建的管道委托。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时构建。
+    /// </remarks>
     public PipelineStep Pipeline => _pipeline.Value;
 
     /// <summary>
@@ -154,8 +178,11 @@ public sealed partial class App : IDisposable
     public string DescribePipeline() => _model.Pipeline.Dump();
 
     /// <summary>
-    /// 创建一次调用的上下文。未提供 Trace 时生成新的 W3C trace-id 与 parent-id。
+    /// 创建一次调用的上下文。
     /// </summary>
+    /// <remarks>
+    /// 未提供 Trace 时生成新的 W3C trace-id 与 parent-id。
+    /// </remarks>
     public static InvocationContext CreateContext(
         IServiceProvider scopedServices,
         CancellationToken cancellationToken,
@@ -204,8 +231,11 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 按拓扑顺序启动特性。失败按 <see cref="KernelOptions.FailurePolicy"/> 处理。
+    /// 按拓扑顺序启动特性。
     /// </summary>
+    /// <remarks>
+    /// 失败按 <see cref="KernelOptions.FailurePolicy"/> 处理。
+    /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await _lifecycleLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -245,8 +275,11 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 按逆序停止特性。超时的特性记为 <see cref="LifecycleState.Failed"/>，其余继续。
+    /// 按逆序停止特性。
     /// </summary>
+    /// <remarks>
+    /// 超时的特性记为 <see cref="LifecycleState.Failed"/>，其余继续。
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         await _lifecycleLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -273,19 +306,28 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 释放生命周期锁。由容器在应用停止后调用。
+    /// 释放生命周期锁。
     /// </summary>
+    /// <remarks>
+    /// 由容器在应用停止后调用。
+    /// </remarks>
     public void Dispose() => _lifecycleLock.Dispose();
 
     /// <summary>
-    /// 管道终点：执行 <see cref="InvokeAsync"/> 放入上下文的处理器；没有处理器时什么都不做。
+    /// 管道终点。
     /// </summary>
+    /// <remarks>
+    /// 执行 <see cref="InvokeAsync"/> 放入上下文的处理器；没有处理器时什么都不做。
+    /// </remarks>
     private static ValueTask Terminal(InvocationContext context)
         => context.Get(_handlerKey).Match(handler => handler(context), static () => ValueTask.CompletedTask);
 
     /// <summary>
-    /// 把各特性状态聚合为应用状态。判定顺序：失败且终止策略 → 全部停止 → 任一排空或停止 → 全部可服务 → 隔离策略下有失败 → 最保守状态。
+    /// 把各特性状态聚合为应用状态。
     /// </summary>
+    /// <remarks>
+    /// 判定顺序：失败且终止策略 → 全部停止 → 任一排空或停止 → 全部可服务 → 隔离策略下有失败 → 最保守状态。
+    /// </remarks>
     /// <param name="states">各特性的状态。</param>
     /// <param name="policy">启动失败策略，决定单个特性失败是否拖垮整个应用。</param>
     private static LifecycleState Aggregate(List<LifecycleState> states, FailurePolicy policy)
@@ -328,9 +370,11 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 启动一个特性：进入 Started，带启动超时调用 <see cref="IHostedFeature.StartAsync"/>，再按是否有缺失的可选依赖进入 Ready 或 Degraded。
-    /// 失败时记录错误；终止策略下重新抛出 <see cref="KernelErrors.FeatureStartFailed"/>。
+    /// 启动一个特性。
     /// </summary>
+    /// <remarks>
+    /// 进入 Started，带启动超时调用 <see cref="IHostedFeature.StartAsync"/>，再按是否有缺失的可选依赖进入 Ready 或 Degraded。失败时记录错误；终止策略下重新抛出 <see cref="KernelErrors.FeatureStartFailed"/>。
+    /// </remarks>
     private async Task StartFeatureAsync(FeatureRuntime runtime, CancellationToken cancellationToken)
     {
         var id = runtime.Node.Manifest.Id;
@@ -362,9 +406,11 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 停止一个特性：进入 Draining，带停止超时调用 <see cref="IHostedFeature.StopAsync"/>，成功后进入 Stopped。
-    /// 超时记为 <see cref="KernelErrors.FeatureStopTimeout"/>，其他异常记为失败；两者都不中断其余特性的停止。
+    /// 停止一个特性。
     /// </summary>
+    /// <remarks>
+    /// 进入 Draining，带停止超时调用 <see cref="IHostedFeature.StopAsync"/>，成功后进入 Stopped。超时记为 <see cref="KernelErrors.FeatureStopTimeout"/>，其他异常记为失败；两者都不中断其余特性的停止。
+    /// </remarks>
     private async Task StopFeatureAsync(FeatureRuntime runtime, CancellationToken cancellationToken)
     {
         var id = runtime.Node.Manifest.Id;

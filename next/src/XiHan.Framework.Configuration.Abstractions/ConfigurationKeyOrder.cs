@@ -7,8 +7,11 @@ using Microsoft.Extensions.Configuration;
 namespace XiHan.Framework.Configuration.Abstractions;
 
 /// <summary>
-/// 配置键的排序：逐段比较，两段都是整数时按数值，否则忽略大小写按序数；与 <c>Microsoft.Extensions.Configuration</c> 的子键顺序一致。
+/// 配置键的排序。
 /// </summary>
+/// <remarks>
+/// 逐段比较，两段都是整数时按数值，否则忽略大小写按序数；与 <c>Microsoft.Extensions.Configuration</c> 的子键顺序一致。
+/// </remarks>
 internal sealed class ConfigurationKeyOrder : IComparer<string>
 {
     /// <summary>

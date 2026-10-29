@@ -14,8 +14,11 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.Jwt;
 
 /// <summary>
-/// JWT 认证的能力包入口：提供 <c>security.authentication@1</c>，注册 Bearer 处理器与 Authenticate 阶段中间件。
+/// JWT 认证的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>security.authentication@1</c>，注册 Bearer 处理器与 Authenticate 阶段中间件。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JwtSecurityFeature : IFeature
 {

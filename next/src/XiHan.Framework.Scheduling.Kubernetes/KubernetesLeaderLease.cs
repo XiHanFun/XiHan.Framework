@@ -10,8 +10,11 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// 以 Lease 对象承载的租约：续约写 <c>renewTime</c>，释放清空 <c>holderIdentity</c>；每次写都带 resourceVersion，版本过期即视为已被他人接管。
+/// 以 Lease 对象承载的租约。
 /// </summary>
+/// <remarks>
+/// 续约写 <c>renewTime</c>，释放清空 <c>holderIdentity</c>；每次写都带 resourceVersion，版本过期即视为已被他人接管。
+/// </remarks>
 internal sealed class KubernetesLeaderLease : LeaderLease
 {
     /// <summary>

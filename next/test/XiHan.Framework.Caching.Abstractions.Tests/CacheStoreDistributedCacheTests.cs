@@ -9,8 +9,11 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="CacheStoreDistributedCache"/>：读写删与续期落到存储、键文法、过期选项的换算与登记扩展的幂等。
+/// <see cref="CacheStoreDistributedCache"/>。
 /// </summary>
+/// <remarks>
+/// 读写删与续期落到存储、键文法、过期选项的换算与登记扩展的幂等。
+/// </remarks>
 public sealed class CacheStoreDistributedCacheTests
 {
     /// <summary>

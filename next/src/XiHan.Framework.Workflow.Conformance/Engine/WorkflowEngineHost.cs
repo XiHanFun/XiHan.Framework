@@ -14,8 +14,11 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 引擎套件的夹具：装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口；引擎、目录、任务服务都在新作用域里解析。
+/// 引擎套件的夹具。
 /// </summary>
+/// <remarks>
+/// 装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口；引擎、目录、任务服务都在新作用域里解析。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowEngineHost : IAsyncDisposable
 {
@@ -45,8 +48,11 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     public IServiceProvider Services { get; }
 
     /// <summary>
-    /// 轮询一次到期书签；返回恢复的书签数。
+    /// 轮询一次到期书签。
     /// </summary>
+    /// <remarks>
+    /// 返回恢复的书签数。
+    /// </remarks>
     public ValueTask<int> PollAsync(CancellationToken cancellationToken = default) => _poll(cancellationToken);
 
     /// <summary>

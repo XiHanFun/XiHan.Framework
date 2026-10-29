@@ -12,8 +12,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// HTTP 请求：<c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象。
+/// HTTP 请求。
 /// </summary>
+/// <remarks>
+/// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HttpActivity : IActivity
 {
@@ -38,8 +41,11 @@ public sealed class HttpActivity : IActivity
     public const string BodyProperty = "Body";
 
     /// <summary>
-    /// 属性：内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// 内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）。
+    /// </remarks>
     public const string ContentTypeProperty = "ContentType";
 
     /// <summary>
@@ -157,8 +163,11 @@ public sealed class HttpActivity : IActivity
     }
 
     /// <summary>
-    /// 组装请求体：字符串按模板渲染，对象序列化为 JSON；没有请求体时 <paramref name="content"/> 为空。返回属性错误，成功为空。
+    /// 组装请求体。
     /// </summary>
+    /// <remarks>
+    /// 字符串按模板渲染，对象序列化为 JSON；没有请求体时 <paramref name="content"/> 为空。返回属性错误，成功为空。
+    /// </remarks>
     private static Error? BuildBody(ActivityContext context, out HttpContent? content)
     {
         content = null;

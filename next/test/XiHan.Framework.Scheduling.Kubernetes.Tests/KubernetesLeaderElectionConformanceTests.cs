@@ -9,8 +9,11 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// 让 <see cref="KubernetesLeaderElection"/>（对着内存 API Server 桩）跑完整套 <see cref="LeaderElectionConformance"/> 用例；Lease 只有整数秒，存活时间取 1 秒。
+/// 让 <see cref="KubernetesLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 对着内存 API Server 桩。Lease 只有整数秒，存活时间取 1 秒。
+/// </remarks>
 public sealed class KubernetesLeaderElectionConformanceTests : LeaderElectionConformance
 {
     /// <inheritdoc />

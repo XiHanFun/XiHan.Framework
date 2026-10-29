@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// 基于 StackExchange.Redis 的字节存储。连接与超时失败抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>。
-/// 批量读取用 <c>MGET</c>，批量写入与删除把全部命令放进一个批次、一次往返。
+/// 基于 StackExchange.Redis 的字节存储。
 /// </summary>
+/// <remarks>
+/// 连接与超时失败抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>。批量读取用 <c>MGET</c>，批量写入与删除把全部命令放进一个批次、一次往返。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCachingOptions options) : ICacheStore
 {

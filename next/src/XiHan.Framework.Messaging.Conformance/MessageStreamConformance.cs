@@ -10,14 +10,20 @@ using Xunit;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// <c>messaging.stream@1</c> 的一致性套件：在 <see cref="MessageBrokerConformance"/> 全部用例之上，再验证同分区键有序与按时刻重放。提供流能力的 Provider 继承本类即可，不必再继承队列套件。
+/// <c>messaging.stream@1</c> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 在 <see cref="MessageBrokerConformance"/> 全部用例之上，再验证同分区键有序与按时刻重放。提供流能力的 Provider 继承本类即可，不必再继承队列套件。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class MessageStreamConformance : MessageBrokerConformance
 {
     /// <summary>
-    /// 用例 S1：同一分区键的消息按发布顺序投递（两个键交错批量发布，各自的顺序都保持）。
+    /// 用例 S1。
     /// </summary>
+    /// <remarks>
+    /// 同一分区键的消息按发布顺序投递（两个键交错批量发布，各自的顺序都保持）。
+    /// </remarks>
     [Fact]
     public async Task PartitionKey_PreservesOrder_PerKey()
     {
@@ -40,8 +46,11 @@ public abstract class MessageStreamConformance : MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 S2：按时刻重放把该时刻起的消息再投递一遍，正常消费不受影响；没有消息的时段重放成功且不投递。
+    /// 用例 S2。
     /// </summary>
+    /// <remarks>
+    /// 按时刻重放把该时刻起的消息再投递一遍，正常消费不受影响；没有消息的时段重放成功且不投递。
+    /// </remarks>
     [Fact]
     public async Task Replay_RedeliversMessagesSince()
     {

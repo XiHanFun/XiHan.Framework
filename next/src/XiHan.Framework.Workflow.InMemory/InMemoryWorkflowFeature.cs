@@ -15,8 +15,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 内存工作流特性（<c>role: default</c>）：提供 <c>workflow.execution@1</c>——有界内存存储、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。
+/// 内存工作流特性（<c>role: default</c>）。
 /// </summary>
+/// <remarks>
+/// 提供 <c>workflow.execution@1</c>——有界内存存储、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowFeature : IHostedFeature
 {

@@ -8,8 +8,11 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 两级缓存：L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、选项解析。
+/// 两级缓存。
 /// </summary>
+/// <remarks>
+/// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、选项解析。
+/// </remarks>
 public sealed class HybridCacheTests
 {
     /// <summary>

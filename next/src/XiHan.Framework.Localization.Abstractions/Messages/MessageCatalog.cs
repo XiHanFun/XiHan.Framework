@@ -8,9 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Messages;
 
 /// <summary>
-/// 只读的消息目录：消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），
-/// 各包用 <see cref="FromEmbeddedResources"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写。
+/// 只读的消息目录。
 /// </summary>
+/// <remarks>
+/// 消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），各包用 <see cref="FromEmbeddedResources"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageCatalog
 {
@@ -30,8 +32,11 @@ public sealed class MessageCatalog
     private readonly List<string> _locales;
 
     /// <summary>
-    /// 用按区域分组的模板创建目录；键与区域名会被校验，区域名规范化。
+    /// 用按区域分组的模板创建目录。
     /// </summary>
+    /// <remarks>
+    /// 键与区域名会被校验，区域名规范化。
+    /// </remarks>
     /// <param name="name">目录名，同名目录只注册一次。</param>
     /// <param name="templatesByLocale">区域 → 消息键 → 模板。</param>
     public MessageCatalog(string name, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> templatesByLocale)
@@ -100,8 +105,11 @@ public sealed class MessageCatalog
     public int Count => _byKey.Count;
 
     /// <summary>
-    /// 从 <paramref name="anchor"/> 所在程序集的嵌入资源装载全部 <c>&lt;前缀&gt;&lt;区域&gt;.json</c>；没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// 从 <paramref name="anchor"/> 所在程序集的嵌入资源装载全部 <c>&lt;前缀&gt;&lt;区域&gt;.json</c>。
     /// </summary>
+    /// <remarks>
+    /// 没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// </remarks>
     /// <param name="name">目录名。</param>
     /// <param name="anchor">目录所在程序集里的任意类型，用于定位程序集。</param>
     /// <param name="prefix">嵌入资源的逻辑名前缀，默认 <see cref="DefaultResourcePrefix"/>。</param>
@@ -142,8 +150,11 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 解析一种语言的文件（键 → 模板的平面 JSON 对象）；不合法抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// 解析一种语言的文件（键 → 模板的平面 JSON 对象）。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseLocaleFile(string name, string locale, ReadOnlySpan<byte> utf8Json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -180,8 +191,11 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 取某键在某区域的模板，只做精确匹配；回退由 <see cref="IMessageLocalizer"/> 负责。
+    /// 取某键在某区域的模板，只做精确匹配。
     /// </summary>
+    /// <remarks>
+    /// 回退由 <see cref="IMessageLocalizer"/> 负责。
+    /// </remarks>
     public Maybe<string> Find(string key, string locale)
     {
         ArgumentNullException.ThrowIfNull(key);

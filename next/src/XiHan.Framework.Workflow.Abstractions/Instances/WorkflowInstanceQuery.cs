@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 实例列表查询：过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// 实例列表查询。
 /// </summary>
+/// <remarks>
+/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowInstanceQuery
 {
@@ -17,13 +20,19 @@ public sealed record WorkflowInstanceQuery
     public const int MaxLimit = 1000;
 
     /// <summary>
-    /// 状态（单个）；与 <see cref="Statuses"/> 同时给出时取并集。
+    /// 状态（单个）。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="Statuses"/> 同时给出时取并集。
+    /// </remarks>
     public WorkflowInstanceStatus? Status { get; init; }
 
     /// <summary>
-    /// 状态集合；空集合视同未限定。
+    /// 状态集合。
     /// </summary>
+    /// <remarks>
+    /// 空集合视同未限定。
+    /// </remarks>
     public IReadOnlyList<WorkflowInstanceStatus>? Statuses { get; init; }
 
     /// <summary>
@@ -62,13 +71,19 @@ public sealed record WorkflowInstanceQuery
     public DateTimeOffset? CreatedTo { get; init; }
 
     /// <summary>
-    /// 只取在此时刻之前（不含）结束的实例；未结束的实例不匹配。清理历史用。
+    /// 只取在此时刻之前（不含）结束的实例。
     /// </summary>
+    /// <remarks>
+    /// 未结束的实例不匹配。清理历史用。
+    /// </remarks>
     public DateTimeOffset? EndedBefore { get; init; }
 
     /// <summary>
-    /// 跳过条数；默认 0。
+    /// 跳过条数。
     /// </summary>
+    /// <remarks>
+    /// 默认 0。
+    /// </remarks>
     public int Skip
     {
         get => field;
@@ -76,8 +91,11 @@ public sealed record WorkflowInstanceQuery
     }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>；默认 100。
+    /// 最多返回条数，1 到 <see cref="MaxLimit"/>。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int Limit
     {
         get => field;
@@ -85,8 +103,11 @@ public sealed record WorkflowInstanceQuery
     } = 100;
 
     /// <summary>
-    /// 实例是否匹配全部过滤项（不含分页）；存储实现可用它在内存里复核。
+    /// 实例是否匹配全部过滤项（不含分页）。
     /// </summary>
+    /// <remarks>
+    /// 存储实现可用它在内存里复核。
+    /// </remarks>
     public bool Matches(WorkflowInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);

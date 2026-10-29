@@ -22,7 +22,10 @@ public enum CloudEventsContentMode
     Structured = 1,
 
     /// <summary>
-    /// batch：<c>application/cloudevents-batch+json</c> 的事件数组；只用于入站。
+    /// batch。
     /// </summary>
+    /// <remarks>
+    /// <c>application/cloudevents-batch+json</c> 的事件数组；只用于入站。
+    /// </remarks>
     Batch = 2,
 }

@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions;
 
 /// <summary>
-/// 调度子系统的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// 调度子系统的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SchedulingMessages
 {
@@ -18,48 +21,75 @@ public static class SchedulingMessages
     public const string CatalogName = "scheduling";
 
     /// <summary>
-    /// 作业未登记。参数：<c>name</c>。
+    /// 作业未登记。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
     public const string JobNotFound = "scheduling.job.not_found";
 
     /// <summary>
-    /// 作业正在运行。参数：<c>name</c>。
+    /// 作业正在运行。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
     public const string JobRunning = "scheduling.job.running";
 
     /// <summary>
-    /// 作业抛出异常。参数：<c>name</c>、<c>reason</c>。
+    /// 作业抛出异常。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>reason</c>。
+    /// </remarks>
     public const string JobFailed = "scheduling.job.failed";
 
     /// <summary>
-    /// 作业类型未登记。参数：<c>type</c>。
+    /// 作业类型未登记。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>type</c>。
+    /// </remarks>
     public const string JobTypeNotRegistered = "scheduling.job.type_not_registered";
 
     /// <summary>
-    /// 作业定义不合法。参数：<c>name</c>、<c>reason</c>。
+    /// 作业定义不合法。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>reason</c>。
+    /// </remarks>
     public const string DefinitionInvalid = "scheduling.definition.invalid";
 
     /// <summary>
-    /// 触发器不存在。参数：<c>job</c>、<c>trigger</c>。
+    /// 触发器不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>job</c>、<c>trigger</c>。
+    /// </remarks>
     public const string TriggerNotFound = "scheduling.trigger.not_found";
 
     /// <summary>
-    /// 运行不存在或已结束。参数：<c>id</c>。
+    /// 运行不存在或已结束。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string RunNotFound = "scheduling.run.not_found";
 
     /// <summary>
-    /// 运行被取消。参数：<c>id</c>。
+    /// 运行被取消。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string RunCanceled = "scheduling.run.canceled";
 
     /// <summary>
-    /// 领导租约被占用。参数：<c>resource</c>。
+    /// 领导租约被占用。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>resource</c>。
+    /// </remarks>
     public const string LeaseHeld = "scheduling.lease.held";
 
     /// <summary>
@@ -68,18 +98,27 @@ public static class SchedulingMessages
     public const string SchedulerUnavailable = "scheduling.scheduler.unavailable";
 
     /// <summary>
-    /// 领导选举的存储不可达。参数：<c>resource</c>、<c>reason</c>。
+    /// 领导选举的存储不可达。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>resource</c>、<c>reason</c>。
+    /// </remarks>
     public const string LeaseUnavailable = "scheduling.lease.unavailable";
 
     /// <summary>
-    /// 作业存储不可达。参数：<c>reason</c>。
+    /// 作业存储不可达。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string StoreUnavailable = "scheduling.store.unavailable";
 
     /// <summary>
-    /// 作业存储容量已满。参数：<c>store</c>、<c>limit</c>。
+    /// 作业存储容量已满。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>store</c>、<c>limit</c>。
+    /// </remarks>
     public const string StoreCapacity = "scheduling.store.capacity";
 
     /// <summary>

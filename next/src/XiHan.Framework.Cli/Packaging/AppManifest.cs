@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 应用清单 <c>xihan.app.json</c>（规范：<c>spec/packaging/app-manifest.md</c>）。由 <see cref="AppManifestReader"/> 读取并校验，缺省值在这里。
+/// 应用清单 <c>xihan.app.json</c>（规范：<c>spec/packaging/app-manifest.md</c>）。
 /// </summary>
+/// <remarks>
+/// 由 <see cref="AppManifestReader"/> 读取并校验，缺省值在这里。
+/// </remarks>
 internal sealed record AppManifest
 {
     /// <summary>

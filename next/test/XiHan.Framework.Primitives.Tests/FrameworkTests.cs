@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives.Tests;
 
 /// <summary>
-/// 框架级原语的行为：<see cref="FrameworkException"/>、<see cref="FrameworkInfo"/>、<see cref="ApiLevelAttribute"/> 与管道阶段名互转。
+/// 框架级原语的行为。
 /// </summary>
+/// <remarks>
+/// <see cref="FrameworkException"/>、<see cref="FrameworkInfo"/>、<see cref="ApiLevelAttribute"/> 与管道阶段名互转。
+/// </remarks>
 public sealed class FrameworkTests
 {
     [Fact]

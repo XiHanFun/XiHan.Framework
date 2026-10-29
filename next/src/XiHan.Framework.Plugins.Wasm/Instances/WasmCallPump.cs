@@ -8,15 +8,19 @@ using System.Runtime.ExceptionServices;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 一个插件的调用泵：外层调用在执行线程上登记所有者；插件回调宿主期间，管道再次进入同一插件（它自己贡献的中间件、操作或订阅）时，
-/// 调用锁由外层调用持有，再入必须回到执行线程上、在导入函数返回前同步完成（wasmtime 允许导入函数内再调导出），
-/// 所以宿主导入函数等待管道时在这里泵出再入工作。
+/// 一个插件的调用泵。
 /// </summary>
+/// <remarks>
+/// 外层调用在执行线程上登记所有者；插件回调宿主期间，管道再次进入同一插件（它自己贡献的中间件、操作或订阅）时，调用锁由外层调用持有，再入必须回到执行线程上、在导入函数返回前同步完成（wasmtime 允许导入函数内再调导出），所以宿主导入函数等待管道时在这里泵出再入工作。
+/// </remarks>
 internal sealed class WasmCallPump : IDisposable
 {
     /// <summary>
-    /// 当前异步流所属的泵：宿主导入函数启动管道前设置，随 ExecutionContext 流到管道里的每一步。
+    /// 当前异步流所属的泵。
     /// </summary>
+    /// <remarks>
+    /// 宿主导入函数启动管道前设置，随 ExecutionContext 流到管道里的每一步。
+    /// </remarks>
     private static readonly AsyncLocal<WasmCallPump?> _flow = new();
 
     /// <summary>
@@ -35,8 +39,11 @@ internal sealed class WasmCallPump : IDisposable
     private readonly Lock _sync = new();
 
     /// <summary>
-    /// 执行线程的托管线程 ID；0 表示没有外层调用。
+    /// 执行线程的托管线程 ID。
     /// </summary>
+    /// <remarks>
+    /// 0 表示没有外层调用。
+    /// </remarks>
     private int _owner;
 
     /// <summary>
@@ -73,8 +80,11 @@ internal sealed class WasmCallPump : IDisposable
     }
 
     /// <summary>
-    /// 宿主导入函数等待管道：在执行线程上边等边泵再入工作；不在执行线程上时退化为普通等待。
+    /// 宿主导入函数等待管道。
     /// </summary>
+    /// <remarks>
+    /// 在执行线程上边等边泵再入工作；不在执行线程上时退化为普通等待。
+    /// </remarks>
     public T Wait<T>(Task<T> task)
     {
         if (Environment.CurrentManagedThreadId != Volatile.Read(ref _owner))
@@ -93,8 +103,11 @@ internal sealed class WasmCallPump : IDisposable
     }
 
     /// <summary>
-    /// 再入：已在执行线程上就直接运行；否则交给执行线程并等待结果。外层调用已结束时返回假，调用方走普通路径。
+    /// 再入。
     /// </summary>
+    /// <remarks>
+    /// 已在执行线程上就直接运行；否则交给执行线程并等待结果。外层调用已结束时返回假，调用方走普通路径。
+    /// </remarks>
     public bool TryRunNested<T>(Func<T> call, [MaybeNullWhen(false)] out T result)
     {
         if (Environment.CurrentManagedThreadId == Volatile.Read(ref _owner))
@@ -193,8 +206,11 @@ internal sealed class WasmCallPump : IDisposable
         }
 
         /// <summary>
-        /// 等待运行结束并取结果；运行抛出的异常原样重抛。
+        /// 等待运行结束并取结果。
         /// </summary>
+        /// <remarks>
+        /// 运行抛出的异常原样重抛。
+        /// </remarks>
         public T Wait()
         {
             _done.Wait();

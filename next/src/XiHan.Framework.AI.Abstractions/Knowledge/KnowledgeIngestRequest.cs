@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 摄入一篇文档：切块、嵌入、写入集合；同一文档再次摄入先删后写。
+/// 摄入一篇文档。
 /// </summary>
+/// <remarks>
+/// 切块、嵌入、写入集合；同一文档再次摄入先删后写。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KnowledgeIngestRequest
 {
@@ -22,8 +25,11 @@ public sealed record KnowledgeIngestRequest
     public required string Text { get; init; }
 
     /// <summary>
-    /// 集合；空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// 集合。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// </remarks>
     public string? Collection { get; init; }
 
     /// <summary>
@@ -32,12 +38,18 @@ public sealed record KnowledgeIngestRequest
     public IReadOnlyDictionary<string, string>? Metadata { get; init; }
 
     /// <summary>
-    /// 嵌入 Provider；空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// 嵌入 Provider。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// </remarks>
     public string? Provider { get; init; }
 
     /// <summary>
-    /// 切块选项；空取 <see cref="KnowledgeOptions.Chunking"/>。
+    /// 切块选项。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.Chunking"/>。
+    /// </remarks>
     public ChunkingOptions? Chunking { get; init; }
 }

@@ -12,43 +12,67 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 public static class ActivityTypes
 {
     /// <summary>
-    /// 开始；每个定义恰好一个。
+    /// 开始。
     /// </summary>
+    /// <remarks>
+    /// 每个定义恰好一个。
+    /// </remarks>
     public const string Start = "Start";
 
     /// <summary>
-    /// 结束；可带 <c>Outcome</c>，有结果时调用结果处理器并结束实例。
+    /// 结束。
     /// </summary>
+    /// <remarks>
+    /// 可带 <c>Outcome</c>，有结果时调用结果处理器并结束实例。
+    /// </remarks>
     public const string End = "End";
 
     /// <summary>
-    /// 终止实例；<c>Reason</c>。
+    /// 终止实例。
     /// </summary>
+    /// <remarks>
+    /// <c>Reason</c>。
+    /// </remarks>
     public const string Terminate = "Terminate";
 
     /// <summary>
-    /// 设变量；<c>Values</c>（字面量）与 <c>Expressions</c>（表达式）。
+    /// 设变量。
     /// </summary>
+    /// <remarks>
+    /// <c>Values</c>（字面量）与 <c>Expressions</c>（表达式）。
+    /// </remarks>
     public const string SetVariable = "SetVariable";
 
     /// <summary>
-    /// 决策；出边 Exclusive。
+    /// 决策。
     /// </summary>
+    /// <remarks>
+    /// 出边 Exclusive。
+    /// </remarks>
     public const string Decision = "Decision";
 
     /// <summary>
-    /// 并行网关；出边 All。
+    /// 并行网关。
     /// </summary>
+    /// <remarks>
+    /// 出边 All。
+    /// </remarks>
     public const string Parallel = "Parallel";
 
     /// <summary>
-    /// 汇合；<c>Mode</c> = <c>WaitAll</c>（默认）/ <c>WaitAny</c>。
+    /// 汇合。
     /// </summary>
+    /// <remarks>
+    /// <c>Mode</c> = <c>WaitAll</c>（默认）/ <c>WaitAny</c>。
+    /// </remarks>
     public const string Join = "Join";
 
     /// <summary>
-    /// 延时；<c>Duration</c> 秒（数字或表达式）。
+    /// 延时。
     /// </summary>
+    /// <remarks>
+    /// <c>Duration</c> 秒（数字或表达式）。
+    /// </remarks>
     public const string Delay = "Delay";
 
     /// <summary>
@@ -57,13 +81,19 @@ public static class ActivityTypes
     public const string UserTask = "UserTask";
 
     /// <summary>
-    /// 发布自定义事件；<c>EventName</c>、<c>Payload</c>。
+    /// 发布自定义事件。
     /// </summary>
+    /// <remarks>
+    /// <c>EventName</c>、<c>Payload</c>。
+    /// </remarks>
     public const string PublishEvent = "PublishEvent";
 
     /// <summary>
-    /// 等待信号；<c>SignalName</c>、<c>AcceptAnyCorrelation</c>。
+    /// 等待信号。
     /// </summary>
+    /// <remarks>
+    /// <c>SignalName</c>、<c>AcceptAnyCorrelation</c>。
+    /// </remarks>
     public const string WaitSignal = "WaitSignal";
 
     /// <summary>
@@ -77,13 +107,19 @@ public static class ActivityTypes
     public const string ForEach = "ForEach";
 
     /// <summary>
-    /// 写日志；<c>Message</c>、<c>Level</c>。
+    /// 写日志。
     /// </summary>
+    /// <remarks>
+    /// <c>Message</c>、<c>Level</c>。
+    /// </remarks>
     public const string Log = "Log";
 
     /// <summary>
-    /// 故障；<c>Message</c>。
+    /// 故障。
     /// </summary>
+    /// <remarks>
+    /// <c>Message</c>。
+    /// </remarks>
     public const string Fault = "Fault";
 
     /// <summary>

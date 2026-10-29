@@ -4,9 +4,11 @@
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 生成器对封闭泛型与字符串枚举的产出形态（与 <c>Kernel.Generators.Tests</c> 断言的文本同形）：
-/// 根 <c>title</c> 带实参名，字符串枚举在 <c>$defs</c> 里是 <c>type: string</c> + <c>enum</c>，属性以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。
+/// 生成器对封闭泛型与字符串枚举的产出形态。
 /// </summary>
+/// <remarks>
+/// 与 <c>Kernel.Generators.Tests</c> 断言的文本同形。根 <c>title</c> 带实参名，字符串枚举在 <c>$defs</c> 里是 <c>type: string</c> + <c>enum</c>，属性以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。
+/// </remarks>
 internal static class PagedSchemas
 {
     /// <summary>

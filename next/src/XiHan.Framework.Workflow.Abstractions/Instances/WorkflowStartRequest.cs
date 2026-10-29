@@ -13,8 +13,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 public sealed record WorkflowStartRequest
 {
     /// <summary>
-    /// 定义 ID；给出时忽略名字与版本。
+    /// 定义 ID。
     /// </summary>
+    /// <remarks>
+    /// 给出时忽略名字与版本。
+    /// </remarks>
     public string? DefinitionId { get; init; }
 
     /// <summary>
@@ -23,13 +26,19 @@ public sealed record WorkflowStartRequest
     public WorkflowName? Name { get; init; }
 
     /// <summary>
-    /// 版本；空为最新已发布版本。
+    /// 版本。
     /// </summary>
+    /// <remarks>
+    /// 空为最新已发布版本。
+    /// </remarks>
     public int? Version { get; init; }
 
     /// <summary>
-    /// 实例显示名；空取定义的。
+    /// 实例显示名。
     /// </summary>
+    /// <remarks>
+    /// 空取定义的。
+    /// </remarks>
     public string? DisplayName { get; init; }
 
     /// <summary>
@@ -48,13 +57,19 @@ public sealed record WorkflowStartRequest
     public string? StarterId { get; init; }
 
     /// <summary>
-    /// 租户；空取当前调用的租户。
+    /// 租户。
     /// </summary>
+    /// <remarks>
+    /// 空取当前调用的租户。
+    /// </remarks>
     public string? TenantId { get; init; }
 
     /// <summary>
-    /// 指定实例 ID（子流程用）；空由引擎生成。
+    /// 指定实例 ID（子流程用）。
     /// </summary>
+    /// <remarks>
+    /// 空由引擎生成。
+    /// </remarks>
     public string? InstanceId { get; init; }
 
     /// <summary>
@@ -73,8 +88,11 @@ public sealed record WorkflowStartRequest
     public int Depth { get; init; }
 
     /// <summary>
-    /// 延迟启动：实例创建后在该时刻才执行 <c>Start</c> 之后的节点；空或已过去则立即执行。
+    /// 延迟启动。
     /// </summary>
+    /// <remarks>
+    /// 实例创建后在该时刻才执行 <c>Start</c> 之后的节点；空或已过去则立即执行。
+    /// </remarks>
     public DateTimeOffset? StartAt { get; init; }
 
     /// <summary>

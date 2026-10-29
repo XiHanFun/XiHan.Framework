@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 当前租户。由 Tenant 阶段写入上下文。
+/// 当前租户。
 /// </summary>
+/// <remarks>
+/// 由 Tenant 阶段写入上下文。
+/// </remarks>
 /// <param name="Id">租户 ID。</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record TenantContext(string Id)

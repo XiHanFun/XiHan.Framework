@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// 幂等记录：处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。
+/// 幂等记录。
 /// </summary>
+/// <remarks>
+/// 处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。
+/// </remarks>
 /// <param name="State">记录状态：<see cref="InProgressState"/> 或 <see cref="CompletedState"/>。</param>
 /// <param name="ErrorCode">失败时的错误码；成功为 <see langword="null"/>。</param>
 /// <param name="ErrorMessage">失败时已解析的文案；键错误未解析时为 <see langword="null"/>。</param>
@@ -57,8 +60,11 @@ public sealed record IdempotencyRecord(
     }
 
     /// <summary>
-    /// 还原为调用结果；失败记录还原为带消息键与参数的 <see cref="Error"/>。
+    /// 还原为调用结果。
     /// </summary>
+    /// <remarks>
+    /// 失败记录还原为带消息键与参数的 <see cref="Error"/>。
+    /// </remarks>
     public Result ToResult()
     {
         if (ErrorCode is null)

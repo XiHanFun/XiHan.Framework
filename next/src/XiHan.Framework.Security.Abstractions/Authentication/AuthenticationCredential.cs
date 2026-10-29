@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authentication;
 
 /// <summary>
-/// 协议层提取的凭据：方案（如 <c>Bearer</c>、<c>ApiKey</c>）与值。方案比较不区分大小写。
+/// 协议层提取的凭据。
 /// </summary>
+/// <remarks>
+/// 方案（如 <c>Bearer</c>、<c>ApiKey</c>）与值。方案比较不区分大小写。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuthenticationCredential
 {
@@ -27,8 +30,11 @@ public sealed record AuthenticationCredential
     public string Scheme { get; }
 
     /// <summary>
-    /// 值；不写入日志。
+    /// 值。
     /// </summary>
+    /// <remarks>
+    /// 不写入日志。
+    /// </remarks>
     public string Value { get; }
 
     /// <summary>

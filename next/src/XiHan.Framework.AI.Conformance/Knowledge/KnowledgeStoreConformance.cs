@@ -9,8 +9,11 @@ using Xunit;
 namespace XiHan.Framework.AI.Conformance.Knowledge;
 
 /// <summary>
-/// 知识库存储的一致性套件（RFC-0022 §知识库）：写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>。
+/// 知识库存储的一致性套件（RFC-0022 §知识库）。
 /// </summary>
+/// <remarks>
+/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class KnowledgeStoreConformance
 {
@@ -20,8 +23,11 @@ public abstract class KnowledgeStoreConformance
     protected abstract Task<KnowledgeStoreHost> StartAsync();
 
     /// <summary>
-    /// 用例 1：写入后按向量搜索，按得分降序，最多 top 条；空集合返回空。
+    /// 用例 1：写入后按向量搜索，按得分降序，最多 top 条。
     /// </summary>
+    /// <remarks>
+    /// 空集合返回空。
+    /// </remarks>
     [Fact]
     public async Task Search_OrdersBySimilarity_AndHonoursTop()
     {

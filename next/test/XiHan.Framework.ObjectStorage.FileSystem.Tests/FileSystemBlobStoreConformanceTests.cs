@@ -7,8 +7,11 @@ using XiHan.Framework.ObjectStorage.Conformance;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 让 <see cref="FileSystemBlobStore"/> 跑完整套 <see cref="BlobStoreConformance"/> 用例；每个用例一个临时根目录。
+/// 让 <see cref="FileSystemBlobStore"/> 跑完整套 <see cref="BlobStoreConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 每个用例一个临时根目录。
+/// </remarks>
 public sealed class FileSystemBlobStoreConformanceTests : BlobStoreConformance, IDisposable
 {
     /// <summary>

@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Nacos;
 
 /// <summary>
-/// 把 Nacos 配置内容展平成 <c>IConfiguration</c> 的键值：JSON 对象按 <c>A:B</c> 与数组下标展平，properties 按行解析。格式不合法抛出 <see cref="FormatException"/>。
+/// 把 Nacos 配置内容展平成 <c>IConfiguration</c> 的键值。
 /// </summary>
+/// <remarks>
+/// JSON 对象按 <c>A:B</c> 与数组下标展平，properties 按行解析。格式不合法抛出 <see cref="FormatException"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class NacosDocumentParser
 {
@@ -36,8 +39,11 @@ public static class NacosDocumentParser
     }
 
     /// <summary>
-    /// JSON：根必须是对象；字符串取原文，数字与布尔取 JSON 文本，<c>null</c> 保留为空值（与 .NET 的 JSON 配置提供者一致）。
+    /// JSON。
     /// </summary>
+    /// <remarks>
+    /// 根必须是对象；字符串取原文，数字与布尔取 JSON 文本，<c>null</c> 保留为空值（与 .NET 的 JSON 配置提供者一致）。
+    /// </remarks>
     private static void ParseJson(string content, Dictionary<string, string?> values)
     {
         JsonDocument document;
@@ -97,8 +103,11 @@ public static class NacosDocumentParser
     }
 
     /// <summary>
-    /// properties：空行与 <c>#</c> / <c>!</c> 开头的行跳过；第一个 <c>=</c> 或 <c>:</c> 分隔键值，没有分隔符的行值为空串；键里的点换成 <c>:</c>。
+    /// properties。
     /// </summary>
+    /// <remarks>
+    /// 空行与 <c>#</c> / <c>!</c> 开头的行跳过；第一个 <c>=</c> 或 <c>:</c> 分隔键值，没有分隔符的行值为空串；键里的点换成 <c>:</c>。
+    /// </remarks>
     private static void ParseProperties(string content, Dictionary<string, string?> values)
     {
         foreach (var raw in content.Split('\n'))

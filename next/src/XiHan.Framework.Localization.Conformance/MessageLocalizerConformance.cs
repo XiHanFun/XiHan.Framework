@@ -10,8 +10,11 @@ using Xunit;
 namespace XiHan.Framework.Localization.Conformance;
 
 /// <summary>
-/// <see cref="IMessageLocalizer"/> 的一致性套件（RFC-0010）。继承并实现 <see cref="CreateLocalizer"/>，全部用例随之执行；实现同时必须是 <see cref="IMessageResolver"/>。
+/// <see cref="IMessageLocalizer"/> 的一致性套件（RFC-0010）。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateLocalizer"/>，全部用例随之执行；实现同时必须是 <see cref="IMessageResolver"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class MessageLocalizerConformance
 {
@@ -46,8 +49,11 @@ public abstract class MessageLocalizerConformance
     protected abstract IMessageLocalizer CreateLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options);
 
     /// <summary>
-    /// 用例 1：回退链为精确区域 → 同语言的启用区域 → 默认区域 → 源语言；非法区域按默认区域处理。
+    /// 用例 1：回退链为精确区域 → 同语言的启用区域 → 默认区域 → 源语言。
     /// </summary>
+    /// <remarks>
+    /// 非法区域按默认区域处理。
+    /// </remarks>
     [Fact]
     public void Find_FallsBackExactThenLanguageThenDefaultThenSource()
     {
@@ -87,8 +93,11 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 3：没有模板或占位符缺值时退回键与参数的描述；解析器接口同样如此。
+    /// 用例 3：没有模板或占位符缺值时退回键与参数的描述。
     /// </summary>
+    /// <remarks>
+    /// 解析器接口同样如此。
+    /// </remarks>
     [Fact]
     public void Localize_FallsBackToDescription_WhenMissingOrIncomplete()
     {
@@ -104,8 +113,11 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 4：错误按键与细节翻译；自由文本错误原样返回；没有模板时返回键。
+    /// 用例 4：错误按键与细节翻译。
     /// </summary>
+    /// <remarks>
+    /// 自由文本错误原样返回；没有模板时返回键。
+    /// </remarks>
     [Fact]
     public void Localize_Error_UsesKeyAndDetails_OrLiteralText()
     {

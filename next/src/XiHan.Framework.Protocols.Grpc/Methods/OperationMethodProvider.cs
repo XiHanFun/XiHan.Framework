@@ -18,10 +18,11 @@ using XiHan.Framework.Protocols.Grpc.Services;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 把操作表绑定为 gRPC 一元方法：消息以字节数组进出，处理器里按 Schema 在 protobuf 与 JSON 之间转换，
-/// 以请求头构造的调用上下文经 <see cref="IOperationInvoker.InvokeAsync(InvocationContext, OperationRequest)"/> 走完整内核管道；失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。
-/// 端点带 <see cref="PipelineBypassMetadata"/>：响应完全由 gRPC 处理器写出，不经 <c>UseXiHan()</c> 的 Problem Details 回写。
+/// 把操作表绑定为 gRPC 一元方法。
 /// </summary>
+/// <remarks>
+/// 消息以字节数组进出，处理器里按 Schema 在 protobuf 与 JSON 之间转换，以请求头构造的调用上下文经 <see cref="IOperationInvoker.InvokeAsync(InvocationContext, OperationRequest)"/> 走完整内核管道；失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。端点带 <see cref="PipelineBypassMetadata"/>：响应完全由 gRPC 处理器写出，不经 <c>UseXiHan()</c> 的 Problem Details 回写。
+/// </remarks>
 internal sealed class OperationMethodProvider : IServiceMethodProvider<OperationsGrpcService>
 {
     /// <summary>
@@ -45,8 +46,11 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     private readonly GrpcOperationTable _table;
 
     /// <summary>
-    /// 应用；提供服务状态。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 提供服务状态。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>
@@ -55,8 +59,11 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     private readonly IOperationInvoker _invoker;
 
     /// <summary>
-    /// 本地化器；未装配本地化时为空，状态文案按进程默认区域。
+    /// 本地化器。
     /// </summary>
+    /// <remarks>
+    /// 未装配本地化时为空，状态文案按进程默认区域。
+    /// </remarks>
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
@@ -136,8 +143,11 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     }
 
     /// <summary>
-    /// 把失败结果翻译为 gRPC 异常：状态码按错误 KIND，文案按调用方区域，错误码进尾部元数据。
+    /// 把失败结果翻译为 gRPC 异常。
     /// </summary>
+    /// <remarks>
+    /// 状态码按错误 KIND，文案按调用方区域，错误码进尾部元数据。
+    /// </remarks>
     private RpcException Fail(ServerCallContext call, InvocationContext context, Error error)
     {
         var detail = _localizer is not null ? _localizer.Localize(error, context) : error.Message;

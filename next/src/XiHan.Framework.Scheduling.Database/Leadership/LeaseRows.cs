@@ -9,9 +9,11 @@ using XiHan.Framework.Scheduling.Database.Storage;
 namespace XiHan.Framework.Scheduling.Database.Leadership;
 
 /// <summary>
-/// 租约行的三个原子步骤，每一步都是一次独立的管道调用（返回即提交，别的节点立刻看得见）：获取、续约、释放。
-/// 跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回冲突。
+/// 租约行的三个原子步骤。
 /// </summary>
+/// <remarks>
+/// 每一步都是一次独立的管道调用（返回即提交，别的节点立刻看得见）。获取、续约、释放。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回冲突。
+/// </remarks>
 internal sealed class LeaseRows
 {
     /// <summary>
@@ -34,8 +36,11 @@ internal sealed class LeaseRows
     }
 
     /// <summary>
-    /// 尝试获取：行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回空值；其余失败原样返回。
+    /// 尝试获取。
     /// </summary>
+    /// <remarks>
+    /// 行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回空值；其余失败原样返回。
+    /// </remarks>
     public ValueTask<Result<DateTimeOffset?>> TryAcquireAsync(string resource, string holder, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
         => _invocation.RunAsync<DateTimeOffset?>(async ctx =>
         {
@@ -63,8 +68,11 @@ internal sealed class LeaseRows
         }, cancellationToken);
 
     /// <summary>
-    /// 续约：行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回空值。
+    /// 续约。
     /// </summary>
+    /// <remarks>
+    /// 行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回空值。
+    /// </remarks>
     public ValueTask<Result<DateTimeOffset?>> RenewAsync(string resource, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
         => _invocation.RunAsync<DateTimeOffset?>(async ctx =>
         {
@@ -81,8 +89,11 @@ internal sealed class LeaseRows
         }, cancellationToken);
 
     /// <summary>
-    /// 释放：只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。
+    /// </remarks>
     public ValueTask<Result> ReleaseAsync(string resource, string token, CancellationToken cancellationToken)
         => _invocation.RunAsync(async ctx =>
         {

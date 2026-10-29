@@ -11,8 +11,11 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// 用签发者 JWKS 里的密钥校验 <c>Bearer</c> 令牌并映射为主体；签名密钥未知时按需刷新一次元数据再试。
+/// 用签发者 JWKS 里的密钥校验 <c>Bearer</c> 令牌并映射为主体。
 /// </summary>
+/// <remarks>
+/// 签名密钥未知时按需刷新一次元数据再试。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
 {
@@ -22,8 +25,11 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     public const string SchemeName = "Bearer";
 
     /// <summary>
-    /// 令牌处理器；关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// 令牌处理器。
     /// </summary>
+    /// <remarks>
+    /// 关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// </remarks>
     private readonly JsonWebTokenHandler _handler = new() { MapInboundClaims = false };
 
     /// <summary>
@@ -102,8 +108,11 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     }
 
     /// <summary>
-    /// 由选项与一份元数据推出校验参数：签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众只在配置了才校验。
+    /// 由选项与一份元数据推出校验参数。
     /// </summary>
+    /// <remarks>
+    /// 签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众只在配置了才校验。
+    /// </remarks>
     private TokenValidationParameters Parameters(OpenIdConnectMetadata metadata) => new()
     {
         IssuerSigningKeys = metadata.SigningKeys,

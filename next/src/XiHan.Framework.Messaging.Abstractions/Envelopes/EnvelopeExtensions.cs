@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 
 /// <summary>
-/// 框架约定的 CloudEvents 扩展属性名。扩展属性名只含小写字母与数字、不超过 20 个字符。
+/// 框架约定的 CloudEvents 扩展属性名。
 /// </summary>
+/// <remarks>
+/// 扩展属性名只含小写字母与数字、不超过 20 个字符。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class EnvelopeExtensions
 {

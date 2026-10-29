@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 写日志：<c>Message</c>（模板）按 <c>Level</c>（默认 Information）写到 <c>XiHan.Framework.Workflow.Abstractions.Activities.LogActivity</c> 日志类别。
+/// 写日志。
 /// </summary>
+/// <remarks>
+/// <c>Message</c>（模板）按 <c>Level</c>（默认 Information）写到 <c>XiHan.Framework.Workflow.Abstractions.Activities.LogActivity</c> 日志类别。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class LogActivity : IActivity
 {

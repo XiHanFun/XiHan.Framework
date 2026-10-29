@@ -10,8 +10,11 @@ using XiHan.Framework.Caching.InMemory;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 探针端点把 Provider 的健康项写进响应：<c>/health/ready</c> 的 <c>contributions</c> 里出现 <c>caching.inmemory.capacity</c>。
+/// 探针端点把 Provider 的健康项写进响应。
 /// </summary>
+/// <remarks>
+/// <c>/health/ready</c> 的 <c>contributions</c> 里出现 <c>caching.inmemory.capacity</c>。
+/// </remarks>
 public sealed class ProviderHealthProbeTests
 {
     [Fact]

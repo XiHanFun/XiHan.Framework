@@ -8,8 +8,11 @@ using Xunit;
 namespace XiHan.Framework.Security.Conformance;
 
 /// <summary>
-/// <see cref="IPermissionGrantStore"/> 的一致性套件。继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// <see cref="IPermissionGrantStore"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class PermissionGrantStoreConformance
 {
@@ -27,13 +30,19 @@ public abstract class PermissionGrantStoreConformance
     ];
 
     /// <summary>
-    /// 用给定授予创建被测存储。每个用例调用一次。
+    /// 用给定授予创建被测存储。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract ValueTask<IPermissionGrantStore> CreateStoreAsync(IReadOnlyList<PermissionGrant> grants);
 
     /// <summary>
-    /// 用例 1：角色与用户的授予分别返回；未知主体为空。
+    /// 用例 1：角色与用户的授予分别返回。
     /// </summary>
+    /// <remarks>
+    /// 未知主体为空。
+    /// </remarks>
     [Fact]
     public async Task Grants_AreReturnedPerSubject_AndEmptyForUnknown()
     {

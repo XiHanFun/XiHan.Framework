@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 同一实现登记在多个操作 ID 下：回显上下文里的操作 ID 与绑定到的字段；名字为 <c>fail</c> 时返回冲突。
+/// 同一实现登记在多个操作 ID 下。
 /// </summary>
+/// <remarks>
+/// 回显上下文里的操作 ID 与绑定到的字段；名字为 <c>fail</c> 时返回冲突。
+/// </remarks>
 internal sealed class OrdersOperation : IOperation<OrderRequest, OrderReply>
 {
     /// <inheritdoc />

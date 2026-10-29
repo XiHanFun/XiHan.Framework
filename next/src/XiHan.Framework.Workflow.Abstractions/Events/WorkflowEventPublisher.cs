@@ -10,13 +10,19 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Events;
 
 /// <summary>
-/// 把攒下的事件以 CloudEvents 信封按主题批量发布；没有装配消息发布者时跳过，发布失败只记日志。
+/// 把攒下的事件以 CloudEvents 信封按主题批量发布。
 /// </summary>
+/// <remarks>
+/// 没有装配消息发布者时跳过，发布失败只记日志。
+/// </remarks>
 internal sealed partial class WorkflowEventPublisher
 {
     /// <summary>
-    /// 发布者；没有为 <see langword="null"/>。
+    /// 发布者。
     /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>。
+    /// </remarks>
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>

@@ -7,8 +7,11 @@ using System.Text;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成 .NET Aspire AppHost 的登记代码：按绑定添加资源，把连接串注入应用的绑定环境变量。
+/// 生成 .NET Aspire AppHost 的登记代码。
 /// </summary>
+/// <remarks>
+/// 按绑定添加资源，把连接串注入应用的绑定环境变量。
+/// </remarks>
 internal static class AspireGenerator
 {
     /// <summary>

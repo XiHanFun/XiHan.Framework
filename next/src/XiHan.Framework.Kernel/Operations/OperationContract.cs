@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 操作契约的运行期形态：操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
+/// 操作契约的运行期形态。
 /// </summary>
+/// <remarks>
+/// 操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationContract
 {
@@ -51,8 +54,11 @@ public sealed record OperationContract
     }
 
     /// <summary>
-    /// 是否只读（不改变状态、可重复调用）：动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法。
+    /// 是否只读（不改变状态、可重复调用）。
     /// </summary>
+    /// <remarks>
+    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法。
+    /// </remarks>
     public bool IsReadOnly { get; }
 
     /// <summary>
@@ -71,8 +77,11 @@ public sealed record OperationContract
     public Expose Expose { get; }
 
     /// <summary>
-    /// 授权策略名；为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求。
+    /// 授权策略名。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求。
+    /// </remarks>
     public string? Policy { get; }
 
     /// <summary>
@@ -91,7 +100,10 @@ public sealed record OperationContract
     public string Verb => OperationId.VerbOf(Id);
 
     /// <summary>
-    /// 是否暴露给指定协议；<see cref="Operations.Expose.None"/> 永远为 <see langword="false"/>。
+    /// 是否暴露给指定协议。
     /// </summary>
+    /// <remarks>
+    /// <see cref="Operations.Expose.None"/> 永远为 <see langword="false"/>。
+    /// </remarks>
     public bool IsExposedTo(Expose protocol) => protocol != Expose.None && (Expose & protocol) == protocol;
 }

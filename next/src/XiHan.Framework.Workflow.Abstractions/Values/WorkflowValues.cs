@@ -9,15 +9,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Values;
 
 /// <summary>
-/// JSON 值与 .NET 值之间的转换（不用反射，AOT 可用）：数字跨类型、字符串解析成数字 / 布尔 / 时间 / Guid / 枚举，数组转字符串列表。
+/// JSON 值与 .NET 值之间的转换（不用反射，AOT 可用）。
 /// </summary>
+/// <remarks>
+/// 数字跨类型、字符串解析成数字 / 布尔 / 时间 / Guid / 枚举，数组转字符串列表。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowValues
 {
     /// <summary>
-    /// 转成 <typeparamref name="T"/>；<see langword="null"/>、转不成返回 <see langword="false"/>。
-    /// 支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>。
+    /// 转成 <typeparamref name="T"/>。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/>、转不成返回 <see langword="false"/>。支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>。
+    /// </remarks>
     public static bool TryConvert<T>(JsonNode? node, out T? value)
     {
         value = default;
@@ -183,8 +188,11 @@ public static class WorkflowValues
     public static T? ConvertOr<T>(JsonNode? node, T? fallback) => TryConvert<T>(node, out var value) ? value : fallback;
 
     /// <summary>
-    /// 转成字符串列表：数组逐项转字符串（跳过 null），字符串按逗号拆分并裁剪，其他标量单元素；<see langword="null"/> 为空列表。
+    /// 转成字符串列表。
     /// </summary>
+    /// <remarks>
+    /// 数组逐项转字符串（跳过 null），字符串按逗号拆分并裁剪，其他标量单元素；<see langword="null"/> 为空列表。
+    /// </remarks>
     public static IReadOnlyList<string> ToStringList(JsonNode? node)
     {
         switch (node)

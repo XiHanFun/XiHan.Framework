@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 
 /// <summary>
-/// 要求权限 <c>orders.write</c> 的操作：到达处理器即返回当前主体与租户，授权在 Authorize 阶段按契约判定。
+/// 要求权限 <c>orders.write</c> 的操作。
 /// </summary>
+/// <remarks>
+/// 到达处理器即返回当前主体与租户，授权在 Authorize 阶段按契约判定。
+/// </remarks>
 internal sealed class WriteOrderOperation : IOperation<OrderRequest, OrderResponse>
 {
     /// <summary>

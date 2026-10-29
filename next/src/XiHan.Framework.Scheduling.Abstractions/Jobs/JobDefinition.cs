@@ -14,8 +14,11 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 public sealed record JobDefinition
 {
     /// <summary>
-    /// 创建没有触发器（只能手动触发）的作业；<paramref name="jobType"/> 必须实现 <see cref="IJob"/>。
+    /// 创建没有触发器（只能手动触发）的作业。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="jobType"/> 必须实现 <see cref="IJob"/>。
+    /// </remarks>
     public JobDefinition(JobName name, Type jobType)
     {
         Name = name;
@@ -27,8 +30,11 @@ public sealed record JobDefinition
     }
 
     /// <summary>
-    /// 创建带一个触发器（名为 <see cref="JobTriggerDefinition.DefaultName"/>）的作业；手动计划即没有触发器。
+    /// 创建带一个触发器（名为 <see cref="JobTriggerDefinition.DefaultName"/>）的作业。
     /// </summary>
+    /// <remarks>
+    /// 手动计划即没有触发器。
+    /// </remarks>
     public JobDefinition(JobName name, JobSchedule schedule, Type jobType)
         : this(name, jobType)
     {
@@ -47,8 +53,11 @@ public sealed record JobDefinition
     public Type JobType { get; }
 
     /// <summary>
-    /// 触发器；空为只手动触发。名字重复是定义不合法（<see cref="SchedulingErrors.DefinitionInvalid"/>）。
+    /// 触发器。
     /// </summary>
+    /// <remarks>
+    /// 空为只手动触发。名字重复是定义不合法（<see cref="SchedulingErrors.DefinitionInvalid"/>）。
+    /// </remarks>
     public IReadOnlyList<JobTriggerDefinition> Triggers { get; init; } = [];
 
     /// <summary>
@@ -57,18 +66,27 @@ public sealed record JobDefinition
     public JsonObject? Data { get; init; }
 
     /// <summary>
-    /// 允许多次运行重叠；默认 <see langword="false"/>：整个集群同一时刻最多一次运行，按计划的触发被阻塞到上一次结束、手动触发返回 <see cref="SchedulingErrors.JobRunning"/>。
+    /// 允许多次运行重叠。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>：整个集群同一时刻最多一次运行，按计划的触发被阻塞到上一次结束、手动触发返回 <see cref="SchedulingErrors.JobRunning"/>。
+    /// </remarks>
     public bool AllowConcurrent { get; init; }
 
     /// <summary>
-    /// 每个实例各自按本地时钟运行；默认 <see langword="false"/>：按计划的触发在整个集群只运行一次。
+    /// 每个实例各自按本地时钟运行。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>：按计划的触发在整个集群只运行一次。
+    /// </remarks>
     public bool RunOnEveryInstance { get; init; }
 
     /// <summary>
-    /// 运行所在节点失联时由领导者重新入队一次（<see cref="Schedulers.JobTrigger.Recovery"/>）；默认 <see langword="false"/>。
+    /// 运行所在节点失联时由领导者重新入队一次（<see cref="Schedulers.JobTrigger.Recovery"/>）。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>。
+    /// </remarks>
     public bool RequestsRecovery { get; init; }
 
     /// <summary>

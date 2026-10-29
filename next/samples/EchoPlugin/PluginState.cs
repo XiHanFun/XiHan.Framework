@@ -73,8 +73,11 @@ internal sealed class PluginState
     }
 
     /// <summary>
-    /// 订阅状态变化；返回取消订阅的句柄。
+    /// 订阅状态变化。
     /// </summary>
+    /// <remarks>
+    /// 返回取消订阅的句柄。
+    /// </remarks>
     public IDisposable Watch(Func<Task> onChange)
     {
         var id = Guid.NewGuid();
@@ -83,8 +86,11 @@ internal sealed class PluginState
     }
 
     /// <summary>
-    /// 配置里的问候语；没有配置时为空。
+    /// 配置里的问候语。
     /// </summary>
+    /// <remarks>
+    /// 没有配置时为空。
+    /// </remarks>
     public string? Greeting => Configuration[nameof(Greeting)]?.GetValue<string>();
 
     /// <summary>

@@ -7,8 +7,11 @@ using System.Text;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 极简 YAML 拼接：按缩进写行，标量按需加引号，多行文本用块标量。生成的清单只用映射、序列与标量三种结构。
+/// 极简 YAML 拼接。
 /// </summary>
+/// <remarks>
+/// 按缩进写行，标量按需加引号，多行文本用块标量。生成的清单只用映射、序列与标量三种结构。
+/// </remarks>
 internal sealed class YamlText
 {
     /// <summary>

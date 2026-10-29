@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 密钥配置的 Provider：构建时一次批量读取映射的密钥，可按周期重读；重读失败的项保留旧值。
+/// 密钥配置的 Provider。
 /// </summary>
+/// <remarks>
+/// 构建时一次批量读取映射的密钥，可按周期重读；重读失败的项保留旧值。
+/// </remarks>
 internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvider
 {
     /// <summary>
@@ -101,8 +104,11 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     }
 
     /// <summary>
-    /// 把逐项结果写进键值表：首次时失败项按 <see cref="SecretsConfigurationOptions.Optional"/> 决定跳过或抛出；重读时失败项保留旧值。
+    /// 把逐项结果写进键值表。
     /// </summary>
+    /// <remarks>
+    /// 首次时失败项按 <see cref="SecretsConfigurationOptions.Optional"/> 决定跳过或抛出；重读时失败项保留旧值。
+    /// </remarks>
     private void Apply(IReadOnlyList<SecretLookup> lookups, bool initial)
     {
         if (lookups.Count != _names.Length)
@@ -139,8 +145,11 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     }
 
     /// <summary>
-    /// 周期性重读；失败只回调，不丢弃已有数据。
+    /// 周期性重读。
     /// </summary>
+    /// <remarks>
+    /// 失败只回调，不丢弃已有数据。
+    /// </remarks>
     private async Task RefreshAsync(PeriodicTimer timer, CancellationToken cancellationToken)
     {
         try

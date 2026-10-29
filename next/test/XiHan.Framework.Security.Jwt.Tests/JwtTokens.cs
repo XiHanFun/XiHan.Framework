@@ -29,8 +29,11 @@ internal static class JwtTokens
     public const string Audience = "api";
 
     /// <summary>
-    /// 签发令牌；默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// 签发令牌。
     /// </summary>
+    /// <remarks>
+    /// 默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// </remarks>
     public static string Create(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
     {
         var identity = new ClaimsIdentity();

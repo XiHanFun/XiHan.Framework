@@ -6,8 +6,11 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 项目里一个 <c>JsonSerializerContext</c> 子类的信息：登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化。
+/// 项目里一个 <c>JsonSerializerContext</c> 子类的信息。
 /// </summary>
+/// <remarks>
+/// 登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化。
+/// </remarks>
 internal sealed class JsonContextModel
 {
     /// <summary>

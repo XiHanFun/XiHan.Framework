@@ -31,8 +31,11 @@ internal sealed class PostgresDatabase(string server, string name) : IDisposable
     ];
 
     /// <summary>
-    /// 创建以 PostgreSQL 装配的 SqlSugar 特性；连接串来自宿主解析的绑定。
+    /// 创建以 PostgreSQL 装配的 SqlSugar 特性。
     /// </summary>
+    /// <remarks>
+    /// 连接串来自宿主解析的绑定。
+    /// </remarks>
     public static IFeature CreateFeature()
         => new SqlSugarPersistenceFeature(static (binding, config) =>
         {

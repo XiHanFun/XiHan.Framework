@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 列出当前租户订单的操作；多租户过滤由持久化子系统按上下文里的租户自动施加。HTTP 上是 <c>GET /orders</c>。
+/// 列出当前租户订单的操作。
 /// </summary>
+/// <remarks>
+/// 多租户过滤由持久化子系统按上下文里的租户自动施加。HTTP 上是 <c>GET /orders</c>。
+/// </remarks>
 /// <param name="orders">订单仓储。</param>
 [Operation(Id, Stability = Stability.Experimental, Expose = Expose.Http | Expose.Grpc | Expose.Mcp, Permission = "orders.read")]
 public sealed class ListOrders(IRepository<Order, Guid> orders) : IOperation<ListOrdersRequest, OrderList>

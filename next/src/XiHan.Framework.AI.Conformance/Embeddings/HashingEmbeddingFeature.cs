@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.Conformance.Embeddings;
 
 /// <summary>
-/// 套件用的 <c>ai.embedding@1</c> Provider：登记 <see cref="HashingEmbeddingGeneratorFactory"/>，让知识库 Provider 的测试不依赖外部模型。
+/// 套件用的 <c>ai.embedding@1</c> Provider。
 /// </summary>
+/// <remarks>
+/// 登记 <see cref="HashingEmbeddingGeneratorFactory"/>，让知识库 Provider 的测试不依赖外部模型。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HashingEmbeddingFeature : IFeature
 {

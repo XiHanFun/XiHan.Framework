@@ -21,8 +21,11 @@ internal static class EchoPluginHost
     public const string PluginId = "xihan.samples.echo";
 
     /// <summary>
-    /// 示例插件的输出目录：测试输出在 .../bin/&lt;Configuration&gt;/net10.0/，示例在 samples/EchoPlugin/bin/&lt;Configuration&gt;/net10.0/。
+    /// 示例插件的输出目录。
     /// </summary>
+    /// <remarks>
+    /// 测试输出在 .../bin/&lt;Configuration&gt;/net10.0/，示例在 samples/EchoPlugin/bin/&lt;Configuration&gt;/net10.0/。
+    /// </remarks>
     public static string Directory { get; } = Locate();
 
     /// <summary>

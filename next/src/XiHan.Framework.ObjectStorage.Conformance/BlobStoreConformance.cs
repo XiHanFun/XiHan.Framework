@@ -14,8 +14,11 @@ using Xunit;
 namespace XiHan.Framework.ObjectStorage.Conformance;
 
 /// <summary>
-/// <see cref="IBlobStore"/> 的一致性套件。继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// <see cref="IBlobStore"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class BlobStoreConformance
 {
@@ -25,13 +28,19 @@ public abstract class BlobStoreConformance
     protected virtual ContainerName Container => new("conformance");
 
     /// <summary>
-    /// 创建被测存储。每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键。
+    /// 创建被测存储。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键。
+    /// </remarks>
     protected abstract IBlobStore CreateStore();
 
     /// <summary>
-    /// 用例 1：写入后能读到同样的字节、内容类型与自定义元数据；ETag 与长度正确；没写过的键是 NOTFOUND。
+    /// 用例 1：写入后能读到同样的字节、内容类型与自定义元数据。
     /// </summary>
+    /// <remarks>
+    /// ETag 与长度正确；没写过的键是 NOTFOUND。
+    /// </remarks>
     [Fact]
     public async Task Put_ThenGet_RoundTripsContentAndMetadata()
     {
@@ -64,8 +73,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：允许覆盖时新内容替换旧内容且 ETag 变化；不允许覆盖时返回 CONFLICT 且内容不变；键区分大小写。
+    /// 用例 2：允许覆盖时新内容替换旧内容且 ETag 变化。
     /// </summary>
+    /// <remarks>
+    /// 不允许覆盖时返回 CONFLICT 且内容不变；键区分大小写。
+    /// </remarks>
     [Fact]
     public async Task Put_OverwritesOrConflicts_AndKeysAreCaseSensitive()
     {
@@ -89,8 +101,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：批量写入按顺序逐项返回结果，空列表返回空；重复键按顺序各执行一次。
+    /// 用例 3：批量写入按顺序逐项返回结果，空列表返回空。
     /// </summary>
+    /// <remarks>
+    /// 重复键按顺序各执行一次。
+    /// </remarks>
     [Fact]
     public async Task PutMany_ReturnsOneResultPerUpload_InOrder()
     {
@@ -118,8 +133,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：批量删除逐项报告是否存在；不存在是成功；重复键第二次报告不存在；删除后读不到。
+    /// 用例 4：批量删除逐项报告是否存在。
     /// </summary>
+    /// <remarks>
+    /// 不存在是成功；重复键第二次报告不存在；删除后读不到。
+    /// </remarks>
     [Fact]
     public async Task DeleteMany_ReportsExistencePerKey()
     {
@@ -139,8 +157,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 5：按前缀列举，键的序数顺序；页大小生效，续页标记取完全部且不重复；无匹配为空页。
+    /// 用例 5：按前缀列举，键的序数顺序。
     /// </summary>
+    /// <remarks>
+    /// 页大小生效，续页标记取完全部且不重复；无匹配为空页。
+    /// </remarks>
     [Fact]
     public async Task List_FiltersByPrefix_OrdersByKey_AndPaginates()
     {
@@ -227,8 +248,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 8：范围读取——起点与长度、读到末尾、超出末尾截断，<see cref="BlobContent.Range"/> 给出实际范围，元数据长度仍是总长；起点不在对象内（含空对象）不可满足；不存在是 NOTFOUND。
+    /// 用例 8：范围读取——起点与长度、读到末尾、超出末尾截断。
     /// </summary>
+    /// <remarks>
+    /// <see cref="BlobContent.Range"/> 给出实际范围，元数据长度仍是总长。起点不在对象内（含空对象）不可满足；不存在是 NOTFOUND。
+    /// </remarks>
     [Fact]
     public async Task GetRange_ReturnsTheRequestedBytes()
     {
@@ -258,8 +282,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 9：分片上传——乱序上传、同一编号重传覆盖，列出分片升序；完成前对象不可见，完成后是按编号拼接的内容，内容类型与自定义元数据来自发起时；完成后上传不存在。存储不支持分片时跳过。
+    /// 用例 9：分片上传——乱序上传、同一编号重传覆盖，列出分片升序。
     /// </summary>
+    /// <remarks>
+    /// 完成前对象不可见，完成后是按编号拼接的内容，内容类型与自定义元数据来自发起时；完成后上传不存在。存储不支持分片时跳过。
+    /// </remarks>
     [Fact]
     public async Task Multipart_UploadsPartsInAnyOrder_AndCompletesAtomically()
     {
@@ -289,8 +316,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 10：分片清单不合法（为空、乱序、ETag 不符、非末片过小）返回 PARTS_INVALID 且上传保留、之后仍可完成；不覆盖时对象已存在拒绝发起与完成；放弃后上传不存在，再放弃也成功。存储不支持分片时跳过。
+    /// 用例 10：分片清单不合法返回 PARTS_INVALID 且上传保留、之后仍可完成。
     /// </summary>
+    /// <remarks>
+    /// 为空、乱序、ETag 不符、非末片过小。不覆盖时对象已存在拒绝发起与完成；放弃后上传不存在，再放弃也成功。存储不支持分片时跳过。
+    /// </remarks>
     [Fact]
     public async Task Multipart_RejectsInvalidPartLists_AndHonoursOverwriteAndAbort()
     {
@@ -323,8 +353,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 被测存储与其分片上传；存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例。
+    /// 被测存储与其分片上传。
     /// </summary>
+    /// <remarks>
+    /// 存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例。
+    /// </remarks>
     private (IBlobStore Store, IBlobMultipartStore Multipart) CreateMultipartStore()
     {
         var store = CreateStore();

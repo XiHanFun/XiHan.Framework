@@ -23,17 +23,26 @@ public interface IAIProviderCatalog
     Maybe<AIProviderOptions> Find(string name);
 
     /// <summary>
-    /// 解析聊天客户端；<paramref name="name"/> 为空取默认 Provider。未配置或种类无工厂 → <see cref="AIErrors.ProviderNotFound"/>。
+    /// 解析聊天客户端。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="name"/> 为空取默认 Provider。未配置或种类无工厂 → <see cref="AIErrors.ProviderNotFound"/>。
+    /// </remarks>
     Result<IChatClient> ResolveChatClient(string? name = null);
 
     /// <summary>
-    /// 解析嵌入生成器；<paramref name="name"/> 为空取默认嵌入 Provider。
+    /// 解析嵌入生成器。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="name"/> 为空取默认嵌入 Provider。
+    /// </remarks>
     Result<IEmbeddingGenerator<string, Embedding<float>>> ResolveEmbeddingGenerator(string? name = null);
 
     /// <summary>
-    /// 丢弃缓存的实例（可释放的会被释放）；<paramref name="name"/> 为空清全部。
+    /// 丢弃缓存的实例（可释放的会被释放）。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="name"/> 为空清全部。
+    /// </remarks>
     void Invalidate(string? name = null);
 }

@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 
 /// <summary>
-/// 指派规则解析：按类型找 Provider（不区分大小写，同类型两个 Provider 是编程错误），结果裁剪、去重、保序。作用域服务。
+/// 指派规则解析。
 /// </summary>
+/// <remarks>
+/// 按类型找 Provider（不区分大小写，同类型两个 Provider 是编程错误），结果裁剪、去重、保序。作用域服务。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AssigneeResolver
 {
@@ -43,8 +46,11 @@ public sealed class AssigneeResolver
     public bool Supports(string ruleType) => ruleType is not null && _providers.ContainsKey(ruleType);
 
     /// <summary>
-    /// 校验一组规则：未登记的类型与 Provider 拒绝的参数都算错误；返回错误说明（空表示合法）。
+    /// 校验一组规则。
     /// </summary>
+    /// <remarks>
+    /// 未登记的类型与 Provider 拒绝的参数都算错误；返回错误说明（空表示合法）。
+    /// </remarks>
     public IReadOnlyList<string> Validate(IEnumerable<AssigneeRule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);

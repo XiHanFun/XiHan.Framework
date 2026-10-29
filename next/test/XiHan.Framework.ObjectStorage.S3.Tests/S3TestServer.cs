@@ -7,8 +7,11 @@ using Amazon.S3.Model;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 真实的 S3 兼容服务来自环境变量 <c>XIHAN_TEST_S3</c>（服务端点，如 <c>http://localhost:9000</c>），密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>minioadmin</c>）；未设置端点时跳过需要它的用例。
+/// 真实的 S3 兼容服务来自环境变量 <c>XIHAN_TEST_S3</c>。
 /// </summary>
+/// <remarks>
+/// 服务端点，如 <c>http://localhost:9000</c>。密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>minioadmin</c>）。未设置端点时跳过需要它的用例。
+/// </remarks>
 internal static class S3TestServer
 {
     /// <summary>
@@ -32,8 +35,11 @@ internal static class S3TestServer
     private static readonly Lock _gate = new();
 
     /// <summary>
-    /// 环境变量里的服务端点；未设置为 <see langword="null"/>。
+    /// 环境变量里的服务端点。
     /// </summary>
+    /// <remarks>
+    /// 未设置为 <see langword="null"/>。
+    /// </remarks>
     public static string? ServiceUrl => Environment.GetEnvironmentVariable(EnvironmentVariable);
 
     /// <summary>
@@ -47,8 +53,11 @@ internal static class S3TestServer
     public static string SecretKey => Environment.GetEnvironmentVariable("XIHAN_TEST_S3_SECRET_KEY") is { Length: > 0 } key ? key : "minioadmin";
 
     /// <summary>
-    /// 返回服务端点；未设置时跳过当前用例。
+    /// 返回服务端点。
     /// </summary>
+    /// <remarks>
+    /// 未设置时跳过当前用例。
+    /// </remarks>
     public static string RequireServiceUrl()
     {
         Assert.SkipWhen(string.IsNullOrWhiteSpace(ServiceUrl), $"Set the environment variable '{EnvironmentVariable}' to an S3-compatible endpoint to run this test.");
@@ -77,8 +86,11 @@ internal static class S3TestServer
     ];
 
     /// <summary>
-    /// 共享客户端；未设置端点时跳过当前用例。
+    /// 共享客户端。
     /// </summary>
+    /// <remarks>
+    /// 未设置端点时跳过当前用例。
+    /// </remarks>
     public static IAmazonS3 Client()
     {
         RequireServiceUrl();
@@ -96,8 +108,11 @@ internal static class S3TestServer
     }
 
     /// <summary>
-    /// 桶不存在就创建；每个桶只检查一次。
+    /// 桶不存在就创建。
     /// </summary>
+    /// <remarks>
+    /// 每个桶只检查一次。
+    /// </remarks>
     public static void EnsureBucket(IAmazonS3 client, string bucket)
     {
         lock (_gate)

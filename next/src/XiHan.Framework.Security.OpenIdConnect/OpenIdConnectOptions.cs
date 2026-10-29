@@ -24,8 +24,11 @@ public sealed record OpenIdConnectOptions
     public const string DiscoveryPath = ".well-known/openid-configuration";
 
     /// <summary>
-    /// 签发者地址（绝对 URI，如 <c>https://login.example.com/realms/shop</c>）；发现文档默认在其下的 <see cref="DiscoveryPath"/>。
+    /// 签发者地址（绝对 URI，如 <c>https://login.example.com/realms/shop</c>）。
     /// </summary>
+    /// <remarks>
+    /// 发现文档默认在其下的 <see cref="DiscoveryPath"/>。
+    /// </remarks>
     public required string Authority
     {
         get => field;
@@ -33,8 +36,11 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 发现文档地址；为空时由 <see cref="Authority"/> 推出。
+    /// 发现文档地址。
     /// </summary>
+    /// <remarks>
+    /// 为空时由 <see cref="Authority"/> 推出。
+    /// </remarks>
     public string? MetadataAddress
     {
         get => field;
@@ -42,23 +48,35 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 期望的签发者；为空时取发现文档里的 <c>issuer</c>。
+    /// 期望的签发者。
     /// </summary>
+    /// <remarks>
+    /// 为空时取发现文档里的 <c>issuer</c>。
+    /// </remarks>
     public string? Issuer { get; init; }
 
     /// <summary>
-    /// 期望的受众；为空时不校验受众。
+    /// 期望的受众。
     /// </summary>
+    /// <remarks>
+    /// 为空时不校验受众。
+    /// </remarks>
     public string? Audience { get; init; }
 
     /// <summary>
-    /// 发现文档与 JWKS 是否必须经 HTTPS 取得；默认是，只在本地开发时关闭。
+    /// 发现文档与 JWKS 是否必须经 HTTPS 取得。
     /// </summary>
+    /// <remarks>
+    /// 默认是，只在本地开发时关闭。
+    /// </remarks>
     public bool RequireHttpsMetadata { get; init; } = true;
 
     /// <summary>
-    /// 校验有效期时允许的时钟偏移；默认 60 秒。
+    /// 校验有效期时允许的时钟偏移。
     /// </summary>
+    /// <remarks>
+    /// 默认 60 秒。
+    /// </remarks>
     public TimeSpan ClockSkew
     {
         get => field;
@@ -66,8 +84,11 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 元数据的自动刷新间隔；默认 12 小时。
+    /// 元数据的自动刷新间隔。
     /// </summary>
+    /// <remarks>
+    /// 默认 12 小时。
+    /// </remarks>
     public TimeSpan RefreshInterval
     {
         get => field;
@@ -75,8 +96,11 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromHours(12);
 
     /// <summary>
-    /// 两次按需刷新（未知签名密钥触发）之间的最短间隔，也是刷新失败后沿用旧密钥的时长；默认 5 分钟。
+    /// 两次按需刷新（未知签名密钥触发）之间的最短间隔，也是刷新失败后沿用旧密钥的时长。
     /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟。
+    /// </remarks>
     public TimeSpan MinimumRefreshInterval
     {
         get => field;
@@ -84,8 +108,11 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 取发现文档或 JWKS 的 HTTP 超时；默认 30 秒。
+    /// 取发现文档或 JWKS 的 HTTP 超时。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒。
+    /// </remarks>
     public TimeSpan BackchannelTimeout
     {
         get => field;
@@ -93,8 +120,11 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 作为主体 ID 的声明类型；默认 <c>sub</c>。
+    /// 作为主体 ID 的声明类型。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>sub</c>。
+    /// </remarks>
     public string NameClaim
     {
         get => field;
@@ -116,8 +146,11 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 从配置读取；<c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）。
+    /// </remarks>
     public static OpenIdConnectOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -167,8 +200,11 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 读取以秒为单位的时长；未配置为空，不是非负数则抛出。
+    /// 读取以秒为单位的时长。
     /// </summary>
+    /// <remarks>
+    /// 未配置为空，不是非负数则抛出。
+    /// </remarks>
     private static TimeSpan? Seconds(IConfiguration configuration, string name)
     {
         var text = configuration[$"{ConfigurationSection}:{name}"];

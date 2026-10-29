@@ -14,8 +14,11 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 请求在进入管道前绑定为载荷，Validate 阶段按契约 Schema 拒绝：缺必填、类型不符与嵌套违规都是 400 的 <c>KERNEL_VALIDATION_003</c>，不执行操作；合法请求照常执行；请求体不是 JSON 对象在进管道前就被拒绝。
+/// HTTP 请求在进入管道前绑定为载荷，Validate 阶段按契约 Schema 拒绝。
 /// </summary>
+/// <remarks>
+/// 缺必填、类型不符与嵌套违规都是 400 的 <c>KERNEL_VALIDATION_003</c>，不执行操作；合法请求照常执行；请求体不是 JSON 对象在进管道前就被拒绝。
+/// </remarks>
 public sealed class ValidationStageTests
 {
     /// <summary>

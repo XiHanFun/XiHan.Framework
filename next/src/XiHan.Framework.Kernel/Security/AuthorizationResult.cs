@@ -12,19 +12,28 @@ namespace XiHan.Framework.Kernel.Security;
 public readonly record struct AuthorizationResult
 {
     /// <summary>
-    /// 创建结果。<see cref="IsAllowed"/> 由工厂方法通过初始化器设置，保证 <c>default</c> 实例是拒绝。
+    /// 创建结果。
     /// </summary>
+    /// <remarks>
+    /// <see cref="IsAllowed"/> 由工厂方法通过初始化器设置，保证 <c>default</c> 实例是拒绝。
+    /// </remarks>
     /// <param name="reason">拒绝原因。</param>
     private AuthorizationResult(Error? reason) => Reason = reason;
 
     /// <summary>
-    /// 是否允许。<c>default</c> 为拒绝。
+    /// 是否允许。
     /// </summary>
+    /// <remarks>
+    /// <c>default</c> 为拒绝。
+    /// </remarks>
     public bool IsAllowed { get; private init; }
 
     /// <summary>
-    /// 拒绝原因；允许时为 <see langword="null"/>。
+    /// 拒绝原因。
     /// </summary>
+    /// <remarks>
+    /// 允许时为 <see langword="null"/>。
+    /// </remarks>
     public Error? Reason { get; }
 
     /// <summary>

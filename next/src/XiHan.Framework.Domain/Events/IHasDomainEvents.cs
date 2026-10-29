@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Events;
 
 /// <summary>
-/// 收集领域事件的聚合。持久化子系统在提交后取出并派发，然后清空。
+/// 收集领域事件的聚合。
 /// </summary>
+/// <remarks>
+/// 持久化子系统在提交后取出并派发，然后清空。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IHasDomainEvents
 {

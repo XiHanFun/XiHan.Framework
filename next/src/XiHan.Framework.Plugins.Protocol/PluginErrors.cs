@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 插件协议各载体（进程外、Wasm）共用的错误码（<c>PLUGINS_*</c>，见 <c>spec/conventions/error-codes.md</c>）。
+/// 插件协议各载体共用的错误码。
 /// </summary>
+/// <remarks>
+/// 进程外、Wasm。<c>PLUGINS_*</c>，见 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginErrors
 {

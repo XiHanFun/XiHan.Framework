@@ -7,8 +7,11 @@ using XiHan.Framework.Kernel.Tests.Fixtures;
 namespace XiHan.Framework.Kernel.Tests.Hosting;
 
 /// <summary>
-/// 宿主支撑类型的行为：<see cref="KernelOptions"/> 的显式配置读取与 <see cref="BindingResolver"/> 对目录与配置两种来源的合并。
+/// 宿主支撑类型的行为。
 /// </summary>
+/// <remarks>
+/// <see cref="KernelOptions"/> 的显式配置读取与 <see cref="BindingResolver"/> 对目录与配置两种来源的合并。
+/// </remarks>
 public sealed class HostingSupportTests
 {
     [Fact]

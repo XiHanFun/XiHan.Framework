@@ -8,8 +8,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Abstractions.Authorization;
 
 /// <summary>
-/// 策略：主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝。
+/// 策略。
 /// </summary>
+/// <remarks>
+/// 主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionPolicy : IPolicy
 {
@@ -19,8 +22,11 @@ public sealed class PermissionPolicy : IPolicy
     public const string Prefix = "permission:";
 
     /// <summary>
-    /// 权限检查器；判定主体是否持有 <see cref="PermissionCode"/>。
+    /// 权限检查器。
     /// </summary>
+    /// <remarks>
+    /// 判定主体是否持有 <see cref="PermissionCode"/>。
+    /// </remarks>
     private readonly IPermissionChecker _checker;
 
     /// <summary>
@@ -50,8 +56,11 @@ public sealed class PermissionPolicy : IPolicy
     }
 
     /// <summary>
-    /// 从策略名取权限码；不是权限策略返回 <see langword="null"/>。
+    /// 从策略名取权限码。
     /// </summary>
+    /// <remarks>
+    /// 不是权限策略返回 <see langword="null"/>。
+    /// </remarks>
     public static string? CodeOf(string policyName)
         // 前缀之后必须还有内容："permission:" 本身不是权限策略
         => policyName is not null && policyName.StartsWith(Prefix, StringComparison.Ordinal) && policyName.Length > Prefix.Length

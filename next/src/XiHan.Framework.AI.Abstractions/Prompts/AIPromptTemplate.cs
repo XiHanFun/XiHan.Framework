@@ -60,8 +60,11 @@ public sealed record AIPromptTemplate
     }
 
     /// <summary>
-    /// 渲染；缺参数 → <see cref="AIErrors.RequestInvalid"/>。值按不变文化转字符串，<see langword="null"/> 为空串。
+    /// 渲染。
     /// </summary>
+    /// <remarks>
+    /// 缺参数 → <see cref="AIErrors.RequestInvalid"/>。值按不变文化转字符串，<see langword="null"/> 为空串。
+    /// </remarks>
     public Result<string> Render(IReadOnlyDictionary<string, object?>? arguments = null)
     {
         var builder = new StringBuilder(Template.Length);

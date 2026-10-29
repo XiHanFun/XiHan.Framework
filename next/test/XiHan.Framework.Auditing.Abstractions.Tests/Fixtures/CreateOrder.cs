@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 声明了权限的创建操作：补充资源与细节；金额为负返回校验失败，为 999 抛出异常。
+/// 声明了权限的创建操作。
 /// </summary>
+/// <remarks>
+/// 补充资源与细节；金额为负返回校验失败，为 999 抛出异常。
+/// </remarks>
 [Operation(Id, Permission = "orders.write")]
 internal sealed class CreateOrder : IOperation<CreateOrderRequest, OrderResponse>
 {

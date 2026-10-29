@@ -7,8 +7,11 @@ using System.Xml.Linq;
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 定位 next 工作区并枚举正式包。所有架构测试都以文件系统为事实源，不依赖已编译的程序集。
+/// 定位 next 工作区并枚举正式包。
 /// </summary>
+/// <remarks>
+/// 所有架构测试都以文件系统为事实源，不依赖已编译的程序集。
+/// </remarks>
 internal static class Workspace
 {
     /// <summary>
@@ -42,13 +45,19 @@ internal static class Workspace
     public static IReadOnlyList<SourceProject> SourceProjects { get; } = LoadProjects(SourceRoot);
 
     /// <summary>
-    /// 全部测试项目，按项目名排序；目录与子命名空间规则对它们同样生效。
+    /// 全部测试项目，按项目名排序。
     /// </summary>
+    /// <remarks>
+    /// 目录与子命名空间规则对它们同样生效。
+    /// </remarks>
     public static IReadOnlyList<SourceProject> TestProjects { get; } = LoadProjects(TestRoot);
 
     /// <summary>
-    /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序；目录与子命名空间规则对它们同样生效。
+    /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序。
     /// </summary>
+    /// <remarks>
+    /// 目录与子命名空间规则对它们同样生效。
+    /// </remarks>
     public static IReadOnlyList<SourceProject> SampleProjects { get; } = LoadProjects(Path.Combine(Root, "samples")).Concat(LoadProjects(Path.Combine(Root, "benchmarks"))).ToList();
 
     /// <summary>
@@ -97,8 +106,11 @@ internal static class Workspace
     }
 
     /// <summary>
-    /// 枚举根目录下每个目录中与目录同名的项目文件；没有同名项目文件的目录不算项目。
+    /// 枚举根目录下每个目录中与目录同名的项目文件。
     /// </summary>
+    /// <remarks>
+    /// 没有同名项目文件的目录不算项目。
+    /// </remarks>
     private static List<SourceProject> LoadProjects(string root)
     {
         var projects = new List<SourceProject>();

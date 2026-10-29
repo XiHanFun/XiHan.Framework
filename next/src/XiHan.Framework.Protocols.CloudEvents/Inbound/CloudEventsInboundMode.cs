@@ -12,8 +12,11 @@ namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 public enum CloudEventsInboundMode
 {
     /// <summary>
-    /// 在请求内经内核管道派发给主题的处理器：处理结果就是响应，发送方据此重试；主题没有处理器时 404。
+    /// 在请求内经内核管道派发给主题的处理器。
     /// </summary>
+    /// <remarks>
+    /// 处理结果就是响应，发送方据此重试；主题没有处理器时 404。
+    /// </remarks>
     Dispatch = 0,
 
     /// <summary>

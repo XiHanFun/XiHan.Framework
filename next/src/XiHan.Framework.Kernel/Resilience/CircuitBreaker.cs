@@ -4,9 +4,11 @@
 namespace XiHan.Framework.Kernel.Resilience;
 
 /// <summary>
-/// 简单熔断器：连续失败达到阈值即打开，打开期间拒绝调用；到期进入半开放一次试探，试探成功关闭、失败重新打开。
-/// 打开期间仍在途的调用结束时不改变状态（它们反映的是打开前的情况）。状态转移在锁内完成；时间来自 <see cref="TimeProvider"/>，便于测试推进。
+/// 简单熔断器。
 /// </summary>
+/// <remarks>
+/// 连续失败达到阈值即打开，打开期间拒绝调用；到期进入半开放一次试探，试探成功关闭、失败重新打开。打开期间仍在途的调用结束时不改变状态（它们反映的是打开前的情况）。状态转移在锁内完成；时间来自 <see cref="TimeProvider"/>，便于测试推进。
+/// </remarks>
 internal sealed class CircuitBreaker
 {
     /// <summary>
@@ -76,8 +78,11 @@ internal sealed class CircuitBreaker
     }
 
     /// <summary>
-    /// 尝试进入：关闭态放行；打开态未到期拒绝并给出剩余时长，到期转半开放出一次试探；半开态已有试探在途时拒绝。
+    /// 尝试进入。
     /// </summary>
+    /// <remarks>
+    /// 关闭态放行；打开态未到期拒绝并给出剩余时长，到期转半开放出一次试探；半开态已有试探在途时拒绝。
+    /// </remarks>
     public bool TryEnter(out TimeSpan retryAfter)
     {
         lock (_gate)
@@ -112,8 +117,11 @@ internal sealed class CircuitBreaker
     }
 
     /// <summary>
-    /// 放弃一次已放行但没有执行的进入（随后被限流或并发拒绝、排队被取消）：半开态让出试探名额给下一个调用。
+    /// 放弃一次已放行但没有执行的进入（随后被限流或并发拒绝、排队被取消）。
     /// </summary>
+    /// <remarks>
+    /// 半开态让出试探名额给下一个调用。
+    /// </remarks>
     public void Abandon()
     {
         lock (_gate)
@@ -126,8 +134,11 @@ internal sealed class CircuitBreaker
     }
 
     /// <summary>
-    /// 记一次成功：清零连续失败；半开态试探成功即关闭；打开态不变。
+    /// 记一次成功。
     /// </summary>
+    /// <remarks>
+    /// 清零连续失败；半开态试探成功即关闭；打开态不变。
+    /// </remarks>
     public void RecordSuccess()
     {
         lock (_gate)
@@ -142,8 +153,11 @@ internal sealed class CircuitBreaker
     }
 
     /// <summary>
-    /// 记一次失败：关闭态计数达到阈值即打开；半开态试探失败重新打开；打开态不变。
+    /// 记一次失败。
     /// </summary>
+    /// <remarks>
+    /// 关闭态计数达到阈值即打开；半开态试探失败重新打开；打开态不变。
+    /// </remarks>
     public void RecordFailure()
     {
         lock (_gate)

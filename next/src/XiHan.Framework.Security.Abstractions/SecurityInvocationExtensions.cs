@@ -35,8 +35,11 @@ public static class SecurityInvocationExtensions
     public static Maybe<AuthenticationCredential> GetCredential(this InvocationContext context) => context.Get(_credentialKey);
 
     /// <summary>
-    /// 声明本次调用在 Authorize 阶段必须满足的要求；由宿主端点元数据或操作契约设置。
+    /// 声明本次调用在 Authorize 阶段必须满足的要求。
     /// </summary>
+    /// <remarks>
+    /// 由宿主端点元数据或操作契约设置。
+    /// </remarks>
     public static void RequireAuthorization(this InvocationContext context, AuthorizationRequirement requirement) => context.Set(_requirementKey, requirement);
 
     /// <summary>

@@ -26,8 +26,11 @@ using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
 /// <summary>
-/// 一个 Wasm 插件的运行时：模块编译、实例化与握手、配置与启动、串行调用、健康轮询、陷阱后的退避重建与停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子。
+/// 一个 Wasm 插件的运行时。
 /// </summary>
+/// <remarks>
+/// 模块编译、实例化与握手、配置与启动、串行调用、健康轮询、陷阱后的退避重建与停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子。
+/// </remarks>
 internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
 {
     /// <summary>
@@ -71,23 +74,35 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private readonly WasmHostFunctions _functions;
 
     /// <summary>
-    /// 已编译的模块；首次发现时装载。
+    /// 已编译的模块。
     /// </summary>
+    /// <remarks>
+    /// 首次发现时装载。
+    /// </remarks>
     private WasmModule? _module;
 
     /// <summary>
-    /// 当前实例；没有时为空。
+    /// 当前实例。
     /// </summary>
+    /// <remarks>
+    /// 没有时为空。
+    /// </remarks>
     private WasmInstance? _instance;
 
     /// <summary>
-    /// 当前实例的监视（健康轮询）；停止时取消。
+    /// 当前实例的监视（健康轮询）。
     /// </summary>
+    /// <remarks>
+    /// 停止时取消。
+    /// </remarks>
     private CancellationTokenSource? _monitor;
 
     /// <summary>
-    /// 首次成功握手的结果；重建后核对。
+    /// 首次成功握手的结果。
     /// </summary>
+    /// <remarks>
+    /// 重建后核对。
+    /// </remarks>
     private HandshakeInfo? _handshake;
 
     /// <summary>
@@ -116,8 +131,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private volatile bool _stopping;
 
     /// <summary>
-    /// 崩溃后有重建在退避中；期间的调用直接按不可用失败。
+    /// 崩溃后有重建在退避中。
     /// </summary>
+    /// <remarks>
+    /// 期间的调用直接按不可用失败。
+    /// </remarks>
     private volatile bool _restartPending;
 
     /// <summary>
@@ -166,8 +184,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     public IReadOnlyDictionary<string, string> Mounts { get; }
 
     /// <summary>
-    /// 日志；宿主附着到容器后换成真正的日志工厂产出的实例。
+    /// 日志。
     /// </summary>
+    /// <remarks>
+    /// 宿主附着到容器后换成真正的日志工厂产出的实例。
+    /// </remarks>
     public ILogger Logger { get; set; }
 
     /// <summary>
@@ -239,8 +260,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType)) == true;
 
     /// <summary>
-    /// 探测启动：编译模块、实例化并握手；懒激活的插件随即丢弃实例，其余保持实例等待 <see cref="StartAsync"/>。
+    /// 探测启动。
     /// </summary>
+    /// <remarks>
+    /// 编译模块、实例化并握手；懒激活的插件随即丢弃实例，其余保持实例等待 <see cref="StartAsync"/>。
+    /// </remarks>
     public async Task<Result<HandshakeInfo>> DiscoverAsync(CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -268,8 +292,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 启动（<c>onStartup</c> 的插件）；懒激活的插件什么都不做。
+    /// 启动（<c>onStartup</c> 的插件）。
     /// </summary>
+    /// <remarks>
+    /// 懒激活的插件什么都不做。
+    /// </remarks>
     public Task<Result> StartAsync(CancellationToken cancellationToken)
         => IsLazy ? Task.FromResult(Result.Success()) : EnsureRunningAsync(cancellationToken);
 
@@ -372,8 +399,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 释放同步原语与模块；调用前应已 <see cref="StopAsync"/>。
+    /// 释放同步原语与模块。
     /// </summary>
+    /// <remarks>
+    /// 调用前应已 <see cref="StopAsync"/>。
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed)
@@ -391,8 +421,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 取可服务的实例：没有在运行就按需启动（懒激活、停止后的首次调用）；退避中的重建不被绕过。
+    /// 取可服务的实例。
     /// </summary>
+    /// <remarks>
+    /// 没有在运行就按需启动（懒激活、停止后的首次调用）；退避中的重建不被绕过。
+    /// </remarks>
     private async Task<Result<WasmInstance>> AcquireAsync(CancellationToken cancellationToken)
     {
         if (IsServing)
@@ -468,8 +501,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 编译（首次）、实例化并握手；成功后实例保持、状态为 Resolved。
+    /// 编译（首次）、实例化并握手。
     /// </summary>
+    /// <remarks>
+    /// 成功后实例保持、状态为 Resolved。
+    /// </remarks>
     private async Task<Result<HandshakeInfo>> InstantiateAndHandshakeAsync(CancellationToken cancellationToken)
     {
         if (_module is null)
@@ -559,8 +595,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 清单与模块导出的一致性：贡献了中间件必须导出 <c>xihan_middleware</c>，中间件阶段不得是 <c>handle</c>。
+    /// 清单与模块导出的一致性。
     /// </summary>
+    /// <remarks>
+    /// 贡献了中间件必须导出 <c>xihan_middleware</c>，中间件阶段不得是 <c>handle</c>。
+    /// </remarks>
     private Result CheckDeclarations(WasmModule module)
     {
         if (Manifest.Contributes.Pipeline.Count > 0 && !module.HasMiddleware)
@@ -608,8 +647,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 串行地做一次调用并解码响应；陷阱、超时与无响应都让实例失效（在途的崩溃处理由 <see cref="HandleCrashAsync"/> 负责）。
+    /// 串行地做一次调用并解码响应。
     /// </summary>
+    /// <remarks>
+    /// 陷阱、超时与无响应都让实例失效（在途的崩溃处理由 <see cref="HandleCrashAsync"/> 负责）。
+    /// </remarks>
     private async Task<Result<TResponse>> CallAsync<TResponse>(WasmInstance instance, string export, IMessage request, TimeSpan timeout, CancellationToken cancellationToken)
         where TResponse : IMessage<TResponse>, new()
     {
@@ -668,8 +710,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 启动后台工作：同步前缀立刻执行（崩溃标记要先于调用方拿到结果），之后的延续不带当前异步流——回调流的标记不能漏进健康轮询与崩溃重建，否则它们的调用会被当成再入。
+    /// 启动后台工作。
     /// </summary>
+    /// <remarks>
+    /// 同步前缀立刻执行（崩溃标记要先于调用方拿到结果），之后的延续不带当前异步流——回调流的标记不能漏进健康轮询与崩溃重建，否则它们的调用会被当成再入。
+    /// </remarks>
     private static void Background(Func<Task> work)
     {
         using (ExecutionContext.SuppressFlow())
@@ -679,8 +724,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 运行期崩溃：若该实例仍是当前实例则丢弃、记为 Failed 并按退避重建；生命周期阶段的失败由各自的路径处理，这里不重复。
+    /// 运行期崩溃。
     /// </summary>
+    /// <remarks>
+    /// 若该实例仍是当前实例则丢弃、记为 Failed 并按退避重建；生命周期阶段的失败由各自的路径处理，这里不重复。
+    /// </remarks>
     private async Task HandleCrashAsync(WasmInstance instance, Error error)
     {
         if (_stopping)
@@ -711,8 +759,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 退避重建：1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="WasmPluginOptions.RestartLimit"/> 次后保持 Failed。
+    /// 退避重建。
     /// </summary>
+    /// <remarks>
+    /// 1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="WasmPluginOptions.RestartLimit"/> 次后保持 Failed。
+    /// </remarks>
     private async Task RestartAsync()
     {
         var token = _lifetime.Token;
@@ -787,8 +838,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 每 <see cref="WasmPluginOptions.HealthInterval"/> 调一次 <c>xihan_health</c>；连续失败达到阈值即按崩溃处理。
+    /// 每 <see cref="WasmPluginOptions.HealthInterval"/> 调一次 <c>xihan_health</c>。
     /// </summary>
+    /// <remarks>
+    /// 连续失败达到阈值即按崩溃处理。
+    /// </remarks>
     private async Task HealthLoopAsync(WasmInstance instance, CancellationToken token)
     {
         var failures = 0;
@@ -827,8 +881,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 采纳一次健康应答；插件自报 Failed 时按崩溃处理。返回是否继续轮询。
+    /// 采纳一次健康应答。
     /// </summary>
+    /// <remarks>
+    /// 插件自报 Failed 时按崩溃处理。返回是否继续轮询。
+    /// </remarks>
     private bool Apply(WasmInstance instance, HealthResponse health)
     {
         if (_stopping)
@@ -879,8 +936,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 组装 <c>Configure</c> 请求：配置节 JSON、已授予权限（含已映射的文件系统权限）、已解析绑定与工作目录。
+    /// 组装 <c>Configure</c> 请求。
     /// </summary>
+    /// <remarks>
+    /// 配置节 JSON、已授予权限（含已映射的文件系统权限）、已解析绑定与工作目录。
+    /// </remarks>
     private ConfigureRequest BuildConfigure()
     {
         var workDirectory = Path.Combine(_host.WorkRoot, Manifest.Id);
@@ -938,8 +998,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         => context.RemainingTime(_host.Clock.GetUtcNow()) is { } remaining && remaining > TimeSpan.Zero && remaining < _host.Options.CallTimeout ? remaining : _host.Options.CallTimeout;
 
     /// <summary>
-    /// 丢弃当前实例并停止它的健康轮询；在调用锁内释放，Store 不会在别的线程执行 Wasm 时被释放。
+    /// 丢弃当前实例并停止它的健康轮询。
     /// </summary>
+    /// <remarks>
+    /// 在调用锁内释放，Store 不会在别的线程执行 Wasm 时被释放。
+    /// </remarks>
     private async Task DropInstanceAsync()
     {
         await _calls.WaitAsync().ConfigureAwait(false);

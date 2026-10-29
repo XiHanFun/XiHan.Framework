@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
 /// <summary>
-/// 一次写入：键、内容流与选项。流由调用方负责释放；Provider 从当前位置读到末尾。
+/// 一次写入。
 /// </summary>
+/// <remarks>
+/// 键、内容流与选项。流由调用方负责释放；Provider 从当前位置读到末尾。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BlobUpload
 {

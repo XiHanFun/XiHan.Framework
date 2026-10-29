@@ -162,8 +162,11 @@ public sealed partial class NamingTests
     }
 
     /// <summary>
-    /// 加载全部正式包的程序集；分析器与生成器面向编译器运行，不加载。
+    /// 加载全部正式包的程序集。
     /// </summary>
+    /// <remarks>
+    /// 分析器与生成器面向编译器运行，不加载。
+    /// </remarks>
     internal static IEnumerable<Assembly> LoadSourceAssemblies()
     {
         foreach (var project in Workspace.SourceProjects)
@@ -184,8 +187,11 @@ public sealed partial class NamingTests
     private static partial Regex PascalWord();
 
     /// <summary>
-    /// 匹配列首的文件级或块级 <c>namespace</c> 声明并捕获名称；测试里源码片段中缩进的声明不算。
+    /// 匹配列首的文件级或块级 <c>namespace</c> 声明并捕获名称。
     /// </summary>
+    /// <remarks>
+    /// 测试里源码片段中缩进的声明不算。
+    /// </remarks>
     [GeneratedRegex(@"^namespace\s+(?<ns>[A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline)]
     private static partial Regex TopLevelNamespaceDeclaration();
 }

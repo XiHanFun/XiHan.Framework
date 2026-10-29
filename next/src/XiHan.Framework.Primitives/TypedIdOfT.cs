@@ -4,10 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 强类型标识：<typeparamref name="TTag"/> 只用于区分类型，不承载数据。
-/// <c>TypedId&lt;Order, Guid&gt;</c> 与 <c>TypedId&lt;Customer, Guid&gt;</c> 不可互相赋值。
-/// 线上编码为 <typeparamref name="TValue"/> 的编码（string / uuid / int64）。
+/// 强类型标识。
 /// </summary>
+/// <remarks>
+/// <typeparamref name="TTag"/> 只用于区分类型，不承载数据。<c>TypedId&lt;Order, Guid&gt;</c> 与 <c>TypedId&lt;Customer, Guid&gt;</c> 不可互相赋值。线上编码为 <typeparamref name="TValue"/> 的编码（string / uuid / int64）。
+/// </remarks>
 /// <typeparam name="TTag">标签类型。</typeparam>
 /// <typeparam name="TValue">底层值类型。</typeparam>
 /// <param name="Value">底层值。</param>

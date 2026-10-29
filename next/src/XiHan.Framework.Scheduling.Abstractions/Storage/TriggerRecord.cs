@@ -56,8 +56,11 @@ public sealed class TriggerRecord
     public TriggerState State { get; set; }
 
     /// <summary>
-    /// 下一次运行时刻；没有为空。
+    /// 下一次运行时刻。
     /// </summary>
+    /// <remarks>
+    /// 没有为空。
+    /// </remarks>
     public DateTimeOffset? NextFireAt { get; set; }
 
     /// <summary>

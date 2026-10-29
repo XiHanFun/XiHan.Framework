@@ -15,8 +15,11 @@ namespace SamplePlugin;
 public sealed class SamplePlugin : IPlugin
 {
     /// <summary>
-    /// 清单：与插件目录里的 <c>xihan.manifest.json</c> 保持一致，宿主会核对两者的 ID；<c>Entry</c> 是入口类型的全名。
+    /// 清单。
     /// </summary>
+    /// <remarks>
+    /// 与插件目录里的 <c>xihan.manifest.json</c> 保持一致，宿主会核对两者的 ID；<c>Entry</c> 是入口类型的全名。
+    /// </remarks>
     public Manifest Manifest { get; } = new()
     {
         Id = "xihan.samples.plugin",

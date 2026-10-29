@@ -11,9 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 子流程：按 <c>DefinitionName</c> / <c>DefinitionVersion</c> 启动子实例（变量来自 <c>Variables</c> 字面量与 <c>VariableExpressions</c>），
-/// <c>WaitForCompletion</c>（默认真）时以 <c>SubWorkflow</c> 书签等待回调：子实例未完成且 <c>FailOnChildFault</c>（默认真）即故障，否则以子实例状态小写为结果完成，<c>ResultVariable</c> 接收子实例变量。
+/// 子流程。
 /// </summary>
+/// <remarks>
+/// 按 <c>DefinitionName</c> / <c>DefinitionVersion</c> 启动子实例（变量来自 <c>Variables</c> 字面量与 <c>VariableExpressions</c>），<c>WaitForCompletion</c>（默认真）时以 <c>SubWorkflow</c> 书签等待回调：子实例未完成且 <c>FailOnChildFault</c>（默认真）即故障，否则以子实例状态小写为结果完成，<c>ResultVariable</c> 接收子实例变量。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SubWorkflowActivity : IResumableActivity
 {

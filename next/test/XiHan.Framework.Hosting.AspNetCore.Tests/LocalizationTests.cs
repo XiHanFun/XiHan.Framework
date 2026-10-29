@@ -18,8 +18,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 宿主的本地化集成：<c>Accept-Language</c> 协商进 Baggage，Problem Details 的 <c>detail</c> 按调用方区域翻译；没有装配本地化时退回键与参数的描述。
+/// 宿主的本地化集成。
 /// </summary>
+/// <remarks>
+/// <c>Accept-Language</c> 协商进 Baggage，Problem Details 的 <c>detail</c> 按调用方区域翻译；没有装配本地化时退回键与参数的描述。
+/// </remarks>
 public sealed class LocalizationTests
 {
     /// <summary>
@@ -32,8 +35,11 @@ public sealed class LocalizationTests
     });
 
     /// <summary>
-    /// 启动测试宿主：<c>/missing</c> 写入带 <c>id</c> 参数的未找到错误，<c>/locale</c> 回显 Baggage 里的区域。
+    /// 启动测试宿主。
     /// </summary>
+    /// <remarks>
+    /// <c>/missing</c> 写入带 <c>id</c> 参数的未找到错误，<c>/locale</c> 回显 Baggage 里的区域。
+    /// </remarks>
     /// <param name="localization">是否装配内存本地化特性。</param>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization)
     {

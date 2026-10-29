@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// AI 子系统的名字文法：Provider、提示词与工具名 <c>^[a-z0-9][a-z0-9._-]{0,63}$</c>（工具名另允许大写字母与下划线开头，见 <see cref="IsValidToolName"/>）。
+/// AI 子系统的名字文法。
 /// </summary>
+/// <remarks>
+/// Provider、提示词与工具名 <c>^[a-z0-9][a-z0-9._-]{0,63}$</c>（工具名另允许大写字母与下划线开头，见 <see cref="IsValidToolName"/>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static partial class AIIdentifiers
 {

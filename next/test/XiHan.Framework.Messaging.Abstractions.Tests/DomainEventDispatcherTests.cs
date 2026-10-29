@@ -14,8 +14,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 领域事件派发：登记表的去重与容量、<c>AddDomainEvent</c> 的注册、事件到信封的映射、按主题分组批量发布、未登记与发布失败、成功后清空缓冲。
+/// 领域事件派发。
 /// </summary>
+/// <remarks>
+/// 登记表的去重与容量、<c>AddDomainEvent</c> 的注册、事件到信封的映射、按主题分组批量发布、未登记与发布失败、成功后清空缓冲。
+/// </remarks>
 public sealed class DomainEventDispatcherTests
 {
     /// <summary>

@@ -19,8 +19,11 @@ namespace XiHan.Framework.Scheduling.Abstractions;
 public static class SchedulingServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记一个作业类型（作用域服务），键为类型全名；运行时登记的作业引用它。
+    /// 登记一个作业类型（作用域服务），键为类型全名。
     /// </summary>
+    /// <remarks>
+    /// 运行时登记的作业引用它。
+    /// </remarks>
     public static IServiceCollection AddJobType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services)
         where TJob : class, IJob
         => services.AddJobType<TJob>(JobTypeRegistry.KeyOf(typeof(TJob)));
@@ -38,15 +41,21 @@ public static class SchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记一个代码定义的作业（手动计划即没有触发器）；作业是作用域服务。
+    /// 登记一个代码定义的作业（手动计划即没有触发器）。
     /// </summary>
+    /// <remarks>
+    /// 作业是作用域服务。
+    /// </remarks>
     public static IServiceCollection AddJob<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, JobName name, JobSchedule schedule)
         where TJob : class, IJob
         => services.AddJob<TJob>(new JobDefinition(name, schedule, typeof(TJob)));
 
     /// <summary>
-    /// 登记一个代码定义的作业；作业是作用域服务。同名重复登记是编程错误。
+    /// 登记一个代码定义的作业。
     /// </summary>
+    /// <remarks>
+    /// 作业是作用域服务。同名重复登记是编程错误。
+    /// </remarks>
     public static IServiceCollection AddJob<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, JobDefinition definition)
         where TJob : class, IJob
     {
@@ -91,8 +100,11 @@ public static class SchedulingServiceCollectionExtensions
         => services.GetOrAddInstance(static () => new JobCalendars());
 
     /// <summary>
-    /// 装配引擎：Provider 在注册了 <c>IJobStore</c> 与 <c>ILeaderElection</c> 后调用；引擎同时作为 <see cref="IJobScheduler"/>。
+    /// 装配引擎。
     /// </summary>
+    /// <remarks>
+    /// Provider 在注册了 <c>IJobStore</c> 与 <c>ILeaderElection</c> 后调用；引擎同时作为 <see cref="IJobScheduler"/>。
+    /// </remarks>
     public static IServiceCollection AddJobSchedulerEngine(this IServiceCollection services, SchedulerOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);

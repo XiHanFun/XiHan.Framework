@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 活动登记表：类型名 → 定义；以实例注册，特性与应用共同填充。
+/// 活动登记表。
 /// </summary>
+/// <remarks>
+/// 类型名 → 定义；以实例注册，特性与应用共同填充。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ActivityRegistry
 {
@@ -32,8 +35,11 @@ public sealed class ActivityRegistry
     public bool Contains(ActivityType type) => _activities.ContainsKey(type.Value);
 
     /// <summary>
-    /// 登记；同一类型名登记两个不同的类是编程错误，同一个类重复登记忽略。
+    /// 登记。
     /// </summary>
+    /// <remarks>
+    /// 同一类型名登记两个不同的类是编程错误，同一个类重复登记忽略。
+    /// </remarks>
     public ActivityRegistry Add(ActivityDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);

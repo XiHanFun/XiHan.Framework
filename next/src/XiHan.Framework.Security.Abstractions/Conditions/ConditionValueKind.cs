@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件属性的值种类：决定条件值怎么解析、属性值怎么比较。整数值是持久化契约。
+/// 条件属性的值种类。
 /// </summary>
+/// <remarks>
+/// 决定条件值怎么解析、属性值怎么比较。整数值是持久化契约。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum ConditionValueKind
 {
@@ -29,8 +32,11 @@ public enum ConditionValueKind
     Boolean = 2,
 
     /// <summary>
-    /// 日期时间（ISO 8601；不带偏移的按编译选项里的时区解释）。
+    /// 日期时间。
     /// </summary>
+    /// <remarks>
+    /// ISO 8601；不带偏移的按编译选项里的时区解释。
+    /// </remarks>
     DateTime = 3,
 
     /// <summary>
@@ -44,7 +50,10 @@ public enum ConditionValueKind
     TimeOfDay = 5,
 
     /// <summary>
-    /// IP 地址；条件值里的集合可写 CIDR 网段。
+    /// IP 地址。
     /// </summary>
+    /// <remarks>
+    /// 条件值里的集合可写 CIDR 网段。
+    /// </remarks>
     IpAddress = 6,
 }

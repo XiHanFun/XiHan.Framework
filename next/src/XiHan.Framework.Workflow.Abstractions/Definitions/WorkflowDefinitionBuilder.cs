@@ -9,8 +9,11 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 流式构造定义：节点、转移、变量；<see cref="Build"/> 得到草稿（ID 与创建时间由目录在 <c>CreateAsync</c> 时分配）。
+/// 流式构造定义。
 /// </summary>
+/// <remarks>
+/// 节点、转移、变量；<see cref="Build"/> 得到草稿（ID 与创建时间由目录在 <c>CreateAsync</c> 时分配）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionBuilder
 {
@@ -172,8 +175,11 @@ public sealed class WorkflowDefinitionBuilder
     public WorkflowDefinitionBuilder AddStart(string id = "start", string? displayName = null) => AddNode(id, ActivityTypes.Start, displayName);
 
     /// <summary>
-    /// 结束节点；<paramref name="outcome"/> 非空即带结果结束实例。
+    /// 结束节点。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="outcome"/> 非空即带结果结束实例。
+    /// </remarks>
     public WorkflowDefinitionBuilder AddEnd(string id = "end", string? outcome = null, string? displayName = null)
         => AddNode(id, ActivityTypes.End, displayName, outcome is null ? null : builder => builder.WithProperty(EndActivity.OutcomeProperty, outcome));
 
@@ -249,8 +255,11 @@ public sealed class WorkflowDefinitionBuilder
         => AddNode(id, ActivityTypes.Compensate, displayName, nodeIds is null ? null : builder => builder.WithProperty(CompensateActivity.NodeIdsProperty, new JsonArray(nodeIds.Select(static node => (JsonNode?)JsonValue.Create(node)).ToArray())));
 
     /// <summary>
-    /// 加转移；ID 为 <c>源->目标#序号</c>。
+    /// 加转移。
     /// </summary>
+    /// <remarks>
+    /// ID 为 <c>源->目标#序号</c>。
+    /// </remarks>
     public WorkflowDefinitionBuilder AddTransition(string sourceNodeId, string targetNodeId, string? condition = null, int priority = 0, string? displayName = null)
     {
         _transitions.Add(new WorkflowTransition
@@ -283,8 +292,11 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 生成定义（草稿，版本 1；ID 是新的 UUID v7）。
+    /// 生成定义。
     /// </summary>
+    /// <remarks>
+    /// 草稿，版本 1；ID 是新的 UUID v7。
+    /// </remarks>
     public WorkflowDefinition Build() => new()
     {
         Id = WorkflowIdentifiers.NewId(),

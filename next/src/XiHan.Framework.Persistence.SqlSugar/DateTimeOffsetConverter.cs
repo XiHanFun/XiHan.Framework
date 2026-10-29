@@ -8,9 +8,11 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// <see cref="DateTimeOffset"/> 列的值转换：写入时取 UTC 时刻存成不带偏移的日期时间，读取时按 UTC 还原，保证时刻在各数据库上一致。
-/// SqlSugar 默认把 <see cref="DateTimeOffset"/> 当本地时间往返，跨时区会改变时刻；由 <see cref="SqlSugarConventions"/> 登记到每个此类型的列。
+/// <see cref="DateTimeOffset"/> 列的值转换。
 /// </summary>
+/// <remarks>
+/// 写入时取 UTC 时刻存成不带偏移的日期时间，读取时按 UTC 还原，保证时刻在各数据库上一致。SqlSugar 默认把 <see cref="DateTimeOffset"/> 当本地时间往返，跨时区会改变时刻；由 <see cref="SqlSugarConventions"/> 登记到每个此类型的列。
+/// </remarks>
 internal sealed class DateTimeOffsetConverter : ISugarDataConverter
 {
     /// <inheritdoc />

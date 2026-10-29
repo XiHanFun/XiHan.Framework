@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.RabbitMQ;
 
 /// <summary>
-/// RabbitMQ Provider 选项。从配置节 <c>XiHan:Messaging:RabbitMQ</c> 与绑定 <c>queue</c> 显式读取。
+/// RabbitMQ Provider 选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Messaging:RabbitMQ</c> 与绑定 <c>queue</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record RabbitMQMessagingOptions
 {
@@ -31,13 +34,19 @@ public sealed record RabbitMQMessagingOptions
     }
 
     /// <summary>
-    /// 队列名前缀；默认 <c>xihan.</c>。
+    /// 队列名前缀。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan.</c>。
+    /// </remarks>
     public string QueuePrefix { get; init; } = "xihan.";
 
     /// <summary>
-    /// 每个消费者的预取数；默认 16。
+    /// 每个消费者的预取数。
     /// </summary>
+    /// <remarks>
+    /// 默认 16。
+    /// </remarks>
     public ushort PrefetchCount
     {
         get => field;
@@ -45,8 +54,11 @@ public sealed record RabbitMQMessagingOptions
     } = 16;
 
     /// <summary>
-    /// 健康项 <c>messaging.rabbitmq.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>messaging.rabbitmq.connection</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -54,8 +66,11 @@ public sealed record RabbitMQMessagingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置与绑定读取：<c>Configuration</c>（配置优先于绑定值）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// 从配置与绑定读取。
     /// </summary>
+    /// <remarks>
+    /// <c>Configuration</c>（配置优先于绑定值）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// </remarks>
     public static RabbitMQMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);

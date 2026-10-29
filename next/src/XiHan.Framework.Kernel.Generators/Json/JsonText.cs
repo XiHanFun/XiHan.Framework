@@ -7,8 +7,11 @@ using System.Text;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 极简 JSON 文本拼装：生成器运行在 netstandard2.0 的编译器进程里，不依赖 System.Text.Json。
+/// 极简 JSON 文本拼装。
 /// </summary>
+/// <remarks>
+/// 生成器运行在 netstandard2.0 的编译器进程里，不依赖 System.Text.Json。
+/// </remarks>
 internal sealed class JsonText
 {
     /// <summary>

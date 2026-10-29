@@ -14,9 +14,11 @@ namespace XiHan.Framework.Hosting.AspNetCore.Authentication;
 public sealed class InvocationAuthenticationOptions : AuthenticationSchemeOptions
 {
     /// <summary>
-    /// 接受查询串令牌（<c>access_token</c>）的路径前缀，相对 PathBase、按路径段匹配、不区分大小写；不能为空也不能是 <c>/</c>。
-    /// 只给带不了请求头的客户端（浏览器的 WebSocket 与 EventSource）用：查询串会进入访问日志与代理日志。缺省为空，即只认 <c>Authorization</c> 头。
+    /// 接受查询串令牌（<c>access_token</c>）的路径前缀。
     /// </summary>
+    /// <remarks>
+    /// 相对 PathBase、按路径段匹配、不区分大小写。不能为空也不能是 <c>/</c>。只给带不了请求头的客户端（浏览器的 WebSocket 与 EventSource）用：查询串会进入访问日志与代理日志。缺省为空，即只认 <c>Authorization</c> 头。
+    /// </remarks>
     public IList<PathString> QueryTokenPaths { get; } = [];
 
     /// <summary>

@@ -12,8 +12,11 @@ namespace XiHan.Framework.Cli.Packaging;
 internal static class DockerfileGenerator
 {
     /// <summary>
-    /// 生成 <c>Dockerfile</c> 与 <c>Dockerfile.dockerignore</c>；<paramref name="projectInContext"/> 是项目文件相对构建上下文的路径。
+    /// 生成 <c>Dockerfile</c> 与 <c>Dockerfile.dockerignore</c>。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="projectInContext"/> 是项目文件相对构建上下文的路径。
+    /// </remarks>
     public static IEnumerable<PackOutput> Generate(AppManifest manifest, string projectInContext)
     {
         ArgumentNullException.ThrowIfNull(manifest);

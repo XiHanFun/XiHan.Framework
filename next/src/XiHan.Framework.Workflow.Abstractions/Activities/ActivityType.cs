@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 活动类型名：<c>^[A-Za-z][A-Za-z0-9._-]{0,63}$</c>；内置活动用 PascalCase 名（<c>Start</c>、<c>UserTask</c>）。
+/// 活动类型名。
 /// </summary>
+/// <remarks>
+/// <c>^[A-Za-z][A-Za-z0-9._-]{0,63}$</c>；内置活动用 PascalCase 名（<c>Start</c>、<c>UserTask</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(ActivityTypeJsonConverter))]
 public readonly partial record struct ActivityType
@@ -22,8 +25,11 @@ public readonly partial record struct ActivityType
     public const int MaxLength = 64;
 
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public ActivityType(string value)
     {
         Value = Validate(value);
@@ -45,8 +51,11 @@ public readonly partial record struct ActivityType
     public static bool IsValid([NotNullWhen(true)] string? value) => value is not null && Pattern().IsMatch(value);
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

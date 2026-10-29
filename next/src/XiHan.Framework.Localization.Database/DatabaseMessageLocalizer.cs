@@ -11,19 +11,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库优先的本地化器：每个回退区域先查数据库翻译的快照，再查嵌入的目录（按注册顺序）。快照由 <see cref="MessageTranslationLoader"/> 整份替换，读取无锁。
+/// 数据库优先的本地化器。
 /// </summary>
+/// <remarks>
+/// 每个回退区域先查数据库翻译的快照，再查嵌入的目录（按注册顺序）。快照由 <see cref="MessageTranslationLoader"/> 整份替换，读取无锁。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序；同一键先注册的目录优先。
+    /// 已注册的目录，按注册顺序。
     /// </summary>
+    /// <remarks>
+    /// 同一键先注册的目录优先。
+    /// </remarks>
     private readonly IReadOnlyList<MessageCatalog> _catalogs;
 
     /// <summary>
-    /// 当前快照；整份替换。
+    /// 当前快照。
     /// </summary>
+    /// <remarks>
+    /// 整份替换。
+    /// </remarks>
     private volatile TranslationOverlay _overlay = TranslationOverlay.Empty;
 
     /// <summary>

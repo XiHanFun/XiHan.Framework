@@ -47,13 +47,19 @@ public static class BookmarkKinds
     public const string External = "External";
 
     /// <summary>
-    /// 用户任务提醒：<c>DueAt</c> 到期发布提醒事件并再次排期；由引擎处理，不经活动。
+    /// 用户任务提醒。
     /// </summary>
+    /// <remarks>
+    /// <c>DueAt</c> 到期发布提醒事件并再次排期；由引擎处理，不经活动。
+    /// </remarks>
     public const string Reminder = "Reminder";
 
     /// <summary>
-    /// 实例级超时：<c>DueAt</c> 到期按定义的超时动作处理实例；<c>NodeInstanceId</c> = 实例 ID。
+    /// 实例级超时。
     /// </summary>
+    /// <remarks>
+    /// <c>DueAt</c> 到期按定义的超时动作处理实例；<c>NodeInstanceId</c> = 实例 ID。
+    /// </remarks>
     public const string InstanceTimeout = "InstanceTimeout";
 
     /// <summary>

@@ -20,8 +20,11 @@ public sealed record OutOfProcessPluginOptions
     public const string ConfigurationSection = "XiHan:Plugins:OutOfProcess";
 
     /// <summary>
-    /// 启动时装载的插件目录（每个目录一个插件，含 <c>xihan.manifest.json</c>）；相对路径相对当前目录。
+    /// 启动时装载的插件目录（每个目录一个插件，含 <c>xihan.manifest.json</c>）。
     /// </summary>
+    /// <remarks>
+    /// 相对路径相对当前目录。
+    /// </remarks>
     public IReadOnlyList<string> Directories { get; init; } = [];
 
     /// <summary>
@@ -30,8 +33,11 @@ public sealed record OutOfProcessPluginOptions
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Grants { get; init; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 读到握手行并完成 <c>Handshake</c> 的时限；默认 10 秒。
+    /// 读到握手行并完成 <c>Handshake</c> 的时限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan HandshakeTimeout
     {
         get => field;
@@ -39,8 +45,11 @@ public sealed record OutOfProcessPluginOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// <c>Configure</c> 与 <c>Start</c> 各自的时限；默认 30 秒。
+    /// <c>Configure</c> 与 <c>Start</c> 各自的时限。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒。
+    /// </remarks>
     public TimeSpan StartTimeout
     {
         get => field;
@@ -48,8 +57,11 @@ public sealed record OutOfProcessPluginOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 停止宽限；为空时取内核的 <c>XiHan:Kernel:StopTimeoutSeconds</c>。
+    /// 停止宽限。
     /// </summary>
+    /// <remarks>
+    /// 为空时取内核的 <c>XiHan:Kernel:StopTimeoutSeconds</c>。
+    /// </remarks>
     public TimeSpan? StopGrace
     {
         get => field;
@@ -57,8 +69,11 @@ public sealed record OutOfProcessPluginOptions
     }
 
     /// <summary>
-    /// 健康推送不可用时的轮询间隔；默认 10 秒。
+    /// 健康推送不可用时的轮询间隔。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan HealthInterval
     {
         get => field;
@@ -66,8 +81,11 @@ public sealed record OutOfProcessPluginOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 连续多少次健康探测失败视为进程失效；默认 3。
+    /// 连续多少次健康探测失败视为进程失效。
     /// </summary>
+    /// <remarks>
+    /// 默认 3。
+    /// </remarks>
     public int HealthFailures
     {
         get => field;
@@ -75,8 +93,11 @@ public sealed record OutOfProcessPluginOptions
     } = 3;
 
     /// <summary>
-    /// <see cref="RestartWindow"/> 内最多自动重启多少次，之后保持 Failed；默认 5。
+    /// <see cref="RestartWindow"/> 内最多自动重启多少次，之后保持 Failed。
     /// </summary>
+    /// <remarks>
+    /// 默认 5。
+    /// </remarks>
     public int RestartLimit
     {
         get => field;
@@ -84,8 +105,11 @@ public sealed record OutOfProcessPluginOptions
     } = 5;
 
     /// <summary>
-    /// 统计重启次数的时间窗；默认 10 分钟。
+    /// 统计重启次数的时间窗。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 分钟。
+    /// </remarks>
     public TimeSpan RestartWindow
     {
         get => field;
@@ -93,13 +117,19 @@ public sealed record OutOfProcessPluginOptions
     } = TimeSpan.FromMinutes(10);
 
     /// <summary>
-    /// 插件工作目录的根（每个插件一个子目录）；为空时取临时目录下的 <c>xihan-plugins</c>。
+    /// 插件工作目录的根（每个插件一个子目录）。
     /// </summary>
+    /// <remarks>
+    /// 为空时取临时目录下的 <c>xihan-plugins</c>。
+    /// </remarks>
     public string? WorkDirectory { get; init; }
 
     /// <summary>
-    /// 清单 ID 对应的授予；未配置为空授予。
+    /// 清单 ID 对应的授予。
     /// </summary>
+    /// <remarks>
+    /// 未配置为空授予。
+    /// </remarks>
     public PermissionGrant GrantsFor(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
@@ -113,8 +143,11 @@ public sealed record OutOfProcessPluginOptions
         => Path.GetFullPath(WorkDirectory ?? Path.Combine(Path.GetTempPath(), "xihan-plugins"));
 
     /// <summary>
-    /// 从配置读取；各时长以秒为单位（<c>HandshakeTimeoutSeconds</c>、<c>StartTimeoutSeconds</c>、<c>StopGraceSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// 各时长以秒为单位（<c>HandshakeTimeoutSeconds</c>、<c>StartTimeoutSeconds</c>、<c>StopGraceSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）。
+    /// </remarks>
     public static OutOfProcessPluginOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -168,8 +201,11 @@ public sealed record OutOfProcessPluginOptions
     }
 
     /// <summary>
-    /// 读取以秒为单位的时长；未配置为空，不是正数则抛出。
+    /// 读取以秒为单位的时长。
     /// </summary>
+    /// <remarks>
+    /// 未配置为空，不是正数则抛出。
+    /// </remarks>
     private static TimeSpan? Seconds(IConfiguration section, string name)
     {
         var text = section[name];
@@ -184,8 +220,11 @@ public sealed record OutOfProcessPluginOptions
     }
 
     /// <summary>
-    /// 读取整数；未配置为空，不是非负整数则抛出。
+    /// 读取整数。
     /// </summary>
+    /// <remarks>
+    /// 未配置为空，不是非负整数则抛出。
+    /// </remarks>
     private static int? Integer(IConfiguration section, string name)
     {
         var text = section[name];

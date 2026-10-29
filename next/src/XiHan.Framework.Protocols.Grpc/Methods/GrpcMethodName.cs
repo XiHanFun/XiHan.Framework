@@ -7,14 +7,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 一个 gRPC 方法的名字：服务名与方法名，都是 protobuf 标识符（字母、数字、下划线，不以数字开头）。文本形式 <c>Service/Method</c>；完整路径 <c>/{package}.{Service}/{Method}</c>。
+/// 一个 gRPC 方法的名字。
 /// </summary>
+/// <remarks>
+/// 服务名与方法名，都是 protobuf 标识符（字母、数字、下划线，不以数字开头）。文本形式 <c>Service/Method</c>；完整路径 <c>/{package}.{Service}/{Method}</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record GrpcMethodName
 {
     /// <summary>
-    /// 创建；名字不合法时抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 名字不合法时抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public GrpcMethodName(string service, string method)
     {
         Service = ValidateIdentifier(service, nameof(service));
@@ -47,8 +53,11 @@ public sealed partial record GrpcMethodName
     }
 
     /// <summary>
-    /// 带包名的完整服务名：<c>{package}.{Service}</c>；没有包名时就是服务名。
+    /// 带包名的完整服务名。
     /// </summary>
+    /// <remarks>
+    /// <c>{package}.{Service}</c>；没有包名时就是服务名。
+    /// </remarks>
     public string FullServiceName(string? package) => string.IsNullOrEmpty(package) ? Service : package + "." + Service;
 
     /// <summary>

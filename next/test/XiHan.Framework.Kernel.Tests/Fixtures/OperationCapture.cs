@@ -9,7 +9,10 @@ namespace XiHan.Framework.Kernel.Tests.Fixtures;
 internal sealed class OperationCapture
 {
     /// <summary>
-    /// Authorize 阶段看到的操作 ID；不是操作调用时记 <c>-</c>。
+    /// Authorize 阶段看到的操作 ID。
     /// </summary>
+    /// <remarks>
+    /// 不是操作调用时记 <c>-</c>。
+    /// </remarks>
     public List<string> Seen { get; } = [];
 }

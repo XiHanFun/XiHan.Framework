@@ -17,8 +17,11 @@ public enum UserTaskCompletionPolicy
     Any = 1,
 
     /// <summary>
-    /// 全部指派人通过才完成；其间合并变量并保留其余书签。
+    /// 全部指派人通过才完成。
     /// </summary>
+    /// <remarks>
+    /// 其间合并变量并保留其余书签。
+    /// </remarks>
     All = 2,
 
     /// <summary>

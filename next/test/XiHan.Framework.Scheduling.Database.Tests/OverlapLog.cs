@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 多节点用例的运行记录：每次运行所在的节点、运行 ID 与开始、结束时刻，供断言区间不交叠。
+/// 多节点用例的运行记录。
 /// </summary>
+/// <remarks>
+/// 每次运行所在的节点、运行 ID 与开始、结束时刻，供断言区间不交叠。
+/// </remarks>
 internal sealed class OverlapLog
 {
     /// <summary>

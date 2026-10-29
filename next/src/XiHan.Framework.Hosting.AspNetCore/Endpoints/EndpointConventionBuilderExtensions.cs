@@ -9,8 +9,11 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 
 /// <summary>
-/// 把授权要求挂在端点元数据上；<c>UseXiHan()</c> 在构造调用上下文时读取它，Authorize 阶段据此判定。
+/// 把授权要求挂在端点元数据上。
 /// </summary>
+/// <remarks>
+/// <c>UseXiHan()</c> 在构造调用上下文时读取它，Authorize 阶段据此判定。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class EndpointConventionBuilderExtensions
 {

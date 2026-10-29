@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 登记测试操作的特性：五个标准动词、一个实例级与一个集合级自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部。
+/// 登记测试操作的特性。
 /// </summary>
+/// <remarks>
+/// 五个标准动词、一个实例级与一个集合级自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部。
+/// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>

@@ -13,9 +13,11 @@ using XiHan.Framework.Protocols.CloudEvents.Outbound;
 namespace XiHan.Framework.Protocols.CloudEvents;
 
 /// <summary>
-/// CloudEvents 协议适配器的能力包入口：提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；
-/// 注册选项、消息目录、出站 Webhook 的 HttpClient 与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射。
+/// CloudEvents 协议适配器的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；注册选项、消息目录、出站 Webhook 的 HttpClient 与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CloudEventsProtocolFeature : IFeature
 {

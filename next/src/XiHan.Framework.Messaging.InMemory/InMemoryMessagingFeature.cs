@@ -14,8 +14,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.InMemory;
 
 /// <summary>
-/// 内存消息的能力包入口：默认提供 <c>messaging.queue@1</c>；启动时消费全部订阅主题，停止时等待进行中的投递结束。
+/// 内存消息的能力包入口。
 /// </summary>
+/// <remarks>
+/// 默认提供 <c>messaging.queue@1</c>；启动时消费全部订阅主题，停止时等待进行中的投递结束。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMessagingFeature : IHostedFeature
 {
@@ -25,8 +28,11 @@ public sealed class InMemoryMessagingFeature : IHostedFeature
     public const string HealthName = "messaging.inmemory.capacity";
 
     /// <summary>
-    /// 启动后取得的运行时；停止时用它结束消费。
+    /// 启动后取得的运行时。
     /// </summary>
+    /// <remarks>
+    /// 停止时用它结束消费。
+    /// </remarks>
     private MessagingRuntime? _runtime;
 
     /// <inheritdoc />

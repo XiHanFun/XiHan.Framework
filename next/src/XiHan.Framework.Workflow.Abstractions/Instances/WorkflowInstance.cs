@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 定义的一次执行；状态全部在存储里，引擎在实例锁内修改。
+/// 定义的一次执行。
 /// </summary>
+/// <remarks>
+/// 状态全部在存储里，引擎在实例锁内修改。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowInstance
 {
@@ -108,8 +111,11 @@ public sealed class WorkflowInstance
     public string? FaultNodeId { get; set; }
 
     /// <summary>
-    /// 故障节点实例 ID；引擎级故障为 <see langword="null"/>（不可重试）。
+    /// 故障节点实例 ID。
     /// </summary>
+    /// <remarks>
+    /// 引擎级故障为 <see langword="null"/>（不可重试）。
+    /// </remarks>
     public string? FaultNodeInstanceId { get; set; }
 
     /// <summary>

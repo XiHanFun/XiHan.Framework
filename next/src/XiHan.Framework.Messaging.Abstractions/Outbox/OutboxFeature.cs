@@ -14,20 +14,28 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 事务性发件箱特性：需要 <c>messaging.queue@1</c> 与 <c>persistence.relational@1</c>；把 <see cref="IMessagePublisher"/> 换成 <see cref="OutboxPublisher"/>，
-/// 登记 <see cref="OutboxMessage"/> 实体，启动后运行投递循环。
+/// 事务性发件箱特性。
 /// </summary>
+/// <remarks>
+/// 需要 <c>messaging.queue@1</c> 与 <c>persistence.relational@1</c>；把 <see cref="IMessagePublisher"/> 换成 <see cref="OutboxPublisher"/>，登记 <see cref="OutboxMessage"/> 实体，启动后运行投递循环。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OutboxFeature : IHostedFeature, IDisposable
 {
     /// <summary>
-    /// 停止信号；<see cref="StopAsync"/> 取消它让投递循环退出。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// <see cref="StopAsync"/> 取消它让投递循环退出。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 正在运行的投递循环；停止时等待它结束。
+    /// 正在运行的投递循环。
     /// </summary>
+    /// <remarks>
+    /// 停止时等待它结束。
+    /// </remarks>
     private Task? _loop;
 
     /// <inheritdoc />

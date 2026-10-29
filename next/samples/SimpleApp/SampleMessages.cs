@@ -4,8 +4,11 @@
 namespace SimpleApp;
 
 /// <summary>
-/// 示例应用的消息键；各语言文案在 <c>Localization/&lt;区域&gt;.json</c>，与框架包同一格式。
+/// 示例应用的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在 <c>Localization/&lt;区域&gt;.json</c>，与框架包同一格式。
+/// </remarks>
 public static class SampleMessages
 {
     /// <summary>
@@ -40,7 +43,10 @@ public static class SampleMessages
     public const string ListOrdersDescription = "orders.list.description";
 
     /// <summary>
-    /// 订单名称只有空白；<c>PlaceOrderRequest</c> 自校验的文案。
+    /// 订单名称只有空白。
     /// </summary>
+    /// <remarks>
+    /// <c>PlaceOrderRequest</c> 自校验的文案。
+    /// </remarks>
     public const string OrderNameBlank = "samples.order.name_blank";
 }

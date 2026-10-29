@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// SqlSugar Provider 选项。从配置节 <c>XiHan:Persistence:SqlSugar</c> 显式读取。
+/// SqlSugar Provider 选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Persistence:SqlSugar</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record SqlSugarPersistenceOptions
 {
@@ -19,13 +22,19 @@ public sealed record SqlSugarPersistenceOptions
     public const string ConfigurationSection = "XiHan:Persistence:SqlSugar";
 
     /// <summary>
-    /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）。只用于开发与测试；生产由应用管理表结构。默认 <see langword="false"/>。
+    /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）。
     /// </summary>
+    /// <remarks>
+    /// 只用于开发与测试；生产由应用管理表结构。默认 <see langword="false"/>。
+    /// </remarks>
     public bool InitTables { get; init; }
 
     /// <summary>
-    /// 健康项 <c>persistence.sqlsugar.database</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>persistence.sqlsugar.database</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -33,9 +42,11 @@ public sealed record SqlSugarPersistenceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 哪些实体的仓储写入经 SqlSugar 差异日志（<c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>），应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收；缺省一个都不开。
-    /// 开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置。
+    /// 哪些实体的仓储写入经 SqlSugar 差异日志。
     /// </summary>
+    /// <remarks>
+    /// <c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>。应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收。缺省一个都不开。开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置。
+    /// </remarks>
     public Func<Type, bool> DiffLog
     {
         get => field;

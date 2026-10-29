@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 内核错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 内核错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class KernelErrors
 {
@@ -77,23 +80,35 @@ public static class KernelErrors
     public const string InvalidAppState = "KERNEL_HOSTING_004";
 
     /// <summary>
-    /// 应用未就绪或正在停止，暂不接收调用；协议适配器据此返回 503。
+    /// 应用未就绪或正在停止，暂不接收调用。
     /// </summary>
+    /// <remarks>
+    /// 协议适配器据此返回 503。
+    /// </remarks>
     public const string NotServing = "KERNEL_UNAVAILABLE_001";
 
     /// <summary>
-    /// 操作被限流：固定窗口的许可用尽且队列已满；Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。
+    /// 操作被限流。
     /// </summary>
+    /// <remarks>
+    /// 固定窗口的许可用尽且队列已满；Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。
+    /// </remarks>
     public const string RateLimited = "KERNEL_UNAVAILABLE_002";
 
     /// <summary>
-    /// 操作已达并发上限且队列已满；Resilience 阶段拒绝。
+    /// 操作已达并发上限且队列已满。
     /// </summary>
+    /// <remarks>
+    /// Resilience 阶段拒绝。
+    /// </remarks>
     public const string ConcurrencyExceeded = "KERNEL_UNAVAILABLE_003";
 
     /// <summary>
-    /// 操作的熔断器打开，暂不执行；Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。
+    /// 操作的熔断器打开，暂不执行。
     /// </summary>
+    /// <remarks>
+    /// Resilience 阶段拒绝，<c>retryAfter</c> 秒后重试。
+    /// </remarks>
     public const string CircuitOpen = "KERNEL_UNAVAILABLE_004";
 
     /// <summary>
@@ -137,13 +152,19 @@ public static class KernelErrors
     public const string OperationTypeMismatch = "KERNEL_VALIDATION_002";
 
     /// <summary>
-    /// 请求不满足操作契约的 JSON Schema；Validate 阶段拒绝，不进 Handle。
+    /// 请求不满足操作契约的 JSON Schema。
     /// </summary>
+    /// <remarks>
+    /// Validate 阶段拒绝，不进 Handle。
+    /// </remarks>
     public const string SchemaViolation = "KERNEL_VALIDATION_003";
 
     /// <summary>
-    /// 请求对象的自校验（<c>IValidatableObject</c>）失败；Validate 阶段拒绝，不进 Handle。
+    /// 请求对象的自校验（<c>IValidatableObject</c>）失败。
     /// </summary>
+    /// <remarks>
+    /// Validate 阶段拒绝，不进 Handle。
+    /// </remarks>
     public const string RequestInvalid = "KERNEL_VALIDATION_004";
 
     /// <summary>
@@ -157,7 +178,10 @@ public static class KernelErrors
     public const string OperationRegistryFull = "KERNEL_OPERATION_002";
 
     /// <summary>
-    /// 健康探针失败（抛出或超时）；条目 Degraded，应用仍在服务。
+    /// 健康探针失败（抛出或超时）。
     /// </summary>
+    /// <remarks>
+    /// 条目 Degraded，应用仍在服务。
+    /// </remarks>
     public const string HealthProbeFailed = "KERNEL_UNAVAILABLE_005";
 }

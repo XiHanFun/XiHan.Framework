@@ -20,8 +20,11 @@ internal static class Hosts
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     /// <summary>
-    /// 用 <see cref="AppBuilder"/> 配置一个新的服务集合并构建容器；返回容器与从中解析出的 <see cref="App"/>。调用方负责释放容器。
+    /// 用 <see cref="AppBuilder"/> 配置一个新的服务集合并构建容器。
     /// </summary>
+    /// <remarks>
+    /// 返回容器与从中解析出的 <see cref="App"/>。调用方负责释放容器。
+    /// </remarks>
     /// <param name="configure">对构建器的配置。</param>
     /// <param name="configuration">宿主配置；缺省为空配置。</param>
     public static (ServiceProvider Provider, App App) BuildApp(Action<AppBuilder> configure, IConfiguration? configuration = null)

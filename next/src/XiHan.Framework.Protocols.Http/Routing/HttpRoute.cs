@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Routing;
 
 /// <summary>
-/// 一个操作在 HTTP 上的位置：方法与路由模板（ASP.NET Core 路由语法，以 <c>/</c> 开头，<c>{id}</c> 等参数绑定到请求对象的同名属性）。
-/// 文本形态 <c>POST /orders:export</c> 用于配置覆盖。
+/// 一个操作在 HTTP 上的位置。
 /// </summary>
+/// <remarks>
+/// 方法与路由模板（ASP.NET Core 路由语法，以 <c>/</c> 开头，<c>{id}</c> 等参数绑定到请求对象的同名属性）。文本形态 <c>POST /orders:export</c> 用于配置覆盖。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record HttpRoute
 {

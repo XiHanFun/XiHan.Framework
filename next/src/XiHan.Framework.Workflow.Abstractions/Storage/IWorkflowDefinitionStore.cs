@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Definitions;
 namespace XiHan.Framework.Workflow.Abstractions.Storage;
 
 /// <summary>
-/// 定义存储；不按租户过滤，写入按批量。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// 定义存储。
 /// </summary>
+/// <remarks>
+/// 不按租户过滤，写入按批量。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionStore
 {
@@ -18,8 +21,11 @@ public interface IWorkflowDefinitionStore
     ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按 ID 批量找；不存在的不在结果里，顺序不保证。
+    /// 按 ID 批量找。
     /// </summary>
+    /// <remarks>
+    /// 不存在的不在结果里，顺序不保证。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
@@ -33,8 +39,11 @@ public interface IWorkflowDefinitionStore
     ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 该名字下的最大版本号；没有为 0。
+    /// 该名字下的最大版本号。
     /// </summary>
+    /// <remarks>
+    /// 没有为 0。
+    /// </remarks>
     ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
@@ -48,7 +57,10 @@ public interface IWorkflowDefinitionStore
     ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 删除；不存在的忽略。
+    /// 删除。
     /// </summary>
+    /// <remarks>
+    /// 不存在的忽略。
+    /// </remarks>
     ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 }

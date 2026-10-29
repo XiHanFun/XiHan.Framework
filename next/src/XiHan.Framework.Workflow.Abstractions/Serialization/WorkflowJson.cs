@@ -11,8 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 
 /// <summary>
-/// 工作流模型的 JSON 往返与深拷贝（源生成，AOT 可用）：存储以此持久化，设计器以此交换定义。
+/// 工作流模型的 JSON 往返与深拷贝（源生成，AOT 可用）。
 /// </summary>
+/// <remarks>
+/// 存储以此持久化，设计器以此交换定义。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowJson
 {
@@ -26,8 +29,11 @@ public static class WorkflowJson
     }
 
     /// <summary>
-    /// JSON → 定义；不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>。
+    /// JSON → 定义。
     /// </summary>
+    /// <remarks>
+    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>。
+    /// </remarks>
     public static Result<WorkflowDefinition> DeserializeDefinition(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -54,8 +60,11 @@ public static class WorkflowJson
     }
 
     /// <summary>
-    /// JSON → 实例；不合法抛出 <see cref="JsonException"/>。
+    /// JSON → 实例。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="JsonException"/>。
+    /// </remarks>
     public static WorkflowInstance DeserializeInstance(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -72,8 +81,11 @@ public static class WorkflowJson
     }
 
     /// <summary>
-    /// JSON → 节点实例；不合法抛出 <see cref="JsonException"/>。
+    /// JSON → 节点实例。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="JsonException"/>。
+    /// </remarks>
     public static WorkflowNodeInstance DeserializeNodeInstance(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -90,8 +102,11 @@ public static class WorkflowJson
     }
 
     /// <summary>
-    /// JSON → 书签；不合法抛出 <see cref="JsonException"/>。
+    /// JSON → 书签。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="JsonException"/>。
+    /// </remarks>
     public static WorkflowBookmark DeserializeBookmark(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -119,8 +134,11 @@ public static class WorkflowJson
     public static WorkflowBookmark Clone(WorkflowBookmark bookmark) => DeserializeBookmark(Serialize(bookmark));
 
     /// <summary>
-    /// 深拷贝 JSON 对象；<see langword="null"/> 得到空对象。
+    /// 深拷贝 JSON 对象。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 得到空对象。
+    /// </remarks>
     public static JsonObject CloneObject(JsonObject? value) => value is null ? [] : (JsonObject)value.DeepClone();
 
     /// <summary>
@@ -138,8 +156,11 @@ public static class WorkflowJson
     }
 
     /// <summary>
-    /// UTF-8 JSON → 事件数据；不合法抛出 <see cref="JsonException"/>。
+    /// UTF-8 JSON → 事件数据。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="JsonException"/>。
+    /// </remarks>
     public static WorkflowEventData DeserializeEvent(ReadOnlySpan<byte> json)
         => JsonSerializer.Deserialize(json, WorkflowJsonContext.Default.WorkflowEventData) ?? throw new JsonException("The event JSON is null.");
 }

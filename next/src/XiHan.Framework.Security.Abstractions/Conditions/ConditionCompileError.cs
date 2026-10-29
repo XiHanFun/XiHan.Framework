@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 子句的编译错误。<see cref="Error"/> 的错误码是 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明具体原因，按调用方区域本地化后给编辑界面。
+/// 子句的编译错误。
 /// </summary>
+/// <remarks>
+/// <see cref="Error"/> 的错误码是 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明具体原因，按调用方区域本地化后给编辑界面。
+/// </remarks>
 /// <param name="ClauseKey">子句标识。</param>
 /// <param name="AttributeName">属性名（原文）。</param>
 /// <param name="Error">错误。</param>

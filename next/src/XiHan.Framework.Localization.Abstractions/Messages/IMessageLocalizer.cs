@@ -6,10 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Messages;
 
 /// <summary>
-/// 按消息键与区域解析文案的通用入口：任何地方（错误、通知、邮件、界面文本）都用它取当前调用方语言的文本。
-/// 实现负责回退链（精确区域 → 同语言 → 默认区域 → 源语言 <c>en-US</c>）、按目标区域的文化格式化占位符，
-/// 以及找不到键或占位符缺值时退回 <see cref="MessageTemplate.Describe"/>。
+/// 按消息键与区域解析文案的通用入口。
 /// </summary>
+/// <remarks>
+/// 任何地方（错误、通知、邮件、界面文本）都用它取当前调用方语言的文本。实现负责回退链（精确区域 → 同语言 → 默认区域 → 源语言 <c>en-US</c>）、按目标区域的文化格式化占位符，以及找不到键或占位符缺值时退回 <see cref="MessageTemplate.Describe"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IMessageLocalizer
 {
@@ -19,33 +20,51 @@ public interface IMessageLocalizer
     LocalizationOptions Options { get; }
 
     /// <summary>
-    /// 取模板（未格式化）；回退链用尽仍没有时无值。
+    /// 取模板（未格式化）。
     /// </summary>
+    /// <remarks>
+    /// 回退链用尽仍没有时无值。
+    /// </remarks>
     Maybe<string> Find(string key, string locale);
 
     /// <summary>
-    /// 按区域解析并格式化，给出实际命中的区域；没有模板或占位符缺值时无值。
+    /// 按区域解析并格式化，给出实际命中的区域。
     /// </summary>
+    /// <remarks>
+    /// 没有模板或占位符缺值时无值。
+    /// </remarks>
     Maybe<LocalizedText> Resolve(string key, string locale, IReadOnlyDictionary<string, object?>? arguments);
 
     /// <summary>
-    /// 按区域取文案并格式化；没有模板或占位符缺值时返回键与参数的描述。
+    /// 按区域取文案并格式化。
     /// </summary>
+    /// <remarks>
+    /// 没有模板或占位符缺值时返回键与参数的描述。
+    /// </remarks>
     string Localize(string key, string locale, IReadOnlyDictionary<string, object?>? arguments);
 
     /// <summary>
-    /// 按调用上下文里的区域（Baggage <see cref="BaggageKeys.Locale"/>，缺失时为默认区域）取文案并格式化；便捷形式见 <c>context.Localize(key, arguments)</c> 与 <c>key.L()</c>。
+    /// 按调用上下文里的区域（Baggage <see cref="BaggageKeys.Locale"/>，缺失时为默认区域）取文案并格式化。
     /// </summary>
+    /// <remarks>
+    /// 便捷形式见 <c>context.Localize(key, arguments)</c> 与 <c>key.L()</c>。
+    /// </remarks>
     string Localize(string key, InvocationContext context, IReadOnlyDictionary<string, object?>? arguments);
 
     /// <summary>
-    /// 把错误翻译成指定区域并给出命中的区域；自由文本错误或没有模板时无值。
+    /// 把错误翻译成指定区域并给出命中的区域。
     /// </summary>
+    /// <remarks>
+    /// 自由文本错误或没有模板时无值。
+    /// </remarks>
     Maybe<LocalizedText> Resolve(Error failure, string locale);
 
     /// <summary>
-    /// 把错误翻译成指定区域：键是 <see cref="Error.MessageKey"/>，参数是 <see cref="Error.Details"/>；自由文本错误返回其 <see cref="Error.Text"/>，没有模板时返回 <see cref="Error.Message"/>。
+    /// 把错误翻译成指定区域。
     /// </summary>
+    /// <remarks>
+    /// 键是 <see cref="Error.MessageKey"/>，参数是 <see cref="Error.Details"/>；自由文本错误返回其 <see cref="Error.Text"/>，没有模板时返回 <see cref="Error.Message"/>。
+    /// </remarks>
     string Localize(Error failure, string locale);
 
     /// <summary>

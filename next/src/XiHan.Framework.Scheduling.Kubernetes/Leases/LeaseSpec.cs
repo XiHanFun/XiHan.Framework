@@ -9,8 +9,11 @@ namespace XiHan.Framework.Scheduling.Kubernetes.Leases;
 internal sealed class LeaseSpec
 {
     /// <summary>
-    /// 持有者标识；空表示无人持有。
+    /// 持有者标识。
     /// </summary>
+    /// <remarks>
+    /// 空表示无人持有。
+    /// </remarks>
     public string? HolderIdentity { get; set; }
 
     /// <summary>

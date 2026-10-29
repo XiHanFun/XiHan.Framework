@@ -6,14 +6,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Locales;
 
 /// <summary>
-/// 框架内置支持的 10 种区域，与 XiHan.UI 的语言包一致。默认区域是 <see cref="Default"/>（英文）。
+/// 框架内置支持的 10 种区域，与 XiHan.UI 的语言包一致。
 /// </summary>
+/// <remarks>
+/// 默认区域是 <see cref="Default"/>（英文）。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class SupportedLocales
 {
     /// <summary>
-    /// 英语（美国）；默认区域，也是代码里消息文本的语言。
+    /// 英语（美国）。
     /// </summary>
+    /// <remarks>
+    /// 默认区域，也是代码里消息文本的语言。
+    /// </remarks>
     public const string EnglishUnitedStates = "en-US";
 
     /// <summary>

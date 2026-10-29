@@ -18,7 +18,10 @@ public abstract class SecretStoreFixture
     public abstract ISecretStore Store { get; }
 
     /// <summary>
-    /// 写入（创建或覆盖）一个密钥；返回后密钥库应能读到。
+    /// 写入（创建或覆盖）一个密钥。
     /// </summary>
+    /// <remarks>
+    /// 返回后密钥库应能读到。
+    /// </remarks>
     public abstract Task PutAsync(SecretName name, string value, CancellationToken cancellationToken);
 }

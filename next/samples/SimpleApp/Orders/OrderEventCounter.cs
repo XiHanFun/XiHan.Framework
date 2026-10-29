@@ -9,8 +9,11 @@ namespace SimpleApp.Orders;
 public sealed class OrderEventCounter
 {
     /// <summary>
-    /// 计数值；只通过 <see cref="Interlocked"/> 读写，消息并发派发时也准确。
+    /// 计数值。
     /// </summary>
+    /// <remarks>
+    /// 只通过 <see cref="Interlocked"/> 读写，消息并发派发时也准确。
+    /// </remarks>
     private long _handled;
 
     /// <summary>

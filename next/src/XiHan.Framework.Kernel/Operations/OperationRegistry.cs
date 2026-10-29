@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 应用内全部操作的登记表：操作 ID 唯一，容量有界。特性在配置阶段经 <c>FeatureContext.AddOperation</c> 登记，协议适配器按它发布端点。
+/// 应用内全部操作的登记表。
 /// </summary>
+/// <remarks>
+/// 操作 ID 唯一，容量有界。特性在配置阶段经 <c>FeatureContext.AddOperation</c> 登记，协议适配器按它发布端点。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OperationRegistry
 {
@@ -43,8 +46,11 @@ public sealed class OperationRegistry
     public int Count => _operations.Count;
 
     /// <summary>
-    /// 登记操作；重复 ID 返回 <see cref="KernelErrors.DuplicateOperation"/>，超限返回 <see cref="KernelErrors.OperationRegistryFull"/>。
+    /// 登记操作。
     /// </summary>
+    /// <remarks>
+    /// 重复 ID 返回 <see cref="KernelErrors.DuplicateOperation"/>，超限返回 <see cref="KernelErrors.OperationRegistryFull"/>。
+    /// </remarks>
     public Result Add(OperationDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);

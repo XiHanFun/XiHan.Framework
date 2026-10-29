@@ -13,8 +13,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义校验（RFC-0021）：结构、活动类型、转移、条件语法、汇合与用户任务的属性、指派规则、可达性。作用域服务（指派规则校验用到 Provider）。
+/// 定义校验（RFC-0021）。
 /// </summary>
+/// <remarks>
+/// 结构、活动类型、转移、条件语法、汇合与用户任务的属性、指派规则、可达性。作用域服务（指派规则校验用到 Provider）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionValidator
 {
@@ -44,8 +47,11 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 校验；不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>，<c>details.errors</c> 是全部问题。
+    /// 校验。
     /// </summary>
+    /// <remarks>
+    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>，<c>details.errors</c> 是全部问题。
+    /// </remarks>
     public Result Validate(WorkflowDefinition definition)
     {
         var errors = Errors(definition);
@@ -55,8 +61,11 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 全部问题的说明（给设计器）；空表示合法。
+    /// 全部问题的说明（给设计器）。
     /// </summary>
+    /// <remarks>
+    /// 空表示合法。
+    /// </remarks>
     public IReadOnlyList<string> Errors(WorkflowDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -260,8 +269,11 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 用户任务：至少一个指派来源，策略与空指派策略取值合法，规则类型已登记且参数合法，兜底策略要有兜底规则。
+    /// 用户任务。
     /// </summary>
+    /// <remarks>
+    /// 至少一个指派来源，策略与空指派策略取值合法，规则类型已登记且参数合法，兜底策略要有兜底规则。
+    /// </remarks>
     private void ValidateUserTask(WorkflowNode node, List<string> errors)
     {
         var properties = node.Properties;

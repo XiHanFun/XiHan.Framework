@@ -7,8 +7,11 @@ using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Conformance;
 
 /// <summary>
-/// Go 写的示例插件 echo-go（framework-sdk-go）跑协议一致性套件；本机没有 go 时跳过。
+/// Go 写的示例插件 echo-go（framework-sdk-go）跑协议一致性套件。
 /// </summary>
+/// <remarks>
+/// 本机没有 go 时跳过。
+/// </remarks>
 public sealed class EchoGoPluginConformanceTests : PluginProtocolConformance
 {
     /// <inheritdoc />

@@ -22,8 +22,11 @@ namespace XiHan.Framework.Kernel.Hosting;
 public sealed class FeatureContext
 {
     /// <summary>
-    /// 创建特性上下文。只由 <see cref="AppBuilder"/> 在配置阶段按拓扑顺序创建。
+    /// 创建特性上下文。
     /// </summary>
+    /// <remarks>
+    /// 只由 <see cref="AppBuilder"/> 在配置阶段按拓扑顺序创建。
+    /// </remarks>
     /// <param name="node">本特性在已解析图中的节点。</param>
     /// <param name="services">宿主的服务集合。</param>
     /// <param name="configuration">宿主配置。</param>
@@ -101,8 +104,11 @@ public sealed class FeatureContext
     }
 
     /// <summary>
-    /// 登记一个操作：实现按作用域注册到容器，描述以本特性为归属进入登记表；重复 ID 或超限抛出对应错误。
+    /// 登记一个操作。
     /// </summary>
+    /// <remarks>
+    /// 实现按作用域注册到容器，描述以本特性为归属进入登记表；重复 ID 或超限抛出对应错误。
+    /// </remarks>
     /// <typeparam name="TOperation">操作实现。</typeparam>
     /// <typeparam name="TRequest">请求类型。</typeparam>
     /// <typeparam name="TResponse">响应类型。</typeparam>
@@ -124,8 +130,11 @@ public sealed class FeatureContext
     }
 
     /// <summary>
-    /// 取清单声明的绑定；缺失抛出 <see cref="KernelErrors.MissingBinding"/>。
+    /// 取清单声明的绑定。
     /// </summary>
+    /// <remarks>
+    /// 缺失抛出 <see cref="KernelErrors.MissingBinding"/>。
+    /// </remarks>
     public BindingValue GetBinding(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -144,8 +153,11 @@ public sealed class FeatureContext
     }
 
     /// <summary>
-    /// 登记本特性定义的权限；重复或超限抛出对应错误。
+    /// 登记本特性定义的权限。
     /// </summary>
+    /// <remarks>
+    /// 重复或超限抛出对应错误。
+    /// </remarks>
     public FeatureContext AddPermission(PermissionDefinition permission)
     {
         Permissions.Add(permission).ThrowIfFailure();

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions;
 
 /// <summary>
-/// 对象存储的错误码；登记在 <c>spec/conventions/error-codes.md</c>。标识不合法是编程错误，在构造时抛出，不占错误码。
+/// 对象存储的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。标识不合法是编程错误，在构造时抛出，不占错误码。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObjectStorageErrors
 {

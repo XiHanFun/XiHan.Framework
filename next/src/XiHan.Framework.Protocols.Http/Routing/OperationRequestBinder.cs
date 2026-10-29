@@ -13,22 +13,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Routing;
 
 /// <summary>
-/// 把 HTTP 请求绑定为 XGI 载荷：一个 JSON 对象，由路由值、JSON 请求体与查询串合并而成。
-/// 路由值最优先（URL 里的标识就是权威），其次请求体，最后查询串。
-/// 操作描述带请求的序列化元数据时，路由值与查询串按目标属性的类型写成 JSON 布尔、数字或数组，属性名取序列化名（不分大小写匹配）；
-/// 没有元数据（插件代理）或找不到属性时按字符串写入，多值写成字符串数组。
+/// 把 HTTP 请求绑定为 XGI 载荷。
 /// </summary>
+/// <remarks>
+/// 一个 JSON 对象，由路由值、JSON 请求体与查询串合并而成。路由值最优先（URL 里的标识就是权威），其次请求体，最后查询串。操作描述带请求的序列化元数据时，路由值与查询串按目标属性的类型写成 JSON 布尔、数字或数组，属性名取序列化名（不分大小写匹配）；没有元数据（插件代理）或找不到属性时按字符串写入，多值写成字符串数组。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class OperationRequestBinder
 {
     /// <summary>
-    /// 带请求体的方法；GET、DELETE 的请求体被忽略。
+    /// 带请求体的方法。
     /// </summary>
+    /// <remarks>
+    /// GET、DELETE 的请求体被忽略。
+    /// </remarks>
     private static readonly string[] _bodyMethods = ["POST", "PUT", "PATCH"];
 
     /// <summary>
-    /// 绑定；请求体不是 JSON 对象时返回 <see cref="KernelErrors.InvalidOperationPayload"/>。
+    /// 绑定。
     /// </summary>
+    /// <remarks>
+    /// 请求体不是 JSON 对象时返回 <see cref="KernelErrors.InvalidOperationPayload"/>。
+    /// </remarks>
     public static async ValueTask<Result<ReadOnlyMemory<byte>>> BindAsync(HttpContext httpContext, OperationDescriptor descriptor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -89,8 +95,11 @@ public static class OperationRequestBinder
     }
 
     /// <summary>
-    /// 请求类型的属性按序列化名索引（不分大小写）；没有元数据或不是对象类型时为空表。
+    /// 请求类型的属性按序列化名索引（不分大小写）。
     /// </summary>
+    /// <remarks>
+    /// 没有元数据或不是对象类型时为空表。
+    /// </remarks>
     private static Dictionary<string, JsonPropertyInfo> PropertiesOf(JsonTypeInfo? requestInfo)
     {
         var properties = new Dictionary<string, JsonPropertyInfo>(StringComparer.OrdinalIgnoreCase);
@@ -108,8 +117,11 @@ public static class OperationRequestBinder
     }
 
     /// <summary>
-    /// 写一个来自路由或查询串的字段：集合属性写数组，标量属性写单值（多值且目标不是集合时保留数组，让反序列化报出类型不符）。
+    /// 写一个来自路由或查询串的字段。
     /// </summary>
+    /// <remarks>
+    /// 集合属性写数组，标量属性写单值（多值且目标不是集合时保留数组，让反序列化报出类型不符）。
+    /// </remarks>
     private static void WriteValues(Utf8JsonWriter writer, string name, string?[] values, JsonPropertyInfo? property, JsonTypeInfo? requestInfo)
     {
         writer.WritePropertyName(name);
@@ -130,8 +142,11 @@ public static class OperationRequestBinder
     }
 
     /// <summary>
-    /// 集合属性的元素类型（字符串不算集合）；元数据解析不了时返回 null，按标量处理。
+    /// 集合属性的元素类型（字符串不算集合）。
     /// </summary>
+    /// <remarks>
+    /// 元数据解析不了时返回 null，按标量处理。
+    /// </remarks>
     private static Type? ElementTypeOf(Type propertyType, JsonTypeInfo? requestInfo)
     {
         if (propertyType == typeof(string) || requestInfo is null)
@@ -152,8 +167,11 @@ public static class OperationRequestBinder
     }
 
     /// <summary>
-    /// 按目标类型写一个文本值：布尔、整数、浮点与数值枚举写 JSON 字面量，解析不了或其他类型写字符串（交给反序列化报错或按字符串处理）。
+    /// 按目标类型写一个文本值。
     /// </summary>
+    /// <remarks>
+    /// 布尔、整数、浮点与数值枚举写 JSON 字面量，解析不了或其他类型写字符串（交给反序列化报错或按字符串处理）。
+    /// </remarks>
     private static void WriteScalar(Utf8JsonWriter writer, string? value, Type? targetType)
     {
         if (value is null)
@@ -198,8 +216,11 @@ public static class OperationRequestBinder
             || type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort) || type == typeof(sbyte);
 
     /// <summary>
-    /// 读取并解析 JSON 请求体；无请求体的方法或空请求体返回 <see langword="null"/>，非 JSON 抛出 <see cref="JsonException"/> 之外的情况由调用方翻译。
+    /// 读取并解析 JSON 请求体。
     /// </summary>
+    /// <remarks>
+    /// 无请求体的方法或空请求体返回 <see langword="null"/>，非 JSON 抛出 <see cref="JsonException"/> 之外的情况由调用方翻译。
+    /// </remarks>
     private static async ValueTask<JsonDocument?> ReadBodyAsync(HttpRequest request, CancellationToken cancellationToken)
     {
         if (!_bodyMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase) || request.ContentLength == 0)

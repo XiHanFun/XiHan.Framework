@@ -8,8 +8,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>multitenancy.inmemory.capacity</c>：有余量时 Ready，租户数达到容量后 Degraded 并带 <see cref="MultiTenancyErrors.CapacityExceeded"/>。
+/// 健康项 <c>multitenancy.inmemory.capacity</c>。
 /// </summary>
+/// <remarks>
+/// 有余量时 Ready，租户数达到容量后 Degraded 并带 <see cref="MultiTenancyErrors.CapacityExceeded"/>。
+/// </remarks>
 public sealed class InMemoryMultiTenancyHealthTests
 {
     [Fact]

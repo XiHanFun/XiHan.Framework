@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Mcp.Tests;
 
 /// <summary>
-/// 登记八个操作 ID 的测试特性：六个暴露给 MCP（<c>orders.create</c> 带 <c>orders.write</c> 权限，<c>create</c> 与 <c>get</c> 带 Schema），一个只给 HTTP，一个标为内部。
+/// 登记八个操作 ID 的测试特性。
 /// </summary>
+/// <remarks>
+/// 六个暴露给 MCP（<c>orders.create</c> 带 <c>orders.write</c> 权限，<c>create</c> 与 <c>get</c> 带 Schema），一个只给 HTTP，一个标为内部。
+/// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>

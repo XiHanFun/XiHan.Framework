@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// <c>caching.distributed@1</c> 远程 Provider 的操作集（<c>spec/provider/caching-distributed.md</c>）：操作 ID 与请求、响应的 JSON 形态。
-/// 值与期望值是标准 base64；<c>ttlMs</c> 与 <c>slidingMs</c> 二选一，都不给用插件的默认存活时间。批量操作的响应数组与请求数组等长、顺序一致。
+/// <c>caching.distributed@1</c> 远程 Provider 的操作集。
 /// </summary>
+/// <remarks>
+/// <c>spec/provider/caching-distributed.md</c>。操作 ID 与请求、响应的 JSON 形态。值与期望值是标准 base64；<c>ttlMs</c> 与 <c>slidingMs</c> 二选一，都不给用插件的默认存活时间。批量操作的响应数组与请求数组等长、顺序一致。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public static class RemoteCacheOperations
 {
@@ -70,8 +72,11 @@ public static class RemoteCacheOperations
     public sealed record GetResponse(string? Value);
 
     /// <summary>
-    /// <c>cache-entries.set</c> 与 <c>cache-entries.try-add</c> 的请求，也是 <c>cache-entries.set-many</c> 的一项。
+    /// <c>cache-entries.set</c> 与 <c>cache-entries.try-add</c> 的请求。
     /// </summary>
+    /// <remarks>
+    /// 也是 <c>cache-entries.set-many</c> 的一项。
+    /// </remarks>
     [ApiLevel(Stability.Experimental, "5.0")]
     public sealed record SetRequest(string Key, string Value, long? TtlMs, long? SlidingMs);
 

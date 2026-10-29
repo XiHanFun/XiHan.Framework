@@ -14,8 +14,11 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库书签存储（单例）：每个操作在新作用域里经完整管道执行；到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// 数据库书签存储（单例）。
 /// </summary>
+/// <remarks>
+/// 每个操作在新作用域里经完整管道执行；到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
 {
@@ -175,8 +178,11 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
         => Result.Success<IReadOnlyList<WorkflowBookmark>>(records.Select(static record => WorkflowJson.DeserializeBookmark(record.Document)).ToList());
 
     /// <summary>
-    /// 书签 → 行；序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它。
+    /// 书签 → 行。
     /// </summary>
+    /// <remarks>
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它。
+    /// </remarks>
     private WorkflowBookmarkRecord ToRecord(WorkflowBookmark bookmark)
     {
         ArgumentNullException.ThrowIfNull(bookmark);

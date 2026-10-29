@@ -15,8 +15,11 @@ using XiHan.Framework.Kernel.Operations;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 操作描述作为端点元数据进入上下文，端点内用 <see cref="IOperationInvoker.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext, OperationRequest)"/> 执行；失败结果由宿主写成 Problem Details。
+/// 操作描述作为端点元数据进入上下文，端点内用 <see cref="IOperationInvoker.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext, OperationRequest)"/> 执行。
 /// </summary>
+/// <remarks>
+/// 失败结果由宿主写成 Problem Details。
+/// </remarks>
 public sealed class OperationEndpointTests
 {
     /// <summary>

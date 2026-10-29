@@ -15,8 +15,11 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// OpenID Connect 认证 Provider：提供 <c>security.authentication@1</c>，注册 <c>Bearer</c> 处理器与 Authenticate 阶段中间件；授权仍由被选中的授权 Provider 承担。
+/// OpenID Connect 认证 Provider。
 /// </summary>
+/// <remarks>
+/// 提供 <c>security.authentication@1</c>，注册 <c>Bearer</c> 处理器与 Authenticate 阶段中间件；授权仍由被选中的授权 Provider 承担。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenIdConnectSecurityFeature : IFeature
 {

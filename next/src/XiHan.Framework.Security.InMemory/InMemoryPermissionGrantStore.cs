@@ -24,13 +24,19 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 当前授予总数；用于容量检查。
+    /// 当前授予总数。
     /// </summary>
+    /// <remarks>
+    /// 用于容量检查。
+    /// </remarks>
     private int _count;
 
     /// <summary>
-    /// 创建并装载选项里的授予；超出容量抛出 <see cref="FrameworkException"/>。
+    /// 创建并装载选项里的授予。
     /// </summary>
+    /// <remarks>
+    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// </remarks>
     public InMemoryPermissionGrantStore(InMemorySecurityOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -82,8 +88,11 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 授予；已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// 授予。
     /// </summary>
+    /// <remarks>
+    /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// </remarks>
     public Result Grant(PermissionGrant grant)
     {
         ArgumentNullException.ThrowIfNull(grant);
@@ -114,8 +123,11 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 撤销；存在返回 <see langword="true"/>。
+    /// 撤销。
     /// </summary>
+    /// <remarks>
+    /// 存在返回 <see langword="true"/>。
+    /// </remarks>
     public bool Revoke(PermissionGrant grant)
     {
         ArgumentNullException.ThrowIfNull(grant);

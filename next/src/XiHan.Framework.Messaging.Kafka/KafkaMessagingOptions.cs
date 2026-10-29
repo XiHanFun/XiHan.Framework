@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Kafka;
 
 /// <summary>
-/// Kafka Provider 的选项。配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（或绑定 <c>stream</c> 的值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
+/// Kafka Provider 的选项。
 /// </summary>
+/// <remarks>
+/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（或绑定 <c>stream</c> 的值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
 {
@@ -29,8 +32,11 @@ public sealed record KafkaMessagingOptions
     }
 
     /// <summary>
-    /// 消费组；默认 <c>xihan</c>。同一消费组的实例分摊分区。
+    /// 消费组。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan</c>。同一消费组的实例分摊分区。
+    /// </remarks>
     public string GroupId
     {
         get => field;
@@ -38,18 +44,27 @@ public sealed record KafkaMessagingOptions
     } = "xihan";
 
     /// <summary>
-    /// 主题前缀；默认 <c>xihan.</c>。
+    /// 主题前缀。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan.</c>。
+    /// </remarks>
     public string TopicPrefix { get; init; } = "xihan.";
 
     /// <summary>
-    /// 透传给 librdkafka 的配置（生产者与消费者共用），如 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>ssl.ca.location</c>。
+    /// 透传给 librdkafka 的配置（生产者与消费者共用）。
     /// </summary>
+    /// <remarks>
+    /// 如 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>ssl.ca.location</c>。
+    /// </remarks>
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 健康项 <c>messaging.kafka.connection</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>messaging.kafka.connection</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;
@@ -57,8 +72,11 @@ public sealed record KafkaMessagingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置与绑定读取：<c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:*</c>。
+    /// 从配置与绑定读取。
     /// </summary>
+    /// <remarks>
+    /// <c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:*</c>。
+    /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);

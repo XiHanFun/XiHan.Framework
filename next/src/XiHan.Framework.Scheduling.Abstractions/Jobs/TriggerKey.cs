@@ -12,8 +12,11 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 public readonly record struct TriggerKey
 {
     /// <summary>
-    /// 创建；触发器名不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 触发器名不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public TriggerKey(JobName job, string trigger)
     {
         Job = job;

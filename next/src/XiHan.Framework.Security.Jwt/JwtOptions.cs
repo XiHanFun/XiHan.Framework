@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Jwt;
 
 /// <summary>
-/// JWT 选项。从配置节 <c>XiHan:Security:Jwt</c> 显式读取。
+/// JWT 选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Security:Jwt</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JwtOptions
 {
@@ -36,18 +39,27 @@ public sealed record JwtOptions
     }
 
     /// <summary>
-    /// 签发者；<see langword="null"/> 不校验。
+    /// 签发者。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 不校验。
+    /// </remarks>
     public string? Issuer { get; init; }
 
     /// <summary>
-    /// 受众；<see langword="null"/> 不校验。
+    /// 受众。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 不校验。
+    /// </remarks>
     public string? Audience { get; init; }
 
     /// <summary>
-    /// 时钟偏移；默认 60 秒。
+    /// 时钟偏移。
     /// </summary>
+    /// <remarks>
+    /// 默认 60 秒。
+    /// </remarks>
     public TimeSpan ClockSkew
     {
         get => field;
@@ -55,8 +67,11 @@ public sealed record JwtOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 作为主体 ID 的声明类型；默认 <c>sub</c>。
+    /// 作为主体 ID 的声明类型。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>sub</c>。
+    /// </remarks>
     public string NameClaim
     {
         get => field;

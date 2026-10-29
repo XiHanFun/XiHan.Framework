@@ -11,24 +11,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Testing;
 
 /// <summary>
-/// 内存中的测试宿主：自建服务集合与配置，装配并启动 <see cref="App"/>，调用直接走管道，不经过任何协议。
+/// 内存中的测试宿主。
 /// </summary>
+/// <remarks>
+/// 自建服务集合与配置，装配并启动 <see cref="App"/>，调用直接走管道，不经过任何协议。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TestHost : IAsyncDisposable
 {
     /// <summary>
-    /// 根服务提供器；宿主释放时一并释放。
+    /// 根服务提供器。
     /// </summary>
+    /// <remarks>
+    /// 宿主释放时一并释放。
+    /// </remarks>
     private readonly ServiceProvider _provider;
 
     /// <summary>
-    /// 是否已释放；释放后拒绝再发起调用。
+    /// 是否已释放。
     /// </summary>
+    /// <remarks>
+    /// 释放后拒绝再发起调用。
+    /// </remarks>
     private bool _disposed;
 
     /// <summary>
-    /// 以已启动的应用、其服务提供器与配置创建宿主；只由 <see cref="StartAsync"/> 调用。
+    /// 以已启动的应用、其服务提供器与配置创建宿主。
     /// </summary>
+    /// <remarks>
+    /// 只由 <see cref="StartAsync"/> 调用。
+    /// </remarks>
     private TestHost(ServiceProvider provider, App app, IConfiguration configuration)
     {
         _provider = provider;
@@ -109,8 +121,11 @@ public sealed class TestHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 以 XGI 消息调用操作，经完整管道；每次调用一个独立作用域。
+    /// 以 XGI 消息调用操作，经完整管道。
     /// </summary>
+    /// <remarks>
+    /// 每次调用一个独立作用域。
+    /// </remarks>
     public async ValueTask<OperationResponse> InvokeOperationRawAsync(
         OperationRequest request,
         IReadOnlyDictionary<string, string>? baggage = null,
@@ -124,8 +139,11 @@ public sealed class TestHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 类型化调用操作，经完整管道；每次调用一个独立作用域。
+    /// 类型化调用操作，经完整管道。
     /// </summary>
+    /// <remarks>
+    /// 每次调用一个独立作用域。
+    /// </remarks>
     public async ValueTask<Result<TResponse>> InvokeOperationAsync<TRequest, TResponse>(
         string operationId,
         TRequest request,

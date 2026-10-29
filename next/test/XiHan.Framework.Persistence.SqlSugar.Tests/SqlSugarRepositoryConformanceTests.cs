@@ -7,8 +7,11 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar Provider 以 SQLite 跑一致性套件；每个用例一个临时数据库文件。
+/// SqlSugar Provider 以 SQLite 跑一致性套件。
 /// </summary>
+/// <remarks>
+/// 每个用例一个临时数据库文件。
+/// </remarks>
 public sealed class SqlSugarRepositoryConformanceTests : RepositoryConformance, IDisposable
 {
     /// <summary>

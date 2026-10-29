@@ -11,8 +11,11 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
 /// <summary>
-/// 插件贡献的一个中间件（<c>spec/plugin/wasm.md</c> §6）：进入下游前后各调一次 <c>xihan_middleware</c>；before 可短路或改写已登记 Baggage，after 只观察；任何失败都关闭调用。
+/// 插件贡献的一个中间件（<c>spec/plugin/wasm.md</c> §6）。
 /// </summary>
+/// <remarks>
+/// 进入下游前后各调一次 <c>xihan_middleware</c>；before 可短路或改写已登记 Baggage，after 只观察；任何失败都关闭调用。
+/// </remarks>
 internal sealed class WasmMiddleware(WasmPluginRuntime runtime, string name, PipelineStage stage) : IPipelineMiddleware
 {
     /// <inheritdoc />

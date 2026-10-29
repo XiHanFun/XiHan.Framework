@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Conformance.Embeddings;
 
 /// <summary>
-/// 确定性的词袋哈希嵌入：每个词按 SHA-256 落到一个维度（正负号由哈希决定），向量归一化；词重叠越多余弦相似度越高。只用于测试与一致性套件。
+/// 确定性的词袋哈希嵌入。
 /// </summary>
+/// <remarks>
+/// 每个词按 SHA-256 落到一个维度（正负号由哈希决定），向量归一化；词重叠越多余弦相似度越高。只用于测试与一致性套件。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HashingEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
 {

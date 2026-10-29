@@ -9,9 +9,11 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// Kubernetes 领导选举选项。从配置节 <c>XiHan:Scheduling:Kubernetes</c> 显式读取：<c>Lease</c>、<c>Namespace</c>、<c>Holder</c>、<c>ApiServer</c>、<c>TokenPath</c>、<c>CertificateAuthorityPath</c>。
-/// 没给的值按 Pod 内的约定解析：命名空间读 ServiceAccount 挂载或 <c>POD_NAMESPACE</c>，持有者读 <c>XIHAN_POD_NAME</c> / <c>HOSTNAME</c>，API Server 读 <c>KUBERNETES_SERVICE_HOST</c> / <c>PORT</c>。
+/// Kubernetes 领导选举选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Scheduling:Kubernetes</c> 显式读取：<c>Lease</c>、<c>Namespace</c>、<c>Holder</c>、<c>ApiServer</c>、<c>TokenPath</c>、<c>CertificateAuthorityPath</c>。没给的值按 Pod 内的约定解析：命名空间读 ServiceAccount 挂载或 <c>POD_NAMESPACE</c>，持有者读 <c>XIHAN_POD_NAME</c> / <c>HOSTNAME</c>，API Server 读 <c>KUBERNETES_SERVICE_HOST</c> / <c>PORT</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record KubernetesSchedulingOptions
 {
@@ -21,8 +23,11 @@ public sealed partial record KubernetesSchedulingOptions
     public const string ConfigurationSection = "XiHan:Scheduling:Kubernetes";
 
     /// <summary>
-    /// 调度器默认竞争的资源名；它映射到 <see cref="Lease"/>，其他资源映射到 <c>&lt;Lease&gt;-&lt;资源&gt;</c>。
+    /// 调度器默认竞争的资源名。
     /// </summary>
+    /// <remarks>
+    /// 它映射到 <see cref="Lease"/>，其他资源映射到 <c>&lt;Lease&gt;-&lt;资源&gt;</c>。
+    /// </remarks>
     public const string DefaultResource = "scheduling.jobs";
 
     /// <summary>
@@ -31,8 +36,11 @@ public sealed partial record KubernetesSchedulingOptions
     private const string ServiceAccountDirectory = "/var/run/secrets/kubernetes.io/serviceaccount";
 
     /// <summary>
-    /// 调度器租约的 Lease 名（DNS 标签）；默认 <c>xihan-scheduler</c>。
+    /// 调度器租约的 Lease 名（DNS 标签）。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan-scheduler</c>。
+    /// </remarks>
     public string Lease
     {
         get => field;
@@ -40,23 +48,35 @@ public sealed partial record KubernetesSchedulingOptions
     } = "xihan-scheduler";
 
     /// <summary>
-    /// 命名空间；为空时解析 ServiceAccount 挂载的 namespace 文件、环境变量 <c>POD_NAMESPACE</c>，最后 <c>default</c>。
+    /// 命名空间。
     /// </summary>
+    /// <remarks>
+    /// 为空时解析 ServiceAccount 挂载的 namespace 文件、环境变量 <c>POD_NAMESPACE</c>，最后 <c>default</c>。
+    /// </remarks>
     public string? Namespace { get; init; }
 
     /// <summary>
-    /// 持有者标识；为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名。
+    /// 持有者标识。
     /// </summary>
+    /// <remarks>
+    /// 为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名。
+    /// </remarks>
     public string? Holder { get; init; }
 
     /// <summary>
-    /// API Server 地址；为空时由 <c>KUBERNETES_SERVICE_HOST</c> / <c>KUBERNETES_SERVICE_PORT</c> 拼出，没有时 <c>https://kubernetes.default.svc</c>。
+    /// API Server 地址。
     /// </summary>
+    /// <remarks>
+    /// 为空时由 <c>KUBERNETES_SERVICE_HOST</c> / <c>KUBERNETES_SERVICE_PORT</c> 拼出，没有时 <c>https://kubernetes.default.svc</c>。
+    /// </remarks>
     public Uri? ApiServer { get; init; }
 
     /// <summary>
-    /// 直接给定的 Bearer 令牌（测试用）；为空时每次请求从 <see cref="TokenPath"/> 读取，以跟上投射令牌的轮换。
+    /// 直接给定的 Bearer 令牌（测试用）。
     /// </summary>
+    /// <remarks>
+    /// 为空时每次请求从 <see cref="TokenPath"/> 读取，以跟上投射令牌的轮换。
+    /// </remarks>
     public string? Token { get; init; }
 
     /// <summary>
@@ -65,8 +85,11 @@ public sealed partial record KubernetesSchedulingOptions
     public string TokenPath { get; init; } = ServiceAccountDirectory + "/token";
 
     /// <summary>
-    /// API Server 的 CA 证书文件；不存在时用系统信任。
+    /// API Server 的 CA 证书文件。
     /// </summary>
+    /// <remarks>
+    /// 不存在时用系统信任。
+    /// </remarks>
     public string CertificateAuthorityPath { get; init; } = ServiceAccountDirectory + "/ca.crt";
 
     /// <summary>
@@ -163,8 +186,11 @@ public sealed partial record KubernetesSchedulingOptions
     }
 
     /// <summary>
-    /// 资源对应的 Lease 名：默认资源用 <see cref="Lease"/>，其他资源追加成 <c>&lt;Lease&gt;-&lt;资源&gt;</c>（点与下划线换成连字符，截到 63 字符）。
+    /// 资源对应的 Lease 名。
     /// </summary>
+    /// <remarks>
+    /// 默认资源用 <see cref="Lease"/>，其他资源追加成 <c>&lt;Lease&gt;-&lt;资源&gt;</c>（点与下划线换成连字符，截到 63 字符）。
+    /// </remarks>
     public string LeaseNameFor(JobName resource)
     {
         if (string.Equals(resource.Value, DefaultResource, StringComparison.Ordinal))

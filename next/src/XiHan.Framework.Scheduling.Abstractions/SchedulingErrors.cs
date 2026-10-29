@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions;
 
 /// <summary>
-/// 调度子系统的错误码；登记在 <c>spec/conventions/error-codes.md</c>。名字与 cron 表达式不合法是编程错误，在构造时抛出。
+/// 调度子系统的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。名字与 cron 表达式不合法是编程错误，在构造时抛出。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SchedulingErrors
 {

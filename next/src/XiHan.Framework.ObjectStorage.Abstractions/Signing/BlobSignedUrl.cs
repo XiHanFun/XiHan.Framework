@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 /// <summary>
-/// 签出的地址：客户端按 <see cref="Method"/> 请求 <see cref="Url"/>，并原样带上 <see cref="Headers"/>（如上传限定的 <c>Content-Type</c>）；过了 <see cref="ExpiresAt"/> 即失效。
-/// 宿主代收发的地址可以是相对地址（相对应用的源）。
+/// 签出的地址。
 /// </summary>
+/// <remarks>
+/// 客户端按 <see cref="Method"/> 请求 <see cref="Url"/>，并原样带上 <see cref="Headers"/>（如上传限定的 <c>Content-Type</c>）；过了 <see cref="ExpiresAt"/> 即失效。宿主代收发的地址可以是相对地址（相对应用的源）。
+/// </remarks>
 /// <param name="Url">地址。</param>
 /// <param name="Method">方法。</param>
 /// <param name="ExpiresAt">失效时刻（UTC）。</param>

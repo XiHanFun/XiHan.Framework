@@ -14,8 +14,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Chat;
 
 /// <summary>
-/// <see cref="IAIChat"/> 的实现：工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息。
+/// <see cref="IAIChat"/> 的实现。
 /// </summary>
+/// <remarks>
+/// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIChat : IAIChat
 {

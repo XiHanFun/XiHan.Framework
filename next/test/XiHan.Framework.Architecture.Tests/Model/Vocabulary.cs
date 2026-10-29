@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 从 <c>spec/conventions/vocabulary.md</c> 的表格读取术语表。规范文件是唯一事实源，测试不另存一份。
+/// 从 <c>spec/conventions/vocabulary.md</c> 的表格读取术语表。
 /// </summary>
+/// <remarks>
+/// 规范文件是唯一事实源，测试不另存一份。
+/// </remarks>
 internal static class Vocabulary
 {
     /// <summary>
@@ -38,8 +41,11 @@ internal static class Vocabulary
         Words.Where(static w => !StructuralWords.Contains(w)).ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
-    /// 解析 Markdown 表格：只取以 <c>| `</c> 开头的数据行（表头与分隔行不以反引号开头），前四列依次为领域词、能力 ID 前缀、配置节、错误码域。
+    /// 解析 Markdown 表格。
     /// </summary>
+    /// <remarks>
+    /// 只取以 <c>| `</c> 开头的数据行（表头与分隔行不以反引号开头），前四列依次为领域词、能力 ID 前缀、配置节、错误码域。
+    /// </remarks>
     private static List<VocabularyEntry> Load()
     {
         var entries = new List<VocabularyEntry>();

@@ -15,9 +15,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Trail;
 
 /// <summary>
-/// 数据库审计（单例）：写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；
-/// 查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在自己的作用域与工作单元里执行（<see cref="AuditStoreScope"/>），不加入调用方的事务。
+/// 数据库审计（单例）。
 /// </summary>
+/// <remarks>
+/// 写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在自己的作用域与工作单元里执行（<see cref="AuditStoreScope"/>），不加入调用方的事务。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDisposable
 {
@@ -52,13 +54,19 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     private readonly AuditStoreScope _store;
 
     /// <summary>
-    /// 等待落库的事件；有界，满了丢弃新到的。
+    /// 等待落库的事件。
     /// </summary>
+    /// <remarks>
+    /// 有界，满了丢弃新到的。
+    /// </remarks>
     private readonly Channel<AuditEvent> _queue;
 
     /// <summary>
-    /// 批满信号：队列攒够一批时唤醒后台循环，不等刷写间隔；容量 1，重复信号丢弃。
+    /// 批满信号。
     /// </summary>
+    /// <remarks>
+    /// 队列攒够一批时唤醒后台循环，不等刷写间隔；容量 1，重复信号丢弃。
+    /// </remarks>
     private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
 
     /// <summary>
@@ -67,8 +75,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     private readonly SemaphoreSlim _flushing = new(1, 1);
 
     /// <summary>
-    /// 上一个分配的写入序号；只在持有 <see cref="_flushing"/> 时读写。
+    /// 上一个分配的写入序号。
     /// </summary>
+    /// <remarks>
+    /// 只在持有 <see cref="_flushing"/> 时读写。
+    /// </remarks>
     private long _lastSequence;
 
     /// <summary>
@@ -189,8 +200,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 立即把队列里的事件全部落库并等待完成；与后台循环互斥，循环正在刷写时等它这一批结束再接着刷剩下的。
+    /// 立即把队列里的事件全部落库并等待完成。
     /// </summary>
+    /// <remarks>
+    /// 与后台循环互斥，循环正在刷写时等它这一批结束再接着刷剩下的。
+    /// </remarks>
     public async Task FlushAsync(CancellationToken cancellationToken)
     {
         // 刷写串行：序号按出队顺序分配并按同一顺序提交，续页才不会越过尚未落库的事件
@@ -212,8 +226,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     public void Dispose() => _flushing.Dispose();
 
     /// <summary>
-    /// 后台循环：到刷写间隔或收到批满信号就刷写，直到取消；取消后剩余的事件由停止流程另行刷写。
+    /// 后台循环。
     /// </summary>
+    /// <remarks>
+    /// 到刷写间隔或收到批满信号就刷写，直到取消；取消后剩余的事件由停止流程另行刷写。
+    /// </remarks>
     internal async Task RunAsync(CancellationToken cancellationToken)
     {
         using var timer = new PeriodicTimer(_options.FlushInterval, _clock);
@@ -251,13 +268,19 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 停止接收：之后写入的事件按丢弃计数；队列里已有的仍可被刷写。
+    /// 停止接收。
     /// </summary>
+    /// <remarks>
+    /// 之后写入的事件按丢弃计数；队列里已有的仍可被刷写。
+    /// </remarks>
     internal void Complete() => _queue.Writer.TryComplete();
 
     /// <summary>
-    /// 按查询的过滤项组合规约；可空字符串列只写相等比较，空值在 SQL 里本就不相等。
+    /// 按查询的过滤项组合规约。
     /// </summary>
+    /// <remarks>
+    /// 可空字符串列只写相等比较，空值在 SQL 里本就不相等。
+    /// </remarks>
     private static EntityQuery<AuditRecord> Filter(AuditQuery query, long after)
     {
         var filtered = EntityQuery.All<AuditRecord>();
@@ -305,8 +328,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 从队列取出最多一批的事件；队列为空返回空列表。
+    /// 从队列取出最多一批的事件。
     /// </summary>
+    /// <remarks>
+    /// 队列为空返回空列表。
+    /// </remarks>
     private List<AuditEvent> TakeBatch()
     {
         var batch = new List<AuditEvent>(Math.Min(_options.BatchSize, Math.Max(_queue.Reader.Count, 1)));
@@ -319,8 +345,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 把一批事件映射成记录并一次批量写入；整批异常或逐项被拒都只记日志并计数，这一批不再重试。
+    /// 把一批事件映射成记录并一次批量写入。
     /// </summary>
+    /// <remarks>
+    /// 整批异常或逐项被拒都只记日志并计数，这一批不再重试。
+    /// </remarks>
     private async Task PersistAsync(List<AuditEvent> batch, CancellationToken cancellationToken)
     {
         var records = new AuditRecord[batch.Count];
@@ -368,8 +397,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 下一个写入序号：上一个加一与时钟 UTC 刻度的较大者——同一进程内严格递增，时钟回拨或同一刻度内多次取号时退化为上一个加一。
+    /// 下一个写入序号。
     /// </summary>
+    /// <remarks>
+    /// 上一个加一与时钟 UTC 刻度的较大者——同一进程内严格递增，时钟回拨或同一刻度内多次取号时退化为上一个加一。
+    /// </remarks>
     private long NextSequence()
     {
         _lastSequence = Math.Max(_lastSequence + 1, _clock.GetUtcNow().UtcTicks);

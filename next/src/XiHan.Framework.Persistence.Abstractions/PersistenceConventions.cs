@@ -7,14 +7,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions;
 
 /// <summary>
-/// Provider 共用的协议约定：按实体实现的接口写入创建时间、修改时间、租户、并发戳，并执行软删除与租户匹配。
+/// Provider 共用的协议约定。
 /// </summary>
+/// <remarks>
+/// 按实体实现的接口写入创建时间、修改时间、租户、并发戳，并执行软删除与租户匹配。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PersistenceConventions
 {
     /// <summary>
-    /// 新增前：写入创建时间、租户与并发戳。多租户实体没有当前租户时返回 <see cref="PersistenceErrors.TenantRequired"/>。
+    /// 新增前。
     /// </summary>
+    /// <remarks>
+    /// 写入创建时间、租户与并发戳。多租户实体没有当前租户时返回 <see cref="PersistenceErrors.TenantRequired"/>。
+    /// </remarks>
     public static Result ApplyOnAdd<TEntity>(TEntity entity, string? tenantId, DateTimeOffset now)
         where TEntity : class
     {
@@ -79,8 +85,11 @@ public static class PersistenceConventions
     }
 
     /// <summary>
-    /// 实体是否对当前租户可见：非多租户实体总是可见；多租户实体要求租户相同。
+    /// 实体是否对当前租户可见。
     /// </summary>
+    /// <remarks>
+    /// 非多租户实体总是可见；多租户实体要求租户相同。
+    /// </remarks>
     public static bool IsVisibleTo<TEntity>(TEntity entity, string? tenantId)
         where TEntity : class
     {

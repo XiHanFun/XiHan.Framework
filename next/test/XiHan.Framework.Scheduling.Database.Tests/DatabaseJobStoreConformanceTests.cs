@@ -8,8 +8,11 @@ using XiHan.Framework.Scheduling.Conformance;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 数据库作业存储对 SQLite 通过存储套件；引擎的轮询周期设得很长，存储里的状态只由用例改动。
+/// 数据库作业存储对 SQLite 通过存储套件。
 /// </summary>
+/// <remarks>
+/// 引擎的轮询周期设得很长，存储里的状态只由用例改动。
+/// </remarks>
 public sealed class DatabaseJobStoreConformanceTests : JobStoreConformance
 {
     /// <inheritdoc />

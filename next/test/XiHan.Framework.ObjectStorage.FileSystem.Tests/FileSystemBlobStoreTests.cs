@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 文件系统实现特有的行为：目录布局与原子写入、配额、启动扫描与临时文件清理、选项解析、宿主装配。
+/// 文件系统实现特有的行为。
 /// </summary>
+/// <remarks>
+/// 目录布局与原子写入、配额、启动扫描与临时文件清理、选项解析、宿主装配。
+/// </remarks>
 public sealed class FileSystemBlobStoreTests : IDisposable
 {
     /// <summary>
