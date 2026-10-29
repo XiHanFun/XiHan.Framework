@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using XiHan.Framework.Hosting.AspNetCore.Authentication;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
@@ -39,7 +41,7 @@ public static partial class HttpInvocation
 
     /// <summary>
     /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、
-    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）；
+    /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；
     /// 调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
@@ -52,7 +54,8 @@ public static partial class HttpInvocation
 
     /// <summary>
     /// 以同一请求的头部构造另一个调用上下文：服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。
-    /// 供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道。
+    /// 供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道；
+    /// 也供绕过管道的端点（如 SignalR Hub 以连接的 <c>HttpContext</c>）发起内核调用，凭据随之带上，调用经管道时照常重新认证。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext, IServiceProvider services)
     {
@@ -109,7 +112,7 @@ public static partial class HttpInvocation
         var context = App.CreateContext(services, httpContext.RequestAborted, traceId, spanId, deadline, baggage);
 
         // 凭据只做格式拆分（scheme 与值），不在这里验证；解释交给安全子系统的 Authenticate 阶段
-        if (AuthenticationCredential.TryParse(headers.Authorization.ToString(), out var credential))
+        if (CredentialOf(httpContext).TryGetValue(out var credential))
         {
             context.SetCredential(credential);
         }
@@ -143,6 +146,31 @@ public static partial class HttpInvocation
             Route = (endpoint as RouteEndpoint)?.RoutePattern.RawText,
             EndpointName = endpoint?.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName,
         };
+    }
+
+    /// <summary>
+    /// 请求出示的凭据：先取 <c>Authorization</c> 头；没有时，请求路径（不含 PathBase）按路径段落在登记的查询串令牌路径前缀下，且查询串 <c>access_token</c> 只有一个非空值，才作为 <c>Bearer</c> 凭据。
+    /// 其他路径的查询串令牌一律忽略。认证方案 <c>XiHan</c> 与 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 共用这一条规则。
+    /// </summary>
+    internal static Maybe<AuthenticationCredential> CredentialOf(HttpContext httpContext)
+    {
+        var request = httpContext.Request;
+        if (AuthenticationCredential.TryParse(request.Headers.Authorization.ToString(), out var credential))
+        {
+            return Maybe.Some(credential);
+        }
+
+        // 没有登记过方案时选项为缺省值（没有路径），查询串令牌一律不认
+        var options = httpContext.RequestServices?.GetService<IOptionsMonitor<InvocationAuthenticationOptions>>()?.Get(InvocationAuthenticationDefaults.AuthenticationScheme);
+        if (options is null || !options.AcceptsQueryToken(request.Path))
+        {
+            return Maybe.None<AuthenticationCredential>();
+        }
+
+        var values = request.Query[InvocationAuthenticationDefaults.QueryTokenParameter];
+        return values.Count == 1 && !string.IsNullOrWhiteSpace(values[0])
+            ? Maybe.Some(new AuthenticationCredential(InvocationAuthenticationDefaults.QueryTokenScheme, values[0]!.Trim()))
+            : Maybe.None<AuthenticationCredential>();
     }
 
     /// <summary>

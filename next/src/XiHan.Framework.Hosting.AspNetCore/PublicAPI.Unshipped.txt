@@ -1,5 +1,15 @@
 #nullable enable
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.Authentication.IInvocationAuthenticationFilter
+XiHan.Framework.Hosting.AspNetCore.Authentication.IInvocationAuthenticationFilter.AuthenticatedAsync(XiHan.Framework.Kernel.Security.Principal! principal, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationBuilderExtensions
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationDefaults
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationHandler
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationHandler.InvocationAuthenticationHandler(Microsoft.Extensions.Options.IOptionsMonitor<XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions!>! options, Microsoft.Extensions.Logging.ILoggerFactory! logger, System.Text.Encodings.Web.UrlEncoder! encoder) -> void
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions.AcceptsQueryToken(Microsoft.AspNetCore.Http.PathString path) -> bool
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions.InvocationAuthenticationOptions() -> void
+XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions.QueryTokenPaths.get -> System.Collections.Generic.IList<Microsoft.AspNetCore.Http.PathString>!
 XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
@@ -73,11 +83,15 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Type.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.WriteTo(System.Text.Json.Utf8JsonWriter! writer) -> void
 XiHan.Framework.Hosting.AspNetCore.WebApplicationBuilderExtensions
+const XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationDefaults.AuthenticationScheme = "XiHan" -> string!
+const XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationDefaults.QueryTokenParameter = "access_token" -> string!
+const XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationDefaults.QueryTokenScheme = "Bearer" -> string!
 const XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.ConfigurationSection = "XiHan:ObjectStorage:SignedUrls" -> string!
 const XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.MinSecretBytes = 32 -> int
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.DeadlineHeader = "xihan-deadline" -> string!
 const XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GrpcTimeoutHeader = "grpc-timeout" -> string!
 const XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ErrorsKey = "errors" -> string!
+override XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions.Validate() -> void
 override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.ToString() -> string!
@@ -92,6 +106,7 @@ override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, System.Action<XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions!>? configure = null) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions.MapXiHanBlobs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator !=(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
