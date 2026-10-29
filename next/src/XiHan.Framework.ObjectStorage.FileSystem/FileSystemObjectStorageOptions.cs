@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储选项。从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>。
+/// 文件系统对象存储选项。从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record FileSystemObjectStorageOptions
@@ -55,39 +55,72 @@ public sealed record FileSystemObjectStorageOptions
     } = TimeSpan.FromDays(7);
 
     /// <summary>
+    /// 设置键（配置节下的键与命名实例的设置共用）。
+    /// </summary>
+    private static readonly string[] _settingKeys = ["RootPath", "MaxTotalBytes", "MaxBlobBytes", "MultipartExpiryHours"];
+
+    /// <summary>
     /// 从配置读取。
     /// </summary>
     public static FileSystemObjectStorageOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        return Parse(name => configuration[$"{ConfigurationSection}:{name}"], ConfigurationSection + ":");
+    }
+
+    /// <summary>
+    /// 从命名实例的设置读取（键同配置节，不区分大小写）：<c>RootPath</c> 必填，未知的键抛出。
+    /// </summary>
+    public static FileSystemObjectStorageOptions FromSettings(IReadOnlyDictionary<string, string> settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var lookup = new Dictionary<string, string>(settings, StringComparer.OrdinalIgnoreCase);
+        if (lookup.Keys.FirstOrDefault(static key => !_settingKeys.Contains(key, StringComparer.OrdinalIgnoreCase)) is { } unknown)
+        {
+            throw new ArgumentException($"Unknown file system setting '{unknown}'; the known settings are {string.Join(", ", _settingKeys)}.", nameof(settings));
+        }
+
+        if (!lookup.TryGetValue("RootPath", out var root) || string.IsNullOrWhiteSpace(root))
+        {
+            throw new ArgumentException("RootPath is required for a named file system store.", nameof(settings));
+        }
+
+        return Parse(name => lookup.TryGetValue(name, out var value) ? value : null, string.Empty);
+    }
+
+    /// <summary>
+    /// 按名读取各项；<paramref name="prefix"/> 只用于报错。
+    /// </summary>
+    private static FileSystemObjectStorageOptions Parse(Func<string, string?> read, string prefix)
+    {
         var options = new FileSystemObjectStorageOptions();
-        if (configuration[$"{ConfigurationSection}:RootPath"] is { } root && !string.IsNullOrWhiteSpace(root))
+        if (read("RootPath") is { } root && !string.IsNullOrWhiteSpace(root))
         {
             options = options with { RootPath = root };
         }
 
-        var total = configuration[$"{ConfigurationSection}:MaxTotalBytes"];
+        var total = read("MaxTotalBytes");
         if (total is not null)
         {
             options = long.TryParse(total, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
                 ? options with { MaxTotalBytes = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxTotalBytes must be a positive integer, but was '{total}'.");
+                : throw new ArgumentException($"{prefix}MaxTotalBytes must be a positive integer, but was '{total}'.");
         }
 
-        var blob = configuration[$"{ConfigurationSection}:MaxBlobBytes"];
+        var blob = read("MaxBlobBytes");
         if (blob is not null)
         {
             options = long.TryParse(blob, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
                 ? options with { MaxBlobBytes = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxBlobBytes must be a positive integer, but was '{blob}'.");
+                : throw new ArgumentException($"{prefix}MaxBlobBytes must be a positive integer, but was '{blob}'.");
         }
 
-        var expiry = configuration[$"{ConfigurationSection}:MultipartExpiryHours"];
+        var expiry = read("MultipartExpiryHours");
         if (expiry is not null)
         {
             options = double.TryParse(expiry, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours) && hours > 0 && !double.IsInfinity(hours)
                 ? options with { MultipartExpiry = TimeSpan.FromHours(hours) }
-                : throw new ArgumentException($"{ConfigurationSection}:MultipartExpiryHours must be a positive number, but was '{expiry}'.");
+                : throw new ArgumentException($"{prefix}MultipartExpiryHours must be a positive number, but was '{expiry}'.");
         }
 
         return options;

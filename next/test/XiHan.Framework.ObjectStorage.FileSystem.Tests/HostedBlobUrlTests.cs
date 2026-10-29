@@ -17,13 +17,14 @@ using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
 /// 文件系统存储经宿主代收发的预签名地址：下载（整读、单区间 206、后缀区间、不可满足 416、保存文件名）、上传（限定内容类型）、分片上传的一片，
-/// 签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>。
+/// 签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>，<see cref="HostedBlobUrlSigner.ForStore"/> 签出的地址由端点交给命名实例收发。
 /// </summary>
 public sealed class HostedBlobUrlTests : IDisposable
 {
@@ -142,6 +143,44 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     [Fact]
+    public async Task StoreBoundSigner_ServesNamedStores_AndBindsTheStoreIntoTheSignature()
+    {
+        await using var app = await StartAsync(
+            new("XiHan:ObjectStorage:Stores:archive:Provider", "filesystem"),
+            new("XiHan:ObjectStorage:Stores:archive:RootPath", Path.Combine(_root.Path, "archive")));
+        using var client = app.GetTestClient();
+        var archive = (await app.Services.GetRequiredService<BlobStores>().GetAsync("archive", CancellationToken.None)).ValueOrThrow();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        Assert.True((await archive.PutAsync(Container, "docs/a.txt", Encoding.UTF8.GetBytes("archived"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        Assert.True((await store.PutAsync(Container, "docs/a.txt", Encoding.UTF8.GetBytes("default"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+
+        var signer = app.Services.GetRequiredService<HostedBlobUrlSigner>();
+        var named = signer.ForStore("archive");
+        Assert.Equal((null, "archive"), (signer.Store, named.Store));
+        Assert.Throws<ArgumentException>(() => signer.ForStore("Not A Name"));
+
+        // 同一个键：命名实例的地址读到命名实例的内容，缺省签名器的地址读到缺省实例的
+        var url = (await named.SignAsync(Container, "docs/a.txt", BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url.OriginalString;
+        Assert.Contains("x-store=archive", url, StringComparison.Ordinal);
+        Assert.Equal("archived", await client.GetStringAsync(url));
+        Assert.Equal("default", await client.GetStringAsync((await signer.SignAsync(Container, "docs/a.txt", BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url));
+
+        // 实例名在签名里：改成别的实例或去掉都签名不符
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url.Replace("x-store=archive", "x-store=other", StringComparison.Ordinal))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url.Replace("&x-store=archive", string.Empty, StringComparison.Ordinal))).StatusCode);
+
+        // 上传落到命名实例
+        var upload = (await named.SignAsync(Container, "inbox/n.txt", BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsync(upload.Url, new StringContent("new"))).StatusCode);
+        Assert.Equal("new", Encoding.UTF8.GetString((await archive.ReadAllBytesAsync(Container, "inbox/n.txt", CancellationToken.None)).ValueOrThrow()));
+        Assert.False((await store.ExistsAsync(Container, "inbox/n.txt", CancellationToken.None)).ValueOrThrow());
+
+        // 签名有效但实例不存在：404
+        using var missing = await client.GetAsync((await signer.ForStore("missing").SignAsync(Container, "docs/a.txt", BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url);
+        Assert.Equal((HttpStatusCode.NotFound, ObjectStorageErrors.StoreNotFound), (missing.StatusCode, await CodeOf(missing)));
+    }
+
+    [Fact]
     public void Options_RequireAStrongSecret_AndAValidBase()
     {
         static IConfiguration Build(params (string Key, string Value)[] values) => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
@@ -168,9 +207,9 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     /// <summary>
-    /// 启动宿主：文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动。
+    /// 启动宿主：文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置。
     /// </summary>
-    private async Task<WebApplication> StartAsync()
+    private async Task<WebApplication> StartAsync(params KeyValuePair<string, string?>[] configuration)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -178,6 +217,7 @@ public sealed class HostedBlobUrlTests : IDisposable
         [
             new("XiHan:ObjectStorage:FileSystem:RootPath", _root.Path),
             new("XiHan:ObjectStorage:SignedUrls:Secret", Secret),
+            .. configuration,
         ]);
         builder.Services.AddSingleton<TimeProvider>(_clock);
         builder.AddXiHan(static xihan => xihan.UseFeature<FileSystemObjectStorageFeature>().UseFeature<HostedBlobUrlFeature>());

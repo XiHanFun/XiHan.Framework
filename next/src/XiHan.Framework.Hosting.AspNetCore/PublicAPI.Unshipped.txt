@@ -15,9 +15,11 @@ XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.HostedBlobUrlOptio
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Secret.get -> System.ReadOnlyMemory<byte>
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.Secret.init -> void
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.ForStore(string! name) -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner!
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.HostedBlobUrlSigner(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions! options, System.TimeProvider! clock) -> void
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.Options.get -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.SignAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl!>>
+XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.Store.get -> string?
 XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder

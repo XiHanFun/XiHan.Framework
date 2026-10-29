@@ -16,6 +16,7 @@ using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
@@ -23,7 +24,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 /// <summary>
 /// 宿主代收发预签名地址的端点：<c>GET &lt;BasePath&gt;/{container}/{**key}</c> 下载（单个 <c>Range</c> 区间回 206 与 <c>Content-Range</c>，不可满足回 416），
 /// <c>PUT</c> 同一路径上传整个对象或分片上传的一片（回 200 与 <c>ETag</c>）。地址由 <see cref="HostedBlobUrlSigner"/> 签出，验签失败或过期回 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）。
-/// 端点经内核管道（Observe 照常记录），不要求凭据：签名即授权。上传解除请求体大小上限，单对象上限由存储自己把关。
+/// 端点经内核管道（Observe 照常记录），不要求凭据：签名即授权。上传解除请求体大小上限，单对象上限由存储自己把关。地址带 <c>x-store</c> 时经 <see cref="BlobStores"/> 取命名实例，否则用缺省的 <see cref="IBlobStore"/>。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobEndpointRouteBuilderExtensions
@@ -67,7 +68,13 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
-        var store = http.RequestServices.GetRequiredService<IBlobStore>();
+        var resolved = await StoreOf(http, grant, context.CancellationToken).ConfigureAwait(false);
+        if (!resolved.TryGetValue(out var store))
+        {
+            context.SetOutcome(resolved.Error!);
+            return;
+        }
+
         var range = await RangeOf(http, store, container, key, context.CancellationToken).ConfigureAwait(false);
         if (!range.IsSuccess)
         {
@@ -153,10 +160,17 @@ public static class BlobEndpointRouteBuilderExtensions
             limit.MaxRequestBodySize = null;
         }
 
+        var resolved = await StoreOf(http, grant, context.CancellationToken).ConfigureAwait(false);
+        if (!resolved.TryGetValue(out var store))
+        {
+            context.SetOutcome(resolved.Error!);
+            return;
+        }
+
         string etag;
         if (grant.UploadId is { } uploadId)
         {
-            var multipart = http.RequestServices.GetService<IBlobMultipartStore>();
+            var multipart = grant.Store is null ? http.RequestServices.GetService<IBlobMultipartStore>() : store as IBlobMultipartStore;
             if (multipart is null)
             {
                 context.SetOutcome(Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", "the object storage does not support multipart uploads"))));
@@ -175,7 +189,7 @@ public static class BlobEndpointRouteBuilderExtensions
         else
         {
             var options = new BlobPutOptions { ContentType = grant.ContentType ?? (string.IsNullOrWhiteSpace(requestType) ? BlobPutOptions.DefaultContentType : requestType) };
-            var put = await http.RequestServices.GetRequiredService<IBlobStore>().PutAsync(container, key, http.Request.Body, options, context.CancellationToken).ConfigureAwait(false);
+            var put = await store.PutAsync(container, key, http.Request.Body, options, context.CancellationToken).ConfigureAwait(false);
             if (!put.TryGetValue(out var written))
             {
                 context.SetOutcome(put.Error!);
@@ -187,6 +201,21 @@ public static class BlobEndpointRouteBuilderExtensions
 
         http.Response.StatusCode = StatusCodes.Status200OK;
         http.Response.Headers.ETag = new EntityTagHeaderValue("\"" + etag + "\"").ToString();
+    }
+
+    /// <summary>
+    /// 地址指向的存储：带 <c>x-store</c> 的经 <see cref="BlobStores"/> 取命名实例（没装配注册表即不存在），否则取缺省实例。
+    /// </summary>
+    private static async ValueTask<Result<IBlobStore>> StoreOf(HttpContext http, VerifiedBlobUrl grant, CancellationToken cancellationToken)
+    {
+        if (grant.Store is not { } name)
+        {
+            return Result.Success(http.RequestServices.GetRequiredService<IBlobStore>());
+        }
+
+        return http.RequestServices.GetService<BlobStores>() is { } stores
+            ? await stores.GetAsync(name, cancellationToken).ConfigureAwait(false)
+            : Error.NotFound(ObjectStorageErrors.StoreNotFound, ObjectStorageMessages.StoreNotFound, MessageArguments.Of(("store", name)));
     }
 
     /// <summary>

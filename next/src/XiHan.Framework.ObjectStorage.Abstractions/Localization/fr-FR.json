@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "La plage commençant à l'octet {offset} ne peut pas être satisfaite : l'objet fait {length} octets.",
   "objectstorage.signed_url.expired": "L'URL signée a expiré le {expiresAt}.",
   "objectstorage.signed_url.invalid": "L'URL signée n'est pas valide.",
+  "objectstorage.store.definition_invalid": "La définition de l'instance de stockage '{store}' n'est pas valide : {reason}",
+  "objectstorage.store.not_found": "L'instance de stockage '{store}' n'est pas enregistrée.",
+  "objectstorage.store.provider_unknown": "L'instance de stockage '{store}' utilise le fournisseur '{provider}', qui n'est pas installé.",
   "objectstorage.store.unavailable": "Le stockage d'objets est indisponible : {reason}"
 }

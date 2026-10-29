@@ -11,5 +11,15 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Multipart_Uploads
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PutMany_ReturnsOneResultPerUpload_InOrder() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_OverwritesOrConflicts_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_ThenGet_RoundTripsContentAndMetadata() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.BlobStoreProviderConformance() -> void
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_RejectsUnknownSettings() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_YieldsAWorkingStore_ThatProbesHealthy() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_ReusesReplacesAndRemovesInstances() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_TranslatesDefinitionErrors_AndKeepsTheExistingInstance() -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.CreateStore() -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.CreateProvider() -> XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.OtherValidSettings() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.ValidSettings() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 virtual XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Container.get -> XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName
+virtual XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Container.get -> XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName

@@ -22,6 +22,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 - 错误：不存在的键与桶映射为 `OBJECTSTORAGE_NOTFOUND_001`，其余服务端错误、网络错误与 SDK 超时映射为 `OBJECTSTORAGE_UNAVAILABLE_001`；调用方的取消原样抛出。没有配额（由桶策略管理）。
 - 健康项 `objectstorage.s3.connection`：启动时同步探一次，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果；配了 `HealthBucket` 就对它 HEAD（桶不存在、无权限或服务不可达都算失败），没配就列桶；失败或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 是 SDK 的异常消息），应用仍在服务。
 - 范围读取、分片与预签名（ADR-0049，同时提供 `objectstorage.multipart@1` 与 `objectstorage.presign@1`）：范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长，起点越界（416）报 `OBJECTSTORAGE_VALIDATION_001`；分片直接映射 S3 multipart，`ListParts` 分页取全，不覆盖的完成先 HEAD 再带 `If-None-Match: *`，服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）报 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 报 `OBJECTSTORAGE_NOTFOUND_002`；预签名经 SDK 本地签出（签名 V4，端点是 http 时按 http 签），下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号，客户端直连存储。
+- 命名实例（ADR-0050）：特性登记 Provider `S3BlobStoreProvider`（名 `s3`），设置的键同本配置节（不含 `HealthProbeIntervalSeconds`，探测间隔由注册表统一），未知键报错；每个实例按自己的端点、区域与密钥建客户端，不读绑定，实例被替换、移除或应用停止时释放客户端（经公开构造函数建的 `S3BlobStore` 不拥有客户端）；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；探测对实例的 `HealthBucket` HEAD，没配时列桶。
 - 不满足 AOT 分析器（AWS SDK 的请求编组基于运行时反射）。
 
 ## 依赖方向
@@ -30,7 +31,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 
 ## 测试
 
-`ObjectStorage.S3.Tests` 在设置环境变量 `XIHAN_TEST_S3`（服务端点，如 `http://localhost:9000`）时对真实服务跑 `ObjectStorage.Conformance` 全部用例，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `minioadmin`；未设置时跳过。本地用 `docker run -p 9000:9000 quay.io/minio/minio server /data` 起一个 MinIO 即可。
+`ObjectStorage.S3.Tests` 在设置环境变量 `XIHAN_TEST_S3`（服务端点，如 `http://localhost:9000`）时对真实服务跑 `ObjectStorage.Conformance` 全部用例（含命名实例的 `BlobStoreProviderConformance`），`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `minioadmin`；未设置时跳过。本地用 `docker run -p 9000:9000 quay.io/minio/minio server /data` 起一个 MinIO 即可。
 
 ## 状态
 

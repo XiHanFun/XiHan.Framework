@@ -88,6 +88,21 @@ public static class ObjectStorageMessages
     public const string SignedUrlExpired = "objectstorage.signed_url.expired";
 
     /// <summary>
+    /// 命名存储实例不存在。参数：<c>store</c>。
+    /// </summary>
+    public const string StoreNotFound = "objectstorage.store.not_found";
+
+    /// <summary>
+    /// 命名存储实例的 Provider 未登记。参数：<c>store</c>、<c>provider</c>。
+    /// </summary>
+    public const string StoreProviderUnknown = "objectstorage.store.provider_unknown";
+
+    /// <summary>
+    /// 命名存储实例的设置不合法。参数：<c>store</c>、<c>reason</c>。
+    /// </summary>
+    public const string StoreDefinitionInvalid = "objectstorage.store.definition_invalid";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

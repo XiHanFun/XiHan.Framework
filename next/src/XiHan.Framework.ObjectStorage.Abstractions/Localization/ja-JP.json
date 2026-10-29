@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "{offset} バイト目から始まる範囲は満たせません。オブジェクトの長さは {length} バイトです。",
   "objectstorage.signed_url.expired": "署名付き URL は {expiresAt} に期限切れになりました。",
   "objectstorage.signed_url.invalid": "署名付き URL が無効です。",
+  "objectstorage.store.definition_invalid": "ストアインスタンス '{store}' の定義が無効です：{reason}",
+  "objectstorage.store.not_found": "ストアインスタンス '{store}' は登録されていません。",
+  "objectstorage.store.provider_unknown": "ストアインスタンス '{store}' が使用するプロバイダー '{provider}' はインストールされていません。",
   "objectstorage.store.unavailable": "オブジェクトストレージを利用できません: {reason}"
 }

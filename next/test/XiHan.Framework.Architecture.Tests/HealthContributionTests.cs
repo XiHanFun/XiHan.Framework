@@ -13,9 +13,9 @@ namespace XiHan.Framework.Architecture.Tests;
 public sealed partial class HealthContributionTests
 {
     /// <summary>
-    /// 条目名由插件自己的清单声明（RFC-0017 / RFC-0018 的 <c>contributes.health</c>）、宿主特性的清单无法枚举的包：只豁免反向检查。
+    /// 条目名在运行时才确定、清单无法枚举的包：插件宿主（条目名由插件自己的清单声明，RFC-0017 / RFC-0018 的 <c>contributes.health</c>）与命名存储实例的注册表（每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，ADR-0050）。只豁免反向检查。
     /// </summary>
-    private static readonly string[] _dynamicContributors = ["XiHan.Framework.Plugins.OutOfProcess", "XiHan.Framework.Plugins.Wasm"];
+    private static readonly string[] _dynamicContributors = ["XiHan.Framework.Plugins.OutOfProcess", "XiHan.Framework.Plugins.Wasm", "XiHan.Framework.ObjectStorage.Abstractions"];
 
     /// <summary>
     /// 每个正式包的扫描结果。

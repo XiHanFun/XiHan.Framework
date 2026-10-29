@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "從第 {offset} 位元組起的範圍無法滿足：物件長 {length} 位元組。",
   "objectstorage.signed_url.expired": "預先簽署的網址已於 {expiresAt} 過期。",
   "objectstorage.signed_url.invalid": "預先簽署的網址無效。",
+  "objectstorage.store.definition_invalid": "儲存體執行個體 '{store}' 的定義無效：{reason}",
+  "objectstorage.store.not_found": "儲存體執行個體 '{store}' 未登記。",
+  "objectstorage.store.provider_unknown": "儲存體執行個體 '{store}' 使用的 Provider '{provider}' 未安裝。",
   "objectstorage.store.unavailable": "物件儲存無法使用：{reason}"
 }

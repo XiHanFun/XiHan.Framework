@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "No se puede satisfacer el rango que empieza en el byte {offset}: el objeto mide {length} bytes.",
   "objectstorage.signed_url.expired": "La URL firmada caducó el {expiresAt}.",
   "objectstorage.signed_url.invalid": "La URL firmada no es válida.",
+  "objectstorage.store.definition_invalid": "La definición de la instancia de almacenamiento '{store}' no es válida: {reason}",
+  "objectstorage.store.not_found": "La instancia de almacenamiento '{store}' no está registrada.",
+  "objectstorage.store.provider_unknown": "La instancia de almacenamiento '{store}' usa el proveedor '{provider}', que no está instalado.",
   "objectstorage.store.unavailable": "El almacenamiento de objetos no está disponible: {reason}"
 }

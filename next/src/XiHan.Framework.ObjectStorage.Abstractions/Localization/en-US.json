@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "The range starting at byte {offset} cannot be satisfied: the blob is {length} bytes long.",
   "objectstorage.signed_url.expired": "The signed URL expired at {expiresAt}.",
   "objectstorage.signed_url.invalid": "The signed URL is invalid.",
+  "objectstorage.store.definition_invalid": "The definition of blob store '{store}' is invalid: {reason}",
+  "objectstorage.store.not_found": "Blob store '{store}' is not registered.",
+  "objectstorage.store.provider_unknown": "Blob store '{store}' uses provider '{provider}', which is not installed.",
   "objectstorage.store.unavailable": "The object storage is unavailable: {reason}"
 }

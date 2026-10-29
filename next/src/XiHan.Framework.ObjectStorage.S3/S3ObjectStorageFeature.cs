@@ -15,6 +15,7 @@ using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -22,7 +23,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
 /// S3 对象存储的能力包入口：显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。
+/// 健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。另登记命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature
@@ -78,6 +79,8 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
         // 应用自己注册的客户端优先（自定义凭据链、代理、重试策略）
         context.Services.TryAddSingleton<IAmazonS3>(_ => CreateClient(options));
         context.Services.TryAddSingleton<S3BlobStore>();
+        // 命名实例：按定义（配置 XiHan:ObjectStorage:Stores 或应用运行时登记）各建各的客户端
+        context.Services.AddBlobStoreProvider<S3BlobStoreProvider>(context.Configuration);
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
         {
             context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<S3BlobStore>());
@@ -143,7 +146,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
     /// <summary>
     /// 连通性探针：配了健康桶就 HEAD 它（桶不存在、无权限或服务不可达都抛出）；没配就列桶，是最轻的通用管理调用。异常由探针宿主记成 Degraded 并带异常消息。
     /// </summary>
-    private static async ValueTask<Result> ProbeAsync(IAmazonS3 client, string? bucket, CancellationToken cancellationToken)
+    internal static async ValueTask<Result> ProbeAsync(IAmazonS3 client, string? bucket, CancellationToken cancellationToken)
     {
         if (bucket is not null)
         {

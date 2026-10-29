@@ -50,4 +50,14 @@ public static class ObjectStorageErrors
     /// 预签名地址无效或已过期。
     /// </summary>
     public const string SignatureInvalid = "OBJECTSTORAGE_DENIED_001";
+
+    /// <summary>
+    /// 命名存储实例不存在（没有运行时登记，配置里也没有定义）。
+    /// </summary>
+    public const string StoreNotFound = "OBJECTSTORAGE_NOTFOUND_003";
+
+    /// <summary>
+    /// 命名存储实例的定义不合法（Provider 未登记或设置不合法）。
+    /// </summary>
+    public const string StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003";
 }

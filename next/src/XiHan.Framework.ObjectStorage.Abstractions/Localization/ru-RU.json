@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "Диапазон, начинающийся с байта {offset}, не может быть выполнен: длина объекта {length} байт.",
   "objectstorage.signed_url.expired": "Срок действия подписанного URL истёк {expiresAt}.",
   "objectstorage.signed_url.invalid": "Подписанный URL недействителен.",
+  "objectstorage.store.definition_invalid": "Определение экземпляра хранилища '{store}' недопустимо: {reason}",
+  "objectstorage.store.not_found": "Экземпляр хранилища '{store}' не зарегистрирован.",
+  "objectstorage.store.provider_unknown": "Экземпляр хранилища '{store}' использует поставщика '{provider}', который не установлен.",
   "objectstorage.store.unavailable": "Объектное хранилище недоступно: {reason}"
 }

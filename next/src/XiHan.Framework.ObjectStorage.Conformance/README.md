@@ -9,6 +9,8 @@ public sealed class FileSystemBlobStoreConformanceTests : BlobStoreConformance
 }
 ```
 
+命名实例的 Provider（ADR-0050）继承 `BlobStoreProviderConformance`，实现 `CreateProvider()` 与两组可用的设置：按定义建出的实例可读写且探测通过、未知的设置键被拒绝、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.ObjectStorage.Abstractions` 与 xunit 的断言与扩展核心包。
