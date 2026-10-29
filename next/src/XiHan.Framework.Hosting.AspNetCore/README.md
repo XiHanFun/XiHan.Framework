@@ -5,7 +5,7 @@ ASP.NET Core 宿主适配（Ring 4）。
 ## 责任边界
 
 - `AddXiHan()`：由内核的 `IHostApplicationBuilder` 扩展提供，`WebApplicationBuilder` 直接可用。
-- `UseXiHan()`：把每个 HTTP 请求翻译为 `InvocationContext`（`traceparent`、`baggage`、`xihan-deadline`、`Accept-Language`；调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`，经反向代理时在 `UseXiHan()` 之前 `UseForwardedHeaders()` 即得到客户端地址，ADR-0043），让其余 ASP.NET Core 管道在内核管道的 Handle 阶段内执行；失败结果在响应未开始时以 RFC 9457 Problem Details 回写。
+- `UseXiHan()`：把每个 HTTP 请求翻译为 `InvocationContext`（`traceparent`、`baggage`、`xihan-deadline`、`Accept-Language`；调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`、匹配到的端点的路由模板（`Route`）与名字（`EndpointName`，即 `WithName`；普通端点据此在 Observe 阶段被识别，ADR-0048），经反向代理时在 `UseXiHan()` 之前 `UseForwardedHeaders()` 即得到客户端地址，ADR-0043），让其余 ASP.NET Core 管道在内核管道的 Handle 阶段内执行；失败结果在响应未开始时以 RFC 9457 Problem Details 回写。
 - `MapXiHanHealth()`：`/health/startup`、`/health/ready`、`/health/live` 直接映射应用状态机；响应体含各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态。
 - `HttpContext.GetXiHanContext()`：在端点内取当前调用上下文。
 

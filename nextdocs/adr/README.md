@@ -51,3 +51,4 @@
 | [0045](0045-授予来源.md) | 授予来源 `IPermissionGrantSource`：与收窄过滤器对称，给出存储之外的额外授予（角色继承、限时委托），检查器在存储没命中时按登记顺序查询，命中后照常经全部过滤器收窄；只能加、不能拿走 | 已采纳 |
 | [0046](0046-条件引擎.md) | 条件引擎移入 `Security.Abstractions.Conditions`：4.x 的十五个运算符、七种值种类、值语法与求值语义原样保留（整数值是持久化契约），编译错误与求值原因改为带错误码与消息键的 `Error`（十种区域），属性登记经容器（`AddConditionAttributes`），去掉 Options 与 `Default` 前缀 | 已采纳 |
 | [0047](0047-IP归属地.md) | IP 归属地：契约 `IIpRegionResolver` 进 `Security.Abstractions.Network`（能力 `security.ip-region@1`，返回 `Maybe<IpRegion>`，回环 / 私有 / 查不到为无值），离线库实现新包 `Security.Ip2Region`（xdb 由宿主提供，缺失只记警告）；宿主可以不装 | 已采纳 |
+| [0048](0048-调用来源带端点身份.md) | 调用来源增加 `Route`（匹配到的端点的路由模板）与 `EndpointName`（`WithName`）：普通端点在 Observe 阶段就能被识别，授权阶段被拒的调用也进访问日志；没有匹配到端点时为空 | 已采纳 |

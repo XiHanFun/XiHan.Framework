@@ -44,4 +44,14 @@ public sealed record InvocationOrigin
     /// 来源页（HTTP <c>Referer</c>）；没有时为 <see langword="null"/>。
     /// </summary>
     public string? Referer { get; init; }
+
+    /// <summary>
+    /// 宿主匹配到的端点的路由模板（如 <c>/api/files/{id}</c>），按它聚合访问日志不受路径参数影响；没有匹配到路由端点（404、非路由的终结点）或协议没有端点时为 <see langword="null"/>。
+    /// </summary>
+    public string? Route { get; init; }
+
+    /// <summary>
+    /// 宿主匹配到的端点的名字（ASP.NET Core 的 <c>WithName</c>）；端点没有命名或协议没有端点时为 <see langword="null"/>。普通端点（非操作端点）据此在 Observe 阶段被识别。
+    /// </summary>
+    public string? EndpointName { get; init; }
 }
