@@ -18,14 +18,20 @@ using XiHan.Framework.Workflow.InMemory;
 namespace XiHan.Framework.Profiles.Full;
 
 /// <summary>
-/// Full 组合：Standard + 对象存储、调度、审计的默认实现 + OpenTelemetry 导出 + HTTP / gRPC / MCP / CloudEvents 协议适配器。远程配置与密钥没有默认实现（.NET 原生文件与环境变量），按需装配 Provider。
+/// Full 组合。
 /// </summary>
+/// <remarks>
+/// Standard + 对象存储、调度、审计的默认实现 + OpenTelemetry 导出 + HTTP / gRPC / MCP / CloudEvents 协议适配器。远程配置与密钥没有默认实现（.NET 原生文件与环境变量），按需装配 Provider。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class FullProfile
 {
     /// <summary>
-    /// 装配 Full 组合。协议端点仍需在宿主上 <c>MapXiHanOperations()</c>、<c>MapXiHanGrpc()</c>、<c>MapXiHanMcp()</c>、<c>MapXiHanCloudEvents()</c> 映射。
+    /// 装配 Full 组合。
     /// </summary>
+    /// <remarks>
+    /// 协议端点仍需在宿主上 <c>MapXiHanOperations()</c>、<c>MapXiHanGrpc()</c>、<c>MapXiHanMcp()</c>、<c>MapXiHanCloudEvents()</c> 映射。
+    /// </remarks>
     public static AppBuilder UseFullProfile(this AppBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

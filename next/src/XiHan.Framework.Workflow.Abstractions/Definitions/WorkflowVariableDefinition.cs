@@ -27,8 +27,11 @@ public sealed record WorkflowVariableDefinition
     public bool Required { get; init; }
 
     /// <summary>
-    /// 默认值；没有为 <see langword="null"/>。
+    /// 默认值。
     /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>。
+    /// </remarks>
     public JsonNode? DefaultValue { get; init; }
 
     /// <summary>

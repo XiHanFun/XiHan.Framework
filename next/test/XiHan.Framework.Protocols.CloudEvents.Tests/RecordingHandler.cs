@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 记录投递的处理器；主题标识为 <c>fail</c> 时返回冲突。
+/// 记录投递的处理器。
 /// </summary>
+/// <remarks>
+/// 主题标识为 <c>fail</c> 时返回冲突。
+/// </remarks>
 /// <param name="log">记录。</param>
 internal sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
 {

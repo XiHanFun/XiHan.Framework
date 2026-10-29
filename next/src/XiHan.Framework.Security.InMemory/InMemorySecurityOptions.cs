@@ -9,8 +9,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 内存安全选项。配置节 <c>XiHan:Security:InMemory</c>。
+/// 内存安全选项。
 /// </summary>
+/// <remarks>
+/// 配置节 <c>XiHan:Security:InMemory</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemorySecurityOptions
 {
@@ -20,8 +23,11 @@ public sealed record InMemorySecurityOptions
     public const string ConfigurationSection = "XiHan:Security:InMemory";
 
     /// <summary>
-    /// 主体上限；默认 1000。
+    /// 主体上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int MaxPrincipals
     {
         get => field;
@@ -29,8 +35,11 @@ public sealed record InMemorySecurityOptions
     } = 1_000;
 
     /// <summary>
-    /// 授予上限；默认 10000。
+    /// 授予上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000。
+    /// </remarks>
     public int MaxGrants
     {
         get => field;
@@ -56,9 +65,11 @@ public sealed record InMemorySecurityOptions
     } = [];
 
     /// <summary>
-    /// 从配置读取：<c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、
-    /// <c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）。
+    /// </remarks>
     public static InMemorySecurityOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -107,8 +118,11 @@ public sealed record InMemorySecurityOptions
     }
 
     /// <summary>
-    /// 读取配置节下的正整数；缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// 读取配置节下的正整数。
     /// </summary>
+    /// <remarks>
+    /// 缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     private static int? ReadPositive(IConfiguration configuration, string name)
     {
         var raw = configuration[$"{ConfigurationSection}:{name}"];
@@ -123,8 +137,11 @@ public sealed record InMemorySecurityOptions
     }
 
     /// <summary>
-    /// 按逗号拆分并去掉空白与空项；<see langword="null"/> 得到空列表。
+    /// 按逗号拆分并去掉空白与空项。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 得到空列表。
+    /// </remarks>
     private static List<string> Split(string? value)
         => value is null ? [] : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 }

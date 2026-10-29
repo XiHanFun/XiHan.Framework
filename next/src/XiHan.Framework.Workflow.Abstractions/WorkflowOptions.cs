@@ -19,8 +19,11 @@ public sealed record WorkflowOptions
     public const string ConfigurationSection = "XiHan:Workflow";
 
     /// <summary>
-    /// 一个波次最多执行的节点数；超过即实例故障（防死循环）。默认 1000。
+    /// 一个波次最多执行的节点数。
     /// </summary>
+    /// <remarks>
+    /// 超过即实例故障（防死循环）。默认 1000。
+    /// </remarks>
     public int MaxNodeExecutionsPerBurst
     {
         get => field;
@@ -28,8 +31,11 @@ public sealed record WorkflowOptions
     } = 1000;
 
     /// <summary>
-    /// 子流程最大深度；默认 16。
+    /// 子流程最大深度。
     /// </summary>
+    /// <remarks>
+    /// 默认 16。
+    /// </remarks>
     public int MaxSubWorkflowDepth
     {
         get => field;
@@ -37,8 +43,11 @@ public sealed record WorkflowOptions
     } = 16;
 
     /// <summary>
-    /// 等实例锁的上限；默认 10 秒。
+    /// 等实例锁的上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan LockTimeout
     {
         get => field;
@@ -46,8 +55,11 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 到期书签因实例不在运行中而不能恢复时，把到期时间后推多久；默认 5 分钟。
+    /// 到期书签因实例不在运行中而不能恢复时，把到期时间后推多久。
     /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟。
+    /// </remarks>
     public TimeSpan NotResumableBackoff
     {
         get => field;
@@ -55,8 +67,11 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 表达式缓存上限；默认 10000。
+    /// 表达式缓存上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000。
+    /// </remarks>
     public int ExpressionCacheSize
     {
         get => field;
@@ -64,8 +79,11 @@ public sealed record WorkflowOptions
     } = 10_000;
 
     /// <summary>
-    /// 已结束实例的保留期；零为不自动清理（默认）。
+    /// 已结束实例的保留期。
     /// </summary>
+    /// <remarks>
+    /// 零为不自动清理（默认）。
+    /// </remarks>
     public TimeSpan Retention
     {
         get => field;
@@ -73,8 +91,11 @@ public sealed record WorkflowOptions
     }
 
     /// <summary>
-    /// 轮询器维护（按保留期清理）的周期；默认 1 小时。
+    /// 轮询器维护（按保留期清理）的周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 小时。
+    /// </remarks>
     public TimeSpan HousekeepingInterval
     {
         get => field;
@@ -82,8 +103,11 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// <c>Http</c> 活动的默认超时；默认 30 秒。
+    /// <c>Http</c> 活动的默认超时。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒。
+    /// </remarks>
     public TimeSpan HttpTimeout
     {
         get => field;
@@ -91,8 +115,11 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 从配置读取：<c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>。
+    /// </remarks>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

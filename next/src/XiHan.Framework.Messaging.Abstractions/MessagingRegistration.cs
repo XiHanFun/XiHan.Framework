@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions;
 
 /// <summary>
-/// Provider 共用的装配：选项、派发器、直接发布者与运行时。Provider 的特性先注册 <see cref="IMessageBroker"/> 再调用。
+/// Provider 共用的装配。
 /// </summary>
+/// <remarks>
+/// 选项、派发器、直接发布者与运行时。Provider 的特性先注册 <see cref="IMessageBroker"/> 再调用。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MessagingRegistration
 {

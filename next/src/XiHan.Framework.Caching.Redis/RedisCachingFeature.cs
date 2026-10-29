@@ -21,9 +21,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// Redis 缓存的能力包入口：提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；
-/// 健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded。
+/// Redis 缓存的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RedisCachingFeature : IHostedFeature
 {
@@ -38,8 +40,11 @@ public sealed class RedisCachingFeature : IHostedFeature
     public const string HealthName = "caching.redis.connection";
 
     /// <summary>
-    /// 启动时取得的连接，停止时关闭；未启动或已停止为 <see langword="null"/>。
+    /// 启动时取得的连接，停止时关闭。
     /// </summary>
+    /// <remarks>
+    /// 未启动或已停止为 <see langword="null"/>。
+    /// </remarks>
     private IConnectionMultiplexer? _connection;
 
     /// <summary>
@@ -130,8 +135,11 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 按连接字符串建立连接；连接或超时失败包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常。
+    /// 按连接字符串建立连接。
     /// </summary>
+    /// <remarks>
+    /// 连接或超时失败包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常。
+    /// </remarks>
     private static ConnectionMultiplexer Connect(string configuration)
     {
         try
@@ -145,8 +153,11 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 连通性探针：对共享连接发一次 PING。连接断开时 PING 抛出连接或超时异常，由探针宿主记成 Degraded 并带异常消息。
+    /// 连通性探针。
     /// </summary>
+    /// <remarks>
+    /// 对共享连接发一次 PING。连接断开时 PING 抛出连接或超时异常，由探针宿主记成 Degraded 并带异常消息。
+    /// </remarks>
     private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         var connection = services.GetRequiredService<IConnectionMultiplexer>();

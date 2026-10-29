@@ -6,14 +6,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义目录：定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。
+/// 定义目录。
 /// </summary>
+/// <remarks>
+/// 定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionCatalog
 {
     /// <summary>
-    /// 新建草稿：分配新 ID，版本号 = 同名最大版本 + 1，状态 Draft，租户缺省取当前调用的租户；返回存下的定义。
+    /// 新建草稿。
     /// </summary>
+    /// <remarks>
+    /// 分配新 ID，版本号 = 同名最大版本 + 1，状态 Draft，租户缺省取当前调用的租户；返回存下的定义。
+    /// </remarks>
     ValueTask<Result<WorkflowDefinition>> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken);
 
     /// <summary>

@@ -7,8 +7,11 @@ using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 
 /// <summary>
-/// <see cref="TenantRecord"/> 与 <see cref="TenantInfo"/> 之间的换算，以及属性列的 JSON 序列化（源生成上下文）。
+/// <see cref="TenantRecord"/> 与 <see cref="TenantInfo"/> 之间的换算。
 /// </summary>
+/// <remarks>
+/// 以及属性列的 JSON 序列化（源生成上下文）。
+/// </remarks>
 internal static class TenantRecordMapping
 {
     /// <summary>
@@ -22,8 +25,11 @@ internal static class TenantRecordMapping
     private static readonly IReadOnlyDictionary<string, string> _noProperties = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 由存储行建租户信息；属性列不是 JSON 对象时抛出 <see cref="JsonException"/>（数据损坏不伪装成没有属性）。
+    /// 由存储行建租户信息。
     /// </summary>
+    /// <remarks>
+    /// 属性列不是 JSON 对象时抛出 <see cref="JsonException"/>（数据损坏不伪装成没有属性）。
+    /// </remarks>
     public static TenantInfo ToTenantInfo(TenantRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -37,8 +43,11 @@ internal static class TenantRecordMapping
     }
 
     /// <summary>
-    /// 由租户信息建新行；创建时间与并发戳由持久化子系统在新增时写入。
+    /// 由租户信息建新行。
     /// </summary>
+    /// <remarks>
+    /// 创建时间与并发戳由持久化子系统在新增时写入。
+    /// </remarks>
     public static TenantRecord ToRecord(TenantInfo tenant)
     {
         ArgumentNullException.ThrowIfNull(tenant);
@@ -52,8 +61,11 @@ internal static class TenantRecordMapping
     }
 
     /// <summary>
-    /// 把租户信息整份写到已有行上（ID 不变）；修改时间与并发戳由持久化子系统在更新时刷新。
+    /// 把租户信息整份写到已有行上（ID 不变）。
     /// </summary>
+    /// <remarks>
+    /// 修改时间与并发戳由持久化子系统在更新时刷新。
+    /// </remarks>
     public static void Apply(TenantRecord record, TenantInfo tenant)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -64,8 +76,11 @@ internal static class TenantRecordMapping
     }
 
     /// <summary>
-    /// 属性 → JSON 对象；键原样写出、区分大小写。
+    /// 属性 → JSON 对象。
     /// </summary>
+    /// <remarks>
+    /// 键原样写出、区分大小写。
+    /// </remarks>
     public static string SerializeProperties(IReadOnlyDictionary<string, string> properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
@@ -80,8 +95,11 @@ internal static class TenantRecordMapping
     }
 
     /// <summary>
-    /// JSON 对象 → 属性（键区分大小写）；空列视为没有属性，不是对象（含字面量 <c>null</c>）抛出 <see cref="JsonException"/>。
+    /// JSON 对象 → 属性（键区分大小写）。
     /// </summary>
+    /// <remarks>
+    /// 空列视为没有属性，不是对象（含字面量 <c>null</c>）抛出 <see cref="JsonException"/>。
+    /// </remarks>
     public static IReadOnlyDictionary<string, string> DeserializeProperties(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))

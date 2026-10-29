@@ -15,9 +15,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.RabbitMQ;
 
 /// <summary>
-/// RabbitMQ 消息的能力包入口：提供 <c>messaging.queue@1</c>；启动时连接并消费全部订阅主题，停止时关闭。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="RabbitMQMessagingOptions.HealthProbeInterval"/> 周期检查连接与发布通道是否打开。
+/// RabbitMQ 消息的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>messaging.queue@1</c>；启动时连接并消费全部订阅主题，停止时关闭。健康项 <see cref="HealthName"/> 按 <see cref="RabbitMQMessagingOptions.HealthProbeInterval"/> 周期检查连接与发布通道是否打开。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RabbitMQMessagingFeature : IHostedFeature
 {
@@ -32,13 +34,19 @@ public sealed class RabbitMQMessagingFeature : IHostedFeature
     public const string HealthName = "messaging.rabbitmq.connection";
 
     /// <summary>
-    /// 启动后取得的运行时；停止时用它结束消费。
+    /// 启动后取得的运行时。
     /// </summary>
+    /// <remarks>
+    /// 停止时用它结束消费。
+    /// </remarks>
     private MessagingRuntime? _runtime;
 
     /// <summary>
-    /// 启动时连接的代理；停止时释放连接。
+    /// 启动时连接的代理。
     /// </summary>
+    /// <remarks>
+    /// 停止时释放连接。
+    /// </remarks>
     private RabbitMQMessageBroker? _broker;
 
     /// <summary>

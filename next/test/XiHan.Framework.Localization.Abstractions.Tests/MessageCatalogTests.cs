@@ -16,8 +16,11 @@ namespace XiHan.Framework.Localization.Abstractions.Tests;
 public sealed class MessageCatalogTests
 {
     /// <summary>
-    /// 两种语言的目录；区域名故意用小写验证规范化。
+    /// 两种语言的目录。
     /// </summary>
+    /// <remarks>
+    /// 区域名故意用小写验证规范化。
+    /// </remarks>
     private static MessageCatalog Orders() => new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
         ["en-US"] = new Dictionary<string, string> { ["orders.order.not_found"] = "Order '{id}' was not found.", ["orders.order.denied"] = "Not the owner." },

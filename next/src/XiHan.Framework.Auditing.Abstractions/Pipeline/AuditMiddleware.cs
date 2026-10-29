@@ -12,9 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Pipeline;
 
 /// <summary>
-/// Observe 阶段末尾的审计中间件：调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。
-/// 主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>。
+/// Observe 阶段末尾的审计中间件。
 /// </summary>
+/// <remarks>
+/// 调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class AuditMiddleware : IPipelineMiddleware
 {
@@ -131,8 +133,11 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 动作：显式声明优先；否则按选择规则看当前操作。
+    /// 动作。
     /// </summary>
+    /// <remarks>
+    /// 显式声明优先；否则按选择规则看当前操作。
+    /// </remarks>
     private string? ResolveAction(InvocationContext context)
     {
         if (context.GetAuditAction().TryGetValue(out var explicitAction))

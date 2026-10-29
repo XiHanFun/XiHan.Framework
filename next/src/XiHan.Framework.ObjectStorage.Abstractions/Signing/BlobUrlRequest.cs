@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 /// <summary>
-/// 要签的地址：方法、有效期（缺省 <see cref="DefaultExpiresIn"/>，与 4.x 一致），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload"/>、<see cref="ForUpload"/>、<see cref="ForPart"/> 构造。
+/// 要签的地址。
 /// </summary>
+/// <remarks>
+/// 方法、有效期（缺省 <see cref="DefaultExpiresIn"/>，与 4.x 一致），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload"/>、<see cref="ForUpload"/>、<see cref="ForPart"/> 构造。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BlobUrlRequest
 {
@@ -52,18 +55,27 @@ public sealed record BlobUrlRequest
     public TimeSpan ExpiresIn { get; }
 
     /// <summary>
-    /// 上传时客户端必须发送的内容类型（也成为对象的内容类型）；为 <see langword="null"/> 时不限定。
+    /// 上传时客户端必须发送的内容类型（也成为对象的内容类型）。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时不限定。
+    /// </remarks>
     public string? ContentType { get; }
 
     /// <summary>
-    /// 下载时浏览器保存的文件名（响应带 <c>Content-Disposition: attachment</c>）；为 <see langword="null"/> 时不带。
+    /// 下载时浏览器保存的文件名（响应带 <c>Content-Disposition: attachment</c>）。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时不带。
+    /// </remarks>
     public string? DownloadFileName { get; }
 
     /// <summary>
-    /// 分片上传；与 <see cref="PartNumber"/> 一起给出时地址只能上传这一片。
+    /// 分片上传。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="PartNumber"/> 一起给出时地址只能上传这一片。
+    /// </remarks>
     public BlobMultipartUpload? Upload { get; }
 
     /// <summary>
@@ -88,8 +100,11 @@ public sealed record BlobUrlRequest
         => new(BlobUrlMethod.Put, expiresIn, NonEmptyOrNull(contentType, nameof(contentType)), null, null, null);
 
     /// <summary>
-    /// 分片上传中某一片的上传地址；响应的 <c>ETag</c> 头即该分片的 ETag。
+    /// 分片上传中某一片的上传地址。
     /// </summary>
+    /// <remarks>
+    /// 响应的 <c>ETag</c> 头即该分片的 ETag。
+    /// </remarks>
     /// <param name="upload">分片上传。</param>
     /// <param name="partNumber">编号。</param>
     /// <param name="expiresIn">有效期；缺省 30 分钟。</param>

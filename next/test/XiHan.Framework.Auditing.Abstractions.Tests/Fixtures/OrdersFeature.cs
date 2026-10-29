@@ -8,8 +8,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 登记三个操作的测试特性：声明了权限的创建、未声明权限的列表、显式声明审计动作的导出。
+/// 登记三个操作的测试特性。
 /// </summary>
+/// <remarks>
+/// 声明了权限的创建、未声明权限的列表、显式声明审计动作的导出。
+/// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <inheritdoc />

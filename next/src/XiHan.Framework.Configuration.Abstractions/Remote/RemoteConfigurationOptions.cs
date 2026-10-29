@@ -31,8 +31,11 @@ public sealed record RemoteConfigurationOptions
     public string? Prefix { get; init; }
 
     /// <summary>
-    /// 轮询周期；默认 30 秒，<see langword="null"/> 关闭轮询。
+    /// 轮询周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒，<see langword="null"/> 关闭轮询。
+    /// </remarks>
     public TimeSpan? PollInterval
     {
         get => field;
@@ -40,8 +43,11 @@ public sealed record RemoteConfigurationOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 构建配置时首次加载的超时；默认 10 秒。
+    /// 构建配置时首次加载的超时。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan LoadTimeout
     {
         get => field;
@@ -49,8 +55,11 @@ public sealed record RemoteConfigurationOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 首次加载失败时是否继续（为空）；默认 <see langword="false"/>：抛出让启动失败。
+    /// 首次加载失败时是否继续（为空）。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>：抛出让启动失败。
+    /// </remarks>
     public bool Optional { get; init; }
 
     /// <summary>

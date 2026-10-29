@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 宿主进程的影子栈检查：wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突，
-/// 影子栈强制时第一次陷阱就让进程 fail-fast（0xC0000409），所以在创建引擎前拒绝。
+/// 宿主进程的影子栈检查。
 /// </summary>
+/// <remarks>
+/// wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突，影子栈强制时第一次陷阱就让进程 fail-fast（0xC0000409），所以在创建引擎前拒绝。
+/// </remarks>
 internal static partial class ShadowStackGuard
 {
     /// <summary>
@@ -30,8 +32,11 @@ internal static partial class ShadowStackGuard
     private const int ProcessUserShadowStackPolicy = 16;
 
     /// <summary>
-    /// 当前进程是否强制用户态影子栈（已启用且不是审计模式）；非 Windows 或系统没有该策略时为否。
+    /// 当前进程是否强制用户态影子栈（已启用且不是审计模式）。
     /// </summary>
+    /// <remarks>
+    /// 非 Windows 或系统没有该策略时为否。
+    /// </remarks>
     internal static bool IsEnforced()
     {
         if (!OperatingSystem.IsWindows())

@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
-/// <see cref="Result{T}"/> 的行为：成功值非空、失败携带错误、<c>default</c> 视为未初始化失败、组合方法的传播与相等语义。
+/// <see cref="Result{T}"/> 的行为。
 /// </summary>
+/// <remarks>
+/// 成功值非空、失败携带错误、<c>default</c> 视为未初始化失败、组合方法的传播与相等语义。
+/// </remarks>
 public sealed class ResultOfTTests
 {
     /// <summary>

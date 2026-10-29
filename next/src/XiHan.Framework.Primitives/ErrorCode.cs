@@ -7,9 +7,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 错误码格式：<c>&lt;领域大写&gt;_&lt;KIND&gt;_&lt;NNN&gt;</c>，例如 <c>PERSISTENCE_CONFLICT_001</c>。
-/// 格式与登记表在 <c>spec/conventions/error-codes.md</c>。
+/// 错误码格式。
 /// </summary>
+/// <remarks>
+/// <c>&lt;领域大写&gt;_&lt;KIND&gt;_&lt;NNN&gt;</c>，例如 <c>PERSISTENCE_CONFLICT_001</c>。格式与登记表在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class ErrorCode
 {

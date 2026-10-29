@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 
 /// <summary>
-/// 消息处理器。返回失败或抛出异常都算投递失败。
+/// 消息处理器。
 /// </summary>
+/// <remarks>
+/// 返回失败或抛出异常都算投递失败。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IMessageHandler
 {

@@ -11,9 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Ip2Region.Tests;
 
 /// <summary>
-/// ip2region 归属地：记录文本两种格式的解析、回环与私有网段不查、映射地址按 IPv4 查、库不可用或查询失败时无值、选项与特性装配；
-/// 设了 <c>XIHAN_TEST_IP2REGION_V4</c>（xdb 文件路径）时再用真实库查一次。
+/// ip2region 归属地。
 /// </summary>
+/// <remarks>
+/// 记录文本两种格式的解析、回环与私有网段不查、映射地址按 IPv4 查、库不可用或查询失败时无值、选项与特性装配；设了 <c>XIHAN_TEST_IP2REGION_V4</c>（xdb 文件路径）时再用真实库查一次。
+/// </remarks>
 public sealed class Ip2RegionTests
 {
     /// <summary>

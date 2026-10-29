@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 登记回声操作并在 Authorize 阶段挂上捕获中间件的测试特性；可改操作 ID 以制造重复登记。
+/// 登记回声操作并在 Authorize 阶段挂上捕获中间件的测试特性。
 /// </summary>
+/// <remarks>
+/// 可改操作 ID 以制造重复登记。
+/// </remarks>
 /// <param name="manifestId">清单 ID。</param>
 /// <param name="operationId">登记的操作 ID。</param>
 /// <param name="capture">是否在 Authorize 阶段挂捕获中间件；同一应用里只能有一个实例挂它。</param>

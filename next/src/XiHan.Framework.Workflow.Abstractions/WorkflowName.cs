@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 工作流定义名：<c>^[a-z0-9][a-z0-9._-]{0,127}$</c>（与主题文法相同）；一个名字下有多个版本。
+/// 工作流定义名。
 /// </summary>
+/// <remarks>
+/// <c>^[a-z0-9][a-z0-9._-]{0,127}$</c>（与主题文法相同）；一个名字下有多个版本。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(WorkflowNameJsonConverter))]
 public readonly partial record struct WorkflowName
@@ -22,8 +25,11 @@ public readonly partial record struct WorkflowName
     public const int MaxLength = 128;
 
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public WorkflowName(string value)
     {
         Value = Validate(value);
@@ -45,8 +51,11 @@ public readonly partial record struct WorkflowName
     public static bool IsValid([NotNullWhen(true)] string? value) => value is not null && Pattern().IsMatch(value);
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

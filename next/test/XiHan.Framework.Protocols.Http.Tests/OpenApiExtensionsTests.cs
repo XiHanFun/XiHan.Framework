@@ -25,14 +25,19 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// OpenAPI 生成器的四项能力：标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作标题与说明按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；
-/// 普通端点按元数据收录（二进制 / 表单 / 文本按内容类型，JSON 只能引用已登记操作的根 Schema，引用不到即失败）。
+/// OpenAPI 生成器的四项能力。
 /// </summary>
+/// <remarks>
+/// 标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作标题与说明按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；普通端点按元数据收录（二进制 / 表单 / 文本按内容类型，JSON 只能引用已登记操作的根 Schema，引用不到即失败）。
+/// </remarks>
 public sealed class OpenApiExtensionsTests
 {
     /// <summary>
-    /// 操作标题与说明的消息目录：只有英文与简体中文，只给 <c>orders.get</c> 与 <c>order-filters.list</c>。
+    /// 操作标题与说明的消息目录。
     /// </summary>
+    /// <remarks>
+    /// 只有英文与简体中文，只给 <c>orders.get</c> 与 <c>order-filters.list</c>。
+    /// </remarks>
     private static readonly MessageCatalog _descriptions = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
         // 资源段带连字符的操作：键的首段是连字符换成下划线的形态；order-filters.list 只有标题
@@ -41,8 +46,11 @@ public sealed class OpenApiExtensionsTests
     });
 
     /// <summary>
-    /// 启动装配了 HTTP 协议与订单特性的测试宿主；可加本地化、Bearer 认证桩、文档选项与额外端点。
+    /// 启动装配了 HTTP 协议与订单特性的测试宿主。
     /// </summary>
+    /// <remarks>
+    /// 可加本地化、Bearer 认证桩、文档选项与额外端点。
+    /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization = false, bool bearer = false, OpenApiOptions? options = null, Action<WebApplication>? map = null)
     {
         var builder = WebApplication.CreateBuilder();
@@ -72,8 +80,11 @@ public sealed class OpenApiExtensionsTests
     }
 
     /// <summary>
-    /// 取文档；可带 <c>Accept-Language</c>。
+    /// 取文档。
     /// </summary>
+    /// <remarks>
+    /// 可带 <c>Accept-Language</c>。
+    /// </remarks>
     private static async Task<(JsonDocument Document, HttpResponseMessage Response)> DocumentOf(HttpClient client, string? acceptLanguage = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/openapi.json");

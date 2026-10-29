@@ -8,8 +8,11 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// 套件作业的记录与行为开关：记录每次运行与上下文里的关联 ID、调用来源；可让运行失败、抛出或停留一段时间。
+/// 套件作业的记录与行为开关。
 /// </summary>
+/// <remarks>
+/// 记录每次运行与上下文里的关联 ID、调用来源；可让运行失败、抛出或停留一段时间。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordingJobLog
 {
@@ -24,8 +27,11 @@ public sealed class RecordingJobLog
     private readonly List<(JobRun Run, string? Correlation, InvocationOrigin? Origin)> _runs = [];
 
     /// <summary>
-    /// 下一次运行返回的失败；为 <see langword="null"/> 时成功。
+    /// 下一次运行返回的失败。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时成功。
+    /// </remarks>
     public Error? FailWith { get; set; }
 
     /// <summary>
@@ -65,8 +71,11 @@ public sealed class RecordingJobLog
     }
 
     /// <summary>
-    /// 等到某作业的记录数达到 <paramref name="count"/>；超时抛出。
+    /// 等到某作业的记录数达到 <paramref name="count"/>。
     /// </summary>
+    /// <remarks>
+    /// 超时抛出。
+    /// </remarks>
     public async Task WaitAsync(JobName name, int count, TimeSpan timeout)
     {
         var deadline = DateTimeOffset.UtcNow + timeout;

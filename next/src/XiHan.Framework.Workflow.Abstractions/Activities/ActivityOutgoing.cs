@@ -12,13 +12,19 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 public enum ActivityOutgoing
 {
     /// <summary>
-    /// 取全部无条件或条件为真的出边；一条都没有时取默认出边；仍没有则实例故障。
+    /// 取全部无条件或条件为真的出边。
     /// </summary>
+    /// <remarks>
+    /// 一条都没有时取默认出边；仍没有则实例故障。
+    /// </remarks>
     AllMatched = 0,
 
     /// <summary>
-    /// 按优先级取第一条无条件或条件为真的出边；没有则默认出边；仍没有则实例故障。
+    /// 按优先级取第一条无条件或条件为真的出边。
     /// </summary>
+    /// <remarks>
+    /// 没有则默认出边；仍没有则实例故障。
+    /// </remarks>
     Exclusive = 1,
 
     /// <summary>

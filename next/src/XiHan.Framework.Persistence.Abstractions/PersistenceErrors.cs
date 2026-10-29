@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions;
 
 /// <summary>
-/// 持久化错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 持久化错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PersistenceErrors
 {
@@ -62,7 +65,10 @@ public static class PersistenceErrors
     public const string ClockMovedBackwards = "PERSISTENCE_UNAVAILABLE_004";
 
     /// <summary>
-    /// 雪花标识生成器没有可用的机器位：未配置且没有分布式锁、机器位已满、租约尚未取得或已丢失。
+    /// 雪花标识生成器没有可用的机器位。
     /// </summary>
+    /// <remarks>
+    /// 未配置且没有分布式锁、机器位已满、租约尚未取得或已丢失。
+    /// </remarks>
     public const string WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005";
 }

@@ -13,14 +13,20 @@ using XiHan.Framework.Protocols.Grpc.Methods;
 namespace XiHan.Framework.Protocols.Grpc.Services;
 
 /// <summary>
-/// 映射 gRPC 端点：操作表里的每个操作一个一元方法（<c>/{package}.{Service}/{Method}</c>），以及发布生成的 <c>.proto</c> 文本的端点。需要 HTTP/2 的监听端点（明文 h2c 时 Kestrel 该端点的 <c>Protocols</c> 须为 <c>Http2</c>）。
+/// 映射 gRPC 端点。
 /// </summary>
+/// <remarks>
+/// 操作表里的每个操作一个一元方法（<c>/{package}.{Service}/{Method}</c>），以及发布生成的 <c>.proto</c> 文本的端点。需要 HTTP/2 的监听端点（明文 h2c 时 Kestrel 该端点的 <c>Protocols</c> 须为 <c>Http2</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class OperationGrpcEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 映射全部暴露给 gRPC 的操作；需要 <see cref="GrpcProtocolFeature"/> 已装配。
+    /// 映射全部暴露给 gRPC 的操作。
     /// </summary>
+    /// <remarks>
+    /// 需要 <see cref="GrpcProtocolFeature"/> 已装配。
+    /// </remarks>
     public static IEndpointConventionBuilder MapXiHanGrpc(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -31,8 +37,11 @@ public static class OperationGrpcEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 映射 <c>.proto</c> 文本端点（<c>text/plain</c>），不经过内核管道；供客户端用 protoc / grpcurl 生成或调用。
+    /// 映射 <c>.proto</c> 文本端点（<c>text/plain</c>），不经过内核管道。
     /// </summary>
+    /// <remarks>
+    /// 供客户端用 protoc / grpcurl 生成或调用。
+    /// </remarks>
     public static IEndpointConventionBuilder MapXiHanProto(this IEndpointRouteBuilder endpoints, string pattern = "/operations.proto")
     {
         ArgumentNullException.ThrowIfNull(endpoints);

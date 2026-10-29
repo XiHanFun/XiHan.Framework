@@ -18,9 +18,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Auditing.Database;
 
 /// <summary>
-/// 数据库审计的能力包入口：提供 <c>auditing.trail@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存审计：被选中时把 <see cref="DatabaseAuditTrail"/> 绑定为接收器与查询并挂上审计中间件；
-/// 启动后运行后台刷写循环，停止时先把队列里剩余的事件刷完。
+/// 数据库审计的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>auditing.trail@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存审计：被选中时把 <see cref="DatabaseAuditTrail"/> 绑定为接收器与查询并挂上审计中间件；启动后运行后台刷写循环，停止时先把队列里剩余的事件刷完。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseAuditingFeature : IHostedFeature, IDisposable
 {
@@ -30,13 +32,19 @@ public sealed class DatabaseAuditingFeature : IHostedFeature, IDisposable
     private DatabaseAuditTrail? _trail;
 
     /// <summary>
-    /// 停止信号；<see cref="StopAsync"/> 取消它让刷写循环退出。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// <see cref="StopAsync"/> 取消它让刷写循环退出。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 正在运行的刷写循环；停止时等待它结束。
+    /// 正在运行的刷写循环。
     /// </summary>
+    /// <remarks>
+    /// 停止时等待它结束。
+    /// </remarks>
     private Task? _loop;
 
     /// <inheritdoc />

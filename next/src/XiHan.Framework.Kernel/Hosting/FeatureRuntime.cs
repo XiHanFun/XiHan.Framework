@@ -14,8 +14,11 @@ namespace XiHan.Framework.Kernel.Hosting;
 internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
 {
     /// <summary>
-    /// 当前生命周期状态。创建时已完成 Configure，因此从 Configured 起步。
+    /// 当前生命周期状态。
     /// </summary>
+    /// <remarks>
+    /// 创建时已完成 Configure，因此从 Configured 起步。
+    /// </remarks>
     private LifecycleState _state = LifecycleState.Configured;
 
     /// <summary>
@@ -34,8 +37,11 @@ internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
     public LifecycleState State => _state;
 
     /// <summary>
-    /// 失败原因；未失败时为 <see langword="null"/>。
+    /// 失败原因。
     /// </summary>
+    /// <remarks>
+    /// 未失败时为 <see langword="null"/>。
+    /// </remarks>
     public Error? Error { get; private set; }
 
     /// <summary>
@@ -44,8 +50,11 @@ internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
     public FeatureStatus Status => new(Node.Manifest, _state, Error, Feature is IHostedFeature);
 
     /// <summary>
-    /// 迁移到新状态；不合法的迁移抛出 <see cref="KernelErrors.InvalidAppState"/>，表示内核的状态机被误用。
+    /// 迁移到新状态。
     /// </summary>
+    /// <remarks>
+    /// 不合法的迁移抛出 <see cref="KernelErrors.InvalidAppState"/>，表示内核的状态机被误用。
+    /// </remarks>
     public void Transition(LifecycleState to)
     {
         if (!_state.CanTransitionTo(to))
@@ -57,8 +66,11 @@ internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
     }
 
     /// <summary>
-    /// 记录失败原因并尽量进入 Failed；已处于终态或已失败时只更新原因，不改状态。
+    /// 记录失败原因并尽量进入 Failed。
     /// </summary>
+    /// <remarks>
+    /// 已处于终态或已失败时只更新原因，不改状态。
+    /// </remarks>
     public void Fail(Error error)
     {
         Error = error;

@@ -12,8 +12,11 @@ namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 internal sealed class RecordingPermissionFilter(IReadOnlySet<string>? allowed) : IPermissionFilter
 {
     /// <summary>
-    /// 放行的权限码；<see langword="null"/> 表示全部放行。
+    /// 放行的权限码。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示全部放行。
+    /// </remarks>
     public IReadOnlySet<string>? Allowed { get; } = allowed;
 
     /// <summary>

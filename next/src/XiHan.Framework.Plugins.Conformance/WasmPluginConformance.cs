@@ -24,9 +24,11 @@ using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 namespace XiHan.Framework.Plugins.Conformance;
 
 /// <summary>
-/// Wasm 载体的黑盒一致性套件（RFC-0018，<c>spec/plugin/wasm.md</c> §7）：以模块文件为输入，核对导出表与 ABI 版本、握手一致性、生命周期、调用、事件与中间件钩子。
-/// 任何语言编译出的插件都应以其产物目录继承本类运行。
+/// Wasm 载体的黑盒一致性套件（RFC-0018，<c>spec/plugin/wasm.md</c> §7）。
 /// </summary>
+/// <remarks>
+/// 以模块文件为输入，核对导出表与 ABI 版本、握手一致性、生命周期、调用、事件与中间件钩子。任何语言编译出的插件都应以其产物目录继承本类运行。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public abstract class WasmPluginConformance
 {
@@ -41,13 +43,19 @@ public abstract class WasmPluginConformance
     protected abstract string PluginDirectory { get; }
 
     /// <summary>
-    /// <c>Configure</c> 下发的配置节 JSON；默认空对象。
+    /// <c>Configure</c> 下发的配置节 JSON。
     /// </summary>
+    /// <remarks>
+    /// 默认空对象。
+    /// </remarks>
     protected virtual string ConfigurationJson => "{}";
 
     /// <summary>
-    /// 调用用例使用的示例请求（操作 ID → JSON）；没有示例的操作以 <c>{}</c> 调用。
+    /// 调用用例使用的示例请求（操作 ID → JSON）。
     /// </summary>
+    /// <remarks>
+    /// 没有示例的操作以 <c>{}</c> 调用。
+    /// </remarks>
     protected virtual IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
@@ -68,8 +76,11 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 2：握手协商出版本 1、清单与目录里的文件一致、操作与订阅在清单声明范围内、没有流式操作。
+    /// 用例 2：握手与清单相符。
     /// </summary>
+    /// <remarks>
+    /// 握手协商出版本 1、清单与目录里的文件一致、操作与订阅在清单声明范围内、没有流式操作。
+    /// </remarks>
     [Fact]
     public void Handshake_MatchesTheManifest()
     {
@@ -90,8 +101,11 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 3：Configure 与 Start 成功、Health 报可服务状态且健康项都已在清单声明、Stop 成功。
+    /// 用例 3：生命周期按协议进行。
     /// </summary>
+    /// <remarks>
+    /// Configure 与 Start 成功、Health 报可服务状态且健康项都已在清单声明、Stop 成功。
+    /// </remarks>
     [Fact]
     public void Lifecycle_ConfigureStartHealthStop_FollowTheProtocol()
     {
@@ -122,8 +136,11 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 5：每个声明的操作都返回带 <c>status</c> 的应答；成功时载荷是 JSON，失败时错误码合法。
+    /// 用例 5：每个声明的操作都返回带 <c>status</c> 的应答。
     /// </summary>
+    /// <remarks>
+    /// 成功时载荷是 JSON，失败时错误码合法。
+    /// </remarks>
     [Fact]
     public void Invoke_DeclaredOperations_ReturnAStatus()
     {
@@ -186,8 +203,11 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 7：每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答（没有中间件贡献时跳过）。
+    /// 用例 7：每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果）。
     /// </summary>
+    /// <remarks>
+    /// 在 after 阶段也应答（没有中间件贡献时跳过）。
+    /// </remarks>
     [Fact]
     public void Middleware_BeforeAndAfter_ReturnValidDecisions()
     {
@@ -288,8 +308,11 @@ public abstract class WasmPluginConformance
         public HandshakeInfo Handshake { get; set; } = null!;
 
         /// <summary>
-        /// 一次调用：编码请求、调用导出、解码响应；陷阱或无响应即失败。
+        /// 一次调用。
         /// </summary>
+        /// <remarks>
+        /// 编码请求、调用导出、解码响应；陷阱或无响应即失败。
+        /// </remarks>
         public TResponse Call<TResponse>(string export, IMessage request)
             where TResponse : IMessage<TResponse>, new()
         {

@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database;
 
 /// <summary>
-/// 数据库审计选项。从配置节 <c>XiHan:Auditing:Database</c> 显式读取：<c>QueueCapacity</c>、<c>BatchSize</c>、<c>FlushIntervalSeconds</c>、<c>LogEvents</c>。
+/// 数据库审计选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Auditing:Database</c> 显式读取：<c>QueueCapacity</c>、<c>BatchSize</c>、<c>FlushIntervalSeconds</c>、<c>LogEvents</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseAuditingOptions
 {
@@ -19,8 +22,11 @@ public sealed record DatabaseAuditingOptions
     public const string ConfigurationSection = "XiHan:Auditing:Database";
 
     /// <summary>
-    /// 等待落库的事件数上限：队列满了新到的事件被丢弃并计数；默认 10000。
+    /// 等待落库的事件数上限。
     /// </summary>
+    /// <remarks>
+    /// 队列满了新到的事件被丢弃并计数；默认 10000。
+    /// </remarks>
     public int QueueCapacity
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record DatabaseAuditingOptions
     } = 10_000;
 
     /// <summary>
-    /// 一批落库的事件数上限：攒够这么多就立即刷写；默认 100。
+    /// 一批落库的事件数上限。
     /// </summary>
+    /// <remarks>
+    /// 攒够这么多就立即刷写；默认 100。
+    /// </remarks>
     public int BatchSize
     {
         get => field;
@@ -37,8 +46,11 @@ public sealed record DatabaseAuditingOptions
     } = 100;
 
     /// <summary>
-    /// 刷写间隔：不足一批也按此周期刷写；默认 1 秒。
+    /// 刷写间隔。
     /// </summary>
+    /// <remarks>
+    /// 不足一批也按此周期刷写；默认 1 秒。
+    /// </remarks>
     public TimeSpan FlushInterval
     {
         get => field;
@@ -46,8 +58,11 @@ public sealed record DatabaseAuditingOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 是否把每条事件写进日志（Information 级）；默认 <see langword="true"/>。
+    /// 是否把每条事件写进日志（Information 级）。
     /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="true"/>。
+    /// </remarks>
     public bool LogEvents { get; init; } = true;
 
     /// <summary>
@@ -85,8 +100,11 @@ public sealed record DatabaseAuditingOptions
     }
 
     /// <summary>
-    /// 读取配置节下的一个正整数；没有配置返回 <see langword="null"/>，不是正整数抛出。
+    /// 读取配置节下的一个正整数。
     /// </summary>
+    /// <remarks>
+    /// 没有配置返回 <see langword="null"/>，不是正整数抛出。
+    /// </remarks>
     private static int? PositiveInteger(IConfiguration configuration, string name)
     {
         if (configuration[$"{ConfigurationSection}:{name}"] is not { } raw)

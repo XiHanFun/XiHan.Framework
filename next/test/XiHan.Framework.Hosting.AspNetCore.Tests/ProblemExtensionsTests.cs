@@ -20,8 +20,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// Problem Details 的扩展成员：VALIDATION 错误的字段级 <c>errors</c> 按调用方区域翻译（与 <c>detail</c> 同一通道，没有键的文案原样），所有错误的 <c>details</c> 只收标量；没有装配本地化时字段文案是违规的原因。
+/// Problem Details 的扩展成员。
 /// </summary>
+/// <remarks>
+/// VALIDATION 错误的字段级 <c>errors</c> 按调用方区域翻译（与 <c>detail</c> 同一通道，没有键的文案原样），所有错误的 <c>details</c> 只收标量；没有装配本地化时字段文案是违规的原因。
+/// </remarks>
 public sealed class ProblemExtensionsTests
 {
     /// <summary>
@@ -34,8 +37,11 @@ public sealed class ProblemExtensionsTests
     });
 
     /// <summary>
-    /// 带字段级违规的校验错误：内核键的违规两条（同一字段两条、嵌套路径一条）、应用文案一条；细节另带标量与集合。
+    /// 带字段级违规的校验错误。
     /// </summary>
+    /// <remarks>
+    /// 内核键的违规两条（同一字段两条、嵌套路径一条）、应用文案一条；细节另带标量与集合。
+    /// </remarks>
     private static Error Invalid()
     {
         IReadOnlyList<SchemaViolation> violations =
@@ -48,8 +54,11 @@ public sealed class ProblemExtensionsTests
     }
 
     /// <summary>
-    /// 带各种细节的冲突错误：标量进 <c>details</c>，对象与集合不进，<c>errors</c> 在非 VALIDATION 错误上不输出。
+    /// 带各种细节的冲突错误。
     /// </summary>
+    /// <remarks>
+    /// 标量进 <c>details</c>，对象与集合不进，<c>errors</c> 在非 VALIDATION 错误上不输出。
+    /// </remarks>
     private static Error Conflict()
     {
         IReadOnlyList<SchemaViolation> violations = [new("$.name", "x")];

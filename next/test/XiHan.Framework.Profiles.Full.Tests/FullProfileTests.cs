@@ -22,8 +22,11 @@ using XiHan.Framework.Protocols.Mcp.Transports;
 namespace XiHan.Framework.Profiles.Full.Tests;
 
 /// <summary>
-/// Full 组合：零外部基础设施下每个能力都选中默认实现，管道阶段齐全，四种协议的端点都能映射并应答。
+/// Full 组合。
 /// </summary>
+/// <remarks>
+/// 零外部基础设施下每个能力都选中默认实现，管道阶段齐全，四种协议的端点都能映射并应答。
+/// </remarks>
 public sealed class FullProfileTests
 {
     /// <summary>

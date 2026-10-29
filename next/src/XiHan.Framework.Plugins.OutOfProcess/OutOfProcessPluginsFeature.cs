@@ -17,9 +17,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.OutOfProcess;
 
 /// <summary>
-/// 进程外插件宿主特性：配置阶段按 <c>XiHan:Plugins:OutOfProcess:Directories</c> 发现插件（启动进程并握手），把声明的操作登记为代理操作、
-/// 消息目录与事件订阅接进容器；启动阶段启动回调服务器与 <c>onStartup</c> 的插件；停止阶段停止全部插件。
+/// 进程外插件宿主特性。
 /// </summary>
+/// <remarks>
+/// 配置阶段按 <c>XiHan:Plugins:OutOfProcess:Directories</c> 发现插件（启动进程并握手），把声明的操作登记为代理操作、消息目录与事件订阅接进容器；启动阶段启动回调服务器与 <c>onStartup</c> 的插件；停止阶段停止全部插件。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OutOfProcessPluginsFeature : IHostedFeature
 {

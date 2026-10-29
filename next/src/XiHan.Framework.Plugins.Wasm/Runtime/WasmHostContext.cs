@@ -42,8 +42,11 @@ internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, 
     public string DefaultLocale { get; } = defaultLocale;
 
     /// <summary>
-    /// 应用名；可空。
+    /// 应用名。
     /// </summary>
+    /// <remarks>
+    /// 可空。
+    /// </remarks>
     public string Application { get; } = application;
 
     /// <summary>
@@ -52,7 +55,10 @@ internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, 
     public string WorkRoot { get; } = workRoot;
 
     /// <summary>
-    /// 宿主应用的根容器；附着后才有，回调经它开作用域。
+    /// 宿主应用的根容器。
     /// </summary>
+    /// <remarks>
+    /// 附着后才有，回调经它开作用域。
+    /// </remarks>
     public IServiceProvider? Services { get; set; }
 }

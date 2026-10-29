@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Guardrails;
 
 /// <summary>
-/// 护栏判定：放行，或带原因拦截。原因是消息键（<c>AIMessages.*</c> 或应用自己的键）加参数，宿主在出口翻译。
+/// 护栏判定。
 /// </summary>
+/// <remarks>
+/// 放行，或带原因拦截。原因是消息键（<c>AIMessages.*</c> 或应用自己的键）加参数，宿主在出口翻译。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record GuardrailVerdict
 {

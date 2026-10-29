@@ -14,8 +14,11 @@ namespace XiHan.Framework.Localization.Abstractions;
 public static class LocalizationServiceCollectionExtensions
 {
     /// <summary>
-    /// 注册消息目录；同名目录只保留第一次注册（多个 Provider 可能都带同一份抽象包目录）。
+    /// 注册消息目录。
     /// </summary>
+    /// <remarks>
+    /// 同名目录只保留第一次注册（多个 Provider 可能都带同一份抽象包目录）。
+    /// </remarks>
     public static IServiceCollection AddMessageCatalog(this IServiceCollection services, MessageCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(services);

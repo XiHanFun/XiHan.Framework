@@ -10,13 +10,19 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Abstractions.Events;
 
 /// <summary>
-/// 把调度事件发成 CloudEvents 信封；没有发布者时跳过，发布失败只记日志（事件是旁路，不影响调度状态）。
+/// 把调度事件发成 CloudEvents 信封。
 /// </summary>
+/// <remarks>
+/// 没有发布者时跳过，发布失败只记日志（事件是旁路，不影响调度状态）。
+/// </remarks>
 internal sealed partial class SchedulingEventPublisher
 {
     /// <summary>
-    /// 发布者；没有装配消息能力时为空。
+    /// 发布者。
     /// </summary>
+    /// <remarks>
+    /// 没有装配消息能力时为空。
+    /// </remarks>
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>

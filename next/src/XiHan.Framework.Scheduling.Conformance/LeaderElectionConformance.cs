@@ -10,8 +10,11 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <see cref="ILeaderElection"/> 的一致性套件。继承并实现 <see cref="CreateElection"/>，全部用例随之执行。过期用例用真实时间等待。
+/// <see cref="ILeaderElection"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateElection"/>，全部用例随之执行。过期用例用真实时间等待。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class LeaderElectionConformance
 {
@@ -21,18 +24,27 @@ public abstract class LeaderElectionConformance
     protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
 
     /// <summary>
-    /// 过期用例使用的存活时间；只有整数秒粒度的 Provider（如 Kubernetes Lease）改为 1 秒。
+    /// 过期用例使用的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 只有整数秒粒度的 Provider（如 Kubernetes Lease）改为 1 秒。
+    /// </remarks>
     protected virtual TimeSpan LeaseTimeToLive => TimeSpan.FromMilliseconds(400);
 
     /// <summary>
-    /// 创建被测选举。每个用例调用一次。
+    /// 创建被测选举。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract ILeaderElection CreateElection();
 
     /// <summary>
-    /// 用例 1：空闲资源可获取；被持有时拒绝；释放后可再获取；不同资源互不影响。
+    /// 用例 1：空闲资源可获取。
     /// </summary>
+    /// <remarks>
+    /// 被持有时拒绝；释放后可再获取；不同资源互不影响。
+    /// </remarks>
     [Fact]
     public async Task Acquire_RefusesWhileHeld_AndSucceedsAfterRelease()
     {
@@ -58,8 +70,11 @@ public abstract class LeaderElectionConformance
     }
 
     /// <summary>
-    /// 用例 2：到期后他人可获取，原持有者续约失败；到期前续约延长到期时刻。
+    /// 用例 2：到期后他人可获取，原持有者续约失败。
     /// </summary>
+    /// <remarks>
+    /// 到期前续约延长到期时刻。
+    /// </remarks>
     [Fact]
     public async Task Lease_ExpiresUnlessRenewed()
     {

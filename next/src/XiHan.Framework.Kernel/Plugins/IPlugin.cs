@@ -7,14 +7,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件契约。运行期加载、隔离；失败不影响宿主。
+/// 插件契约。
 /// </summary>
+/// <remarks>
+/// 运行期加载、隔离；失败不影响宿主。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IPlugin
 {
     /// <summary>
-    /// 插件清单；<see cref="Manifest.Kind"/> 必须是 <see cref="ManifestKind.Plugin"/>。
+    /// 插件清单。
     /// </summary>
+    /// <remarks>
+    /// <see cref="Manifest.Kind"/> 必须是 <see cref="ManifestKind.Plugin"/>。
+    /// </remarks>
     Manifest Manifest { get; }
 
     /// <summary>

@@ -6,13 +6,19 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 的根对象 JSON 形态。所有字段都是可空的原始文本，缺失与格式错误由 <see cref="ManifestReader"/> 在转换时统一报告。
+/// <c>xihan.manifest.json</c> 的根对象 JSON 形态。
 /// </summary>
+/// <remarks>
+/// 所有字段都是可空的原始文本，缺失与格式错误由 <see cref="ManifestReader"/> 在转换时统一报告。
+/// </remarks>
 internal sealed class ManifestDocument
 {
     /// <summary>
-    /// JSON Schema 地址（<c>$schema</c>）；写出时固定为规范地址，读取时忽略。
+    /// JSON Schema 地址（<c>$schema</c>）。
     /// </summary>
+    /// <remarks>
+    /// 写出时固定为规范地址，读取时忽略。
+    /// </remarks>
     [JsonPropertyName("$schema")]
     public string? Schema { get; set; }
 
@@ -47,8 +53,11 @@ internal sealed class ManifestDocument
     public string? Kind { get; set; }
 
     /// <summary>
-    /// 角色的小写名称；缺省为普通 Provider。
+    /// 角色的小写名称。
     /// </summary>
+    /// <remarks>
+    /// 缺省为普通 Provider。
+    /// </remarks>
     public string? Role { get; set; }
 
     /// <summary>
@@ -77,8 +86,11 @@ internal sealed class ManifestDocument
     public ContributionsDocument? Contributes { get; set; }
 
     /// <summary>
-    /// 激活事件；缺省为 <c>onStartup</c>。
+    /// 激活事件。
     /// </summary>
+    /// <remarks>
+    /// 缺省为 <c>onStartup</c>。
+    /// </remarks>
     public List<string>? Activation { get; set; }
 
     /// <summary>

@@ -6,8 +6,11 @@ using System.Data;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// <see cref="DateTimeOffsetConverter"/>：各驱动交出的日期时间形态都还原成同一个 UTC 时刻，参数按 UTC 写入。
+/// <see cref="DateTimeOffsetConverter"/>。
 /// </summary>
+/// <remarks>
+/// 各驱动交出的日期时间形态都还原成同一个 UTC 时刻，参数按 UTC 写入。
+/// </remarks>
 public sealed class DateTimeOffsetConverterTests
 {
     /// <summary>

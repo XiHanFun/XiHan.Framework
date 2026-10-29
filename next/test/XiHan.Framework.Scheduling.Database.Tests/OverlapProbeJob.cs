@@ -8,8 +8,11 @@ using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 多节点用例的作业：停留 150 毫秒后把所在节点（引擎选项里的节点 ID）与开始、结束时刻记进 <see cref="OverlapLog"/>。
+/// 多节点用例的作业。
 /// </summary>
+/// <remarks>
+/// 停留 150 毫秒后把所在节点（引擎选项里的节点 ID）与开始、结束时刻记进 <see cref="OverlapLog"/>。
+/// </remarks>
 internal sealed class OverlapProbeJob : IJob
 {
     /// <summary>

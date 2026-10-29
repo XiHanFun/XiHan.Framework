@@ -13,10 +13,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）：每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；
-/// 插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。
-/// 批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议。
+/// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）。
 /// </summary>
+/// <remarks>
+/// 每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCacheStore : ICacheStore
 {
@@ -179,8 +180,11 @@ public sealed class RemoteCacheStore : ICacheStore
     private static long Milliseconds(TimeSpan duration) => Math.Max(1, (long)Math.Ceiling(duration.TotalMilliseconds));
 
     /// <summary>
-    /// 解码 base64 的值；不合法视为插件违反协议。
+    /// 解码 base64 的值。
     /// </summary>
+    /// <remarks>
+    /// 不合法视为插件违反协议。
+    /// </remarks>
     private static ReadOnlyMemory<byte> Decode(string value, string operation)
     {
         try
@@ -229,8 +233,11 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 把失败翻译成异常：缓存域的错误码原样（插件侧的键与选项校验），其余（插件未加载、未登记、不可达、超时）为存储不可用并带原错误码。
+    /// 把失败翻译成异常。
     /// </summary>
+    /// <remarks>
+    /// 缓存域的错误码原样（插件侧的键与选项校验），其余（插件未加载、未登记、不可达、超时）为存储不可用并带原错误码。
+    /// </remarks>
     private static FrameworkException Translate(Error error, string operation)
         => string.Equals(ErrorCode.DomainOf(error.Code), "CACHING", StringComparison.Ordinal)
             ? new FrameworkException(error.Code, $"The remote cache operation '{operation}' failed: {error.Message}")

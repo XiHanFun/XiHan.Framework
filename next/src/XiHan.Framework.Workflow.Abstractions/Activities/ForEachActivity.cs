@@ -10,9 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 对 <c>Items</c>（表达式，求值为数组）逐项启动子流程（<c>DefinitionName</c> / <c>DefinitionVersion</c> / <c>Variables</c>），每个子实例得到 <c>ItemVariable</c>（默认 <c>item</c>）与 <c>index</c>；
-/// <c>Parallel</c>（默认假）决定一起启动还是逐个；<c>FailFast</c>（默认真）时子实例未完成即故障；<c>ResultVariable</c> 接收各子实例变量的数组。空集合立即完成。
+/// 对 <c>Items</c>逐项启动子流程。
 /// </summary>
+/// <remarks>
+/// 表达式，求值为数组。<c>DefinitionName</c> / <c>DefinitionVersion</c> / <c>Variables</c>。每个子实例得到 <c>ItemVariable</c>（默认 <c>item</c>）与 <c>index</c>。<c>Parallel</c>（默认假）决定一起启动还是逐个；<c>FailFast</c>（默认真）时子实例未完成即故障；<c>ResultVariable</c> 接收各子实例变量的数组。空集合立即完成。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ForEachActivity : IResumableActivity
 {

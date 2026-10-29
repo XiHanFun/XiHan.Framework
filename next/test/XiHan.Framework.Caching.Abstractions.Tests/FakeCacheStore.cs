@@ -13,8 +13,11 @@ namespace XiHan.Framework.Caching.Abstractions.Tests;
 internal sealed class FakeCacheStore : ICacheStore
 {
     /// <summary>
-    /// 键到字节的字典；键区分大小写，没有过期。
+    /// 键到字节的字典。
     /// </summary>
+    /// <remarks>
+    /// 键区分大小写，没有过期。
+    /// </remarks>
     private readonly ConcurrentDictionary<string, byte[]> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -23,8 +26,11 @@ internal sealed class FakeCacheStore : ICacheStore
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 按发生顺序记录的操作（<c>get:</c>、<c>set:</c>、<c>add:</c>、<c>remove:</c>、<c>cad:</c> 加键），供测试断言调用序列。
+    /// 按发生顺序记录的操作（<c>get:</c>、<c>set:</c>、<c>add:</c>、<c>remove:</c>、<c>cad:</c> 加键）。
     /// </summary>
+    /// <remarks>
+    /// 供测试断言调用序列。
+    /// </remarks>
     public List<string> Operations { get; } = [];
 
     /// <summary>
@@ -33,8 +39,11 @@ internal sealed class FakeCacheStore : ICacheStore
     public int Count => _entries.Count;
 
     /// <summary>
-    /// 直接按原始键读取字节；不存在为 <see langword="null"/>。
+    /// 直接按原始键读取字节。
     /// </summary>
+    /// <remarks>
+    /// 不存在为 <see langword="null"/>。
+    /// </remarks>
     public byte[]? this[string key] => _entries.TryGetValue(key, out var value) ? value : null;
 
     /// <summary>
@@ -47,8 +56,11 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>set:</c> 并写入；忽略过期选项。
+    /// 记录 <c>set:</c> 并写入。
     /// </summary>
+    /// <remarks>
+    /// 忽略过期选项。
+    /// </remarks>
     public ValueTask SetAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
         Operations.Add("set:" + key.Value);
@@ -90,8 +102,11 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>setmany:</c> 并逐项写入；忽略过期选项。
+    /// 记录 <c>setmany:</c> 并逐项写入。
     /// </summary>
+    /// <remarks>
+    /// 忽略过期选项。
+    /// </remarks>
     public ValueTask SetManyAsync(IReadOnlyList<CacheEntry> entries, CancellationToken cancellationToken)
     {
         Operations.Add("setmany:" + string.Join(",", entries.Select(static e => e.Key.Value)));

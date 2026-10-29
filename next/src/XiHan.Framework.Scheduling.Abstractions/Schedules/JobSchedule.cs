@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 /// <summary>
-/// 作业的计划：手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化。
+/// 作业的计划。
 /// </summary>
+/// <remarks>
+/// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JobSchedule
 {
@@ -62,8 +65,11 @@ public sealed record JobSchedule
     public TimeSpan Interval { get; }
 
     /// <summary>
-    /// 总运行次数上限（只对 <see cref="JobScheduleKind.Interval"/>）；空为无限。
+    /// 总运行次数上限（只对 <see cref="JobScheduleKind.Interval"/>）。
     /// </summary>
+    /// <remarks>
+    /// 空为无限。
+    /// </remarks>
     public int? RepeatCount { get; }
 
     /// <summary>
@@ -72,8 +78,11 @@ public sealed record JobSchedule
     public CronExpression? Cron { get; }
 
     /// <summary>
-    /// cron 的时区 ID（<see cref="TimeZoneInfo"/> 的 ID）；空为 UTC。
+    /// cron 的时区 ID（<see cref="TimeZoneInfo"/> 的 ID）。
     /// </summary>
+    /// <remarks>
+    /// 空为 UTC。
+    /// </remarks>
     public string? TimeZoneId { get; }
 
     /// <summary>
@@ -92,13 +101,19 @@ public sealed record JobSchedule
     public DateTimeOffset? EndAt { get; init; }
 
     /// <summary>
-    /// 排除日历的名字（<c>services.AddJobCalendar</c> 登记）；空为不排除。
+    /// 排除日历的名字（<c>services.AddJobCalendar</c> 登记）。
     /// </summary>
+    /// <remarks>
+    /// 空为不排除。
+    /// </remarks>
     public string? Calendar { get; init; }
 
     /// <summary>
-    /// 固定间隔：上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<paramref name="repeatCount"/> 为总运行次数（空为无限，否则至少 1）。
+    /// 固定间隔。
     /// </summary>
+    /// <remarks>
+    /// 上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<paramref name="repeatCount"/> 为总运行次数（空为无限，否则至少 1）。
+    /// </remarks>
     public static JobSchedule Every(TimeSpan interval, int? repeatCount = null)
     {
         if (interval <= TimeSpan.Zero)
@@ -115,8 +130,11 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// cron 表达式；不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>。
+    /// cron 表达式。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static JobSchedule FromCron(string expression, string? timeZoneId = null)
     {
         var cron = CronExpression.Parse(expression);
@@ -134,8 +152,11 @@ public sealed record JobSchedule
     public static JobSchedule Once(DateTimeOffset at) => new(JobScheduleKind.Once, TimeSpan.Zero, null, null, null, at);
 
     /// <summary>
-    /// <paramref name="after"/> 之后的下一次运行时刻（不考虑日历）；手动计划、超过 <see cref="EndAt"/> 或一次性计划已过都无值。间隔计划的 <paramref name="after"/> 应是上一次的完成时刻。
+    /// <paramref name="after"/> 之后的下一次运行时刻（不考虑日历）。
     /// </summary>
+    /// <remarks>
+    /// 手动计划、超过 <see cref="EndAt"/> 或一次性计划已过都无值。间隔计划的 <paramref name="after"/> 应是上一次的完成时刻。
+    /// </remarks>
     public Maybe<DateTimeOffset> NextRun(DateTimeOffset after)
     {
         // 起始窗口：窗口开始之前的"之后"一律从窗口开始算（间隔计划的首次也落在窗口开始 + 间隔）
@@ -155,8 +176,11 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 解析 <see cref="ToString"/> 产生的文本；不合法抛出 <see cref="ArgumentException"/>。
+    /// 解析 <see cref="ToString"/> 产生的文本。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static JobSchedule Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -281,8 +305,11 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 按 ID 找时区；找不到抛出 <see cref="ArgumentException"/>。
+    /// 按 ID 找时区。
     /// </summary>
+    /// <remarks>
+    /// 找不到抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static TimeZoneInfo ResolveTimeZone(string timeZoneId)
         => TryResolveTimeZone(timeZoneId, out var zone) ? zone : throw new ArgumentException($"Time zone '{timeZoneId}' is unknown.", nameof(timeZoneId));
 

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 面向设计器的活动描述：显示名、分类、说明与输入属性；由登记时给出，<see cref="Definitions.IWorkflowDefinitionCatalog.ActivityTypes"/> 返回。
+/// 面向设计器的活动描述。
 /// </summary>
+/// <remarks>
+/// 显示名、分类、说明与输入属性；由登记时给出，<see cref="Definitions.IWorkflowDefinitionCatalog.ActivityTypes"/> 返回。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ActivityDescriptor
 {

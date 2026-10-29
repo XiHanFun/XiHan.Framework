@@ -14,8 +14,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义目录的默认实现：生命周期规则在这里，存储只管读写。作用域服务。
+/// 定义目录的默认实现。
 /// </summary>
+/// <remarks>
+/// 生命周期规则在这里，存储只管读写。作用域服务。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 {

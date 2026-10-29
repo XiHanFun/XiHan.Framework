@@ -11,14 +11,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 
 /// <summary>
-/// 命名存储实例的登记：存储包在装配时登记自己的 <see cref="IBlobStoreProvider"/>，注册表 <see cref="BlobStores"/> 与它的健康项只登记一次。
+/// 命名存储实例的登记。
 /// </summary>
+/// <remarks>
+/// 存储包在装配时登记自己的 <see cref="IBlobStoreProvider"/>，注册表 <see cref="BlobStores"/> 与它的健康项只登记一次。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobStoreServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记一个 Provider（同一类型只登记一次），并确保 <see cref="BlobStores"/> 已登记为单例与健康项贡献者；配置定义的实例从 <paramref name="configuration"/> 读（先登记的那次为准，特性都传宿主配置）。
+    /// 登记一个 Provider（同一类型只登记一次）。
     /// </summary>
+    /// <remarks>
+    /// 并确保 <see cref="BlobStores"/> 已登记为单例与健康项贡献者。配置定义的实例从 <paramref name="configuration"/> 读（先登记的那次为准，特性都传宿主配置）。
+    /// </remarks>
     public static IServiceCollection AddBlobStoreProvider<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TProvider>(this IServiceCollection services, IConfiguration configuration)
         where TProvider : class, IBlobStoreProvider
     {

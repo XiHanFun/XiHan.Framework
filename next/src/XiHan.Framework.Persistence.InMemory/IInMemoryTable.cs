@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存表的非泛型视图：健康项按它遍历各实体的表比较用量与容量，不必知道实体与键的类型。
+/// 内存表的非泛型视图。
 /// </summary>
+/// <remarks>
+/// 健康项按它遍历各实体的表比较用量与容量，不必知道实体与键的类型。
+/// </remarks>
 internal interface IInMemoryTable
 {
     /// <summary>

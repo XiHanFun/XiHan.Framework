@@ -9,9 +9,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式小语言的编译器：递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。
-/// 数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null。
+/// 表达式小语言的编译器。
 /// </summary>
+/// <remarks>
+/// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null。
+/// </remarks>
 internal sealed class ExpressionCompiler
 {
     /// <summary>
@@ -33,8 +35,11 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 编译；语法错误抛 <see cref="ExpressionException"/>。
+    /// 编译。
     /// </summary>
+    /// <remarks>
+    /// 语法错误抛 <see cref="ExpressionException"/>。
+    /// </remarks>
     public static CompiledExpression Compile(string expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
@@ -354,8 +359,11 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 内置函数（名字不区分大小写）；参数个数在编译期校验。
+    /// 内置函数（名字不区分大小写）。
     /// </summary>
+    /// <remarks>
+    /// 参数个数在编译期校验。
+    /// </remarks>
     private static CompiledExpression BindFunction(string name, List<CompiledExpression> args)
     {
         static void Arity(string name, List<CompiledExpression> args, int min, int max)
@@ -515,8 +523,11 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 宽松相等：都为 null 相等；都是数字按数值；都是布尔按值；其余按字符串序数比较。
+    /// 宽松相等。
     /// </summary>
+    /// <remarks>
+    /// 都为 null 相等；都是数字按数值；都是布尔按值；其余按字符串序数比较。
+    /// </remarks>
     private static bool AreEqual(JsonNode? left, JsonNode? right)
     {
         if (left is null || right is null)
@@ -604,8 +615,11 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 若当前位置是 <paramref name="token"/> 则消费；运算符前先跳空白。
+    /// 若当前位置是 <paramref name="token"/> 则消费。
     /// </summary>
+    /// <remarks>
+    /// 运算符前先跳空白。
+    /// </remarks>
     private bool TryConsume(string token)
     {
         SkipWhitespace();
@@ -625,8 +639,11 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 读标识符（字母、数字、下划线，首字符非数字）；不是标识符返回 <see langword="null"/>。
+    /// 读标识符（字母、数字、下划线，首字符非数字）。
     /// </summary>
+    /// <remarks>
+    /// 不是标识符返回 <see langword="null"/>。
+    /// </remarks>
     private string? ReadIdentifier()
     {
         SkipWhitespace();

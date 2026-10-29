@@ -11,8 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 健康项 <c>localization.database.translations</c>：宿主进入服务状态前为 Started（不影响就绪），首次加载成功后 Ready 且 <see cref="MessageTranslationLoader.LastError"/> 为空。
+/// 健康项 <c>localization.database.translations</c>。
 /// </summary>
+/// <remarks>
+/// 宿主进入服务状态前为 Started（不影响就绪），首次加载成功后 Ready 且 <see cref="MessageTranslationLoader.LastError"/> 为空。
+/// </remarks>
 public sealed class DatabaseLocalizationHealthTests
 {
     [Fact]

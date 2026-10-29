@@ -11,9 +11,11 @@ using Microsoft.CodeAnalysis.Text;
 namespace XiHan.Framework.Persistence.Generators;
 
 /// <summary>
-/// 从实现 <c>IEntity&lt;TKey&gt;</c> 的实体类生成 <c>GeneratedEntities</c>：仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，
-/// 以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）。
+/// 从实现 <c>IEntity&lt;TKey&gt;</c> 的实体类生成 <c>GeneratedEntities</c>。
 /// </summary>
+/// <remarks>
+/// 仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）。
+/// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class EntityGenerator : IIncrementalGenerator
 {
@@ -38,13 +40,19 @@ public sealed class EntityGenerator : IIncrementalGenerator
     private const string MultiTenantName = "XiHan.Framework.Domain.Entities.IMultiTenant";
 
     /// <summary>
-    /// EF Core <c>ModelBuilder</c> 的元数据名；存在时生成实体登记。
+    /// EF Core <c>ModelBuilder</c> 的元数据名。
     /// </summary>
+    /// <remarks>
+    /// 存在时生成实体登记。
+    /// </remarks>
     private const string ModelBuilderName = "Microsoft.EntityFrameworkCore.ModelBuilder";
 
     /// <summary>
-    /// 持久化 EF Core Provider 的约定扩展；存在时在实体登记后应用约定。
+    /// 持久化 EF Core Provider 的约定扩展。
     /// </summary>
+    /// <remarks>
+    /// 存在时在实体登记后应用约定。
+    /// </remarks>
     private const string ConventionsName = "XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions";
 
     /// <inheritdoc />
@@ -123,8 +131,11 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 解析键类型与协议；有问题的实体报诊断并跳过。
+    /// 解析键类型与协议。
     /// </summary>
+    /// <remarks>
+    /// 有问题的实体报诊断并跳过。
+    /// </remarks>
     private static EntityModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, INamedTypeSymbol entityInterface, INamedTypeSymbol? softDeletable, INamedTypeSymbol? multiTenant, Compilation compilation)
     {
         var location = symbol.Locations.FirstOrDefault() ?? Location.None;
@@ -292,8 +303,11 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 带 <c>global::</c> 的完整类型名；特殊类型仍用关键字（<c>int</c>、<c>string</c>）。
+    /// 带 <c>global::</c> 的完整类型名。
     /// </summary>
+    /// <remarks>
+    /// 特殊类型仍用关键字（<c>int</c>、<c>string</c>）。
+    /// </remarks>
     private static string Display(ITypeSymbol type)
         => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 

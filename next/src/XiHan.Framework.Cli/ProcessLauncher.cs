@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 以 <see cref="Process"/> 启动子进程，标准输出与标准错误逐行转发到写入器；取消时结束子进程。
+/// 以 <see cref="Process"/> 启动子进程，标准输出与标准错误逐行转发到写入器。
 /// </summary>
+/// <remarks>
+/// 取消时结束子进程。
+/// </remarks>
 internal sealed class ProcessLauncher : IProcessLauncher
 {
     /// <inheritdoc />

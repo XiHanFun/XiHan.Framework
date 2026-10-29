@@ -7,8 +7,11 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 一个进文档的普通端点的一个方法：OpenAPI 形式的路径模板、方法与从端点元数据读出的描述信息。
+/// 一个进文档的普通端点的一个方法。
 /// </summary>
+/// <remarks>
+/// OpenAPI 形式的路径模板、方法与从端点元数据读出的描述信息。
+/// </remarks>
 /// <param name="Template">OpenAPI 形式的路径模板（约束、可选标记与通配前缀都去掉）。</param>
 /// <param name="Method">大写的 HTTP 方法。</param>
 /// <param name="DisplayName">端点显示名，用于错误说明。</param>

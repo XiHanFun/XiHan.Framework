@@ -12,14 +12,19 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// <c>Host.Publish</c> 的批量分组：两种宿主共用。逐项校验主题与信封，不合法的直接写结果；通过的按主题分组（保持首次出现的主题顺序与组内顺序），
-/// 宿主对每组调用一次 <see cref="IMessagePublisher.PublishManyAsync(string, IReadOnlyList{MessageEnvelope}, CancellationToken)"/> 后把逐项结果回填到原始位置。
+/// <c>Host.Publish</c> 的批量分组。
 /// </summary>
+/// <remarks>
+/// 两种宿主共用。逐项校验主题与信封，不合法的直接写结果；通过的按主题分组（保持首次出现的主题顺序与组内顺序），宿主对每组调用一次 <see cref="IMessagePublisher.PublishManyAsync(string, IReadOnlyList{MessageEnvelope}, CancellationToken)"/> 后把逐项结果回填到原始位置。
+/// </remarks>
 internal static class PluginPublishBatches
 {
     /// <summary>
-    /// 分组。<paramref name="unavailable"/> 非空表示宿主没有消息发布器：每一项都写该错误，不分组。
+    /// 分组。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="unavailable"/> 非空表示宿主没有消息发布器：每一项都写该错误，不分组。
+    /// </remarks>
     /// <param name="envelopes">请求的信封。</param>
     /// <param name="statuses">与信封等长的结果数组；校验失败的位置在此写入。</param>
     /// <param name="unavailable">宿主没有消息发布器时的错误。</param>

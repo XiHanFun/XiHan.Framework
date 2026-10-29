@@ -4,9 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 消息键常量上的本地化简写：<c>KernelMessages.ManifestEmpty.L()</c>、<c>OrdersMessages.Placed.L(("name", name))</c>、<c>OrdersMessages.Total.L(count, amount)</c>。
-/// 文案按 <see cref="MessageScope.Current"/>（调用链里是调用方区域，否则是进程默认区域）解析；没有作用域时返回键与参数的描述。
+/// 消息键常量上的本地化简写。
 /// </summary>
+/// <remarks>
+/// <c>KernelMessages.ManifestEmpty.L()</c>、<c>OrdersMessages.Placed.L(("name", name))</c>、<c>OrdersMessages.Total.L(count, amount)</c>。文案按 <see cref="MessageScope.Current"/>（调用链里是调用方区域，否则是进程默认区域）解析；没有作用域时返回键与参数的描述。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MessageKeyExtensions
 {

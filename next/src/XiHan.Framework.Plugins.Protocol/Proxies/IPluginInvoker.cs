@@ -11,7 +11,10 @@ namespace XiHan.Framework.Plugins.Protocol.Proxies;
 internal interface IPluginInvoker
 {
     /// <summary>
-    /// 调用插件的一个操作；载荷与结果都是原样搬运的 JSON 字节。
+    /// 调用插件的一个操作。
     /// </summary>
+    /// <remarks>
+    /// 载荷与结果都是原样搬运的 JSON 字节。
+    /// </remarks>
     ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context);
 }

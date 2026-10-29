@@ -21,9 +21,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core 持久化的能力包入口：提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// EF Core 持久化的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFeature, IRepositoryRegistrar
@@ -45,13 +47,19 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     private const string ConnectionBindingType = "connection:relational";
 
     /// <summary>
-    /// 应用提供的 DbContext 配置回调；在每次构建 DbContext 选项时调用。
+    /// 应用提供的 DbContext 配置回调。
     /// </summary>
+    /// <remarks>
+    /// 在每次构建 DbContext 选项时调用。
+    /// </remarks>
     private readonly Action<Maybe<BindingValue>, DbContextOptionsBuilder> _configure;
 
     /// <summary>
-    /// 配置阶段读取的选项；<see cref="StartAsync"/> 据此决定是否建表。
+    /// 配置阶段读取的选项。
     /// </summary>
+    /// <remarks>
+    /// <see cref="StartAsync"/> 据此决定是否建表。
+    /// </remarks>
     private EntityFrameworkCorePersistenceOptions _options = new();
 
     /// <summary>
@@ -160,8 +168,11 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     }
 
     /// <summary>
-    /// 连通性探针：在独立作用域里取应用默认连接的 DbContext 试连；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>。
+    /// 连通性探针。
     /// </summary>
+    /// <remarks>
+    /// 在独立作用域里取应用默认连接的 DbContext 试连；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>。
+    /// </remarks>
     private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         await using var scope = services.CreateAsyncScope();

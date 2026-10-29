@@ -16,14 +16,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.RabbitMQ;
 
 /// <summary>
-/// 基于 RabbitMQ.Client 的代理：每主题一个持久队列，手动确认，失败重新发布到队尾或死信队列。批量发布在同一通道上连续发布、一次持锁、一次声明队列。
+/// 基于 RabbitMQ.Client 的代理。
 /// </summary>
+/// <remarks>
+/// 每主题一个持久队列，手动确认，失败重新发布到队尾或死信队列。批量发布在同一通道上连续发布、一次持锁、一次声明队列。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDisposable
 {
     /// <summary>
-    /// 携带尝试次数的消息头；重新发布时加一。
+    /// 携带尝试次数的消息头。
     /// </summary>
+    /// <remarks>
+    /// 重新发布时加一。
+    /// </remarks>
     private const string AttemptHeader = "x-xihan-attempt";
 
     /// <summary>
@@ -37,8 +43,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private readonly MessagingOptions _messaging;
 
     /// <summary>
-    /// 应用；只在其进入服务状态后才投递。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 只在其进入服务状态后才投递。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>
@@ -47,23 +56,35 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 串行化发布通道访问的信号量；通道不是线程安全的。
+    /// 串行化发布通道访问的信号量。
     /// </summary>
+    /// <remarks>
+    /// 通道不是线程安全的。
+    /// </remarks>
     private readonly SemaphoreSlim _publishGate = new(1, 1);
 
     /// <summary>
-    /// 已声明过的队列名；避免每次发布都声明。
+    /// 已声明过的队列名。
     /// </summary>
+    /// <remarks>
+    /// 避免每次发布都声明。
+    /// </remarks>
     private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 每个被消费主题的通道与消费者标签；停止时逐个取消并关闭。
+    /// 每个被消费主题的通道与消费者标签。
     /// </summary>
+    /// <remarks>
+    /// 停止时逐个取消并关闭。
+    /// </remarks>
     private readonly List<(IChannel Channel, string ConsumerTag)> _consumers = [];
 
     /// <summary>
-    /// 连接；<see cref="ConnectAsync"/> 建立，释放时关闭。
+    /// 连接。
     /// </summary>
+    /// <remarks>
+    /// <see cref="ConnectAsync"/> 建立，释放时关闭。
+    /// </remarks>
     private IConnection? _connection;
 
     /// <summary>
@@ -72,13 +93,19 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private IChannel? _publishChannel;
 
     /// <summary>
-    /// 停止信号；取消后进行中的投递不再确认。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// 取消后进行中的投递不再确认。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 创建代理；连接在 <see cref="ConnectAsync"/> 时建立。
+    /// 创建代理。
     /// </summary>
+    /// <remarks>
+    /// 连接在 <see cref="ConnectAsync"/> 时建立。
+    /// </remarks>
     public RabbitMQMessageBroker(RabbitMQMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -94,8 +121,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     public bool IsConnected => _connection?.IsOpen == true;
 
     /// <summary>
-    /// 连通性检查（健康项）：连接与发布通道都打开为成功；否则以代理给出的关闭原因（还没建立连接时说明如此）构造 <see cref="MessagingErrors.BrokerUnavailable"/>。
+    /// 连通性检查（健康项）。
     /// </summary>
+    /// <remarks>
+    /// 连接与发布通道都打开为成功；否则以代理给出的关闭原因（还没建立连接时说明如此）构造 <see cref="MessagingErrors.BrokerUnavailable"/>。
+    /// </remarks>
     public Result CheckConnection()
     {
         if (_connection is { IsOpen: true } && _publishChannel is { IsOpen: true })
@@ -264,8 +294,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     }
 
     /// <summary>
-    /// 处理一条到达的消息：解码、等待宿主就绪、派发，失败重新发布到队尾或死信队列，最后确认原消息。
+    /// 处理一条到达的消息。
     /// </summary>
+    /// <remarks>
+    /// 解码、等待宿主就绪、派发，失败重新发布到队尾或死信队列，最后确认原消息。
+    /// </remarks>
     private async Task OnReceivedAsync(IChannel channel, string topic, BasicDeliverEventArgs received, MessageDispatch dispatch, CancellationToken stopping)
     {
         // 尝试次数随消息头携带，重新发布时加一；缺失或非法按首次处理
@@ -326,8 +359,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         => PublishAsync(queue, CloudEventsFormat.Encode(envelope), attempt, cancellationToken, envelope.Id);
 
     /// <summary>
-    /// 发布原始字节到队列：持久化投递、CloudEvents 内容类型、尝试次数写入消息头；必要时先连接并声明队列。
+    /// 发布原始字节到队列。
     /// </summary>
+    /// <remarks>
+    /// 持久化投递、CloudEvents 内容类型、尝试次数写入消息头；必要时先连接并声明队列。
+    /// </remarks>
     private async Task PublishAsync(string queue, byte[] body, int attempt, CancellationToken cancellationToken, string? messageId = null)
     {
         if (_publishChannel is null)
@@ -364,8 +400,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     };
 
     /// <summary>
-    /// 声明持久、非独占、不自动删除的队列；同一队列只声明一次。
+    /// 声明持久、非独占、不自动删除的队列。
     /// </summary>
+    /// <remarks>
+    /// 同一队列只声明一次。
+    /// </remarks>
     private async Task DeclareAsync(IChannel channel, string queue, CancellationToken cancellationToken)
     {
         // 队列声明是幂等的，但每次都声明会多一次往返；按名缓存已声明的队列
@@ -408,8 +447,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private static partial void LogUndecodable(ILogger logger, string topic, string reason);
 
     /// <summary>
-    /// 记录停止消费者时的异常；停止流程继续。
+    /// 记录停止消费者时的异常。
     /// </summary>
+    /// <remarks>
+    /// 停止流程继续。
+    /// </remarks>
     [LoggerMessage(Level = LogLevel.Warning, Message = "An error occurred while stopping the RabbitMQ consumer.")]
     private static partial void LogStopFailed(ILogger logger, Exception exception);
 }

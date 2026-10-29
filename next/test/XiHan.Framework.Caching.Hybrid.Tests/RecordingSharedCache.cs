@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 记录每次调用的 L2 替身：转发给内存对象缓存，顺便记下操作名与键，让用例断言哪些读写真的到了 L2。
+/// 记录每次调用的 L2 替身。
 /// </summary>
+/// <remarks>
+/// 转发给内存对象缓存，顺便记下操作名与键，让用例断言哪些读写真的到了 L2。
+/// </remarks>
 internal sealed class RecordingSharedCache : ISharedCache
 {
     /// <summary>

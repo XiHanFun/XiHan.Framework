@@ -19,13 +19,19 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Protocols.Mcp.Tests;
 
 /// <summary>
-/// stdio 传输：每行一条消息、通知不答复、输入结束即返回；<c>mcp</c> 命令注册进命令行宿主。
+/// stdio 传输。
 /// </summary>
+/// <remarks>
+/// 每行一条消息、通知不答复、输入结束即返回；<c>mcp</c> 命令注册进命令行宿主。
+/// </remarks>
 public sealed class McpStdioTests
 {
     /// <summary>
-    /// 在通用宿主里启动：Minimal 组合 + 内存安全（alice 可写订单）+ MCP + 订单特性 + 命令行宿主。
+    /// 在通用宿主里启动。
     /// </summary>
+    /// <remarks>
+    /// Minimal 组合 + 内存安全（alice 可写订单）+ MCP + 订单特性 + 命令行宿主。
+    /// </remarks>
     private static async Task<IHost> StartAsync()
     {
         var builder = Host.CreateApplicationBuilder();

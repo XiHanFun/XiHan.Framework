@@ -9,8 +9,11 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 仿真 OpenAI 兼容端点：<c>/chat/completions</c>（可流式、可先要求调用工具）与 <c>/embeddings</c>；记录全部请求。
+/// 仿真 OpenAI 兼容端点。
 /// </summary>
+/// <remarks>
+/// <c>/chat/completions</c>（可流式、可先要求调用工具）与 <c>/embeddings</c>；记录全部请求。
+/// </remarks>
 internal sealed class FakeOpenAIHandler : HttpMessageHandler
 {
     /// <summary>

@@ -12,13 +12,19 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed record RetrievalFilter
 {
     /// <summary>
-    /// 只在这些文档里找；空表示不限。
+    /// 只在这些文档里找。
     /// </summary>
+    /// <remarks>
+    /// 空表示不限。
+    /// </remarks>
     public IReadOnlyList<string>? DocumentIds { get; init; }
 
     /// <summary>
-    /// 元数据必须等于这些键值；空表示不限。
+    /// 元数据必须等于这些键值。
     /// </summary>
+    /// <remarks>
+    /// 空表示不限。
+    /// </remarks>
     public IReadOnlyDictionary<string, string>? Metadata { get; init; }
 
     /// <summary>

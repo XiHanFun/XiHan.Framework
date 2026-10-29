@@ -11,8 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 一次锁内操作的会话：实例、定义图、节点实例与书签的内存副本，记录脏项与删除项供波次结束一次写回；事件与锁外动作也先攒在这里。
+/// 一次锁内操作的会话。
 /// </summary>
+/// <remarks>
+/// 实例、定义图、节点实例与书签的内存副本，记录脏项与删除项供波次结束一次写回；事件与锁外动作也先攒在这里。
+/// </remarks>
 internal sealed class WorkflowSession
 {
     /// <summary>
@@ -204,8 +207,11 @@ internal sealed class WorkflowSession
     public WorkflowBookmark AddBookmark(WorkflowNodeInstance nodeInstance, BookmarkRequest request) => AddBookmark(nodeInstance.NodeId, nodeInstance.Id, request);
 
     /// <summary>
-    /// 新建书签（节点 ID 与节点实例 ID 由调用方给出：实例级超时书签的节点实例 ID 是实例 ID）。
+    /// 新建书签。
     /// </summary>
+    /// <remarks>
+    /// 节点 ID 与节点实例 ID 由调用方给出：实例级超时书签的节点实例 ID 是实例 ID。
+    /// </remarks>
     public WorkflowBookmark AddBookmark(string nodeId, string nodeInstanceId, BookmarkRequest request)
     {
         var bookmark = new WorkflowBookmark
@@ -257,8 +263,11 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 删除全部书签；<paramref name="keepInstanceTimeout"/> 时保留实例级超时书签（跳转后实例仍在运行，超时仍然有效）。
+    /// 删除全部书签。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="keepInstanceTimeout"/> 时保留实例级超时书签（跳转后实例仍在运行，超时仍然有效）。
+    /// </remarks>
     public void RemoveAllBookmarks(bool keepInstanceTimeout = false)
     {
         foreach (var bookmark in _bookmarks.Values.ToList())

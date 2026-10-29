@@ -8,15 +8,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 进程内的类型化缓存：直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。
-/// <see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。
+/// 进程内的类型化缓存。
 /// </summary>
+/// <remarks>
+/// 直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。<see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryObjectCache : ISharedCache
 {
     /// <summary>
-    /// 直接保存对象引用的有界 LRU 表；与字节存储各自独立计数。
+    /// 直接保存对象引用的有界 LRU 表。
     /// </summary>
+    /// <remarks>
+    /// 与字节存储各自独立计数。
+    /// </remarks>
     private readonly BoundedLruTable<object> _table;
 
     /// <summary>

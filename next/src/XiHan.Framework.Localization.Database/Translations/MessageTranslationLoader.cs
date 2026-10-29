@@ -11,20 +11,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 把数据库里的翻译装进 <see cref="DatabaseMessageLocalizer"/>：宿主进入服务状态后首次加载，之后按周期刷新；写入翻译后可显式 <see cref="ReloadAsync"/>。读取经完整管道（仓储要求 Transaction 阶段）。
-/// 同时是健康项 <see cref="DatabaseLocalizationFeature.HealthName"/> 的贡献者：以最近一次加载的结果报告，失败（保留上一份快照）为 Degraded。
+/// 把数据库里的翻译装进 <see cref="DatabaseMessageLocalizer"/>。
 /// </summary>
+/// <remarks>
+/// 宿主进入服务状态后首次加载，之后按周期刷新；写入翻译后可显式 <see cref="ReloadAsync"/>。读取经完整管道（仓储要求 Transaction 阶段）。同时是健康项 <see cref="DatabaseLocalizationFeature.HealthName"/> 的贡献者：以最近一次加载的结果报告，失败（保留上一份快照）为 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class MessageTranslationLoader : IDisposable, IHealthContributor
 {
     /// <summary>
-    /// 根服务提供者；每次加载开新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次加载开新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 应用；加载经它的管道执行。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 加载经它的管道执行。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>
@@ -48,8 +56,11 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 最近一次加载的失败；成功后清空。后台循环写、健康采集读，整体替换不加锁。
+    /// 最近一次加载的失败。
     /// </summary>
+    /// <remarks>
+    /// 成功后清空。后台循环写、健康采集读，整体替换不加锁。
+    /// </remarks>
     private volatile Error? _lastError;
 
     /// <summary>
@@ -82,18 +93,27 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 最近一次成功加载的时刻；还没有加载过为 <see langword="null"/>。
+    /// 最近一次成功加载的时刻。
     /// </summary>
+    /// <remarks>
+    /// 还没有加载过为 <see langword="null"/>。
+    /// </remarks>
     public DateTimeOffset? LastLoadedAt { get; private set; }
 
     /// <summary>
-    /// 最近一次加载的失败；成功后为 <see langword="null"/>。失败时上一份快照仍在生效。
+    /// 最近一次加载的失败。
     /// </summary>
+    /// <remarks>
+    /// 成功后为 <see langword="null"/>。失败时上一份快照仍在生效。
+    /// </remarks>
     public Error? LastError => _lastError;
 
     /// <summary>
-    /// 立即重新加载并替换快照。只能在宿主服务期间调用；失败时保留上一份快照并返回失败。
+    /// 立即重新加载并替换快照。
     /// </summary>
+    /// <remarks>
+    /// 只能在宿主服务期间调用；失败时保留上一份快照并返回失败。
+    /// </remarks>
     public async ValueTask<Result> ReloadAsync(CancellationToken cancellationToken)
     {
         var loaded = new List<MessageTranslation>();

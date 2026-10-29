@@ -8,8 +8,11 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 节点的一次执行记录；重试复用同一记录并递增 <see cref="Attempt"/>。
+/// 节点的一次执行记录。
 /// </summary>
+/// <remarks>
+/// 重试复用同一记录并递增 <see cref="Attempt"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowNodeInstance
 {
@@ -59,8 +62,11 @@ public sealed class WorkflowNodeInstance
     public JsonObject Inputs { get; set; } = [];
 
     /// <summary>
-    /// 输出（完成时合并进实例变量；<c>outcome</c> 也记在这里）。
+    /// 输出。
     /// </summary>
+    /// <remarks>
+    /// 完成时合并进实例变量；<c>outcome</c> 也记在这里。
+    /// </remarks>
     public JsonObject Outputs { get; set; } = [];
 
     /// <summary>

@@ -6,14 +6,11 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 从类型符号生成 JSON Schema（draft 2020-12）：基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，
-/// 对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。
-/// 根 <c>title</c> 与定义名按 <see cref="SchemaNames"/>（封闭泛型带实参名）；按字符串序列化的枚举进 <c>$defs/&lt;枚举类型名&gt;</c>（<c>type: string</c> + <c>enum</c>）并以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。
-/// 属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），
-/// <c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），
-/// <c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。
-/// XML 文档注释进 <c>description</c>（<see cref="DocumentationText"/>）：根与 <c>$defs</c> 里的对象、枚举取类型的 <c>&lt;summary&gt;</c>，属性取属性的 <c>&lt;summary&gt;</c>，没有时取主构造参数在类型上的 <c>&lt;param&gt;</c>。
+/// 从类型符号生成 JSON Schema（draft 2020-12）。
 /// </summary>
+/// <remarks>
+/// 基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。根 <c>title</c> 与定义名按 <see cref="SchemaNames"/>（封闭泛型带实参名）；按字符串序列化的枚举进 <c>$defs/&lt;枚举类型名&gt;</c>（<c>type: string</c> + <c>enum</c>）并以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），<c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），<c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。XML 文档注释进 <c>description</c>（<see cref="DocumentationText"/>）：根与 <c>$defs</c> 里的对象、枚举取类型的 <c>&lt;summary&gt;</c>，属性取属性的 <c>&lt;summary&gt;</c>，没有时取主构造参数在类型上的 <c>&lt;param&gt;</c>。
+/// </remarks>
 internal sealed class JsonSchemaBuilder
 {
     /// <summary>
@@ -81,8 +78,11 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 某类型的 Schema 片段；<paramref name="inline"/> 为 <see langword="true"/> 时对象直接展开而不是进 <c>$defs</c>；<paramref name="forceNonNull"/> 为 <see langword="true"/> 时（<c>[Required]</c>）忽略类型的可空性。
+    /// 某类型的 Schema 片段。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="inline"/> 为 <see langword="true"/> 时对象直接展开而不是进 <c>$defs</c>；<paramref name="forceNonNull"/> 为 <see langword="true"/> 时（<c>[Required]</c>）忽略类型的可空性。
+    /// </remarks>
     private string SchemaOf(ITypeSymbol type, bool nullable, bool inline = false, bool forceNonNull = false)
     {
         // 可空注解或 Nullable<T> 都允许 null；类型本身的 Schema 在内层决定；[Required] 的属性不允许 null
@@ -177,8 +177,11 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 类型进 <c>$defs</c>（只登记一次，先占位再生成以支持递归；定义名按 <see cref="SchemaNames"/>），返回 <c>$ref</c> 片段；<paramref name="writeBody"/> 写定义的内容。
+    /// 类型进 <c>$defs</c>。
     /// </summary>
+    /// <remarks>
+    /// 只登记一次，先占位再生成以支持递归；定义名按 <see cref="SchemaNames"/>。返回 <c>$ref</c> 片段。<paramref name="writeBody"/> 写定义的内容。
+    /// </remarks>
     private string Reference(INamedTypeSymbol type, bool nullable, Action<JsonText> writeBody)
     {
         if (!_definitions.TryGetValue(type, out var name))
@@ -206,8 +209,11 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 同名类型来自不同命名空间时加序号；按已占位的名字判重，嵌套生成途中遇到的同名类型也不会撞名。
+    /// 同名类型来自不同命名空间时加序号。
     /// </summary>
+    /// <remarks>
+    /// 按已占位的名字判重，嵌套生成途中遇到的同名类型也不会撞名。
+    /// </remarks>
     private string UniqueDefinitionName(string name)
     {
         var candidate = name;
@@ -221,8 +227,11 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 写 <c>properties</c> 与 <c>required</c>：公开可读的实例属性，跳过 <c>[JsonIgnore]</c>；名字按 <c>[JsonPropertyName]</c> 或命名策略。
+    /// 写 <c>properties</c> 与 <c>required</c>。
     /// </summary>
+    /// <remarks>
+    /// 公开可读的实例属性，跳过 <c>[JsonIgnore]</c>；名字按 <c>[JsonPropertyName]</c> 或命名策略。
+    /// </remarks>
     private void WriteProperties(JsonText json, INamedTypeSymbol type)
     {
         var required = new List<string>();
@@ -252,14 +261,20 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 属性的说明：属性自己的 <c>&lt;summary&gt;</c>，没有时取声明它的类型上同名主构造参数的 <c>&lt;param&gt;</c>。
+    /// 属性的说明。
     /// </summary>
+    /// <remarks>
+    /// 属性自己的 <c>&lt;summary&gt;</c>，没有时取声明它的类型上同名主构造参数的 <c>&lt;param&gt;</c>。
+    /// </remarks>
     private static string? DescriptionOf(INamedTypeSymbol type, IPropertySymbol property)
         => DocumentationText.Summary(property) ?? DocumentationText.Parameter(property.ContainingType ?? type, property.Name);
 
     /// <summary>
-    /// 在 Schema 片段（紧凑的 JSON 对象）最前面加上 <c>description</c>；没有说明时原样返回。
+    /// 在 Schema 片段（紧凑的 JSON 对象）最前面加上 <c>description</c>。
     /// </summary>
+    /// <remarks>
+    /// 没有说明时原样返回。
+    /// </remarks>
     private static string WithDescription(string schema, string? description)
     {
         if (description is null)
@@ -314,8 +329,11 @@ internal sealed class JsonSchemaBuilder
     }
 
     /// <summary>
-    /// 是否必填：带 <c>required</c> 修饰符，或非可空且对应的主构造参数没有默认值；可空、有初始值或有默认值的不必填。
+    /// 是否必填。
     /// </summary>
+    /// <remarks>
+    /// 带 <c>required</c> 修饰符，或非可空且对应的主构造参数没有默认值；可空、有初始值或有默认值的不必填。
+    /// </remarks>
     private static bool IsRequired(INamedTypeSymbol type, IPropertySymbol property)
     {
         if (property.IsRequired)

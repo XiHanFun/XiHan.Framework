@@ -11,10 +11,11 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 从宿主的端点里挑出进文档的普通端点：有路由模板、不是操作端点（没有 <see cref="OperationDescriptor"/> 元数据）、有 HTTP 方法元数据、
-/// 带 <see cref="IAcceptsMetadata"/> 或 <see cref="IProducesResponseTypeMetadata"/> 之一、没有标 <see cref="IExcludeFromDescriptionMetadata"/>。
-/// Hub、健康探针、重定向、静态资源都没有这两种描述元数据，自然不进，不另做名单。
+/// 从宿主的端点里挑出进文档的普通端点。
 /// </summary>
+/// <remarks>
+/// 有路由模板、不是操作端点（没有 <see cref="OperationDescriptor"/> 元数据）、有 HTTP 方法元数据、带 <see cref="IAcceptsMetadata"/> 或 <see cref="IProducesResponseTypeMetadata"/> 之一、没有标 <see cref="IExcludeFromDescriptionMetadata"/>。Hub、健康探针、重定向、静态资源都没有这两种描述元数据，自然不进，不另做名单。
+/// </remarks>
 internal static partial class EndpointReader
 {
     /// <summary>
@@ -71,8 +72,11 @@ internal static partial class EndpointReader
     }
 
     /// <summary>
-    /// 把 ASP.NET Core 路由模板改成 OpenAPI 形式：补上开头的斜杠，<c>{id:int}</c>、<c>{id?}</c>、<c>{*path}</c> 都只留 <c>{name}</c>。
+    /// 把 ASP.NET Core 路由模板改成 OpenAPI 形式。
     /// </summary>
+    /// <remarks>
+    /// 补上开头的斜杠，<c>{id:int}</c>、<c>{id?}</c>、<c>{*path}</c> 都只留 <c>{name}</c>。
+    /// </remarks>
     private static string Normalize(string? rawText)
     {
         var template = string.IsNullOrEmpty(rawText) ? "/" : rawText;

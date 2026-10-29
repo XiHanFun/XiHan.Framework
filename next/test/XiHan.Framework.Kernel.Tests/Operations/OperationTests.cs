@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Operations;
 
 /// <summary>
-/// 操作契约与 XGI：登记表、契约校验、JSON 与类型化调用、描述进入上下文、失败与异常翻译、管道内执行。
+/// 操作契约与 XGI。
 /// </summary>
+/// <remarks>
+/// 登记表、契约校验、JSON 与类型化调用、描述进入上下文、失败与异常翻译、管道内执行。
+/// </remarks>
 public sealed class OperationTests
 {
     /// <summary>

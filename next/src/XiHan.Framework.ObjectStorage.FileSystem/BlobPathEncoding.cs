@@ -8,14 +8,19 @@ using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 键的段与文件名之间的可逆编码。键区分大小写而常见文件系统（Windows、macOS 默认）不区分，所以大写字母、非 ASCII、<c>%</c>、
-/// Windows 保留字符、保留设备名与结尾的点都按 UTF-8 字节百分号编码；小写字母、数字与 <c>._-</c> 原样保留，常见的键在目录里仍可读。
+/// 键的段与文件名之间的可逆编码。
 /// </summary>
+/// <remarks>
+/// 键区分大小写而常见文件系统（Windows、macOS 默认）不区分，所以大写字母、非 ASCII、<c>%</c>、Windows 保留字符、保留设备名与结尾的点都按 UTF-8 字节百分号编码；小写字母、数字与 <c>._-</c> 原样保留，常见的键在目录里仍可读。
+/// </remarks>
 internal static class BlobPathEncoding
 {
     /// <summary>
-    /// Windows 保留的设备名（不区分大小写）；作为文件名会失败，必须编码。
+    /// Windows 保留的设备名（不区分大小写）。
     /// </summary>
+    /// <remarks>
+    /// 作为文件名会失败，必须编码。
+    /// </remarks>
     private static readonly HashSet<string> _reservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "con", "prn", "aux", "nul",
@@ -67,8 +72,11 @@ internal static class BlobPathEncoding
     }
 
     /// <summary>
-    /// 解码一段：<c>%XX</c> 序列还原为 UTF-8 字节；不是本编码产生的名字（外部放入的文件）原样返回。
+    /// 解码一段。
     /// </summary>
+    /// <remarks>
+    /// <c>%XX</c> 序列还原为 UTF-8 字节；不是本编码产生的名字（外部放入的文件）原样返回。
+    /// </remarks>
     public static string DecodeSegment(string name)
     {
         if (!name.Contains('%', StringComparison.Ordinal))

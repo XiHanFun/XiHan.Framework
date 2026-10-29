@@ -14,8 +14,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.InMemory;
 
 /// <summary>
-/// 每主题一条有界通道、单消费者顺序投递的内存代理。批量发布一次入队：容量不足整批返回队列已满，不写入半批。
+/// 每主题一条有界通道、单消费者顺序投递的内存代理。
 /// </summary>
+/// <remarks>
+/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
@@ -30,8 +33,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private readonly MessagingOptions _messaging = messaging ?? throw new ArgumentNullException(nameof(messaging));
 
     /// <summary>
-    /// 应用；只在其进入服务状态后才投递。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 只在其进入服务状态后才投递。
+    /// </remarks>
     private readonly App _app = app ?? throw new ArgumentNullException(nameof(app));
 
     /// <summary>
@@ -40,8 +46,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private readonly ILogger _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<InMemoryMessageBroker>();
 
     /// <summary>
-    /// 主题到队列的映射；首次发布或消费时创建。
+    /// 主题到队列的映射。
     /// </summary>
+    /// <remarks>
+    /// 首次发布或消费时创建。
+    /// </remarks>
     private readonly ConcurrentDictionary<string, TopicQueue> _topics = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -50,8 +59,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private readonly List<Task> _loops = [];
 
     /// <summary>
-    /// 停止信号；非空表示正在消费。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// 非空表示正在消费。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <inheritdoc />
@@ -258,8 +270,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private sealed class TopicQueue(int capacity)
     {
         /// <summary>
-        /// 有界、单消费者的投递通道；发布方用 TryWrite，满了不等待。
+        /// 有界、单消费者的投递通道。
         /// </summary>
+        /// <remarks>
+        /// 发布方用 TryWrite，满了不等待。
+        /// </remarks>
         public Channel<MessageDelivery> Channel { get; } = System.Threading.Channels.Channel.CreateBounded<MessageDelivery>(new BoundedChannelOptions(capacity)
         {
             SingleReader = true,
@@ -267,18 +282,27 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         });
 
         /// <summary>
-        /// 发布锁：批量发布在锁内完成容量判定与整批写入，单条发布同样在锁内写入，二者不会交错。
+        /// 发布锁。
         /// </summary>
+        /// <remarks>
+        /// 批量发布在锁内完成容量判定与整批写入，单条发布同样在锁内写入，二者不会交错。
+        /// </remarks>
         public Lock PublishGate { get; } = new();
 
         /// <summary>
-        /// 死信，按进入顺序；超过容量丢弃最旧。
+        /// 死信，按进入顺序。
         /// </summary>
+        /// <remarks>
+        /// 超过容量丢弃最旧。
+        /// </remarks>
         public ConcurrentQueue<MessageDelivery> DeadLetters { get; } = new();
 
         /// <summary>
-        /// 累计成功投递条数；用 <see cref="Interlocked"/> 读写。
+        /// 累计成功投递条数。
         /// </summary>
+        /// <remarks>
+        /// 用 <see cref="Interlocked"/> 读写。
+        /// </remarks>
         public long Delivered;
     }
 }

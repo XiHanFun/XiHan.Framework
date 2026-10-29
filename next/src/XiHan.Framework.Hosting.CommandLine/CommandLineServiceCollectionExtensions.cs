@@ -19,8 +19,11 @@ namespace XiHan.Framework.Hosting.CommandLine;
 public static class CommandLineServiceCollectionExtensions
 {
     /// <summary>
-    /// 注册命令行宿主：运行器、内置命令（help、graph、pipeline、operations、invoke）、本包的消息目录，并把日志改为只写 stderr（stdout 只承载命令输出，管道与重定向才安全）。幂等。
+    /// 注册命令行宿主。
     /// </summary>
+    /// <remarks>
+    /// 运行器、内置命令（help、graph、pipeline、operations、invoke）、本包的消息目录，并把日志改为只写 stderr（stdout 只承载命令输出，管道与重定向才安全）。幂等。
+    /// </remarks>
     public static IServiceCollection AddXiHanCommandLine(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -37,8 +40,11 @@ public static class CommandLineServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 注册一个命令（单例）；同一类型只注册一次。
+    /// 注册一个命令（单例）。
     /// </summary>
+    /// <remarks>
+    /// 同一类型只注册一次。
+    /// </remarks>
     public static IServiceCollection AddXiHanCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TCommand>(this IServiceCollection services)
         where TCommand : class, ICommand
     {

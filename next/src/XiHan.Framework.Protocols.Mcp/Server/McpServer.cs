@@ -13,16 +13,20 @@ using XiHan.Framework.Protocols.Mcp.Tools;
 namespace XiHan.Framework.Protocols.Mcp.Server;
 
 /// <summary>
-/// MCP 服务端核心，与传输无关：把登记表里暴露给 MCP 的操作变成 tool 表，处理 JSON-RPC 2.0 消息（<c>initialize</c>、<c>ping</c>、<c>tools/list</c>、<c>tools/call</c>；通知不答复）。
-/// <c>tools/call</c> 以新的调用上下文经完整内核管道执行操作（认证、按契约授权、事务……），操作失败按 MCP 约定以 <c>isError</c> 结果返回而不是协议错误。
-/// tool 的 <c>title</c> 与 <c>description</c> 来自消息目录里的 <c>&lt;操作 ID&gt;.title</c> / <c>.description</c>（ID 里的 <c>-</c> 换成 <c>_</c>），按调用方区域翻译；没有就不给。
+/// MCP 服务端核心，与传输无关。
 /// </summary>
+/// <remarks>
+/// 把登记表里暴露给 MCP 的操作变成 tool 表，处理 JSON-RPC 2.0 消息（<c>initialize</c>、<c>ping</c>、<c>tools/list</c>、<c>tools/call</c>；通知不答复）。<c>tools/call</c> 以新的调用上下文经完整内核管道执行操作（认证、按契约授权、事务……），操作失败按 MCP 约定以 <c>isError</c> 结果返回而不是协议错误。tool 的 <c>title</c> 与 <c>description</c> 来自消息目录里的 <c>&lt;操作 ID&gt;.title</c> / <c>.description</c>（ID 里的 <c>-</c> 换成 <c>_</c>），按调用方区域翻译；没有就不给。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class McpServer
 {
     /// <summary>
-    /// 支持的 MCP 协议版本；<c>initialize</c> 总是答复此版本。
+    /// 支持的 MCP 协议版本。
     /// </summary>
+    /// <remarks>
+    /// <c>initialize</c> 总是答复此版本。
+    /// </remarks>
     public const string ProtocolVersion = "2025-06-18";
 
     /// <summary>
@@ -56,8 +60,11 @@ public sealed class McpServer
     private readonly McpProtocolOptions _options;
 
     /// <summary>
-    /// 本地化器；未装配本地化时为空，tool 没有描述、失败文案按进程默认区域。
+    /// 本地化器。
     /// </summary>
+    /// <remarks>
+    /// 未装配本地化时为空，tool 没有描述、失败文案按进程默认区域。
+    /// </remarks>
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
@@ -71,8 +78,11 @@ public sealed class McpServer
     private readonly IReadOnlyList<McpTool> _toolList;
 
     /// <summary>
-    /// 创建服务端；登记表此时必须已定型，tool 表在这里一次建成，名字不合法或重复即失败。
+    /// 创建服务端。
     /// </summary>
+    /// <remarks>
+    /// 登记表此时必须已定型，tool 表在这里一次建成，名字不合法或重复即失败。
+    /// </remarks>
     /// <param name="registry">操作登记表。</param>
     /// <param name="invoker">操作调用器。</param>
     /// <param name="options">选项。</param>
@@ -121,8 +131,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// 处理一条 JSON-RPC 消息。通知与客户端发来的响应不答复（无值）；请求得到响应对象。
+    /// 处理一条 JSON-RPC 消息。
     /// </summary>
+    /// <remarks>
+    /// 通知与客户端发来的响应不答复（无值）；请求得到响应对象。
+    /// </remarks>
     /// <param name="message">消息的 UTF-8 JSON。</param>
     /// <param name="context">承载这条消息的调用上下文（区域、取消）。</param>
     /// <param name="createCallContext">为 <c>tools/call</c> 创建独立调用上下文的工厂：每次调用自己的作用域与管道。</param>
@@ -177,8 +190,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// 从登记表建 tool 表：排除内部稳定性与未暴露给 MCP 的操作；名字按选项覆盖或约定推导，不合法或重复视为配置错误。
+    /// 从登记表建 tool 表。
     /// </summary>
+    /// <remarks>
+    /// 排除内部稳定性与未暴露给 MCP 的操作；名字按选项覆盖或约定推导，不合法或重复视为配置错误。
+    /// </remarks>
     private static SortedDictionary<string, McpTool> BuildTools(OperationRegistry registry, McpProtocolOptions options)
     {
         var tools = new SortedDictionary<string, McpTool>(StringComparer.Ordinal);
@@ -208,8 +224,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// 读 JSON-RPC 请求：对象、<c>jsonrpc</c> 为 2.0、<c>method</c> 为字符串；<c>id</c> 只能是字符串或数字（缺失即通知）；<c>params</c> 只能是对象。
+    /// 读 JSON-RPC 请求。
     /// </summary>
+    /// <remarks>
+    /// 对象、<c>jsonrpc</c> 为 2.0、<c>method</c> 为字符串；<c>id</c> 只能是字符串或数字（缺失即通知）；<c>params</c> 只能是对象。
+    /// </remarks>
     private static bool TryReadRequest(JsonElement root, out JsonElement id, out string method, out JsonElement parameters)
     {
         id = default;
@@ -256,8 +275,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// <c>initialize</c> 结果：协议版本、能力（只有 tools，不通知变更）、服务端信息与使用说明。客户端请求的版本不同时也答复本服务端的版本，由客户端决定是否继续。
+    /// <c>initialize</c> 结果。
     /// </summary>
+    /// <remarks>
+    /// 协议版本、能力（只有 tools，不通知变更）、服务端信息与使用说明。客户端请求的版本不同时也答复本服务端的版本，由客户端决定是否继续。
+    /// </remarks>
     private void WriteInitialize(Utf8JsonWriter writer)
     {
         writer.WriteString("protocolVersion", ProtocolVersion);
@@ -329,8 +351,11 @@ public sealed class McpServer
     private static string MessageKeyOf(string operationId, string suffix) => operationId.Replace('-', '_') + suffix;
 
     /// <summary>
-    /// <c>tools/call</c>：找 tool，参数必须是对象（缺省为空对象），以新的调用上下文经完整管道执行。
+    /// <c>tools/call</c>。
     /// </summary>
+    /// <remarks>
+    /// 找 tool，参数必须是对象（缺省为空对象），以新的调用上下文经完整管道执行。
+    /// </remarks>
     private async ValueTask<ReadOnlyMemory<byte>> CallToolAsync(JsonElement id, JsonElement parameters, Func<InvocationContext> createCallContext)
     {
         if (parameters.ValueKind != JsonValueKind.Object || !parameters.TryGetProperty("name", out var nameElement) || nameElement.ValueKind != JsonValueKind.String)
@@ -366,8 +391,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// tool 调用结果：成功时文本内容是响应 JSON，响应为对象时同时给 <c>structuredContent</c>；失败时 <c>isError</c> 并以"错误码: 文案"作为文本，文案按调用方区域翻译。
+    /// tool 调用结果。
     /// </summary>
+    /// <remarks>
+    /// 成功时文本内容是响应 JSON，响应为对象时同时给 <c>structuredContent</c>；失败时 <c>isError</c> 并以"错误码: 文案"作为文本，文案按调用方区域翻译。
+    /// </remarks>
     private void WriteCallResult(Utf8JsonWriter writer, OperationResponse response, InvocationContext call)
     {
         writer.WriteStartArray("content");
@@ -451,8 +479,11 @@ public sealed class McpServer
     }
 
     /// <summary>
-    /// 回写请求的 <c>id</c>；没有可用的 id（解析失败）时写 <c>null</c>。
+    /// 回写请求的 <c>id</c>。
     /// </summary>
+    /// <remarks>
+    /// 没有可用的 id（解析失败）时写 <c>null</c>。
+    /// </remarks>
     private static void WriteId(Utf8JsonWriter writer, JsonElement id)
     {
         if (id.ValueKind == JsonValueKind.Undefined)

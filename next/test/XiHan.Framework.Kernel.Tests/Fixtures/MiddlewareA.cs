@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 记录进出事件的中间件 A。管道中每个类型只能出现一次，因此用独立类型而不是同一类型的多个实例。
+/// 记录进出事件的中间件 A。
 /// </summary>
+/// <remarks>
+/// 管道中每个类型只能出现一次，因此用独立类型而不是同一类型的多个实例。
+/// </remarks>
 /// <param name="log">事件日志。</param>
 internal sealed class MiddlewareA(List<string> log) : IPipelineMiddleware
 {

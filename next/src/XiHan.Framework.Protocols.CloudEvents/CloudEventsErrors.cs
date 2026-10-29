@@ -6,14 +6,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.CloudEvents;
 
 /// <summary>
-/// CloudEvents 协议适配器的错误码；登记在 <c>spec/conventions/error-codes.md</c>。信封本身不合法用消息子系统的 <c>MESSAGING_VALIDATION_002</c>。
+/// CloudEvents 协议适配器的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。信封本身不合法用消息子系统的 <c>MESSAGING_VALIDATION_002</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsErrors
 {
     /// <summary>
-    /// 请求不是 CloudEvent：内容类型既不是结构化或批量格式，也没有 binary 模式的 <c>ce-specversion</c> 头。
+    /// 请求不是 CloudEvent。
     /// </summary>
+    /// <remarks>
+    /// 内容类型既不是结构化或批量格式，也没有 binary 模式的 <c>ce-specversion</c> 头。
+    /// </remarks>
     public const string UnsupportedContentType = "PROTOCOLS_VALIDATION_008";
 
     /// <summary>

@@ -12,14 +12,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 事务性发布者：有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。
+/// 事务性发布者。
 /// </summary>
+/// <remarks>
+/// 有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMessage, Guid> outbox, IIdGenerator<Guid> ids, IMessageBroker broker, TimeProvider timeProvider) : IMessagePublisher
 {
     /// <summary>
-    /// 当前作用域的工作单元；活动时消息随它提交或回滚。
+    /// 当前作用域的工作单元。
     /// </summary>
+    /// <remarks>
+    /// 活动时消息随它提交或回滚。
+    /// </remarks>
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -38,8 +44,11 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
     private readonly IMessageBroker _broker = broker ?? throw new ArgumentNullException(nameof(broker));
 
     /// <summary>
-    /// 时间源；记消息创建时间。
+    /// 时间源。
     /// </summary>
+    /// <remarks>
+    /// 记消息创建时间。
+    /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <inheritdoc />

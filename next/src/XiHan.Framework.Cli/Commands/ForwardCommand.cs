@@ -8,9 +8,11 @@ using XiHan.Framework.Hosting.CommandLine.Runtime;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// 把命令转发给应用自己的命令行宿主：<c>dotnet run --project &lt;project&gt; --configuration &lt;c&gt; -- &lt;命令&gt; …</c>。
-/// 项目取 <c>--project</c>，否则取当前目录 <c>xihan.app.json</c> 的 <c>project</c>，否则交给 <c>dotnet run</c> 自己找。
+/// 把命令转发给应用自己的命令行宿主。
 /// </summary>
+/// <remarks>
+/// <c>dotnet run --project &lt;project&gt; --configuration &lt;c&gt; -- &lt;命令&gt; …</c>。项目取 <c>--project</c>，否则取当前目录 <c>xihan.app.json</c> 的 <c>project</c>，否则交给 <c>dotnet run</c> 自己找。
+/// </remarks>
 internal sealed class ForwardCommand : ICommand
 {
     /// <summary>
@@ -78,8 +80,11 @@ internal sealed class ForwardCommand : ICommand
     }
 
     /// <summary>
-    /// 当前目录有合法的应用清单时取它的项目；没有或不合法时不猜。
+    /// 当前目录有合法的应用清单时取它的项目。
     /// </summary>
+    /// <remarks>
+    /// 没有或不合法时不猜。
+    /// </remarks>
     private static string? ProjectFromManifest()
     {
         var path = Path.Combine(Directory.GetCurrentDirectory(), AppManifestReader.DefaultFileName);

@@ -9,9 +9,11 @@ using XiHan.Framework.Workflow.Database.Locking;
 namespace XiHan.Framework.Workflow.Database.Polling;
 
 /// <summary>
-/// 到期书签轮询的领导权（单例）：用与实例锁同一张租约表、资源名 <see cref="Resource"/>。每个轮询周期调用一次 <see cref="TryHoldAsync"/>：没持有就尝试一次（不等待），持有就按需续约；拿不到的节点跳过本周期。
-/// 领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。只在单个轮询循环里使用，不做并发保护。
+/// 到期书签轮询的领导权（单例）。
 /// </summary>
+/// <remarks>
+/// 用与实例锁同一张租约表、资源名 <see cref="Resource"/>。每个轮询周期调用一次 <see cref="TryHoldAsync"/>：没持有就尝试一次（不等待），持有就按需续约；拿不到的节点跳过本周期。领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。只在单个轮询循环里使用，不做并发保护。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class PollerLeadership
 {
@@ -70,8 +72,11 @@ public sealed partial class PollerLeadership
     public bool IsLeader { get; private set; }
 
     /// <summary>
-    /// 没持有就尝试一次获取（不等待）；持有且距上次续约已过三分之一租约就续约；返回本周期是否持有。
+    /// 没持有就尝试一次获取（不等待）。
     /// </summary>
+    /// <remarks>
+    /// 持有且距上次续约已过三分之一租约就续约；返回本周期是否持有。
+    /// </remarks>
     public async ValueTask<bool> TryHoldAsync(CancellationToken cancellationToken)
     {
         var now = _clock.GetUtcNow();
@@ -123,8 +128,11 @@ public sealed partial class PollerLeadership
     }
 
     /// <summary>
-    /// 释放领导权（停止时调用）；没持有时什么也不做。
+    /// 释放领导权（停止时调用）。
     /// </summary>
+    /// <remarks>
+    /// 没持有时什么也不做。
+    /// </remarks>
     public async ValueTask ReleaseAsync(CancellationToken cancellationToken)
     {
         if (!IsLeader)

@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 框架异常基类，携带错误码。异常只用于不可恢复或编程错误；可恢复失败用 <see cref="Result"/>。
+/// 框架异常基类，携带错误码。
 /// </summary>
+/// <remarks>
+/// 异常只用于不可恢复或编程错误；可恢复失败用 <see cref="Result"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public class FrameworkException : Exception
 {
@@ -27,7 +30,10 @@ public class FrameworkException : Exception
     public string Code { get; }
 
     /// <summary>
-    /// 转换为 <see cref="Error"/>；内部异常若也是 <see cref="FrameworkException"/> 则成为 <see cref="Error.Inner"/>。
+    /// 转换为 <see cref="Error"/>。
     /// </summary>
+    /// <remarks>
+    /// 内部异常若也是 <see cref="FrameworkException"/> 则成为 <see cref="Error.Inner"/>。
+    /// </remarks>
     public Error ToError() => Error.Literal(Code, Message, null, InnerException is FrameworkException inner ? inner.ToError() : null);
 }

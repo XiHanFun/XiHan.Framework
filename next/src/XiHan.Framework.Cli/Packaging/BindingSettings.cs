@@ -14,7 +14,10 @@ internal sealed record BindingSettings
     public string Type { get; set; } = string.Empty;
 
     /// <summary>
-    /// k8s Secret 名；为空时用 <c>&lt;应用&gt;-&lt;绑定&gt;</c>。
+    /// k8s Secret 名。
     /// </summary>
+    /// <remarks>
+    /// 为空时用 <c>&lt;应用&gt;-&lt;绑定&gt;</c>。
+    /// </remarks>
     public string? Secret { get; set; }
 }

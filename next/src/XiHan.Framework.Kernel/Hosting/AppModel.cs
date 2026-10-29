@@ -7,8 +7,11 @@ using XiHan.Framework.Kernel.Pipeline;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 构建产物：已解析图、特性运行时、管道与选项。由 <see cref="App"/> 消费。
+/// 构建产物。
 /// </summary>
+/// <remarks>
+/// 已解析图、特性运行时、管道与选项。由 <see cref="App"/> 消费。
+/// </remarks>
 /// <param name="Graph">已解析图。</param>
 /// <param name="Features">已装配的特性运行时，按拓扑顺序；被顶替的节点不在其中。</param>
 /// <param name="Pipeline">应用的管道构建器。</param>

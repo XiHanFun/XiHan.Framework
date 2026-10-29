@@ -6,8 +6,11 @@ using System.Net;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 捕获出站请求的 HTTP 处理器：记录方法、URL、头与内容，按设定的状态答复；设为不可达时抛出连接异常。
+/// 捕获出站请求的 HTTP 处理器。
 /// </summary>
+/// <remarks>
+/// 记录方法、URL、头与内容，按设定的状态答复；设为不可达时抛出连接异常。
+/// </remarks>
 internal sealed class CapturingHandler : HttpMessageHandler
 {
     /// <summary>

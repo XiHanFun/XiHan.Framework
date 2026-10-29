@@ -7,9 +7,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 操作 ID 文法：<c>&lt;resource&gt;.&lt;verb&gt;</c>，资源是小写复数名词（连字符分隔），动词小写；见 <c>spec/conventions/operation-ids.md</c>。
-/// 协议适配器按它推导路由（<c>orders.create</c> → <c>POST /orders</c>）、gRPC 方法与 MCP tool 名。
+/// 操作 ID 文法。
 /// </summary>
+/// <remarks>
+/// <c>&lt;resource&gt;.&lt;verb&gt;</c>，资源是小写复数名词（连字符分隔），动词小写；见 <c>spec/conventions/operation-ids.md</c>。协议适配器按它推导路由（<c>orders.create</c> → <c>POST /orders</c>）、gRPC 方法与 MCP tool 名。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class OperationId
 {
@@ -25,8 +27,11 @@ public static partial class OperationId
         => id is not null && id.Length <= MaxLength && Pattern().IsMatch(id);
 
     /// <summary>
-    /// 校验；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string id, string? paramName = null)
     {
         ArgumentNullException.ThrowIfNull(id, paramName ?? nameof(id));
@@ -54,8 +59,11 @@ public static partial class OperationId
     }
 
     /// <summary>
-    /// 操作 ID 文法：资源与动词都是小写字母开头、连字符分隔的小写字母数字段，中间一个点。
+    /// 操作 ID 文法。
     /// </summary>
+    /// <remarks>
+    /// 资源与动词都是小写字母开头、连字符分隔的小写字母数字段，中间一个点。
+    /// </remarks>
     [GeneratedRegex("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*$")]
     private static partial Regex Pattern();
 }

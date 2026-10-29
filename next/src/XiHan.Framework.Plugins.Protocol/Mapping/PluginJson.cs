@@ -14,8 +14,11 @@ namespace XiHan.Framework.Plugins.Protocol.Mapping;
 internal static class PluginJson
 {
     /// <summary>
-    /// 错误细节（模板参数）写成 JSON 对象；只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>。
+    /// 错误细节（模板参数）写成 JSON 对象。
     /// </summary>
+    /// <remarks>
+    /// 只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>。
+    /// </remarks>
     public static string SerializeDetails(IReadOnlyDictionary<string, object?> details)
     {
         using var stream = new MemoryStream();
@@ -35,8 +38,11 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 解析错误细节；不是 JSON 对象返回空。
+    /// 解析错误细节。
     /// </summary>
+    /// <remarks>
+    /// 不是 JSON 对象返回空。
+    /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ParseDetails(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -67,8 +73,11 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 配置节序列化为 JSON：没有子项的节是标量，子键都是从 0 起的连续整数时是数组，否则是对象。
+    /// 配置节序列化为 JSON。
     /// </summary>
+    /// <remarks>
+    /// 没有子项的节是标量，子键都是从 0 起的连续整数时是数组，否则是对象。
+    /// </remarks>
     public static string SerializeSection(IConfigurationSection section)
     {
         using var stream = new MemoryStream();
@@ -179,8 +188,11 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 读一个细节值：字符串、数字（整数优先）、布尔、空；对象与数组保留为 <see cref="JsonElement"/>。
+    /// 读一个细节值。
     /// </summary>
+    /// <remarks>
+    /// 字符串、数字（整数优先）、布尔、空；对象与数组保留为 <see cref="JsonElement"/>。
+    /// </remarks>
     private static object? ReadValue(JsonElement element) => element.ValueKind switch
     {
         JsonValueKind.String => element.GetString(),

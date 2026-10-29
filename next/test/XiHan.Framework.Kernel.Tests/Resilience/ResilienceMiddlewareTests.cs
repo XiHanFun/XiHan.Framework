@@ -14,18 +14,27 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Resilience;
 
 /// <summary>
-/// Resilience 阶段的内置中间件：管道里紧随截止时间中间件；固定窗口限流、并发上限与熔断按配置拒绝并不进 Handle；按操作覆盖；调用方错误不算熔断失败；关闭内置中间件与非操作调用不受限。
+/// Resilience 阶段的内置中间件。
 /// </summary>
+/// <remarks>
+/// 管道里紧随截止时间中间件；固定窗口限流、并发上限与熔断按配置拒绝并不进 Handle；按操作覆盖；调用方错误不算熔断失败；关闭内置中间件与非操作调用不受限。
+/// </remarks>
 public sealed class ResilienceMiddlewareTests
 {
     /// <summary>
-    /// 空容器；直接调用中间件的用例用它构造上下文。
+    /// 空容器。
     /// </summary>
+    /// <remarks>
+    /// 直接调用中间件的用例用它构造上下文。
+    /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     /// <summary>
-    /// 构建并启动装配了回声特性与 Handle 阶段门闸的应用；<paramref name="clock"/> 给定时注册为时间源。
+    /// 构建并启动装配了回声特性与 Handle 阶段门闸的应用。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="clock"/> 给定时注册为时间源。
+    /// </remarks>
     private static async Task<(ServiceProvider Provider, App App, GateMiddleware Gate)> StartAsync(FakeTimeProvider? clock = null, params (string Key, string Value)[] settings)
     {
         var gate = new GateMiddleware();

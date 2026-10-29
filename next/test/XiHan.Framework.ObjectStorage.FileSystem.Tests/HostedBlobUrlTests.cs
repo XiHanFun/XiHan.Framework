@@ -23,9 +23,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 文件系统存储经宿主代收发的预签名地址：下载（整读、单区间 206、后缀区间、不可满足 416、保存文件名）、上传（限定内容类型）、分片上传的一片，
-/// 签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>，<see cref="HostedBlobUrlSigner.ForStore"/> 签出的地址由端点交给命名实例收发。
+/// 文件系统存储经宿主代收发的预签名地址。
 /// </summary>
+/// <remarks>
+/// 下载（整读、单区间 206、后缀区间、不可满足 416、保存文件名）、上传（限定内容类型）、分片上传的一片，签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>，<see cref="HostedBlobUrlSigner.ForStore"/> 签出的地址由端点交给命名实例收发。
+/// </remarks>
 public sealed class HostedBlobUrlTests : IDisposable
 {
     /// <summary>
@@ -207,8 +209,11 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     /// <summary>
-    /// 启动宿主：文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置。
+    /// 启动宿主。
     /// </summary>
+    /// <remarks>
+    /// 文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置。
+    /// </remarks>
     private async Task<WebApplication> StartAsync(params KeyValuePair<string, string?>[] configuration)
     {
         var builder = WebApplication.CreateBuilder();

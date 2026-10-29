@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 节点实例的存储行：按实例查询与按开始时间排序用的列，整份节点实例在 JSON 文档里；删实例时级联删除。
+/// 节点实例的存储行。
 /// </summary>
+/// <remarks>
+/// 按实例查询与按开始时间排序用的列，整份节点实例在 JSON 文档里；删实例时级联删除。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowNodeInstanceRecord : IEntity<string>
 {
@@ -35,8 +38,11 @@ public sealed class WorkflowNodeInstanceRecord : IEntity<string>
     public long Sequence { get; set; }
 
     /// <summary>
-    /// 整份节点实例的 JSON；长文本列。
+    /// 整份节点实例的 JSON。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Document { get; set; } = string.Empty;
 }

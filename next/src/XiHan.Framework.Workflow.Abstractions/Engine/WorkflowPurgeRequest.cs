@@ -18,18 +18,27 @@ public sealed record WorkflowPurgeRequest
     public required DateTimeOffset EndedBefore { get; init; }
 
     /// <summary>
-    /// 只删除这些状态的实例；空为全部终态。
+    /// 只删除这些状态的实例。
     /// </summary>
+    /// <remarks>
+    /// 空为全部终态。
+    /// </remarks>
     public IReadOnlyList<WorkflowInstanceStatus>? Statuses { get; init; }
 
     /// <summary>
-    /// 只删除该定义名的实例；空为全部。
+    /// 只删除该定义名的实例。
     /// </summary>
+    /// <remarks>
+    /// 空为全部。
+    /// </remarks>
     public WorkflowName? DefinitionName { get; init; }
 
     /// <summary>
-    /// 一次最多删除条数，1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/>；默认 1000。
+    /// 一次最多删除条数，1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/>。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int Limit
     {
         get => field;

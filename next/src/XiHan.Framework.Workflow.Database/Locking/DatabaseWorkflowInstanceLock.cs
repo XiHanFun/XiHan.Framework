@@ -13,9 +13,11 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Locking;
 
 /// <summary>
-/// 租约式的分布式实例锁（单例）：实例 ID 对应一行 <c>WorkflowLockRecord</c>，拿到后后台每三分之一租约续约一次，释放时删除自己的行；持有者消失时别的节点在租约到期后接管。
-/// 等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>；不可重入。
+/// 租约式的分布式实例锁（单例）。
 /// </summary>
+/// <remarks>
+/// 实例 ID 对应一行 <c>WorkflowLockRecord</c>，拿到后后台每三分之一租约续约一次，释放时删除自己的行；持有者消失时别的节点在租约到期后接管。等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>；不可重入。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
 {
@@ -120,14 +122,20 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 持久化层的冲突与管道里的意外（跨节点同时插入同一行时唯一约束以异常出现，内核把它转成 Unexpected）当作争用重试，直到等待超时；其余失败是存储不可达。
+    /// 持久化层的冲突与管道里的意外当作争用重试。
     /// </summary>
+    /// <remarks>
+    /// 跨节点同时插入同一行时唯一约束以异常出现，内核把它转成 Unexpected。直到等待超时。其余失败是存储不可达。
+    /// </remarks>
     private static bool IsRetryable(Error error)
         => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.Duplicate or PersistenceErrors.NotFound or KernelErrors.Unexpected;
 
     /// <summary>
-    /// 续约循环：每三分之一租约续一次；续约失败只记日志，行被别人接管则停止。
+    /// 续约循环。
     /// </summary>
+    /// <remarks>
+    /// 每三分之一租约续一次；续约失败只记日志，行被别人接管则停止。
+    /// </remarks>
     private async Task RenewLoopAsync(string instanceId, string holder, CancellationToken stopping)
     {
         var interval = _lease / 3;
@@ -157,8 +165,11 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 释放：删除自己的行；失败只记日志，租约到期后行自然可被接管。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 删除自己的行；失败只记日志，租约到期后行自然可被接管。
+    /// </remarks>
     private async ValueTask ReleaseAsync(string instanceId, string holder)
     {
         var released = await _leases.ReleaseAsync(instanceId, holder, CancellationToken.None).ConfigureAwait(false);
@@ -187,8 +198,11 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     private static partial void LogReleaseFailed(ILogger logger, string instanceId, string errorCode);
 
     /// <summary>
-    /// 锁句柄：持有期间后台续约，释放时停止续约并删除自己的行；重复释放无害。
+    /// 锁句柄。
     /// </summary>
+    /// <remarks>
+    /// 持有期间后台续约，释放时停止续约并删除自己的行；重复释放无害。
+    /// </remarks>
     private sealed class Handle : IAsyncDisposable
     {
         /// <summary>

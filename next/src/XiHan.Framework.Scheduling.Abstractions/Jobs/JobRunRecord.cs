@@ -24,8 +24,11 @@ public sealed class JobRunRecord
     public required JobName Job { get; set; }
 
     /// <summary>
-    /// 触发器名；手动触发为空。
+    /// 触发器名。
     /// </summary>
+    /// <remarks>
+    /// 手动触发为空。
+    /// </remarks>
     public string? TriggerName { get; set; }
 
     /// <summary>
@@ -44,8 +47,11 @@ public sealed class JobRunRecord
     public DateTimeOffset StartedAt { get; set; }
 
     /// <summary>
-    /// 结束时刻；运行中为空。
+    /// 结束时刻。
     /// </summary>
+    /// <remarks>
+    /// 运行中为空。
+    /// </remarks>
     public DateTimeOffset? CompletedAt { get; set; }
 
     /// <summary>
@@ -91,8 +97,11 @@ public sealed class JobRunRecord
         : Result.Failure(Error.Literal(ErrorCode, ErrorMessage ?? ErrorCode));
 
     /// <summary>
-    /// 还原为运行结果；运行中为空。
+    /// 还原为运行结果。
     /// </summary>
+    /// <remarks>
+    /// 运行中为空。
+    /// </remarks>
     public JobOutcome? ToOutcome() => CompletedAt is { } completed ? new JobOutcome(ToRun(), StartedAt, completed, ToResult()) : null;
 
     /// <summary>

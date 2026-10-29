@@ -17,13 +17,19 @@ public sealed record KnowledgeQuery
     public required string Text { get; init; }
 
     /// <summary>
-    /// 集合；空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// 集合。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// </remarks>
     public string? Collection { get; init; }
 
     /// <summary>
-    /// 条数；空取 <see cref="KnowledgeOptions.Top"/>。
+    /// 条数。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.Top"/>。
+    /// </remarks>
     public int? Top
     {
         get => field;
@@ -36,12 +42,18 @@ public sealed record KnowledgeQuery
     public RetrievalFilter? Filter { get; init; }
 
     /// <summary>
-    /// 嵌入 Provider；空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// 嵌入 Provider。
     /// </summary>
+    /// <remarks>
+    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// </remarks>
     public string? Provider { get; init; }
 
     /// <summary>
-    /// 最低得分；低于它的命中被丢弃。
+    /// 最低得分。
     /// </summary>
+    /// <remarks>
+    /// 低于它的命中被丢弃。
+    /// </remarks>
     public double? MinScore { get; init; }
 }

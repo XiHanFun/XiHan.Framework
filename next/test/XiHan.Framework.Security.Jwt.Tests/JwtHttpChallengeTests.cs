@@ -15,9 +15,11 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Security.Jwt.Tests;
 
 /// <summary>
-/// 经 ASP.NET Core 宿主的 JWT 认证失败：过期、签名不符的访问令牌是 401 并质询 <c>Bearer error="invalid_token"</c>（RFC 6750 §3.1），
-/// 没有令牌是 401 并质询 <c>Bearer</c>（RFC 6750 §3，不带错误码）；有效令牌放行。客户端与网关据 401 触发刷新。
+/// 经 ASP.NET Core 宿主的 JWT 认证失败。
 /// </summary>
+/// <remarks>
+/// 过期、签名不符的访问令牌是 401 并质询 <c>Bearer error="invalid_token"</c>（RFC 6750 §3.1），没有令牌是 401 并质询 <c>Bearer</c>（RFC 6750 §3，不带错误码）；有效令牌放行。客户端与网关据 401 触发刷新。
+/// </remarks>
 public sealed class JwtHttpChallengeTests
 {
     [Fact]

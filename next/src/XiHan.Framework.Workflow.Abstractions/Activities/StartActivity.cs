@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 开始节点：直接完成。延迟启动（<c>WorkflowStartRequest.StartAt</c>）时由引擎以 Timer 书签挂起，到期恢复后完成。属性 <c>SignalName</c>（信号启动）与 <c>Cron</c> / <c>TimeZone</c>（定时启动）由引擎与目录解释。
+/// 开始节点。
 /// </summary>
+/// <remarks>
+/// 直接完成。延迟启动（<c>WorkflowStartRequest.StartAt</c>）时由引擎以 Timer 书签挂起，到期恢复后完成。属性 <c>SignalName</c>（信号启动）与 <c>Cron</c> / <c>TimeZone</c>（定时启动）由引擎与目录解释。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class StartActivity : IResumableActivity
 {

@@ -17,7 +17,10 @@ public interface ICacheSerializer
     ReadOnlyMemory<byte> Serialize<T>(T value);
 
     /// <summary>
-    /// 反序列化；数据不能还原为 <typeparamref name="T"/> 时抛出 <see cref="InvalidOperationException"/>。
+    /// 反序列化。
     /// </summary>
+    /// <remarks>
+    /// 数据不能还原为 <typeparamref name="T"/> 时抛出 <see cref="InvalidOperationException"/>。
+    /// </remarks>
     T Deserialize<T>(ReadOnlyMemory<byte> data);
 }

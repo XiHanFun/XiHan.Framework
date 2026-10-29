@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions;
 
 /// <summary>
-/// 审计子系统的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// 审计子系统的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AuditingMessages
 {
@@ -18,13 +21,19 @@ public static class AuditingMessages
     public const string CatalogName = "auditing";
 
     /// <summary>
-    /// 查询不合法。参数：<c>reason</c>。
+    /// 查询不合法。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string QueryInvalid = "auditing.query.invalid";
 
     /// <summary>
-    /// 审计存储不可达。参数：<c>reason</c>。
+    /// 审计存储不可达。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string TrailUnavailable = "auditing.trail.unavailable";
 
     /// <summary>

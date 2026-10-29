@@ -11,9 +11,11 @@ using XiHan.Framework.Scheduling.Database.Entities;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 契约记录与实体行之间的换算：枚举存整数值，JSON 数据存文本，计划存 <see cref="JobSchedule.ToString"/> 的文本。
-/// <c>Copy</c> 把新内容复制到取回的行上，不碰标识、并发戳与写入序号——整体替换由协议维护的列保持在取回的实例里。
+/// 契约记录与实体行之间的换算。
 /// </summary>
+/// <remarks>
+/// 枚举存整数值，JSON 数据存文本，计划存 <see cref="JobSchedule.ToString"/> 的文本。<c>Copy</c> 把新内容复制到取回的行上，不碰标识、并发戳与写入序号——整体替换由协议维护的列保持在取回的实例里。
+/// </remarks>
 internal static class RecordMapping
 {
     /// <summary>
@@ -134,8 +136,11 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 运行记录 → 行；<paramref name="sequence"/> 只对新增的行生效，替换已有行时 <see cref="Copy(JobRunEntity, JobRunEntity)"/> 不复制它。
+    /// 运行记录 → 行。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="sequence"/> 只对新增的行生效，替换已有行时 <see cref="Copy(JobRunEntity, JobRunEntity)"/> 不复制它。
+    /// </remarks>
     public static JobRunEntity ToEntity(JobRunRecord record, long sequence)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -279,8 +284,11 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// JSON 文本 → 对象；空文本或不是对象的文本按空对象处理。
+    /// JSON 文本 → 对象。
     /// </summary>
+    /// <remarks>
+    /// 空文本或不是对象的文本按空对象处理。
+    /// </remarks>
     private static JsonObject ParseData(string text)
         => string.IsNullOrWhiteSpace(text) ? [] : JsonNode.Parse(text) as JsonObject ?? [];
 }

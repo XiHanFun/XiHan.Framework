@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 内存工作流特性通过引擎套件；轮询周期设得很长，由用例主动 <c>PollAsync</c>。
+/// 内存工作流特性通过引擎套件。
 /// </summary>
+/// <remarks>
+/// 轮询周期设得很长，由用例主动 <c>PollAsync</c>。
+/// </remarks>
 public sealed class InMemoryWorkflowEngineConformanceTests : WorkflowEngineConformance
 {
     /// <inheritdoc />

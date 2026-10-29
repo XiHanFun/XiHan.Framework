@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 从 <see cref="ITenantStore"/> 的租户属性推出分片：<c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）。
+/// 从 <see cref="ITenantStore"/> 的租户属性推出分片。
 /// </summary>
+/// <remarks>
+/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TenantStoreShardResolver : ITenantShardResolver
 {
@@ -87,8 +90,11 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
     }
 
     /// <summary>
-    /// 从租户属性建分片；没有连接串即无分片。
+    /// 从租户属性建分片。
     /// </summary>
+    /// <remarks>
+    /// 没有连接串即无分片。
+    /// </remarks>
     public static Maybe<TenantShard> FromProperties(TenantInfo tenant)
     {
         ArgumentNullException.ThrowIfNull(tenant);

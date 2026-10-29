@@ -57,9 +57,11 @@ internal static class GeneratorRules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XHG004：操作没写 <c>Expose</c>，程序集也没有 <c>[assembly: OperationDefaults]</c>，于是暴露给全部协议。缺省关闭：想强制每个操作写明协议的应用以
-    /// <c>dotnet_diagnostic.XHG004.severity = error</c> 打开，或声明程序集缺省。
+    /// XHG004。
     /// </summary>
+    /// <remarks>
+    /// 操作没写 <c>Expose</c>，程序集也没有 <c>[assembly: OperationDefaults]</c>，于是暴露给全部协议。缺省关闭：想强制每个操作写明协议的应用以<c>dotnet_diagnostic.XHG004.severity = error</c> 打开，或声明程序集缺省。
+    /// </remarks>
     public static readonly DiagnosticDescriptor ImplicitExposeAll = new(
         "XHG004",
         "Operation is exposed on every protocol by default",

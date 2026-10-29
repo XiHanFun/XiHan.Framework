@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 /// <summary>
-/// 作业类型登记表：类型键 → 类型。存储里的作业只记类型键，运行时经此表解析；以实例注册进容器，特性与应用共同填充。
+/// 作业类型登记表。
 /// </summary>
+/// <remarks>
+/// 类型键 → 类型。存储里的作业只记类型键，运行时经此表解析；以实例注册进容器，特性与应用共同填充。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobTypeRegistry
 {
@@ -31,8 +34,11 @@ public sealed class JobTypeRegistry
     }
 
     /// <summary>
-    /// 按键找类型；未登记为无值。
+    /// 按键找类型。
     /// </summary>
+    /// <remarks>
+    /// 未登记为无值。
+    /// </remarks>
     public Maybe<Type> Find(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -40,8 +46,11 @@ public sealed class JobTypeRegistry
     }
 
     /// <summary>
-    /// 类型的键；未登记为无值。
+    /// 类型的键。
     /// </summary>
+    /// <remarks>
+    /// 未登记为无值。
+    /// </remarks>
     public Maybe<string> KeyFor(Type jobType)
     {
         ArgumentNullException.ThrowIfNull(jobType);
@@ -49,8 +58,11 @@ public sealed class JobTypeRegistry
     }
 
     /// <summary>
-    /// 登记；同一个键对应不同类型是编程错误，同一类型用同一个键重复登记是幂等的。
+    /// 登记。
     /// </summary>
+    /// <remarks>
+    /// 同一个键对应不同类型是编程错误，同一类型用同一个键重复登记是幂等的。
+    /// </remarks>
     public JobTypeRegistry Add(string key, Type jobType)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);

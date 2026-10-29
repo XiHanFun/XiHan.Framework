@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 临时目录里的一份清单与一个空项目文件；释放时删除目录。
+/// 临时目录里的一份清单与一个空项目文件。
 /// </summary>
+/// <remarks>
+/// 释放时删除目录。
+/// </remarks>
 internal sealed class ManifestFixture : IDisposable
 {
     /// <summary>

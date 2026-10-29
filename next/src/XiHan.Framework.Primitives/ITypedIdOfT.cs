@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 强类型标识的公共契约。协议适配器与生成器据此把标识编码为底层值。
+/// 强类型标识的公共契约。
 /// </summary>
+/// <remarks>
+/// 协议适配器与生成器据此把标识编码为底层值。
+/// </remarks>
 /// <typeparam name="TValue">底层值类型（string、Guid、long 等）。</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface ITypedId<out TValue>

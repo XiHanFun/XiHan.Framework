@@ -17,8 +17,11 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 /// <summary>
-/// 调度引擎（RFC-0013）：按周期抢占到期的触发器并在本节点运行，推算下一次、处理 misfire 与并发阻塞，记录运行历史；领导者负责失联恢复与历史清理。Provider 注册 <see cref="IJobStore"/> 与 <see cref="ILeaderElection"/> 后装配并启停它。
+/// 调度引擎（RFC-0013）。
 /// </summary>
+/// <remarks>
+/// 按周期抢占到期的触发器并在本节点运行，推算下一次、处理 misfire 与并发阻塞，记录运行历史；领导者负责失联恢复与历史清理。Provider 注册 <see cref="IJobStore"/> 与 <see cref="ILeaderElection"/> 后装配并启停它。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
 {
@@ -211,8 +214,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 开始轮询；幂等。
+    /// 开始轮询。
     /// </summary>
+    /// <remarks>
+    /// 幂等。
+    /// </remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loop is not null)
@@ -230,8 +236,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 停止轮询：等待进行中的运行结束；<paramref name="cancellationToken"/> 触发时取消它们并再等待收尾；最后释放领导租约。
+    /// 停止轮询。
     /// </summary>
+    /// <remarks>
+    /// 等待进行中的运行结束；<paramref name="cancellationToken"/> 触发时取消它们并再等待收尾；最后释放领导租约。
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         if (_loop is null || _stopping is null)
@@ -290,8 +299,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 执行一个轮询周期（心跳、领导、维护、取消、本地触发器、抢占）；测试与套件用，与循环互斥。
+    /// 执行一个轮询周期（心跳、领导、维护、取消、本地触发器、抢占）。
     /// </summary>
+    /// <remarks>
+    /// 测试与套件用，与循环互斥。
+    /// </remarks>
     public async ValueTask PollOnceAsync(CancellationToken cancellationToken)
     {
         await _polling.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -608,8 +620,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 首次把代码登记的作业写入存储；失败时记日志并在下个周期重试。
+    /// 首次把代码登记的作业写入存储。
     /// </summary>
+    /// <remarks>
+    /// 失败时记日志并在下个周期重试。
+    /// </remarks>
     private async ValueTask<bool> EnsureSyncedAsync(CancellationToken cancellationToken)
     {
         if (_synced)
@@ -945,8 +960,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行一条已抢占的触发器：暂停与类型检查、misfire、独占开始、推算下一次、后台运行。
+    /// 运行一条已抢占的触发器。
     /// </summary>
+    /// <remarks>
+    /// 暂停与类型检查、misfire、独占开始、推算下一次、后台运行。
+    /// </remarks>
     private async ValueTask FireAcquiredAsync(TriggerRecord trigger, JobRecord job, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (job.Paused)
@@ -1027,8 +1045,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 间隔触发器在运行结束后推算下一次：重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
+    /// 间隔触发器在运行结束后推算下一次。
     /// </summary>
+    /// <remarks>
+    /// 重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
+    /// </remarks>
     private async ValueTask FinishIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
     {
         var found = await _store.TriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
@@ -1070,8 +1091,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 后台运行；结束后执行 <paramref name="completed"/>。
+    /// 后台运行。
     /// </summary>
+    /// <remarks>
+    /// 结束后执行 <paramref name="completed"/>。
+    /// </remarks>
     private void StartBackground(JobRunRecord record, JobRun run, Type jobType, Func<DateTimeOffset, ValueTask>? completed)
     {
         var cancellation = new CancellationTokenSource();
@@ -1170,8 +1194,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 执行一次运行并写回结果；调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果。
+    /// 执行一次运行并写回结果。
     /// </summary>
+    /// <remarks>
+    /// 调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果。
+    /// </remarks>
     private async ValueTask<Result> ExecuteAsync(RunningRun running, JobRun run, Type jobType, CancellationToken callerToken)
     {
         var record = running.Record;
@@ -1467,8 +1494,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 把触发器改成暂停或从暂停恢复；返回是否有改动。恢复时没有下一次时刻的（间隔计划在运行中被暂停）从现在推算。
+    /// 把触发器改成暂停或从暂停恢复。
     /// </summary>
+    /// <remarks>
+    /// 返回是否有改动。恢复时没有下一次时刻的（间隔计划在运行中被暂停）从现在推算。
+    /// </remarks>
     private bool ApplyPause(TriggerRecord trigger, bool paused, DateTimeOffset now)
     {
         if (paused)
@@ -1582,8 +1612,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 到期触发器的 misfire 判定与计划时刻：返回推算下一次的基准时刻与本次运行的计划时刻；<paramref name="skip"/> 为真表示本次不运行。
+    /// 到期触发器的 misfire 判定与计划时刻。
     /// </summary>
+    /// <remarks>
+    /// 返回推算下一次的基准时刻与本次运行的计划时刻；<paramref name="skip"/> 为真表示本次不运行。
+    /// </remarks>
     private (DateTimeOffset NextFrom, DateTimeOffset ScheduledAt) Plan(TriggerRecord trigger, DateTimeOffset planned, DateTimeOffset now, out bool skip)
     {
         skip = false;
@@ -1618,8 +1651,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 套用日历与次数上限推算下一次；日历未登记按不排除处理（登记时已校验）。
+    /// 套用日历与次数上限推算下一次。
     /// </summary>
+    /// <remarks>
+    /// 日历未登记按不排除处理（登记时已校验）。
+    /// </remarks>
     private DateTimeOffset? NextFire(JobSchedule schedule, DateTimeOffset after, long fireCount)
     {
         IJobCalendar? calendar = null;

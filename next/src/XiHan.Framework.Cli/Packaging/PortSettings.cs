@@ -14,7 +14,10 @@ internal sealed record PortSettings
     public int Http { get; set; } = 8080;
 
     /// <summary>
-    /// gRPC（h2c）端口；没有时不暴露。
+    /// gRPC（h2c）端口。
     /// </summary>
+    /// <remarks>
+    /// 没有时不暴露。
+    /// </remarks>
     public int? Grpc { get; set; }
 }

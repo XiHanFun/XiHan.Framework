@@ -12,8 +12,11 @@ namespace XiHan.Framework.AI.Abstractions.Guardrails;
 public sealed record AIGuardrailOptions
 {
     /// <summary>
-    /// 是否登记 <see cref="KeywordBlocklistGuardrail"/>；默认 false。
+    /// 是否登记 <see cref="KeywordBlocklistGuardrail"/>。
     /// </summary>
+    /// <remarks>
+    /// 默认 false。
+    /// </remarks>
     public bool Enabled { get; init; }
 
     /// <summary>
@@ -27,7 +30,10 @@ public sealed record AIGuardrailOptions
     public IReadOnlyList<string> InjectionPatterns { get; init; } = [];
 
     /// <summary>
-    /// 是否启用内置的中英文提示注入模式；默认 true。
+    /// 是否启用内置的中英文提示注入模式。
     /// </summary>
+    /// <remarks>
+    /// 默认 true。
+    /// </remarks>
     public bool UseBuiltInInjectionHeuristics { get; init; } = true;
 }

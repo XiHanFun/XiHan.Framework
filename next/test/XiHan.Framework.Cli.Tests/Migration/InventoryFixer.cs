@@ -6,9 +6,11 @@ using XiHan.Framework.Cli.Migration;
 namespace XiHan.Framework.Cli.Tests.Migration;
 
 /// <summary>
-/// 测试规则 <c>T5-02</c>：第一遍记下原文里用到 <c>LegacyClock</c> 的文件，扫描完在根目录生成清单 <c>MIGRATION.md</c>；不改任何文件。
-/// 排在 <see cref="RenameClockFixer"/> 之后，能看到原文说明扫描先于改写。
+/// 测试规则 <c>T5-02</c>。
 /// </summary>
+/// <remarks>
+/// 第一遍记下原文里用到 <c>LegacyClock</c> 的文件，扫描完在根目录生成清单 <c>MIGRATION.md</c>；不改任何文件。排在 <see cref="RenameClockFixer"/> 之后，能看到原文说明扫描先于改写。
+/// </remarks>
 internal sealed class InventoryFixer : MigrationFixer
 {
     /// <inheritdoc />

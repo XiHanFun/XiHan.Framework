@@ -19,9 +19,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 
 /// <summary>
-/// 外部任务服务（RFC-0021）：领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；
-/// 完成与无重试的失败先在锁内校验工作者持锁，释放锁后经引擎消费书签（引擎自己加锁，实例锁不可重入）；带重试的失败与延长锁只改书签。作用域服务：当前租户取自本次调用。
+/// 外部任务服务（RFC-0021）。
 /// </summary>
+/// <remarks>
+/// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，释放锁后经引擎消费书签（引擎自己加锁，实例锁不可重入）；带重试的失败与延长锁只改书签。作用域服务：当前租户取自本次调用。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
 {
@@ -197,8 +199,11 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 完成一项：锁内校验工作者持锁，释放锁后经引擎以 <c>outputs</c> 恢复节点（输出合并进实例变量），再发完成事件。
+    /// 完成一项。
     /// </summary>
+    /// <remarks>
+    /// 锁内校验工作者持锁，释放锁后经引擎以 <c>outputs</c> 恢复节点（输出合并进实例变量），再发完成事件。
+    /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> CompleteOneAsync(ExternalTaskCompletion completion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(completion);
@@ -224,8 +229,11 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 失败一项：有 <c>RetryAfter</c> 时在锁内解锁、尝试次数加一、后推可领取时刻并把书签到期设到那时；没有时释放锁后经引擎以 <c>error</c> 恢复节点使其故障。
+    /// 失败一项。
     /// </summary>
+    /// <remarks>
+    /// 有 <c>RetryAfter</c> 时在锁内解锁、尝试次数加一、后推可领取时刻并把书签到期设到那时；没有时释放锁后经引擎以 <c>error</c> 恢复节点使其故障。
+    /// </remarks>
     private async ValueTask<Result> FailOneAsync(ExternalTaskFailure failure, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(failure);
@@ -322,8 +330,11 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 在实例锁内确认工作者持有未过期的锁；返回锁内重读的书签。锁在返回前释放：随后的引擎调用自己加锁。
+    /// 在实例锁内确认工作者持有未过期的锁。
     /// </summary>
+    /// <remarks>
+    /// 返回锁内重读的书签。锁在返回前释放：随后的引擎调用自己加锁。
+    /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> VerifyLockAsync(string taskId, string workerId, CancellationToken cancellationToken)
     {
         var peekFound = await FindExternalBookmarkAsync(taskId, cancellationToken).ConfigureAwait(false);
@@ -392,8 +403,11 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 找本租户的外部任务书签；不存在、种类不对或不是本租户的都按不存在处理（不泄露别的租户的任务）。
+    /// 找本租户的外部任务书签。
     /// </summary>
+    /// <remarks>
+    /// 不存在、种类不对或不是本租户的都按不存在处理（不泄露别的租户的任务）。
+    /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> FindExternalBookmarkAsync(string taskId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(taskId))
@@ -454,20 +468,29 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     };
 
     /// <summary>
-    /// 载荷里的尝试次数；没有为 1。
+    /// 载荷里的尝试次数。
     /// </summary>
+    /// <remarks>
+    /// 没有为 1。
+    /// </remarks>
     private static int Attempt(WorkflowBookmark bookmark)
         => bookmark.Payload.TryGetPropertyValue(ExternalTaskPayloadKeys.Attempt, out var value) && WorkflowValues.TryConvert<int>(value, out var attempt) && attempt >= 1 ? attempt : 1;
 
     /// <summary>
-    /// 载荷里的时刻；没有或不是时刻为空。
+    /// 载荷里的时刻。
     /// </summary>
+    /// <remarks>
+    /// 没有或不是时刻为空。
+    /// </remarks>
     private static DateTimeOffset? Time(WorkflowBookmark bookmark, string key)
         => bookmark.Payload.TryGetPropertyValue(key, out var value) && WorkflowValues.TryConvert<DateTimeOffset>(value, out var at) ? at : null;
 
     /// <summary>
-    /// 载荷里的字符串；没有或不是标量为空。
+    /// 载荷里的字符串。
     /// </summary>
+    /// <remarks>
+    /// 没有或不是标量为空。
+    /// </remarks>
     private static string? Text(JsonObject payload, string key)
         => payload.TryGetPropertyValue(key, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
 

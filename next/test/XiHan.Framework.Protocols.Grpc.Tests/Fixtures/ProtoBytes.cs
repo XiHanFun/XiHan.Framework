@@ -6,8 +6,11 @@ using System.Text;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 手工拼 protobuf 线格式的小工具：测试用它构造"真实客户端会发的字节"，不经过被测的编码器。
+/// 手工拼 protobuf 线格式的小工具。
 /// </summary>
+/// <remarks>
+/// 测试用它构造"真实客户端会发的字节"，不经过被测的编码器。
+/// </remarks>
 internal static class ProtoBytes
 {
     /// <summary>

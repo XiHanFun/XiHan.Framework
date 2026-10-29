@@ -20,15 +20,20 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 引擎的一致性套件（RFC-0021）：顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体。
-/// Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// 引擎的一致性套件（RFC-0021）。
 /// </summary>
+/// <remarks>
+/// 顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowEngineConformance
 {
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主；<paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// 启动装配了被测 Provider 的宿主。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// </remarks>
     protected abstract Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
@@ -81,8 +86,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 2：决策按条件选一条出边，都不匹配走默认出边；条件里能用结果标签。
+    /// 用例 2：决策按条件选一条出边，都不匹配走默认出边。
     /// </summary>
+    /// <remarks>
+    /// 条件里能用结果标签。
+    /// </remarks>
     [Fact]
     public async Task Decision_PicksMatchingTransition_OrDefault()
     {
@@ -116,8 +124,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 3：并行网关让两个分支都执行；汇合等全部到达只执行一次；有分支死掉的汇合让实例故障。
+    /// 用例 3：并行网关让两个分支都执行。
     /// </summary>
+    /// <remarks>
+    /// 汇合等全部到达只执行一次；有分支死掉的汇合让实例故障。
+    /// </remarks>
     [Fact]
     public async Task Parallel_RunsBothBranches_AndJoinWaitsForAll()
     {
@@ -155,8 +166,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 4：用户任务（Any）：待办按指派人查到；非指派人完成被拒；结果不在允许范围被拒；通过后继续；事件记录任务创建与完成。
+    /// 用例 4：用户任务（Any）。
     /// </summary>
+    /// <remarks>
+    /// 待办按指派人查到；非指派人完成被拒；结果不在允许范围被拒；通过后继续；事件记录任务创建与完成。
+    /// </remarks>
     [Fact]
     public async Task UserTask_Any_PendingCompleteAndGuards()
     {
@@ -191,8 +205,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 5：会签（All）要全部通过，拒绝立即结束；顺序（Sequential）一次一个。
+    /// 用例 5：会签（All）要全部通过，拒绝立即结束。
     /// </summary>
+    /// <remarks>
+    /// 顺序（Sequential）一次一个。
+    /// </remarks>
     [Fact]
     public async Task UserTask_AllAndSequential_Policies()
     {
@@ -226,8 +243,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 6：转办把任务交给目标（目标已是指派人被拒），加签立即给新人任务（已有的被拒）。
+    /// 用例 6：转办把任务交给目标（目标已是指派人被拒）。
     /// </summary>
+    /// <remarks>
+    /// 加签立即给新人任务（已有的被拒）。
+    /// </remarks>
     [Fact]
     public async Task UserTask_TransferAndAddAssignees()
     {
@@ -259,8 +279,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 7：延时以定时书签挂起，到期轮询后完成；用户任务超时以 <c>timeout</c> 结果完成。
+    /// 用例 7：延时以定时书签挂起，到期轮询后完成。
     /// </summary>
+    /// <remarks>
+    /// 用户任务超时以 <c>timeout</c> 结果完成。
+    /// </remarks>
     [Fact]
     public async Task Delay_AndNodeTimeout_ResumeByPolling()
     {
@@ -300,8 +323,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 8：信号按名字与关联消费书签，载荷成为输出；关联不匹配的不消费。
+    /// 用例 8：信号按名字与关联消费书签，载荷成为输出。
     /// </summary>
+    /// <remarks>
+    /// 关联不匹配的不消费。
+    /// </remarks>
     [Fact]
     public async Task Signal_ResumesMatchingBookmarks()
     {
@@ -331,8 +357,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 9：子流程等待回调并取回子实例变量；ForEach 顺序逐项启动子流程并汇总结果。
+    /// 用例 9：子流程等待回调并取回子实例变量。
     /// </summary>
+    /// <remarks>
+    /// ForEach 顺序逐项启动子流程并汇总结果。
+    /// </remarks>
     [Fact]
     public async Task SubWorkflow_AndForEach_RunChildren()
     {
@@ -373,8 +402,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 10：重试策略按退避重试（到期轮询）；用尽后故障；<c>RetryAsync</c> 从故障节点再来；继续出错以 <c>error</c> 流出并记 <c>lastError</c>。
+    /// 用例 10：重试策略按退避重试（到期轮询）。
     /// </summary>
+    /// <remarks>
+    /// 用尽后故障；<c>RetryAsync</c> 从故障节点再来；继续出错以 <c>error</c> 流出并记 <c>lastError</c>。
+    /// </remarks>
     [Fact]
     public async Task Faults_RetryPolicy_ManualRetry_AndContinueOnError()
     {
@@ -423,8 +455,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 11：挂起的实例不接收到期书签（轮询后推），恢复后接收；取消清掉书签并补偿，终止不补偿；已结束的幂等；状态不允许的报冲突。
+    /// 用例 11：挂起的实例不接收到期书签（轮询后推），恢复后接收。
     /// </summary>
+    /// <remarks>
+    /// 取消清掉书签并补偿，终止不补偿；已结束的幂等；状态不允许的报冲突。
+    /// </remarks>
     [Fact]
     public async Task Control_SuspendResumeCancelTerminate()
     {
@@ -466,8 +501,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 12：定义生命周期：不合法的草稿发布失败；发布后不能改；新版本是草稿；停用后不能启动；删除只允许草稿；结束节点带结果时结果处理器失败即故障。
+    /// 用例 12：定义生命周期。
     /// </summary>
+    /// <remarks>
+    /// 不合法的草稿发布失败；发布后不能改；新版本是草稿；停用后不能启动；删除只允许草稿；结束节点带结果时结果处理器失败即故障。
+    /// </remarks>
     [Fact]
     public async Task Definitions_Lifecycle_AndOutcomeHandlers()
     {
@@ -544,8 +582,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 14：租户隔离：带租户启动的实例，没有租户的调用方查不到它的任务、发不到它的信号。
+    /// 用例 14：租户隔离。
     /// </summary>
+    /// <remarks>
+    /// 带租户启动的实例，没有租户的调用方查不到它的任务、发不到它的信号。
+    /// </remarks>
     [Fact]
     public async Task Tenant_IsolatesTasksAndSignals()
     {
@@ -564,8 +605,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 15：事件网关：先到的信号决定出路并带出载荷，其余书签清掉；没有信号时按超时流出。
+    /// 用例 15：事件网关。
     /// </summary>
+    /// <remarks>
+    /// 先到的信号决定出路并带出载荷，其余书签清掉；没有信号时按超时流出。
+    /// </remarks>
     [Fact]
     public async Task EventGateway_TakesFirstSignalOrTimeout()
     {
@@ -599,8 +643,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 16：HTTP 活动：模板 URL 与请求体、响应解析为对象、输出映射取值；非 2xx 默认故障，关掉后以 error 标签继续。
+    /// 用例 16：HTTP 活动。
     /// </summary>
+    /// <remarks>
+    /// 模板 URL 与请求体、响应解析为对象、输出映射取值；非 2xx 默认故障，关掉后以 error 标签继续。
+    /// </remarks>
     [Fact]
     public async Task Http_SendsRequests_AndMapsResponses()
     {
@@ -641,8 +688,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 17：补偿活动逆序补偿指定的已完成节点后继续；故障补偿在实例故障时补偿全部已完成节点。
+    /// 用例 17：补偿活动逆序补偿指定的已完成节点后继续。
     /// </summary>
+    /// <remarks>
+    /// 故障补偿在实例故障时补偿全部已完成节点。
+    /// </remarks>
     [Fact]
     public async Task Compensate_ActivityAndOnFault()
     {
@@ -673,8 +723,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 18：输出映射以节点输出为作用域求值写入变量；表达式不合法在发布时拒绝，求值失败即节点故障。
+    /// 用例 18：输出映射以节点输出为作用域求值写入变量。
     /// </summary>
+    /// <remarks>
+    /// 表达式不合法在发布时拒绝，求值失败即节点故障。
+    /// </remarks>
     [Fact]
     public async Task OutputMappings_WriteVariables_AndFailLoudly()
     {
@@ -731,8 +784,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 20：延迟启动在到期前只有开始节点的定时书签；重用策略按关联 ID 拒绝或返回已有实例。
+    /// 用例 20：延迟启动在到期前只有开始节点的定时书签。
     /// </summary>
+    /// <remarks>
+    /// 重用策略按关联 ID 拒绝或返回已有实例。
+    /// </remarks>
     [Fact]
     public async Task DelayedStart_AndReusePolicy()
     {
@@ -765,8 +821,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 21：信号启动为声明了该信号的已发布定义启动实例；定时启动在发布时排定义级书签，到期由轮询启动并再次排期，停用后不再排。
+    /// 用例 21：信号启动为声明了该信号的已发布定义启动实例。
     /// </summary>
+    /// <remarks>
+    /// 定时启动在发布时排定义级书签，到期由轮询启动并再次排期，停用后不再排。
+    /// </remarks>
     [Fact]
     public async Task SignalStart_AndCronStart()
     {
@@ -805,8 +864,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 22：改变量、跳转到指定节点、迁移到兼容的新版本；不兼容的版本与不存在的节点被拒绝。
+    /// 用例 22：改变量、跳转到指定节点、迁移到兼容的新版本。
     /// </summary>
+    /// <remarks>
+    /// 不兼容的版本与不存在的节点被拒绝。
+    /// </remarks>
     [Fact]
     public async Task SetVariables_Jump_AndMigrate()
     {
@@ -849,8 +911,11 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 23：清理删除早于时刻结束的实例及其节点与书签，运行中的不动；延时节点支持到时刻与 cron。
+    /// 用例 23：清理删除早于时刻结束的实例及其节点与书签，运行中的不动。
     /// </summary>
+    /// <remarks>
+    /// 延时节点支持到时刻与 cron。
+    /// </remarks>
     [Fact]
     public async Task Purge_AndDelayVariants()
     {

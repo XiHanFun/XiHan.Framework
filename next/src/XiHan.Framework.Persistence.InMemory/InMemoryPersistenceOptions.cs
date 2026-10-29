@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存持久化选项。从配置节 <c>XiHan:Persistence:InMemory</c> 显式读取。
+/// 内存持久化选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Persistence:InMemory</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryPersistenceOptions
 {

@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.CloudEvents;
 
 /// <summary>
-/// CloudEvents 1.0 结构化 JSON 编码（<c>application/cloudevents+json</c>）。JSON 数据内联在 <c>data</c>，其他数据放在 <c>data_base64</c>，扩展属性是顶层成员。
+/// CloudEvents 1.0 结构化 JSON 编码（<c>application/cloudevents+json</c>）。
 /// </summary>
+/// <remarks>
+/// JSON 数据内联在 <c>data</c>，其他数据放在 <c>data_base64</c>，扩展属性是顶层成员。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CloudEventsFormat
 {
@@ -21,8 +24,11 @@ public static class CloudEventsFormat
     public const string ContentType = "application/cloudevents+json";
 
     /// <summary>
-    /// 编码；JSON 数据不是合法 JSON 时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>。
+    /// 编码。
     /// </summary>
+    /// <remarks>
+    /// JSON 数据不是合法 JSON 时抛出携带 <see cref="MessagingErrors.InvalidEnvelope"/> 的 <see cref="FrameworkException"/>。
+    /// </remarks>
     public static byte[] Encode(MessageEnvelope envelope)
     {
         ArgumentNullException.ThrowIfNull(envelope);
@@ -71,8 +77,11 @@ public static class CloudEventsFormat
     }
 
     /// <summary>
-    /// 解码；文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>。
+    /// 解码。
     /// </summary>
+    /// <remarks>
+    /// 文档不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>。
+    /// </remarks>
     public static Result<MessageEnvelope> Decode(ReadOnlyMemory<byte> json)
     {
         CloudEventDocument? document;

@@ -8,14 +8,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件实体：实现全部持久化协议的聚合根。Provider 的测试需要把它映射到存储。
+/// 套件实体。
 /// </summary>
+/// <remarks>
+/// 实现全部持久化协议的聚合根。Provider 的测试需要把它映射到存储。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {
     /// <summary>
-    /// 以组合方式持有的领域事件缓冲；不映射到存储。
+    /// 以组合方式持有的领域事件缓冲。
     /// </summary>
+    /// <remarks>
+    /// 不映射到存储。
+    /// </remarks>
     private readonly DomainEventBuffer _events = new();
 
     /// <inheritdoc />

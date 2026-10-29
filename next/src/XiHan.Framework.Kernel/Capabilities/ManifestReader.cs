@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转。JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射。
+/// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转。
 /// </summary>
+/// <remarks>
+/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ManifestReader
 {
@@ -20,8 +23,11 @@ public static class ManifestReader
     public const string FileName = "xihan.manifest.json";
 
     /// <summary>
-    /// 从 JSON 文本读取清单。格式或约束错误以 <see cref="KernelErrors.InvalidManifest"/> 返回。
+    /// 从 JSON 文本读取清单。
     /// </summary>
+    /// <remarks>
+    /// 格式或约束错误以 <see cref="KernelErrors.InvalidManifest"/> 返回。
+    /// </remarks>
     public static Result<Manifest> Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -99,8 +105,11 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 把 JSON 形态转换为 <see cref="Manifest"/>：必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+    /// 把 JSON 形态转换为 <see cref="Manifest"/>。
     /// </summary>
+    /// <remarks>
+    /// 必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+    /// </remarks>
     private static Result<Manifest> Convert(ManifestDocument document)
     {
         // 原语层以 ArgumentException 报告单字段格式错误，阶段名未知以 FrameworkException 报告；
@@ -158,14 +167,20 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 构造"必填字段缺失"异常；在对象初始化器里以 <c>?? throw</c> 形式使用。
+    /// 构造"必填字段缺失"异常。
     /// </summary>
+    /// <remarks>
+    /// 在对象初始化器里以 <c>?? throw</c> 形式使用。
+    /// </remarks>
     /// <param name="field">字段的 JSON 路径，例如 <c>provides.id</c>。</param>
     private static ArgumentException Missing(string field) => new($"The manifest is missing the required field '{field}'.");
 
     /// <summary>
-    /// 把字段文本解析为正整数；非数字或小于 1 时抛出 <see cref="ArgumentException"/>。
+    /// 把字段文本解析为正整数。
     /// </summary>
+    /// <remarks>
+    /// 非数字或小于 1 时抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     /// <param name="text">原始文本。</param>
     /// <param name="field">字段的 JSON 路径，用于错误信息。</param>
     private static int ParseInt(string text, string field)
@@ -180,8 +195,11 @@ public static class ManifestReader
         => ParseInt(text.StartsWith('^') ? text[1..] : text, "requires.version");
 
     /// <summary>
-    /// 把字段文本解析为枚举，不区分大小写；未定义的值抛出 <see cref="ArgumentException"/>。
+    /// 把字段文本解析为枚举，不区分大小写。
     /// </summary>
+    /// <remarks>
+    /// 未定义的值抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     /// <typeparam name="TEnum">枚举类型。</typeparam>
     /// <param name="text">原始文本。</param>
     /// <param name="field">字段的 JSON 路径，用于错误信息。</param>

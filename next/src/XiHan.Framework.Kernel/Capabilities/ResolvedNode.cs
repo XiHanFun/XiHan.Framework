@@ -28,8 +28,11 @@ public sealed class ResolvedNode
     private readonly HashSet<string> _selected = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建节点。只由 <see cref="CapabilityResolver"/> 调用，依赖与选中结果在求解过程中追加。
+    /// 创建节点。
     /// </summary>
+    /// <remarks>
+    /// 只由 <see cref="CapabilityResolver"/> 调用，依赖与选中结果在求解过程中追加。
+    /// </remarks>
     /// <param name="manifest">清单。</param>
     internal ResolvedNode(Manifest manifest) => Manifest = manifest;
 
@@ -44,8 +47,11 @@ public sealed class ResolvedNode
     public IReadOnlyList<ResolvedNode> Dependencies => _dependencies;
 
     /// <summary>
-    /// 缺失的可选依赖；非空时对应特性启动后进入 <see cref="LifecycleState.Degraded"/>。
+    /// 缺失的可选依赖。
     /// </summary>
+    /// <remarks>
+    /// 非空时对应特性启动后进入 <see cref="LifecycleState.Degraded"/>。
+    /// </remarks>
     public IReadOnlyList<CapabilityRequirement> MissingOptional => _missingOptional;
 
     /// <summary>
@@ -54,8 +60,11 @@ public sealed class ResolvedNode
     public bool IsDegraded => _missingOptional.Count > 0;
 
     /// <summary>
-    /// 本节点被选中提供的能力 ID。声明了但未被选中的能力由别的节点提供，本节点不得为其注册服务或中间件。
+    /// 本节点被选中提供的能力 ID。
     /// </summary>
+    /// <remarks>
+    /// 声明了但未被选中的能力由别的节点提供，本节点不得为其注册服务或中间件。
+    /// </remarks>
     public IReadOnlyCollection<string> SelectedCapabilities => _selected;
 
     /// <summary>
@@ -73,18 +82,27 @@ public sealed class ResolvedNode
     }
 
     /// <summary>
-    /// 追加一个依赖节点。求解期调用。
+    /// 追加一个依赖节点。
     /// </summary>
+    /// <remarks>
+    /// 求解期调用。
+    /// </remarks>
     internal void AddDependency(ResolvedNode node) => _dependencies.Add(node);
 
     /// <summary>
-    /// 记录一条无法满足的可选依赖。求解期调用。
+    /// 记录一条无法满足的可选依赖。
     /// </summary>
+    /// <remarks>
+    /// 求解期调用。
+    /// </remarks>
     internal void AddMissingOptional(CapabilityRequirement requirement) => _missingOptional.Add(requirement);
 
     /// <summary>
-    /// 标记本节点被选中提供某能力。求解期调用。
+    /// 标记本节点被选中提供某能力。
     /// </summary>
+    /// <remarks>
+    /// 求解期调用。
+    /// </remarks>
     internal void AddSelected(string capabilityId) => _selected.Add(capabilityId);
 
     /// <inheritdoc />

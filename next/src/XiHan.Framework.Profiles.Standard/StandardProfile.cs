@@ -13,14 +13,20 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Profiles.Standard;
 
 /// <summary>
-/// Standard 组合：Minimal（含本地化）加五个子系统的内存默认实现。显式 Provider 顶替同能力的默认实现。
+/// Standard 组合。
 /// </summary>
+/// <remarks>
+/// Minimal（含本地化）加五个子系统的内存默认实现。显式 Provider 顶替同能力的默认实现。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class StandardProfile
 {
     /// <summary>
-    /// 装配 Standard 组合：Minimal（内核、宿主、本地化）加持久化、缓存、多租户、安全、消息的内存默认实现。
+    /// 装配 Standard 组合。
     /// </summary>
+    /// <remarks>
+    /// Minimal（内核、宿主、本地化）加持久化、缓存、多租户、安全、消息的内存默认实现。
+    /// </remarks>
     public static AppBuilder UseStandardProfile(this AppBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

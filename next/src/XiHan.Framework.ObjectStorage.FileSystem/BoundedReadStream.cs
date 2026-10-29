@@ -4,8 +4,11 @@
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 只读、只向前的有界流：从内层流的当前位置起最多读 <c>length</c> 个字节，释放时一并释放内层流。范围读取用它截出对象的一段。
+/// 只读、只向前的有界流。
 /// </summary>
+/// <remarks>
+/// 从内层流的当前位置起最多读 <c>length</c> 个字节，释放时一并释放内层流。范围读取用它截出对象的一段。
+/// </remarks>
 internal sealed class BoundedReadStream(Stream inner, long length) : Stream
 {
     /// <summary>

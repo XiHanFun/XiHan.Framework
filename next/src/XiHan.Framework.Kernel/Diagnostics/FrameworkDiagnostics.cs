@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Diagnostics;
 
 /// <summary>
-/// 内核的诊断源。直接基于 <see cref="System.Diagnostics"/>，OpenTelemetry 桥接包只需订阅同名的 ActivitySource 与 Meter。
+/// 内核的诊断源。
 /// </summary>
+/// <remarks>
+/// 直接基于 <see cref="System.Diagnostics"/>，OpenTelemetry 桥接包只需订阅同名的 ActivitySource 与 Meter。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class FrameworkDiagnostics
 {

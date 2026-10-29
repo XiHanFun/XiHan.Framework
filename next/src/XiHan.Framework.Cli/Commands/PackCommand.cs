@@ -10,8 +10,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// <c>pack [--manifest &lt;path&gt;] [--output &lt;dir&gt;] [--only dockerfile,kustomize,compose,aspire]</c>：从应用清单生成部署产物，逐行输出写出的文件。
+/// 命令 <c>pack</c>：从应用清单生成部署产物。
 /// </summary>
+/// <remarks>
+/// 用法：<c>pack [--manifest &lt;path&gt;] [--output &lt;dir&gt;] [--only dockerfile,kustomize,compose,aspire]</c>。
+/// 从应用清单生成部署产物，逐行输出写出的文件。
+/// </remarks>
 internal sealed class PackCommand : ICommand
 {
     /// <inheritdoc />

@@ -9,8 +9,11 @@ namespace XiHan.Framework.Cli.Packaging;
 internal sealed record ImageSettings
 {
     /// <summary>
-    /// 镜像仓库（可含注册表前缀）；为空时用应用名。
+    /// 镜像仓库（可含注册表前缀）。
     /// </summary>
+    /// <remarks>
+    /// 为空时用应用名。
+    /// </remarks>
     public string? Repository { get; set; }
 
     /// <summary>

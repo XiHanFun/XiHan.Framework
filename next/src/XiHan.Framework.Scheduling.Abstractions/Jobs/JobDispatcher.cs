@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 /// <summary>
-/// 把一次运行变成一次内核调用：新作用域、新上下文（关联 ID = 运行 ID），经完整管道执行作业；失败或异常都是调用结果。
+/// 把一次运行变成一次内核调用。
 /// </summary>
+/// <remarks>
+/// 新作用域、新上下文（关联 ID = 运行 ID），经完整管道执行作业；失败或异常都是调用结果。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobDispatcher
 {
@@ -20,13 +23,19 @@ public sealed class JobDispatcher
     private static readonly ContextItemKey<JobRun> _runKey = new("xihan.scheduling.run");
 
     /// <summary>
-    /// 根服务提供者；每次运行从它创建新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次运行从它创建新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 应用；运行经它的完整管道执行。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 运行经它的完整管道执行。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>

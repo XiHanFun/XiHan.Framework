@@ -7,13 +7,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Locking;
 
 /// <summary>
-/// 租约式分布式锁：获取即持有到释放或存活时间到期；不可重入、不续约。
+/// 租约式分布式锁。
 /// </summary>
+/// <remarks>
+/// 获取即持有到释放或存活时间到期；不可重入、不续约。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IDistributedLock
 {
     /// <summary>
-    /// 尝试获取；被占用时无值。
+    /// 尝试获取。
     /// </summary>
+    /// <remarks>
+    /// 被占用时无值。
+    /// </remarks>
     ValueTask<Maybe<LockHandle>> TryAcquireAsync(CacheKey resource, TimeSpan timeToLive, CancellationToken cancellationToken);
 }

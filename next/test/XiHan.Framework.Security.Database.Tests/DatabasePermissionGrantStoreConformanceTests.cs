@@ -12,13 +12,19 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 数据库授予存储跑一致性套件：每个用例启动一个装配了内存持久化的宿主，经 <see cref="PermissionGrantRecordStore"/> 种入套件的授予；用例结束后停止宿主。
+/// 数据库授予存储跑一致性套件。
 /// </summary>
+/// <remarks>
+/// 每个用例启动一个装配了内存持久化的宿主，经 <see cref="PermissionGrantRecordStore"/> 种入套件的授予；用例结束后停止宿主。
+/// </remarks>
 public sealed class DatabasePermissionGrantStoreConformanceTests : PermissionGrantStoreConformance, IAsyncDisposable
 {
     /// <summary>
-    /// 本用例启动的宿主；释放时停止。
+    /// 本用例启动的宿主。
     /// </summary>
+    /// <remarks>
+    /// 释放时停止。
+    /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <inheritdoc />

@@ -16,8 +16,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Abstractions.Tests;
 
 /// <summary>
-/// 审计中间件经完整管道的行为：选择规则、显式动作、主体与租户、失败与异常、接收器故障、选项解析。
+/// 审计中间件经完整管道的行为。
 /// </summary>
+/// <remarks>
+/// 选择规则、显式动作、主体与租户、失败与异常、接收器故障、选项解析。
+/// </remarks>
 public sealed class AuditMiddlewareTests
 {
     /// <summary>

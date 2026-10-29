@@ -10,9 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 两个响应为同一泛型、不同实参的列表操作（<c>users.list</c> → <c>PageResult&lt;UserResponse&gt;</c>，<c>roles.list</c> → <c>PageResult&lt;RoleResponse&gt;</c>）同时暴露给 gRPC，
-/// 验证消息名带实参后不再以 <c>PROTOCOLS_CONFLICT_003</c> 冲突。
+/// 两个响应为同一泛型、不同实参的列表操作同时暴露给 gRPC。
 /// </summary>
+/// <remarks>
+/// <c>users.list</c> → <c>PageResult&lt;UserResponse&gt;</c>，<c>roles.list</c> → <c>PageResult&lt;RoleResponse&gt;</c>。验证消息名带实参后不再以 <c>PROTOCOLS_CONFLICT_003</c> 冲突。
+/// </remarks>
 internal sealed class PagedFeature : IFeature
 {
     /// <inheritdoc />

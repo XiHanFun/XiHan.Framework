@@ -14,8 +14,11 @@ namespace XiHan.Framework.Persistence.Abstractions.Repositories;
 public static class RepositoryServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记实体，由当前装配的持久化 Provider 注册仓储。可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
+    /// 登记实体，由当前装配的持久化 Provider 注册仓储。
     /// </summary>
+    /// <remarks>
+    /// 可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
+    /// </remarks>
     public static IServiceCollection AddRepository<TEntity, TKey>(this IServiceCollection services)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>

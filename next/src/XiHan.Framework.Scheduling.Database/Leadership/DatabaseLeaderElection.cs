@@ -13,9 +13,11 @@ using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 namespace XiHan.Framework.Scheduling.Database.Leadership;
 
 /// <summary>
-/// 以租约行实现的领导选举（单例）：资源名对应一行，行不存在就插入，过期就带并发戳接管，否则返回被占用；持有者是本节点的 ID（<see cref="SchedulerOptions.NodeId"/>），每次获取另带随机令牌，旧租约对象在释放或被接管后失效。
-/// 存储不可达 → <see cref="SchedulingErrors.LeaseUnavailable"/>。
+/// 以租约行实现的领导选举（单例）。
 /// </summary>
+/// <remarks>
+/// 资源名对应一行，行不存在就插入，过期就带并发戳接管，否则返回被占用；持有者是本节点的 ID（<see cref="SchedulerOptions.NodeId"/>），每次获取另带随机令牌，旧租约对象在释放或被接管后失效。存储不可达 → <see cref="SchedulingErrors.LeaseUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseLeaderElection : ILeaderElection
 {

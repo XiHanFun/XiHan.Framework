@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.InProcess;
 
 /// <summary>
-/// 插件宿主错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 插件宿主错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginErrors
 {

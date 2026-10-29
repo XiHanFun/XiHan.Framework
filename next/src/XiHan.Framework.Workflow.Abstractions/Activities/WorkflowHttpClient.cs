@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// <c>Http</c> 活动用的 HTTP 客户端（单例，连接池寿命 2 分钟以跟随 DNS 变化）；应用可在装配前注册自己的实例替换（如带代理、认证处理器）。
+/// <c>Http</c> 活动用的 HTTP 客户端（单例，连接池寿命 2 分钟以跟随 DNS 变化）。
 /// </summary>
+/// <remarks>
+/// 应用可在装配前注册自己的实例替换（如带代理、认证处理器）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowHttpClient : IDisposable
 {
@@ -33,8 +36,11 @@ public sealed class WorkflowHttpClient : IDisposable
     }
 
     /// <summary>
-    /// 发送请求；超过 <paramref name="timeout"/> 以 <see cref="OperationCanceledException"/> 结束。
+    /// 发送请求。
     /// </summary>
+    /// <remarks>
+    /// 超过 <paramref name="timeout"/> 以 <see cref="OperationCanceledException"/> 结束。
+    /// </remarks>
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, TimeSpan timeout, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);

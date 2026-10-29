@@ -22,9 +22,11 @@ using XiHan.Framework.Scheduling.Database.Storage;
 namespace XiHan.Framework.Scheduling.Database;
 
 /// <summary>
-/// 数据库调度特性（<c>role: provider</c>）：提供 <c>scheduling.jobs@1</c>（数据库作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（租约行），依赖 <c>persistence.relational@1</c>，多个节点共用一个数据库。装配后顶替默认的内存调度；被别的显式 Provider 顶替的能力只留本包自己的类型。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="DatabaseSchedulingOptions.HealthProbeInterval"/> 周期读一次租约行，租约表不可达时条目 Degraded。
+/// 数据库调度特性（<c>role: provider</c>）。
 /// </summary>
+/// <remarks>
+/// 提供 <c>scheduling.jobs@1</c>（数据库作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（租约行），依赖 <c>persistence.relational@1</c>，多个节点共用一个数据库。装配后顶替默认的内存调度；被别的显式 Provider 顶替的能力只留本包自己的类型。健康项 <see cref="HealthName"/> 按 <see cref="DatabaseSchedulingOptions.HealthProbeInterval"/> 周期读一次租约行，租约表不可达时条目 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseSchedulingFeature : IHostedFeature
 {
@@ -34,8 +36,11 @@ public sealed class DatabaseSchedulingFeature : IHostedFeature
     public const string HealthName = "scheduling.database.leader";
 
     /// <summary>
-    /// 引擎；只在本包被选中提供作业能力时存在。
+    /// 引擎。
     /// </summary>
+    /// <remarks>
+    /// 只在本包被选中提供作业能力时存在。
+    /// </remarks>
     private JobSchedulerEngine? _engine;
 
     /// <summary>

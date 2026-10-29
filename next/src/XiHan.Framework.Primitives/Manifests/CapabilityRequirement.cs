@@ -6,9 +6,11 @@ using System.Globalization;
 namespace XiHan.Framework.Primitives.Manifests;
 
 /// <summary>
-/// 清单 <c>requires</c> 中的一项：依赖的能力、接口版本与是否可选。
-/// 文本形式 <c>id@version[?]</c>，版本前允许 <c>^</c>（接口版本是整数，<c>^1</c> 与 <c>1</c> 等价）。
+/// 清单 <c>requires</c> 中的一项。
 /// </summary>
+/// <remarks>
+/// 依赖的能力、接口版本与是否可选。文本形式 <c>id@version[?]</c>，版本前允许 <c>^</c>（接口版本是整数，<c>^1</c> 与 <c>1</c> 等价）。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record CapabilityRequirement
 {

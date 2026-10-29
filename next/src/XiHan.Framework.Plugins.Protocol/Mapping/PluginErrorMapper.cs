@@ -10,8 +10,11 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// 原语层 <see cref="Error"/> / <see cref="Result"/> 与协议 <c>Error</c> / <c>Status</c> 之间的转换，以及 gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c>）。
+/// 原语层 <see cref="Error"/> / <see cref="Result"/> 与协议 <c>Error</c> / <c>Status</c> 之间的转换。
 /// </summary>
+/// <remarks>
+/// 以及 gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c>）。
+/// </remarks>
 internal static class PluginErrorMapper
 {
     /// <summary>
@@ -41,8 +44,11 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 协议状态 → 结果；<c>ok</c> 为假却没有错误时按未预期失败处理。
+    /// 协议状态 → 结果。
     /// </summary>
+    /// <remarks>
+    /// <c>ok</c> 为假却没有错误时按未预期失败处理。
+    /// </remarks>
     public static Result FromStatus(ProtoStatus? status, string pluginId, string phase)
     {
         if (status is { Ok: true })
@@ -56,8 +62,11 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 协议错误 → 错误：有消息键按键还原，否则按文案字面还原；错误码不合法时整体视为插件的未预期失败。
+    /// 协议错误 → 错误。
     /// </summary>
+    /// <remarks>
+    /// 有消息键按键还原，否则按文案字面还原；错误码不合法时整体视为插件的未预期失败。
+    /// </remarks>
     public static Error FromProto(ProtoError error, string pluginId)
     {
         if (!ErrorCode.IsValid(error.Code))
@@ -73,8 +82,11 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 调用插件时的 gRPC 异常 → 宿主错误：传输层失败归为插件不可用，截止与取消沿用内核错误码；截止时间已过的取消按超时报告。
+    /// 调用插件时的 gRPC 异常 → 宿主错误。
     /// </summary>
+    /// <remarks>
+    /// 传输层失败归为插件不可用，截止与取消沿用内核错误码；截止时间已过的取消按超时报告。
+    /// </remarks>
     public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool deadlineExpired = false) => exception.StatusCode switch
     {
         StatusCode.DeadlineExceeded => new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded),

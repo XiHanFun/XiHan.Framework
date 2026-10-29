@@ -10,14 +10,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 有界的内存租户存储。ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded。
+/// 有界的内存租户存储。
 /// </summary>
+/// <remarks>
+/// ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
 {
     /// <summary>
-    /// 按 ID 索引的租户；读取无锁。
+    /// 按 ID 索引的租户。
     /// </summary>
+    /// <remarks>
+    /// 读取无锁。
+    /// </remarks>
     private readonly ConcurrentDictionary<string, TenantInfo> _tenants = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -26,8 +32,11 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建存储并装载选项里的租户；超出容量抛出 <see cref="FrameworkException"/>。
+    /// 创建存储并装载选项里的租户。
     /// </summary>
+    /// <remarks>
+    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// </remarks>
     public InMemoryTenantStore(InMemoryMultiTenancyOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -72,8 +81,11 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
         => ValueTask.FromResult<IReadOnlyList<TenantInfo>>(_tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal).ToList());
 
     /// <summary>
-    /// 新增或替换；新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>。
+    /// 新增或替换。
     /// </summary>
+    /// <remarks>
+    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>。
+    /// </remarks>
     public Result Set(TenantInfo tenant)
     {
         ArgumentNullException.ThrowIfNull(tenant);
@@ -91,8 +103,11 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     }
 
     /// <summary>
-    /// 删除；存在返回 <see langword="true"/>。
+    /// 删除。
     /// </summary>
+    /// <remarks>
+    /// 存在返回 <see langword="true"/>。
+    /// </remarks>
     public bool Remove(string tenantId)
     {
         ArgumentNullException.ThrowIfNull(tenantId);

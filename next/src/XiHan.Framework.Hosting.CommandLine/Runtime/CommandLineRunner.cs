@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Runtime;
 
 /// <summary>
-/// 命令行的入口：解析参数、找命令、在新作用域里执行并返回退出码。没有命令或 <c>help</c> 时打印帮助；
-/// 命令名不存在但 <c>&lt;resource&gt; &lt;verb&gt;</c> 能拼成操作 ID 时转成 <c>invoke &lt;resource&gt;.&lt;verb&gt;</c>。
+/// 命令行的入口。
 /// </summary>
+/// <remarks>
+/// 解析参数、找命令、在新作用域里执行并返回退出码。没有命令或 <c>help</c> 时打印帮助；命令名不存在但 <c>&lt;resource&gt; &lt;verb&gt;</c> 能拼成操作 ID 时转成 <c>invoke &lt;resource&gt;.&lt;verb&gt;</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CommandLineRunner
 {
@@ -26,8 +28,11 @@ public sealed class CommandLineRunner
     private const string HelpCommandName = "help";
 
     /// <summary>
-    /// 根服务；每次执行从它创建作用域。
+    /// 根服务。
     /// </summary>
+    /// <remarks>
+    /// 每次执行从它创建作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
@@ -36,8 +41,11 @@ public sealed class CommandLineRunner
     private readonly SortedDictionary<string, ICommand> _commands = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建；命令名重复即失败。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 命令名重复即失败。
+    /// </remarks>
     public CommandLineRunner(IServiceProvider services, IEnumerable<ICommand> commands)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -91,8 +99,11 @@ public sealed class CommandLineRunner
     }
 
     /// <summary>
-    /// 执行命令；取消按取消退出码返回，不当作崩溃。
+    /// 执行命令。
     /// </summary>
+    /// <remarks>
+    /// 取消按取消退出码返回，不当作崩溃。
+    /// </remarks>
     private static async ValueTask<int> ExecuteAsync(ICommand command, CommandContext context)
     {
         try

@@ -12,8 +12,11 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Storage;
 
 /// <summary>
-/// 存储与实例锁的一致性套件（RFC-0021 §存储契约）：查询、排序、批量、级联、快照语义与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>；锁等待上限应配置在 1 秒以内。
+/// 存储与实例锁的一致性套件（RFC-0021 §存储契约）。
 /// </summary>
+/// <remarks>
+/// 查询、排序、批量、级联、快照语义与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>；锁等待上限应配置在 1 秒以内。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowStoreConformance
 {
@@ -23,8 +26,11 @@ public abstract class WorkflowStoreConformance
     protected abstract Task<WorkflowStoreHost> StartAsync();
 
     /// <summary>
-    /// 用例 1：定义按 ID、名字 + 版本、最新已发布查得到；最大版本与列表排序正确；删除后找不到；批量找忽略不存在的。
+    /// 用例 1：定义按 ID、名字 + 版本、最新已发布查得到。
     /// </summary>
+    /// <remarks>
+    /// 最大版本与列表排序正确；删除后找不到；批量找忽略不存在的。
+    /// </remarks>
     [Fact]
     public async Task Definitions_SaveFindListAndDelete()
     {
@@ -56,8 +62,11 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：保存后再改原对象不影响存下的；返回的对象再改也不影响（快照语义）。
+    /// 用例 2：保存后再改原对象不影响存下的。
     /// </summary>
+    /// <remarks>
+    /// 返回的对象再改也不影响（快照语义）。
+    /// </remarks>
     [Fact]
     public async Task Stores_KeepSnapshots_NotReferences()
     {
@@ -82,8 +91,11 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：实例列表按创建时间降序、过滤项与上限生效；节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例。
+    /// 用例 3：实例列表按创建时间降序、过滤项与上限生效。
     /// </summary>
+    /// <remarks>
+    /// 节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例。
+    /// </remarks>
     [Fact]
     public async Task Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades()
     {
@@ -139,8 +151,11 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：书签按实例、到期、种类与键、信号查询，排序与上限正确；按 ID 与按实例删除。
+    /// 用例 4：书签按实例、到期、种类与键、信号查询，排序与上限正确。
     /// </summary>
+    /// <remarks>
+    /// 按 ID 与按实例删除。
+    /// </remarks>
     [Fact]
     public async Task Bookmarks_Queries_Order_AndDelete()
     {
@@ -175,8 +190,11 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 5：实例锁互斥：持有期间第二个获取者等到超时得 <c>WORKFLOW_TIMEOUT_001</c>；释放后能获取；不同实例互不影响。
+    /// 用例 5：实例锁互斥。
     /// </summary>
+    /// <remarks>
+    /// 持有期间第二个获取者等到超时得 <c>WORKFLOW_TIMEOUT_001</c>；释放后能获取；不同实例互不影响。
+    /// </remarks>
     [Fact]
     public async Task Lock_IsExclusivePerInstance_AndTimesOut()
     {

@@ -10,10 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 经 <see cref="IDistributedLock"/> 租约分配的机器位：启动时从 0 起逐个尝试锁 <c>persistence:snowflake:worker:&lt;n&gt;</c>，取得第一个空位；
-/// 每三分之一存活时间续约一次（锁不续约，续约 = 释放再获取同一机器位），续约失败按丢失处理并重新分配。
-/// 本地按获取时刻 + 存活时间判定有效：到期未续上即没有机器位，宁可拒绝生成也不冒重复的风险。同时是健康项 <see cref="HealthName"/> 的贡献者。
+/// 经 <see cref="IDistributedLock"/> 租约分配的机器位。
 /// </summary>
+/// <remarks>
+/// 启动时从 0 起逐个尝试锁 <c>persistence:snowflake:worker:&lt;n&gt;</c>，取得第一个空位；每三分之一存活时间续约一次（锁不续约，续约 = 释放再获取同一机器位），续约失败按丢失处理并重新分配。本地按获取时刻 + 存活时间判定有效：到期未续上即没有机器位，宁可拒绝生成也不冒重复的风险。同时是健康项 <see cref="HealthName"/> 的贡献者。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContributor, IAsyncDisposable
 {
@@ -53,13 +54,19 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 当前租约；整体替换，<see cref="Current"/> 读它不加锁。
+    /// 当前租约。
     /// </summary>
+    /// <remarks>
+    /// 整体替换，<see cref="Current"/> 读它不加锁。
+    /// </remarks>
     private volatile Lease? _lease;
 
     /// <summary>
-    /// 停止信号；非空表示续约循环在跑。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// 非空表示续约循环在跑。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
@@ -103,8 +110,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     }
 
     /// <summary>
-    /// 当前租约的本地到期时刻；没有租约为 <see langword="null"/>。
+    /// 当前租约的本地到期时刻。
     /// </summary>
+    /// <remarks>
+    /// 没有租约为 <see langword="null"/>。
+    /// </remarks>
     public DateTimeOffset? ExpiresAt => _lease?.ExpiresAt;
 
     /// <summary>
@@ -113,8 +123,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     public TimeSpan RenewInterval => _timeToLive / 3;
 
     /// <summary>
-    /// 分配机器位并起续约循环。1024 个机器位都被占用时抛出携带 <see cref="PersistenceErrors.WorkerIdUnavailable"/> 的 <see cref="FrameworkException"/>。重复调用不再起第二个循环。
+    /// 分配机器位并起续约循环。
     /// </summary>
+    /// <remarks>
+    /// 1024 个机器位都被占用时抛出携带 <see cref="PersistenceErrors.WorkerIdUnavailable"/> 的 <see cref="FrameworkException"/>。重复调用不再起第二个循环。
+    /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loop is not null)
@@ -186,8 +199,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     }
 
     /// <summary>
-    /// 续约一次：持有时释放再获取同一机器位，失败即视为丢失并重新分配；没有租约时直接重新分配。存储不可达时按丢失处理（存储侧租约可能已被删掉，继续用不安全）。
+    /// 续约一次。
     /// </summary>
+    /// <remarks>
+    /// 持有时释放再获取同一机器位，失败即视为丢失并重新分配；没有租约时直接重新分配。存储不可达时按丢失处理（存储侧租约可能已被删掉，继续用不安全）。
+    /// </remarks>
     public async ValueTask RenewAsync(CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -246,8 +262,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     }
 
     /// <summary>
-    /// 从 0 起逐个尝试，取得第一个空位；全部被占返回 <see langword="false"/>。调用方持有 <see cref="_gate"/>。
+    /// 从 0 起逐个尝试，取得第一个空位。
     /// </summary>
+    /// <remarks>
+    /// 全部被占返回 <see langword="false"/>。调用方持有 <see cref="_gate"/>。
+    /// </remarks>
     private async Task<bool> AcquireAsync(CancellationToken cancellationToken)
     {
         for (var workerId = 0; workerId <= SnowflakeId.MaxWorkerId; workerId++)
@@ -267,8 +286,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     }
 
     /// <summary>
-    /// 释放再获取同一机器位；任一步失败或抛出都先把租约置空再返回或传播——存储侧的租约可能已被删掉，继续用不安全。
+    /// 释放再获取同一机器位。
     /// </summary>
+    /// <remarks>
+    /// 任一步失败或抛出都先把租约置空再返回或传播——存储侧的租约可能已被删掉，继续用不安全。
+    /// </remarks>
     private async Task<LockHandle?> TryRenewAsync(Lease lease, CancellationToken cancellationToken)
     {
         try
@@ -291,8 +313,11 @@ public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContr
     }
 
     /// <summary>
-    /// 按间隔续约，直到停止；计时器由本方法释放。
+    /// 按间隔续约，直到停止。
     /// </summary>
+    /// <remarks>
+    /// 计时器由本方法释放。
+    /// </remarks>
     private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
     {
         using (timer)

@@ -10,14 +10,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存存储：每种实体一张有界的表。单例。同时是健康项 <see cref="InMemoryPersistenceFeature.HealthName"/> 的贡献者：任一张表满即 Degraded。
+/// 内存存储。
 /// </summary>
+/// <remarks>
+/// 每种实体一张有界的表。单例。同时是健康项 <see cref="InMemoryPersistenceFeature.HealthName"/> 的贡献者：任一张表满即 Degraded。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthContributor
 {
     /// <summary>
-    /// 按实体类型索引的表；值是对应的 <see cref="InMemoryTable{TEntity, TKey}"/>，并发创建由字典保证只保留一张。
+    /// 按实体类型索引的表。
     /// </summary>
+    /// <remarks>
+    /// 值是对应的 <see cref="InMemoryTable{TEntity, TKey}"/>，并发创建由字典保证只保留一张。
+    /// </remarks>
     private readonly ConcurrentDictionary<Type, object> _tables = new();
 
     /// <summary>

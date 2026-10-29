@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 内核提供的能力 ID。特性在清单的 <c>requires</c> 中引用它们。
+/// 内核提供的能力 ID。
 /// </summary>
+/// <remarks>
+/// 特性在清单的 <c>requires</c> 中引用它们。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class KernelCapabilities
 {

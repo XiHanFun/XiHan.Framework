@@ -9,13 +9,19 @@ using XiHan.Framework.AI.Abstractions.Providers;
 namespace XiHan.Framework.AI.OpenAI;
 
 /// <summary>
-/// 按 Provider 配置创建 <see cref="OpenAIClient"/>：端点、凭据、网络超时，以及注册了命名 <see cref="HttpClient"/> 时的传输。
+/// 按 Provider 配置创建 <see cref="OpenAIClient"/>。
 /// </summary>
+/// <remarks>
+/// 端点、凭据、网络超时，以及注册了命名 <see cref="HttpClient"/> 时的传输。
+/// </remarks>
 internal sealed class OpenAIClientFactory
 {
     /// <summary>
-    /// 命名 HttpClient 的名字；注册了它（<c>services.AddHttpClient(OpenAIClientFactory.HttpClientName)</c>）就经它发请求。
+    /// 命名 HttpClient 的名字。
     /// </summary>
+    /// <remarks>
+    /// 注册了它（<c>services.AddHttpClient(OpenAIClientFactory.HttpClientName)</c>）就经它发请求。
+    /// </remarks>
     public const string HttpClientName = "xihan.ai.openai";
 
     /// <summary>

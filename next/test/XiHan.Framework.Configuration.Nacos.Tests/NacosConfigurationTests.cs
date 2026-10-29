@@ -12,8 +12,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Configuration.Nacos.Tests;
 
 /// <summary>
-/// Nacos Provider 独有的行为：选项解析与绑定、文档展平、格式不合法的错误、properties 格式、接进配置构建器、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// Nacos Provider 独有的行为。
 /// </summary>
+/// <remarks>
+/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、接进配置构建器、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// </remarks>
 public sealed class NacosConfigurationTests
 {
     /// <summary>

@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存仓储：在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。批量方法在同一次调用里逐项进入覆盖层，提交时由表原子应用。
+/// 内存仓储。
 /// </summary>
+/// <remarks>
+/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。批量方法在同一次调用里逐项进入覆盖层，提交时由表原子应用。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMemoryUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
@@ -24,8 +27,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     private readonly InMemoryStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <summary>
-    /// 本作用域的工作单元；提供覆盖层与当前租户。
+    /// 本作用域的工作单元。
     /// </summary>
+    /// <remarks>
+    /// 提供覆盖层与当前租户。
+    /// </remarks>
     private readonly InMemoryUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -163,15 +169,21 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 处于活动状态的工作单元；不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 处于活动状态的工作单元。
     /// </summary>
+    /// <remarks>
+    /// 不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// </remarks>
     private InMemoryUnitOfWork Active => _unitOfWork.State == UnitOfWorkState.Active
         ? _unitOfWork
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
     /// <summary>
-    /// 新增一项：重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并进覆盖层。
+    /// 新增一项。
     /// </summary>
+    /// <remarks>
+    /// 重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并进覆盖层。
+    /// </remarks>
     private Result Add(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
         if (Lookup(changes, entity.Id).HasValue)
@@ -191,8 +203,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 更新一项：目标须存在且可见；游离实例的并发戳与当前值不同即冲突，之后刷新审计字段并进覆盖层。
+    /// 更新一项。
     /// </summary>
+    /// <remarks>
+    /// 目标须存在且可见；游离实例的并发戳与当前值不同即冲突，之后刷新审计字段并进覆盖层。
+    /// </remarks>
     private Result Update(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
         if (!Lookup(changes, entity.Id).TryGetValue(out var existing) || !IsVisible(existing, includeDeleted: false))
@@ -215,8 +230,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 删除一项：目标须存在且可见；软删除是一次打标更新，走 Upsert，物理删除才进入覆盖层的删除集合。
+    /// 删除一项。
     /// </summary>
+    /// <remarks>
+    /// 目标须存在且可见；软删除是一次打标更新，走 Upsert，物理删除才进入覆盖层的删除集合。
+    /// </remarks>
     private Result Remove(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
         if (!Exists(changes, entity.Id))
@@ -243,8 +261,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, PersistenceMessages.NotFound, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
-    /// 先查覆盖层，再查表；覆盖层标记为删除的视为不存在。
+    /// 先查覆盖层，再查表。
     /// </summary>
+    /// <remarks>
+    /// 覆盖层标记为删除的视为不存在。
+    /// </remarks>
     private Maybe<TEntity> Lookup(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id)
     {
         var (found, removed, pending) = changes.Lookup(id);
@@ -252,14 +273,20 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 实体是否存在且对当前调用可见（未软删除、租户匹配）；删除以此判定目标。
+    /// 实体是否存在且对当前调用可见（未软删除、租户匹配）。
     /// </summary>
+    /// <remarks>
+    /// 删除以此判定目标。
+    /// </remarks>
     private bool Exists(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id)
         => Lookup(changes, id).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false);
 
     /// <summary>
-    /// 把覆盖层合并到表快照上，再施加可见性与查询过滤；排序与分页由调用方处理。
+    /// 把覆盖层合并到表快照上，再施加可见性与查询过滤。
     /// </summary>
+    /// <remarks>
+    /// 排序与分页由调用方处理。
+    /// </remarks>
     private IEnumerable<TEntity> Visible(EntityQuery<TEntity> query)
     {
         var items = Active.Changes<TEntity, TKey>().Overlay(_store.Table<TEntity, TKey>().Snapshot())

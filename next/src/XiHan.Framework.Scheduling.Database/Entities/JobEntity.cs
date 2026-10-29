@@ -9,9 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Database.Entities;
 
 /// <summary>
-/// 作业行：<c>Id</c> 是作业名，<c>JobRecord</c> 的其余字段逐列存放，数据是 JSON 文本，来源存枚举的整数值。
-/// 并发戳让独占运行对 <see cref="ActiveRunId"/> 的占用与释放在跨进程下是原子的比较并交换。不实现 <c>IMultiTenant</c>，存储不按租户过滤。
+/// 作业行。
 /// </summary>
+/// <remarks>
+/// <c>Id</c> 是作业名，<c>JobRecord</c> 的其余字段逐列存放，数据是 JSON 文本，来源存枚举的整数值。并发戳让独占运行对 <see cref="ActiveRunId"/> 的占用与释放在跨进程下是原子的比较并交换。不实现 <c>IMultiTenant</c>，存储不按租户过滤。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
 {
@@ -26,8 +28,11 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     public string JobTypeName { get; set; } = string.Empty;
 
     /// <summary>
-    /// 运行时传给作业的数据，JSON 对象文本；长文本列。
+    /// 运行时传给作业的数据，JSON 对象文本。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Data { get; set; } = "{}";
 
@@ -58,8 +63,11 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     public bool Paused { get; set; }
 
     /// <summary>
-    /// 不允许并发时正在运行的运行 ID；没有为空。
+    /// 不允许并发时正在运行的运行 ID。
     /// </summary>
+    /// <remarks>
+    /// 没有为空。
+    /// </remarks>
     [StringLength(128)]
     public string? ActiveRunId { get; set; }
 

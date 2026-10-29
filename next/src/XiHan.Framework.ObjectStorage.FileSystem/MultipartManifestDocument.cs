@@ -4,8 +4,11 @@
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 分片上传的清单文件（<c>uploads/&lt;上传标识&gt;/manifest.json</c>）：完成后对象的键与写入选项。
+/// 分片上传的清单文件（<c>uploads/&lt;上传标识&gt;/manifest.json</c>）。
 /// </summary>
+/// <remarks>
+/// 完成后对象的键与写入选项。
+/// </remarks>
 internal sealed class MultipartManifestDocument
 {
     /// <summary>
@@ -29,7 +32,10 @@ internal sealed class MultipartManifestDocument
     public bool Overwrite { get; set; }
 
     /// <summary>
-    /// 发起时间；过期清理据此判断。
+    /// 发起时间。
     /// </summary>
+    /// <remarks>
+    /// 过期清理据此判断。
+    /// </remarks>
     public DateTimeOffset StartedAt { get; set; }
 }

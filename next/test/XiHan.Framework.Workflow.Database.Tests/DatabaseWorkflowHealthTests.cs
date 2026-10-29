@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 健康项 <c>workflow.database.poller</c>：选项里的探测间隔解析；租约表可达时宿主启动后条目 Ready。
+/// 健康项 <c>workflow.database.poller</c>。
 /// </summary>
+/// <remarks>
+/// 选项里的探测间隔解析；租约表可达时宿主启动后条目 Ready。
+/// </remarks>
 public sealed class DatabaseWorkflowHealthTests
 {
     [Fact]

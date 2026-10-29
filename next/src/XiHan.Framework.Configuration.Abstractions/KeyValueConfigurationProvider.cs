@@ -7,8 +7,11 @@ using Microsoft.Extensions.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions;
 
 /// <summary>
-/// 以一份可整体替换的键值表实现 <see cref="IConfigurationProvider"/>；替换时触发重载令牌。本包只能引用抽象包，所以不派生自 <c>ConfigurationProvider</c>。
+/// 以一份可整体替换的键值表实现 <see cref="IConfigurationProvider"/>。
 /// </summary>
+/// <remarks>
+/// 替换时触发重载令牌。本包只能引用抽象包，所以不派生自 <c>ConfigurationProvider</c>。
+/// </remarks>
 internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, IDisposable
 {
     /// <summary>
@@ -22,8 +25,11 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     private Dictionary<string, string?> _data = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 当前重载令牌的源；替换数据时取消并换新。
+    /// 当前重载令牌的源。
     /// </summary>
+    /// <remarks>
+    /// 替换数据时取消并换新。
+    /// </remarks>
     private CancellationTokenSource _reload = new();
 
     /// <inheritdoc />
@@ -115,8 +121,11 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 整体替换键值表；<paramref name="notify"/> 为真时触发重载令牌（首次加载不触发）。
+    /// 整体替换键值表。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="notify"/> 为真时触发重载令牌（首次加载不触发）。
+    /// </remarks>
     protected void Replace(IReadOnlyDictionary<string, string?> values, bool notify)
     {
         CancellationTokenSource previous;

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的错误码；登记在 <c>spec/conventions/error-codes.md</c>。协议层错误随 JSON-RPC 错误对象的 <c>data.code</c> 返回。
+/// MCP 协议适配器的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。协议层错误随 JSON-RPC 错误对象的 <c>data.code</c> 返回。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpErrors
 {

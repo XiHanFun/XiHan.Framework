@@ -6,8 +6,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 随调用跨进程传播的 Baggage 键。键名由 <c>spec/conventions/baggage-keys.md</c> 登记，格式 <c>xihan.&lt;name&gt;</c>。
+/// 随调用跨进程传播的 Baggage 键。
 /// </summary>
+/// <remarks>
+/// 键名由 <c>spec/conventions/baggage-keys.md</c> 登记，格式 <c>xihan.&lt;name&gt;</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class BaggageKeys
 {
@@ -47,8 +50,11 @@ public static partial class BaggageKeys
     public static bool IsWellFormed(string? key) => key is not null && Pattern().IsMatch(key);
 
     /// <summary>
-    /// 键名是否已登记。未登记的键在 Egress 阶段被剥离。
+    /// 键名是否已登记。
     /// </summary>
+    /// <remarks>
+    /// 未登记的键在 Egress 阶段被剥离。
+    /// </remarks>
     public static bool IsRegistered(string? key) => key is not null && Registered.Contains(key, StringComparer.Ordinal);
 
     /// <summary>

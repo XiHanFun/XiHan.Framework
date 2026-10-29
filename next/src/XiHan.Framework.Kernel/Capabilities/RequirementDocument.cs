@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>requires</c> 一项的 JSON 形态。版本以字符串承载，允许 <c>^</c> 前缀。
+/// <c>xihan.manifest.json</c> 中 <c>requires</c> 一项的 JSON 形态。
 /// </summary>
+/// <remarks>
+/// 版本以字符串承载，允许 <c>^</c> 前缀。
+/// </remarks>
 internal sealed class RequirementDocument
 {
     /// <summary>
@@ -19,7 +22,10 @@ internal sealed class RequirementDocument
     public string? Version { get; set; }
 
     /// <summary>
-    /// 是否可选；缺省视为必需。
+    /// 是否可选。
     /// </summary>
+    /// <remarks>
+    /// 缺省视为必需。
+    /// </remarks>
     public bool? Optional { get; set; }
 }

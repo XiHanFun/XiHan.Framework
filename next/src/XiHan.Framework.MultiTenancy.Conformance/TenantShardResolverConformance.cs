@@ -9,8 +9,11 @@ using Xunit;
 namespace XiHan.Framework.MultiTenancy.Conformance;
 
 /// <summary>
-/// <see cref="ITenantShardResolver"/> 的一致性套件。继承并实现 <see cref="CreateResolverAsync"/>，全部用例随之执行。
+/// <see cref="ITenantShardResolver"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateResolverAsync"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class TenantShardResolverConformance
 {
@@ -36,13 +39,19 @@ public abstract class TenantShardResolverConformance
     public static TenantInfo Shared { get; } = new() { Id = "beta", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["Tier"] = "silver" } };
 
     /// <summary>
-    /// 用给定租户创建被测解析器。每个用例调用一次。
+    /// 用给定租户创建被测解析器。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract ValueTask<ITenantShardResolver> CreateResolverAsync(IReadOnlyList<TenantInfo> tenants);
 
     /// <summary>
-    /// 用例 1：分库租户解析出分片：连接串、小写的提供者名与去掉前缀的透传属性；其他租户属性不进分片。
+    /// 用例 1：分库租户解析出分片。
     /// </summary>
+    /// <remarks>
+    /// 连接串、小写的提供者名与去掉前缀的透传属性；其他租户属性不进分片。
+    /// </remarks>
     [Fact]
     public async Task Resolve_ReturnsShard_ForShardedTenant()
     {
@@ -75,8 +84,11 @@ public abstract class TenantShardResolverConformance
     }
 
     /// <summary>
-    /// 用例 3：重复解析结果一致；失效单个或全部租户后再解析仍得到同样的分片。
+    /// 用例 3：重复解析结果一致。
     /// </summary>
+    /// <remarks>
+    /// 失效单个或全部租户后再解析仍得到同样的分片。
+    /// </remarks>
     [Fact]
     public async Task Resolve_IsStable_AcrossInvalidate()
     {

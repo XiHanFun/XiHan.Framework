@@ -7,18 +7,27 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 能力包入口。一个实例对应一份清单；通过 <see cref="AppBuilder.UseFeature{TFeature}()"/> 显式加入，内核不扫描、不推断。
+/// 能力包入口。
 /// </summary>
+/// <remarks>
+/// 一个实例对应一份清单；通过 <see cref="AppBuilder.UseFeature{TFeature}()"/> 显式加入，内核不扫描、不推断。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IFeature
 {
     /// <summary>
-    /// 清单。源生成器可从 <see cref="Capabilities.CapabilityAttribute"/> 生成此属性。
+    /// 清单。
     /// </summary>
+    /// <remarks>
+    /// 源生成器可从 <see cref="Capabilities.CapabilityAttribute"/> 生成此属性。
+    /// </remarks>
     Manifest Manifest { get; }
 
     /// <summary>
-    /// 注册服务、贡献中间件、读取绑定。在依赖解析完成后、按拓扑顺序调用。
+    /// 注册服务、贡献中间件、读取绑定。
     /// </summary>
+    /// <remarks>
+    /// 在依赖解析完成后、按拓扑顺序调用。
+    /// </remarks>
     void Configure(FeatureContext context);
 }

@@ -9,11 +9,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Database.Grants;
 
 /// <summary>
-/// 数据库授予存储（单例）：按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。
-/// 读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；基础设施异常原样抛出，<see cref="PermissionChecker"/> 不捕获，由内核转成 Unexpected 结果。
-/// 缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；
-/// <see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>。
+/// 数据库授予存储（单例）。
 /// </summary>
+/// <remarks>
+/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；基础设施异常原样抛出，<see cref="PermissionChecker"/> 不捕获，由内核转成 Unexpected 结果。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
 {
@@ -28,8 +28,11 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     private readonly DatabaseSecurityOptions _options;
 
     /// <summary>
-    /// 时钟；判定条目过期。
+    /// 时钟。
     /// </summary>
+    /// <remarks>
+    /// 判定条目过期。
+    /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
@@ -114,8 +117,11 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 取未过期的缓存条目；过期的条目顺手移除。
+    /// 取未过期的缓存条目。
     /// </summary>
+    /// <remarks>
+    /// 过期的条目顺手移除。
+    /// </remarks>
     private bool TryGetCached(GrantSubject subject, string? tenant, out FrozenSet<string> grants)
     {
         lock (_gate)
@@ -142,8 +148,11 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 写入缓存；新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）。
+    /// 写入缓存。
     /// </summary>
+    /// <remarks>
+    /// 新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）。
+    /// </remarks>
     private void Store(GrantSubject subject, string? tenant, FrozenSet<string> grants)
     {
         var expiresAt = _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : (DateTimeOffset?)null;

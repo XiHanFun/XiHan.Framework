@@ -7,8 +7,11 @@ using XiHan.Framework.Messaging.Conformance;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 真实 RabbitMQ 来自环境变量 <c>XIHAN_TEST_RABBITMQ</c>（如 <c>amqp://guest:guest@localhost:5672</c>）；未设置时跳过需要它的用例。
+/// 真实 RabbitMQ 来自环境变量 <c>XIHAN_TEST_RABBITMQ</c>。
 /// </summary>
+/// <remarks>
+/// 如 <c>amqp://guest:guest@localhost:5672</c>。未设置时跳过需要它的用例。
+/// </remarks>
 public sealed class RabbitMQMessageBrokerConformanceTests : MessageBrokerConformance
 {
     /// <summary>

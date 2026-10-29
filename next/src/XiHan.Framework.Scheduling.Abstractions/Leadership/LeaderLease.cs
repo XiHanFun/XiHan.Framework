@@ -7,8 +7,11 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Abstractions.Leadership;
 
 /// <summary>
-/// 领导租约：持有期间本实例是资源的领导；到期前须 <see cref="RenewAsync"/>，不再需要时 <see cref="ReleaseAsync"/>。释放即放弃。
+/// 领导租约。
 /// </summary>
+/// <remarks>
+/// 持有期间本实例是资源的领导；到期前须 <see cref="RenewAsync"/>，不再需要时 <see cref="ReleaseAsync"/>。释放即放弃。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class LeaderLease : IAsyncDisposable
 {
@@ -42,13 +45,19 @@ public abstract class LeaderLease : IAsyncDisposable
     public abstract bool IsHeld { get; }
 
     /// <summary>
-    /// 续约一个存活时间；已过期或已释放返回 <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// 续约一个存活时间。
     /// </summary>
+    /// <remarks>
+    /// 已过期或已释放返回 <see cref="SchedulingErrors.LeaseHeld"/>。
+    /// </remarks>
     public abstract ValueTask<Result> RenewAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// 释放；幂等。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 幂等。
+    /// </remarks>
     public abstract ValueTask ReleaseAsync();
 
     /// <inheritdoc />

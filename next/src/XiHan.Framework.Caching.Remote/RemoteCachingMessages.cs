@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// 远程缓存插件侧错误的消息键（<c>framework-sdk-go</c> 的 <c>caching</c> 包等实现返回这些键）；文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，
-/// 宿主据此翻译插件的失败，不依赖插件自带的目录。
+/// 远程缓存插件侧错误的消息键（<c>framework-sdk-go</c> 的 <c>caching</c> 包等实现返回这些键）。
 /// </summary>
+/// <remarks>
+/// 文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，宿主据此翻译插件的失败，不依赖插件自带的目录。
+/// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public static class RemoteCachingMessages
 {
@@ -39,12 +41,18 @@ public static class RemoteCachingMessages
     public const string CapacityReached = "caching.remote.capacity_reached";
 
     /// <summary>
-    /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// 延迟装载的目录。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// </remarks>
     private static readonly Lazy<MessageCatalog> _catalog = new(static () => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(RemoteCachingMessages)));
 
     /// <summary>
-    /// 目录实例；首次访问时从嵌入资源装载。
+    /// 目录实例。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时从嵌入资源装载。
+    /// </remarks>
     public static MessageCatalog Catalog => _catalog.Value;
 }

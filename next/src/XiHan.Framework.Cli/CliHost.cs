@@ -17,8 +17,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 组装工具的服务与命令并执行一条命令行。工具不是 XiHan 应用：没有能力图谱与管道，只借用命令行宿主的解析、帮助、失败输出与退出码。
+/// 组装工具的服务与命令并执行一条命令行。
 /// </summary>
+/// <remarks>
+/// 工具不是 XiHan 应用：没有能力图谱与管道，只借用命令行宿主的解析、帮助、失败输出与退出码。
+/// </remarks>
 internal static class CliHost
 {
     /// <summary>

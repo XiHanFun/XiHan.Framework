@@ -19,8 +19,11 @@ public sealed record InMemoryWorkflowOptions
     public const string ConfigurationSection = "XiHan:Workflow:InMemory";
 
     /// <summary>
-    /// 定义存储容量；默认 1000。
+    /// 定义存储容量。
     /// </summary>
+    /// <remarks>
+    /// 默认 1000。
+    /// </remarks>
     public int MaxDefinitions
     {
         get => field;
@@ -28,8 +31,11 @@ public sealed record InMemoryWorkflowOptions
     } = 1000;
 
     /// <summary>
-    /// 实例存储容量；默认 10000。
+    /// 实例存储容量。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000。
+    /// </remarks>
     public int MaxInstances
     {
         get => field;
@@ -37,8 +43,11 @@ public sealed record InMemoryWorkflowOptions
     } = 10_000;
 
     /// <summary>
-    /// 节点实例存储容量；默认 100000。
+    /// 节点实例存储容量。
     /// </summary>
+    /// <remarks>
+    /// 默认 100000。
+    /// </remarks>
     public int MaxNodeInstances
     {
         get => field;
@@ -46,8 +55,11 @@ public sealed record InMemoryWorkflowOptions
     } = 100_000;
 
     /// <summary>
-    /// 书签存储容量；默认 100000。
+    /// 书签存储容量。
     /// </summary>
+    /// <remarks>
+    /// 默认 100000。
+    /// </remarks>
     public int MaxBookmarks
     {
         get => field;
@@ -55,8 +67,11 @@ public sealed record InMemoryWorkflowOptions
     } = 100_000;
 
     /// <summary>
-    /// 到期书签的轮询周期；默认 1 秒。
+    /// 到期书签的轮询周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 秒。
+    /// </remarks>
     public TimeSpan PollInterval
     {
         get => field;
@@ -64,8 +79,11 @@ public sealed record InMemoryWorkflowOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 每次轮询最多恢复的书签数；默认 100。
+    /// 每次轮询最多恢复的书签数。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int BatchSize
     {
         get => field;
@@ -73,8 +91,11 @@ public sealed record InMemoryWorkflowOptions
     } = 100;
 
     /// <summary>
-    /// 从配置读取：<c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。
+    /// </remarks>
     public static InMemoryWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

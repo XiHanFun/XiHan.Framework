@@ -32,9 +32,11 @@ public static class MessagingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记一种领域事件（RFC-0009）：聚合记录的 <typeparamref name="TEvent"/> 在工作单元提交前发布到 <paramref name="topic"/>，CloudEvents <c>type</c> 为 <paramref name="type"/>，
-    /// 数据用 <paramref name="info"/> 序列化（源生成，不经反射），<paramref name="subject"/> 给出信封的 <c>subject</c>。首次调用同时注册 <see cref="IDomainEventDispatcher"/> 的实现 <see cref="DomainEventDispatcher"/>（作用域）。
+    /// 登记一种领域事件（RFC-0009）。
     /// </summary>
+    /// <remarks>
+    /// 聚合记录的 <typeparamref name="TEvent"/> 在工作单元提交前发布到 <paramref name="topic"/>，CloudEvents <c>type</c> 为 <paramref name="type"/>，数据用 <paramref name="info"/> 序列化（源生成，不经反射），<paramref name="subject"/> 给出信封的 <c>subject</c>。首次调用同时注册 <see cref="IDomainEventDispatcher"/> 的实现 <see cref="DomainEventDispatcher"/>（作用域）。
+    /// </remarks>
     public static IServiceCollection AddDomainEvent<TEvent>(this IServiceCollection services, string topic, string type, JsonTypeInfo<TEvent> info, Func<TEvent, string?>? subject = null)
         where TEvent : IDomainEvent
     {
@@ -48,8 +50,11 @@ public static class MessagingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 取（必要时创建）领域事件登记表；以实例注册，多次调用返回同一对象。
+    /// 取（必要时创建）领域事件登记表。
     /// </summary>
+    /// <remarks>
+    /// 以实例注册，多次调用返回同一对象。
+    /// </remarks>
     public static DomainEventRegistry GetDomainEventRegistry(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);

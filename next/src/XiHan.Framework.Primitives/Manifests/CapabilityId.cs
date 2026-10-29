@@ -7,8 +7,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives.Manifests;
 
 /// <summary>
-/// 能力 ID 格式：<c>&lt;领域小写&gt;.&lt;能力&gt;</c>，例如 <c>persistence.relational</c>。见 <c>spec/conventions/capability-ids.md</c>。
+/// 能力 ID 格式。
 /// </summary>
+/// <remarks>
+/// <c>&lt;领域小写&gt;.&lt;能力&gt;</c>，例如 <c>persistence.relational</c>。见 <c>spec/conventions/capability-ids.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class CapabilityId
 {

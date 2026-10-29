@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 雪花标识生成器的选项。从配置节 <c>XiHan:Persistence:Snowflake</c> 显式逐键读取，不经反射绑定。
+/// 雪花标识生成器的选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Persistence:Snowflake</c> 显式逐键读取，不经反射绑定。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record SnowflakeOptions
 {
@@ -24,8 +27,11 @@ public sealed record SnowflakeOptions
     public static DateTimeOffset DefaultEpoch { get; } = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 时间戳的起点（UTC）。同一套数据一经写入不得再改，否则已有标识解析出的时间会错位。
+    /// 时间戳的起点（UTC）。
     /// </summary>
+    /// <remarks>
+    /// 同一套数据一经写入不得再改，否则已有标识解析出的时间会错位。
+    /// </remarks>
     public DateTimeOffset Epoch
     {
         get => field;
@@ -33,8 +39,11 @@ public sealed record SnowflakeOptions
     } = DefaultEpoch;
 
     /// <summary>
-    /// 显式指定的机器位（0–1023）；<see langword="null"/> 表示启动时经分布式锁租约分配。
+    /// 显式指定的机器位（0–1023）。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示启动时经分布式锁租约分配。
+    /// </remarks>
     public int? WorkerId
     {
         get => field;
@@ -53,8 +62,11 @@ public sealed record SnowflakeOptions
     } = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
-    /// 租约分配时每个机器位租约的存活时间；每三分之一存活时间续约一次。
+    /// 租约分配时每个机器位租约的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 每三分之一存活时间续约一次。
+    /// </remarks>
     public TimeSpan LeaseTimeToLive
     {
         get => field;
@@ -62,8 +74,11 @@ public sealed record SnowflakeOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 从配置读取：<c>Epoch</c>（ISO 8601）、<c>WorkerId</c>、<c>ClockDriftToleranceMilliseconds</c>、<c>LeaseTimeToLiveSeconds</c>；缺省键沿用默认值，非法值抛出 <see cref="ArgumentException"/>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>Epoch</c>（ISO 8601）、<c>WorkerId</c>、<c>ClockDriftToleranceMilliseconds</c>、<c>LeaseTimeToLiveSeconds</c>；缺省键沿用默认值，非法值抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static SnowflakeOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

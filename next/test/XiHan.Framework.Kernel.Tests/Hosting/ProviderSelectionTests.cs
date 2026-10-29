@@ -9,19 +9,28 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Hosting;
 
 /// <summary>
-/// 提供者选择：显式 Provider 优先于 default，选中结果回填到节点，未被选中的节点不装配。
+/// 提供者选择。
 /// </summary>
+/// <remarks>
+/// 显式 Provider 优先于 default，选中结果回填到节点，未被选中的节点不装配。
+/// </remarks>
 public sealed class ProviderSelectionTests
 {
     /// <summary>
-    /// 同时提供本地与分布式缓存的内存实现；默认为 default 角色。
+    /// 同时提供本地与分布式缓存的内存实现。
     /// </summary>
+    /// <remarks>
+    /// 默认为 default 角色。
+    /// </remarks>
     private static Manifest Memory(ManifestRole role = ManifestRole.Default)
         => Manifests.Create("xihan.caching.inmemory", provides: ["caching.local@1", "caching.distributed@1"], requires: ["kernel.hosting@1"], role: role);
 
     /// <summary>
-    /// 只提供分布式缓存的显式 Provider；清单 ID 可改，便于构造第二个显式 Provider。
+    /// 只提供分布式缓存的显式 Provider。
     /// </summary>
+    /// <remarks>
+    /// 清单 ID 可改，便于构造第二个显式 Provider。
+    /// </remarks>
     private static Manifest Redis(string id = "xihan.caching.redis")
         => Manifests.Create(id, provides: ["caching.distributed@1"], requires: ["kernel.hosting@1"]);
 

@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Observability.OpenTelemetry;
 
 /// <summary>
-/// 可观测性的能力 ID 与接口版本。内核直接基于 <c>System.Diagnostics</c>，没有抽象包；本能力只约定导出器的装配。
+/// 可观测性的能力 ID 与接口版本。
 /// </summary>
+/// <remarks>
+/// 内核直接基于 <c>System.Diagnostics</c>，没有抽象包；本能力只约定导出器的装配。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObservabilityCapabilities
 {

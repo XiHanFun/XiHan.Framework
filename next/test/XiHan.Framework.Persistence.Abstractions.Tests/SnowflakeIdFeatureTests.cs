@@ -11,8 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeIdFeature"/> 的装配：配置了机器位时固定来源、没有配置时经分布式锁租约分配并上报健康项、既没配置也没有锁时启动失败。
+/// <see cref="SnowflakeIdFeature"/> 的装配。
 /// </summary>
+/// <remarks>
+/// 配置了机器位时固定来源、没有配置时经分布式锁租约分配并上报健康项、既没配置也没有锁时启动失败。
+/// </remarks>
 public sealed class SnowflakeIdFeatureTests
 {
     [Fact]

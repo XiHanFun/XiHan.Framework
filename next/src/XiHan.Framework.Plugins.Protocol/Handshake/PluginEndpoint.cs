@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
 /// <summary>
-/// 一个本机 gRPC 端点：Unix 域套接字、回环 TCP 或 Windows 命名管道（<c>spec/plugin/handshake.md</c>）。
+/// 一个本机 gRPC 端点。
 /// </summary>
+/// <remarks>
+/// Unix 域套接字、回环 TCP 或 Windows 命名管道（<c>spec/plugin/handshake.md</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record PluginEndpoint
 {
@@ -107,8 +110,11 @@ public sealed partial record PluginEndpoint
     }
 
     /// <summary>
-    /// 网络类型已知且地址合法；TCP 只接受带端口的回环地址，其他网络只要求地址非空。
+    /// 网络类型已知且地址合法。
     /// </summary>
+    /// <remarks>
+    /// TCP 只接受带端口的回环地址，其他网络只要求地址非空。
+    /// </remarks>
     private static bool IsValid(string network, string address) => network switch
     {
         Unix or NamedPipe => !string.IsNullOrWhiteSpace(address),

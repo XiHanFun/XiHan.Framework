@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions;
 
 /// <summary>
-/// 持久化子系统的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// 持久化子系统的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PersistenceMessages
 {
@@ -18,23 +21,35 @@ public static class PersistenceMessages
     public const string CatalogName = "persistence";
 
     /// <summary>
-    /// 多租户实体在没有租户的调用里新增。参数：<c>entity</c>。
+    /// 多租户实体在没有租户的调用里新增。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>。
+    /// </remarks>
     public const string TenantRequired = "persistence.entity.tenant_required";
 
     /// <summary>
-    /// 新增的标识已存在。参数：<c>entity</c>、<c>id</c>。
+    /// 新增的标识已存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>id</c>。
+    /// </remarks>
     public const string Duplicate = "persistence.entity.duplicate";
 
     /// <summary>
-    /// 并发戳过期。参数：<c>entity</c>、<c>id</c>。
+    /// 并发戳过期。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>id</c>。
+    /// </remarks>
     public const string StaleStamp = "persistence.entity.stale_stamp";
 
     /// <summary>
-    /// 实体不存在。参数：<c>entity</c>、<c>id</c>。
+    /// 实体不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>id</c>。
+    /// </remarks>
     public const string NotFound = "persistence.entity.not_found";
 
     /// <summary>
@@ -43,23 +58,35 @@ public static class PersistenceMessages
     public const string ReadOnly = "persistence.unit_of_work.read_only";
 
     /// <summary>
-    /// 聚合有未派发的领域事件但没有注册派发器。参数：<c>aggregate</c>、<c>count</c>。
+    /// 聚合有未派发的领域事件但没有注册派发器。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>aggregate</c>、<c>count</c>。
+    /// </remarks>
     public const string EventsUndispatched = "persistence.unit_of_work.events_undispatched";
 
     /// <summary>
-    /// 实体上的乐观并发冲突。参数：<c>entity</c>、<c>reason</c>。
+    /// 实体上的乐观并发冲突。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>reason</c>。
+    /// </remarks>
     public const string ConcurrencyConflict = "persistence.entity.concurrency_conflict";
 
     /// <summary>
-    /// 提交时的乐观并发冲突。参数：<c>reason</c>。
+    /// 提交时的乐观并发冲突。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string CommitConflict = "persistence.unit_of_work.concurrency_conflict";
 
     /// <summary>
-    /// 内存表容量已满。参数：<c>entity</c>、<c>capacity</c>。
+    /// 内存表容量已满。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>capacity</c>。
+    /// </remarks>
     public const string CapacityExceeded = "persistence.store.capacity_exceeded";
 
     /// <summary>
@@ -73,12 +100,18 @@ public static class PersistenceMessages
     public const string WorkerIdUnavailable = "persistence.snowflake.worker_unavailable";
 
     /// <summary>
-    /// 延迟装载的目录；首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// 延迟装载的目录。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// </remarks>
     private static readonly Lazy<MessageCatalog> _catalog = new(static () => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(PersistenceMessages)));
 
     /// <summary>
-    /// 目录实例；首次访问时从嵌入资源装载。
+    /// 目录实例。
     /// </summary>
+    /// <remarks>
+    /// 首次访问时从嵌入资源装载。
+    /// </remarks>
     public static MessageCatalog Catalog => _catalog.Value;
 }

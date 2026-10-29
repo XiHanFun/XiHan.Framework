@@ -6,8 +6,11 @@ using System.Text.Json;
 namespace XiHan.Framework.Configuration.Nacos.Tests;
 
 /// <summary>
-/// 真实 Nacos 来自环境变量 <c>XIHAN_TEST_NACOS</c>（如 <c>http://localhost:8848</c>），鉴权用 <c>XIHAN_TEST_NACOS_USERNAME</c> / <c>XIHAN_TEST_NACOS_PASSWORD</c>；未设置地址时跳过需要它的用例。
+/// 真实 Nacos 来自环境变量 <c>XIHAN_TEST_NACOS</c>（如 <c>http://localhost:8848</c>）。
 /// </summary>
+/// <remarks>
+/// 鉴权用 <c>XIHAN_TEST_NACOS_USERNAME</c> / <c>XIHAN_TEST_NACOS_PASSWORD</c>。未设置地址时跳过需要它的用例。
+/// </remarks>
 internal static class NacosTestServer
 {
     /// <summary>
@@ -21,13 +24,19 @@ internal static class NacosTestServer
     private static readonly HttpClient _http = new();
 
     /// <summary>
-    /// 环境变量里的服务地址；未设置为 <see langword="null"/>。
+    /// 环境变量里的服务地址。
     /// </summary>
+    /// <remarks>
+    /// 未设置为 <see langword="null"/>。
+    /// </remarks>
     public static string? ServiceUrl => Environment.GetEnvironmentVariable(EnvironmentVariable);
 
     /// <summary>
-    /// 返回服务地址；未设置时跳过当前用例。
+    /// 返回服务地址。
     /// </summary>
+    /// <remarks>
+    /// 未设置时跳过当前用例。
+    /// </remarks>
     public static string RequireServiceUrl()
     {
         Assert.SkipWhen(string.IsNullOrWhiteSpace(ServiceUrl), $"Set the environment variable '{EnvironmentVariable}' to a Nacos server address to run this test.");
@@ -75,8 +84,11 @@ internal static class NacosTestServer
     }
 
     /// <summary>
-    /// 发布接口返回后内容要经通知落到服务端的本地缓存才可读：轮询到取回的内容与发布的一致为止（最多 10 秒），免得用例读到上一版。
+    /// 发布接口返回后内容要经通知落到服务端的本地缓存才可读。
     /// </summary>
+    /// <remarks>
+    /// 轮询到取回的内容与发布的一致为止（最多 10 秒），免得用例读到上一版。
+    /// </remarks>
     private static async Task WaitUntilVisibleAsync(string dataId, string content, CancellationToken cancellationToken)
     {
         var url = RequireServiceUrl().TrimEnd('/') + "/nacos/v1/cs/configs?dataId=" + Uri.EscapeDataString(dataId) + "&group=DEFAULT_GROUP" + (await TokenQueryAsync(cancellationToken).ConfigureAwait(false)).Replace('?', '&');

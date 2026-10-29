@@ -10,10 +10,11 @@ using XiHan.Framework.Security.Abstractions;
 namespace XiHan.Framework.Hosting.AspNetCore;
 
 /// <summary>
-/// RFC 9457 Problem Details 的响应体。<c>code</c>、<c>traceId</c>、<c>errors</c>、<c>details</c> 是扩展成员：
-/// <c>errors</c> 只在 VALIDATION 种类的错误上出现，键是字段键（<see cref="SchemaViolation.Field"/>），值是该字段的消息数组；
-/// <c>details</c> 是 <see cref="Error.Details"/> 里的标量（字符串、布尔、数值、<see cref="Guid"/>、时间），按白名单输出，集合与对象不写。
+/// RFC 9457 Problem Details 的响应体。
 /// </summary>
+/// <remarks>
+/// <c>code</c>、<c>traceId</c>、<c>errors</c>、<c>details</c> 是扩展成员：<c>errors</c> 只在 VALIDATION 种类的错误上出现，键是字段键（<see cref="SchemaViolation.Field"/>），值是该字段的消息数组；<c>details</c> 是 <see cref="Error.Details"/> 里的标量（字符串、布尔、数值、<see cref="Guid"/>、时间），按白名单输出，集合与对象不写。
+/// </remarks>
 /// <param name="Type">问题类型 URI：<c>urn:xihan:error:&lt;错误码&gt;</c>。</param>
 /// <param name="Title">错误码的 KIND 段。</param>
 /// <param name="Status">HTTP 状态码。</param>
@@ -41,9 +42,11 @@ public sealed record ProblemResponse(
     public const string ErrorsKey = "errors";
 
     /// <summary>
-    /// 从错误构造响应体；<paramref name="detail"/> 给出时作为本地化后的说明，否则用 <see cref="Error.Message"/>；
-    /// <paramref name="translate"/> 把一条违规翻译成字段消息（宿主按调用方区域取文案），不给时用违规的原因文本。
+    /// 从错误构造响应体。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="detail"/> 给出时作为本地化后的说明，否则用 <see cref="Error.Message"/>；<paramref name="translate"/> 把一条违规翻译成字段消息（宿主按调用方区域取文案），不给时用违规的原因文本。
+    /// </remarks>
     public static ProblemResponse FromError(Error error, string instance, string traceId, string? detail = null, Func<SchemaViolation, string>? translate = null)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -84,8 +87,11 @@ public sealed record ProblemResponse(
     }
 
     /// <summary>
-    /// 是否认证失败（HTTP 401）：<see cref="SecurityErrors.NotAuthenticated"/>（未认证）或 <see cref="SecurityErrors.InvalidCredential"/>（凭据无效、过期或签名不符）。
+    /// 是否认证失败（HTTP 401）。
     /// </summary>
+    /// <remarks>
+    /// <see cref="SecurityErrors.NotAuthenticated"/>（未认证）或 <see cref="SecurityErrors.InvalidCredential"/>（凭据无效、过期或签名不符）。
+    /// </remarks>
     public static bool IsAuthenticationFailure(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -94,8 +100,11 @@ public sealed record ProblemResponse(
     }
 
     /// <summary>
-    /// VALIDATION 错误的字段级错误：细节 <c>errors</c> 里的违规按字段键分组（保持出现顺序），每条经 <paramref name="translate"/> 成文案；其他种类或没有违规为 <see langword="null"/>。
+    /// VALIDATION 错误的字段级错误。
     /// </summary>
+    /// <remarks>
+    /// 细节 <c>errors</c> 里的违规按字段键分组（保持出现顺序），每条经 <paramref name="translate"/> 成文案；其他种类或没有违规为 <see langword="null"/>。
+    /// </remarks>
     public static IReadOnlyDictionary<string, IReadOnlyList<string>>? FieldErrorsOf(Error error, Func<SchemaViolation, string> translate)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -127,8 +136,11 @@ public sealed record ProblemResponse(
     }
 
     /// <summary>
-    /// 细节里的标量：字符串、布尔、整数与浮点、<see cref="decimal"/>、<see cref="Guid"/>、<see cref="DateTimeOffset"/> / <see cref="DateTime"/> / <see cref="TimeSpan"/>、字符；其余（集合、对象、违规列表）不收，<see cref="ErrorsKey"/> 也不收。没有标量为 <see langword="null"/>。
+    /// 细节里的标量。
     /// </summary>
+    /// <remarks>
+    /// 字符串、布尔、整数与浮点、<see cref="decimal"/>、<see cref="Guid"/>、<see cref="DateTimeOffset"/> / <see cref="DateTime"/> / <see cref="TimeSpan"/>、字符；其余（集合、对象、违规列表）不收，<see cref="ErrorsKey"/> 也不收。没有标量为 <see langword="null"/>。
+    /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ScalarDetailsOf(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -204,8 +216,11 @@ public sealed record ProblemResponse(
         => value is null or string or bool or int or long or short or byte or sbyte or uint or ulong or ushort or double or float or decimal or Guid or DateTimeOffset or DateTime or TimeSpan or char;
 
     /// <summary>
-    /// 写一个标量成员：数值按数值、布尔按布尔、其余按字符串（时间为 ISO 8601，时长为不变区域文本）。
+    /// 写一个标量成员。
     /// </summary>
+    /// <remarks>
+    /// 数值按数值、布尔按布尔、其余按字符串（时间为 ISO 8601，时长为不变区域文本）。
+    /// </remarks>
     private static void WriteScalar(Utf8JsonWriter writer, string name, object? value)
     {
         switch (value)

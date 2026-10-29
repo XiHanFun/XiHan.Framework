@@ -8,21 +8,30 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 一种实体的有界表。读取返回快照；写入由工作单元在提交时原子应用。
+/// 一种实体的有界表。
 /// </summary>
+/// <remarks>
+/// 读取返回快照；写入由工作单元在提交时原子应用。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryTable<TEntity, TKey>(int capacity) : IInMemoryTable
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
     /// <summary>
-    /// 已提交的行，按标识索引；所有访问都在 <see cref="_gate"/> 内进行。
+    /// 已提交的行，按标识索引。
     /// </summary>
+    /// <remarks>
+    /// 所有访问都在 <see cref="_gate"/> 内进行。
+    /// </remarks>
     private readonly Dictionary<TKey, TEntity> _rows = [];
 
     /// <summary>
-    /// 保护 <see cref="_rows"/> 的锁；读取只在锁内复制快照，写入在锁内整批应用。
+    /// 保护 <see cref="_rows"/> 的锁。
     /// </summary>
+    /// <remarks>
+    /// 读取只在锁内复制快照，写入在锁内整批应用。
+    /// </remarks>
     private readonly Lock _gate = new();
 
     /// <summary>
@@ -70,8 +79,11 @@ public sealed class InMemoryTable<TEntity, TKey>(int capacity) : IInMemoryTable
     }
 
     /// <summary>
-    /// 原子应用一批变更：同键覆盖、缺键新增、删除缺键忽略；重复标识的判定在仓储 <c>AddAsync</c> 完成，不在这里。新增超出容量返回 <see cref="PersistenceErrors.CapacityExceeded"/>，此时整批不写。
+    /// 原子应用一批变更。
     /// </summary>
+    /// <remarks>
+    /// 同键覆盖、缺键新增、删除缺键忽略；重复标识的判定在仓储 <c>AddAsync</c> 完成，不在这里。新增超出容量返回 <see cref="PersistenceErrors.CapacityExceeded"/>，此时整批不写。
+    /// </remarks>
     public Result Apply(IReadOnlyDictionary<TKey, TEntity> upserts, IReadOnlySet<TKey> removals)
     {
         ArgumentNullException.ThrowIfNull(upserts);

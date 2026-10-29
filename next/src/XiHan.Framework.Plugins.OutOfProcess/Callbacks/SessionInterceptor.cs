@@ -8,8 +8,11 @@ using XiHan.Framework.Plugins.Protocol;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务的认证：每次调用必须带有效的 <c>xihan-plugin-session</c> 元数据，对应的运行时放进调用状态供服务取用。
+/// 宿主回调服务的认证。
 /// </summary>
+/// <remarks>
+/// 每次调用必须带有效的 <c>xihan-plugin-session</c> 元数据，对应的运行时放进调用状态供服务取用。
+/// </remarks>
 internal sealed class SessionInterceptor(PluginSessions sessions) : Interceptor
 {
     /// <summary>

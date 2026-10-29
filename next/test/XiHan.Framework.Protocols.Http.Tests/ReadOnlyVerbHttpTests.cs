@@ -14,8 +14,11 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// 声明只读的自定义动词经真实宿主走 <c>GET …:{verb}</c>，字段从路由值与查询串绑定；OpenAPI 里同样是 GET 与查询参数（ADR-0041）。
+/// 声明只读的自定义动词经真实宿主走 <c>GET …:{verb}</c>，字段从路由值与查询串绑定。
 /// </summary>
+/// <remarks>
+/// OpenAPI 里同样是 GET 与查询参数（ADR-0041）。
+/// </remarks>
 public sealed class ReadOnlyVerbHttpTests
 {
     [Fact]

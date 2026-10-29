@@ -24,8 +24,11 @@ public sealed record McpTool(string Name, OperationDescriptor Descriptor, string
     public const string DefaultInputSchema = """{"type":"object"}""";
 
     /// <summary>
-    /// 从操作描述创建：MCP 要求输入为对象、结构化输出为对象，所以只有 <c>type</c> 为 <c>object</c> 的 Schema 被采用。
+    /// 从操作描述创建。
     /// </summary>
+    /// <remarks>
+    /// MCP 要求输入为对象、结构化输出为对象，所以只有 <c>type</c> 为 <c>object</c> 的 Schema 被采用。
+    /// </remarks>
     public static McpTool Create(string name, OperationDescriptor descriptor)
     {
         McpToolName.Validate(name, nameof(name));

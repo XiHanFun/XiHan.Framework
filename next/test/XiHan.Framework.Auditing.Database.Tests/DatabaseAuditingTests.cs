@@ -24,8 +24,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为：顶替内存实现、经中间件进队列与刷写、错误往返与翻译、队列满丢弃、批满与定时刷写、停止时刷完、落库失败只记日志、选项解析。
+/// 数据库 Provider 特有的行为。
 /// </summary>
+/// <remarks>
+/// 顶替内存实现、经中间件进队列与刷写、错误往返与翻译、队列满丢弃、批满与定时刷写、停止时刷完、落库失败只记日志、选项解析。
+/// </remarks>
 public sealed class DatabaseAuditingTests
 {
     /// <summary>
@@ -235,8 +238,11 @@ public sealed class DatabaseAuditingTests
     }
 
     /// <summary>
-    /// 启动装配了内存持久化、内存本地化、内存审计（被顶替）、数据库审计与订单操作的宿主；时钟换成假时钟让刷写只由用例驱动，事件日志关闭。
+    /// 启动装配了内存持久化、内存本地化、内存审计、数据库审计与订单操作的宿主。
     /// </summary>
+    /// <remarks>
+    /// 被顶替。时钟换成假时钟让刷写只由用例驱动，事件日志关闭。
+    /// </remarks>
     private static Task<TestHost> StartAsync(TimeProvider clock, Action<IServiceCollection>? services = null, params KeyValuePair<string, string?>[] configuration)
         => TestHost.StartAsync(
             static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryAuditingFeature>().UseFeature<DatabaseAuditingFeature>().UseFeature<OrdersFeature>(),

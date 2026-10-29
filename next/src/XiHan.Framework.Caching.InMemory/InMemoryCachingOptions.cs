@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 内存缓存选项。从配置节 <c>XiHan:Caching:InMemory</c> 显式读取。
+/// 内存缓存选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Caching:InMemory</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryCachingOptions
 {
@@ -19,8 +22,11 @@ public sealed record InMemoryCachingOptions
     public const string ConfigurationSection = "XiHan:Caching:InMemory";
 
     /// <summary>
-    /// 每张表（字节存储、对象缓存各一张）的条目上限；默认 10000。
+    /// 每张表（字节存储、对象缓存各一张）的条目上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000。
+    /// </remarks>
     public int MaxEntries
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record InMemoryCachingOptions
     } = 10_000;
 
     /// <summary>
-    /// 未指定过期时的存活时间；默认 5 分钟。
+    /// 未指定过期时的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟。
+    /// </remarks>
     public TimeSpan DefaultTimeToLive
     {
         get => field;

@@ -8,9 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 命名存储实例的文件系统 Provider（名 <c>filesystem</c>）：设置的键同 <see cref="FileSystemObjectStorageOptions"/>，<c>RootPath</c> 必填（各实例各用各的目录，与缺省实例的目录也不要重叠）。
-/// 建出时即建根目录并扫描已用量；探测看总配额是否还有余量，与缺省实例的健康项同一口径。预签名地址由宿主代收发（<c>HostedBlobUrlSigner.ForStore</c>）。
+/// 命名存储实例的文件系统 Provider（名 <c>filesystem</c>）。
 /// </summary>
+/// <remarks>
+/// 设置的键同 <see cref="FileSystemObjectStorageOptions"/>，<c>RootPath</c> 必填（各实例各用各的目录，与缺省实例的目录也不要重叠）。建出时即建根目录并扫描已用量；探测看总配额是否还有余量，与缺省实例的健康项同一口径。预签名地址由宿主代收发（<c>HostedBlobUrlSigner.ForStore</c>）。
+/// </remarks>
 /// <param name="clock">时钟。</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FileSystemBlobStoreProvider(TimeProvider clock) : IBlobStoreProvider

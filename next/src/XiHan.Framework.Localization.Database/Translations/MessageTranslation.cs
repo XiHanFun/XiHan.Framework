@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 一条翻译：键与区域共同唯一，模板与语言文件里的写法相同。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;MessageTranslation&gt;()</c>。
+/// 一条翻译。
 /// </summary>
+/// <remarks>
+/// 键与区域共同唯一，模板与语言文件里的写法相同。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;MessageTranslation&gt;()</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MessageTranslation : IEntity<Guid>, IHasModificationTime
 {

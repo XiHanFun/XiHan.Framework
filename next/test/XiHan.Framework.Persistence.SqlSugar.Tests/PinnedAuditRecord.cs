@@ -7,8 +7,11 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 用 SqlSugar 的 <c>[Tenant]</c> 固定落在 <c>audit</c> 连接上的实体；多连接用例验证显式落点优先于默认规则。
+/// 用 SqlSugar 的 <c>[Tenant]</c> 固定落在 <c>audit</c> 连接上的实体。
 /// </summary>
+/// <remarks>
+/// 多连接用例验证显式落点优先于默认规则。
+/// </remarks>
 [Tenant("audit")]
 public sealed class PinnedAuditRecord : IEntity<Guid>
 {

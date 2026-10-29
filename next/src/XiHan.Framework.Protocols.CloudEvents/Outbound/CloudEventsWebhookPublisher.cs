@@ -9,16 +9,20 @@ using XiHan.Framework.Protocols.CloudEvents.Inbound;
 namespace XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 /// <summary>
-/// 出站 Webhook 发布者：把信封以 CloudEvents（binary 或 structured）POST 到主题配置的 URL（<c>XiHan:Protocols:CloudEvents:Webhooks:&lt;主题&gt;</c>）；
-/// 批量发布多条时用 batch 内容模式一次 POST，响应对整批生效。
-/// 作为具体类型注册，不替换消息代理的 <see cref="IMessagePublisher"/>；非 2xx 与连接失败都是 UNAVAILABLE，由调用方决定重试（例如经发件箱）。
+/// 出站 Webhook 发布者。
 /// </summary>
+/// <remarks>
+/// 把信封以 CloudEvents（binary 或 structured）POST 到主题配置的 URL（<c>XiHan:Protocols:CloudEvents:Webhooks:&lt;主题&gt;</c>）；批量发布多条时用 batch 内容模式一次 POST，响应对整批生效。作为具体类型注册，不替换消息代理的 <see cref="IMessagePublisher"/>；非 2xx 与连接失败都是 UNAVAILABLE，由调用方决定重试（例如经发件箱）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CloudEventsWebhookPublisher : IMessagePublisher
 {
     /// <summary>
-    /// 使用的命名 HttpClient；应用可按此名配置超时、重试与基地址。
+    /// 使用的命名 HttpClient。
     /// </summary>
+    /// <remarks>
+    /// 应用可按此名配置超时、重试与基地址。
+    /// </remarks>
     public const string HttpClientName = "xihan.protocols.cloudevents";
 
     /// <summary>

@@ -7,9 +7,11 @@ using XiHan.Framework.Plugins.Wasm.Runtime;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 一个模块实例：自己的 Store（内存上限、WASI、epoch 截止）、导入函数与导出函数的委托；按 ABI v1 的内存约定做一次调用。
-/// 实例不是线程安全的，调用由运行时串行化；回调引发的再入由 <see cref="WasmCallPump"/> 回到执行线程上。
+/// 一个模块实例。
 /// </summary>
+/// <remarks>
+/// 自己的 Store（内存上限、WASI、epoch 截止）、导入函数与导出函数的委托；按 ABI v1 的内存约定做一次调用。实例不是线程安全的，调用由运行时串行化；回调引发的再入由 <see cref="WasmCallPump"/> 回到执行线程上。
+/// </remarks>
 internal sealed class WasmInstance : IDisposable
 {
     /// <summary>
@@ -53,8 +55,11 @@ internal sealed class WasmInstance : IDisposable
     private readonly WasmCallPump _pump;
 
     /// <summary>
-    /// 实例化：定义导入、设上限与 WASI、实例化模块、调用 <c>_initialize</c>、读 ABI 版本并解析导出。
+    /// 实例化。
     /// </summary>
+    /// <remarks>
+    /// 定义导入、设上限与 WASI、实例化模块、调用 <c>_initialize</c>、读 ABI 版本并解析导出。
+    /// </remarks>
     /// <param name="engine">引擎。</param>
     /// <param name="module">已校验的模块。</param>
     /// <param name="functions">宿主导入函数。</param>
@@ -113,14 +118,20 @@ internal sealed class WasmInstance : IDisposable
     public bool Supports(string export) => _calls.ContainsKey(export);
 
     /// <summary>
-    /// 一次外层调用：设截止时间、在当前线程上登记执行线程，把请求写进客体内存，调用导出，读回响应并释放。
+    /// 一次外层调用。
     /// </summary>
+    /// <remarks>
+    /// 设截止时间、在当前线程上登记执行线程，把请求写进客体内存，调用导出，读回响应并释放。
+    /// </remarks>
     public WasmCallOutcome Call(string export, ReadOnlyMemory<byte> request, TimeSpan timeout)
         => _pump.Run(() => CallCore(export, request, timeout));
 
     /// <summary>
-    /// 一次再入调用：外层调用的导入函数等待期间、在执行线程上调用导出；不另设截止时间，受外层调用的截止时间约束。
+    /// 一次再入调用。
     /// </summary>
+    /// <remarks>
+    /// 外层调用的导入函数等待期间、在执行线程上调用导出；不另设截止时间，受外层调用的截止时间约束。
+    /// </remarks>
     public WasmCallOutcome CallNested(string export, ReadOnlyMemory<byte> request)
         => CallCore(export, request, null);
 

@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions;
 
 /// <summary>
-/// 消息选项。从配置节 <c>XiHan:Messaging</c> 显式读取。
+/// 消息选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Messaging</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MessagingOptions
 {
@@ -19,8 +22,11 @@ public sealed record MessagingOptions
     public const string ConfigurationSection = "XiHan:Messaging";
 
     /// <summary>
-    /// 一条消息最多投递次数（含首次）；超过进入死信。默认 3。
+    /// 一条消息最多投递次数（含首次）。
     /// </summary>
+    /// <remarks>
+    /// 超过进入死信。默认 3。
+    /// </remarks>
     public int MaxAttempts
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record MessagingOptions
     } = 3;
 
     /// <summary>
-    /// 死信主题后缀；默认 <c>.dlq</c>。
+    /// 死信主题后缀。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>.dlq</c>。
+    /// </remarks>
     public string DeadLetterSuffix
     {
         get => field;

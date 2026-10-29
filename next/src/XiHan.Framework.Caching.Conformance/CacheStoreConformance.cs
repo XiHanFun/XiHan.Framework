@@ -10,8 +10,11 @@ using Xunit;
 namespace XiHan.Framework.Caching.Conformance;
 
 /// <summary>
-/// <see cref="ICacheStore"/> 的一致性套件（含批量用例）。继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// <see cref="ICacheStore"/> 的一致性套件（含批量用例）。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class CacheStoreConformance
 {
@@ -21,13 +24,19 @@ public abstract class CacheStoreConformance
     protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
 
     /// <summary>
-    /// 创建被测存储。每个用例调用一次；返回的存储不应含有本套件使用的键。
+    /// 创建被测存储。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次；返回的存储不应含有本套件使用的键。
+    /// </remarks>
     protected abstract ICacheStore CreateStore();
 
     /// <summary>
-    /// 用例 1：写入后能读到同样的字节；没写过的键为无值。
+    /// 用例 1：写入后能读到同样的字节。
     /// </summary>
+    /// <remarks>
+    /// 没写过的键为无值。
+    /// </remarks>
     [Fact]
     public async Task Set_ThenGet_RoundTrips_AndMissingIsNone()
     {
@@ -42,8 +51,11 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：再次写入覆盖旧值；键区分大小写。
+    /// 用例 2：再次写入覆盖旧值。
     /// </summary>
+    /// <remarks>
+    /// 键区分大小写。
+    /// </remarks>
     [Fact]
     public async Task Set_Overwrites_AndKeysAreCaseSensitive()
     {
@@ -145,8 +157,11 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 8：滑动过期在读取时延长；不再读取后到期。
+    /// 用例 8：滑动过期在读取时延长。
     /// </summary>
+    /// <remarks>
+    /// 不再读取后到期。
+    /// </remarks>
     [Fact]
     public async Task SlidingExpiration_ExtendsOnRead_ThenExpires()
     {
@@ -214,8 +229,11 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 11：批量写入后批量读取：结果与键顺序一一对应、未命中为无值；同一键在一批里出现多次后者覆盖。
+    /// 用例 11：批量写入后批量读取。
     /// </summary>
+    /// <remarks>
+    /// 结果与键顺序一一对应、未命中为无值；同一键在一批里出现多次后者覆盖。
+    /// </remarks>
     [Fact]
     public async Task SetMany_ThenGetMany_KeepsOrder_AndLastWriteWins()
     {
@@ -240,8 +258,11 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 12：批量删除逐键报告是否存在，同一键出现多次第二次为假；之后批量读取都未命中。
+    /// 用例 12：批量删除逐键报告是否存在，同一键出现多次第二次为假。
     /// </summary>
+    /// <remarks>
+    /// 之后批量读取都未命中。
+    /// </remarks>
     [Fact]
     public async Task RemoveMany_ReportsPerKey()
     {
@@ -271,8 +292,11 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 14：批量写入的每项各自过期：短存活的到期后读不到、长存活的仍在；批量读取同样延长滑动过期。
+    /// 用例 14：批量写入的每项各自过期。
     /// </summary>
+    /// <remarks>
+    /// 短存活的到期后读不到、长存活的仍在；批量读取同样延长滑动过期。
+    /// </remarks>
     [Fact]
     public async Task SetMany_HonoursPerEntryExpiration_AndGetManyExtendsSliding()
     {
@@ -312,7 +336,10 @@ public abstract class CacheStoreConformance
     protected static ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
     /// <summary>
-    /// 读取结果转文本；无值抛出。
+    /// 读取结果转文本。
     /// </summary>
+    /// <remarks>
+    /// 无值抛出。
+    /// </remarks>
     protected static string Text(Maybe<ReadOnlyMemory<byte>> value) => Encoding.UTF8.GetString(value.ValueOrThrow().Span);
 }

@@ -6,8 +6,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives.Manifests;
 
 /// <summary>
-/// 清单 <c>bindings</c> 中的一项：需要宿主注入的资源。缺失必需绑定在启动期失败。
+/// 清单 <c>bindings</c> 中的一项。
 /// </summary>
+/// <remarks>
+/// 需要宿主注入的资源。缺失必需绑定在启动期失败。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record Binding
 {

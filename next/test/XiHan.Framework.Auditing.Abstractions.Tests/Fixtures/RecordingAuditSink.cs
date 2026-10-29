@@ -6,8 +6,11 @@ using XiHan.Framework.Kernel.Diagnostics;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 记录每条事件的接收器；可让写入抛出。
+/// 记录每条事件的接收器。
 /// </summary>
+/// <remarks>
+/// 可让写入抛出。
+/// </remarks>
 internal sealed class RecordingAuditSink : IAuditSink
 {
     /// <summary>

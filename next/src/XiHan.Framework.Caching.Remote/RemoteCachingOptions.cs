@@ -19,8 +19,11 @@ public sealed class RemoteCachingOptions
     public const string ConfigurationSection = "XiHan:Caching:Remote";
 
     /// <summary>
-    /// 每次操作的截止时间；超时按存储不可用处理。默认 5 秒。
+    /// 每次操作的截止时间。
     /// </summary>
+    /// <remarks>
+    /// 超时按存储不可用处理。默认 5 秒。
+    /// </remarks>
     public TimeSpan Timeout
     {
         get;

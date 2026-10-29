@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 一次调用的安全上下文：主体与租户。不可变；通过 <see cref="SecurityContextExtensions"/> 读写。
+/// 一次调用的安全上下文。
 /// </summary>
+/// <remarks>
+/// 主体与租户。不可变；通过 <see cref="SecurityContextExtensions"/> 读写。
+/// </remarks>
 /// <param name="Principal">主体。</param>
 /// <param name="Tenant">租户；无租户时为 <see langword="null"/>。</param>
 [ApiLevel(Stability.Stable, "5.0")]

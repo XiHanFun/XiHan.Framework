@@ -21,8 +21,11 @@ internal static class MicroTime
     public static string Format(DateTimeOffset time) => time.UtcDateTime.ToString(Pattern, CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// 解析；空或不合法为无值。
+    /// 解析。
     /// </summary>
+    /// <remarks>
+    /// 空或不合法为无值。
+    /// </remarks>
     public static DateTimeOffset? Parse(string? text)
         => !string.IsNullOrWhiteSpace(text) && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed) ? parsed : null;
 }

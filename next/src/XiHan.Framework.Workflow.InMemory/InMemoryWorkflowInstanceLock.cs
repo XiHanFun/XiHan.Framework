@@ -8,8 +8,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 进程内实例锁：每个实例一个信号量，没人用时回收；等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>。
+/// 进程内实例锁。
 /// </summary>
+/// <remarks>
+/// 每个实例一个信号量，没人用时回收；等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDisposable
 {

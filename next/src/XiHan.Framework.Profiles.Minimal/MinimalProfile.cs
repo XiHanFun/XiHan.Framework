@@ -14,8 +14,11 @@ namespace XiHan.Framework.Profiles.Minimal;
 public static class MinimalProfile
 {
     /// <summary>
-    /// 装配 Minimal 组合：内存本地化默认实现；内核与宿主由 <c>AddXiHan()</c> 与 <c>UseXiHan()</c> 提供。
+    /// 装配 Minimal 组合。
     /// </summary>
+    /// <remarks>
+    /// 内存本地化默认实现；内核与宿主由 <c>AddXiHan()</c> 与 <c>UseXiHan()</c> 提供。
+    /// </remarks>
     public static AppBuilder UseMinimalProfile(this AppBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);

@@ -10,9 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 两个响应为同一泛型、不同实参的列表操作（<c>users.list</c> → <c>PageResult&lt;UserResponse&gt;</c>，<c>roles.list</c> → <c>PageResult&lt;RoleResponse&gt;</c>）暴露给 HTTP，
-/// 验证 OpenAPI 把两份根 Schema 与字符串枚举定义都提升为各自的组件。
+/// 两个响应为同一泛型、不同实参的列表操作暴露给 HTTP。
 /// </summary>
+/// <remarks>
+/// <c>users.list</c> → <c>PageResult&lt;UserResponse&gt;</c>，<c>roles.list</c> → <c>PageResult&lt;RoleResponse&gt;</c>。验证 OpenAPI 把两份根 Schema 与字符串枚举定义都提升为各自的组件。
+/// </remarks>
 internal sealed class PagedFeature : IFeature
 {
     /// <inheritdoc />

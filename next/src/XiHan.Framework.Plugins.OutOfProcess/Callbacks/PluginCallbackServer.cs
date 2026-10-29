@@ -13,8 +13,11 @@ using XiHan.Framework.Plugins.Protocol.Handshake;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务器：一个只监听本机端点、只服务 <c>Host</c> 的 Kestrel 实例，与宿主应用自己的服务器无关。
+/// 宿主回调服务器。
 /// </summary>
+/// <remarks>
+/// 一个只监听本机端点、只服务 <c>Host</c> 的 Kestrel 实例，与宿主应用自己的服务器无关。
+/// </remarks>
 internal sealed class PluginCallbackServer(PluginEndpoint endpoint, PluginSessions sessions, IServiceProvider services, ILoggerFactory loggerFactory) : IAsyncDisposable
 {
     /// <summary>
@@ -33,8 +36,11 @@ internal sealed class PluginCallbackServer(PluginEndpoint endpoint, PluginSessio
     public PluginEndpoint Endpoint => endpoint;
 
     /// <summary>
-    /// 为本机选一个新端点：Windows 用命名管道，其他系统用临时目录下的 Unix 域套接字；名字随机，不与其他宿主冲突。
+    /// 为本机选一个新端点。
     /// </summary>
+    /// <remarks>
+    /// Windows 用命名管道，其他系统用临时目录下的 Unix 域套接字；名字随机，不与其他宿主冲突。
+    /// </remarks>
     public static PluginEndpoint CreateEndpoint()
     {
         var name = "xihan-host-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(6));

@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// VectorData 知识库 Provider：没有向量存储即启动失败；完整的摄入 → 检索 → 增强流程。
+/// VectorData 知识库 Provider。
 /// </summary>
+/// <remarks>
+/// 没有向量存储即启动失败；完整的摄入 → 检索 → 增强流程。
+/// </remarks>
 public sealed class VectorDataKnowledgeFeatureTests
 {
     [Fact]

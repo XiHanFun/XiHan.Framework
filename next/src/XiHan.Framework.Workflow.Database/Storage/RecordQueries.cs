@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 存储共用的仓储读写：按标识批量查找与查询都以 <see cref="EntityQuery.DefaultMaxTake"/> 为一批，超过的分批或分页循环；批量写入把逐项结果汇总成一个结果。
+/// 存储共用的仓储读写。
 /// </summary>
+/// <remarks>
+/// 按标识批量查找与查询都以 <see cref="EntityQuery.DefaultMaxTake"/> 为一批，超过的分批或分页循环；批量写入把逐项结果汇总成一个结果。
+/// </remarks>
 internal static class RecordQueries
 {
     /// <summary>
@@ -43,8 +46,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 按查询的过滤与排序分页读完：每页 <see cref="EntityQuery.DefaultMaxTake"/> 条，直到不足一页或达到 <paramref name="limit"/>。查询的排序必须是全序，分页才不重不漏。
+    /// 按查询的过滤与排序分页读完。
     /// </summary>
+    /// <remarks>
+    /// 每页 <see cref="EntityQuery.DefaultMaxTake"/> 条，直到不足一页或达到 <paramref name="limit"/>。查询的排序必须是全序，分页才不重不漏。
+    /// </remarks>
     public static async Task<List<TEntity>> ListAllAsync<TEntity>(IRepository<TEntity, string> repository, EntityQuery<TEntity> query, int? limit, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -70,8 +76,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 新增或整体替换：已有的行整行更新，没有的新增；同一批里同一标识后者覆盖前者。任一项失败即整体失败（由调用方据此回滚）。
+    /// 新增或整体替换。
     /// </summary>
+    /// <remarks>
+    /// 已有的行整行更新，没有的新增；同一批里同一标识后者覆盖前者。任一项失败即整体失败（由调用方据此回滚）。
+    /// </remarks>
     public static async ValueTask<Result> UpsertAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, Action<TEntity, TEntity> copy, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -104,8 +113,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 批量删除这些行；任一项失败即整体失败。
+    /// 批量删除这些行。
     /// </summary>
+    /// <remarks>
+    /// 任一项失败即整体失败。
+    /// </remarks>
     public static async ValueTask<Result> RemoveManyAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, CancellationToken cancellationToken)
         where TEntity : class, IEntity<string>
     {
@@ -119,8 +131,11 @@ internal static class RecordQueries
     }
 
     /// <summary>
-    /// 逐项结果里的第一个失败；没有为 <see langword="null"/>。
+    /// 逐项结果里的第一个失败。
     /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>。
+    /// </remarks>
     private static Result? FirstFailure(IReadOnlyList<Result> results)
     {
         foreach (var result in results)

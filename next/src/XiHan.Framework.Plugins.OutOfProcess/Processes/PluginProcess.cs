@@ -17,13 +17,19 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 
 /// <summary>
-/// 一个插件子进程：启动、读握手行、建立 gRPC 通道、转发 stderr / stdout 到日志、等待退出与终止。
+/// 一个插件子进程。
 /// </summary>
+/// <remarks>
+/// 启动、读握手行、建立 gRPC 通道、转发 stderr / stdout 到日志、等待退出与终止。
+/// </remarks>
 internal sealed partial class PluginProcess : IAsyncDisposable
 {
     /// <summary>
-    /// 允许原样传给插件的环境变量：PATH、用户目录、临时目录、区域与时区，以及操作系统运行所需的系统变量。
+    /// 允许原样传给插件的环境变量。
     /// </summary>
+    /// <remarks>
+    /// PATH、用户目录、临时目录、区域与时区，以及操作系统运行所需的系统变量。
+    /// </remarks>
     private static readonly string[] _inheritedVariables =
     [
         "PATH", "HOME", "USERPROFILE", "TMP", "TEMP", "TMPDIR", "LANG", "LC_ALL", "TZ",
@@ -56,13 +62,19 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    /// 到插件端点的通道；握手行之后才有。
+    /// 到插件端点的通道。
     /// </summary>
+    /// <remarks>
+    /// 握手行之后才有。
+    /// </remarks>
     private GrpcChannel? _channel;
 
     /// <summary>
-    /// 插件服务客户端；握手行之后才有。
+    /// 插件服务客户端。
     /// </summary>
+    /// <remarks>
+    /// 握手行之后才有。
+    /// </remarks>
     private Plugin.PluginClient? _client;
 
     /// <summary>
@@ -84,8 +96,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     public string SessionToken { get; }
 
     /// <summary>
-    /// 插件公布的端点；握手行之后才有。
+    /// 插件公布的端点。
     /// </summary>
+    /// <remarks>
+    /// 握手行之后才有。
+    /// </remarks>
     public PluginEndpoint? Endpoint { get; private set; }
 
     /// <summary>
@@ -109,8 +124,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     public Plugin.PluginClient Client => _client ?? throw new InvalidOperationException("The plugin process has not published its endpoint yet.");
 
     /// <summary>
-    /// 启动进程、读握手行并建立通道；任一步失败都终止进程并返回错误。
+    /// 启动进程、读握手行并建立通道。
     /// </summary>
+    /// <remarks>
+    /// 任一步失败都终止进程并返回错误。
+    /// </remarks>
     public static async Task<Result<PluginProcess>> LaunchAsync(PluginLaunch launch, TimeProvider clock, ILogger logger, CancellationToken cancellationToken)
     {
         var info = new ProcessStartInfo(launch.Executable)
@@ -175,8 +193,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 在宽限内等待进程自行退出；返回是否退出。
+    /// 在宽限内等待进程自行退出。
     /// </summary>
+    /// <remarks>
+    /// 返回是否退出。
+    /// </remarks>
     public async Task<bool> WaitForExitAsync(TimeSpan grace, TimeProvider clock, CancellationToken cancellationToken)
     {
         var completed = await Task.WhenAny(_exited.Task, Task.Delay(grace, clock, cancellationToken)).ConfigureAwait(false);
@@ -279,8 +300,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 逐行把插件输出转为日志：以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information。
+    /// 逐行把插件输出转为日志。
     /// </summary>
+    /// <remarks>
+    /// 以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information。
+    /// </remarks>
     private async Task PumpAsync(StreamReader reader)
     {
         try

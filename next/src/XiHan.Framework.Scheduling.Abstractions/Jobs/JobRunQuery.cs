@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 /// <summary>
-/// 运行历史查询：过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// 运行历史查询。
 /// </summary>
+/// <remarks>
+/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JobRunQuery
 {
@@ -22,8 +25,11 @@ public sealed record JobRunQuery
     public JobName? Job { get; init; }
 
     /// <summary>
-    /// 状态集合；空视同未限定。
+    /// 状态集合。
     /// </summary>
+    /// <remarks>
+    /// 空视同未限定。
+    /// </remarks>
     public IReadOnlyList<JobRunState>? States { get; init; }
 
     /// <summary>
@@ -37,8 +43,11 @@ public sealed record JobRunQuery
     public DateTimeOffset? To { get; init; }
 
     /// <summary>
-    /// 跳过条数；默认 0。
+    /// 跳过条数。
     /// </summary>
+    /// <remarks>
+    /// 默认 0。
+    /// </remarks>
     public int Skip
     {
         get => field;
@@ -46,8 +55,11 @@ public sealed record JobRunQuery
     }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>；默认 100。
+    /// 最多返回条数，1 到 <see cref="MaxLimit"/>。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int Limit
     {
         get => field;

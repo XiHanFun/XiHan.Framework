@@ -9,8 +9,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Values;
 
 /// <summary>
-/// 实例变量的视图：按名读写 JSON 值并做类型化转换；写入的值深拷贝（JSON 节点只能有一个父）。
+/// 实例变量的视图。
 /// </summary>
+/// <remarks>
+/// 按名读写 JSON 值并做类型化转换；写入的值深拷贝（JSON 节点只能有一个父）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowVariables
 {
@@ -20,8 +23,11 @@ public sealed class WorkflowVariables
     private readonly JsonObject _values;
 
     /// <summary>
-    /// 包装一个对象；修改直接作用于它。
+    /// 包装一个对象。
     /// </summary>
+    /// <remarks>
+    /// 修改直接作用于它。
+    /// </remarks>
     public WorkflowVariables(JsonObject values)
     {
         _values = values ?? throw new ArgumentNullException(nameof(values));
@@ -38,8 +44,11 @@ public sealed class WorkflowVariables
     public int Count => _values.Count;
 
     /// <summary>
-    /// 按名取值；没有为 <see langword="null"/>。
+    /// 按名取值。
     /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>。
+    /// </remarks>
     public JsonNode? this[string name] => Get(name);
 
     /// <summary>
@@ -52,8 +61,11 @@ public sealed class WorkflowVariables
     }
 
     /// <summary>
-    /// 按名取值；没有为 <see langword="null"/>。
+    /// 按名取值。
     /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>。
+    /// </remarks>
     public JsonNode? Get(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -61,8 +73,11 @@ public sealed class WorkflowVariables
     }
 
     /// <summary>
-    /// 按名取值并转成 <typeparamref name="T"/>；没有或转不成返回默认值。
+    /// 按名取值并转成 <typeparamref name="T"/>。
     /// </summary>
+    /// <remarks>
+    /// 没有或转不成返回默认值。
+    /// </remarks>
     public T? Get<T>(string name) => WorkflowValues.TryConvert<T>(Get(name), out var value) ? value : default;
 
     /// <summary>
@@ -120,7 +135,10 @@ public sealed class WorkflowVariables
     public JsonObject Snapshot() => (JsonObject)_values.DeepClone();
 
     /// <summary>
-    /// 底层对象（不拷贝；表达式求值用）。
+    /// 底层对象。
     /// </summary>
+    /// <remarks>
+    /// 不拷贝；表达式求值用。
+    /// </remarks>
     public JsonObject AsJsonObject() => _values;
 }

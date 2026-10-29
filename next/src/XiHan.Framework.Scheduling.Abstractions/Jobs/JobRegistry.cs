@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 /// <summary>
-/// 作业登记表：名字 → 定义；同名重复登记是编程错误。
+/// 作业登记表。
 /// </summary>
+/// <remarks>
+/// 名字 → 定义；同名重复登记是编程错误。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobRegistry
 {

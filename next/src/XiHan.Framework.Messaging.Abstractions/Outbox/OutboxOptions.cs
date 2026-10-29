@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 发件箱选项。从配置节 <c>XiHan:Messaging:Outbox</c> 显式读取。
+/// 发件箱选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Messaging:Outbox</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OutboxOptions
 {
@@ -19,8 +22,11 @@ public sealed record OutboxOptions
     public const string ConfigurationSection = "XiHan:Messaging:Outbox";
 
     /// <summary>
-    /// 轮询间隔；默认 1 秒。
+    /// 轮询间隔。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 秒。
+    /// </remarks>
     public TimeSpan PollInterval
     {
         get => field;
@@ -28,8 +34,11 @@ public sealed record OutboxOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 每轮最多投递条数；默认 100。
+    /// 每轮最多投递条数。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int BatchSize
     {
         get => field;

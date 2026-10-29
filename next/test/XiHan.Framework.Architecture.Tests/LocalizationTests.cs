@@ -11,9 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 本地化约定（RFC-0010）：带语言文件的包每种内置区域一个文件且键集一致、占位符与 <c>en-US</c> 一致、键的领域来自术语表、文件以约定逻辑名嵌入；
-/// <c>&lt;领域&gt;Messages</c> 常量与 <c>en-US.json</c> 一一对应；正式包里的 <see cref="Error"/> 调用点只用消息键常量。
+/// 本地化约定（RFC-0010）。
 /// </summary>
+/// <remarks>
+/// 带语言文件的包每种内置区域一个文件且键集一致、占位符与 <c>en-US</c> 一致、键的领域来自术语表、文件以约定逻辑名嵌入；<c>&lt;领域&gt;Messages</c> 常量与 <c>en-US.json</c> 一一对应；正式包里的 <see cref="Error"/> 调用点只用消息键常量。
+/// </remarks>
 public sealed partial class LocalizationTests
 {
     /// <summary>

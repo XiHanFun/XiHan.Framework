@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 登记四个回显操作：<c>echoes.create</c>（AI + HTTP，带 Schema）、<c>echoes.rename</c>（AI，无 Schema）、<c>echoes.secret</c>（只 HTTP）、<c>echoes.audit</c>（Internal）。
+/// 登记四个回显操作。
 /// </summary>
+/// <remarks>
+/// <c>echoes.create</c>（AI + HTTP，带 Schema）、<c>echoes.rename</c>（AI，无 Schema）、<c>echoes.secret</c>（只 HTTP）、<c>echoes.audit</c>（Internal）。
+/// </remarks>
 internal sealed class EchoFeature : IFeature
 {
     /// <inheritdoc />

@@ -22,8 +22,11 @@ public static class BlobMultipart
     public const int MaxPartNumber = 10_000;
 
     /// <summary>
-    /// 校验分片编号在 1 到 <see cref="MaxPartNumber"/> 之间；越界是编程错误，抛出。
+    /// 校验分片编号在 1 到 <see cref="MaxPartNumber"/> 之间。
     /// </summary>
+    /// <remarks>
+    /// 越界是编程错误，抛出。
+    /// </remarks>
     public static int ValidatePartNumber(int partNumber)
         => partNumber is >= 1 and <= MaxPartNumber ? partNumber : throw new ArgumentOutOfRangeException(nameof(partNumber), partNumber, $"The part number must be between 1 and {MaxPartNumber}.");
 }

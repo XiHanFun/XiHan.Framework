@@ -6,9 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件求值器（无状态，线程安全）。多值属性按"任一元素"判定（等于、比大小、包含、在集合中、在范围内、开头、结尾），否定运算符按"没有元素"判定；字符串比较不区分大小写。
-/// 为空 / 不为空把取不到、空列表与全是空白的字符串当空，可以取反；其余运算符遇到取不到的属性为无法判定，取反不翻转。
+/// 条件求值器（无状态，线程安全）。
 /// </summary>
+/// <remarks>
+/// 多值属性按"任一元素"判定（等于、比大小、包含、在集合中、在范围内、开头、结尾），否定运算符按"没有元素"判定；字符串比较不区分大小写。为空 / 不为空把取不到、空列表与全是空白的字符串当空，可以取反；其余运算符遇到取不到的属性为无法判定，取反不翻转。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConditionEvaluator : IConditionEvaluator
 {
@@ -69,8 +71,11 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 组内且：任一子句不命中或无法判定即不命中（不要说明时立即返回），否则任一待定即待定，否则命中。
+    /// 组内且。
     /// </summary>
+    /// <remarks>
+    /// 任一子句不命中或无法判定即不命中（不要说明时立即返回），否则任一待定即待定，否则命中。
+    /// </remarks>
     private static async ValueTask<(ConditionOutcome Outcome, IReadOnlyList<ConditionClauseEvaluation> Clauses)> EvaluateGroupAsync(CompiledConditionGroup group, TimeZoneInfo timeZone, IConditionAttributeSource source, bool explain, CancellationToken cancellationToken)
     {
         var anyPending = false;
@@ -101,8 +106,11 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 一个子句：编译出错为无法判定；取属性值，暂不可得为待定；为空 / 不为空直接判定；其余先把属性值转成值种类再运算。
+    /// 一个子句。
     /// </summary>
+    /// <remarks>
+    /// 编译出错为无法判定；取属性值，暂不可得为待定；为空 / 不为空直接判定；其余先把属性值转成值种类再运算。
+    /// </remarks>
     private static async ValueTask<ConditionClauseEvaluation> EvaluateClauseAsync(CompiledConditionClause clause, TimeZoneInfo timeZone, IConditionAttributeSource source, bool explain, CancellationToken cancellationToken)
     {
         if (clause.Error is not null || clause.Resolution is null)
@@ -183,8 +191,11 @@ public sealed class ConditionEvaluator : IConditionEvaluator
             : elements.Exists(element => ((string)element).Contains((string)clause.Scalar!, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
-    /// 闭区间；时刻的下限大于上限表示跨零点（落在下限之后或上限之前）。
+    /// 闭区间。
     /// </summary>
+    /// <remarks>
+    /// 时刻的下限大于上限表示跨零点（落在下限之后或上限之前）。
+    /// </remarks>
     private static bool InRange(object value, object min, object max, ConditionValueKind kind)
     {
         if (ConditionValues.Compare(min, max, kind) > 0)
@@ -201,8 +212,11 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     private static ConditionOutcome ToOutcome(bool result, bool isNegated) => result != isNegated ? ConditionOutcome.Matched : ConditionOutcome.NotMatched;
 
     /// <summary>
-    /// 子句说明；不要说明时不格式化属性值。
+    /// 子句说明。
     /// </summary>
+    /// <remarks>
+    /// 不要说明时不格式化属性值。
+    /// </remarks>
     private static ConditionClauseEvaluation Describe(CompiledConditionClause clause, ConditionOutcome outcome, IReadOnlyList<object> values, Error? reason, bool explain)
         => new(
             clause.Source.Key,

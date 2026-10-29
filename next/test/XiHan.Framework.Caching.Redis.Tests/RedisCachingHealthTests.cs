@@ -9,8 +9,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Redis.Tests;
 
 /// <summary>
-/// 健康项 <c>caching.redis.connection</c>：选项里的探测间隔解析；真实 Redis 可用时宿主启动后条目 Ready（未设置 <c>XIHAN_TEST_REDIS</c> 时跳过）。
+/// 健康项 <c>caching.redis.connection</c>。
 /// </summary>
+/// <remarks>
+/// 选项里的探测间隔解析；真实 Redis 可用时宿主启动后条目 Ready（未设置 <c>XIHAN_TEST_REDIS</c> 时跳过）。
+/// </remarks>
 public sealed class RedisCachingHealthTests
 {
     [Fact]

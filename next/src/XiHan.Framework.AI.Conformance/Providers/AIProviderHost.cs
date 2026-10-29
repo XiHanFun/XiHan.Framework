@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Conformance.Providers;
 
 /// <summary>
-/// Provider 目录套件的夹具：装配了被测 Provider 的根服务、它的 Provider 名与嵌入维度，以及释放句柄。
+/// Provider 目录套件的夹具。
 /// </summary>
+/// <remarks>
+/// 装配了被测 Provider 的根服务、它的 Provider 名与嵌入维度，以及释放句柄。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIProviderHost : IAsyncDisposable
 {

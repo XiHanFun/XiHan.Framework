@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式的语法或求值错误；在求值器边界翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>。
+/// 表达式的语法或求值错误。
 /// </summary>
+/// <remarks>
+/// 在求值器边界翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>。
+/// </remarks>
 internal sealed class ExpressionException : Exception
 {
     /// <summary>

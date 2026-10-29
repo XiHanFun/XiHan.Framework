@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 授权策略原语。安全子系统的 RBAC / ABAC 引擎实现它；内核只定义判定接口。
+/// 授权策略原语。
 /// </summary>
+/// <remarks>
+/// 安全子系统的 RBAC / ABAC 引擎实现它；内核只定义判定接口。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IPolicy
 {

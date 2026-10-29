@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 
 /// <summary>
-/// 对象键：<c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>。区分大小写。
+/// 对象键。
 /// </summary>
+/// <remarks>
+/// <c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>。区分大小写。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public readonly record struct BlobKey
 {
@@ -23,8 +26,11 @@ public readonly record struct BlobKey
     public const char Separator = '/';
 
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public BlobKey(string value)
     {
         Value = Validate(value);
@@ -84,8 +90,11 @@ public readonly record struct BlobKey
     }
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

@@ -22,8 +22,11 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库实现自己的行为：租约锁的接管与超时、选项读取、特性清单与领导权轮询、SQLite 上的计数与分页过滤、批量分批、长 JSON 往返、宿主停止后的不可达。
+/// 数据库实现自己的行为。
 /// </summary>
+/// <remarks>
+/// 租约锁的接管与超时、选项读取、特性清单与领导权轮询、SQLite 上的计数与分页过滤、批量分批、长 JSON 往返、宿主停止后的不可达。
+/// </remarks>
 public sealed class DatabaseWorkflowTests
 {
     [Fact]
@@ -288,8 +291,11 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 读租约行的持有者；没有行为 <see langword="null"/>。
+    /// 读租约行的持有者。
     /// </summary>
+    /// <remarks>
+    /// 没有行为 <see langword="null"/>。
+    /// </remarks>
     private static async Task<string?> HolderAsync(TestHost host, string id)
     {
         string? holder = null;

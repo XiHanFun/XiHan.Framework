@@ -12,8 +12,11 @@ using Status = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace EchoPlugin;
 
 /// <summary>
-/// <c>xihan.plugin.v1.Plugin</c> 的实现：四个操作（回显、经宿主回调中继、故意崩溃、列出收到的事件）、一个订阅与一个健康项。
+/// <c>xihan.plugin.v1.Plugin</c> 的实现。
 /// </summary>
+/// <remarks>
+/// 四个操作（回显、经宿主回调中继、故意崩溃、列出收到的事件）、一个订阅与一个健康项。
+/// </remarks>
 internal sealed partial class EchoPluginService(PluginState state, HostClient host, IHostApplicationLifetime lifetime, ILogger<EchoPluginService> logger) : Plugin.PluginBase
 {
     /// <summary>
@@ -168,8 +171,11 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     }
 
     /// <summary>
-    /// 经宿主回调调用 <c>payload.operation</c>，把宿主的结果原样返回；回调被拒时把尾部元数据里的错误码作为失败返回。
+    /// 经宿主回调调用 <c>payload.operation</c>，把宿主的结果原样返回。
     /// </summary>
+    /// <remarks>
+    /// 回调被拒时把尾部元数据里的错误码作为失败返回。
+    /// </remarks>
     private async Task<InvokeResponse> RelayAsync(JsonObject payload, InvocationMetadata? metadata, CancellationToken cancellationToken)
     {
         var operation = payload["operation"]?.GetValue<string>() ?? string.Empty;

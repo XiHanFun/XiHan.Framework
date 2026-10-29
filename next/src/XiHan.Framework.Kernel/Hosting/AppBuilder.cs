@@ -19,9 +19,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 应用构建器：收集特性、求解能力图谱、按拓扑顺序配置特性、把 <see cref="App"/> 与宿主服务注册进容器。
-/// 容器由宿主构建；内核只配置 <see cref="IServiceCollection"/>。
+/// 应用构建器。
 /// </summary>
+/// <remarks>
+/// 收集特性、求解能力图谱、按拓扑顺序配置特性、把 <see cref="App"/> 与宿主服务注册进容器。容器由宿主构建；内核只配置 <see cref="IServiceCollection"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AppBuilder
 {
@@ -36,18 +38,27 @@ public sealed class AppBuilder
     private readonly Dictionary<string, string> _providerSelections = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 通过 <see cref="UseOptions"/> 覆盖的内核选项；<see langword="null"/> 时从配置读取。
+    /// 通过 <see cref="UseOptions"/> 覆盖的内核选项。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 时从配置读取。
+    /// </remarks>
     private KernelOptions? _options;
 
     /// <summary>
-    /// 通过 <see cref="UseServiceBindingRoot"/> 覆盖的 Service Binding 根目录；<see langword="null"/> 时读环境变量。
+    /// 通过 <see cref="UseServiceBindingRoot"/> 覆盖的 Service Binding 根目录。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 时读环境变量。
+    /// </remarks>
     private string? _serviceBindingRoot;
 
     /// <summary>
-    /// 是否已调用过 <see cref="Build"/>；构建后禁止再修改。
+    /// 是否已调用过 <see cref="Build"/>。
     /// </summary>
+    /// <remarks>
+    /// 构建后禁止再修改。
+    /// </remarks>
     private bool _built;
 
     /// <summary>
@@ -71,8 +82,11 @@ public sealed class AppBuilder
     public IConfiguration Configuration { get; }
 
     /// <summary>
-    /// 应用的管道构建器；特性与应用都向它贡献中间件。
+    /// 应用的管道构建器。
     /// </summary>
+    /// <remarks>
+    /// 特性与应用都向它贡献中间件。
+    /// </remarks>
     public PipelineBuilder Pipeline { get; }
 
     /// <summary>
@@ -94,8 +108,11 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 显式指定某个能力由哪份清单提供；优先于配置 <c>XiHan:Providers:&lt;能力ID&gt;</c>。
+    /// 显式指定某个能力由哪份清单提供。
     /// </summary>
+    /// <remarks>
+    /// 优先于配置 <c>XiHan:Providers:&lt;能力ID&gt;</c>。
+    /// </remarks>
     public AppBuilder UseProvider(string capabilityId, string manifestId)
     {
         EnsureNotBuilt();
@@ -136,8 +153,11 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 求解能力图谱、配置特性并注册 <see cref="App"/>。只能调用一次。
+    /// 求解能力图谱、配置特性并注册 <see cref="App"/>。
     /// </summary>
+    /// <remarks>
+    /// 只能调用一次。
+    /// </remarks>
     /// <returns>已解析图。</returns>
     public ResolvedGraph Build()
     {

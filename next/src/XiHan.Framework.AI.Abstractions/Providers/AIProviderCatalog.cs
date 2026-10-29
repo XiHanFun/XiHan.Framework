@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Providers;
 
 /// <summary>
-/// Provider 目录的实现（单例）：按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准。
+/// Provider 目录的实现（单例）。
 /// </summary>
+/// <remarks>
+/// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
 {

@@ -18,8 +18,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 聚合的领域事件经工作单元 → 发件箱 → 代理 → 处理器的全链路：提交的调用其事件随订单写入落进发件箱并投递到处理器，回滚的调用什么都不留下；没有发件箱时直接发布到代理。
+/// 聚合的领域事件经工作单元 → 发件箱 → 代理 → 处理器的全链路。
 /// </summary>
+/// <remarks>
+/// 提交的调用其事件随订单写入落进发件箱并投递到处理器，回滚的调用什么都不留下；没有发件箱时直接发布到代理。
+/// </remarks>
 public sealed class DomainEventOutboxTests
 {
     /// <summary>
@@ -28,8 +31,11 @@ public sealed class DomainEventOutboxTests
     private const string Topic = "orders";
 
     /// <summary>
-    /// 启动装配了内存持久化、内存消息、可选发件箱、订单聚合与事件登记的宿主；租户由套件的 Tenant 阶段中间件从 Baggage 解析。
+    /// 启动装配了内存持久化、内存消息、可选发件箱、订单聚合与事件登记的宿主。
     /// </summary>
+    /// <remarks>
+    /// 租户由套件的 Tenant 阶段中间件从 Baggage 解析。
+    /// </remarks>
     private static Task<TestHost> StartAsync(DeliveryLog log, bool outbox) => TestHost.StartAsync(
         b =>
         {

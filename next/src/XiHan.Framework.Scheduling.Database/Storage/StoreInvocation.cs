@@ -12,24 +12,35 @@ using XiHan.Framework.Scheduling.Abstractions;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 存储与租约共用的执行方式：每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。
-/// 动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// 存储与租约共用的执行方式。
 /// </summary>
+/// <remarks>
+/// 每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// </remarks>
 internal sealed class StoreInvocation
 {
     /// <summary>
-    /// 调度子系统错误码的前缀；带此前缀的失败是业务语义（作业不存在等），不归为存储不可达。
+    /// 调度子系统错误码的前缀。
     /// </summary>
+    /// <remarks>
+    /// 带此前缀的失败是业务语义（作业不存在等），不归为存储不可达。
+    /// </remarks>
     private const string SchedulingPrefix = "SCHEDULING_";
 
     /// <summary>
-    /// 根服务提供者；每次操作开新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次操作开新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 应用；操作经它的管道执行。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 操作经它的管道执行。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>
@@ -99,8 +110,11 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 把失败归为存储不可达：调度子系统自己的错误（作业不存在、运行不存在、已经是存储不可达）原样返回，其余以原错误码为原因、原错误为内部错误包一层。
+    /// 把失败归为存储不可达。
     /// </summary>
+    /// <remarks>
+    /// 调度子系统自己的错误（作业不存在、运行不存在、已经是存储不可达）原样返回，其余以原错误码为原因、原错误为内部错误包一层。
+    /// </remarks>
     public static Error Unavailable(Error cause)
     {
         ArgumentNullException.ThrowIfNull(cause);

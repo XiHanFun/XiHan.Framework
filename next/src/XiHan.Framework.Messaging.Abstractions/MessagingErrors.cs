@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions;
 
 /// <summary>
-/// 消息错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 消息错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MessagingErrors
 {

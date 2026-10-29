@@ -8,9 +8,11 @@ using XiHan.Framework.Workflow.Abstractions.Engine;
 namespace XiHan.Framework.Workflow.Database.Polling;
 
 /// <summary>
-/// 到期书签的轮询循环（单例）：按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.PollOnceAsync"/>。
-/// 不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前。
+/// 到期书签的轮询循环（单例）。
 /// </summary>
+/// <remarks>
+/// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.PollOnceAsync"/>。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPollingLoop : IDisposable
 {
@@ -73,8 +75,11 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     public bool IsLeader => _leadership.IsLeader;
 
     /// <summary>
-    /// 启动循环；已在跑时什么也不做。
+    /// 启动循环。
     /// </summary>
+    /// <remarks>
+    /// 已在跑时什么也不做。
+    /// </remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loop is not null)

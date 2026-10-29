@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// 工具目录特性（<c>role: default</c>）：提供 <c>ai.tools@1</c>——进程内、零外部依赖；启动时构建目录，工具名不合法或重复即启动失败。
+/// 工具目录特性（<c>role: default</c>）。
 /// </summary>
+/// <remarks>
+/// 提供 <c>ai.tools@1</c>——进程内、零外部依赖；启动时构建目录，工具名不合法或重复即启动失败。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIToolsFeature : IHostedFeature
 {

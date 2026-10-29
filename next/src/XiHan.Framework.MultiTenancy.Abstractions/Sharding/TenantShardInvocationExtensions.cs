@@ -18,8 +18,11 @@ public static class TenantShardInvocationExtensions
     private static readonly ContextItemKey<TenantShard> _shardKey = new("xihan.tenant.shard");
 
     /// <summary>
-    /// 当前调用的租户分片；没有分片（共库租户或无租户）为空。
+    /// 当前调用的租户分片。
     /// </summary>
+    /// <remarks>
+    /// 没有分片（共库租户或无租户）为空。
+    /// </remarks>
     public static Maybe<TenantShard> GetTenantShard(this InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

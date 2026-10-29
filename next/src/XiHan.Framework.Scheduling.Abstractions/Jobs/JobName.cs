@@ -19,8 +19,11 @@ public readonly partial record struct JobName
     public const int MaxLength = 128;
 
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public JobName(string value)
     {
         Value = Validate(value);
@@ -42,8 +45,11 @@ public readonly partial record struct JobName
     public static bool IsValid([NotNullWhen(true)] string? value) => value is not null && Pattern().IsMatch(value);
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

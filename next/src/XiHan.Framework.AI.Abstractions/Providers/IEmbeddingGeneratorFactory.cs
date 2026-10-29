@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Providers;
 
 /// <summary>
-/// 按 Provider 配置创建 <see cref="IEmbeddingGenerator{TInput, TEmbedding}"/> 的工厂（<c>ai.embedding@1</c> 的 Provider 契约）；以 <c>AddAIEmbeddingGeneratorFactory&lt;T&gt;()</c> 登记。
+/// 按 Provider 配置创建 <see cref="IEmbeddingGenerator{TInput, TEmbedding}"/> 的工厂。
 /// </summary>
+/// <remarks>
+/// <c>ai.embedding@1</c> 的 Provider 契约。以 <c>AddAIEmbeddingGeneratorFactory&lt;T&gt;()</c> 登记。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IEmbeddingGeneratorFactory
 {
@@ -18,7 +21,10 @@ public interface IEmbeddingGeneratorFactory
     string Kind { get; }
 
     /// <summary>
-    /// 创建生成器；配置缺必填项 → <see cref="AIErrors.RequestInvalid"/>。
+    /// 创建生成器。
     /// </summary>
+    /// <remarks>
+    /// 配置缺必填项 → <see cref="AIErrors.RequestInvalid"/>。
+    /// </remarks>
     Result<IEmbeddingGenerator<string, Embedding<float>>> Create(AIProviderOptions options);
 }

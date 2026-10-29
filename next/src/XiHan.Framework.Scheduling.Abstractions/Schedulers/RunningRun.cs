@@ -30,7 +30,10 @@ internal sealed class RunningRun
     public CancellationTokenSource Cancellation { get; }
 
     /// <summary>
-    /// 运行任务；停止时等待它。
+    /// 运行任务。
     /// </summary>
+    /// <remarks>
+    /// 停止时等待它。
+    /// </remarks>
     public Task Task { get; set; } = Task.CompletedTask;
 }

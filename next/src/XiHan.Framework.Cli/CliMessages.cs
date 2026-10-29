@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 命令行工具的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。公开只为让架构测试核对常量与语言文件一一对应。
+/// 命令行工具的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。公开只为让架构测试核对常量与语言文件一一对应。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CliMessages
 {
@@ -23,23 +26,35 @@ public static class CliMessages
     public const string PackDescription = "cli.pack.description";
 
     /// <summary>
-    /// 打包完成。参数：<c>count</c>、<c>output</c>。
+    /// 打包完成。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>、<c>output</c>。
+    /// </remarks>
     public const string PackWritten = "cli.pack.written";
 
     /// <summary>
-    /// <c>--only</c> 里有不认识的产物种类。参数：<c>kind</c>。
+    /// <c>--only</c> 里有不认识的产物种类。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>kind</c>。
+    /// </remarks>
     public const string PackKindUnknown = "cli.pack.kind_unknown";
 
     /// <summary>
-    /// 应用清单文件不存在。参数：<c>path</c>。
+    /// 应用清单文件不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
     public const string ManifestNotFound = "cli.manifest.not_found";
 
     /// <summary>
-    /// 应用清单不合法。参数：<c>path</c>、<c>reason</c>。
+    /// 应用清单不合法。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>、<c>reason</c>。
+    /// </remarks>
     public const string ManifestInvalid = "cli.manifest.invalid";
 
     /// <summary>
@@ -68,8 +83,11 @@ public static class CliMessages
     public const string VersionDescription = "cli.version.description";
 
     /// <summary>
-    /// 无法启动 dotnet。参数：<c>reason</c>。
+    /// 无法启动 dotnet。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string DotnetUnavailable = "cli.dotnet.unavailable";
 
     /// <summary>
@@ -78,23 +96,35 @@ public static class CliMessages
     public const string MigrateDescription = "cli.migrate.description";
 
     /// <summary>
-    /// 来源版本没有对应的规则集。参数：<c>version</c>、<c>known</c>。
+    /// 来源版本没有对应的规则集。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>version</c>、<c>known</c>。
+    /// </remarks>
     public const string MigrateVersionUnknown = "cli.migrate.version_unknown";
 
     /// <summary>
-    /// 这一版工具没有任何迁移规则集。参数：<c>version</c>。
+    /// 这一版工具没有任何迁移规则集。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>version</c>。
+    /// </remarks>
     public const string MigrateNoRuleSets = "cli.migrate.no_rule_sets";
 
     /// <summary>
-    /// 路径不存在。参数：<c>path</c>。
+    /// 路径不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
     public const string MigratePathNotFound = "cli.migrate.path_not_found";
 
     /// <summary>
-    /// 不认识的规则编号。参数：<c>fixer</c>、<c>known</c>。
+    /// 不认识的规则编号。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>fixer</c>、<c>known</c>。
+    /// </remarks>
     public const string MigrateFixerUnknown = "cli.migrate.fixer_unknown";
 
     /// <summary>
@@ -103,8 +133,11 @@ public static class CliMessages
     public const string MigrateTableHeader = "cli.migrate.table_header";
 
     /// <summary>
-    /// 汇总。参数：<c>files</c>、<c>changed</c>、<c>markers</c>。
+    /// 汇总。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>files</c>、<c>changed</c>、<c>markers</c>。
+    /// </remarks>
     public const string MigrateSummary = "cli.migrate.summary";
 
     /// <summary>
@@ -113,8 +146,11 @@ public static class CliMessages
     public const string MigrateDryRun = "cli.migrate.dry_run";
 
     /// <summary>
-    /// 报告已写出。参数：<c>path</c>。
+    /// 报告已写出。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
     public const string MigrateReportWritten = "cli.migrate.report_written";
 
     /// <summary>

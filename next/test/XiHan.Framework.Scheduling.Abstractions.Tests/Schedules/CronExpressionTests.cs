@@ -8,8 +8,11 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 
 /// <summary>
-/// cron 表达式的解析（5、6、7 段与 Quartz 式特殊写法）、下一次匹配（UTC 与指定时区）与边界。
+/// cron 表达式的解析、下一次匹配与边界。
 /// </summary>
+/// <remarks>
+/// 5、6、7 段与 Quartz 式特殊写法。UTC 与指定时区。
+/// </remarks>
 public sealed class CronExpressionTests
 {
     /// <summary>
@@ -51,8 +54,11 @@ public sealed class CronExpressionTests
     }
 
     /// <summary>
-    /// 按 IANA 标识找时区；没有 ICU 的 Windows 上退回对应的 Windows 标识。
+    /// 按 IANA 标识找时区。
     /// </summary>
+    /// <remarks>
+    /// 没有 ICU 的 Windows 上退回对应的 Windows 标识。
+    /// </remarks>
     private static TimeZoneInfo FindTimeZone(string ianaId)
     {
         try

@@ -26,8 +26,11 @@ public sealed class OpenIdConnectAuthenticationTests
     private static readonly OpenIdConnectOptions _options = new() { Authority = FakeIssuer.Authority, Audience = FakeIssuer.Audience, ClockSkew = TimeSpan.Zero };
 
     /// <summary>
-    /// 用桩签发者组装处理器；时钟可控，缓存实例一并返回供断言。
+    /// 用桩签发者组装处理器。
     /// </summary>
+    /// <remarks>
+    /// 时钟可控，缓存实例一并返回供断言。
+    /// </remarks>
     private static (OpenIdConnectAuthenticationHandler Handler, OpenIdConnectMetadataCache Cache, FakeTimeProvider Clock) Create(FakeIssuer issuer, OpenIdConnectOptions? options = null)
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);

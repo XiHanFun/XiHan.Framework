@@ -10,15 +10,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// 事务型工作单元：首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。
-/// 延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。
+/// 事务型工作单元。
 /// </summary>
+/// <remarks>
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWork, IAsyncDisposable
 {
     /// <summary>
-    /// 延迟开启的数据库事务；为 <see langword="null"/> 表示本工作单元尚未写入。
+    /// 延迟开启的数据库事务。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示本工作单元尚未写入。
+    /// </remarks>
     private IDbContextTransaction? _transaction;
 
     /// <summary>
@@ -54,8 +59,11 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     }
 
     /// <summary>
-    /// 确保数据库事务已开启。仓储在每次写入前调用；只读工作单元不会调用。
+    /// 确保数据库事务已开启。
     /// </summary>
+    /// <remarks>
+    /// 仓储在每次写入前调用；只读工作单元不会调用。
+    /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)

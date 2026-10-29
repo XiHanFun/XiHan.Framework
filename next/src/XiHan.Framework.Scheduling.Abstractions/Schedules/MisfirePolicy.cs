@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 /// <summary>
-/// 触发器的到期时刻落后当前时刻超过 misfire 阈值（停机、暂停、节点失联造成）时的处理策略。
+/// 触发器的到期时刻落后当前时刻超过 misfire 阈值时的处理策略。
 /// </summary>
+/// <remarks>
+/// 停机、暂停、节点失联造成。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum MisfirePolicy
 {

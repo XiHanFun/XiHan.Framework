@@ -13,8 +13,11 @@ namespace XiHan.Framework.Protocols.Http.OpenApi;
 public static class OpenApiEndpointConventionBuilderExtensions
 {
     /// <summary>
-    /// 声明端点的 JSON 请求体 / 响应正文同某个已登记操作的请求 / 响应 Schema（至少给一个）；不声明时按类型与已登记操作自动匹配，匹配不到在生成文档时以 <see cref="HttpErrors.OpenApiSchemaUnresolved"/> 失败。
+    /// 声明端点的 JSON 请求体 / 响应正文同某个已登记操作的请求 / 响应 Schema。
     /// </summary>
+    /// <remarks>
+    /// 至少给一个。不声明时按类型与已登记操作自动匹配，匹配不到在生成文档时以 <see cref="HttpErrors.OpenApiSchemaUnresolved"/> 失败。
+    /// </remarks>
     /// <param name="builder">端点约定构建器。</param>
     /// <param name="request">请求体同哪个操作的请求 Schema。</param>
     /// <param name="response">响应正文同哪个操作的响应 Schema。</param>

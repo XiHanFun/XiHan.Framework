@@ -9,9 +9,11 @@ using XiHan.Framework.Protocols.CloudEvents.Inbound;
 namespace XiHan.Framework.Protocols.CloudEvents;
 
 /// <summary>
-/// CloudEvents 协议适配器选项。从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），
-/// <c>Topics:&lt;事件类型&gt;</c> = 主题，<c>Webhooks:&lt;主题&gt;</c> = 出站 URL。
+/// CloudEvents 协议适配器选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），<c>Topics:&lt;事件类型&gt;</c> = 主题，<c>Webhooks:&lt;主题&gt;</c> = 出站 URL。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record CloudEventsProtocolOptions
 {
@@ -21,13 +23,19 @@ public sealed record CloudEventsProtocolOptions
     public const string ConfigurationSection = "XiHan:Protocols:CloudEvents";
 
     /// <summary>
-    /// 入站事件的处理方式；默认在请求内派发。
+    /// 入站事件的处理方式。
     /// </summary>
+    /// <remarks>
+    /// 默认在请求内派发。
+    /// </remarks>
     public CloudEventsInboundMode Inbound { get; init; } = CloudEventsInboundMode.Dispatch;
 
     /// <summary>
-    /// 出站 Webhook 的内容模式；默认 binary，不能是 batch。
+    /// 出站 Webhook 的内容模式。
     /// </summary>
+    /// <remarks>
+    /// 默认 binary，不能是 batch。
+    /// </remarks>
     public CloudEventsContentMode Outbound
     {
         get => field;
@@ -43,8 +51,11 @@ public sealed record CloudEventsProtocolOptions
     } = CloudEventsContentMode.Binary;
 
     /// <summary>
-    /// 事件类型 → 主题；没有映射的类型在其本身是合法主题时直接作为主题。
+    /// 事件类型 → 主题。
     /// </summary>
+    /// <remarks>
+    /// 没有映射的类型在其本身是合法主题时直接作为主题。
+    /// </remarks>
     public IReadOnlyDictionary<string, string> Topics
     {
         get => field;
@@ -83,8 +94,11 @@ public sealed record CloudEventsProtocolOptions
     } = new Dictionary<string, Uri>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取；枚举值不合法时抛出 <see cref="ArgumentException"/>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// 枚举值不合法时抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static CloudEventsProtocolOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -131,8 +145,11 @@ public sealed record CloudEventsProtocolOptions
     }
 
     /// <summary>
-    /// 读枚举配置值；缺失用默认值，不合法抛出。
+    /// 读枚举配置值。
     /// </summary>
+    /// <remarks>
+    /// 缺失用默认值，不合法抛出。
+    /// </remarks>
     private static TEnum ParseEnum<TEnum>(string? text, string key)
         where TEnum : struct, Enum
     {

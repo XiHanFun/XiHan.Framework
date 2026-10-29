@@ -8,8 +8,11 @@ using Xunit;
 namespace XiHan.Framework.MultiTenancy.Conformance;
 
 /// <summary>
-/// <see cref="ITenantStore"/> 的一致性套件。继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// <see cref="ITenantStore"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class TenantStoreConformance
 {
@@ -29,13 +32,19 @@ public abstract class TenantStoreConformance
     public static TenantInfo Dormant { get; } = new() { Id = "Dormant-01", IsEnabled = false };
 
     /// <summary>
-    /// 用给定租户创建被测存储。每个用例调用一次。
+    /// 用给定租户创建被测存储。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract ValueTask<ITenantStore> CreateStoreAsync(IReadOnlyList<TenantInfo> tenants);
 
     /// <summary>
-    /// 用例 1：按 ID 查找返回完整信息；不存在为无值。
+    /// 用例 1：按 ID 查找返回完整信息。
     /// </summary>
+    /// <remarks>
+    /// 不存在为无值。
+    /// </remarks>
     [Fact]
     public async Task Find_ReturnsSeededTenant_AndNoneForMissing()
     {

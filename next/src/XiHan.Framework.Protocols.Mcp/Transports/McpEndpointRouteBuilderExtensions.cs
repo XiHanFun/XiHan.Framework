@@ -13,15 +13,20 @@ using XiHan.Framework.Protocols.Mcp.Server;
 namespace XiHan.Framework.Protocols.Mcp.Transports;
 
 /// <summary>
-/// MCP 的 Streamable HTTP 传输端点：一个 <c>POST</c> 端点收 JSON-RPC 消息，答复以 <c>application/json</c> 返回（不开 SSE 流，不建会话；<c>GET</c> / <c>DELETE</c> 为 405）。
-/// 端点经过 <c>UseXiHan()</c> 的内核管道：请求的凭据先在外层认证（凭据无效时整个请求以 401 Problem Details 拒绝），每个 <c>tools/call</c> 再以自己的作用域与上下文经完整管道执行。必须放在 <c>UseXiHan()</c> 之后。
+/// MCP 的 Streamable HTTP 传输端点。
 /// </summary>
+/// <remarks>
+/// 一个 <c>POST</c> 端点收 JSON-RPC 消息，答复以 <c>application/json</c> 返回（不开 SSE 流，不建会话；<c>GET</c> / <c>DELETE</c> 为 405）。端点经过 <c>UseXiHan()</c> 的内核管道：请求的凭据先在外层认证（凭据无效时整个请求以 401 Problem Details 拒绝），每个 <c>tools/call</c> 再以自己的作用域与上下文经完整管道执行。必须放在 <c>UseXiHan()</c> 之后。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 映射 MCP 端点；需要 <see cref="McpProtocolFeature"/> 已装配。
+    /// 映射 MCP 端点。
     /// </summary>
+    /// <remarks>
+    /// 需要 <see cref="McpProtocolFeature"/> 已装配。
+    /// </remarks>
     public static IEndpointConventionBuilder MapXiHanMcp(this IEndpointRouteBuilder endpoints, string pattern = "/mcp")
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -33,8 +38,11 @@ public static class McpEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 端点处理：校验协议版本头，读请求体，交给服务端；通知回 202，不合法的消息回 400，其余 200。
+    /// 端点处理。
     /// </summary>
+    /// <remarks>
+    /// 校验协议版本头，读请求体，交给服务端；通知回 202，不合法的消息回 400，其余 200。
+    /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, McpServer server)
     {
         if (!httpContext.GetXiHanContext().TryGetValue(out var context))

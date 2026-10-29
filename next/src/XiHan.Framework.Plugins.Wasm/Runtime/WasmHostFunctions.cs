@@ -22,9 +22,11 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
 /// <summary>
-/// 宿主导入 <c>xihan.log</c> / <c>invoke</c> / <c>publish</c>（<c>spec/plugin/wasm.md</c> §4）：读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限按清单授予判定，回调嵌套深度有上限。
-/// 回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成。
+/// 宿主导入 <c>xihan.log</c> / <c>invoke</c> / <c>publish</c>（<c>spec/plugin/wasm.md</c> §4）。
 /// </summary>
+/// <remarks>
+/// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限按清单授予判定，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成。
+/// </remarks>
 internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, ILogger logger)
 {
     /// <summary>
@@ -53,8 +55,11 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     public const int MaxDepth = 8;
 
     /// <summary>
-    /// 当前回调嵌套深度；调用串行，无需同步。
+    /// 当前回调嵌套深度。
     /// </summary>
+    /// <remarks>
+    /// 调用串行，无需同步。
+    /// </remarks>
     private int _depth;
 
     /// <summary>
@@ -121,8 +126,11 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 回调的核心：权限、嵌套深度、宿主容器，然后在当前线程同步等待管道（Wasm 调用本身是同步的）。
+    /// 回调的核心。
     /// </summary>
+    /// <remarks>
+    /// 权限、嵌套深度、宿主容器，然后在当前线程同步等待管道（Wasm 调用本身是同步的）。
+    /// </remarks>
     private InvokeResponse InvokeCore(InvokeRequest request)
     {
         if (!permissions.IsGranted(PipelinePermission))
@@ -194,8 +202,11 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 读客体内存里的一段字节；越界返回假。
+    /// 读客体内存里的一段字节。
     /// </summary>
+    /// <remarks>
+    /// 越界返回假。
+    /// </remarks>
     private static bool TryRead(Caller caller, int pointer, int length, out byte[] bytes)
     {
         var memory = caller.GetMemory("memory");
@@ -210,8 +221,11 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 经客体的 <c>xihan_alloc</c> 写回响应，返回 <c>(ptr &lt;&lt; 32) | len</c>；分配失败返回 0。
+    /// 经客体的 <c>xihan_alloc</c> 写回响应，返回 <c>(ptr &lt;&lt; 32) | len</c>。
     /// </summary>
+    /// <remarks>
+    /// 分配失败返回 0。
+    /// </remarks>
     private static long Write(Caller caller, byte[] bytes)
     {
         var alloc = caller.GetFunction("xihan_alloc")?.WrapFunc<int, int>();

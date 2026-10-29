@@ -10,19 +10,27 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 
 /// <summary>
-/// 一个临时 SQLite 文件，宿主装配 SqlSugar 持久化（应用自注册客户端、<c>InitTables</c> 建表）与数据库授权特性。释放时停止宿主并删除文件。
-/// 文件用 WAL 日志且每个连接关掉同步写盘：测试库不需要崩溃安全，省掉每次提交的 fsync。
+/// 一个临时 SQLite 文件。
 /// </summary>
+/// <remarks>
+/// 宿主装配 SqlSugar 持久化（应用自注册客户端、<c>InitTables</c> 建表）与数据库授权特性。释放时停止宿主并删除文件。文件用 WAL 日志且每个连接关掉同步写盘：测试库不需要崩溃安全，省掉每次提交的 fsync。
+/// </remarks>
 internal sealed class SqliteDatabase : IAsyncDisposable
 {
     /// <summary>
-    /// 已启动的宿主；释放时停止。
+    /// 已启动的宿主。
     /// </summary>
+    /// <remarks>
+    /// 释放时停止。
+    /// </remarks>
     private TestHost? _host;
 
     /// <summary>
-    /// 数据库文件的完整路径；位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// 数据库文件的完整路径。
     /// </summary>
+    /// <remarks>
+    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// </remarks>
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-security-{Guid.NewGuid():N}.db");
 
     /// <summary>

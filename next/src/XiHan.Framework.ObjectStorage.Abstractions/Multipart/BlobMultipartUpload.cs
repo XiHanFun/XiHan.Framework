@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 
 /// <summary>
-/// 一次进行中的分片上传。应用要跨请求续传时持久化这四项，之后原样构造回来交给 <see cref="IBlobMultipartStore"/>。
+/// 一次进行中的分片上传。
 /// </summary>
+/// <remarks>
+/// 应用要跨请求续传时持久化这四项，之后原样构造回来交给 <see cref="IBlobMultipartStore"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BlobMultipartUpload
 {

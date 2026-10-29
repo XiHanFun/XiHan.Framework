@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件的配置上下文。插件拥有隔离的服务集合；是否允许贡献中间件由隔离级别决定。
+/// 插件的配置上下文。
 /// </summary>
+/// <remarks>
+/// 插件拥有隔离的服务集合；是否允许贡献中间件由隔离级别决定。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PluginContext
 {
@@ -48,7 +51,10 @@ public sealed class PluginContext
     public PermissionGrant Permissions { get; }
 
     /// <summary>
-    /// 可贡献中间件的管道；进程外插件为 <see langword="null"/>。
+    /// 可贡献中间件的管道。
     /// </summary>
+    /// <remarks>
+    /// 进程外插件为 <see langword="null"/>。
+    /// </remarks>
     public PipelineBuilder? Pipeline { get; }
 }

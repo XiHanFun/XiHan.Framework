@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Storage;
 
 /// <summary>
-/// 实例与节点实例存储；不按租户过滤，不做乐观并发（实例锁串行化写入），写入按批量。
+/// 实例与节点实例存储。
 /// </summary>
+/// <remarks>
+/// 不按租户过滤，不做乐观并发（实例锁串行化写入），写入按批量。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowInstanceStore
 {
@@ -18,8 +21,11 @@ public interface IWorkflowInstanceStore
     ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按 ID 批量找实例；不存在的不在结果里。
+    /// 按 ID 批量找实例。
     /// </summary>
+    /// <remarks>
+    /// 不存在的不在结果里。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
@@ -33,8 +39,11 @@ public interface IWorkflowInstanceStore
     ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 删除实例（级联节点实例）；不存在的忽略。
+    /// 删除实例（级联节点实例）。
     /// </summary>
+    /// <remarks>
+    /// 不存在的忽略。
+    /// </remarks>
     ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>

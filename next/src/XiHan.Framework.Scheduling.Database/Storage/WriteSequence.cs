@@ -4,9 +4,11 @@
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 写入序号：同刻写入的运行记录按它排序。取时钟的 UTC 刻度与上一个序号加一的较大者——同一进程内严格递增，不同进程间按时刻大致有序。
-/// UUID v7 只到毫秒单调，同一毫秒内的运行 ID 不能当写入顺序用。
+/// 写入序号。
 /// </summary>
+/// <remarks>
+/// 同刻写入的运行记录按它排序。取时钟的 UTC 刻度与上一个序号加一的较大者——同一进程内严格递增，不同进程间按时刻大致有序。UUID v7 只到毫秒单调，同一毫秒内的运行 ID 不能当写入顺序用。
+/// </remarks>
 internal sealed class WriteSequence
 {
     /// <summary>

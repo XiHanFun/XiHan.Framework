@@ -12,8 +12,11 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.Jwt;
 
 /// <summary>
-/// <c>Bearer</c> 方案的 JWT 处理器：HS256 对称密钥校验签名、有效期、签发者与受众，声明按原始类型名映射为主体。
+/// <c>Bearer</c> 方案的 JWT 处理器。
 /// </summary>
+/// <remarks>
+/// HS256 对称密钥校验签名、有效期、签发者与受众，声明按原始类型名映射为主体。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JwtAuthenticationHandler : IAuthenticationHandler
 {
@@ -23,18 +26,27 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     public const string SchemeName = "Bearer";
 
     /// <summary>
-    /// 令牌处理器；关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// 令牌处理器。
     /// </summary>
+    /// <remarks>
+    /// 关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// </remarks>
     private readonly JsonWebTokenHandler _handler = new() { MapInboundClaims = false };
 
     /// <summary>
-    /// 由选项推出的校验参数；构造时固定。
+    /// 由选项推出的校验参数。
     /// </summary>
+    /// <remarks>
+    /// 构造时固定。
+    /// </remarks>
     private readonly TokenValidationParameters _parameters;
 
     /// <summary>
-    /// JWT 选项；提供主体声明类型。
+    /// JWT 选项。
     /// </summary>
+    /// <remarks>
+    /// 提供主体声明类型。
+    /// </remarks>
     private readonly JwtOptions _options;
 
     /// <summary>

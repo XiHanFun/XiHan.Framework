@@ -22,8 +22,11 @@ public sealed class DomainEventBuffer
     private readonly List<IDomainEvent> _events = [];
 
     /// <summary>
-    /// 容量上限；达到后 <see cref="Add"/> 拒绝继续记录。
+    /// 容量上限。
     /// </summary>
+    /// <remarks>
+    /// 达到后 <see cref="Add"/> 拒绝继续记录。
+    /// </remarks>
     private readonly int _capacity;
 
     /// <summary>

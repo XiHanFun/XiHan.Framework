@@ -26,13 +26,19 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 数据库授权特性与内存安全特性同时装配：本包顶替授权、内存实现只剩 ApiKey 认证；操作按数据库里的授予放行或拒绝；批量授予 / 撤销的逐项结果与本地化文案；授予缓存的命中、失效、过期与容量；选项解析。
+/// 数据库授权特性与内存安全特性同时装配。
 /// </summary>
+/// <remarks>
+/// 本包顶替授权、内存实现只剩 ApiKey 认证；操作按数据库里的授予放行或拒绝；批量授予 / 撤销的逐项结果与本地化文案；授予缓存的命中、失效、过期与容量；选项解析。
+/// </remarks>
 public sealed class DatabaseSecurityTests
 {
     /// <summary>
-    /// 两个 ApiKey 主体（alice 带角色 editor，bob 没有角色）；内存授予配置故意给 editor 授了 orders.write——数据库授权生效时它不起作用。
+    /// 两个 ApiKey 主体（alice 带角色 editor，bob 没有角色）。
     /// </summary>
+    /// <remarks>
+    /// 内存授予配置故意给 editor 授了 orders.write——数据库授权生效时它不起作用。
+    /// </remarks>
     private static readonly KeyValuePair<string, string?>[] _configuration =
     [
         new("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
@@ -232,8 +238,11 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 启动装配了内存持久化、内存本地化、内存安全（认证）、数据库授权与订单特性的宿主；可换时钟、追加配置。
+    /// 启动装配了内存持久化、内存本地化、内存安全（认证）、数据库授权与订单特性的宿主。
     /// </summary>
+    /// <remarks>
+    /// 可换时钟、追加配置。
+    /// </remarks>
     private static Task<TestHost> StartAsync(FakeTimeProvider? clock = null, params KeyValuePair<string, string?>[] extra)
         => TestHost.StartAsync(
             static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>(),

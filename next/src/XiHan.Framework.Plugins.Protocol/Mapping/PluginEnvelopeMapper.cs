@@ -42,8 +42,11 @@ internal static class PluginEnvelopeMapper
     }
 
     /// <summary>
-    /// 协议信封 → 消息信封；属性不合法返回 <c>MESSAGING_VALIDATION_002</c>。
+    /// 协议信封 → 消息信封。
     /// </summary>
+    /// <remarks>
+    /// 属性不合法返回 <c>MESSAGING_VALIDATION_002</c>。
+    /// </remarks>
     public static Result<MessageEnvelope> FromProto(Envelope proto)
     {
         try

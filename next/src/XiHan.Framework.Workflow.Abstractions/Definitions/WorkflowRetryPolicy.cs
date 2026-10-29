@@ -12,8 +12,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 public sealed record WorkflowRetryPolicy
 {
     /// <summary>
-    /// 总尝试次数（含首次），至少 1；1 表示不重试。
+    /// 总尝试次数（含首次），至少 1。
     /// </summary>
+    /// <remarks>
+    /// 1 表示不重试。
+    /// </remarks>
     public int MaxAttempts
     {
         get => field;
@@ -21,8 +24,11 @@ public sealed record WorkflowRetryPolicy
     } = 1;
 
     /// <summary>
-    /// 首次重试前的等待；默认 10 秒。
+    /// 首次重试前的等待。
     /// </summary>
+    /// <remarks>
+    /// 默认 10 秒。
+    /// </remarks>
     public TimeSpan FirstDelay
     {
         get => field;
@@ -30,8 +36,11 @@ public sealed record WorkflowRetryPolicy
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 退避因子：第 n 次重试前等待 <c>FirstDelay × BackoffFactor^(n−1)</c>；至少 1，默认 2。
+    /// 退避因子。
     /// </summary>
+    /// <remarks>
+    /// 第 n 次重试前等待 <c>FirstDelay × BackoffFactor^(n−1)</c>；至少 1，默认 2。
+    /// </remarks>
     public double BackoffFactor
     {
         get => field;

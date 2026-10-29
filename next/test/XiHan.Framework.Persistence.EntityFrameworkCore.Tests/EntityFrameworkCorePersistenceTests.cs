@@ -16,8 +16,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// EF Core Provider 独有的行为：选项解析、模型约定、游离实体更新与并发戳、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
+/// EF Core Provider 独有的行为。
 /// </summary>
+/// <remarks>
+/// 选项解析、模型约定、游离实体更新与并发戳、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
+/// </remarks>
 public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 {
     /// <summary>

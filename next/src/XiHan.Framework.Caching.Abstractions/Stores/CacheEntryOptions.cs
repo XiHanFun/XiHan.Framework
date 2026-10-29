@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Stores;
 
 /// <summary>
-/// 条目过期：绝对存活时间或滑动过期，二选一；都不设时用 Provider 的默认存活时间。
+/// 条目过期。
 /// </summary>
+/// <remarks>
+/// 绝对存活时间或滑动过期，二选一；都不设时用 Provider 的默认存活时间。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record CacheEntryOptions
 {

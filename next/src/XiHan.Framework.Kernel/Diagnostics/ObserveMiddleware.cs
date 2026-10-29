@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Diagnostics;
 
 /// <summary>
-/// Observe 阶段的内置中间件：为每次调用开启 Activity、记录计数与耗时，并把未处理异常转为 <see cref="KernelErrors.Unexpected"/> 结果。
+/// Observe 阶段的内置中间件。
 /// </summary>
+/// <remarks>
+/// 为每次调用开启 Activity、记录计数与耗时，并把未处理异常转为 <see cref="KernelErrors.Unexpected"/> 结果。
+/// </remarks>
 /// <param name="loggerFactory">日志工厂。</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IPipelineMiddleware

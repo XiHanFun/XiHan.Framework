@@ -61,8 +61,11 @@ public sealed class OpenApiDocumentationTests
     };
 
     /// <summary>
-    /// 分组：账单在前（排序 5，额外带 exports 标签让普通端点入组），订单在后；notes 不属于任何组。
+    /// 分组。
     /// </summary>
+    /// <remarks>
+    /// 账单在前（排序 5，额外带 exports 标签让普通端点入组），订单在后；notes 不属于任何组。
+    /// </remarks>
     private static readonly OpenApiGroup[] _groups = [new("orders", 10, ["xihan.test.orders"]), new("billing", 5, ["xihan.test.billing"], ["exports"])];
 
     [Fact]
@@ -216,8 +219,11 @@ public sealed class OpenApiDocumentationTests
     private static JsonDocument Build(string? group = null) => JsonDocument.Parse(OpenApiDocumentBuilder.Build(Source() with { Group = group }));
 
     /// <summary>
-    /// 文档输入：五个操作分属三个特性、一个带 exports 标签的普通端点、权限注册表与简体中文目录。
+    /// 文档输入。
     /// </summary>
+    /// <remarks>
+    /// 五个操作分属三个特性、一个带 exports 标签的普通端点、权限注册表与简体中文目录。
+    /// </remarks>
     private static OpenApiDocumentSource Source()
     {
         var registry = new OperationRegistry();

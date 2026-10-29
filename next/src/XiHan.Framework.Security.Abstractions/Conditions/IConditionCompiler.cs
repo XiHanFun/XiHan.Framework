@@ -12,7 +12,10 @@ namespace XiHan.Framework.Security.Abstractions.Conditions;
 public interface IConditionCompiler
 {
     /// <summary>
-    /// 编译条件集；出错的子句保留在结果里并记入 <see cref="CompiledConditionSet.Errors"/>。<paramref name="options"/> 为 <see langword="null"/> 时取 <see cref="ConditionCompileOptions.Default"/>。
+    /// 编译条件集。
     /// </summary>
+    /// <remarks>
+    /// 出错的子句保留在结果里并记入 <see cref="CompiledConditionSet.Errors"/>。<paramref name="options"/> 为 <see langword="null"/> 时取 <see cref="ConditionCompileOptions.Default"/>。
+    /// </remarks>
     CompiledConditionSet Compile(ConditionSet conditions, ConditionCompileOptions? options = null);
 }

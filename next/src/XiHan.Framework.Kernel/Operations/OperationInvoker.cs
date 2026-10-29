@@ -8,13 +8,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// <see cref="IOperationInvoker"/> 的内核实现：按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行。
+/// <see cref="IOperationInvoker"/> 的内核实现。
 /// </summary>
+/// <remarks>
+/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行。
+/// </remarks>
 internal sealed class OperationInvoker : IOperationInvoker
 {
     /// <summary>
-    /// 应用；提供完整管道。
+    /// 应用。
     /// </summary>
+    /// <remarks>
+    /// 提供完整管道。
+    /// </remarks>
     private readonly App _app;
 
     /// <summary>
@@ -99,8 +105,11 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// Handle 阶段的终点：Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文。
+    /// Handle 阶段的终点。
     /// </summary>
+    /// <remarks>
+    /// Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文。
+    /// </remarks>
     private static async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
         if (!context.GetOperationRequest().TryGetValue(out var request))

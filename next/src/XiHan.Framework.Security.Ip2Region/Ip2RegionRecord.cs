@@ -6,14 +6,19 @@ using XiHan.Framework.Security.Abstractions.Network;
 namespace XiHan.Framework.Security.Ip2Region;
 
 /// <summary>
-/// ip2region 记录文本的解析。新版 xdb 是"国家|省份|城市|运营商|国家代码"，旧版是"国家|区域|省份|城市|运营商"；
-/// 未知的段记为 <c>0</c> 或空，保留地址记为 <c>Reserved</c>。
+/// ip2region 记录文本的解析。
 /// </summary>
+/// <remarks>
+/// 新版 xdb 是"国家|省份|城市|运营商|国家代码"，旧版是"国家|区域|省份|城市|运营商"；未知的段记为 <c>0</c> 或空，保留地址记为 <c>Reserved</c>。
+/// </remarks>
 internal static class Ip2RegionRecord
 {
     /// <summary>
-    /// 解析记录；有任一已知段时返回归属地，保留地址与全部未知返回 <see langword="null"/>。
+    /// 解析记录。
     /// </summary>
+    /// <remarks>
+    /// 有任一已知段时返回归属地，保留地址与全部未知返回 <see langword="null"/>。
+    /// </remarks>
     public static IpRegion? Parse(string? record)
     {
         if (string.IsNullOrWhiteSpace(record))

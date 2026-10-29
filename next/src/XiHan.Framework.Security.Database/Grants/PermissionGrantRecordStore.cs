@@ -12,9 +12,11 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Database.Grants;
 
 /// <summary>
-/// 授予的批量读写（作用域服务，须在调用的 Transaction 阶段内使用，走调用方的工作单元）：一次查询取回已有行，再用仓储的批量方法一次写入，写入后让 <see cref="DatabasePermissionGrantStore"/> 的缓存按主体失效。
-/// 写入在调用方的事务提交后才对别的调用可见；失效与提交之间的窗口由缓存的存活时间收敛。
+/// 授予的批量读写。
 /// </summary>
+/// <remarks>
+/// 作用域服务，须在调用的 Transaction 阶段内使用，走调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入，写入后让 <see cref="DatabasePermissionGrantStore"/> 的缓存按主体失效。写入在调用方的事务提交后才对别的调用可见；失效与提交之间的窗口由缓存的存活时间收敛。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PermissionGrantRecordStore
 {
@@ -29,8 +31,11 @@ public sealed class PermissionGrantRecordStore
     private readonly IIdGenerator<Guid> _ids;
 
     /// <summary>
-    /// 单例授予存储；写入后按主体失效其缓存。
+    /// 单例授予存储。
     /// </summary>
+    /// <remarks>
+    /// 写入后按主体失效其缓存。
+    /// </remarks>
     private readonly DatabasePermissionGrantStore _grants;
 
     /// <summary>
@@ -44,9 +49,11 @@ public sealed class PermissionGrantRecordStore
     }
 
     /// <summary>
-    /// 授予，按顺序逐项返回：已存在的返回成功且不重复写，同一批里重复的项同样成功（只写一行，结果相同）。
-    /// 租户专属授予的 <see cref="PermissionGrant.TenantId"/> 不能是空白（全局用 <see langword="null"/>），否则是编程错误。
+    /// 授予，按顺序逐项返回。
     /// </summary>
+    /// <remarks>
+    /// 已存在的返回成功且不重复写，同一批里重复的项同样成功（只写一行，结果相同）。租户专属授予的 <see cref="PermissionGrant.TenantId"/> 不能是空白（全局用 <see langword="null"/>），否则是编程错误。
+    /// </remarks>
     public async ValueTask<IReadOnlyList<PermissionGrantResult>> GrantAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grants);
@@ -152,9 +159,11 @@ public sealed class PermissionGrantRecordStore
     }
 
     /// <summary>
-    /// 列出授予行：<paramref name="subject"/> 为 <see langword="null"/> 不按主体过滤，<paramref name="tenantId"/> 为 <see langword="null"/> 不按租户过滤（否则只列该租户专属的行）；
-    /// 按主体种类、主体 ID、权限码、租户排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
+    /// 列出授予行。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="subject"/> 为 <see langword="null"/> 不按主体过滤，<paramref name="tenantId"/> 为 <see langword="null"/> 不按租户过滤（否则只列该租户专属的行）；按主体种类、主体 ID、权限码、租户排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
+    /// </remarks>
     public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(GrantSubject? subject, string? tenantId, int skip, int take, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<PermissionGrantRecord>()

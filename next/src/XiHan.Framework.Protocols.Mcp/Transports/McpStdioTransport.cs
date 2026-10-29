@@ -10,9 +10,11 @@ using XiHan.Framework.Protocols.Mcp.Server;
 namespace XiHan.Framework.Protocols.Mcp.Transports;
 
 /// <summary>
-/// MCP 的 stdio 传输：stdin 每行一条 JSON-RPC 消息，答复每条一行写到 stdout（不含换行的紧凑 JSON），通知不答复；输入结束即返回。
-/// 每条消息在自己的服务作用域里处理，<c>tools/call</c> 以该作用域的新上下文经完整管道执行；区域取进程默认区域。日志必须走 stderr，由宿主保证。
+/// MCP 的 stdio 传输。
 /// </summary>
+/// <remarks>
+/// stdin 每行一条 JSON-RPC 消息，答复每条一行写到 stdout（不含换行的紧凑 JSON），通知不答复；输入结束即返回。每条消息在自己的服务作用域里处理，<c>tools/call</c> 以该作用域的新上下文经完整管道执行；区域取进程默认区域。日志必须走 stderr，由宿主保证。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpStdioTransport
 {

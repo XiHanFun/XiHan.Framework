@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 密钥名：<c>^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$</c>，不含 <c>..</c> 与 <c>//</c>，不以 <c>/</c> 结尾；大小写敏感。
+/// 密钥名。
 /// </summary>
+/// <remarks>
+/// <c>^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$</c>，不含 <c>..</c> 与 <c>//</c>，不以 <c>/</c> 结尾；大小写敏感。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public readonly partial record struct SecretName
 {
@@ -19,8 +22,11 @@ public readonly partial record struct SecretName
     public const int MaxLength = 256;
 
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public SecretName(string value)
     {
         Value = Validate(value);
@@ -43,8 +49,11 @@ public readonly partial record struct SecretName
         => value is not null && Pattern().IsMatch(value) && !value.Contains("..", StringComparison.Ordinal) && !value.Contains("//", StringComparison.Ordinal) && !value.EndsWith('/');
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

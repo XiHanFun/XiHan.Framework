@@ -54,8 +54,11 @@ public sealed class JobRecord
     public bool Paused { get; set; }
 
     /// <summary>
-    /// 不允许并发时正在运行的运行 ID；没有为空。
+    /// 不允许并发时正在运行的运行 ID。
     /// </summary>
+    /// <remarks>
+    /// 没有为空。
+    /// </remarks>
     public string? ActiveRunId { get; set; }
 
     /// <summary>

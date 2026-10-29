@@ -25,8 +25,11 @@ public sealed record SchedulerOptions
     private static readonly string _defaultNodeId = Environment.MachineName + ":" + Environment.ProcessId.ToString(CultureInfo.InvariantCulture) + ":" + Guid.NewGuid().ToString("N")[..8];
 
     /// <summary>
-    /// 轮询周期；默认 1 秒。
+    /// 轮询周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 1 秒。
+    /// </remarks>
     public TimeSpan PollInterval
     {
         get => field;
@@ -34,8 +37,11 @@ public sealed record SchedulerOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 节点 ID；默认机器名 + 进程 ID + 随机。
+    /// 节点 ID。
     /// </summary>
+    /// <remarks>
+    /// 默认机器名 + 进程 ID + 随机。
+    /// </remarks>
     public string NodeId
     {
         get => field;
@@ -43,8 +49,11 @@ public sealed record SchedulerOptions
     } = _defaultNodeId;
 
     /// <summary>
-    /// 本节点同时运行的上限；默认 32。
+    /// 本节点同时运行的上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 32。
+    /// </remarks>
     public int MaxConcurrentRuns
     {
         get => field;
@@ -52,8 +61,11 @@ public sealed record SchedulerOptions
     } = 32;
 
     /// <summary>
-    /// 一个周期最多抢占的触发器数；默认 16。
+    /// 一个周期最多抢占的触发器数。
     /// </summary>
+    /// <remarks>
+    /// 默认 16。
+    /// </remarks>
     public int AcquireBatchSize
     {
         get => field;
@@ -61,8 +73,11 @@ public sealed record SchedulerOptions
     } = 16;
 
     /// <summary>
-    /// misfire 阈值：到期时刻落后当前时刻超过它才算 misfire；默认 60 秒。
+    /// misfire 阈值。
     /// </summary>
+    /// <remarks>
+    /// 到期时刻落后当前时刻超过它才算 misfire；默认 60 秒。
+    /// </remarks>
     public TimeSpan MisfireThreshold
     {
         get => field;
@@ -70,13 +85,19 @@ public sealed record SchedulerOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 领导租约的资源名；默认 <c>scheduling.jobs</c>。
+    /// 领导租约的资源名。
     /// </summary>
+    /// <remarks>
+    /// 默认 <c>scheduling.jobs</c>。
+    /// </remarks>
     public JobName LeaseResource { get; init; } = new("scheduling.jobs");
 
     /// <summary>
-    /// 领导租约的存活时间；默认 30 秒。
+    /// 领导租约的存活时间。
     /// </summary>
+    /// <remarks>
+    /// 默认 30 秒。
+    /// </remarks>
     public TimeSpan LeaseTimeToLive
     {
         get => field;
@@ -84,8 +105,11 @@ public sealed record SchedulerOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 节点失联判定：心跳超过它即失联；默认 90 秒。
+    /// 节点失联判定。
     /// </summary>
+    /// <remarks>
+    /// 心跳超过它即失联；默认 90 秒。
+    /// </remarks>
     public TimeSpan NodeTimeout
     {
         get => field;
@@ -93,8 +117,11 @@ public sealed record SchedulerOptions
     } = TimeSpan.FromSeconds(90);
 
     /// <summary>
-    /// 领导者维护（失联恢复、历史清理）的周期；默认 60 秒。
+    /// 领导者维护（失联恢复、历史清理）的周期。
     /// </summary>
+    /// <remarks>
+    /// 默认 60 秒。
+    /// </remarks>
     public TimeSpan HousekeepingInterval
     {
         get => field;
@@ -102,8 +129,11 @@ public sealed record SchedulerOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 运行历史保留期；默认 7 天，零为不删。
+    /// 运行历史保留期。
     /// </summary>
+    /// <remarks>
+    /// 默认 7 天，零为不删。
+    /// </remarks>
     public TimeSpan HistoryRetention
     {
         get => field;
@@ -173,8 +203,11 @@ public sealed record SchedulerOptions
     }
 
     /// <summary>
-    /// 读秒数配置；不合法抛出。
+    /// 读秒数配置。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出。
+    /// </remarks>
     private static TimeSpan? Seconds(IConfiguration configuration, string key)
     {
         var raw = configuration[$"{ConfigurationSection}:{key}"];
@@ -189,8 +222,11 @@ public sealed record SchedulerOptions
     }
 
     /// <summary>
-    /// 读整数配置；不合法抛出。
+    /// 读整数配置。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出。
+    /// </remarks>
     private static int? Integer(IConfiguration configuration, string key)
     {
         var raw = configuration[$"{ConfigurationSection}:{key}"];

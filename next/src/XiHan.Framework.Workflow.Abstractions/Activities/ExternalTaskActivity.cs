@@ -11,8 +11,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 外部任务：以 <c>External</c> 书签（<c>Key</c> = 主题）挂起，由外部工作者经 <c>IWorkflowExternalTaskService</c> 领取并完成；输出合并进实例变量。锁到期的书签由轮询恢复，活动重新挂起（解锁）。
+/// 外部任务。
 /// </summary>
+/// <remarks>
+/// 以 <c>External</c> 书签（<c>Key</c> = 主题）挂起，由外部工作者经 <c>IWorkflowExternalTaskService</c> 领取并完成；输出合并进实例变量。锁到期的书签由轮询恢复，活动重新挂起（解锁）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ExternalTaskActivity : IResumableActivity
 {
@@ -22,8 +25,11 @@ public sealed class ExternalTaskActivity : IResumableActivity
     public const string TopicProperty = "Topic";
 
     /// <summary>
-    /// 属性：交给工作者的载荷（对象；字符串值按模板渲染）。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// 交给工作者的载荷（对象；字符串值按模板渲染）。
+    /// </remarks>
     public const string PayloadProperty = "Payload";
 
     /// <inheritdoc />

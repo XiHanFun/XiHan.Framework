@@ -15,15 +15,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.Kafka;
 
 /// <summary>
-/// Kafka 消息的能力包入口：显式 Provider，同时提供 <c>messaging.queue@1</c> 与 <c>messaging.stream@1</c>；启动时连接集群并开始消费订阅的主题，停止时先停消费再释放生产者。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="KafkaMessagingOptions.HealthProbeInterval"/> 周期经生产者的连接描述集群。
+/// Kafka 消息的能力包入口。
 /// </summary>
+/// <remarks>
+/// 显式 Provider，同时提供 <c>messaging.queue@1</c> 与 <c>messaging.stream@1</c>；启动时连接集群并开始消费订阅的主题，停止时先停消费再释放生产者。健康项 <see cref="HealthName"/> 按 <see cref="KafkaMessagingOptions.HealthProbeInterval"/> 周期经生产者的连接描述集群。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KafkaMessagingFeature : IHostedFeature
 {
     /// <summary>
-    /// 连接绑定名：<c>stream</c>，类型 <c>stream</c>，可选；值是引导地址。
+    /// 连接绑定名。
     /// </summary>
+    /// <remarks>
+    /// <c>stream</c>，类型 <c>stream</c>，可选；值是引导地址。
+    /// </remarks>
     public const string ConnectionBinding = "stream";
 
     /// <summary>
@@ -32,13 +37,19 @@ public sealed class KafkaMessagingFeature : IHostedFeature
     public const string HealthName = "messaging.kafka.connection";
 
     /// <summary>
-    /// 运行时；启动后保存，停止时使用。
+    /// 运行时。
     /// </summary>
+    /// <remarks>
+    /// 启动后保存，停止时使用。
+    /// </remarks>
     private MessagingRuntime? _runtime;
 
     /// <summary>
-    /// 代理；启动后保存，停止时释放。
+    /// 代理。
     /// </summary>
+    /// <remarks>
+    /// 启动后保存，停止时释放。
+    /// </remarks>
     private KafkaMessageBroker? _broker;
 
     /// <summary>

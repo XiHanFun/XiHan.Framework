@@ -8,13 +8,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Mcp.Tests;
 
 /// <summary>
-/// 测试操作执行时记下的调用来源（RFC-0003），按到达顺序；宿主没有登记它时操作不记。
+/// 测试操作执行时记下的调用来源（RFC-0003），按到达顺序。
 /// </summary>
+/// <remarks>
+/// 宿主没有登记它时操作不记。
+/// </remarks>
 internal sealed class OriginLog
 {
     /// <summary>
-    /// 记录；没有来源记 <c>null</c>。
+    /// 记录。
     /// </summary>
+    /// <remarks>
+    /// 没有来源记 <c>null</c>。
+    /// </remarks>
     private readonly ConcurrentQueue<InvocationOrigin?> _origins = new();
 
     /// <summary>

@@ -7,8 +7,11 @@ using XiHan.Framework.Messaging.Conformance;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// 让 <see cref="KafkaMessagingFeature"/> 对真实 Kafka 跑完整套队列与流用例；未设置 <c>XIHAN_TEST_KAFKA</c> 时跳过。每个用例用独立的主题前缀与消费组，互不干扰。
+/// 让 <see cref="KafkaMessagingFeature"/> 对真实 Kafka 跑完整套队列与流用例。
 /// </summary>
+/// <remarks>
+/// 未设置 <c>XIHAN_TEST_KAFKA</c> 时跳过。每个用例用独立的主题前缀与消费组，互不干扰。
+/// </remarks>
 public sealed class KafkaMessagingConformanceTests : MessageStreamConformance
 {
     /// <summary>

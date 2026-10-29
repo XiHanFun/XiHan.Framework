@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 捕获发布的发布者：记录每次批量发布的主题与信封；设置 <see cref="Failure"/> 后每一项都返回该失败。
+/// 捕获发布的发布者。
 /// </summary>
+/// <remarks>
+/// 记录每次批量发布的主题与信封；设置 <see cref="Failure"/> 后每一项都返回该失败。
+/// </remarks>
 internal sealed class CapturingPublisher : IMessagePublisher
 {
     /// <summary>

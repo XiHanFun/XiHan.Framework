@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 执行管道的固定阶段，顺序即枚举值顺序。阶段名与顺序是跨语言规范（RFC-0004）。
+/// 执行管道的固定阶段，顺序即枚举值顺序。
 /// </summary>
+/// <remarks>
+/// 阶段名与顺序是跨语言规范（RFC-0004）。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public enum PipelineStage
 {

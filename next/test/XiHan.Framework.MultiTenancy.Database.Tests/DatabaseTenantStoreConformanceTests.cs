@@ -10,13 +10,19 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 让 <see cref="DatabaseTenantStore"/>（对着内存持久化）跑完整套 <see cref="TenantStoreConformance"/> 用例；套件每次要一个独立的存储，所以每次启动一个宿主，用例结束时一并释放。
+/// 让 <see cref="DatabaseTenantStore"/>（对着内存持久化）跑完整套 <see cref="TenantStoreConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 套件每次要一个独立的存储，所以每次启动一个宿主，用例结束时一并释放。
+/// </remarks>
 public sealed class DatabaseTenantStoreConformanceTests : TenantStoreConformance, IAsyncDisposable
 {
     /// <summary>
-    /// 本用例启动的宿主；释放时一并停止。
+    /// 本用例启动的宿主。
     /// </summary>
+    /// <remarks>
+    /// 释放时一并停止。
+    /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <summary>

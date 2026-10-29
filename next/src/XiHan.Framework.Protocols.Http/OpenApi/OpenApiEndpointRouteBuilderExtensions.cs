@@ -30,8 +30,11 @@ public static class OpenApiEndpointRouteBuilderExtensions
     public const string DefaultPattern = "/openapi.json";
 
     /// <summary>
-    /// 全量文档的名字（<see cref="OpenApiDocumentLink.Name"/>）；分组不能用它。
+    /// 全量文档的名字（<see cref="OpenApiDocumentLink.Name"/>）。
     /// </summary>
+    /// <remarks>
+    /// 分组不能用它。
+    /// </remarks>
     public const string FullDocumentName = "all";
 
     /// <summary>
@@ -106,8 +109,11 @@ public static class OpenApiEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 分组文档的路径：<paramref name="pattern"/> 去掉 <c>.json</c> 后接 <c>/&lt;组名&gt;.json</c>（缺省 <c>/openapi/&lt;组名&gt;.json</c>）。
+    /// 分组文档的路径。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="pattern"/> 去掉 <c>.json</c> 后接 <c>/&lt;组名&gt;.json</c>（缺省 <c>/openapi/&lt;组名&gt;.json</c>）。
+    /// </remarks>
     public static string GroupPattern(string pattern, string group)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pattern);

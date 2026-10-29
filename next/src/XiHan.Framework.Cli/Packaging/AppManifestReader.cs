@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 读取并校验应用清单；全部问题一次列出。
+/// 读取并校验应用清单。
 /// </summary>
+/// <remarks>
+/// 全部问题一次列出。
+/// </remarks>
 internal static partial class AppManifestReader
 {
     /// <summary>
@@ -18,8 +21,11 @@ internal static partial class AppManifestReader
     public const string DefaultFileName = "xihan.app.json";
 
     /// <summary>
-    /// 从文件读取；文件不存在由调用方先判断。
+    /// 从文件读取。
     /// </summary>
+    /// <remarks>
+    /// 文件不存在由调用方先判断。
+    /// </remarks>
     public static Result<AppManifest> Read(string path)
     {
         ArgumentNullException.ThrowIfNull(path);

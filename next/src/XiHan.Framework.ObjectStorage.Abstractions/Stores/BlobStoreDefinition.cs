@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 
 /// <summary>
-/// 一个命名存储实例的定义：名字（<c>^[a-z0-9][a-z0-9-]{0,63}$</c>）、Provider 名（如 <c>filesystem</c>、<c>s3</c>，不区分大小写）与 Provider 的设置。
-/// 设置的键与该 Provider 配置节下的键相同（如 S3 的 <c>ServiceUrl</c>、<c>AccessKey</c>，文件系统的 <c>RootPath</c>），不区分大小写；可以来自配置，也可以来自应用自己的存储（运行时登记）。
+/// 一个命名存储实例的定义。
 /// </summary>
+/// <remarks>
+/// 名字（<c>^[a-z0-9][a-z0-9-]{0,63}$</c>）、Provider 名（如 <c>filesystem</c>、<c>s3</c>，不区分大小写）与 Provider 的设置。设置的键与该 Provider 配置节下的键相同（如 S3 的 <c>ServiceUrl</c>、<c>AccessKey</c>，文件系统的 <c>RootPath</c>），不区分大小写；可以来自配置，也可以来自应用自己的存储（运行时登记）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record BlobStoreDefinition
 {
@@ -56,8 +58,11 @@ public sealed partial record BlobStoreDefinition
     public static bool IsValidName(string? name) => name is not null && NamePattern().IsMatch(name);
 
     /// <summary>
-    /// 是否与另一个定义描述同一个实例：Provider 名（不区分大小写）与设置（键不区分大小写、值区分）完全相同。
+    /// 是否与另一个定义描述同一个实例。
     /// </summary>
+    /// <remarks>
+    /// Provider 名（不区分大小写）与设置（键不区分大小写、值区分）完全相同。
+    /// </remarks>
     public bool Describes(BlobStoreDefinition other)
     {
         ArgumentNullException.ThrowIfNull(other);

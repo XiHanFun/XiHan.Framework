@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 包一层的缓存存储：<see cref="Refuse"/> 时"不存在才写"一律失败（模拟机器位全被占），<see cref="Fail"/> 时每个操作都抛存储不可用（模拟锁存储不可达）。
+/// 包一层的缓存存储。
 /// </summary>
+/// <remarks>
+/// <see cref="Refuse"/> 时"不存在才写"一律失败（模拟机器位全被占），<see cref="Fail"/> 时每个操作都抛存储不可用（模拟锁存储不可达）。
+/// </remarks>
 /// <param name="inner">真正的存储。</param>
 internal sealed class SwitchableCacheStore(ICacheStore inner) : ICacheStore
 {

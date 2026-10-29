@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 工作流实例的存储行：<c>WorkflowInstanceQuery</c> 的每个过滤项都有对应的列，整份实例在 JSON 文档里；同刻排序以写入序号为次关键字。
+/// 工作流实例的存储行。
 /// </summary>
+/// <remarks>
+/// <c>WorkflowInstanceQuery</c> 的每个过滤项都有对应的列，整份实例在 JSON 文档里；同刻排序以写入序号为次关键字。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowInstanceRecord : IEntity<string>
 {
@@ -81,8 +84,11 @@ public sealed class WorkflowInstanceRecord : IEntity<string>
     public long Sequence { get; set; }
 
     /// <summary>
-    /// 整份实例的 JSON；长文本列。
+    /// 整份实例的 JSON。
     /// </summary>
+    /// <remarks>
+    /// 长文本列。
+    /// </remarks>
     [LongText]
     public string Document { get; set; } = string.Empty;
 }

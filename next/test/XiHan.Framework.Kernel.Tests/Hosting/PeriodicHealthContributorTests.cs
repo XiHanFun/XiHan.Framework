@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Hosting;
 
 /// <summary>
-/// <see cref="PeriodicHealthContributor"/>：首探同步完成、失败结果 Degraded 并带原错误、再探成功回 Ready、异常与超时记为 <see cref="KernelErrors.HealthProbeFailed"/> 且不传播、按时钟重探、停止后不再探。
+/// <see cref="PeriodicHealthContributor"/>。
 /// </summary>
+/// <remarks>
+/// 首探同步完成、失败结果 Degraded 并带原错误、再探成功回 Ready、异常与超时记为 <see cref="KernelErrors.HealthProbeFailed"/> 且不传播、按时钟重探、停止后不再探。
+/// </remarks>
 public sealed class PeriodicHealthContributorTests
 {
     /// <summary>
@@ -24,14 +27,20 @@ public sealed class PeriodicHealthContributorTests
     private static readonly Error _failure = Error.Unavailable("TEST_UNAVAILABLE_001", "test.store.unavailable");
 
     /// <summary>
-    /// 以假时钟与空日志创建贡献者；间隔缺省 15 秒。
+    /// 以假时钟与空日志创建贡献者。
     /// </summary>
+    /// <remarks>
+    /// 间隔缺省 15 秒。
+    /// </remarks>
     private static PeriodicHealthContributor Create(Func<CancellationToken, ValueTask<Result>> probe, FakeTimeProvider clock, TimeSpan? interval = null)
         => new(Name, probe, interval ?? TimeSpan.FromSeconds(15), clock, NullLoggerFactory.Instance);
 
     /// <summary>
-    /// 等条件成立，最多等 5 秒真实时间（后台循环在线程池上跑，假时钟推进后要给它调度的机会）。
+    /// 等条件成立，最多等 5 秒真实时间。
     /// </summary>
+    /// <remarks>
+    /// 后台循环在线程池上跑，假时钟推进后要给它调度的机会。
+    /// </remarks>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(5);

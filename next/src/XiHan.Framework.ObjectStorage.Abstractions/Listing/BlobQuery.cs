@@ -23,8 +23,11 @@ public sealed record BlobQuery
     public static BlobQuery All { get; } = new();
 
     /// <summary>
-    /// 键前缀（序数比较）；空表示全部。
+    /// 键前缀（序数比较）。
     /// </summary>
+    /// <remarks>
+    /// 空表示全部。
+    /// </remarks>
     public string Prefix
     {
         get => field;
@@ -41,7 +44,10 @@ public sealed record BlobQuery
     } = MaxPageSize;
 
     /// <summary>
-    /// 续页标记：上一页 <see cref="BlobPage.ContinuationToken"/>；<see langword="null"/> 从头开始。
+    /// 续页标记。
     /// </summary>
+    /// <remarks>
+    /// 上一页 <see cref="BlobPage.ContinuationToken"/>；<see langword="null"/> 从头开始。
+    /// </remarks>
     public string? ContinuationToken { get; init; }
 }

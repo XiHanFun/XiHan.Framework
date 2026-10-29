@@ -22,15 +22,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储的能力包入口：显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。
-/// 健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。另登记命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）。
+/// S3 对象存储的能力包入口。
 /// </summary>
+/// <remarks>
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。另登记命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature
 {
     /// <summary>
-    /// 连接绑定名：<c>objectstorage</c>，类型 <c>storage:object</c>，可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>。
+    /// 连接绑定名。
     /// </summary>
+    /// <remarks>
+    /// <c>objectstorage</c>，类型 <c>storage:object</c>，可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>。
+    /// </remarks>
     public const string ConnectionBinding = "objectstorage";
 
     /// <summary>
@@ -120,8 +125,11 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 按选项创建客户端：有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链。
+    /// 按选项创建客户端。
     /// </summary>
+    /// <remarks>
+    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链。
+    /// </remarks>
     public static AmazonS3Client CreateClient(S3ObjectStorageOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -144,8 +152,11 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 连通性探针：配了健康桶就 HEAD 它（桶不存在、无权限或服务不可达都抛出）；没配就列桶，是最轻的通用管理调用。异常由探针宿主记成 Degraded 并带异常消息。
+    /// 连通性探针。
     /// </summary>
+    /// <remarks>
+    /// 配了健康桶就 HEAD 它（桶不存在、无权限或服务不可达都抛出）；没配就列桶，是最轻的通用管理调用。异常由探针宿主记成 Degraded 并带异常消息。
+    /// </remarks>
     internal static async ValueTask<Result> ProbeAsync(IAmazonS3 client, string? bucket, CancellationToken cancellationToken)
     {
         if (bucket is not null)

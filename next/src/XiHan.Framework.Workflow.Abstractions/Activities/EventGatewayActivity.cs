@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 事件网关：同时等待 <c>Signals</c> 列表里的任一信号与可选的 <c>TimeoutSeconds</c>，先到的一个决定出路——结果标签 = 信号名或 <c>timeout</c>，输出 <c>signal</c>、<c>payload</c>；其余书签由引擎清掉。<c>AcceptAnyCorrelation</c> 同 <c>WaitSignal</c>。
+/// 事件网关。
 /// </summary>
+/// <remarks>
+/// 同时等待 <c>Signals</c> 列表里的任一信号与可选的 <c>TimeoutSeconds</c>，先到的一个决定出路——结果标签 = 信号名或 <c>timeout</c>，输出 <c>signal</c>、<c>payload</c>；其余书签由引擎清掉。<c>AcceptAnyCorrelation</c> 同 <c>WaitSignal</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EventGatewayActivity : IResumableActivity
 {
@@ -21,8 +24,11 @@ public sealed class EventGatewayActivity : IResumableActivity
     public const string SignalsProperty = "Signals";
 
     /// <summary>
-    /// 属性：超时秒数；空为不超时。
+    /// 属性。
     /// </summary>
+    /// <remarks>
+    /// 超时秒数；空为不超时。
+    /// </remarks>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
     /// <summary>

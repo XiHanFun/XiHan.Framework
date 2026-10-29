@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Observability.OpenTelemetry;
 
 /// <summary>
-/// 默认订阅的 Activity 源与 Meter：内核自己的，以及 .NET 运行时与 ASP.NET Core 内置的（无需检测包）。
+/// 默认订阅的 Activity 源与 Meter。
 /// </summary>
+/// <remarks>
+/// 内核自己的，以及 .NET 运行时与 ASP.NET Core 内置的（无需检测包）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class OpenTelemetryDefaults
 {

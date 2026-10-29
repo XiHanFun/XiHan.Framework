@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine;
 
 /// <summary>
-/// 命令行宿主的错误码；登记在 <c>spec/conventions/error-codes.md</c>。失败以 JSON 写到 stderr，并映射为退出码（<see cref="CommandLineExitCodes"/>）。
+/// 命令行宿主的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。失败以 JSON 写到 stderr，并映射为退出码（<see cref="CommandLineExitCodes"/>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineErrors
 {

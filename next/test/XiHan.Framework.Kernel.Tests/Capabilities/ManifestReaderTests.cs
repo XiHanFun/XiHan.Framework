@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Capabilities;
 
 /// <summary>
-/// <see cref="ManifestReader"/> 的行为：读取全部字段、写出后可回读、各类非法清单都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+/// <see cref="ManifestReader"/> 的行为。
 /// </summary>
+/// <remarks>
+/// 读取全部字段、写出后可回读、各类非法清单都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+/// </remarks>
 public sealed class ManifestReaderTests
 {
     /// <summary>

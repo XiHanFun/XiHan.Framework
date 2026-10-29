@@ -13,8 +13,11 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <see cref="IJobStore"/> 的一致性套件：查询与排序、抢占的原子性、独占运行与阻塞、历史、节点与恢复。Provider 的测试项目继承并实现 <see cref="CreateAsync"/>。
+/// <see cref="IJobStore"/> 的一致性套件。
 /// </summary>
+/// <remarks>
+/// 查询与排序、抢占的原子性、独占运行与阻塞、历史、节点与恢复。Provider 的测试项目继承并实现 <see cref="CreateAsync"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class JobStoreConformance
 {

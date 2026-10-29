@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 已登记操作的描述：契约、归属特性与请求/响应类型，以及不经反射的编解码与执行入口。
-/// 协议适配器按它推导路由、生成描述并执行；具体类型化实现是 <see cref="OperationDescriptor{TOperation, TRequest, TResponse}"/>。
+/// 已登记操作的描述。
 /// </summary>
+/// <remarks>
+/// 契约、归属特性与请求/响应类型，以及不经反射的编解码与执行入口。协议适配器按它推导路由、生成描述并执行；具体类型化实现是 <see cref="OperationDescriptor{TOperation, TRequest, TResponse}"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class OperationDescriptor
 {
@@ -64,24 +66,35 @@ public abstract class OperationDescriptor
     public Type ResponseType { get; }
 
     /// <summary>
-    /// 请求与响应的 JSON Schema；没有时协议适配器只能发布无 Schema 的描述。
+    /// 请求与响应的 JSON Schema。
     /// </summary>
+    /// <remarks>
+    /// 没有时协议适配器只能发布无 Schema 的描述。
+    /// </remarks>
     public OperationSchema? Schema { get; }
 
     /// <summary>
-    /// 请求类型的序列化元数据：协议适配器据此了解请求形状（如是否声明 <c>id</c>），不经反射；
-    /// 载荷原样搬运、没有类型化元数据的描述（插件代理）为 null，适配器改看 <see cref="Schema"/>。
+    /// 请求类型的序列化元数据。
     /// </summary>
+    /// <remarks>
+    /// 协议适配器据此了解请求形状（如是否声明 <c>id</c>），不经反射；载荷原样搬运、没有类型化元数据的描述（插件代理）为 null，适配器改看 <see cref="Schema"/>。
+    /// </remarks>
     public virtual JsonTypeInfo? RequestInfo => null;
 
     /// <summary>
-    /// 响应类型的序列化元数据；没有类型化元数据的描述为 null。
+    /// 响应类型的序列化元数据。
     /// </summary>
+    /// <remarks>
+    /// 没有类型化元数据的描述为 null。
+    /// </remarks>
     public virtual JsonTypeInfo? ResponseInfo => null;
 
     /// <summary>
-    /// 把 UTF-8 JSON 载荷解码为请求对象；空载荷按 <c>{}</c> 处理；不合法返回 <see cref="KernelErrors.InvalidOperationPayload"/>。
+    /// 把 UTF-8 JSON 载荷解码为请求对象。
     /// </summary>
+    /// <remarks>
+    /// 空载荷按 <c>{}</c> 处理；不合法返回 <see cref="KernelErrors.InvalidOperationPayload"/>。
+    /// </remarks>
     public abstract Result<object> DecodeRequest(ReadOnlyMemory<byte> payload);
 
     /// <summary>
@@ -90,8 +103,11 @@ public abstract class OperationDescriptor
     public abstract ReadOnlyMemory<byte> EncodeResponse(object response);
 
     /// <summary>
-    /// 在当前调用里执行操作：从上下文的服务作用域解析实现并调用 <c>HandleAsync</c>。请求对象必须是 <see cref="RequestType"/>。
+    /// 在当前调用里执行操作。
     /// </summary>
+    /// <remarks>
+    /// 从上下文的服务作用域解析实现并调用 <c>HandleAsync</c>。请求对象必须是 <see cref="RequestType"/>。
+    /// </remarks>
     public abstract ValueTask<Result<object>> ExecuteAsync(InvocationContext context, object request);
 
     /// <inheritdoc />

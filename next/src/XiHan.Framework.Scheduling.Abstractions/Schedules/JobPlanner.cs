@@ -18,8 +18,11 @@ public static class JobPlanner
     private const int MaxCalendarSkips = 10_000;
 
     /// <summary>
-    /// <paramref name="after"/> 之后首个未被 <paramref name="calendar"/> 排除的运行时刻；已运行 <paramref name="fireCount"/> 次且计划限次用尽时无值。
+    /// <paramref name="after"/> 之后首个未被 <paramref name="calendar"/> 排除的运行时刻。
     /// </summary>
+    /// <remarks>
+    /// 已运行 <paramref name="fireCount"/> 次且计划限次用尽时无值。
+    /// </remarks>
     public static Maybe<DateTimeOffset> NextFire(JobSchedule schedule, DateTimeOffset after, IJobCalendar? calendar, long fireCount = 0)
     {
         ArgumentNullException.ThrowIfNull(schedule);

@@ -7,8 +7,11 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Kernel.Analyzers;
 
 /// <summary>
-/// 诊断描述与范围判定。范围由 MSBuild 属性 <c>XiHanFrameworkPackage</c>、<c>XiHanRing</c> 传入。
+/// 诊断描述与范围判定。
 /// </summary>
+/// <remarks>
+/// 范围由 MSBuild 属性 <c>XiHanFrameworkPackage</c>、<c>XiHanRing</c> 传入。
+/// </remarks>
 internal static class Rules
 {
     /// <summary>
@@ -17,8 +20,11 @@ internal static class Rules
     public const string Category = "XiHan";
 
     /// <summary>
-    /// <c>ApiLevelAttribute</c> 的元数据全名；编译里找不到该类型时，依赖它的规则直接跳过。
+    /// <c>ApiLevelAttribute</c> 的元数据全名。
     /// </summary>
+    /// <remarks>
+    /// 编译里找不到该类型时，依赖它的规则直接跳过。
+    /// </remarks>
     public const string ApiLevelAttributeName = "XiHan.Framework.Primitives.ApiLevelAttribute";
 
     /// <summary>
@@ -39,8 +45,11 @@ internal static class Rules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XH0002：类型名以 <c>XiHan</c> 开头；归属由命名空间表达，类型名不再重复。
+    /// XH0002。
     /// </summary>
+    /// <remarks>
+    /// 类型名以 <c>XiHan</c> 开头；归属由命名空间表达，类型名不再重复。
+    /// </remarks>
     public static readonly DiagnosticDescriptor XiHanPrefix = new(
         "XH0002",
         "Type name must not start with XiHan",
@@ -104,8 +113,11 @@ internal static class Rules
             && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 当前编译所在的环层：MSBuild 属性 <c>XiHanRing</c>；未设置或不是整数时为 -1。
+    /// 当前编译所在的环层。
     /// </summary>
+    /// <remarks>
+    /// MSBuild 属性 <c>XiHanRing</c>；未设置或不是整数时为 -1。
+    /// </remarks>
     public static int Ring(AnalyzerOptions options)
         => options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.XiHanRing", out var value)
             && int.TryParse(value, out var ring)
@@ -113,8 +125,11 @@ internal static class Rules
             : -1;
 
     /// <summary>
-    /// 类型是否有效公开：自身与所有包含类型都是 <c>public</c>。嵌套在 internal 类型里的 public 类型不算。
+    /// 类型是否有效公开。
     /// </summary>
+    /// <remarks>
+    /// 自身与所有包含类型都是 <c>public</c>。嵌套在 internal 类型里的 public 类型不算。
+    /// </remarks>
     public static bool IsEffectivelyPublic(INamedTypeSymbol type)
     {
         for (ISymbol? current = type; current is not null && current.Kind != SymbolKind.Namespace; current = current.ContainingSymbol)
@@ -129,8 +144,11 @@ internal static class Rules
     }
 
     /// <summary>
-    /// 符号自身是否直接标注了 <c>[ApiLevel]</c>；不看包含类型。
+    /// 符号自身是否直接标注了 <c>[ApiLevel]</c>。
     /// </summary>
+    /// <remarks>
+    /// 不看包含类型。
+    /// </remarks>
     public static bool HasApiLevel(ISymbol symbol, INamedTypeSymbol attribute)
     {
         foreach (var data in symbol.GetAttributes())

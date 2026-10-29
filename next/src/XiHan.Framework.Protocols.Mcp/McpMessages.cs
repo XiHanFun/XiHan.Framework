@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，特性装配时注册 <see cref="Catalog"/>。
+/// MCP 协议适配器的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，特性装配时注册 <see cref="Catalog"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpMessages
 {
@@ -28,23 +31,35 @@ public static class McpMessages
     public const string MessageInvalid = "protocols.mcp.message_invalid";
 
     /// <summary>
-    /// MCP 协议版本不受支持。参数：<c>version</c>、<c>supported</c>。
+    /// MCP 协议版本不受支持。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>version</c>、<c>supported</c>。
+    /// </remarks>
     public const string VersionUnsupported = "protocols.mcp.version_unsupported";
 
     /// <summary>
-    /// 方法不受支持。参数：<c>method</c>。
+    /// 方法不受支持。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>method</c>。
+    /// </remarks>
     public const string MethodUnknown = "protocols.mcp.method_unknown";
 
     /// <summary>
-    /// tool 未登记。参数：<c>tool</c>。
+    /// tool 未登记。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>tool</c>。
+    /// </remarks>
     public const string ToolUnknown = "protocols.mcp.tool_unknown";
 
     /// <summary>
-    /// tool 的参数不是 JSON 对象。参数：<c>tool</c>。
+    /// tool 的参数不是 JSON 对象。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>tool</c>。
+    /// </remarks>
     public const string ArgumentsInvalid = "protocols.mcp.arguments_invalid";
 
     /// <summary>

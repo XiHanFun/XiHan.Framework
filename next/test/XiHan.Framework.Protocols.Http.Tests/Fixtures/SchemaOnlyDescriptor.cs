@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 没有类型化序列化元数据、只带（可选）Schema 的描述：模拟插件代理操作，验证路由推导回落到 Schema 判定 <c>id</c>。
+/// 没有类型化序列化元数据、只带（可选）Schema 的描述。
 /// </summary>
+/// <remarks>
+/// 模拟插件代理操作，验证路由推导回落到 Schema 判定 <c>id</c>。
+/// </remarks>
 internal sealed class SchemaOnlyDescriptor(string id, OperationSchema? schema)
     : OperationDescriptor(new OperationContract(id), "xihan.test.orders", typeof(SchemaOnlyDescriptor), typeof(object), typeof(object), schema)
 {

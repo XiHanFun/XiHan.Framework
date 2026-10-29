@@ -6,8 +6,11 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 测试收集的 SqlSugar 差异日志：每条事件连同触发时调用方的 AsyncLocal 值一起记下，用来断言回调在调用方的执行流里同步触发。
+/// 测试收集的 SqlSugar 差异日志。
 /// </summary>
+/// <remarks>
+/// 每条事件连同触发时调用方的 AsyncLocal 值一起记下，用来断言回调在调用方的执行流里同步触发。
+/// </remarks>
 internal sealed class DiffLogSink
 {
     /// <summary>
@@ -26,8 +29,11 @@ internal sealed class DiffLogSink
     private readonly List<(DiffLogModel Model, string? Ambient)> _events = [];
 
     /// <summary>
-    /// 调用方的环境值；只在设置它的执行流及其后续里可见。
+    /// 调用方的环境值。
     /// </summary>
+    /// <remarks>
+    /// 只在设置它的执行流及其后续里可见。
+    /// </remarks>
     public static string? Ambient
     {
         get => _ambient.Value;
@@ -49,9 +55,11 @@ internal sealed class DiffLogSink
     }
 
     /// <summary>
-    /// 作为 <c>AopEvents.OnDiffLogEvent</c> 的回调：记下事件快照与此刻的环境值。
-    /// SqlSugar 在分表插入的各组之间复用同一个模型、每组替换其前后值，所以要在回调里复制，不能留引用。
+    /// 作为 <c>AopEvents.OnDiffLogEvent</c> 的回调。
     /// </summary>
+    /// <remarks>
+    /// 记下事件快照与此刻的环境值。SqlSugar 在分表插入的各组之间复用同一个模型、每组替换其前后值，所以要在回调里复制，不能留引用。
+    /// </remarks>
     public void Record(DiffLogModel model)
     {
         var snapshot = new DiffLogModel

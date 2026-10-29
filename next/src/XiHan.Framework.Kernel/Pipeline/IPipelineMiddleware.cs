@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 管道中处理一次调用的中间件。中间件从调用作用域的服务提供器解析，可以是单例或作用域生命周期。
+/// 管道中处理一次调用的中间件。
 /// </summary>
+/// <remarks>
+/// 中间件从调用作用域的服务提供器解析，可以是单例或作用域生命周期。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IPipelineMiddleware
 {

@@ -12,8 +12,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 测试宿主的装配与种数据：内存持久化 + 内存本地化 + 数据库多租户；写入经完整管道（Transaction 阶段提供工作单元）。
+/// 测试宿主的装配与种数据。
 /// </summary>
+/// <remarks>
+/// 内存持久化 + 内存本地化 + 数据库多租户；写入经完整管道（Transaction 阶段提供工作单元）。
+/// </remarks>
 internal static class TenantHosts
 {
     /// <summary>
@@ -26,8 +29,11 @@ internal static class TenantHosts
             services);
 
     /// <summary>
-    /// 经 <see cref="TenantRecordStore.UpsertAsync"/> 在一次调用里种入租户；任一项失败即抛出。
+    /// 经 <see cref="TenantRecordStore.UpsertAsync"/> 在一次调用里种入租户。
     /// </summary>
+    /// <remarks>
+    /// 任一项失败即抛出。
+    /// </remarks>
     public static async Task SeedAsync(TestHost host, IReadOnlyList<TenantInfo> tenants)
     {
         var outcome = await host.InvokeAsync(async context =>

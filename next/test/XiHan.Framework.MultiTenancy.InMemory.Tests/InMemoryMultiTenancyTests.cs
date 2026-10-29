@@ -13,8 +13,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
 /// <summary>
-/// 内存多租户包的测试：从配置装载租户、存储的容量与增删，以及能力包在宿主里的租户解析。
+/// 内存多租户包的测试。
 /// </summary>
+/// <remarks>
+/// 从配置装载租户、存储的容量与增删，以及能力包在宿主里的租户解析。
+/// </remarks>
 public sealed class InMemoryMultiTenancyTests
 {
     /// <summary>

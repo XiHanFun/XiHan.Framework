@@ -6,8 +6,11 @@ using Microsoft.Extensions.VectorData;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// 进程内的向量存储：只支持 <c>&lt;string, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用。
+/// 进程内的向量存储。
 /// </summary>
+/// <remarks>
+/// 只支持 <c>&lt;string, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用。
+/// </remarks>
 internal sealed class TestVectorStore : VectorStore
 {
     /// <summary>

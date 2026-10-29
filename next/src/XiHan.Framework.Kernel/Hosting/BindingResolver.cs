@@ -23,8 +23,11 @@ public static class BindingResolver
     public const string ServiceBindingRootVariable = "SERVICE_BINDING_ROOT";
 
     /// <summary>
-    /// 解析全部绑定。同名时配置优先于目录。
+    /// 解析全部绑定。
     /// </summary>
+    /// <remarks>
+    /// 同名时配置优先于目录。
+    /// </remarks>
     public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -51,8 +54,11 @@ public static class BindingResolver
     }
 
     /// <summary>
-    /// 从配置节 <c>XiHan:Bindings:&lt;name&gt;</c> 读取一个绑定：节本身的标量值或子键 <c>value</c> 作主值，子键 <c>type</c> 作类型，其余子键作属性。
+    /// 从配置节 <c>XiHan:Bindings:&lt;name&gt;</c> 读取一个绑定。
     /// </summary>
+    /// <remarks>
+    /// 节本身的标量值或子键 <c>value</c> 作主值，子键 <c>type</c> 作类型，其余子键作属性。
+    /// </remarks>
     private static BindingValue FromSection(IConfigurationSection section)
     {
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -85,8 +91,11 @@ public static class BindingResolver
     }
 
     /// <summary>
-    /// 按 Service Binding 规范从一个目录读取绑定：目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。
+    /// 按 Service Binding 规范从一个目录读取绑定。
     /// </summary>
+    /// <remarks>
+    /// 目录名是绑定名，每个文件是一个属性，<c>type</c> 作类型，<c>uri</c> 同时作主值。
+    /// </remarks>
     private static BindingValue FromDirectory(string directory)
     {
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);

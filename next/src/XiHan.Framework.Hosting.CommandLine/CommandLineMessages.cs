@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine;
 
 /// <summary>
-/// 命令行宿主的消息键：用法、命令说明与用法错误；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，<c>AddXiHanCommandLine()</c> 注册 <see cref="Catalog"/>。
+/// 命令行宿主的消息键。
 /// </summary>
+/// <remarks>
+/// 用法、命令说明与用法错误；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，<c>AddXiHanCommandLine()</c> 注册 <see cref="Catalog"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineMessages
 {
@@ -18,8 +21,11 @@ public static class CommandLineMessages
     public const string CatalogName = "hosting.commandline";
 
     /// <summary>
-    /// 用法行。参数：<c>program</c>。
+    /// 用法行。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>program</c>。
+    /// </remarks>
     public const string Usage = "hosting.commandline.usage";
 
     /// <summary>
@@ -33,8 +39,11 @@ public static class CommandLineMessages
     public const string OperationShorthand = "hosting.commandline.operation_shorthand";
 
     /// <summary>
-    /// 命令不存在。参数：<c>command</c>。
+    /// 命令不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>command</c>。
+    /// </remarks>
     public const string CommandUnknown = "hosting.commandline.command_unknown";
 
     /// <summary>
@@ -68,13 +77,19 @@ public static class CommandLineMessages
     public const string InvokeOperationMissing = "hosting.commandline.invoke_operation_missing";
 
     /// <summary>
-    /// <c>--json</c> 不是 JSON 对象。参数：<c>reason</c>。
+    /// <c>--json</c> 不是 JSON 对象。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>。
+    /// </remarks>
     public const string InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid";
 
     /// <summary>
-    /// <c>--data</c> 指向的文件不存在。参数：<c>path</c>。
+    /// <c>--data</c> 指向的文件不存在。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
     public const string InvokeDataMissing = "hosting.commandline.invoke_data_missing";
 
     /// <summary>
@@ -88,8 +103,11 @@ public static class CommandLineMessages
     public const string InvokeAuthorizationInvalid = "hosting.commandline.invoke_authorization_invalid";
 
     /// <summary>
-    /// 操作未登记或未暴露给命令行。参数：<c>id</c>。
+    /// 操作未登记或未暴露给命令行。
     /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。
+    /// </remarks>
     public const string OperationNotExposed = "hosting.commandline.operation_not_exposed";
 
     /// <summary>

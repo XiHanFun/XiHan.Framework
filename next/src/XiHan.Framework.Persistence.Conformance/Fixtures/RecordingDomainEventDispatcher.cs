@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件派发器：记录每批交来的事件名与租户并清空聚合的缓冲；设置 <see cref="Failure"/> 后改为返回该失败且不清空，用于验证回滚。
+/// 套件派发器。
 /// </summary>
+/// <remarks>
+/// 记录每批交来的事件名与租户并清空聚合的缓冲；设置 <see cref="Failure"/> 后改为返回该失败且不清空，用于验证回滚。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class RecordingDomainEventDispatcher : IDomainEventDispatcher
 {

@@ -16,8 +16,11 @@ namespace XiHan.Framework.Benchmarks;
 public class PipelineBenchmarks
 {
     /// <summary>
-    /// 解析中间件实例的容器；在 <see cref="Setup"/> 构建、<see cref="Cleanup"/> 释放。
+    /// 解析中间件实例的容器。
     /// </summary>
+    /// <remarks>
+    /// 在 <see cref="Setup"/> 构建、<see cref="Cleanup"/> 释放。
+    /// </remarks>
     private ServiceProvider _services = null!;
 
     /// <summary>
@@ -31,13 +34,19 @@ public class PipelineBenchmarks
     private PipelineStep _five = null!;
 
     /// <summary>
-    /// 复用的调用上下文；基准只测管道本身，不计上下文创建。
+    /// 复用的调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 基准只测管道本身，不计上下文创建。
+    /// </remarks>
     private InvocationContext _context = null!;
 
     /// <summary>
-    /// 构建容器、两条管道与共享上下文；每次基准运行前执行一次。
+    /// 构建容器、两条管道与共享上下文。
     /// </summary>
+    /// <remarks>
+    /// 每次基准运行前执行一次。
+    /// </remarks>
     [GlobalSetup]
     public void Setup()
     {
@@ -87,8 +96,11 @@ public class PipelineBenchmarks
     public ValueTask FiveMiddleware() => _five(_context);
 
     /// <summary>
-    /// 直通中间件：不做任何事，直接调用下一步。五个类型只为占据五个不同的注册位。
+    /// 直通中间件。
     /// </summary>
+    /// <remarks>
+    /// 不做任何事，直接调用下一步。五个类型只为占据五个不同的注册位。
+    /// </remarks>
     public sealed class PassThroughA : IPipelineMiddleware
     {
         /// <inheritdoc />

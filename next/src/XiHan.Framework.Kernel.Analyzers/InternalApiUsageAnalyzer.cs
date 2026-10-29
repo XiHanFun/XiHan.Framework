@@ -11,9 +11,11 @@ using Microsoft.CodeAnalysis.Operations;
 namespace XiHan.Framework.Kernel.Analyzers;
 
 /// <summary>
-/// XH0003：在程序集之外使用标注为 <c>Stability.Internal</c> 的类型或成员。
-/// 类型按名称出现处报告一次；成员只在自身标注 Internal 时报告，避免同一处重复。
+/// XH0003。
 /// </summary>
+/// <remarks>
+/// 在程序集之外使用标注为 <c>Stability.Internal</c> 的类型或成员。类型按名称出现处报告一次；成员只在自身标注 Internal 时报告，避免同一处重复。
+/// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
 {
@@ -79,8 +81,11 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 检查标识符与泛型名解析到的类型：类型或其包含类型标注 Internal 且来自其他程序集时报告。
+    /// 检查标识符与泛型名解析到的类型。
     /// </summary>
+    /// <remarks>
+    /// 类型或其包含类型标注 Internal 且来自其他程序集时报告。
+    /// </remarks>
     private static void AnalyzeTypeSyntax(SyntaxNodeAnalysisContext context, INamedTypeSymbol attribute, IAssemblySymbol assembly)
     {
         // var 是隐式类型关键字，不是对某个类型名的引用
@@ -102,8 +107,11 @@ public sealed class InternalApiUsageAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 符号是否属于当前编译的程序集。没有归属程序集的符号（数组、指针等）视为同程序集，不报告。
+    /// 符号是否属于当前编译的程序集。
     /// </summary>
+    /// <remarks>
+    /// 没有归属程序集的符号（数组、指针等）视为同程序集，不报告。
+    /// </remarks>
     private static bool IsSameAssembly(ISymbol symbol, IAssemblySymbol assembly)
         => symbol.ContainingAssembly is null || SymbolEqualityComparer.Default.Equals(symbol.ContainingAssembly, assembly);
 }

@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 
 /// <summary>
-/// 工作单元里写过的聚合：仓储在新增 / 更新 / 删除成功后登记实体，实现 <see cref="IHasDomainEvents"/> 的按首次写入顺序记一次（按引用去重）；
-/// Transaction 阶段提交前取出带有未派发事件的聚合交给 <see cref="IDomainEventDispatcher"/>。工作单元是作用域服务，不需要并发保护。
+/// 工作单元里写过的聚合。
 /// </summary>
+/// <remarks>
+/// 仓储在新增 / 更新 / 删除成功后登记实体，实现 <see cref="IHasDomainEvents"/> 的按首次写入顺序记一次（按引用去重）；Transaction 阶段提交前取出带有未派发事件的聚合交给 <see cref="IDomainEventDispatcher"/>。工作单元是作用域服务，不需要并发保护。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DomainEventTracker
 {
@@ -29,8 +31,11 @@ public sealed class DomainEventTracker
     public int Count => _aggregates.Count;
 
     /// <summary>
-    /// 登记一个写过的实体；不收集领域事件的实体与已登记的同一实例都忽略。
+    /// 登记一个写过的实体。
     /// </summary>
+    /// <remarks>
+    /// 不收集领域事件的实体与已登记的同一实例都忽略。
+    /// </remarks>
     public void Track(object entity)
     {
         ArgumentNullException.ThrowIfNull(entity);

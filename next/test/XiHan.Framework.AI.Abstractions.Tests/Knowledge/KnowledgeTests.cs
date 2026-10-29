@@ -10,8 +10,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Knowledge;
 
 /// <summary>
-/// 知识库流水线：切块、摄入与重摄入、检索与过滤、删除、维度不一致、没有 Provider、提示增强。
+/// 知识库流水线。
 /// </summary>
+/// <remarks>
+/// 切块、摄入与重摄入、检索与过滤、删除、维度不一致、没有 Provider、提示增强。
+/// </remarks>
 public sealed class KnowledgeTests
 {
     /// <summary>

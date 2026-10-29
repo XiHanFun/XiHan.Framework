@@ -12,15 +12,20 @@ using Xunit;
 namespace XiHan.Framework.ObjectStorage.Conformance;
 
 /// <summary>
-/// <see cref="IBlobStoreProvider"/> 的一致性套件（命名存储实例）。继承并实现 <see cref="CreateProvider"/>、<see cref="ValidSettings"/> 与 <see cref="OtherValidSettings"/>，全部用例随之执行：
-/// 按定义建出可读写、探测通过的实例；未知的设置键被拒绝；经 <see cref="BlobStores"/> 同定义复用、定义变了替换、移除后不存在；定义错误翻译为 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>。
+/// <see cref="IBlobStoreProvider"/> 的一致性套件（命名存储实例）。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateProvider"/>、<see cref="ValidSettings"/> 与 <see cref="OtherValidSettings"/>，全部用例随之执行：按定义建出可读写、探测通过的实例；未知的设置键被拒绝；经 <see cref="BlobStores"/> 同定义复用、定义变了替换、移除后不存在；定义错误翻译为 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class BlobStoreProviderConformance
 {
     /// <summary>
-    /// 用例使用的容器；两组设置建出的实例里它都须可写（不存在时由设置保证会建出，或预先建好）。
+    /// 用例使用的容器。
     /// </summary>
+    /// <remarks>
+    /// 两组设置建出的实例里它都须可写（不存在时由设置保证会建出，或预先建好）。
+    /// </remarks>
     protected virtual ContainerName Container => new("conformance");
 
     /// <summary>
@@ -39,8 +44,11 @@ public abstract class BlobStoreProviderConformance
     protected abstract IReadOnlyDictionary<string, string> OtherValidSettings();
 
     /// <summary>
-    /// 用例 1：按定义建出的实例能写能读，探测通过；实例持有资源时可以释放。
+    /// 用例 1：按定义建出的实例能写能读，探测通过。
     /// </summary>
+    /// <remarks>
+    /// 实例持有资源时可以释放。
+    /// </remarks>
     [Fact]
     public async Task Create_YieldsAWorkingStore_ThatProbesHealthy()
     {
@@ -71,8 +79,11 @@ public abstract class BlobStoreProviderConformance
     }
 
     /// <summary>
-    /// 用例 3：经注册表同名同定义返回同一实例，定义变了建新实例替换，按名取到的是新的；探测后有该实例的健康项且就绪；移除后取用返回 NOTFOUND、健康项消失。
+    /// 用例 3：经注册表同名同定义返回同一实例，定义变了建新实例替换，按名取到的是新的。
     /// </summary>
+    /// <remarks>
+    /// 探测后有该实例的健康项且就绪；移除后取用返回 NOTFOUND、健康项消失。
+    /// </remarks>
     [Fact]
     public async Task Registry_ReusesReplacesAndRemovesInstances()
     {
@@ -103,8 +114,11 @@ public abstract class BlobStoreProviderConformance
     }
 
     /// <summary>
-    /// 用例 4：Provider 未登记、设置不合法都返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，不登记实例；已有的同名实例不受影响。
+    /// 用例 4：Provider 未登记、设置不合法都返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，不登记实例。
     /// </summary>
+    /// <remarks>
+    /// 已有的同名实例不受影响。
+    /// </remarks>
     [Fact]
     public async Task Registry_TranslatesDefinitionErrors_AndKeepsTheExistingInstance()
     {

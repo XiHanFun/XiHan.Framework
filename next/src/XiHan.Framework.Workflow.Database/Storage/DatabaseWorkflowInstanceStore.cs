@@ -14,8 +14,11 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库实例与节点实例存储（单例）：每个操作在新作用域里经完整管道执行；<see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件；删实例级联删节点实例。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// 数据库实例与节点实例存储（单例）。
 /// </summary>
+/// <remarks>
+/// 每个操作在新作用域里经完整管道执行；<see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件；删实例级联删节点实例。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
 {
@@ -162,8 +165,11 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 把查询的过滤项逐项翻译成条件：单个状态与状态集合取并集做 <c>IN</c>，其余等值，时间范围按列比较。
+    /// 把查询的过滤项逐项翻译成条件。
     /// </summary>
+    /// <remarks>
+    /// 单个状态与状态集合取并集做 <c>IN</c>，其余等值，时间范围按列比较。
+    /// </remarks>
     private static EntityQuery<WorkflowInstanceRecord> Filter(WorkflowInstanceQuery query)
     {
         var filtered = EntityQuery.All<WorkflowInstanceRecord>();
@@ -235,8 +241,11 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 实例 → 行；序号只对新增的行生效，替换已有行时 <see cref="Copy(WorkflowInstanceRecord, WorkflowInstanceRecord)"/> 不复制它。
+    /// 实例 → 行。
     /// </summary>
+    /// <remarks>
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy(WorkflowInstanceRecord, WorkflowInstanceRecord)"/> 不复制它。
+    /// </remarks>
     private WorkflowInstanceRecord ToRecord(WorkflowInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);
@@ -277,8 +286,11 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 节点实例 → 行；序号只对新增的行生效。
+    /// 节点实例 → 行。
     /// </summary>
+    /// <remarks>
+    /// 序号只对新增的行生效。
+    /// </remarks>
     private WorkflowNodeInstanceRecord ToRecord(WorkflowNodeInstance nodeInstance)
     {
         ArgumentNullException.ThrowIfNull(nodeInstance);

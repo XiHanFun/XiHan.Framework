@@ -20,8 +20,11 @@ internal static class VectorDataTestHost
     public const int Dimensions = 64;
 
     /// <summary>
-    /// 启动；<paramref name="store"/> 为空时不注册向量存储。
+    /// 启动。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="store"/> 为空时不注册向量存储。
+    /// </remarks>
     public static Task<TestHost> StartAsync(VectorStore? store, params (string Key, string Value)[] extra)
     {
         (string Key, string Value)[] configuration =

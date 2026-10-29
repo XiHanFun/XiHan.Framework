@@ -6,8 +6,11 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 /// <summary>
-/// 本地触发器（作业 <c>RunOnEveryInstance</c>）在本节点的推算状态：不经存储抢占，每个实例按自己的时钟运行。
+/// 本地触发器（作业 <c>RunOnEveryInstance</c>）在本节点的推算状态。
 /// </summary>
+/// <remarks>
+/// 不经存储抢占，每个实例按自己的时钟运行。
+/// </remarks>
 internal sealed class LocalTriggerState
 {
     /// <summary>
@@ -32,8 +35,11 @@ internal sealed class LocalTriggerState
     public JobRecord Job { get; set; }
 
     /// <summary>
-    /// 本节点的下一次运行时刻；间隔计划在运行结束前为空。
+    /// 本节点的下一次运行时刻。
     /// </summary>
+    /// <remarks>
+    /// 间隔计划在运行结束前为空。
+    /// </remarks>
     public DateTimeOffset? NextFireAt { get; set; }
 
     /// <summary>

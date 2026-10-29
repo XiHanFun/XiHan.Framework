@@ -8,8 +8,11 @@ using XiHan.Framework.Scheduling.Conformance;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 让 <see cref="Leadership.DatabaseLeaderElection"/>（对着 SQLite）跑完整套 <see cref="LeaderElectionConformance"/> 用例；套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主。
+/// 让 <see cref="Leadership.DatabaseLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 对着 SQLite。套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主。
+/// </remarks>
 public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConformance, IAsyncLifetime
 {
     /// <summary>

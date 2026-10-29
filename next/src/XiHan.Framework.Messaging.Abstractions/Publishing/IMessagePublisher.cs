@@ -7,9 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Publishing;
 
 /// <summary>
-/// 应用发布消息的入口。主题不合法返回 <see cref="MessagingErrors.InvalidTopic"/>。
-/// 批量发布按 <c>spec/conventions/batch-first.md</c>：结果与入参顺序一一对应，单条是它的特例，空集合不触代理。
+/// 应用发布消息的入口。
 /// </summary>
+/// <remarks>
+/// 主题不合法返回 <see cref="MessagingErrors.InvalidTopic"/>。批量发布按 <c>spec/conventions/batch-first.md</c>：结果与入参顺序一一对应，单条是它的特例，空集合不触代理。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IMessagePublisher
 {
@@ -19,8 +21,10 @@ public interface IMessagePublisher
     ValueTask<Result> PublishAsync(string topic, MessageEnvelope envelope, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 批量发布到同一主题，一次交给代理；同一主题内保持入参顺序，重复 <see cref="MessageEnvelope.Id"/> 照发（去重是消费端的事）。
-    /// 主题不合法时每一项都是 <see cref="MessagingErrors.InvalidTopic"/>。
+    /// 批量发布到同一主题，一次交给代理。
     /// </summary>
+    /// <remarks>
+    /// 同一主题内保持入参顺序，重复 <see cref="MessageEnvelope.Id"/> 照发（去重是消费端的事）。主题不合法时每一项都是 <see cref="MessagingErrors.InvalidTopic"/>。
+    /// </remarks>
     ValueTask<IReadOnlyList<Result>> PublishManyAsync(string topic, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken);
 }

@@ -9,11 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 
 /// <summary>
-/// 单例目录读数据库的方式：在根提供者的新作用域里直接开只读工作单元取仓储，读完提交，异常回滚后原样抛出。
-/// 不经 <c>App.InvokeAsync</c> 再走一遍管道：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant / Authorize 阶段
-/// （<c>RequireTenant</c> 为真时嵌套调用没有租户就失败，目录读自己成了自指），而且要求应用处于服务状态，启动期读不了。
-/// 租户是平台级数据，<see cref="TenantRecord"/> 不实现 <c>IMultiTenant</c>，工作单元不带租户。
+/// 单例目录读数据库的方式。
 /// </summary>
+/// <remarks>
+/// 在根提供者的新作用域里直接开只读工作单元取仓储，读完提交，异常回滚后原样抛出。不经 <c>App.InvokeAsync</c> 再走一遍管道：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant / Authorize 阶段（<c>RequireTenant</c> 为真时嵌套调用没有租户就失败，目录读自己成了自指），而且要求应用处于服务状态，启动期读不了。租户是平台级数据，<see cref="TenantRecord"/> 不实现 <c>IMultiTenant</c>，工作单元不带租户。
+/// </remarks>
 internal sealed class CatalogInvocation
 {
     /// <summary>
@@ -22,8 +22,11 @@ internal sealed class CatalogInvocation
     private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true);
 
     /// <summary>
-    /// 根服务提供者；每次读取开新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次读取开新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
@@ -35,8 +38,11 @@ internal sealed class CatalogInvocation
     }
 
     /// <summary>
-    /// 在新作用域的只读工作单元里用仓储读取并返回结果。提交失败抛出 <see cref="FrameworkException"/>，基础设施异常原样抛出。
+    /// 在新作用域的只读工作单元里用仓储读取并返回结果。
     /// </summary>
+    /// <remarks>
+    /// 提交失败抛出 <see cref="FrameworkException"/>，基础设施异常原样抛出。
+    /// </remarks>
     public async ValueTask<T> ReadAsync<T>(Func<IRepository<TenantRecord, string>, CancellationToken, ValueTask<T>> read, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(read);

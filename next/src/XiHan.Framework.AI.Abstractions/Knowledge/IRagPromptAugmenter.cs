@@ -12,7 +12,10 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public interface IRagPromptAugmenter
 {
     /// <summary>
-    /// 增强；没有块时原样返回问题。
+    /// 增强。
     /// </summary>
+    /// <remarks>
+    /// 没有块时原样返回问题。
+    /// </remarks>
     string Augment(string question, IReadOnlyList<RetrievedChunk> chunks);
 }

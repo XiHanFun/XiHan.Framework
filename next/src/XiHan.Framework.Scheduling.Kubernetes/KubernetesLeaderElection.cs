@@ -11,9 +11,11 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// 以 Kubernetes Lease 实现的领导选举：Lease 不存在就创建，持有者为空或 <c>renewTime + leaseDurationSeconds</c> 已过就接管（交接次数加一），否则返回被占用；并发竞争由 resourceVersion 裁决。
-/// 存活时间按秒向上取整写进 Lease，本地判定仍用精确值。
+/// 以 Kubernetes Lease 实现的领导选举。
 /// </summary>
+/// <remarks>
+/// Lease 不存在就创建，持有者为空或 <c>renewTime + leaseDurationSeconds</c> 已过就接管（交接次数加一），否则返回被占用；并发竞争由 resourceVersion 裁决。存活时间按秒向上取整写进 Lease，本地判定仍用精确值。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class KubernetesLeaderElection : ILeaderElection
 {

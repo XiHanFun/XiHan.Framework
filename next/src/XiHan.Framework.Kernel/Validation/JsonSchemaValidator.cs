@@ -9,18 +9,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Validation;
 
 /// <summary>
-/// 按操作契约的请求 JSON Schema（draft 2020-12 的子集，即 <c>Kernel.Generators</c> 产出的关键字）校验载荷：
-/// <c>type</c>（含 <c>[type, "null"]</c>）、<c>properties</c>、<c>required</c>、<c>additionalProperties</c>、<c>items</c>、<c>enum</c>、<c>const</c>、
-/// <c>anyOf</c> / <c>oneOf</c> / <c>allOf</c>、<c>$ref</c>（<c>#/$defs/…</c>）、<c>minimum</c> / <c>maximum</c> / <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>、
-/// <c>minLength</c> / <c>maxLength</c>、<c>pattern</c>、<c>minItems</c> / <c>maxItems</c>。其他关键字（<c>format</c>、<c>contentEncoding</c> 等）不断言。零反射，可 AOT。
-/// 每条违规带英文原因与 <c>kernel.validation.*</c> 消息键及参数，宿主按调用方区域翻译成字段级错误。
+/// 按操作契约的请求 JSON Schema校验载荷。
 /// </summary>
+/// <remarks>
+/// draft 2020-12 的子集，即 <c>Kernel.Generators</c> 产出的关键字。<c>type</c>（含 <c>[type, "null"]</c>）、<c>properties</c>、<c>required</c>、<c>additionalProperties</c>、<c>items</c>、<c>enum</c>、<c>const</c>、<c>anyOf</c> / <c>oneOf</c> / <c>allOf</c>、<c>$ref</c>（<c>#/$defs/…</c>）、<c>minimum</c> / <c>maximum</c> / <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>、<c>minLength</c> / <c>maxLength</c>、<c>pattern</c>、<c>minItems</c> / <c>maxItems</c>。其他关键字（<c>format</c>、<c>contentEncoding</c> 等）不断言。零反射，可 AOT。每条违规带英文原因与 <c>kernel.validation.*</c> 消息键及参数，宿主按调用方区域翻译成字段级错误。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class JsonSchemaValidator
 {
     /// <summary>
-    /// 一次校验最多记录的违规数；超过即停止，避免恶意载荷制造海量诊断。
+    /// 一次校验最多记录的违规数。
     /// </summary>
+    /// <remarks>
+    /// 超过即停止，避免恶意载荷制造海量诊断。
+    /// </remarks>
     public const int MaxViolations = 32;
 
     /// <summary>
@@ -29,13 +31,19 @@ public static class JsonSchemaValidator
     public const int MaxDepth = 64;
 
     /// <summary>
-    /// <c>pattern</c> 的正则缓存容量；超过后新模式每次现编译，不再缓存。
+    /// <c>pattern</c> 的正则缓存容量。
     /// </summary>
+    /// <remarks>
+    /// 超过后新模式每次现编译，不再缓存。
+    /// </remarks>
     private const int PatternCacheCapacity = 256;
 
     /// <summary>
-    /// 单次正则匹配的超时：模式来自应用的注解、输入来自调用方，超时是对灾难性回溯的保险。
+    /// 单次正则匹配的超时。
     /// </summary>
+    /// <remarks>
+    /// 模式来自应用的注解、输入来自调用方，超时是对灾难性回溯的保险。
+    /// </remarks>
     private static readonly TimeSpan _matchTimeout = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -49,8 +57,11 @@ public static class JsonSchemaValidator
     private static readonly ConcurrentDictionary<string, Regex> _patterns = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 校验载荷；返回违规列表，空表示通过。<paramref name="schema"/> 是 Schema 文档的根对象（<c>$ref</c> 相对它解析）。
+    /// 校验载荷。
     /// </summary>
+    /// <remarks>
+    /// 返回违规列表，空表示通过。<paramref name="schema"/> 是 Schema 文档的根对象（<c>$ref</c> 相对它解析）。
+    /// </remarks>
     public static IReadOnlyList<SchemaViolation> Validate(JsonElement schema, JsonElement instance)
     {
         var violations = new List<SchemaViolation>();
@@ -59,8 +70,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 校验一个节点：先解析 <c>$ref</c>，再依次看类型、组合、枚举与各类约束；每个关键字只在实例类型匹配时生效（与 JSON Schema 语义一致）。
+    /// 校验一个节点。
     /// </summary>
+    /// <remarks>
+    /// 先解析 <c>$ref</c>，再依次看类型、组合、枚举与各类约束；每个关键字只在实例类型匹配时生效（与 JSON Schema 语义一致）。
+    /// </remarks>
     private static void Visit(JsonElement root, JsonElement schema, JsonElement instance, string path, int depth, List<SchemaViolation> violations)
     {
         // 违规数与深度都有上限：超限即停止，既不抛异常也不无限递归
@@ -127,8 +141,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// <c>allOf</c> 全部满足；<c>anyOf</c> 至少一个；<c>oneOf</c> 恰好一个。候选的违规不逐条列出，只报组合本身。
+    /// <c>allOf</c> 全部满足。
     /// </summary>
+    /// <remarks>
+    /// <c>anyOf</c> 至少一个；<c>oneOf</c> 恰好一个。候选的违规不逐条列出，只报组合本身。
+    /// </remarks>
     private static void VisitComposition(JsonElement root, JsonElement schema, JsonElement instance, string path, int depth, List<SchemaViolation> violations)
     {
         if (schema.TryGetProperty("allOf", out var allOf) && allOf.ValueKind == JsonValueKind.Array)
@@ -196,8 +213,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 数值范围；Schema 与实例都按 decimal 比较，超出 decimal 的按 double。
+    /// 数值范围。
     /// </summary>
+    /// <remarks>
+    /// Schema 与实例都按 decimal 比较，超出 decimal 的按 double。
+    /// </remarks>
     private static void VisitNumber(JsonElement schema, JsonElement instance, string path, List<SchemaViolation> violations)
     {
         if (Bound(schema, "minimum") is { } minimum && Compare(instance, minimum) < 0)
@@ -259,8 +279,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 对象：<c>required</c>（违规挂在缺失属性自己的路径上，让字段级错误能落到字段）、<c>properties</c> 逐个下钻、<c>additionalProperties</c>（<see langword="false"/> 拒绝未声明的属性，Schema 则按它校验）。
+    /// 对象。
     /// </summary>
+    /// <remarks>
+    /// <c>required</c>（违规挂在缺失属性自己的路径上，让字段级错误能落到字段）、<c>properties</c> 逐个下钻、<c>additionalProperties</c>（<see langword="false"/> 拒绝未声明的属性，Schema 则按它校验）。
+    /// </remarks>
     private static void VisitObject(JsonElement root, JsonElement schema, JsonElement instance, string path, int depth, List<SchemaViolation> violations)
     {
         if (schema.TryGetProperty("required", out var required) && required.ValueKind == JsonValueKind.Array)
@@ -363,8 +386,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 单个类型名的判定；<c>integer</c> 接受没有小数部分的数（<c>1.0</c> 也算）。
+    /// 单个类型名的判定。
     /// </summary>
+    /// <remarks>
+    /// <c>integer</c> 接受没有小数部分的数（<c>1.0</c> 也算）。
+    /// </remarks>
     private static bool MatchesType(string? name, JsonElement instance) => name switch
     {
         "null" => instance.ValueKind == JsonValueKind.Null,
@@ -391,20 +417,29 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 读数值边界关键字；不是数字视为没有。
+    /// 读数值边界关键字。
     /// </summary>
+    /// <remarks>
+    /// 不是数字视为没有。
+    /// </remarks>
     private static JsonElement? Bound(JsonElement schema, string keyword)
         => schema.TryGetProperty(keyword, out var value) && value.ValueKind == JsonValueKind.Number ? value : null;
 
     /// <summary>
-    /// 读非负整数关键字（长度与元素数）；不是非负整数视为没有。
+    /// 读非负整数关键字（长度与元素数）。
     /// </summary>
+    /// <remarks>
+    /// 不是非负整数视为没有。
+    /// </remarks>
     private static long? Count(JsonElement schema, string keyword)
         => schema.TryGetProperty(keyword, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var count) && count >= 0 ? count : null;
 
     /// <summary>
-    /// 取（或编译并缓存）<c>pattern</c> 的正则；缓存满后不再加入，避免无界增长。
+    /// 取（或编译并缓存）<c>pattern</c> 的正则。
     /// </summary>
+    /// <remarks>
+    /// 缓存满后不再加入，避免无界增长。
+    /// </remarks>
     private static Regex PatternFor(string pattern)
     {
         if (_patterns.TryGetValue(pattern, out var cached))
@@ -422,8 +457,11 @@ public static class JsonSchemaValidator
     }
 
     /// <summary>
-    /// 按 Unicode 标量计长度（JSON Schema 的 <c>minLength</c> / <c>maxLength</c> 语义），代理对算一个字符。
+    /// 按 Unicode 标量计长度（JSON Schema 的 <c>minLength</c> / <c>maxLength</c> 语义）。
     /// </summary>
+    /// <remarks>
+    /// 代理对算一个字符。
+    /// </remarks>
     private static int Length(string text)
     {
         var length = 0;

@@ -9,10 +9,11 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 消息键文法与模板格式化。消息键是专门的代码（如 <c>security.token.subject_missing</c>），各包在 <c>&lt;领域&gt;Messages</c> 常量类里定义，
-/// 文案只存在于语言文件 <c>Localization/&lt;区域&gt;.json</c>（一种语言一个文件，含默认语言 <c>en-US</c>），由本地化器按调用方区域解析。
-/// 模板语法：<c>{name}</c>（按名字）或 <c>{0}</c>（按位置）占位符从参数取值，可带 <c>:format</c> 格式说明符并按目标区域的文化格式化，<c>{{</c> 与 <c>}}</c> 是转义。
+/// 消息键文法与模板格式化。
 /// </summary>
+/// <remarks>
+/// 消息键是专门的代码（如 <c>security.token.subject_missing</c>），各包在 <c>&lt;领域&gt;Messages</c> 常量类里定义，文案只存在于语言文件 <c>Localization/&lt;区域&gt;.json</c>（一种语言一个文件，含默认语言 <c>en-US</c>），由本地化器按调用方区域解析。模板语法：<c>{name}</c>（按名字）或 <c>{0}</c>（按位置）占位符从参数取值，可带 <c>:format</c> 格式说明符并按目标区域的文化格式化，<c>{{</c> 与 <c>}}</c> 是转义。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class MessageTemplate
 {
@@ -22,14 +23,20 @@ public static partial class MessageTemplate
     public const int MaxKeyLength = 128;
 
     /// <summary>
-    /// 消息键是否合法：<c>^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$</c>，首段是领域词的小写形式或应用自定义的小写标识（操作 ID 的资源段把连字符换成下划线后即是，如 <c>tenant_members.list.description</c>）。
+    /// 消息键是否合法。
     /// </summary>
+    /// <remarks>
+    /// <c>^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$</c>，首段是领域词的小写形式或应用自定义的小写标识（操作 ID 的资源段把连字符换成下划线后即是，如 <c>tenant_members.list.description</c>）。
+    /// </remarks>
     public static bool IsValidKey([NotNullWhen(true)] string? key)
         => key is not null && key.Length <= MaxKeyLength && KeyPattern().IsMatch(key);
 
     /// <summary>
-    /// 校验消息键；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验消息键。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string ValidateKey(string key, string? paramName = null)
     {
         ArgumentNullException.ThrowIfNull(key, paramName ?? nameof(key));
@@ -48,9 +55,11 @@ public static partial class MessageTemplate
     }
 
     /// <summary>
-    /// 未解析时的开发者可读形式：键后跟参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。
-    /// 没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见。
+    /// 未解析时的开发者可读形式。
     /// </summary>
+    /// <remarks>
+    /// 键后跟参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见。
+    /// </remarks>
     public static string Describe(string key, IReadOnlyDictionary<string, object?>? arguments = null)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -76,8 +85,11 @@ public static partial class MessageTemplate
     }
 
     /// <summary>
-    /// 宽松格式化：缺值的占位符原样保留；<paramref name="provider"/> 为空时用不变文化。
+    /// 宽松格式化。
     /// </summary>
+    /// <remarks>
+    /// 缺值的占位符原样保留；<paramref name="provider"/> 为空时用不变文化。
+    /// </remarks>
     public static string Format(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider? provider = null)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -115,8 +127,11 @@ public static partial class MessageTemplate
     }
 
     /// <summary>
-    /// 逐段渲染模板：占位符取值并格式化（<see cref="IFormattable"/> 用格式说明符与文化，其余用 <see cref="Convert.ToString(object?, IFormatProvider?)"/>），转义还原为单个花括号。
+    /// 逐段渲染模板。
     /// </summary>
+    /// <remarks>
+    /// 占位符取值并格式化（<see cref="IFormattable"/> 用格式说明符与文化，其余用 <see cref="Convert.ToString(object?, IFormatProvider?)"/>），转义还原为单个花括号。
+    /// </remarks>
     /// <returns>严格模式下任一占位符缺值返回 <see langword="false"/>。</returns>
     private static bool Render(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider provider, bool strict, out string? result)
     {
@@ -152,9 +167,11 @@ public static partial class MessageTemplate
     }
 
     /// <summary>
-    /// 从 <paramref name="index"/> 读取下一段：占位符（<paramref name="name"/> 与可选 <paramref name="format"/>）或字面量（<paramref name="literal"/>，含转义后的单个花括号与普通字符）。
-    /// 没有闭合或名字不合法的花括号按字面量处理；<paramref name="index"/> 读完后前移。
+    /// 从 <paramref name="index"/> 读取下一段。
     /// </summary>
+    /// <remarks>
+    /// 占位符（<paramref name="name"/> 与可选 <paramref name="format"/>）或字面量（<paramref name="literal"/>，含转义后的单个花括号与普通字符）。没有闭合或名字不合法的花括号按字面量处理；<paramref name="index"/> 读完后前移。
+    /// </remarks>
     private static void ReadSegment(string text, ref int index, out string? name, out string? format, out string? literal)
     {
         name = null;

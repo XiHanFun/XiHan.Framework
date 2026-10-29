@@ -8,8 +8,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 以 Go 写的示例插件 EchoGoPlugin（framework-sdk-go）为插件目录启动测试宿主的辅助：测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// 以 Go 写的示例插件 EchoGoPlugin为插件目录启动测试宿主的辅助。
 /// </summary>
+/// <remarks>
+/// framework-sdk-go。测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// </remarks>
 internal static class EchoGoPluginHost
 {
     /// <summary>
@@ -28,13 +31,19 @@ internal static class EchoGoPluginHost
     public static string Directory { get; } = Path.Combine(SourceDirectory, "bin");
 
     /// <summary>
-    /// 只构建一次；值为空表示成功，否则是跳过原因。
+    /// 只构建一次。
     /// </summary>
+    /// <remarks>
+    /// 值为空表示成功，否则是跳过原因。
+    /// </remarks>
     private static readonly Lazy<string?> _build = new(Build, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
-    /// 确保示例已构建；本机没有 go 或构建失败时跳过当前测试。
+    /// 确保示例已构建。
     /// </summary>
+    /// <remarks>
+    /// 本机没有 go 或构建失败时跳过当前测试。
+    /// </remarks>
     public static void EnsureBuiltOrSkip()
     {
         if (_build.Value is { } reason)

@@ -7,8 +7,11 @@ using XiHan.Framework.ObjectStorage.Conformance;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 让 <see cref="S3BlobStore"/> 对真实的 S3 兼容服务跑完整套 <see cref="BlobStoreConformance"/> 用例；未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// 让 <see cref="S3BlobStore"/> 对真实的 S3 兼容服务跑完整套 <see cref="BlobStoreConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// </remarks>
 public sealed class S3BlobStoreConformanceTests : BlobStoreConformance
 {
     /// <inheritdoc />

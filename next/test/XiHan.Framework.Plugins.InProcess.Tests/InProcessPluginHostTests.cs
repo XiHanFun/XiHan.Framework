@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.InProcess.Tests;
 
 /// <summary>
-/// 进程内插件宿主的加载、隔离、权限与卸载验证；以已构建的 SamplePlugin 输出目录作为插件源。
+/// 进程内插件宿主的加载、隔离、权限与卸载验证。
 /// </summary>
+/// <remarks>
+/// 以已构建的 SamplePlugin 输出目录作为插件源。
+/// </remarks>
 public sealed class InProcessPluginHostTests
 {
     /// <summary>
@@ -19,8 +22,11 @@ public sealed class InProcessPluginHostTests
     private static readonly PermissionGrant _granted = new(["capability:kernel.diagnostics"]);
 
     /// <summary>
-    /// 示例插件的构建输出目录；与测试自身的配置（Debug/Release）保持一致。
+    /// 示例插件的构建输出目录。
     /// </summary>
+    /// <remarks>
+    /// 与测试自身的配置（Debug/Release）保持一致。
+    /// </remarks>
     private static string PluginDirectory
     {
         get

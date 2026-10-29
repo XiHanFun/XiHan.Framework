@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存工作单元：变更先进覆盖层（读己之写），提交时按表原子应用；回滚丢弃。
+/// 内存工作单元。
 /// </summary>
+/// <remarks>
+/// 变更先进覆盖层（读己之写），提交时按表原子应用；回滚丢弃。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
 {
@@ -20,8 +23,11 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     private readonly InMemoryStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <summary>
-    /// 按实体类型索引的覆盖层；工作单元是作用域服务，不需要并发保护。
+    /// 按实体类型索引的覆盖层。
     /// </summary>
+    /// <remarks>
+    /// 工作单元是作用域服务，不需要并发保护。
+    /// </remarks>
     private readonly Dictionary<Type, IPendingChanges> _pending = [];
 
     /// <inheritdoc />
@@ -133,13 +139,19 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         where TKey : notnull, IEquatable<TKey>
     {
         /// <summary>
-        /// 待新增或更新的实体，按标识索引；同一标识只保留最后一次写入。
+        /// 待新增或更新的实体，按标识索引。
         /// </summary>
+        /// <remarks>
+        /// 同一标识只保留最后一次写入。
+        /// </remarks>
         private readonly Dictionary<TKey, TEntity> _upserts = [];
 
         /// <summary>
-        /// 待物理删除的标识。与 <see cref="_upserts"/> 互斥：同一标识不会同时出现在两边。
+        /// 待物理删除的标识。
         /// </summary>
+        /// <remarks>
+        /// 与 <see cref="_upserts"/> 互斥：同一标识不会同时出现在两边。
+        /// </remarks>
         private readonly HashSet<TKey> _removals = [];
 
         /// <inheritdoc />

@@ -9,9 +9,11 @@ using static XiHan.Framework.Security.Abstractions.Tests.Fixtures.ConditionTestK
 namespace XiHan.Framework.Security.Abstractions.Tests.Conditions;
 
 /// <summary>
-/// 条件求值器：锁死三条容易写错的语义——取不到值是无法判定（按不命中计且取反不翻转）；待定让组待定，但组里只要有不命中就不命中；
-/// 条件集任一组命中即命中，否则有待定即待定。
+/// 条件求值器。
 /// </summary>
+/// <remarks>
+/// 锁死三条容易写错的语义——取不到值是无法判定（按不命中计且取反不翻转）；待定让组待定，但组里只要有不命中就不命中；条件集任一组命中即命中，否则有待定即待定。
+/// </remarks>
 public sealed class ConditionEvaluatorTests
 {
     [Theory]

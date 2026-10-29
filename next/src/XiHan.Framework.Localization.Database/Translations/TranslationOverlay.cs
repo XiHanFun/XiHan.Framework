@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 一份不可变的翻译快照：键 → 区域 → 模板；整份替换，读取无锁。
+/// 一份不可变的翻译快照。
 /// </summary>
+/// <remarks>
+/// 键 → 区域 → 模板；整份替换，读取无锁。
+/// </remarks>
 internal sealed class TranslationOverlay
 {
     /// <summary>
@@ -33,8 +36,11 @@ internal sealed class TranslationOverlay
     public int Count { get; }
 
     /// <summary>
-    /// 由翻译实体建立快照；同一键与区域重复时后者覆盖。
+    /// 由翻译实体建立快照。
     /// </summary>
+    /// <remarks>
+    /// 同一键与区域重复时后者覆盖。
+    /// </remarks>
     public static TranslationOverlay From(IEnumerable<MessageTranslation> translations)
     {
         ArgumentNullException.ThrowIfNull(translations);

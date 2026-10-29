@@ -6,8 +6,11 @@ using System.Text.Json;
 namespace XiHan.Framework.Primitives.Tests;
 
 /// <summary>
-/// 读取 spec/conformance/vectors/primitives 下的一致性向量。向量是规范的一部分，测试只回放，不另存一份。
+/// 读取 spec/conformance/vectors/primitives 下的一致性向量。
 /// </summary>
+/// <remarks>
+/// 向量是规范的一部分，测试只回放，不另存一份。
+/// </remarks>
 internal static class ConformanceVectors
 {
     /// <summary>

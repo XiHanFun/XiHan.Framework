@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions;
 
 /// <summary>
-/// 审计子系统的错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 审计子系统的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AuditingErrors
 {

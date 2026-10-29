@@ -10,10 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 按消息描述把 protobuf 线格式解码为 JSON 对象。描述里没有的字段号跳过；重复的单值字段取最后一个；repeated 的数值接受打包与不打包两种形式；
-/// 线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的隐式存在字段按 proto3 语义写出默认值：布尔与数值写零值、重复写空数组、映射写空对象，
-/// 让契约 Schema 里的 <c>required</c> 在 gRPC 上成立；字符串 / 字节 / 任意 JSON 不补（空串对 date-time、uuid、枚举这类带格式的字符串不是合法值），显式存在（<c>optional</c>）与嵌套消息缺席时不写。
+/// 按消息描述把 protobuf 线格式解码为 JSON 对象。
 /// </summary>
+/// <remarks>
+/// 描述里没有的字段号跳过；重复的单值字段取最后一个；repeated 的数值接受打包与不打包两种形式；线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的隐式存在字段按 proto3 语义写出默认值：布尔与数值写零值、重复写空数组、映射写空对象，让契约 Schema 里的 <c>required</c> 在 gRPC 上成立；字符串 / 字节 / 任意 JSON 不补（空串对 date-time、uuid、枚举这类带格式的字符串不是合法值），显式存在（<c>optional</c>）与嵌套消息缺席时不写。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoDecoder
 {
@@ -103,8 +104,11 @@ public static class ProtoDecoder
     private readonly record struct RawValue(int WireType, ulong Bits, ReadOnlyMemory<byte> Bytes);
 
     /// <summary>
-    /// 把一段消息拆成字段号 → 值列表（保持出现顺序）；分组（已废弃的线类型 3 / 4）不支持。
+    /// 把一段消息拆成字段号 → 值列表（保持出现顺序）。
     /// </summary>
+    /// <remarks>
+    /// 分组（已废弃的线类型 3 / 4）不支持。
+    /// </remarks>
     private static Dictionary<int, List<RawValue>> Parse(ReadOnlyMemory<byte> input)
     {
         var values = new Dictionary<int, List<RawValue>>();
@@ -228,8 +232,11 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 写一个映射条目：条目消息里 1 是键、2 是值；缺键按空串，缺值按类型默认值。
+    /// 写一个映射条目。
     /// </summary>
+    /// <remarks>
+    /// 条目消息里 1 是键、2 是值；缺键按空串，缺值按类型默认值。
+    /// </remarks>
     private static void WriteMapEntry(ProtoValueType valueType, RawValue raw, Utf8JsonWriter writer, string path)
     {
         Expect(raw, WireLengthDelimited, path);
@@ -248,8 +255,11 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 线上缺席的字段：单值的布尔与数值写 proto3 默认值，重复写空数组，映射写空对象；字符串、字节、任意 JSON、消息与 <c>optional</c> 不写。
+    /// 线上缺席的字段。
     /// </summary>
+    /// <remarks>
+    /// 单值的布尔与数值写 proto3 默认值，重复写空数组，映射写空对象；字符串、字节、任意 JSON、消息与 <c>optional</c> 不写。
+    /// </remarks>
     private static void WriteAbsent(ProtoField field, Utf8JsonWriter writer)
     {
         switch (field.Cardinality)

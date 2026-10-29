@@ -9,14 +9,19 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件值的解析、转换与比较。各值种类统一成一种 CLR 表示：字符串 → <see cref="string"/>、数字 → <see cref="decimal"/>、布尔 → <see cref="bool"/>、
-/// 日期时间 → <see cref="DateTimeOffset"/>、日期 → <see cref="DateOnly"/>、时刻 → <see cref="TimeOnly"/>、IP → <see cref="IPAddress"/>（IPv4 映射地址还原成 IPv4），条件值集合里的网段 → <see cref="IPNetwork"/>。
+/// 条件值的解析、转换与比较。
 /// </summary>
+/// <remarks>
+/// 各值种类统一成一种 CLR 表示：字符串 → <see cref="string"/>、数字 → <see cref="decimal"/>、布尔 → <see cref="bool"/>、日期时间 → <see cref="DateTimeOffset"/>、日期 → <see cref="DateOnly"/>、时刻 → <see cref="TimeOnly"/>、IP → <see cref="IPAddress"/>（IPv4 映射地址还原成 IPv4），条件值集合里的网段 → <see cref="IPNetwork"/>。
+/// </remarks>
 internal static partial class ConditionValues
 {
     /// <summary>
-    /// 解析条件值原文里的一个元素；<paramref name="allowNetwork"/> 时 IP 可写成 CIDR 网段。
+    /// 解析条件值原文里的一个元素。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="allowNetwork"/> 时 IP 可写成 CIDR 网段。
+    /// </remarks>
     public static bool TryParseText(string text, ConditionValueKind kind, TimeZoneInfo timeZone, bool allowNetwork, out object value)
     {
         value = null!;
@@ -58,8 +63,11 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 把属性的原始 CLR 值转换成值种类的统一表示；类型对不上时按文本再解析一次。
+    /// 把属性的原始 CLR 值转换成值种类的统一表示。
     /// </summary>
+    /// <remarks>
+    /// 类型对不上时按文本再解析一次。
+    /// </remarks>
     public static bool TryConvertAttribute(object raw, ConditionValueKind kind, TimeZoneInfo timeZone, out object value)
     {
         value = null!;
@@ -164,8 +172,11 @@ internal static partial class ConditionValues
     };
 
     /// <summary>
-    /// 比较两个同种类的值（数字、布尔、日期时间、日期、时刻，以及字符串的不区分大小写序数比较）。
+    /// 比较两个同种类的值。
     /// </summary>
+    /// <remarks>
+    /// 数字、布尔、日期时间、日期、时刻，以及字符串的不区分大小写序数比较。
+    /// </remarks>
     public static int Compare(object left, object right, ConditionValueKind kind) => kind switch
     {
         ConditionValueKind.Number => ((decimal)left).CompareTo((decimal)right),
@@ -261,8 +272,11 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// CIDR 网段：前缀不超过地址位数，主机位必须为零（如 <c>203.0.113.5/24</c> 多半是笔误，不替使用者猜是哪个网段）。
+    /// CIDR 网段。
     /// </summary>
+    /// <remarks>
+    /// 前缀不超过地址位数，主机位必须为零（如 <c>203.0.113.5/24</c> 多半是笔误，不替使用者猜是哪个网段）。
+    /// </remarks>
     private static bool TryParseNetwork(string text, out IPNetwork network)
     {
         network = default;

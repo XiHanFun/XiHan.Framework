@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 求值结果。子句四种都可能；组与条件集只会是命中、不命中或待定（无法判定在组里按不命中计）。
+/// 求值结果。
 /// </summary>
+/// <remarks>
+/// 子句四种都可能；组与条件集只会是命中、不命中或待定（无法判定在组里按不命中计）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum ConditionOutcome
 {
@@ -22,8 +25,11 @@ public enum ConditionOutcome
     NotMatched = 1,
 
     /// <summary>
-    /// 无法判定：属性取不到、值转换失败或子句编译出错；按不命中计，取反不翻转。
+    /// 无法判定。
     /// </summary>
+    /// <remarks>
+    /// 属性取不到、值转换失败或子句编译出错；按不命中计，取反不翻转。
+    /// </remarks>
     Indeterminate = 2,
 
     /// <summary>

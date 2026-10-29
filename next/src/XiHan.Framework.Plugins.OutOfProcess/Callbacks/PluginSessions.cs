@@ -9,8 +9,11 @@ using XiHan.Framework.Plugins.OutOfProcess.Runtime;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 会话令牌 → 插件运行时：每次启动签发一个随机令牌，插件回调时凭它认证（<c>spec/plugin/handshake.md</c> §4）。
+/// 会话令牌 → 插件运行时。
 /// </summary>
+/// <remarks>
+/// 每次启动签发一个随机令牌，插件回调时凭它认证（<c>spec/plugin/handshake.md</c> §4）。
+/// </remarks>
 internal sealed class PluginSessions
 {
     /// <summary>

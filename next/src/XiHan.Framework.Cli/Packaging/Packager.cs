@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 按种类调用各生成器并写文件；每次整份覆盖已有产物，不删除输出目录里的其他文件。
+/// 按种类调用各生成器并写文件。
 /// </summary>
+/// <remarks>
+/// 每次整份覆盖已有产物，不删除输出目录里的其他文件。
+/// </remarks>
 internal static class Packager
 {
     /// <summary>
@@ -61,8 +64,11 @@ internal static class Packager
     }
 
     /// <summary>
-    /// 正斜杠的相对路径；相同目录为 <c>.</c>。
+    /// 正斜杠的相对路径。
     /// </summary>
+    /// <remarks>
+    /// 相同目录为 <c>.</c>。
+    /// </remarks>
     private static string Relative(string from, string to)
     {
         var relative = Path.GetRelativePath(from, to).Replace('\\', '/');

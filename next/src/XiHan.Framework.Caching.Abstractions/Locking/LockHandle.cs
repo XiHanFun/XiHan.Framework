@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Locking;
 
 /// <summary>
-/// 已获取的锁。释放一次；释放或到期后再释放返回 <see langword="false"/>。
+/// 已获取的锁。
 /// </summary>
+/// <remarks>
+/// 释放一次；释放或到期后再释放返回 <see langword="false"/>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class LockHandle : IAsyncDisposable
 {
@@ -18,13 +21,19 @@ public sealed class LockHandle : IAsyncDisposable
     private readonly Func<CancellationToken, ValueTask<bool>> _release;
 
     /// <summary>
-    /// 是否已经调用过释放；保证释放只执行一次。
+    /// 是否已经调用过释放。
     /// </summary>
+    /// <remarks>
+    /// 保证释放只执行一次。
+    /// </remarks>
     private bool _released;
 
     /// <summary>
-    /// 由锁实现创建句柄；调用方只通过 <see cref="IDistributedLock.TryAcquireAsync"/> 获得。
+    /// 由锁实现创建句柄。
     /// </summary>
+    /// <remarks>
+    /// 调用方只通过 <see cref="IDistributedLock.TryAcquireAsync"/> 获得。
+    /// </remarks>
     internal LockHandle(CacheKey resource, string token, Func<CancellationToken, ValueTask<bool>> release)
     {
         Resource = resource;
@@ -38,13 +47,19 @@ public sealed class LockHandle : IAsyncDisposable
     public CacheKey Resource { get; }
 
     /// <summary>
-    /// 本次持有的唯一令牌；只有令牌匹配才能释放。
+    /// 本次持有的唯一令牌。
     /// </summary>
+    /// <remarks>
+    /// 只有令牌匹配才能释放。
+    /// </remarks>
     public string Token { get; }
 
     /// <summary>
-    /// 释放；仍持有并成功删除返回 <see langword="true"/>。
+    /// 释放。
     /// </summary>
+    /// <remarks>
+    /// 仍持有并成功删除返回 <see langword="true"/>。
+    /// </remarks>
     public async ValueTask<bool> ReleaseAsync(CancellationToken cancellationToken)
     {
         if (_released)

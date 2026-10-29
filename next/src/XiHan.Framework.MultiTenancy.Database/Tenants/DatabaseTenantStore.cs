@@ -11,10 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 
 /// <summary>
-/// 数据库租户目录（单例）：按 ID 读 <see cref="TenantRecord"/>，结果按租户有界缓存（不存在也缓存），每条带存活时间；
-/// <see cref="ListAsync"/> 按 ID 分页读完、不走缓存。读取直接开工作单元（见 <see cref="CatalogInvocation"/>），基础设施异常原样抛出，不伪装成不存在。
-/// 写入经 <see cref="TenantRecordStore"/>，它写完即失效对应条目；失效与提交之间的窗口由存活时间收敛。
+/// 数据库租户目录（单例）。
 /// </summary>
+/// <remarks>
+/// 按 ID 读 <see cref="TenantRecord"/>，结果按租户有界缓存（不存在也缓存），每条带存活时间；<see cref="ListAsync"/> 按 ID 分页读完、不走缓存。读取直接开工作单元（见 <see cref="CatalogInvocation"/>），基础设施异常原样抛出，不伪装成不存在。写入经 <see cref="TenantRecordStore"/>，它写完即失效对应条目；失效与提交之间的窗口由存活时间收敛。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseTenantStore : ITenantStore
 {
@@ -29,8 +30,11 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     private readonly DatabaseMultiTenancyOptions _options;
 
     /// <summary>
-    /// 时钟；判定缓存条目是否过期。
+    /// 时钟。
     /// </summary>
+    /// <remarks>
+    /// 判定缓存条目是否过期。
+    /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
@@ -39,8 +43,11 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 租户 ID → 缓存条目；读取无锁。
+    /// 租户 ID → 缓存条目。
     /// </summary>
+    /// <remarks>
+    /// 读取无锁。
+    /// </remarks>
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
@@ -115,8 +122,11 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     }
 
     /// <summary>
-    /// 在一个工作单元里按 ID 分页读完全部行；达到上限即停止并报告截断。
+    /// 在一个工作单元里按 ID 分页读完全部行。
     /// </summary>
+    /// <remarks>
+    /// 达到上限即停止并报告截断。
+    /// </remarks>
     private async ValueTask<(List<TenantRecord> Records, bool Truncated)> ReadAllAsync(IRepository<TenantRecord, string> repository, CancellationToken cancellationToken)
     {
         var loaded = new List<TenantRecord>();

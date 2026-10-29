@@ -24,8 +24,11 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Protocols.Mcp.Tests;
 
 /// <summary>
-/// MCP 协议适配器：tool 名推导与覆盖、生命周期与传输规则、tools/list 的 Schema 与本地化描述、tools/call 经管道执行与失败映射、按契约授权。
+/// MCP 协议适配器。
 /// </summary>
+/// <remarks>
+/// tool 名推导与覆盖、生命周期与传输规则、tools/list 的 Schema 与本地化描述、tools/call 经管道执行与失败映射、按契约授权。
+/// </remarks>
 public sealed class McpProtocolTests
 {
     /// <summary>
@@ -42,8 +45,11 @@ public sealed class McpProtocolTests
     ];
 
     /// <summary>
-    /// 启动测试宿主：Minimal 组合（本地化）+ 内存安全 + MCP 适配器 + 订单特性，并注册 tool 描述的消息目录。
+    /// 启动测试宿主。
     /// </summary>
+    /// <remarks>
+    /// Minimal 组合（本地化）+ 内存安全 + MCP 适配器 + 订单特性，并注册 tool 描述的消息目录。
+    /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(params (string Key, string Value)[] configuration)
     {
         var builder = WebApplication.CreateBuilder();

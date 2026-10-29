@@ -9,8 +9,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 以 Go 写的远程缓存插件 CacheGoPlugin（framework-sdk-go 的 examples/cache）为插件目录启动测试宿主的辅助：测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// 以 Go 写的远程缓存插件 CacheGoPlugin为插件目录启动测试宿主的辅助。
 /// </summary>
+/// <remarks>
+/// framework-sdk-go 的 examples/cache。测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// </remarks>
 internal static class CacheGoPluginHost
 {
     /// <summary>
@@ -29,8 +32,11 @@ internal static class CacheGoPluginHost
     public static string Directory { get; } = Path.Combine(SourceDirectory, "bin");
 
     /// <summary>
-    /// 只构建一次；值为空表示成功，否则是跳过原因。
+    /// 只构建一次。
     /// </summary>
+    /// <remarks>
+    /// 值为空表示成功，否则是跳过原因。
+    /// </remarks>
     private static readonly Lazy<string?> _build = new(Build, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
@@ -39,8 +45,11 @@ internal static class CacheGoPluginHost
     public static string? BuildReason => _build.Value;
 
     /// <summary>
-    /// 确保示例已构建；本机没有 go 或构建失败时跳过当前测试。
+    /// 确保示例已构建。
     /// </summary>
+    /// <remarks>
+    /// 本机没有 go 或构建失败时跳过当前测试。
+    /// </remarks>
     public static void EnsureBuiltOrSkip()
     {
         if (BuildReason is { } reason)

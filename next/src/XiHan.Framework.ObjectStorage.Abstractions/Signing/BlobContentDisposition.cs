@@ -7,14 +7,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 /// <summary>
-/// 下载时的 <c>Content-Disposition</c>：各签名实现用同一写法，非 ASCII 文件名按 RFC 6266 / RFC 5987 带 <c>filename*</c>。
+/// 下载时的 <c>Content-Disposition</c>。
 /// </summary>
+/// <remarks>
+/// 各签名实现用同一写法，非 ASCII 文件名按 RFC 6266 / RFC 5987 带 <c>filename*</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobContentDisposition
 {
     /// <summary>
-    /// <c>attachment; filename="&lt;ASCII 回退&gt;"; filename*=UTF-8''&lt;百分号编码&gt;</c>：ASCII 回退把非 ASCII、引号、反斜杠与控制字符换成下划线。
+    /// <c>attachment; filename="&lt;ASCII 回退&gt;"; filename*=UTF-8''&lt;百分号编码&gt;</c>。
     /// </summary>
+    /// <remarks>
+    /// ASCII 回退把非 ASCII、引号、反斜杠与控制字符换成下划线。
+    /// </remarks>
     public static string Attachment(string fileName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);

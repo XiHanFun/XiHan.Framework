@@ -19,8 +19,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 数据库实现自己的行为：特性清单与装配、同刻运行的排序、两个节点共用一个库时独占作业不重叠、领导者恢复失联节点、宿主停止后的不可达。
+/// 数据库实现自己的行为。
 /// </summary>
+/// <remarks>
+/// 特性清单与装配、同刻运行的排序、两个节点共用一个库时独占作业不重叠、领导者恢复失联节点、宿主停止后的不可达。
+/// </remarks>
 public sealed class DatabaseSchedulingTests
 {
     /// <summary>
@@ -202,8 +205,11 @@ public sealed class DatabaseSchedulingTests
     ];
 
     /// <summary>
-    /// 登记多节点用例的记录与作业类型；作业本身在两个节点都启动后由用例在运行时登记。
+    /// 登记多节点用例的记录与作业类型。
     /// </summary>
+    /// <remarks>
+    /// 作业本身在两个节点都启动后由用例在运行时登记。
+    /// </remarks>
     private static void Register(IServiceCollection services, OverlapLog log)
     {
         services.AddSingleton(log);

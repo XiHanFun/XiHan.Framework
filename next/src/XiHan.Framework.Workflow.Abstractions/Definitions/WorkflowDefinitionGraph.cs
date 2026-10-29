@@ -67,8 +67,11 @@ internal sealed class WorkflowDefinitionGraph
     public WorkflowDefinition Definition { get; }
 
     /// <summary>
-    /// 开始节点；定义不合法时为 <see langword="null"/>。
+    /// 开始节点。
     /// </summary>
+    /// <remarks>
+    /// 定义不合法时为 <see langword="null"/>。
+    /// </remarks>
     public WorkflowNode? StartNode { get; }
 
     /// <summary>

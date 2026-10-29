@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 一个 protobuf 消息的描述：名字与按字段号排列的字段。由 <see cref="ProtoSchema.FromJsonSchema"/> 从 JSON Schema 建出；编解码与 <c>.proto</c> 生成都只看它。
+/// 一个 protobuf 消息的描述。
 /// </summary>
+/// <remarks>
+/// 名字与按字段号排列的字段。由 <see cref="ProtoSchema.FromJsonSchema"/> 从 JSON Schema 建出；编解码与 <c>.proto</c> 生成都只看它。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ProtoMessage
 {
@@ -23,8 +26,11 @@ public sealed class ProtoMessage
     private readonly Dictionary<string, ProtoField> _byJsonName = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建空消息；字段由 <see cref="Complete"/> 填入（递归引用需要先有消息再填字段）。
+    /// 创建空消息。
     /// </summary>
+    /// <remarks>
+    /// 字段由 <see cref="Complete"/> 填入（递归引用需要先有消息再填字段）。
+    /// </remarks>
     public ProtoMessage(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -59,8 +65,11 @@ public sealed class ProtoMessage
     public override string ToString() => $"{Name} ({Fields.Count} fields)";
 
     /// <summary>
-    /// 填入字段；字段号与 JSON 名都必须唯一，只能填一次。
+    /// 填入字段。
     /// </summary>
+    /// <remarks>
+    /// 字段号与 JSON 名都必须唯一，只能填一次。
+    /// </remarks>
     internal void Complete(IReadOnlyList<ProtoField> fields)
     {
         if (Fields.Count > 0 || _byNumber.Count > 0)

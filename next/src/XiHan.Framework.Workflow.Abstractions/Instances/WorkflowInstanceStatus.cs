@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 实例的状态；<see cref="Completed"/>、<see cref="Canceled"/>、<see cref="Faulted"/>、<see cref="Terminated"/> 是终态（故障可重试）。
+/// 实例的状态。
 /// </summary>
+/// <remarks>
+/// <see cref="Completed"/>、<see cref="Canceled"/>、<see cref="Faulted"/>、<see cref="Terminated"/> 是终态（故障可重试）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceStatus>))]
 public enum WorkflowInstanceStatus
@@ -34,8 +37,11 @@ public enum WorkflowInstanceStatus
     Canceled = 4,
 
     /// <summary>
-    /// 已故障；有故障节点时可重试。
+    /// 已故障。
     /// </summary>
+    /// <remarks>
+    /// 有故障节点时可重试。
+    /// </remarks>
     Faulted = 5,
 
     /// <summary>

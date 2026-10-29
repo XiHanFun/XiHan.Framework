@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 用户任务的内置结果；自定义结果也允许（须在节点的 <c>AllowedOutcomes</c> 里）。
+/// 用户任务的内置结果。
 /// </summary>
+/// <remarks>
+/// 自定义结果也允许（须在节点的 <c>AllowedOutcomes</c> 里）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class UserTaskOutcomes
 {

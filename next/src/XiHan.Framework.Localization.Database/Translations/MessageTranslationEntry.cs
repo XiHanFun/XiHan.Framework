@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 要写入的一条翻译；键须符合消息键文法，区域会规范化大小写，模板不能为空。不合法是编程错误，在构造时抛出。
+/// 要写入的一条翻译。
 /// </summary>
+/// <remarks>
+/// 键须符合消息键文法，区域会规范化大小写，模板不能为空。不合法是编程错误，在构造时抛出。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record MessageTranslationEntry
 {

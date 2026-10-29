@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件运算符。整数值是持久化契约：应用把它存进库里，取值不得调整。带 Not 的运算符是对应运算符的逻辑否定；子句上的取反再作用于运算结果，两者叠加时按字面计算。
+/// 条件运算符。
 /// </summary>
+/// <remarks>
+/// 整数值是持久化契约：应用把它存进库里，取值不得调整。带 Not 的运算符是对应运算符的逻辑否定；子句上的取反再作用于运算结果，两者叠加时按字面计算。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum ConditionOperator
 {

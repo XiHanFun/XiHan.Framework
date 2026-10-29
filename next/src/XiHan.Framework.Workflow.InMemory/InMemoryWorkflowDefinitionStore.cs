@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的定义存储：保存与返回都是深拷贝（读己之写，不泄漏引用）；容量满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// 有界内存的定义存储。
 /// </summary>
+/// <remarks>
+/// 保存与返回都是深拷贝（读己之写，不泄漏引用）；容量满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
 {

@@ -12,8 +12,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory.Tests;
 
 /// <summary>
-/// 内存 Provider 独有的行为：选项解析、容量上限、只读工作单元、状态机、覆盖层回滚与并发提交。一致性套件覆盖的通用行为不在此重复。
+/// 内存 Provider 独有的行为。
 /// </summary>
+/// <remarks>
+/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚与并发提交。一致性套件覆盖的通用行为不在此重复。
+/// </remarks>
 public sealed class InMemoryPersistenceTests
 {
     /// <summary>
@@ -25,8 +28,11 @@ public sealed class InMemoryPersistenceTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 名称；用于验证更新后的值。
+        /// 名称。
         /// </summary>
+        /// <remarks>
+        /// 用于验证更新后的值。
+        /// </remarks>
         public string Name { get; set; } = string.Empty;
     }
 
@@ -51,8 +57,11 @@ public sealed class InMemoryPersistenceTests
     }
 
     /// <summary>
-    /// 在已有存储上打开一个新的工作单元与仓储；用于模拟第二个作用域。
+    /// 在已有存储上打开一个新的工作单元与仓储。
     /// </summary>
+    /// <remarks>
+    /// 用于模拟第二个作用域。
+    /// </remarks>
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Open(InMemoryStore store)
     {
         var unitOfWork = new InMemoryUnitOfWork(store);

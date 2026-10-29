@@ -7,14 +7,19 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 健康项约定（ADR-0030）：清单 <c>contributes.health</c> 声明的每一项都必须由同一个包实现——名字作为 <c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数出现（字面量或同包常量），
-/// 且包里有实现 <c>IHealthContributor</c> 的类型或注册了 <c>IHealthContributor</c>；反过来，注册了 <c>IHealthContributor</c> 的包其清单必须声明 <c>Health</c>。静态扫描源码，不实例化特性。
+/// 健康项约定（ADR-0030）。
 /// </summary>
+/// <remarks>
+/// 清单 <c>contributes.health</c> 声明的每一项都必须由同一个包实现——名字作为 <c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数出现（字面量或同包常量），且包里有实现 <c>IHealthContributor</c> 的类型或注册了 <c>IHealthContributor</c>；反过来，注册了 <c>IHealthContributor</c> 的包其清单必须声明 <c>Health</c>。静态扫描源码，不实例化特性。
+/// </remarks>
 public sealed partial class HealthContributionTests
 {
     /// <summary>
-    /// 条目名在运行时才确定、清单无法枚举的包：插件宿主（条目名由插件自己的清单声明，RFC-0017 / RFC-0018 的 <c>contributes.health</c>）与命名存储实例的注册表（每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，ADR-0050）。只豁免反向检查。
+    /// 条目名在运行时才确定、清单无法枚举的包。
     /// </summary>
+    /// <remarks>
+    /// 插件宿主（条目名由插件自己的清单声明，RFC-0017 / RFC-0018 的 <c>contributes.health</c>）与命名存储实例的注册表（每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，ADR-0050）。只豁免反向检查。
+    /// </remarks>
     private static readonly string[] _dynamicContributors = ["XiHan.Framework.Plugins.OutOfProcess", "XiHan.Framework.Plugins.Wasm", "XiHan.Framework.ObjectStorage.Abstractions"];
 
     /// <summary>
@@ -62,8 +67,11 @@ public sealed partial class HealthContributionTests
     }
 
     /// <summary>
-    /// 扫描一个包：清单声明、实现处出现的条目名、常量表、是否实现或注册 <c>IHealthContributor</c>。
+    /// 扫描一个包。
     /// </summary>
+    /// <remarks>
+    /// 清单声明、实现处出现的条目名、常量表、是否实现或注册 <c>IHealthContributor</c>。
+    /// </remarks>
     private static PackageHealth Scan(SourceProject project)
     {
         var texts = Workspace.SourceFiles(project.Directory).Select(File.ReadAllText).ToList();
@@ -107,8 +115,11 @@ public sealed partial class HealthContributionTests
     }
 
     /// <summary>
-    /// 把条目名表达式解析成字面量：带引号的取引号内文本，标识符取同包常量（<c>XxxFeature.HealthName</c> 取最后一段）。
+    /// 把条目名表达式解析成字面量。
     /// </summary>
+    /// <remarks>
+    /// 带引号的取引号内文本，标识符取同包常量（<c>XxxFeature.HealthName</c> 取最后一段）。
+    /// </remarks>
     private static string? Resolve(string expression, Dictionary<string, string?> constants)
     {
         var trimmed = expression.Trim();
@@ -157,8 +168,11 @@ public sealed partial class HealthContributionTests
     private static partial Regex Implementer();
 
     /// <summary>
-    /// 向容器注册 <c>IHealthContributor</c> 的调用（<c>AddSingleton</c> / <c>TryAddSingleton</c> 及带键变体）；内核采集用的 <c>GetServices</c> 不算。
+    /// 向容器注册 <c>IHealthContributor</c> 的调用。
     /// </summary>
+    /// <remarks>
+    /// <c>AddSingleton</c> / <c>TryAddSingleton</c> 及带键变体。内核采集用的 <c>GetServices</c> 不算。
+    /// </remarks>
     [GeneratedRegex(@"\b(?:Try)?Add(?:Keyed)?(?:Singleton|Scoped|Transient)<IHealthContributor>\s*\(")]
     private static partial Regex Registration();
 

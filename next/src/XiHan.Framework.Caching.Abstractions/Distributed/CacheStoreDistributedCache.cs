@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Distributed;
 
 /// <summary>
-/// 把 .NET 的 <see cref="IDistributedCache"/> 架在 <see cref="ICacheStore"/> 上：键须满足 <see cref="CacheKey"/> 文法；绝对过期换算成 <see cref="CacheEntryOptions.TimeToLive"/>，滑动过期对应 <see cref="CacheEntryOptions.SlidingExpiration"/>，两者都给时绝对过期优先（存储不能同时表达两者）；<see cref="Refresh"/> 是一次读取（读取即续期）；同步成员在适配器边界阻塞等待异步存储，调用方应优先用异步成员。
+/// 把 .NET 的 <see cref="IDistributedCache"/> 架在 <see cref="ICacheStore"/> 上。
 /// </summary>
+/// <remarks>
+/// 键须满足 <see cref="CacheKey"/> 文法；绝对过期换算成 <see cref="CacheEntryOptions.TimeToLive"/>，滑动过期对应 <see cref="CacheEntryOptions.SlidingExpiration"/>，两者都给时绝对过期优先（存储不能同时表达两者）；<see cref="Refresh"/> 是一次读取（读取即续期）；同步成员在适配器边界阻塞等待异步存储，调用方应优先用异步成员。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CacheStoreDistributedCache : IDistributedCache
 {
@@ -19,8 +22,11 @@ public sealed class CacheStoreDistributedCache : IDistributedCache
     private readonly ICacheStore _store;
 
     /// <summary>
-    /// 时钟；绝对过期时刻据此换算成存活时间。
+    /// 时钟。
     /// </summary>
+    /// <remarks>
+    /// 绝对过期时刻据此换算成存活时间。
+    /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
@@ -68,8 +74,11 @@ public sealed class CacheStoreDistributedCache : IDistributedCache
         => await _store.RemoveAsync(new CacheKey(key), token).ConfigureAwait(false);
 
     /// <summary>
-    /// 把 .NET 的过期选项换算成存储的条目选项：绝对过期（时刻或相对现在，两者都给取较早者）换算成存活时间，已过去的时刻拒绝；没有绝对过期时用滑动过期；都没有则不过期。
+    /// 把 .NET 的过期选项换算成存储的条目选项。
     /// </summary>
+    /// <remarks>
+    /// 绝对过期（时刻或相对现在，两者都给取较早者）换算成存活时间，已过去的时刻拒绝；没有绝对过期时用滑动过期；都没有则不过期。
+    /// </remarks>
     public static CacheEntryOptions Translate(DistributedCacheEntryOptions options, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(options);

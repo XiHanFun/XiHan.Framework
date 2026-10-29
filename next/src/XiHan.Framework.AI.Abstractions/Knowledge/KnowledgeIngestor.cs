@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// <see cref="IKnowledgeIngestor"/> 的实现（单例）：每篇文档一次嵌入批调用；重新摄入先删旧块。
+/// <see cref="IKnowledgeIngestor"/> 的实现（单例）。
 /// </summary>
+/// <remarks>
+/// 每篇文档一次嵌入批调用；重新摄入先删旧块。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeIngestor : IKnowledgeIngestor
 {

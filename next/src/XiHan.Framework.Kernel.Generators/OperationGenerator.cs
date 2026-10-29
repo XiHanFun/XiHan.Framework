@@ -12,8 +12,11 @@ using XiHan.Framework.Kernel.Generators.Json;
 namespace XiHan.Framework.Kernel.Generators;
 
 /// <summary>
-/// 从 <c>[Operation]</c> 类生成登记代码与 JSON Schema：输出 <c>GeneratedOperations</c> 静态类，含每个操作的 <c>Add&lt;类名&gt;</c> 与登记全部操作的 <c>AddGeneratedOperations</c>。
+/// 从 <c>[Operation]</c> 类生成登记代码与 JSON Schema。
 /// </summary>
+/// <remarks>
+/// 输出 <c>GeneratedOperations</c> 静态类，含每个操作的 <c>Add&lt;类名&gt;</c> 与登记全部操作的 <c>AddGeneratedOperations</c>。
+/// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class OperationGenerator : IIncrementalGenerator
 {
@@ -90,8 +93,11 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 程序集级缺省暴露协议：<c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>。
+    /// 程序集级缺省暴露协议。
     /// </summary>
+    /// <remarks>
+    /// <c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>。
+    /// </remarks>
     private static int? AssemblyDefaultExpose(Compilation compilation)
     {
         foreach (var attribute in compilation.Assembly.GetAttributes())
@@ -110,8 +116,11 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 读取特性与接口、解析上下文；有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议。
+    /// 读取特性与接口、解析上下文。
     /// </summary>
+    /// <remarks>
+    /// 有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议。
+    /// </remarks>
     private static OperationModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, AttributeData attribute, INamedTypeSymbol? operationInterface, List<JsonContextModel> contexts, int? defaultExpose)
     {
         var location = symbol.Locations.FirstOrDefault() ?? Location.None;

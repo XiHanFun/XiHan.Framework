@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// Schema 无法映射为 protobuf，或线上数据与 Schema 不符。消息为英文诊断文本；适配器把它翻译为错误码与本地化文案。
+/// Schema 无法映射为 protobuf，或线上数据与 Schema 不符。
 /// </summary>
+/// <remarks>
+/// 消息为英文诊断文本；适配器把它翻译为错误码与本地化文案。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ProtoException : Exception
 {

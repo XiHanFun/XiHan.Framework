@@ -9,13 +9,19 @@ using Microsoft.CodeAnalysis.Testing;
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 
 /// <summary>
-/// 五条规则的端到端验证：用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用。
+/// 五条规则的端到端验证。
 /// </summary>
+/// <remarks>
+/// 用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用。
+/// </remarks>
 public sealed class AnalyzerTests
 {
     /// <summary>
-    /// 原语层里 <c>ApiLevelAttribute</c> 与 <c>Stability</c> 的最小替身；分析器按元数据名查找，不依赖真实程序集。
+    /// 原语层里 <c>ApiLevelAttribute</c> 与 <c>Stability</c> 的最小替身。
     /// </summary>
+    /// <remarks>
+    /// 分析器按元数据名查找，不依赖真实程序集。
+    /// </remarks>
     private const string ApiLevelSource = """
         namespace XiHan.Framework.Primitives
         {

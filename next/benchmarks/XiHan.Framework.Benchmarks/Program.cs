@@ -6,6 +6,9 @@ using BenchmarkDotNet.Running;
 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
 
 /// <summary>
-/// 基准入口。运行：<c>dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --filter '*'</c>。
+/// 基准入口。
 /// </summary>
+/// <remarks>
+/// 运行：<c>dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --filter '*'</c>。
+/// </remarks>
 internal static partial class Program;

@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>provides</c> 一项的 JSON 形态。版本以字符串承载，转换时再解析为正整数。
+/// <c>xihan.manifest.json</c> 中 <c>provides</c> 一项的 JSON 形态。
 /// </summary>
+/// <remarks>
+/// 版本以字符串承载，转换时再解析为正整数。
+/// </remarks>
 internal sealed class CapabilityDocument
 {
     /// <summary>

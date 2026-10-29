@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>contributes.pipeline</c> 一项的 JSON 形态。阶段以清单小写名承载。
+/// <c>xihan.manifest.json</c> 中 <c>contributes.pipeline</c> 一项的 JSON 形态。
 /// </summary>
+/// <remarks>
+/// 阶段以清单小写名承载。
+/// </remarks>
 internal sealed class PipelineDocument
 {
     /// <summary>

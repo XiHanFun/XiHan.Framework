@@ -9,8 +9,11 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 进程内作业存储：作业、触发器、运行历史（有界，超出丢弃最旧的已结束记录）与节点都在内存里，读出来的是深拷贝。不跨实例共享（<see cref="IsShared"/> 为假）。
+/// 进程内作业存储。
 /// </summary>
+/// <remarks>
+/// 作业、触发器、运行历史（有界，超出丢弃最旧的已结束记录）与节点都在内存里，读出来的是深拷贝。不跨实例共享（<see cref="IsShared"/> 为假）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryJobStore : IJobStore
 {
@@ -438,8 +441,11 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <summary>
-    /// 淘汰最旧的已结束记录；全部在运行中时无法淘汰。
+    /// 淘汰最旧的已结束记录。
     /// </summary>
+    /// <remarks>
+    /// 全部在运行中时无法淘汰。
+    /// </remarks>
     private bool EvictOldestFinished()
     {
         for (var index = 0; index < _runOrder.Count; index++)

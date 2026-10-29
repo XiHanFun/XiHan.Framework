@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 命令行工具的错误码；登记在 <c>spec/conventions/error-codes.md</c>。
+/// 命令行工具的错误码。
 /// </summary>
+/// <remarks>
+/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// </remarks>
 internal static class CliErrors
 {
     /// <summary>

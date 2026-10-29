@@ -10,8 +10,11 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的实例与节点实例存储：保存与返回都是深拷贝；实例与节点实例分别计容量；删实例级联节点实例。
+/// 有界内存的实例与节点实例存储。
 /// </summary>
+/// <remarks>
+/// 保存与返回都是深拷贝；实例与节点实例分别计容量；删实例级联节点实例。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
 {

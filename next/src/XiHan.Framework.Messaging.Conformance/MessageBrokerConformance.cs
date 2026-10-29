@@ -15,8 +15,11 @@ using Xunit;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）。继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
+/// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）。
 /// </summary>
+/// <remarks>
+/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class MessageBrokerConformance
 {
@@ -41,13 +44,19 @@ public abstract class MessageBrokerConformance
     protected virtual TimeSpan DeliveryTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 宿主配置；Provider 需要的连接等在此提供。
+    /// 宿主配置。
     /// </summary>
+    /// <remarks>
+    /// Provider 需要的连接等在此提供。
+    /// </remarks>
     protected virtual IEnumerable<KeyValuePair<string, string?>> Configuration => [];
 
     /// <summary>
-    /// 创建被测 Provider 的特性。每个用例调用一次。
+    /// 创建被测 Provider 的特性。
     /// </summary>
+    /// <remarks>
+    /// 每个用例调用一次。
+    /// </remarks>
     protected abstract IFeature CreateFeature();
 
     /// <summary>
@@ -99,8 +108,11 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 3：同一主题按发布顺序投递；一次批量发布多条同样保持入参顺序。
+    /// 用例 3：同一主题按发布顺序投递。
     /// </summary>
+    /// <remarks>
+    /// 一次批量发布多条同样保持入参顺序。
+    /// </remarks>
     [Fact]
     public async Task Publish_PreservesOrder_WithinTopic()
     {
@@ -213,8 +225,11 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 9：批量发布逐项结果与入参一一对应并全部投递；空集合返回空列表；主题不合法时每一项都被发布者拒绝，不到达代理。
+    /// 用例 9：批量发布逐项结果与入参一一对应并全部投递。
     /// </summary>
+    /// <remarks>
+    /// 空集合返回空列表；主题不合法时每一项都被发布者拒绝，不到达代理。
+    /// </remarks>
     [Fact]
     public async Task PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll()
     {

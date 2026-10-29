@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 宿主授予插件的权限集合。插件清单声明所需权限，宿主配置决定授予哪些，运行期由宿主强制。
+/// 宿主授予插件的权限集合。
 /// </summary>
+/// <remarks>
+/// 插件清单声明所需权限，宿主配置决定授予哪些，运行期由宿主强制。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionGrant
 {

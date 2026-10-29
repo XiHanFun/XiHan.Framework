@@ -8,14 +8,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 
 /// <summary>
-/// 容器名：小写字母、数字与连字符，3 到 63 个字符，首尾是字母或数字（与 S3 桶名兼容）。
+/// 容器名。
 /// </summary>
+/// <remarks>
+/// 小写字母、数字与连字符，3 到 63 个字符，首尾是字母或数字（与 S3 桶名兼容）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public readonly partial record struct ContainerName
 {
     /// <summary>
-    /// 创建；不合法抛出 <see cref="ArgumentException"/>。
+    /// 创建。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public ContainerName(string value)
     {
         Value = Validate(value);
@@ -37,8 +43,11 @@ public readonly partial record struct ContainerName
     public static bool IsValid([NotNullWhen(true)] string? value) => value is not null && Pattern().IsMatch(value);
 
     /// <summary>
-    /// 校验并返回；不合法抛出 <see cref="ArgumentException"/>。
+    /// 校验并返回。
     /// </summary>
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static string Validate(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

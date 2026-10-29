@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 
 /// <summary>
-/// 规则 <c>Starter</c>：实例的发起人；没有发起人解析为空。
+/// 规则 <c>Starter</c>。
 /// </summary>
+/// <remarks>
+/// 实例的发起人；没有发起人解析为空。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class StarterAssigneeProvider : IAssigneeProvider
 {

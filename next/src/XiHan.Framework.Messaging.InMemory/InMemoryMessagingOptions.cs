@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.InMemory;
 
 /// <summary>
-/// 内存代理选项。从配置节 <c>XiHan:Messaging:InMemory</c> 显式读取。
+/// 内存代理选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Messaging:InMemory</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryMessagingOptions
 {
@@ -19,8 +22,11 @@ public sealed record InMemoryMessagingOptions
     public const string ConfigurationSection = "XiHan:Messaging:InMemory";
 
     /// <summary>
-    /// 每个主题（含其死信列表）的条目上限；默认 10000。
+    /// 每个主题（含其死信列表）的条目上限。
     /// </summary>
+    /// <remarks>
+    /// 默认 10000。
+    /// </remarks>
     public int MaxQueuedMessages
     {
         get => field;

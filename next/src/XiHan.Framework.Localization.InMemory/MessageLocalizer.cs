@@ -11,15 +11,19 @@ namespace XiHan.Framework.Localization.InMemory;
 
 /// <summary>
 /// 汇集全部已注册目录的本地化器，同时是安装到 <see cref="MessageScope"/> 的解析器。
-/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。
-/// 占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。
 /// </summary>
+/// <remarks>
+/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序；同一键先注册的目录优先。
+    /// 已注册的目录，按注册顺序。
     /// </summary>
+    /// <remarks>
+    /// 同一键先注册的目录优先。
+    /// </remarks>
     private readonly IReadOnlyList<MessageCatalog> _catalogs;
 
     /// <summary>

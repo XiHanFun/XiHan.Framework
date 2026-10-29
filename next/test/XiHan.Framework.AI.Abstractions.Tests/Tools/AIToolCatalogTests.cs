@@ -17,8 +17,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Tools;
 
 /// <summary>
-/// 工具目录：操作桥接的声明与名字、描述按区域、显式工具、绑定后经完整管道执行、名字冲突启动失败。
+/// 工具目录。
 /// </summary>
+/// <remarks>
+/// 操作桥接的声明与名字、描述按区域、显式工具、绑定后经完整管道执行、名字冲突启动失败。
+/// </remarks>
 public sealed class AIToolCatalogTests
 {
     [Fact]

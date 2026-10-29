@@ -18,9 +18,11 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 用户任务增强与外部任务的一致性套件（RFC-0021）：会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁。
-/// Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// 用户任务增强与外部任务的一致性套件（RFC-0021）。
 /// </summary>
+/// <remarks>
+/// 会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowTaskConformance
 {
@@ -30,13 +32,19 @@ public abstract class WorkflowTaskConformance
     private const string PaymentTopic = "conf.pay";
 
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主；<paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// 启动装配了被测 Provider 的宿主。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// </remarks>
     protected abstract Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
-    /// 用例 1：会签阈值：人数阈值达到即通过；百分比按指派人数向上取整；剩余人数到不了阈值即拒绝；缺省阈值为全部，一人拒绝立即拒绝。
+    /// 用例 1：会签阈值。
     /// </summary>
+    /// <remarks>
+    /// 人数阈值达到即通过；百分比按指派人数向上取整；剩余人数到不了阈值即拒绝；缺省阈值为全部，一人拒绝立即拒绝。
+    /// </remarks>
     [Fact]
     public async Task Threshold_All_CompletesAtCountOrPercent()
     {
@@ -89,8 +97,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 2：认领（Any）撤下其他指派人的书签，其他人既不能完成也不能认领；认领人加签后新人认领被拒（已被认领）；非认领人释放被拒；释放后其他人重新拿到待办；Sequential 不支持认领；事件记录认领与释放。
+    /// 用例 2：认领（Any）撤下其他指派人的书签，其他人既不能完成也不能认领。
     /// </summary>
+    /// <remarks>
+    /// 认领人加签后新人认领被拒（已被认领）；非认领人释放被拒；释放后其他人重新拿到待办；Sequential 不支持认领；事件记录认领与释放。
+    /// </remarks>
     [Fact]
     public async Task Claim_Release_AndGuards()
     {
@@ -147,8 +158,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 3：退回：缺省目标是本节点之前最近完成的用户任务，以跳转实现（本节点实例取消、目标节点新建实例、上游指派人重新拿到待办），节点历史记 <c>returned</c>；指定的目标不存在被拒；没有上游用户任务时退回 <c>Start</c> 之后的首个节点。
+    /// 用例 3：退回。
     /// </summary>
+    /// <remarks>
+    /// 缺省目标是本节点之前最近完成的用户任务，以跳转实现（本节点实例取消、目标节点新建实例、上游指派人重新拿到待办），节点历史记 <c>returned</c>；指定的目标不存在被拒；没有上游用户任务时退回 <c>Start</c> 之后的首个节点。
+    /// </remarks>
     [Fact]
     public async Task Return_JumpsBack_AndRecordsHistory()
     {
@@ -214,8 +228,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 4：催办只发事件、不改状态；催办人不必是指派人；任务不存在被拒。
+    /// 用例 4：催办只发事件、不改状态。
     /// </summary>
+    /// <remarks>
+    /// 催办人不必是指派人；任务不存在被拒。
+    /// </remarks>
     [Fact]
     public async Task Urge_PublishesEvent()
     {
@@ -237,8 +254,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 5：条件查询：指派人与实例必填其一；按实例、节点、定义名、创建时间过滤；按创建时间升序分页；只含实例运行中的任务。
+    /// 用例 5：条件查询。
     /// </summary>
+    /// <remarks>
+    /// 指派人与实例必填其一；按实例、节点、定义名、创建时间过滤；按创建时间升序分页；只含实例运行中的任务。
+    /// </remarks>
     [Fact]
     public async Task Query_FiltersAndPages()
     {
@@ -277,8 +297,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 6：任务视图带优先级、截止时刻（相对秒数或固定时刻）与渲染后的表单键；<c>ReminderAfterSeconds</c> 周期发布提醒事件，任务完成后不再提醒。
+    /// 用例 6：任务视图带优先级、截止时刻（相对秒数或固定时刻）与渲染后的表单键。
     /// </summary>
+    /// <remarks>
+    /// <c>ReminderAfterSeconds</c> 周期发布提醒事件，任务完成后不再提醒。
+    /// </remarks>
     [Fact]
     public async Task TaskMetadata_PriorityDueFormKey_AndReminder()
     {
@@ -328,8 +351,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 7：外部任务：领取上锁（锁未过期时别人领不到、完成与延长锁要求持锁）；完成合并输出；带 <c>RetryAfter</c> 的失败解锁后推、尝试次数加一；不带的失败使节点故障；锁过期由轮询解锁后别人可领；事件记录创建、完成与失败。
+    /// 用例 7：外部任务。
     /// </summary>
+    /// <remarks>
+    /// 领取上锁（锁未过期时别人领不到、完成与延长锁要求持锁）；完成合并输出；带 <c>RetryAfter</c> 的失败解锁后推、尝试次数加一；不带的失败使节点故障；锁过期由轮询解锁后别人可领；事件记录创建、完成与失败。
+    /// </remarks>
     [Fact]
     public async Task ExternalTask_FetchCompleteFailAndLock()
     {
@@ -412,8 +438,11 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义；<paramref name="configure"/> 给用户任务节点加属性。
+    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="configure"/> 给用户任务节点加属性。
+    /// </remarks>
     protected static WorkflowDefinition Approval(string name, UserTaskCompletionPolicy policy, IReadOnlyList<string> assignees, Action<WorkflowNodeBuilder>? configure = null)
         => WorkflowDefinitionBuilder.Create(name)
             .AddVariable("amount", defaultValue: 7)

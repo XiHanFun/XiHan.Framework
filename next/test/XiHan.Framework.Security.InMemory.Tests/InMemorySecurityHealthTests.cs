@@ -8,8 +8,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>security.inmemory.capacity</c>：两个存储都有余量时 Ready，主体存储填满后 Degraded 并带 <see cref="SecurityErrors.CapacityExceeded"/>。
+/// 健康项 <c>security.inmemory.capacity</c>。
 /// </summary>
+/// <remarks>
+/// 两个存储都有余量时 Ready，主体存储填满后 Degraded 并带 <see cref="SecurityErrors.CapacityExceeded"/>。
+/// </remarks>
 public sealed class InMemorySecurityHealthTests
 {
     /// <summary>

@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 一个租户的数据分片：租户专属的连接串、可选的数据库提供者名与透传给持久化 Provider 的属性。没有分片的租户用应用默认连接。
+/// 一个租户的数据分片。
 /// </summary>
+/// <remarks>
+/// 租户专属的连接串、可选的数据库提供者名与透传给持久化 Provider 的属性。没有分片的租户用应用默认连接。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record TenantShard
 {
@@ -35,8 +38,11 @@ public sealed record TenantShard
     public string ConnectionString { get; }
 
     /// <summary>
-    /// 数据库提供者名（小写，如 <c>postgresql</c>、<c>sqlite</c>）；空表示与应用默认连接同一种。
+    /// 数据库提供者名（小写，如 <c>postgresql</c>、<c>sqlite</c>）。
     /// </summary>
+    /// <remarks>
+    /// 空表示与应用默认连接同一种。
+    /// </remarks>
     public string? Provider { get; }
 
     /// <summary>

@@ -7,10 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 周期探测、缓存结果的健康贡献者：Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，
-/// <see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，
-/// 探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误。
+/// 周期探测、缓存结果的健康贡献者。
 /// </summary>
+/// <remarks>
+/// Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，<see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsyncDisposable
 {
@@ -20,8 +21,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     private readonly Func<CancellationToken, ValueTask<Result>> _probe;
 
     /// <summary>
-    /// 时钟；循环的计时器与每次探测的超时都按它计时。
+    /// 时钟。
     /// </summary>
+    /// <remarks>
+    /// 循环的计时器与每次探测的超时都按它计时。
+    /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
@@ -30,13 +34,19 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 最近一次结果；探测完成后整体替换，<see cref="Check"/> 读它不加锁。
+    /// 最近一次结果。
     /// </summary>
+    /// <remarks>
+    /// 探测完成后整体替换，<see cref="Check"/> 读它不加锁。
+    /// </remarks>
     private volatile ContributorStatus _status;
 
     /// <summary>
-    /// 停止信号；非空表示循环在跑。
+    /// 停止信号。
     /// </summary>
+    /// <remarks>
+    /// 非空表示循环在跑。
+    /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
@@ -82,13 +92,19 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     public TimeSpan Interval { get; }
 
     /// <summary>
-    /// 最近一次探测完成的时刻；还没探过为 <see langword="null"/>。
+    /// 最近一次探测完成的时刻。
     /// </summary>
+    /// <remarks>
+    /// 还没探过为 <see langword="null"/>。
+    /// </remarks>
     public DateTimeOffset? LastProbedAt { get; private set; }
 
     /// <summary>
-    /// 同步探一次（受 <see cref="Interval"/> 上限约束的超时），然后起后台循环按 <see cref="Interval"/> 重探。重复调用不再起第二个循环。
+    /// 同步探一次（受 <see cref="Interval"/> 上限约束的超时），然后起后台循环按 <see cref="Interval"/> 重探。
     /// </summary>
+    /// <remarks>
+    /// 重复调用不再起第二个循环。
+    /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (_loop is not null)
@@ -106,8 +122,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 停止后台循环；缓存的最近结果保留。
+    /// 停止后台循环。
     /// </summary>
+    /// <remarks>
+    /// 缓存的最近结果保留。
+    /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         if (_loop is null || _stopping is null)
@@ -131,8 +150,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 立即探测一次并更新缓存。探针抛出的异常（含超时）不传播，记为 <see cref="LifecycleState.Degraded"/>；只有 <paramref name="cancellationToken"/> 被取消时才抛出。
+    /// 立即探测一次并更新缓存。
     /// </summary>
+    /// <remarks>
+    /// 探针抛出的异常（含超时）不传播，记为 <see cref="LifecycleState.Degraded"/>；只有 <paramref name="cancellationToken"/> 被取消时才抛出。
+    /// </remarks>
     public async ValueTask ProbeAsync(CancellationToken cancellationToken)
     {
         // 每次探测各有超时：探针卡住不能拖住循环，也不能让首探拖住宿主启动；超时与间隔取同一个值
@@ -167,8 +189,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 把探测结果写成条目状态：成功 Ready、失败 Degraded；状态或错误码变化时记日志。
+    /// 把探测结果写成条目状态。
     /// </summary>
+    /// <remarks>
+    /// 成功 Ready、失败 Degraded；状态或错误码变化时记日志。
+    /// </remarks>
     private void Apply(Result outcome)
     {
         var previous = _status;
@@ -195,8 +220,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 按间隔重探，直到停止；计时器由本方法释放。
+    /// 按间隔重探，直到停止。
     /// </summary>
+    /// <remarks>
+    /// 计时器由本方法释放。
+    /// </remarks>
     private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
     {
         using (timer)

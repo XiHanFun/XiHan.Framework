@@ -16,9 +16,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Observability.OpenTelemetry;
 
 /// <summary>
-/// OpenTelemetry 的能力包入口：提供 <c>observability.export@1</c>。内核的 Activity 与 Meter 加上 .NET 与 ASP.NET Core 内置的源与仪表按选项接到追踪、指标与日志提供者；
-/// 配置了端点或标准环境变量时启用 OTLP 导出器，<c>Console</c> 为真时同时写到控制台。
+/// OpenTelemetry 的能力包入口。
 /// </summary>
+/// <remarks>
+/// 提供 <c>observability.export@1</c>。内核的 Activity 与 Meter 加上 .NET 与 ASP.NET Core 内置的源与仪表按选项接到追踪、指标与日志提供者；配置了端点或标准环境变量时启用 OTLP 导出器，<c>Console</c> 为真时同时写到控制台。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenTelemetryObservabilityFeature : IFeature
 {

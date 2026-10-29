@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 当前操作的主体：用户、服务或系统。不可变；由 Authenticate 阶段写入上下文。
+/// 当前操作的主体。
 /// </summary>
+/// <remarks>
+/// 用户、服务或系统。不可变；由 Authenticate 阶段写入上下文。
+/// </remarks>
 /// <param name="Id">主体 ID；匿名主体为空字符串。</param>
 /// <param name="AuthenticationScheme">认证方案；匿名主体为 <see langword="null"/>。</param>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -24,8 +27,11 @@ public sealed record Principal(string Id, string? AuthenticationScheme)
     public string? DisplayName { get; init; }
 
     /// <summary>
-    /// 声明集合；同一类型可有多个值。
+    /// 声明集合。
     /// </summary>
+    /// <remarks>
+    /// 同一类型可有多个值。
+    /// </remarks>
     public IReadOnlyList<KeyValuePair<string, string>> Claims { get; init; } = [];
 
     /// <summary>

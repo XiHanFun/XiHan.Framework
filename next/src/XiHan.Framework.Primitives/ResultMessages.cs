@@ -4,8 +4,11 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 结果原语的消息键；各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。
+/// 结果原语的消息键。
 /// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ResultMessages
 {

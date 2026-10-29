@@ -8,10 +8,11 @@ using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 namespace XiHan.Framework.Security.Database.Grants;
 
 /// <summary>
-/// 单例授予存储读数据库的方式：在根提供者的新作用域里直接开一个只读工作单元，取仓储读完即提交。
-/// 不经 <c>App.InvokeAsync</c> 再走一遍管道：授予是在 Authorize 阶段被查询的，嵌套调用会再次经过 Tenant / Authorize 阶段（要求租户时没有租户就失败），而且要求应用处于服务状态。
-/// 授予是平台级数据，实体不实现 <c>IMultiTenant</c>，工作单元不带租户。基础设施异常原样抛出，由内核转成 Unexpected 结果。
+/// 单例授予存储读数据库的方式。
 /// </summary>
+/// <remarks>
+/// 在根提供者的新作用域里直接开一个只读工作单元，取仓储读完即提交。不经 <c>App.InvokeAsync</c> 再走一遍管道：授予是在 Authorize 阶段被查询的，嵌套调用会再次经过 Tenant / Authorize 阶段（要求租户时没有租户就失败），而且要求应用处于服务状态。授予是平台级数据，实体不实现 <c>IMultiTenant</c>，工作单元不带租户。基础设施异常原样抛出，由内核转成 Unexpected 结果。
+/// </remarks>
 internal sealed class GrantInvocation
 {
     /// <summary>
@@ -20,8 +21,11 @@ internal sealed class GrantInvocation
     private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true);
 
     /// <summary>
-    /// 根服务提供者；每次读取开新作用域。
+    /// 根服务提供者。
     /// </summary>
+    /// <remarks>
+    /// 每次读取开新作用域。
+    /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>

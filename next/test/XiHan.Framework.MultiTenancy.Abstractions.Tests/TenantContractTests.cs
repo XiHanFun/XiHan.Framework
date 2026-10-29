@@ -7,8 +7,11 @@ using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
 
 /// <summary>
-/// 多租户契约层的单元测试：租户 ID 文法、<see cref="TenantInfo"/> 默认值与 <see cref="MultiTenancyOptions"/> 的配置解析。
+/// 多租户契约层的单元测试。
 /// </summary>
+/// <remarks>
+/// 租户 ID 文法、<see cref="TenantInfo"/> 默认值与 <see cref="MultiTenancyOptions"/> 的配置解析。
+/// </remarks>
 public sealed class TenantContractTests
 {
     /// <summary>

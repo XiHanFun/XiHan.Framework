@@ -9,8 +9,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Capabilities;
 
 /// <summary>
-/// <see cref="CapabilityResolver"/> 的行为：拓扑排序、缺失与版本冲突的可解释报错、多候选选择规则、可选依赖降级、环检测与重复清单。
+/// <see cref="CapabilityResolver"/> 的行为。
 /// </summary>
+/// <remarks>
+/// 拓扑排序、缺失与版本冲突的可解释报错、多候选选择规则、可选依赖降级、环检测与重复清单。
+/// </remarks>
 public sealed class CapabilityResolverTests
 {
     [Fact]

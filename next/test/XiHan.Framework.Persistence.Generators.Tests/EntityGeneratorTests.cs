@@ -17,8 +17,11 @@ namespace XiHan.Framework.Persistence.Generators.Tests;
 public sealed class EntityGeneratorTests
 {
     /// <summary>
-    /// 四个实体：聚合根（软删除 + 多租户）、内部实体（int 键）、只软删除的实体、被跳过的抽象类。
+    /// 四个实体。
     /// </summary>
+    /// <remarks>
+    /// 聚合根（软删除 + 多租户）、内部实体（int 键）、只软删除的实体、被跳过的抽象类。
+    /// </remarks>
     private const string Source = """
         using System;
         using System.Collections.Generic;
@@ -60,8 +63,11 @@ public sealed class EntityGeneratorTests
         """;
 
     /// <summary>
-    /// 运行生成器并把生成的代码编回编译；返回编译错误、生成器诊断与生成的源文本。
+    /// 运行生成器并把生成的代码编回编译。
     /// </summary>
+    /// <remarks>
+    /// 返回编译错误、生成器诊断与生成的源文本。
+    /// </remarks>
     private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, bool withEntityFrameworkCore)
     {
         var trustedAssemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator);

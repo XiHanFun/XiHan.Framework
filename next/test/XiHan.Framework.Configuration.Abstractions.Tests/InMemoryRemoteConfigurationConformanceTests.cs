@@ -7,8 +7,11 @@ using XiHan.Framework.Configuration.Conformance.Remote;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 让进程内远程配置跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例，同时验证套件本身。
+/// 让进程内远程配置跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例。
 /// </summary>
+/// <remarks>
+/// 同时验证套件本身。
+/// </remarks>
 public sealed class InMemoryRemoteConfigurationConformanceTests : RemoteConfigurationClientConformance
 {
     /// <summary>

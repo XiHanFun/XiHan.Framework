@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
 /// <summary>
-/// <see cref="InMemoryCachingFeature"/> 的宿主级测试：独占时注册的服务、让位给显式 Provider 时的收缩、幂等端到端。
+/// <see cref="InMemoryCachingFeature"/> 的宿主级测试。
 /// </summary>
+/// <remarks>
+/// 独占时注册的服务、让位给显式 Provider 时的收缩、幂等端到端。
+/// </remarks>
 public sealed class InMemoryCachingFeatureTests
 {
     /// <summary>

@@ -53,8 +53,11 @@ public sealed record AuditQuery
     public bool? Succeeded { get; init; }
 
     /// <summary>
-    /// 页大小；默认 100，1 到 <see cref="MaxPageSize"/>。
+    /// 页大小。
     /// </summary>
+    /// <remarks>
+    /// 默认 100，1 到 <see cref="MaxPageSize"/>。
+    /// </remarks>
     public int PageSize { get; init; } = 100;
 
     /// <summary>
@@ -63,8 +66,11 @@ public sealed record AuditQuery
     public string? ContinuationToken { get; init; }
 
     /// <summary>
-    /// 校验页大小与时间范围；不合法返回 <see cref="AuditingErrors.QueryInvalid"/>。续页令牌由实现自己校验。
+    /// 校验页大小与时间范围。
     /// </summary>
+    /// <remarks>
+    /// 不合法返回 <see cref="AuditingErrors.QueryInvalid"/>。续页令牌由实现自己校验。
+    /// </remarks>
     public Result Validate()
     {
         if (PageSize is < 1 or > MaxPageSize)

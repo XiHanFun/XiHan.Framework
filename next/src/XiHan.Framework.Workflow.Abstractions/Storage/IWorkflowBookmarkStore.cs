@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Storage;
 
 /// <summary>
-/// 书签存储；不按租户过滤，写入按批量。
+/// 书签存储。
 /// </summary>
+/// <remarks>
+/// 不按租户过滤，写入按批量。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowBookmarkStore
 {
@@ -18,8 +21,11 @@ public interface IWorkflowBookmarkStore
     ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按 ID 批量找；不存在的不在结果里。
+    /// 按 ID 批量找。
     /// </summary>
+    /// <remarks>
+    /// 不存在的不在结果里。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
@@ -38,8 +44,11 @@ public interface IWorkflowBookmarkStore
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string kind, string key, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 信号书签：种类 <c>Signal</c>、键为信号名；给了关联 ID 时取关联为空或相等的，否则全部。创建时间升序。
+    /// 信号书签。
     /// </summary>
+    /// <remarks>
+    /// 种类 <c>Signal</c>、键为信号名；给了关联 ID 时取关联为空或相等的，否则全部。创建时间升序。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken);
 
     /// <summary>
@@ -48,8 +57,11 @@ public interface IWorkflowBookmarkStore
     ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按 ID 删除；不存在的忽略。
+    /// 按 ID 删除。
     /// </summary>
+    /// <remarks>
+    /// 不存在的忽略。
+    /// </remarks>
     ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>

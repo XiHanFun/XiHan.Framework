@@ -15,8 +15,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tools;
 
 /// <summary>
-/// 把一个操作契约桥接成模型工具：参数序列化成请求 JSON，在新作用域、复制了调用方 Baggage 与截止时间的新上下文里经完整管道执行；成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
+/// 把一个操作契约桥接成模型工具。
 /// </summary>
+/// <remarks>
+/// 参数序列化成请求 JSON，在新作用域、复制了调用方 Baggage 与截止时间的新上下文里经完整管道执行；成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OperationAIFunction : AIFunction
 {
@@ -110,8 +113,11 @@ public sealed class OperationAIFunction : AIFunction
     }
 
     /// <summary>
-    /// 参数 → 请求 JSON：JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入。
+    /// 参数 → 请求 JSON。
     /// </summary>
+    /// <remarks>
+    /// JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入。
+    /// </remarks>
     private ReadOnlyMemory<byte> SerializeArguments(AIFunctionArguments arguments)
     {
         var buffer = new ArrayBufferWriter<byte>();

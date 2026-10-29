@@ -7,8 +7,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// 一次命令执行的环境：解析后的命令行、本次执行的服务作用域、标准输出与标准错误、取消令牌。
+/// 一次命令执行的环境。
 /// </summary>
+/// <remarks>
+/// 解析后的命令行、本次执行的服务作用域、标准输出与标准错误、取消令牌。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CommandContext
 {

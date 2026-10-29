@@ -9,9 +9,11 @@ using XiHan.Framework.Cli.Migration;
 namespace XiHan.Framework.Cli.Tests.Migration;
 
 /// <summary>
-/// 测试规则 <c>T5-01</c>：<c>LegacyClock</c> 改名 <c>SystemClock</c>（同名文件随之改名）并补 <c>using Shop.Time;</c>，
-/// <c>LegacyTimer</c> 类型的属性前留标记。
+/// 测试规则 <c>T5-01</c>。
 /// </summary>
+/// <remarks>
+/// <c>LegacyClock</c> 改名 <c>SystemClock</c>（同名文件随之改名）并补 <c>using Shop.Time;</c>，<c>LegacyTimer</c> 类型的属性前留标记。
+/// </remarks>
 internal sealed class RenameClockFixer : SyntaxFixer
 {
     /// <summary>

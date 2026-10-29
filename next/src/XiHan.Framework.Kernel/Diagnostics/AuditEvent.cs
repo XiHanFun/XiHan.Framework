@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Diagnostics;
 
 /// <summary>
-/// 审计事件。格式是规范性内容（RFC-0001 附属），审计子系统的 Provider 负责持久化。
+/// 审计事件。
 /// </summary>
+/// <remarks>
+/// 格式是规范性内容（RFC-0001 附属），审计子系统的 Provider 负责持久化。
+/// </remarks>
 /// <param name="Timestamp">发生时间（UTC）。</param>
 /// <param name="Action">动作，例如 <c>orders.create</c>。</param>
 /// <param name="Outcome">结果。</param>

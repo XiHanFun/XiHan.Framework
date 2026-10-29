@@ -26,8 +26,11 @@ public sealed record AssigneeRule(string Type, IReadOnlyList<string> Values)
     public IReadOnlyList<string> Values { get; } = Values ?? throw new ArgumentNullException(nameof(Values));
 
     /// <summary>
-    /// 从 JSON 数组解析：每项 <c>{ "type": "...", "values": [...] }</c>（<c>values</c> 可是逗号分隔字符串）；<see langword="null"/> 为空列表。
+    /// 从 JSON 数组解析。
     /// </summary>
+    /// <remarks>
+    /// 每项 <c>{ "type": "...", "values": [...] }</c>（<c>values</c> 可是逗号分隔字符串）；<see langword="null"/> 为空列表。
+    /// </remarks>
     public static Result<IReadOnlyList<AssigneeRule>> Parse(JsonNode? node)
     {
         if (node is null)

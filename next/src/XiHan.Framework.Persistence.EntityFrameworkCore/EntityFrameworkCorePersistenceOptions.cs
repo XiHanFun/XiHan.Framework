@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core Provider 选项。从配置节 <c>XiHan:Persistence:EntityFrameworkCore</c> 显式读取。
+/// EF Core Provider 选项。
 /// </summary>
+/// <remarks>
+/// 从配置节 <c>XiHan:Persistence:EntityFrameworkCore</c> 显式读取。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record EntityFrameworkCorePersistenceOptions
 {
@@ -19,13 +22,19 @@ public sealed record EntityFrameworkCorePersistenceOptions
     public const string ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore";
 
     /// <summary>
-    /// 启动时调用 <c>EnsureCreated</c> 建表。只用于开发与测试；生产用迁移。默认 <see langword="false"/>。
+    /// 启动时调用 <c>EnsureCreated</c> 建表。
     /// </summary>
+    /// <remarks>
+    /// 只用于开发与测试；生产用迁移。默认 <see langword="false"/>。
+    /// </remarks>
     public bool EnsureCreated { get; init; }
 
     /// <summary>
-    /// 健康项 <c>persistence.entityframeworkcore.database</c> 的重探间隔（也是单次探测的超时）；默认 15 秒。
+    /// 健康项 <c>persistence.entityframeworkcore.database</c> 的重探间隔。
     /// </summary>
+    /// <remarks>
+    /// 也是单次探测的超时。默认 15 秒。
+    /// </remarks>
     public TimeSpan HealthProbeInterval
     {
         get => field;

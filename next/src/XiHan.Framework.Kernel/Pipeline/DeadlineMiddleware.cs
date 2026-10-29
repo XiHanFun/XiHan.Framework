@@ -6,16 +6,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// Resilience 阶段的内置中间件：把 <see cref="InvocationContext.Deadline"/> 落为取消，超时记为 <see cref="KernelErrors.DeadlineExceeded"/>，
-/// 外部取消记为 <see cref="KernelErrors.Cancelled"/>。
+/// Resilience 阶段的内置中间件。
 /// </summary>
+/// <remarks>
+/// 把 <see cref="InvocationContext.Deadline"/> 落为取消，超时记为 <see cref="KernelErrors.DeadlineExceeded"/>，外部取消记为 <see cref="KernelErrors.Cancelled"/>。
+/// </remarks>
 /// <param name="timeProvider">时间源。</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMiddleware
 {
     /// <summary>
-    /// 时间源；判断是否超时与创建定时取消都用它，便于测试推进虚拟时间。
+    /// 时间源。
     /// </summary>
+    /// <remarks>
+    /// 判断是否超时与创建定时取消都用它，便于测试推进虚拟时间。
+    /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <inheritdoc />
@@ -47,8 +52,11 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
     }
 
     /// <summary>
-    /// 执行下游并把取消翻译为结果：先看截止令牌（超时），再看原上下文的令牌（外部取消）；其余取消原样抛出。
+    /// 执行下游并把取消翻译为结果。
     /// </summary>
+    /// <remarks>
+    /// 先看截止令牌（超时），再看原上下文的令牌（外部取消）；其余取消原样抛出。
+    /// </remarks>
     /// <param name="original">原上下文，结果写回这里。</param>
     /// <param name="scoped">传给下游的上下文，可能是带链接令牌的派生实例。</param>
     /// <param name="nextStep">下一步。</param>

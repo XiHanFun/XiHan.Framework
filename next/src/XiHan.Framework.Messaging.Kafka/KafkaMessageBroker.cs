@@ -18,10 +18,11 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Messaging.Kafka;
 
 /// <summary>
-/// Kafka 消息代理：主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。
-/// 生产者幂等且 <c>acks=all</c>；每个订阅主题一个消费者（同一消费组），单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/> 后发布到死信主题，投递完成后提交位点。
-/// 重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍。
+/// Kafka 消息代理。
 /// </summary>
+/// <remarks>
+/// 主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。生产者幂等且 <c>acks=all</c>；每个订阅主题一个消费者（同一消费组），单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/> 后发布到死信主题，投递完成后提交位点。重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplayer, IAsyncDisposable
 {
@@ -66,8 +67,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private readonly List<(IConsumer<string?, byte[]> Consumer, Task Loop)> _consumers = [];
 
     /// <summary>
-    /// 生产者；<see cref="ConnectAsync"/> 创建。
+    /// 生产者。
     /// </summary>
+    /// <remarks>
+    /// <see cref="ConnectAsync"/> 创建。
+    /// </remarks>
     private IProducer<string?, byte[]>? _producer;
 
     /// <summary>
@@ -76,8 +80,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 运行时交来的派发委托；重放也经它投递。
+    /// 运行时交来的派发委托。
     /// </summary>
+    /// <remarks>
+    /// 重放也经它投递。
+    /// </remarks>
     private MessageDispatch? _dispatch;
 
     /// <summary>
@@ -98,9 +105,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     public bool IsConnected => _producer is not null;
 
     /// <summary>
-    /// 连通性探针（健康项）：以生产者的句柄建一个从属管理客户端描述集群——复用生产者已有的连接，只取节点与控制器，不拉主题元数据。
-    /// 生产者还没建立时返回 <see cref="MessagingErrors.BrokerUnavailable"/>；集群不可达时抛出 <see cref="KafkaException"/>，由探针宿主记成 Degraded。
+    /// 连通性探针（健康项）。
     /// </summary>
+    /// <remarks>
+    /// 以生产者的句柄建一个从属管理客户端描述集群——复用生产者已有的连接，只取节点与控制器，不拉主题元数据。生产者还没建立时返回 <see cref="MessagingErrors.BrokerUnavailable"/>；集群不可达时抛出 <see cref="KafkaException"/>，由探针宿主记成 Degraded。
+    /// </remarks>
     public async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {
         if (_producer is not { } producer)
@@ -114,8 +123,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <summary>
-    /// 创建生产者并向集群取一次元数据确认可达；连不上视为失败，不降级运行。可重复调用。
+    /// 创建生产者并向集群取一次元数据确认可达。
     /// </summary>
+    /// <remarks>
+    /// 连不上视为失败，不降级运行。可重复调用。
+    /// </remarks>
     public Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (_producer is not null)
@@ -352,8 +364,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <summary>
-    /// 一个主题的消费循环：取消息、投递、提交；停止信号到来即退出。
+    /// 一个主题的消费循环。
     /// </summary>
+    /// <remarks>
+    /// 取消息、投递、提交；停止信号到来即退出。
+    /// </remarks>
     private async Task ConsumeLoopAsync(IConsumer<string?, byte[]> consumer, string topic, MessageDispatch dispatch, CancellationToken stopping)
     {
         while (!stopping.IsCancellationRequested)
@@ -397,8 +412,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <summary>
-    /// 投递一条消息：解码失败进死信；否则在原位重试到上限，仍失败进死信。
+    /// 投递一条消息。
     /// </summary>
+    /// <remarks>
+    /// 解码失败进死信；否则在原位重试到上限，仍失败进死信。
+    /// </remarks>
     private async Task DeliverAsync(string topic, ConsumeResult<string?, byte[]> consumed, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
         var decoded = CloudEventsFormat.Decode(consumed.Message.Value);
@@ -467,8 +485,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <summary>
-    /// 信封到消息：值是编码后的信封，键是分区键扩展属性（没有则为空，由 Kafka 分配分区），头带内容类型与尝试次数。
+    /// 信封到消息。
     /// </summary>
+    /// <remarks>
+    /// 值是编码后的信封，键是分区键扩展属性（没有则为空，由 Kafka 分配分区），头带内容类型与尝试次数。
+    /// </remarks>
     private static Message<string?, byte[]> ToMessage(MessageEnvelope envelope, byte[] body, int attempt) => new()
     {
         Key = envelope.Extension(EnvelopeExtensions.PartitionKey).TryGetValue(out var key) ? key : null,
@@ -495,8 +516,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private ProducerConfig ProducerConfig() => new(ClientConfig()) { EnableIdempotence = true, Acks = Acks.All };
 
     /// <summary>
-    /// 消费者配置：手动提交、从最早位点开始（订阅前发布的消息也要收到）、允许自动建主题。
+    /// 消费者配置。
     /// </summary>
+    /// <remarks>
+    /// 手动提交、从最早位点开始（订阅前发布的消息也要收到）、允许自动建主题。
+    /// </remarks>
     private ConsumerConfig ConsumerConfig(string groupId) => new(ClientConfig())
     {
         GroupId = groupId,

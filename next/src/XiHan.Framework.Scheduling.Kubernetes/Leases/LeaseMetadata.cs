@@ -19,7 +19,10 @@ internal sealed class LeaseMetadata
     public string? Namespace { get; set; }
 
     /// <summary>
-    /// 资源版本；更新时带上，API Server 据此拒绝过期写入（409）。
+    /// 资源版本。
     /// </summary>
+    /// <remarks>
+    /// 更新时带上，API Server 据此拒绝过期写入（409）。
+    /// </remarks>
     public string? ResourceVersion { get; set; }
 }

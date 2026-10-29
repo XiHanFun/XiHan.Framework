@@ -7,8 +7,11 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 待办查询：<see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间升序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// 待办查询。
 /// </summary>
+/// <remarks>
+/// <see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间升序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTaskQuery
 {
@@ -43,8 +46,11 @@ public sealed record UserTaskQuery
     public DateTimeOffset? CreatedTo { get; init; }
 
     /// <summary>
-    /// 跳过条数；默认 0。
+    /// 跳过条数。
     /// </summary>
+    /// <remarks>
+    /// 默认 0。
+    /// </remarks>
     public int Skip
     {
         get => field;
@@ -52,8 +58,11 @@ public sealed record UserTaskQuery
     }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/>；默认 100。
+    /// 最多返回条数，1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/>。
     /// </summary>
+    /// <remarks>
+    /// 默认 100。
+    /// </remarks>
     public int Limit
     {
         get => field;

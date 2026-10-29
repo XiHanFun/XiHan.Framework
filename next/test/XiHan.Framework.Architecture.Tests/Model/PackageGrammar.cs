@@ -39,8 +39,11 @@ internal static partial class PackageGrammar
     };
 
     /// <summary>
-    /// 校验包 ID 是否符合文法；不符合时 <paramref name="reason"/> 说明原因。
+    /// 校验包 ID 是否符合文法。
     /// </summary>
+    /// <remarks>
+    /// 不符合时 <paramref name="reason"/> 说明原因。
+    /// </remarks>
     /// <param name="packageId">包 ID。</param>
     /// <param name="subsystems">术语表中的子系统领域词。</param>
     /// <param name="reason">不符合时的原因；符合时为空字符串。</param>
@@ -108,8 +111,11 @@ internal static partial class PackageGrammar
     }
 
     /// <summary>
-    /// 环层：0 原语，1 内核，2 子系统抽象与领域，3 实现，4 宿主与协议，5 插件，6 Profile，7 工具链（可引用任何环）。
+    /// 环层。
     /// </summary>
+    /// <remarks>
+    /// 0 原语，1 内核，2 子系统抽象与领域，3 实现，4 宿主与协议，5 插件，6 Profile，7 工具链（可引用任何环）。
+    /// </remarks>
     public static int Ring(string packageId)
     {
         var segments = packageId[Workspace.PackagePrefix.Length..].Split('.');
@@ -133,8 +139,11 @@ internal static partial class PackageGrammar
     }
 
     /// <summary>
-    /// 契约包：同环之间只能经契约包往来。<c>.Abstractions</c> 之外，术语表把 <c>Domain</c> 定义为纯契约、无实现包，同样算契约包。
+    /// 契约包。
     /// </summary>
+    /// <remarks>
+    /// 同环之间只能经契约包往来。<c>.Abstractions</c> 之外，术语表把 <c>Domain</c> 定义为纯契约、无实现包，同样算契约包。
+    /// </remarks>
     public static bool IsContract(string packageId)
         => packageId.EndsWith(".Abstractions", StringComparison.Ordinal) || packageId == Workspace.PackagePrefix + "Domain";
 

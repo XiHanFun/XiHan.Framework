@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.OpenAI;
 
 /// <summary>
-/// OpenAI 兼容端点的 Provider：提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。
+/// OpenAI 兼容端点的 Provider。
 /// </summary>
+/// <remarks>
+/// 提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenAIFeature : IFeature
 {

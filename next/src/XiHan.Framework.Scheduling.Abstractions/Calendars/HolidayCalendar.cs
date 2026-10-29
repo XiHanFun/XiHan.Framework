@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 
 /// <summary>
-/// 排除指定日期（整天）的日历；日期按给定时区的墙上日期判断，缺省 UTC。
+/// 排除指定日期（整天）的日历。
 /// </summary>
+/// <remarks>
+/// 日期按给定时区的墙上日期判断，缺省 UTC。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HolidayCalendar : IJobCalendar
 {

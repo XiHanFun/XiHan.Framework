@@ -7,14 +7,20 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// 一次调用在管道内的上下文。不绑定 HTTP；跨进程传播的字段与载体由 RFC-0003 定义。
+/// 一次调用在管道内的上下文。
 /// </summary>
+/// <remarks>
+/// 不绑定 HTTP；跨进程传播的字段与载体由 RFC-0003 定义。
+/// </remarks>
 [ApiLevelAttribute(Stability.Stable, "5.0")]
 public sealed partial class InvocationContext
 {
     /// <summary>
-    /// 调用作用域内的对象袋；派生上下文与源上下文共享同一个实例。
+    /// 调用作用域内的对象袋。
     /// </summary>
+    /// <remarks>
+    /// 派生上下文与源上下文共享同一个实例。
+    /// </remarks>
     private readonly Dictionary<object, object?> _items;
 
     /// <summary>
@@ -26,8 +32,11 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 从已有上下文派生：复制截止时间、Trace 与服务提供器，替换 Baggage 与取消令牌，并共享 <see cref="Items"/>。
+    /// 从已有上下文派生。
     /// </summary>
+    /// <remarks>
+    /// 复制截止时间、Trace 与服务提供器，替换 Baggage 与取消令牌，并共享 <see cref="Items"/>。
+    /// </remarks>
     /// <param name="source">源上下文。</param>
     /// <param name="baggage">派生上下文的 Baggage，调用方已校验。</param>
     /// <param name="cancellationToken">派生上下文的取消令牌。</param>
@@ -45,13 +54,19 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 取消令牌。到达 <see cref="Deadline"/> 时必须触发。
+    /// 取消令牌。
     /// </summary>
+    /// <remarks>
+    /// 到达 <see cref="Deadline"/> 时必须触发。
+    /// </remarks>
     public required CancellationToken CancellationToken { get; init; }
 
     /// <summary>
-    /// 绝对截止时间（UTC）；<see langword="null"/> 表示无截止。下游调用的截止时间不得晚于上游。
+    /// 绝对截止时间（UTC）。
     /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示无截止。下游调用的截止时间不得晚于上游。
+    /// </remarks>
     public DateTimeOffset? Deadline { get; init; }
 
     /// <summary>
@@ -85,8 +100,11 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 随调用传播的键值；键必须符合 <see cref="BaggageKeys.IsWellFormed"/>。
+    /// 随调用传播的键值。
     /// </summary>
+    /// <remarks>
+    /// 键必须符合 <see cref="BaggageKeys.IsWellFormed"/>。
+    /// </remarks>
     public required IReadOnlyDictionary<string, string> Baggage
     {
         get => field;
@@ -94,13 +112,19 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 调用作用域内的对象袋；不跨进程传播。由 <see cref="WithBaggage"/> 派生的上下文共享同一个袋。
+    /// 调用作用域内的对象袋。
     /// </summary>
+    /// <remarks>
+    /// 不跨进程传播。由 <see cref="WithBaggage"/> 派生的上下文共享同一个袋。
+    /// </remarks>
     public IDictionary<object, object?> Items => _items;
 
     /// <summary>
-    /// 调用作用域的服务提供器；不跨进程传播。
+    /// 调用作用域的服务提供器。
     /// </summary>
+    /// <remarks>
+    /// 不跨进程传播。
+    /// </remarks>
     public required IServiceProvider Services { get; init; }
 
     /// <summary>
@@ -113,8 +137,11 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 派生一个新增或覆盖了一项 Baggage 的上下文；其余字段与 <see cref="Items"/> 共享。
+    /// 派生一个新增或覆盖了一项 Baggage 的上下文。
     /// </summary>
+    /// <remarks>
+    /// 其余字段与 <see cref="Items"/> 共享。
+    /// </remarks>
     public InvocationContext WithBaggage(string key, string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -132,8 +159,11 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 派生一个使用另一个取消令牌的上下文（例如把截止时间落为取消）；其余字段与 <see cref="Items"/> 共享。
+    /// 派生一个使用另一个取消令牌的上下文（例如把截止时间落为取消）。
     /// </summary>
+    /// <remarks>
+    /// 其余字段与 <see cref="Items"/> 共享。
+    /// </remarks>
     public InvocationContext WithCancellation(CancellationToken cancellationToken) => new(this, Baggage, cancellationToken);
 
     /// <summary>
@@ -142,8 +172,11 @@ public sealed partial class InvocationContext
     public bool IsExpired(DateTimeOffset now) => Deadline is { } deadline && now >= deadline;
 
     /// <summary>
-    /// 在 <paramref name="now"/> 时刻距截止时间的剩余时长；无截止时为 <see langword="null"/>，已超时为零。
+    /// 在 <paramref name="now"/> 时刻距截止时间的剩余时长。
     /// </summary>
+    /// <remarks>
+    /// 无截止时为 <see langword="null"/>，已超时为零。
+    /// </remarks>
     public TimeSpan? RemainingTime(DateTimeOffset now)
     {
         if (Deadline is not { } deadline)
@@ -157,8 +190,11 @@ public sealed partial class InvocationContext
     }
 
     /// <summary>
-    /// 校验 Baggage 的每个键都符合 <c>xihan.&lt;name&gt;</c> 格式；通过时原样返回字典。
+    /// 校验 Baggage 的每个键都符合 <c>xihan.&lt;name&gt;</c> 格式。
     /// </summary>
+    /// <remarks>
+    /// 通过时原样返回字典。
+    /// </remarks>
     private static IReadOnlyDictionary<string, string> ValidateBaggage(IReadOnlyDictionary<string, string> baggage)
     {
         ArgumentNullException.ThrowIfNull(baggage);

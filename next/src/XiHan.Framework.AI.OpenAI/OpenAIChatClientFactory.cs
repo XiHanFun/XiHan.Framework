@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.OpenAI;
 
 /// <summary>
-/// <c>Kind = openai</c> 的聊天客户端工厂：<c>OpenAIClient.GetChatClient(ChatModel).AsIChatClient()</c> 外包一层函数调用循环，工具调用自动执行。
+/// <c>Kind = openai</c> 的聊天客户端工厂。
 /// </summary>
+/// <remarks>
+/// <c>OpenAIClient.GetChatClient(ChatModel).AsIChatClient()</c> 外包一层函数调用循环，工具调用自动执行。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenAIChatClientFactory : IChatClientFactory
 {

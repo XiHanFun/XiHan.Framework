@@ -14,18 +14,27 @@ namespace XiHan.Framework.Persistence.Abstractions.Repositories;
 public sealed class RepositoryRegistrations
 {
     /// <summary>
-    /// 按登记顺序保存的注册动作；每个动作把一种实体交给 Provider 注册。
+    /// 按登记顺序保存的注册动作。
     /// </summary>
+    /// <remarks>
+    /// 每个动作把一种实体交给 Provider 注册。
+    /// </remarks>
     private readonly List<Action<IServiceCollection, IRepositoryRegistrar>> _registrations = [];
 
     /// <summary>
-    /// <see cref="ApplyTo"/> 之后记住的服务集合；为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// <see cref="ApplyTo"/> 之后记住的服务集合。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// </remarks>
     private IServiceCollection? _services;
 
     /// <summary>
-    /// <see cref="ApplyTo"/> 之后记住的 Provider 注册器；为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// <see cref="ApplyTo"/> 之后记住的 Provider 注册器。
     /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// </remarks>
     private IRepositoryRegistrar? _registrar;
 
     /// <summary>
@@ -50,8 +59,11 @@ public sealed class RepositoryRegistrations
     }
 
     /// <summary>
-    /// 让 Provider 完成全部注册；此后再登记的实体立即注册。
+    /// 让 Provider 完成全部注册。
     /// </summary>
+    /// <remarks>
+    /// 此后再登记的实体立即注册。
+    /// </remarks>
     public void ApplyTo(IServiceCollection services, IRepositoryRegistrar registrar)
     {
         ArgumentNullException.ThrowIfNull(services);

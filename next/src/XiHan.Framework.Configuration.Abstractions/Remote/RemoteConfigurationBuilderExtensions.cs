@@ -13,8 +13,11 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 public static class RemoteConfigurationBuilderExtensions
 {
     /// <summary>
-    /// 添加远程配置源：构建时同步加载一次（受 <see cref="RemoteConfigurationOptions.LoadTimeout"/> 约束），之后按 <see cref="RemoteConfigurationOptions.PollInterval"/> 轮询并在变化时触发重载。
+    /// 添加远程配置源。
     /// </summary>
+    /// <remarks>
+    /// 构建时同步加载一次（受 <see cref="RemoteConfigurationOptions.LoadTimeout"/> 约束），之后按 <see cref="RemoteConfigurationOptions.PollInterval"/> 轮询并在变化时触发重载。
+    /// </remarks>
     public static IConfigurationBuilder AddXiHanRemoteConfiguration(this IConfigurationBuilder builder, IRemoteConfigurationClient client, RemoteConfigurationOptions options)
     {
         ArgumentNullException.ThrowIfNull(builder);

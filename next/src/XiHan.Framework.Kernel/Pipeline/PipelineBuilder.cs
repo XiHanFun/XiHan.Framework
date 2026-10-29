@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// 按固定阶段组装执行管道（RFC-0004）：特性在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。
+/// 按固定阶段组装执行管道（RFC-0004）。
 /// </summary>
+/// <remarks>
+/// 特性在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PipelineBuilder
 {
@@ -24,13 +27,19 @@ public sealed class PipelineBuilder
     private readonly List<Registration> _registrations = [];
 
     /// <summary>
-    /// 按（类型，名字）索引的注册，用于去重；类型的约束目标经 <see cref="FindByType"/> 解析。
+    /// 按（类型，名字）索引的注册，用于去重。
     /// </summary>
+    /// <remarks>
+    /// 类型的约束目标经 <see cref="FindByType"/> 解析。
+    /// </remarks>
     private readonly Dictionary<MiddlewareKey, Registration> _byKey = [];
 
     /// <summary>
-    /// 在 <see cref="PipelineStage.Transaction"/> 阶段末尾添加中间件；等价于 <c>UseAt&lt;T&gt;(PipelineStage.Transaction)</c>。
+    /// 在 <see cref="PipelineStage.Transaction"/> 阶段末尾添加中间件。
     /// </summary>
+    /// <remarks>
+    /// 等价于 <c>UseAt&lt;T&gt;(PipelineStage.Transaction)</c>。
+    /// </remarks>
     public PipelineBuilder Use<TMiddleware>()
         where TMiddleware : class, IPipelineMiddleware
         => UseAt<TMiddleware>(PipelineStage.Transaction);
@@ -53,9 +62,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 在指定阶段添加一个带名字的中间件实例：同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。
-    /// 按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用。
+    /// 在指定阶段添加一个带名字的中间件实例。
     /// </summary>
+    /// <remarks>
+    /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用。
+    /// </remarks>
     public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -64,9 +75,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之前；两者必须在同一阶段。
-    /// 跨包依赖必须这样声明：阶段内的基准次序（归属清单 ID 字典序）只保证可复现，不表达依赖。
+    /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之前。
     /// </summary>
+    /// <remarks>
+    /// 两者必须在同一阶段。跨包依赖必须这样声明：阶段内的基准次序（归属清单 ID 字典序）只保证可复现，不表达依赖。
+    /// </remarks>
     public PipelineBuilder Before<TMiddleware, TOther>()
         where TMiddleware : class, IPipelineMiddleware
         where TOther : class, IPipelineMiddleware
@@ -77,9 +90,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之后；两者必须在同一阶段。
-    /// 要用到另一个包中间件产出（认证后的主体、解析后的租户）的中间件必须这样声明，基准次序不表达依赖。
+    /// 约束 <typeparamref name="TMiddleware"/> 位于 <typeparamref name="TOther"/> 之后。
     /// </summary>
+    /// <remarks>
+    /// 两者必须在同一阶段。要用到另一个包中间件产出（认证后的主体、解析后的租户）的中间件必须这样声明，基准次序不表达依赖。
+    /// </remarks>
     public PipelineBuilder After<TMiddleware, TOther>()
         where TMiddleware : class, IPipelineMiddleware
         where TOther : class, IPipelineMiddleware
@@ -90,13 +105,19 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 计算最终顺序。约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>，约束引用未注册或跨阶段的中间件抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// 计算最终顺序。
     /// </summary>
+    /// <remarks>
+    /// 约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>，约束引用未注册或跨阶段的中间件抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// </remarks>
     public IReadOnlyList<MiddlewareDescriptor> Describe() => Order().Select(static r => r.Descriptor).ToList();
 
     /// <summary>
-    /// 按 RFC-0004 的格式打印最终顺序，一行一个中间件；带名字的实例在类型名后以 <c>[名字]</c> 标出。
+    /// 按 RFC-0004 的格式打印最终顺序，一行一个中间件。
     /// </summary>
+    /// <remarks>
+    /// 带名字的实例在类型名后以 <c>[名字]</c> 标出。
+    /// </remarks>
     public string Dump()
     {
         var builder = new StringBuilder();
@@ -115,8 +136,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 构建管道委托。每次调用时中间件从 <see cref="InvocationContext.Services"/> 解析；<paramref name="terminal"/> 在所有中间件之后执行。
+    /// 构建管道委托。
     /// </summary>
+    /// <remarks>
+    /// 每次调用时中间件从 <see cref="InvocationContext.Services"/> 解析；<paramref name="terminal"/> 在所有中间件之后执行。
+    /// </remarks>
     public PipelineStep Build(PipelineStep terminal)
     {
         ArgumentNullException.ThrowIfNull(terminal);
@@ -134,8 +158,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 登记一个中间件：校验阶段合法、（类型，名字）未重复，并记录注册序号作为最终排序的决胜键。
+    /// 登记一个中间件。
     /// </summary>
+    /// <remarks>
+    /// 校验阶段合法、（类型，名字）未重复，并记录注册序号作为最终排序的决胜键。
+    /// </remarks>
     /// <param name="middleware">中间件类型。</param>
     /// <param name="name">实例名字；按类型登记为空。</param>
     /// <param name="stage">所属阶段。</param>
@@ -165,14 +192,20 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 取按类型唯一确定的注册；未注册时抛出 <see cref="KernelErrors.PipelineRegistration"/>。约束必须在注册之后声明。
+    /// 取按类型唯一确定的注册。
     /// </summary>
+    /// <remarks>
+    /// 未注册时抛出 <see cref="KernelErrors.PipelineRegistration"/>。约束必须在注册之后声明。
+    /// </remarks>
     private Registration Require(Type middleware)
         => FindByType(middleware) ?? throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{middleware.FullName}' is not registered, so no ordering constraint can be declared for it.");
 
     /// <summary>
-    /// 按类型找注册：恰好一个返回它；没有返回空；多个（按名字登记的多个实例）抛出，因为按类型的约束无法指向其中某一个。
+    /// 按类型找注册。
     /// </summary>
+    /// <remarks>
+    /// 恰好一个返回它；没有返回空；多个（按名字登记的多个实例）抛出，因为按类型的约束无法指向其中某一个。
+    /// </remarks>
     private Registration? FindByType(Type middleware)
     {
         Registration? found = null;
@@ -195,8 +228,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 计算全部中间件的最终顺序：按阶段枚举顺序逐阶段处理，阶段内先按位置、归属、注册序号排出基准次序，再按相对约束调整。
+    /// 计算全部中间件的最终顺序。
     /// </summary>
+    /// <remarks>
+    /// 按阶段枚举顺序逐阶段处理，阶段内先按位置、归属、注册序号排出基准次序，再按相对约束调整。
+    /// </remarks>
     private List<Registration> Order()
     {
         var result = new List<Registration>(_registrations.Count);
@@ -217,8 +253,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 在一个阶段内按 Before/After 约束做稳定拓扑排序：无约束时保持 <paramref name="candidates"/> 的次序，约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>。
+    /// 在一个阶段内按 Before/After 约束做稳定拓扑排序。
     /// </summary>
+    /// <remarks>
+    /// 无约束时保持 <paramref name="candidates"/> 的次序，约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>。
+    /// </remarks>
     /// <param name="candidates">该阶段的中间件，已按基准次序排好。</param>
     /// <param name="stage">所属阶段，用于错误信息与跨阶段校验。</param>
     private List<Registration> SortByConstraints(List<Registration> candidates, PipelineStage stage)
@@ -273,8 +312,11 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
-    /// 解析约束指向的中间件：必须已注册、按类型唯一且与 <paramref name="source"/> 在同一阶段，否则抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// 解析约束指向的中间件。
     /// </summary>
+    /// <remarks>
+    /// 必须已注册、按类型唯一且与 <paramref name="source"/> 在同一阶段，否则抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// </remarks>
     /// <param name="source">声明约束的中间件。</param>
     /// <param name="target">约束指向的中间件类型。</param>
     /// <param name="stage">当前阶段。</param>
@@ -316,8 +358,11 @@ public sealed class PipelineBuilder
         public Type Middleware { get; } = middleware;
 
         /// <summary>
-        /// 实例名字；按类型登记为空。
+        /// 实例名字。
         /// </summary>
+        /// <remarks>
+        /// 按类型登记为空。
+        /// </remarks>
         public string? Name { get; } = name;
 
         /// <summary>

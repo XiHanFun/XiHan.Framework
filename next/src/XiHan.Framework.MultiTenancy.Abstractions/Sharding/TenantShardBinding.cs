@@ -9,14 +9,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 把当前调用的租户分片表示成连接绑定，供持久化 Provider 在作用域内创建客户端时替换应用默认连接：绑定主值是分片连接串，属性并入分片属性并带 <c>tenant</c> 与 <c>provider</c>。
+/// 把当前调用的租户分片表示成连接绑定。
 /// </summary>
+/// <remarks>
+/// 供持久化 Provider 在作用域内创建客户端时替换应用默认连接。绑定主值是分片连接串，属性并入分片属性并带 <c>tenant</c> 与 <c>provider</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class TenantShardBinding
 {
     /// <summary>
-    /// 当前作用域的调用带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>。读的是 Tenant 阶段写进上下文的分片，不触存储、不阻塞。
+    /// 当前作用域的调用带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>。
     /// </summary>
+    /// <remarks>
+    /// 读的是 Tenant 阶段写进上下文的分片，不触存储、不阻塞。
+    /// </remarks>
     public static Maybe<BindingValue> Resolve(IServiceProvider scopedServices, string bindingName, string bindingType, Maybe<BindingValue> fallback)
     {
         ArgumentNullException.ThrowIfNull(scopedServices);

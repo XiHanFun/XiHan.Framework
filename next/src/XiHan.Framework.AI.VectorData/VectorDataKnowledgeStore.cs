@@ -11,8 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// <see cref="IKnowledgeStore"/> 到 <see cref="VectorStore"/> 的映射：每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成。
+/// <see cref="IKnowledgeStore"/> 到 <see cref="VectorStore"/> 的映射。
 /// </summary>
+/// <remarks>
+/// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeStore : IKnowledgeStore
 {

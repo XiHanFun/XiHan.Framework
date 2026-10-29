@@ -10,8 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeIdGenerator"/>：编码、同毫秒序列、序列用尽等下一毫秒、回拨等待与拒绝、没有机器位拒绝、并发唯一与吞吐。
+/// <see cref="SnowflakeIdGenerator"/>。
 /// </summary>
+/// <remarks>
+/// 编码、同毫秒序列、序列用尽等下一毫秒、回拨等待与拒绝、没有机器位拒绝、并发唯一与吞吐。
+/// </remarks>
 public sealed class SnowflakeIdGeneratorTests
 {
     /// <summary>

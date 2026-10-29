@@ -18,13 +18,19 @@ public sealed record AIChatRequest
     public required IReadOnlyList<ChatMessage> Messages { get; init; }
 
     /// <summary>
-    /// Provider 名；空取默认 Provider。
+    /// Provider 名。
     /// </summary>
+    /// <remarks>
+    /// 空取默认 Provider。
+    /// </remarks>
     public string? Provider { get; init; }
 
     /// <summary>
-    /// 提示词模板名；渲染结果作为首条 <c>System</c> 消息。
+    /// 提示词模板名。
     /// </summary>
+    /// <remarks>
+    /// 渲染结果作为首条 <c>System</c> 消息。
+    /// </remarks>
     public string? Prompt { get; init; }
 
     /// <summary>
@@ -33,17 +39,26 @@ public sealed record AIChatRequest
     public IReadOnlyDictionary<string, object?>? PromptArguments { get; init; }
 
     /// <summary>
-    /// 要带上的工具名（目录里的名字）；空表示不带工具。
+    /// 要带上的工具名（目录里的名字）。
     /// </summary>
+    /// <remarks>
+    /// 空表示不带工具。
+    /// </remarks>
     public IReadOnlyList<string> Tools { get; init; } = [];
 
     /// <summary>
-    /// 模型选项；其 <c>Tools</c> 会被目录绑定的工具覆盖。
+    /// 模型选项。
     /// </summary>
+    /// <remarks>
+    /// 其 <c>Tools</c> 会被目录绑定的工具覆盖。
+    /// </remarks>
     public ChatOptions? Options { get; init; }
 
     /// <summary>
-    /// 跳过护栏；默认 false。
+    /// 跳过护栏。
     /// </summary>
+    /// <remarks>
+    /// 默认 false。
+    /// </remarks>
     public bool SkipGuardrails { get; init; }
 }

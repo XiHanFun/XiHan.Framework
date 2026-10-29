@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// S3 命名实例：配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// S3 命名实例。
 /// </summary>
+/// <remarks>
+/// 配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// </remarks>
 public sealed class S3NamedStoreTests
 {
     /// <summary>

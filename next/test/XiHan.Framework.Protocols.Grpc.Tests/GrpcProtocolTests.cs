@@ -22,8 +22,11 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Protocols.Grpc.Tests;
 
 /// <summary>
-/// gRPC 协议适配器端到端：真实的 gRPC 客户端经 TestServer 调用一元方法，请求按线格式手工拼出，响应按 Schema 解码；失败映射、尾部元数据、本地化、按契约授权、<c>.proto</c> 端点、启动校验。
+/// gRPC 协议适配器端到端。
 /// </summary>
+/// <remarks>
+/// 真实的 gRPC 客户端经 TestServer 调用一元方法，请求按线格式手工拼出，响应按 Schema 解码；失败映射、尾部元数据、本地化、按契约授权、<c>.proto</c> 端点、启动校验。
+/// </remarks>
 public sealed class GrpcProtocolTests
 {
     /// <summary>

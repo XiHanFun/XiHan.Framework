@@ -8,8 +8,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 进程内的密钥库：每次写入换版本；可让某个名字返回拒绝，或整体抛出。
+/// 进程内的密钥库。
 /// </summary>
+/// <remarks>
+/// 每次写入换版本；可让某个名字返回拒绝，或整体抛出。
+/// </remarks>
 internal sealed class InMemorySecretStore : ISecretStore
 {
     /// <summary>

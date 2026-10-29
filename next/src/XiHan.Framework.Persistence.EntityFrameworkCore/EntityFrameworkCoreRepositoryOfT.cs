@@ -12,27 +12,38 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core 仓储：读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。
-/// 批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
+/// EF Core 仓储。
 /// </summary>
+/// <remarks>
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {
     /// <summary>
-    /// 实体是否实现 <see cref="ISoftDeletable"/>；按闭合泛型只判断一次，查询过滤据此决定是否追加删除标记条件。
+    /// 实体是否实现 <see cref="ISoftDeletable"/>。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加删除标记条件。
+    /// </remarks>
     private static readonly bool _isSoftDeletable = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 实体是否实现 <see cref="IMultiTenant"/>；按闭合泛型只判断一次，查询过滤据此决定是否追加租户条件。
+    /// 实体是否实现 <see cref="IMultiTenant"/>。
     /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加租户条件。
+    /// </remarks>
     private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 本作用域的工作单元；提供 DbContext、事务与当前租户。
+    /// 本作用域的工作单元。
     /// </summary>
+    /// <remarks>
+    /// 提供 DbContext、事务与当前租户。
+    /// </remarks>
     private readonly EntityFrameworkCoreUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
@@ -375,8 +386,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 活动工作单元的 DbContext；工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 活动工作单元的 DbContext。
     /// </summary>
+    /// <remarks>
+    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// </remarks>
     private DbContext Context => _unitOfWork.State == UnitOfWorkState.Active
         ? _unitOfWork.Context
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
@@ -426,8 +440,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 一次 <c>IN</c> 查询取回这些标识对应的行（不做可见性过滤，与 <see cref="FindAsync"/> 一样在内存里判定），按标识索引；已跟踪的行由 EF 解析为同一实例。
+    /// 一次 <c>IN</c> 查询取回这些标识对应的行。
     /// </summary>
+    /// <remarks>
+    /// 不做可见性过滤，与 <see cref="FindAsync"/> 一样在内存里判定。按标识索引。已跟踪的行由 EF 解析为同一实例。
+    /// </remarks>
     private async Task<Dictionary<TKey, TEntity>> LoadAsync(List<TKey> ids, CancellationToken cancellationToken)
     {
         // 用 EF.Property 按名字访问主键列，表达式树里不需要把 TEntity 转成接口；标识列表作为参数翻译成 IN
@@ -436,8 +453,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 在跟踪实例上准备一次更新：传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例；最后刷新审计字段。
+    /// 在跟踪实例上准备一次更新。
     /// </summary>
+    /// <remarks>
+    /// 传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例；最后刷新审计字段。
+    /// </remarks>
     private Error? Stage(TEntity existing, TEntity entity, DateTimeOffset now)
     {
         if (!ReferenceEquals(existing, entity))
@@ -456,8 +476,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 在跟踪实例上准备一次删除：软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
+    /// 在跟踪实例上准备一次删除。
     /// </summary>
+    /// <remarks>
+    /// 软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
+    /// </remarks>
     private void StageRemoval(TEntity existing, DateTimeOffset now)
     {
         if (!PersistenceConventions.TrySoftDelete(existing, now))
@@ -505,8 +528,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 保存变更；并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。
+    /// 保存变更。
     /// </summary>
+    /// <remarks>
+    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。
+    /// </remarks>
     private async Task<Result> SaveAsync(CancellationToken cancellationToken)
     {
         try

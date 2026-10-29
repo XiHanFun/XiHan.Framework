@@ -22,16 +22,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 
 /// <summary>
-/// 宿主代收发预签名地址的端点：<c>GET &lt;BasePath&gt;/{container}/{**key}</c> 下载（单个 <c>Range</c> 区间回 206 与 <c>Content-Range</c>，不可满足回 416），
-/// <c>PUT</c> 同一路径上传整个对象或分片上传的一片（回 200 与 <c>ETag</c>）。地址由 <see cref="HostedBlobUrlSigner"/> 签出，验签失败或过期回 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）。
-/// 端点经内核管道（Observe 照常记录），不要求凭据：签名即授权。上传解除请求体大小上限，单对象上限由存储自己把关。地址带 <c>x-store</c> 时经 <see cref="BlobStores"/> 取命名实例，否则用缺省的 <see cref="IBlobStore"/>。
+/// 宿主代收发预签名地址的端点。
 /// </summary>
+/// <remarks>
+/// <c>GET &lt;BasePath&gt;/{container}/{**key}</c> 下载（单个 <c>Range</c> 区间回 206 与 <c>Content-Range</c>，不可满足回 416），<c>PUT</c> 同一路径上传整个对象或分片上传的一片（回 200 与 <c>ETag</c>）。地址由 <see cref="HostedBlobUrlSigner"/> 签出，验签失败或过期回 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）。端点经内核管道（Observe 照常记录），不要求凭据：签名即授权。上传解除请求体大小上限，单对象上限由存储自己把关。地址带 <c>x-store</c> 时经 <see cref="BlobStores"/> 取命名实例，否则用缺省的 <see cref="IBlobStore"/>。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 映射端点；路由前缀取 <see cref="HostedBlobUrlOptions.BasePath"/>。要求已装配 <see cref="HostedBlobUrlFeature"/> 且 <c>UseXiHan()</c> 在路由之后。
+    /// 映射端点。
     /// </summary>
+    /// <remarks>
+    /// 路由前缀取 <see cref="HostedBlobUrlOptions.BasePath"/>。要求已装配 <see cref="HostedBlobUrlFeature"/> 且 <c>UseXiHan()</c> 在路由之后。
+    /// </remarks>
     public static IEndpointRouteBuilder MapXiHanBlobs(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -45,8 +49,11 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 路由值的文本；缺失为空串（随后按标识不合法处理）。
+    /// 路由值的文本。
     /// </summary>
+    /// <remarks>
+    /// 缺失为空串（随后按标识不合法处理）。
+    /// </remarks>
     private static string RouteValue(HttpContext http, string name) => http.Request.RouteValues[name] as string ?? string.Empty;
 
     /// <summary>
@@ -129,8 +136,11 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 上传：验签（地址限定了内容类型时请求必须一致），整个对象经 <see cref="IBlobStore"/> 写入，分片经 <see cref="IBlobMultipartStore"/> 上传。
+    /// 上传。
     /// </summary>
+    /// <remarks>
+    /// 验签（地址限定了内容类型时请求必须一致），整个对象经 <see cref="IBlobStore"/> 写入，分片经 <see cref="IBlobMultipartStore"/> 上传。
+    /// </remarks>
     private static async Task UploadAsync(HttpContext http, HostedBlobUrlSigner signer, string container, string key)
     {
         var context = Context(http);
@@ -204,8 +214,11 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 地址指向的存储：带 <c>x-store</c> 的经 <see cref="BlobStores"/> 取命名实例（没装配注册表即不存在），否则取缺省实例。
+    /// 地址指向的存储。
     /// </summary>
+    /// <remarks>
+    /// 带 <c>x-store</c> 的经 <see cref="BlobStores"/> 取命名实例（没装配注册表即不存在），否则取缺省实例。
+    /// </remarks>
     private static async ValueTask<Result<IBlobStore>> StoreOf(HttpContext http, VerifiedBlobUrl grant, CancellationToken cancellationToken)
     {
         if (grant.Store is not { } name)
@@ -219,8 +232,11 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 请求的范围：只认单个 <c>bytes</c> 区间（多区间与不合法的头按整读，RFC 9110 允许忽略）；后缀区间（<c>bytes=-n</c>）先 HEAD 取总长。
+    /// 请求的范围。
     /// </summary>
+    /// <remarks>
+    /// 只认单个 <c>bytes</c> 区间（多区间与不合法的头按整读，RFC 9110 允许忽略）；后缀区间（<c>bytes=-n</c>）先 HEAD 取总长。
+    /// </remarks>
     private static async ValueTask<Result<Maybe<BlobRange>>> RangeOf(HttpContext http, IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
         var header = http.Request.GetTypedHeaders().Range;
@@ -252,8 +268,11 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 本次请求的调用上下文；没有经过 <c>UseXiHan()</c> 是装配错误。
+    /// 本次请求的调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 没有经过 <c>UseXiHan()</c> 是装配错误。
+    /// </remarks>
     private static InvocationContext Context(HttpContext http)
         => http.GetXiHanContext().TryGetValue(out var context)
             ? context

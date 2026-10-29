@@ -22,8 +22,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为：显式 Provider 顶替内存实现、Tenant 阶段解析数据库里的租户、目录缓存的命中 / 失效 / 存活时间 / 容量、批量写入与删除及其对分片解析器的失效、枚举上限、基础设施异常原样抛出、选项解析。
+/// 数据库 Provider 特有的行为。
 /// </summary>
+/// <remarks>
+/// 显式 Provider 顶替内存实现、Tenant 阶段解析数据库里的租户、目录缓存的命中 / 失效 / 存活时间 / 容量、批量写入与删除及其对分片解析器的失效、枚举上限、基础设施异常原样抛出、选项解析。
+/// </remarks>
 public sealed class DatabaseMultiTenancyTests
 {
     /// <summary>
