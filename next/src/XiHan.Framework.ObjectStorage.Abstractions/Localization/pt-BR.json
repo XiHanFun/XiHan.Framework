@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "O intervalo que começa no byte {offset} não pode ser atendido: o objeto tem {length} bytes.",
   "objectstorage.signed_url.expired": "A URL assinada expirou em {expiresAt}.",
   "objectstorage.signed_url.invalid": "A URL assinada é inválida.",
+  "objectstorage.store.definition_invalid": "A definição da instância de armazenamento '{store}' é inválida: {reason}",
+  "objectstorage.store.not_found": "A instância de armazenamento '{store}' não está registrada.",
+  "objectstorage.store.provider_unknown": "A instância de armazenamento '{store}' usa o provedor '{provider}', que não está instalado.",
   "objectstorage.store.unavailable": "O armazenamento de objetos está indisponível: {reason}"
 }

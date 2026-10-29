@@ -21,9 +21,10 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。
 /// 范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。
 /// 不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。
+/// 经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner
+public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable
 {
     /// <summary>
     /// 自定义元数据在 S3 头里的前缀。
@@ -51,14 +52,45 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 是否拥有客户端（释放实例时一并释放）。
+    /// </summary>
+    private readonly bool _ownsClient;
+
+    /// <summary>
+    /// 创建；客户端归调用方（或容器）所有。
     /// </summary>
     public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
+        : this(client, options, clock, ownsClient: false)
+    {
+    }
+
+    /// <summary>
+    /// 创建；<paramref name="ownsClient"/> 为真时释放实例即释放客户端。
+    /// </summary>
+    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, bool ownsClient)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _ownsClient = ownsClient;
     }
+
+    /// <summary>
+    /// 释放：只在拥有客户端时释放客户端。
+    /// </summary>
+    public void Dispose()
+    {
+        if (_ownsClient)
+        {
+            _client.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 连通性探测：按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项）。
+    /// </summary>
+    internal ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+        => S3ObjectStorageFeature.ProbeAsync(_client, _options.HealthBucket, cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)

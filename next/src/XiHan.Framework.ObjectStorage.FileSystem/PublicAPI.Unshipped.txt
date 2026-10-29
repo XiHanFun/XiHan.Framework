@@ -16,6 +16,11 @@ XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.RootPath.get -> str
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.StartAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload!>>
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.UploadPartAsync(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, int partNumber, System.IO.Stream! content, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!>>
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.UsedBytes.get -> long
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.FileSystemBlobStoreProvider(System.TimeProvider! clock) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.Name.get -> string!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.FileSystemObjectStorageFeature() -> void
@@ -34,11 +39,13 @@ XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.Multipar
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MultipartExpiry.init -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.RootPath.get -> string!
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.RootPath.init -> void
+const XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.ProviderName = "filesystem" -> string!
 const XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.HealthName = "objectstorage.filesystem.capacity" -> string!
 const XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.ConfigurationSection = "XiHan:ObjectStorage:FileSystem" -> string!
 override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.GetHashCode() -> int
 override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.ToString() -> string!
 static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions!
+static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FromSettings(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! settings) -> XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions!
 static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.operator !=(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? left, XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? right) -> bool
 static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.operator ==(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? left, XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? right) -> bool

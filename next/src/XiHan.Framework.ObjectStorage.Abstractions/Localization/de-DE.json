@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "Der Bereich ab Byte {offset} kann nicht erfüllt werden: Das Objekt ist {length} Bytes lang.",
   "objectstorage.signed_url.expired": "Die signierte URL ist am {expiresAt} abgelaufen.",
   "objectstorage.signed_url.invalid": "Die signierte URL ist ungültig.",
+  "objectstorage.store.definition_invalid": "Die Definition der Speicherinstanz '{store}' ist ungültig: {reason}",
+  "objectstorage.store.not_found": "Die Speicherinstanz '{store}' ist nicht registriert.",
+  "objectstorage.store.provider_unknown": "Die Speicherinstanz '{store}' verwendet den Anbieter '{provider}', der nicht installiert ist.",
   "objectstorage.store.unavailable": "Der Objektspeicher ist nicht verfügbar: {reason}"
 }

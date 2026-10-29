@@ -12,5 +12,8 @@
   "objectstorage.range.not_satisfiable": "从第 {offset} 字节起的范围不可满足：对象长 {length} 字节。",
   "objectstorage.signed_url.expired": "预签名地址已于 {expiresAt} 过期。",
   "objectstorage.signed_url.invalid": "预签名地址无效。",
+  "objectstorage.store.definition_invalid": "存储实例 '{store}' 的定义不合法：{reason}",
+  "objectstorage.store.not_found": "存储实例 '{store}' 未登记。",
+  "objectstorage.store.provider_unknown": "存储实例 '{store}' 使用的 Provider '{provider}' 未装配。",
   "objectstorage.store.unavailable": "对象存储不可用：{reason}"
 }

@@ -10,7 +10,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
 /// S3 对象存储选项。从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；
-/// 绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。
+/// 绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -75,33 +75,17 @@ public sealed record S3ObjectStorageOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// 命名实例的设置键；探测间隔由注册表统一（<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>），不在其中。
+    /// </summary>
+    private static readonly string[] _settingKeys = ["ServiceUrl", "Region", "AccessKey", "SecretKey", "ForcePathStyle", "EnsureBuckets", "HealthBucket"];
+
+    /// <summary>
     /// 从配置读取，再用绑定（若有）覆盖。
     /// </summary>
     public static S3ObjectStorageOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        var options = new S3ObjectStorageOptions
-        {
-            ServiceUrl = Text(configuration, "ServiceUrl"),
-            AccessKey = Text(configuration, "AccessKey"),
-            SecretKey = Text(configuration, "SecretKey"),
-            HealthBucket = Text(configuration, "HealthBucket"),
-        };
-        if (Text(configuration, "Region") is { } region)
-        {
-            options = options with { Region = region };
-        }
-
-        if (configuration[$"{ConfigurationSection}:ForcePathStyle"] is { } pathStyle)
-        {
-            options = options with { ForcePathStyle = ParseBoolean(pathStyle, "ForcePathStyle") };
-        }
-
-        if (configuration[$"{ConfigurationSection}:EnsureBuckets"] is { } ensure)
-        {
-            options = options with { EnsureBuckets = ParseBoolean(ensure, "EnsureBuckets") };
-        }
-
+        var options = Parse(name => configuration[$"{ConfigurationSection}:{name}"], ConfigurationSection + ":");
         if (configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"] is { } probe)
         {
             options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
@@ -134,8 +118,53 @@ public sealed record S3ObjectStorageOptions
 
             if (value.Property("forcePathStyle").TryGetValue(out var boundPathStyle))
             {
-                options = options with { ForcePathStyle = ParseBoolean(boundPathStyle, "forcePathStyle") };
+                options = options with { ForcePathStyle = ParseBoolean(boundPathStyle, "The binding property forcePathStyle") };
             }
+        }
+
+        return options;
+    }
+
+    /// <summary>
+    /// 从命名实例的设置读取（键同配置节，不区分大小写；没有绑定覆盖）：未知的键抛出。
+    /// </summary>
+    public static S3ObjectStorageOptions FromSettings(IReadOnlyDictionary<string, string> settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var lookup = new Dictionary<string, string>(settings, StringComparer.OrdinalIgnoreCase);
+        if (lookup.Keys.FirstOrDefault(static key => !_settingKeys.Contains(key, StringComparer.OrdinalIgnoreCase)) is { } unknown)
+        {
+            throw new ArgumentException($"Unknown S3 setting '{unknown}'; the known settings are {string.Join(", ", _settingKeys)}.", nameof(settings));
+        }
+
+        return Parse(name => lookup.TryGetValue(name, out var value) ? value : null, string.Empty);
+    }
+
+    /// <summary>
+    /// 按名读取连接与行为各项（不含探测间隔）；<paramref name="prefix"/> 只用于报错。
+    /// </summary>
+    private static S3ObjectStorageOptions Parse(Func<string, string?> read, string prefix)
+    {
+        var options = new S3ObjectStorageOptions
+        {
+            ServiceUrl = Text(read, "ServiceUrl"),
+            AccessKey = Text(read, "AccessKey"),
+            SecretKey = Text(read, "SecretKey"),
+            HealthBucket = Text(read, "HealthBucket"),
+        };
+        if (Text(read, "Region") is { } region)
+        {
+            options = options with { Region = region };
+        }
+
+        if (read("ForcePathStyle") is { } pathStyle)
+        {
+            options = options with { ForcePathStyle = ParseBoolean(pathStyle, prefix + "ForcePathStyle") };
+        }
+
+        if (read("EnsureBuckets") is { } ensure)
+        {
+            options = options with { EnsureBuckets = ParseBoolean(ensure, prefix + "EnsureBuckets") };
         }
 
         return options;
@@ -144,12 +173,12 @@ public sealed record S3ObjectStorageOptions
     /// <summary>
     /// 读一个非空文本值；缺失或空白为 <see langword="null"/>。
     /// </summary>
-    private static string? Text(IConfiguration configuration, string name)
-        => configuration[$"{ConfigurationSection}:{name}"] is { } value && !string.IsNullOrWhiteSpace(value) ? value : null;
+    private static string? Text(Func<string, string?> read, string name)
+        => read(name) is { } value && !string.IsNullOrWhiteSpace(value) ? value : null;
 
     /// <summary>
-    /// 解析布尔值；不是 <c>true</c> / <c>false</c> 时抛出。
+    /// 解析布尔值；不是 <c>true</c> / <c>false</c> 时抛出，<paramref name="name"/> 是报错用的全名。
     /// </summary>
     private static bool ParseBoolean(string text, string name)
-        => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{ConfigurationSection}:{name} must be 'true' or 'false', but was '{text}'.");
+        => bool.TryParse(text, out var value) ? value : throw new ArgumentException($"{name} must be 'true' or 'false', but was '{text}'.");
 }

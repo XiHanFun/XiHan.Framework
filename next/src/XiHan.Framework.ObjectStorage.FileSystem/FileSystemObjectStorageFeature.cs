@@ -9,13 +9,14 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
+using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储的能力包入口：默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。另有显式 Provider 被选中时只注册具体类型，不绑定契约。
+/// 文件系统对象存储的能力包入口：默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。另有显式 Provider 被选中时只注册具体类型，不绑定契约。另登记命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FileSystemObjectStorageFeature : IHostedFeature
@@ -63,6 +64,8 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         context.Services.AddSingleton<FileSystemBlobStore>();
         // 存储自己就是健康项的贡献者：直接看已用量与总配额
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
+        // 命名实例：按定义（配置 XiHan:ObjectStorage:Stores 或应用运行时登记）各用各的根目录
+        context.Services.AddBlobStoreProvider<FileSystemBlobStoreProvider>(context.Configuration);
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
         {
             context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<FileSystemBlobStore>());

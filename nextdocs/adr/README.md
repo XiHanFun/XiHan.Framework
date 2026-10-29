@@ -53,3 +53,4 @@
 | [0047](0047-IP归属地.md) | IP 归属地：契约 `IIpRegionResolver` 进 `Security.Abstractions.Network`（能力 `security.ip-region@1`，返回 `Maybe<IpRegion>`，回环 / 私有 / 查不到为无值），离线库实现新包 `Security.Ip2Region`（xdb 由宿主提供，缺失只记警告）；宿主可以不装 | 已采纳 |
 | [0048](0048-调用来源带端点身份.md) | 调用来源增加 `Route`（匹配到的端点的路由模板）与 `EndpointName`（`WithName`）：普通端点在 Observe 阶段就能被识别，授权阶段被拒的调用也进访问日志；没有匹配到端点时为空 | 已采纳 |
 | [0049](0049-对象存储范围读取分片上传与预签名.md) | 对象存储范围读取（`IBlobStore` 增加按范围的 `Get`）、分片上传（`objectstorage.multipart@1`，`IBlobMultipartStore`）与预签名（`objectstorage.presign@1`，`IBlobUrlSigner`，缺省 30 分钟）；S3 原生映射，文件系统暂存分片、预签名由 `Hosting.AspNetCore` 的 HMAC 端点代收发 | 已采纳 |
+| [0050](0050-命名存储实例.md) | 命名存储实例：注册表 `BlobStores` 按 `BlobStoreDefinition`（实例名、Provider 名、设置）经各存储包的 `IBlobStoreProvider` 建实例并按名缓存，定义来自配置节 `XiHan:ObjectStorage:Stores` 或运行时登记，定义变了替换并释放旧实例，逐实例健康项；宿主签名器 `ForStore(name)` 给文件系统实例签名 | 已采纳 |
