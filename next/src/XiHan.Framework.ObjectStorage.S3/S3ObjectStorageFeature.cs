@@ -13,13 +13,15 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
+using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储的能力包入口：显式 Provider，提供 <c>objectstorage.blob@1</c>。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。
+/// S3 对象存储的能力包入口：显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。
 /// 健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -50,7 +52,12 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
         Stability = Stability.Preview,
         Kind = ManifestKind.Provider,
         Role = ManifestRole.Provider,
-        Provides = [new CapabilityDeclaration(ObjectStorageCapabilities.Blob, ObjectStorageCapabilities.Version)],
+        Provides =
+        [
+            new CapabilityDeclaration(ObjectStorageCapabilities.Blob, ObjectStorageCapabilities.Version),
+            new CapabilityDeclaration(ObjectStorageCapabilities.Multipart, ObjectStorageCapabilities.Version),
+            new CapabilityDeclaration(ObjectStorageCapabilities.Presign, ObjectStorageCapabilities.Version),
+        ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         Bindings = [new Binding(ConnectionBinding, "storage:object", required: false)],
         Contributes = new Contributions
@@ -74,6 +81,16 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
         {
             context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<S3BlobStore>());
+        }
+
+        if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Multipart))
+        {
+            context.Services.TryAddSingleton<IBlobMultipartStore>(static sp => sp.GetRequiredService<S3BlobStore>());
+        }
+
+        if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Presign))
+        {
+            context.Services.TryAddSingleton<IBlobUrlSigner>(static sp => sp.GetRequiredService<S3BlobStore>());
         }
 
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集

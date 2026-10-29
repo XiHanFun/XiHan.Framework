@@ -6,6 +6,7 @@ ASP.NET Core 宿主适配（Ring 4）。
 
 - `AddXiHan()`：由内核的 `IHostApplicationBuilder` 扩展提供，`WebApplicationBuilder` 直接可用。
 - `UseXiHan()`：把每个 HTTP 请求翻译为 `InvocationContext`（`traceparent`、`baggage`、`xihan-deadline`、`Accept-Language`；调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`、匹配到的端点的路由模板（`Route`）与名字（`EndpointName`，即 `WithName`；普通端点据此在 Observe 阶段被识别，ADR-0048），经反向代理时在 `UseXiHan()` 之前 `UseForwardedHeaders()` 即得到客户端地址，ADR-0043），让其余 ASP.NET Core 管道在内核管道的 Handle 阶段内执行；失败结果在响应未开始时以 RFC 9457 Problem Details 回写。
+- `MapXiHanBlobs()` 与 `HostedBlobUrlFeature`（ADR-0049，`objectstorage.presign@1`）：给没有原生签名的对象存储（文件系统）签预签名地址并代为收发——`GET <BaseUrl>/{container}/{**key}` 下载（单个 `Range` 区间 206、不可满足 416、可带保存文件名），`PUT` 上传整个对象或分片的一片（响应 `ETag`）；签名是 HMAC-SHA256（配置 `XiHan:ObjectStorage:SignedUrls:Secret`，至少 32 字节，多实例须一致；`BaseUrl` 缺省 `/blobs`），签名不符或过期 403（`OBJECTSTORAGE_DENIED_001`）；端点经内核管道、不要求凭据，上传解除请求体大小上限（单对象上限由存储把关）。存储能自己签名（S3）时不要装。
 - `MapXiHanHealth()`：`/health/startup`、`/health/ready`、`/health/live` 直接映射应用状态机；响应体含各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态。
 - `HttpContext.GetXiHanContext()`：在端点内取当前调用上下文。
 

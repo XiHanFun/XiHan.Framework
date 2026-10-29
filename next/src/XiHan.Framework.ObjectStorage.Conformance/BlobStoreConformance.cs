@@ -7,6 +7,7 @@ using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
 using Xunit;
 
@@ -223,6 +224,112 @@ public abstract class BlobStoreConformance
         Assert.True(BlobKey.IsValid("a/b.c-d_e"));
         Assert.True(BlobKey.IsValidPrefix(string.Empty));
         Assert.True(BlobKey.IsValidPrefix("a/"));
+    }
+
+    /// <summary>
+    /// 用例 8：范围读取——起点与长度、读到末尾、超出末尾截断，<see cref="BlobContent.Range"/> 给出实际范围，元数据长度仍是总长；起点不在对象内（含空对象）不可满足；不存在是 NOTFOUND。
+    /// </summary>
+    [Fact]
+    public async Task GetRange_ReturnsTheRequestedBytes()
+    {
+        var store = CreateStore();
+        var key = Key("range/digits");
+        Assert.True((await store.PutAsync(Container, key, Bytes("0123456789"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        foreach (var (range, expected, offset, length) in new[] { (new BlobRange(2, 3), "234", 2L, 3L), (new BlobRange(7), "789", 7L, 3L), (new BlobRange(8, 100), "89", 8L, 2L), (new BlobRange(0), "0123456789", 0L, 10L) })
+        {
+            var got = (await store.GetAsync(Container, key, range, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            await using (got)
+            {
+                Assert.Equal(expected, await Text(got.Content).ConfigureAwait(false));
+                Assert.Equal(new BlobContentRange(offset, length, 10), got.Range);
+                Assert.Equal(10, got.Metadata.Length);
+            }
+        }
+
+        var beyond = await store.GetAsync(Container, key, new BlobRange(10), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(ObjectStorageErrors.RangeNotSatisfiable, beyond.Error?.Code);
+        Assert.Equal(10L, Convert.ToInt64(beyond.Error!.Details!["length"], System.Globalization.CultureInfo.InvariantCulture));
+
+        var empty = Key("range/empty");
+        Assert.True((await store.PutAsync(Container, empty, Bytes(string.Empty), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(ObjectStorageErrors.RangeNotSatisfiable, (await store.GetAsync(Container, empty, new BlobRange(0), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.GetAsync(Container, Key("range/missing"), new BlobRange(0), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+    }
+
+    /// <summary>
+    /// 用例 9：分片上传——乱序上传、同一编号重传覆盖，列出分片升序；完成前对象不可见，完成后是按编号拼接的内容，内容类型与自定义元数据来自发起时；完成后上传不存在。存储不支持分片时跳过。
+    /// </summary>
+    [Fact]
+    public async Task Multipart_UploadsPartsInAnyOrder_AndCompletesAtomically()
+    {
+        var (store, multipart) = CreateMultipartStore();
+        var key = Key("multipart/video.bin");
+        var options = new BlobPutOptions { ContentType = "application/x-conformance", Metadata = new Dictionary<string, string> { ["owner"] = "alice" } };
+        var upload = (await multipart.StartAsync(Container, key, options, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((Container, key), (upload.Container, upload.Key));
+
+        var head = new byte[BlobMultipart.MinPartBytes];
+        RandomNumberGenerator.Fill(head);
+        var second = (await multipart.UploadPartAsync(upload, 2, Bytes("tail"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var first = (await multipart.UploadPartAsync(upload, 1, new MemoryStream(head, writable: false), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var resent = (await multipart.UploadPartAsync(upload, 2, Bytes("tail-2"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.NotEqual(second.ETag, resent.ETag);
+
+        var listed = (await multipart.ListPartsAsync(upload, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([(1, first.ETag, (long)head.Length), (2, resent.ETag, 6L)], listed.Select(static p => (p.PartNumber, p.ETag, p.Length)));
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.HeadAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+
+        var completed = (await multipart.CompleteAsync(upload, listed, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((head.Length + 6L, "application/x-conformance", "alice"), (completed.Length, completed.ContentType, completed.Metadata["owner"]));
+        byte[] expected = [.. head, .. Encoding.UTF8.GetBytes("tail-2")];
+        Assert.Equal(expected, (await store.ReadAllBytesAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(upload, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.UploadPartAsync(upload, 3, Bytes("late"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+    }
+
+    /// <summary>
+    /// 用例 10：分片清单不合法（为空、乱序、ETag 不符、非末片过小）返回 PARTS_INVALID 且上传保留、之后仍可完成；不覆盖时对象已存在拒绝发起与完成；放弃后上传不存在，再放弃也成功。存储不支持分片时跳过。
+    /// </summary>
+    [Fact]
+    public async Task Multipart_RejectsInvalidPartLists_AndHonoursOverwriteAndAbort()
+    {
+        var (store, multipart) = CreateMultipartStore();
+        var key = Key("multipart/checked.bin");
+        var upload = (await multipart.StartAsync(Container, key, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var small = (await multipart.UploadPartAsync(upload, 1, Bytes("small"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var last = (await multipart.UploadPartAsync(upload, 2, Bytes("last"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+
+        foreach (var parts in new IReadOnlyList<BlobPart>[] { [], [last, small], [new BlobPart(1, "0123456789abcdef0123456789abcdef"), last], [small, last] })
+        {
+            Assert.Equal(ObjectStorageErrors.PartsInvalid, (await multipart.CompleteAsync(upload, parts, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        }
+
+        // 上传仍在：只用一片（末片可以小于最小分片）即可完成
+        Assert.Equal(5, (await multipart.CompleteAsync(upload, [small], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Length);
+
+        // 不覆盖：已存在拒绝发起；发起后对象才出现，完成时拒绝
+        Assert.Equal(ObjectStorageErrors.BlobExists, (await multipart.StartAsync(Container, key, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        var other = Key("multipart/raced.bin");
+        var raced = (await multipart.StartAsync(Container, other, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var only = (await multipart.UploadPartAsync(raced, 1, Bytes("mine"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.True((await store.PutAsync(Container, other, Bytes("theirs"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(ObjectStorageErrors.BlobExists, (await multipart.CompleteAsync(raced, [only], CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal("theirs", Text((await store.ReadAllBytesAsync(Container, other, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
+
+        Assert.True((await multipart.AbortAsync(raced, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(raced, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.True((await multipart.AbortAsync(raced, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+    }
+
+    /// <summary>
+    /// 被测存储与其分片上传；存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例。
+    /// </summary>
+    private (IBlobStore Store, IBlobMultipartStore Multipart) CreateMultipartStore()
+    {
+        var store = CreateStore();
+        Assert.SkipWhen(store is not IBlobMultipartStore, $"{store.GetType().Name} does not implement IBlobMultipartStore.");
+        return (store, (IBlobMultipartStore)store);
     }
 
     /// <summary>

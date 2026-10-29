@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "O blob '{key}' já existe no contêiner '{container}'.",
   "objectstorage.blob.not_found": "O blob '{key}' não existe no contêiner '{container}'.",
+  "objectstorage.multipart.part_too_small": "A parte {part} tem {length} bytes; todas as partes, exceto a última, devem ter pelo menos {minimum} bytes.",
+  "objectstorage.multipart.part_unknown": "A parte {part} não foi enviada ou seu ETag não corresponde.",
+  "objectstorage.multipart.parts_empty": "A lista de partes não pode estar vazia.",
+  "objectstorage.multipart.parts_rejected": "O armazenamento de objetos rejeitou a lista de partes: {reason}",
+  "objectstorage.multipart.parts_unordered": "A parte {part} está fora de ordem: os números das partes devem ser estritamente crescentes.",
+  "objectstorage.multipart.upload_not_found": "O upload em várias partes '{upload}' do objeto '{key}' no contêiner '{container}' não existe ou já terminou.",
   "objectstorage.quota.exceeded": "Gravar {requested} bytes excederia a cota de armazenamento de objetos de {limit} bytes.",
   "objectstorage.quota.reached": "A cota de armazenamento de objetos de {limit} bytes está esgotada: {used} bytes em uso.",
+  "objectstorage.range.not_satisfiable": "O intervalo que começa no byte {offset} não pode ser atendido: o objeto tem {length} bytes.",
+  "objectstorage.signed_url.expired": "A URL assinada expirou em {expiresAt}.",
+  "objectstorage.signed_url.invalid": "A URL assinada é inválida.",
   "objectstorage.store.unavailable": "O armazenamento de objetos está indisponível: {reason}"
 }

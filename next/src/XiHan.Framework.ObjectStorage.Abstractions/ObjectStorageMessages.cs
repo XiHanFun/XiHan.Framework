@@ -43,6 +43,51 @@ public static class ObjectStorageMessages
     public const string QuotaReached = "objectstorage.quota.reached";
 
     /// <summary>
+    /// 读取范围不可满足。参数：<c>offset</c>、<c>length</c>（对象总长）。
+    /// </summary>
+    public const string RangeNotSatisfiable = "objectstorage.range.not_satisfiable";
+
+    /// <summary>
+    /// 分片上传不存在或已结束。参数：<c>container</c>、<c>key</c>、<c>upload</c>。
+    /// </summary>
+    public const string UploadNotFound = "objectstorage.multipart.upload_not_found";
+
+    /// <summary>
+    /// 分片清单为空。
+    /// </summary>
+    public const string PartsEmpty = "objectstorage.multipart.parts_empty";
+
+    /// <summary>
+    /// 分片编号没有严格升序。参数：<c>part</c>。
+    /// </summary>
+    public const string PartsUnordered = "objectstorage.multipart.parts_unordered";
+
+    /// <summary>
+    /// 分片未上传或 ETag 不符。参数：<c>part</c>。
+    /// </summary>
+    public const string PartUnknown = "objectstorage.multipart.part_unknown";
+
+    /// <summary>
+    /// 非末片小于最小分片。参数：<c>part</c>、<c>length</c>、<c>minimum</c>。
+    /// </summary>
+    public const string PartTooSmall = "objectstorage.multipart.part_too_small";
+
+    /// <summary>
+    /// 存储拒绝了分片清单。参数：<c>reason</c>。
+    /// </summary>
+    public const string PartsRejected = "objectstorage.multipart.parts_rejected";
+
+    /// <summary>
+    /// 预签名地址的签名不符或参数不全。
+    /// </summary>
+    public const string SignedUrlInvalid = "objectstorage.signed_url.invalid";
+
+    /// <summary>
+    /// 预签名地址已过期。参数：<c>expiresAt</c>。
+    /// </summary>
+    public const string SignedUrlExpired = "objectstorage.signed_url.expired";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

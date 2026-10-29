@@ -37,7 +37,7 @@ public sealed class FullProfileTests
         ["xihan.multitenancy.inmemory"] = ["multitenancy.context", "multitenancy.sharding"],
         ["xihan.security.inmemory"] = ["security.authentication", "security.authorization"],
         ["xihan.messaging.inmemory"] = ["messaging.queue"],
-        ["xihan.objectstorage.filesystem"] = ["objectstorage.blob"],
+        ["xihan.objectstorage.filesystem"] = ["objectstorage.blob", "objectstorage.multipart"],
         ["xihan.scheduling.inmemory"] = ["scheduling.jobs", "scheduling.leader"],
         ["xihan.auditing.inmemory"] = ["auditing.trail"],
         ["xihan.workflow.inmemory"] = ["workflow.execution"],

@@ -1,7 +1,16 @@
 {
   "objectstorage.blob.exists": "Blob '{key}' already exists in container '{container}'.",
   "objectstorage.blob.not_found": "Blob '{key}' does not exist in container '{container}'.",
+  "objectstorage.multipart.part_too_small": "Part {part} is {length} bytes; every part except the last must be at least {minimum} bytes.",
+  "objectstorage.multipart.part_unknown": "Part {part} was not uploaded or its ETag does not match.",
+  "objectstorage.multipart.parts_empty": "The part list must not be empty.",
+  "objectstorage.multipart.parts_rejected": "The object storage rejected the part list: {reason}",
+  "objectstorage.multipart.parts_unordered": "Part {part} is out of order: part numbers must be strictly ascending.",
+  "objectstorage.multipart.upload_not_found": "The multipart upload '{upload}' of blob '{key}' in container '{container}' does not exist or has already ended.",
   "objectstorage.quota.exceeded": "The object storage quota of {limit} bytes would be exceeded by writing {requested} bytes.",
   "objectstorage.quota.reached": "The object storage quota of {limit} bytes is exhausted: {used} bytes are in use.",
+  "objectstorage.range.not_satisfiable": "The range starting at byte {offset} cannot be satisfied: the blob is {length} bytes long.",
+  "objectstorage.signed_url.expired": "The signed URL expired at {expiresAt}.",
+  "objectstorage.signed_url.invalid": "The signed URL is invalid.",
   "objectstorage.store.unavailable": "The object storage is unavailable: {reason}"
 }
