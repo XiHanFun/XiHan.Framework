@@ -9,8 +9,9 @@ ASP.NET Core 宿主适配（Ring 4）。
 - `MapXiHanBlobs()` 与 `HostedBlobUrlFeature`（ADR-0049，`objectstorage.presign@1`）：给没有原生签名的对象存储（文件系统）签预签名地址并代为收发——`GET <BaseUrl>/{container}/{**key}` 下载（单个 `Range` 区间 206、不可满足 416、可带保存文件名），`PUT` 上传整个对象或分片的一片（响应 `ETag`）；签名是 HMAC-SHA256（配置 `XiHan:ObjectStorage:SignedUrls:Secret`，至少 32 字节，多实例须一致；`BaseUrl` 缺省 `/blobs`），签名不符或过期 403（`OBJECTSTORAGE_DENIED_001`）；端点经内核管道、不要求凭据，上传解除请求体大小上限（单对象上限由存储把关）。存储能自己签名（S3）时不要装。命名实例（ADR-0050）用 `HostedBlobUrlSigner.ForStore(name)` 签：地址带 `x-store=<name>`，实例名在签名里，端点经 `BlobStores` 取实例，实例不存在 404（`OBJECTSTORAGE_NOTFOUND_003`）。
 - `MapXiHanHealth()`：`/health/startup`、`/health/ready`、`/health/live` 直接映射应用状态机；响应体含各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态。
 - `HttpContext.GetXiHanContext()`：在端点内取当前调用上下文。
+- `AddAuthentication().AddXiHan(...)`（ADR-0051）：ASP.NET Core 认证方案 `XiHan`，给绕过内核管道的端点（SignalR Hub、Server-Sent Events）用——凭据交给内核已装配的 `IAuthenticationHandler`（与 Authenticate 阶段同一个处理器，JWT、OIDC、ApiKey 通用），只认带 `PipelineBypassMetadata` 的端点；查询串 `access_token` 只在 `QueryTokenPaths` 登记的路径前缀下接受（按路径段，其他路径一律忽略）；认证成功后依次调用应用的 `IInvocationAuthenticationFilter`（会话门禁的挂点），任一失败即 401；主体转 `ClaimsPrincipal`（原始声明类型，`ClaimTypes.NameIdentifier` 承载主体 ID 作名称，角色取 `XiHan:Security:RoleClaim`）。在这类端点里发起内核调用用 `HttpInvocation.CreateContext(httpContext, services)`：凭据按同一规则带上，经管道时重新认证。
 
-不负责：操作契约与路由推导（`Protocols.Http`，P3）、认证与租户解析（安全与多租户子系统）。
+不负责：操作契约与路由推导（`Protocols.Http`，P3）、认证与租户解析（安全与多租户子系统；方案 `XiHan` 只把凭据交给安全子系统的处理器）。
 
 `Accept-Language` 在调用方没有显式 `xihan.locale` Baggage 时按权重协商进该 Baggage（装配了本地化时协商到启用的区域，否则取第一个合法值）；装配了 `localization.resources` 时，Problem Details 的 `detail` 用 `IMessageLocalizer.Resolve` 翻译成调用方区域，`Content-Language` 是实际命中的区域（可能是回退链上的区域），`code` 不变；没有装配本地化或错误是自由文本时 `detail` 是 `Error.Message`（RFC-0010）。
 
