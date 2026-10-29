@@ -12,6 +12,7 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// 属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），
 /// <c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），
 /// <c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。
+/// XML 文档注释进 <c>description</c>（<see cref="DocumentationText"/>）：根与 <c>$defs</c> 里的对象、枚举取类型的 <c>&lt;summary&gt;</c>，属性取属性的 <c>&lt;summary&gt;</c>，没有时取主构造参数在类型上的 <c>&lt;param&gt;</c>。
 /// </summary>
 internal sealed class JsonSchemaBuilder
 {
@@ -53,6 +54,11 @@ internal sealed class JsonSchemaBuilder
         var json = new JsonText().StartObject()
             .String("$schema", "https://json-schema.org/draft/2020-12/schema")
             .String("title", SchemaNames.Of(root));
+        if (root is INamedTypeSymbol && DocumentationText.Summary(root) is { } description)
+        {
+            json.String("description", description);
+        }
+
         // 根对象直接展开（去掉外层花括号再拼进来，逗号由 JsonText 补），其他对象放在 $defs
         var inner = body.Substring(1, body.Length - 2);
         if (inner.Length > 0)
@@ -180,6 +186,11 @@ internal sealed class JsonSchemaBuilder
             name = UniqueDefinitionName(SchemaNames.Of(type));
             _definitions[type] = name;
             var body = new JsonText().StartObject();
+            if (DocumentationText.Summary(type) is { } description)
+            {
+                body.String("description", description);
+            }
+
             writeBody(body);
             _definitionBodies.Add(new KeyValuePair<string, string>(name, body.EndObject().ToString()));
         }
@@ -220,7 +231,7 @@ internal sealed class JsonSchemaBuilder
         {
             var name = PropertyName(property);
             var constraints = PropertyConstraints.Collect(type, property);
-            json.Raw(name, constraints.ApplyTo(SchemaOf(property.Type, nullable: false, forceNonNull: constraints.Required), property.Type));
+            json.Raw(name, WithDescription(constraints.ApplyTo(SchemaOf(property.Type, nullable: false, forceNonNull: constraints.Required), property.Type), DescriptionOf(type, property)));
             if (constraints.Required || IsRequired(type, property))
             {
                 required.Add(name);
@@ -238,6 +249,26 @@ internal sealed class JsonSchemaBuilder
 
             json.EndArray();
         }
+    }
+
+    /// <summary>
+    /// 属性的说明：属性自己的 <c>&lt;summary&gt;</c>，没有时取声明它的类型上同名主构造参数的 <c>&lt;param&gt;</c>。
+    /// </summary>
+    private static string? DescriptionOf(INamedTypeSymbol type, IPropertySymbol property)
+        => DocumentationText.Summary(property) ?? DocumentationText.Parameter(property.ContainingType ?? type, property.Name);
+
+    /// <summary>
+    /// 在 Schema 片段（紧凑的 JSON 对象）最前面加上 <c>description</c>；没有说明时原样返回。
+    /// </summary>
+    private static string WithDescription(string schema, string? description)
+    {
+        if (description is null)
+        {
+            return schema;
+        }
+
+        var member = new JsonText().StartObject().String("description", description).EndObject().ToString();
+        return schema == "{}" ? member : member.Substring(0, member.Length - 1) + "," + schema.Substring(1);
     }
 
     /// <summary>

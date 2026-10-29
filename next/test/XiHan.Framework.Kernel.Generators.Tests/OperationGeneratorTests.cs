@@ -364,6 +364,82 @@ public sealed class OperationGeneratorTests
     }
 
     [Fact]
+    public void Descriptions_ComeFromXmlDocumentation()
+    {
+        const string documented = """
+            using System;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+            using System.Text.Json.Serialization.Metadata;
+            using System.Threading.Tasks;
+            using XiHan.Framework.Kernel.Operations;
+            using XiHan.Framework.Primitives;
+
+            namespace Demo.App;
+
+            /// <summary>
+            /// 订单状态。
+            /// </summary>
+            public enum NoteStatus { Open, Closed }
+
+            /// <summary>
+            /// 备注行，见 <see cref="T:Demo.App.NoteRequest"/>。
+            /// </summary>
+            public sealed class NoteLine
+            {
+                /// <summary>
+                ///   行文本，
+                ///   可为 <see langword="null"/>。
+                /// </summary>
+                public string? Text { get; set; }
+            }
+
+            /// <summary>
+            /// 添加备注。
+            /// </summary>
+            /// <remarks>
+            /// 细节不进 Schema。
+            /// </remarks>
+            /// <param name="OrderId">订单 ID，与 <paramref name="Line"/> 一起提交。</param>
+            /// <param name="Line">备注行。</param>
+            public sealed record NoteRequest(Guid OrderId, NoteLine Line, NoteStatus Status, int Undocumented);
+
+            [Operation("notes.create")]
+            public sealed class CreateNote : IOperation<NoteRequest, NoteRequest>
+            {
+                public ValueTask<Result<NoteRequest>> HandleAsync(NoteRequest request, InvocationContext context) => throw new NotImplementedException();
+            }
+
+            [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
+            [JsonSerializable(typeof(NoteRequest))]
+            internal sealed class NoteJsonContext : JsonSerializerContext
+            {
+                public static NoteJsonContext Default { get; } = new();
+                public NoteJsonContext() : base(null) { }
+                protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+                public JsonTypeInfo<NoteRequest> NoteRequest => null!;
+            }
+            """;
+        var (compile, generator, generated) = Run(documented);
+        var text = generated.Replace("\"\"", "\"", StringComparison.Ordinal);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+
+        // 根取类型的 summary（remarks 不进），位置记录的属性取类型上的 param，cref 取最后一段、paramref 与 langword 取文本、空白折叠（中文换行处直接相连）
+        Assert.Contains("\"title\":\"NoteRequest\",\"description\":\"添加备注。\",\"type\":\"object\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"orderId\":{\"description\":\"订单 ID，与 Line 一起提交。\",\"type\":\"string\",\"format\":\"uuid\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"line\":{\"description\":\"备注行。\",\"$ref\":\"#/$defs/NoteLine\"}", text, StringComparison.Ordinal);
+        Assert.Contains("\"undocumented\":{\"type\":\"integer\",\"format\":\"int32\"}", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("细节不进 Schema", text, StringComparison.Ordinal);
+
+        // $defs 里的对象与字符串枚举取类型的 summary，属性取属性的 summary
+        Assert.Contains("\"NoteLine\":{\"description\":\"备注行，见 NoteRequest。\",\"type\":\"object\",\"properties\":{\"text\":{\"description\":\"行文本，可为 null。\",\"type\":[\"string\",\"null\"]}}}", text, StringComparison.Ordinal);
+        Assert.Contains("\"NoteStatus\":{\"description\":\"订单状态。\",\"type\":\"string\",\"enum\":[\"Open\",\"Closed\"]}", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void FallsBackToAssemblyName_WhenRootNamespaceIsMissing()
     {
         var (compile, generator, generated) = Run(Source, rootNamespace: "");

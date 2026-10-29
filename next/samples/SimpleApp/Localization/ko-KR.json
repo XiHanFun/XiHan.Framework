@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "이름과 금액으로 주문합니다. orders.write 권한이 필요합니다.",
-  "orders.list.description": "현재 테넌트의 주문을 생성 순서로 나열합니다. orders.read 권한이 필요합니다.",
+  "orders.create.description": "이름과 금액으로 주문합니다.",
+  "orders.create.title": "주문하기",
+  "orders.list.description": "현재 테넌트의 주문을 생성 순서로 나열합니다.",
+  "orders.list.title": "주문 목록",
   "samples.order.name_blank": "주문 이름은 공백만으로 구성될 수 없습니다.",
   "samples.resource.missing": "샘플 리소스가 없습니다."
 }

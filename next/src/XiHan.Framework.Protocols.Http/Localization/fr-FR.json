@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "Nécessite une connexion.",
+  "protocols.http.openapi_error": "Erreur",
+  "protocols.http.openapi_permission_code_required": "Nécessite l'autorisation {permission}.",
+  "protocols.http.openapi_permission_required": "Nécessite l'autorisation {permission} ({name}).",
+  "protocols.http.openapi_policy_required": "Nécessite la stratégie {policy}.",
+  "protocols.http.openapi_success": "Succès",
+  "protocols.http.openapi_ungrouped": "Autres"
+}

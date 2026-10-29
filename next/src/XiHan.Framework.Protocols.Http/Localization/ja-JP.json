@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "サインインが必要です。",
+  "protocols.http.openapi_error": "エラー",
+  "protocols.http.openapi_permission_code_required": "権限 {permission} が必要です。",
+  "protocols.http.openapi_permission_required": "権限 {permission}（{name}）が必要です。",
+  "protocols.http.openapi_policy_required": "ポリシー {policy} が必要です。",
+  "protocols.http.openapi_success": "成功",
+  "protocols.http.openapi_ungrouped": "その他"
+}

@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -35,6 +36,7 @@ public sealed class HttpProtocolFeature : IFeature
     public void Configure(FeatureContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        context.Services.AddMessageCatalog(HttpMessages.Catalog);
         context.Services.AddSingleton(HttpProtocolOptions.FromConfiguration(context.Configuration));
     }
 }

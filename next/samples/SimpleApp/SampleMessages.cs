@@ -14,12 +14,28 @@ public static class SampleMessages
     public const string ResourceMissing = "samples.resource.missing";
 
     /// <summary>
-    /// MCP tool <c>orders_create</c> 的描述（约定键 <c>&lt;操作 ID&gt;.description</c>）。
+    /// 下单操作的标题。
     /// </summary>
+    /// <remarks>
+    /// 约定键 <c>&lt;操作 ID&gt;.title</c>：MCP tool 的 <c>title</c> 与 OpenAPI 的 <c>summary</c>。
+    /// </remarks>
+    public const string CreateOrderTitle = "orders.create.title";
+
+    /// <summary>
+    /// 下单操作的说明。
+    /// </summary>
+    /// <remarks>
+    /// 约定键 <c>&lt;操作 ID&gt;.description</c>：MCP tool 的 <c>description</c> 与 OpenAPI 的 <c>description</c>；不写授权要求，由适配器统一呈现。
+    /// </remarks>
     public const string CreateOrderDescription = "orders.create.description";
 
     /// <summary>
-    /// MCP tool <c>orders_list</c> 的描述。
+    /// 列出订单操作的标题。
+    /// </summary>
+    public const string ListOrdersTitle = "orders.list.title";
+
+    /// <summary>
+    /// 列出订单操作的说明。
     /// </summary>
     public const string ListOrdersDescription = "orders.list.description";
 

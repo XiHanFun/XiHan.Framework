@@ -25,19 +25,19 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// OpenAPI 生成器的四项能力：标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作摘要按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；
+/// OpenAPI 生成器的四项能力：标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作标题与说明按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；
 /// 普通端点按元数据收录（二进制 / 表单 / 文本按内容类型，JSON 只能引用已登记操作的根 Schema，引用不到即失败）。
 /// </summary>
 public sealed class OpenApiExtensionsTests
 {
     /// <summary>
-    /// 操作摘要的消息目录：只有英文与简体中文，只给 <c>orders.get</c>。
+    /// 操作标题与说明的消息目录：只有英文与简体中文，只给 <c>orders.get</c> 与 <c>order-filters.list</c>。
     /// </summary>
     private static readonly MessageCatalog _descriptions = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
-        // 资源段带连字符的操作：键的首段是连字符换成下划线的形态
-        ["en-US"] = new Dictionary<string, string> { ["orders.get.description"] = "Get one order by its ID.", ["order_filters.list.description"] = "List the saved order filters." },
-        ["zh-CN"] = new Dictionary<string, string> { ["orders.get.description"] = "按 ID 读取一个订单。" },
+        // 资源段带连字符的操作：键的首段是连字符换成下划线的形态；order-filters.list 只有标题
+        ["en-US"] = new Dictionary<string, string> { ["orders.get.title"] = "Get an order", ["orders.get.description"] = "Get one order by its ID.", ["order_filters.list.title"] = "List order filters" },
+        ["zh-CN"] = new Dictionary<string, string> { ["orders.get.title"] = "读取订单", ["orders.get.description"] = "按 ID 读取一个订单。" },
     });
 
     /// <summary>
@@ -120,8 +120,9 @@ public sealed class OpenApiExtensionsTests
         Assert.Equal(["https://api.example.com", "/api"], servers.Select(static s => s.GetProperty("url").GetString()));
         Assert.Equal("Production", servers[0].GetProperty("description").GetString());
         Assert.False(servers[1].TryGetProperty("description", out _));
-        // 没有装配本地化：没有 Content-Language，也没有摘要
+        // 没有装配本地化：没有 Content-Language，也没有标题与说明
         Assert.False(root.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").TryGetProperty("summary", out _));
+        Assert.False(root.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").TryGetProperty("description", out _));
     }
 
     [Fact]
@@ -166,7 +167,7 @@ public sealed class OpenApiExtensionsTests
     }
 
     [Fact]
-    public async Task OpenApi_LocalizesOperationSummaries_PerAcceptLanguage_AndCachesPerLocale()
+    public async Task OpenApi_LocalizesOperationTitlesAndDescriptions_PerAcceptLanguage_AndCachesPerLocale()
     {
         var (app, client) = await StartAsync(localization: true);
         await using var host = app;
@@ -174,18 +175,21 @@ public sealed class OpenApiExtensionsTests
         var (chinese, chineseResponse) = await DocumentOf(client, "zh-CN");
         using var ownedChinese = chinese;
         Assert.Equal(["zh-CN"], chineseResponse.Content.Headers.ContentLanguage);
-        Assert.Equal("按 ID 读取一个订单。", chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
-        // 目录没有的操作没有摘要
+        var get = chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get");
+        Assert.Equal(("读取订单", "按 ID 读取一个订单。"), (get.GetProperty("summary").GetString(), get.GetProperty("description").GetString()));
+        // 目录没有的操作没有标题与说明
         Assert.False(chinese.RootElement.GetProperty("paths").GetProperty("/orders").GetProperty("post").TryGetProperty("summary", out _));
-        // 资源段带连字符的操作（order-filters.list）按 order_filters.list.description 取摘要；只有英文时回退到 en-US
-        Assert.Equal("List the saved order filters.", chinese.RootElement.GetProperty("paths").GetProperty("/order-filters").GetProperty("get").GetProperty("summary").GetString());
+        // 资源段带连字符的操作（order-filters.list）按 order_filters.list.title 取标题；只有英文时回退到 en-US；没有说明就不写，标题不顶替
+        var filters = chinese.RootElement.GetProperty("paths").GetProperty("/order-filters").GetProperty("get");
+        Assert.Equal("List order filters", filters.GetProperty("summary").GetString());
+        Assert.False(filters.TryGetProperty("description", out _));
 
         // 没有 Accept-Language 走默认区域 en-US；日文是启用的区域（Content-Language 标 ja-JP），目录没有日文时文案回退到 en-US；各区域分别缓存，再次请求各自不变
         foreach (var acceptLanguage in new[] { null, "ja-JP", "zh-CN" })
         {
             var (document, response) = await DocumentOf(client, acceptLanguage);
             using var owned = document;
-            var expected = acceptLanguage == "zh-CN" ? "按 ID 读取一个订单。" : "Get one order by its ID.";
+            var expected = acceptLanguage == "zh-CN" ? "读取订单" : "Get an order";
             Assert.Equal(expected, document.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
             Assert.Equal([acceptLanguage ?? "en-US"], response.Content.Headers.ContentLanguage);
         }
@@ -199,20 +203,20 @@ public sealed class OpenApiExtensionsTests
         await using var host = app;
         var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).ToList();
 
-        // 导出工具用同一工厂组装输入：与 /openapi.json 在同一区域下逐字节相同（标题 / 版本 / servers、Bearer 方案、普通端点、摘要都在内）
+        // 导出工具用同一工厂组装输入：与 /openapi.json 在同一区域下逐字节相同（标题 / 版本 / servers、Bearer 方案、普通端点、文案都在内）
         using var request = new HttpRequestMessage(HttpMethod.Get, "/openapi.json");
         request.Headers.TryAddWithoutValidation("Accept-Language", "zh-CN");
         var served = await (await client.SendAsync(request)).Content.ReadAsByteArrayAsync();
         var built = OpenApiDocumentBuilder.Build(OpenApiDocumentSource.FromServices(app.Services, options, endpoints, "zh-CN"));
         Assert.Equal(served, built);
         using var chinese = JsonDocument.Parse(built);
-        Assert.Equal("按 ID 读取一个订单。", chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
+        Assert.Equal("读取订单", chinese.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
         Assert.Equal("Orders API", chinese.RootElement.GetProperty("info").GetProperty("title").GetString());
         Assert.Equal("https://api.example.com", chinese.RootElement.GetProperty("servers")[0].GetProperty("url").GetString());
 
-        // 不给区域时按本地化的默认区域取摘要；不给选项时标题取应用名、版本取框架版本
+        // 不给区域时按本地化的默认区域取文案；不给选项时标题取应用名、版本取框架版本
         using var english = JsonDocument.Parse(OpenApiDocumentBuilder.Build(OpenApiDocumentSource.FromServices(app.Services, null, endpoints)));
-        Assert.Equal("Get one order by its ID.", english.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
+        Assert.Equal("Get an order", english.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").GetProperty("summary").GetString());
         Assert.Equal(FrameworkInfo.Version, english.RootElement.GetProperty("info").GetProperty("version").GetString());
         Assert.NotEqual("Orders API", english.RootElement.GetProperty("info").GetProperty("title").GetString());
         Assert.True(english.RootElement.GetProperty("components").TryGetProperty("securitySchemes", out _));
