@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
@@ -15,14 +16,19 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 生成 OpenAPI 3.1 文档：操作按 <see cref="HttpProtocolOptions.RouteFor"/> 得到路径与方法，参数与请求体来自 <see cref="OperationSchema"/>，
-/// 嵌套定义提升到 <c>components/schemas</c>，失败响应统一为 RFC 9457 Problem Details；没有 Schema 的操作只发布路径与操作 ID。
-/// 授权要求以扩展字段发布：操作上的 <c>x-xihan-permission</c>（权限码）或 <c>x-xihan-policy</c>（策略名），以及 <c>components</c> 下按权限码索引的 <c>x-xihan-permissions</c>。
-/// 装配了 Bearer 认证时发布 <c>components.securitySchemes.bearer</c> 与全局 <c>security</c>，没有授权要求的操作标 <c>security: []</c>。
-/// 操作的 <c>summary</c> 由 <see cref="OpenApiDocumentSource.Describe"/> 按区域给出。
-/// 普通端点（见 <see cref="EndpointReader"/>）也进文档：路由参数、端点名 / 摘要 / 说明 / 标签、端点级授权要求、<c>Accepts</c> / <c>Produces</c> 的内容类型；
-/// JSON 类型不另推导 Schema，只能引用已登记操作的根 Schema（显式 <see cref="OperationSchemaReference"/> 或按类型匹配），被引用的根 Schema 提升到 <c>components/schemas</c>，引用不到即 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。
+/// 生成 OpenAPI 3.1 文档。
 /// </summary>
+/// <remarks>
+/// <para>操作按 <see cref="HttpProtocolOptions.RouteFor"/> 得到路径与方法，参数与请求体来自 <see cref="OperationSchema"/>，嵌套定义提升到 <c>components/schemas</c>，失败响应统一为 RFC 9457 Problem Details；没有 Schema 的操作只发布路径与操作 ID。</para>
+/// <para>授权要求以扩展字段发布：操作上的 <c>x-xihan-permission</c>（权限码）或 <c>x-xihan-policy</c>（策略名），以及 <c>components</c> 下按权限码索引的 <c>x-xihan-permissions</c>；同时按区域附在 <c>description</c> 末尾一行。
+/// 装配了 Bearer 认证时发布 <c>components.securitySchemes.bearer</c> 与全局 <c>security</c>，没有授权要求的操作标 <c>security: []</c>。</para>
+/// <para>文案（ADR-0052）由 <see cref="OpenApiDocumentSource.Localize"/> 按区域给出：操作的 <c>summary</c> / <c>description</c> 取 <c>&lt;操作 ID&gt;.title</c> / <c>.description</c>，
+/// 顶层 <c>tags</c> 的 <c>x-displayName</c> / <c>description</c> 取 <c>openapi.tags.&lt;资源段&gt;.name</c> / <c>.description</c>，分组的显示名取 <c>openapi.groups.&lt;组名&gt;.name</c>，
+/// Schema 的 <c>description</c>（源生成器折进的 XML 文档注释）可被 <c>openapi.schemas.&lt;Schema 名&gt;.description</c> 与 <c>.properties.&lt;属性名&gt;</c> 按区域替换。</para>
+/// <para>分组（<see cref="OpenApiDocumentSource.Groups"/>）：全量文档带 <c>x-tagGroups</c>；<see cref="OpenApiDocumentSource.Group"/> 指定时只出该组的操作与端点、它们引用的组件与权限码。</para>
+/// <para>普通端点（见 <see cref="EndpointReader"/>）也进文档：路由参数、端点名 / 摘要 / 说明 / 标签、端点级授权要求、<c>Accepts</c> / <c>Produces</c> 的内容类型；
+/// JSON 类型不另推导 Schema，只能引用已登记操作的根 Schema（显式 <see cref="OperationSchemaReference"/> 或按类型匹配），被引用的根 Schema 提升到 <c>components/schemas</c>，引用不到即 <see cref="HttpErrors.OpenApiSchemaUnresolved"/>。</para>
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static partial class OpenApiDocumentBuilder
 {
@@ -40,6 +46,16 @@ public static partial class OpenApiDocumentBuilder
     /// <c>securitySchemes</c> 里 Bearer 方案的名字。
     /// </summary>
     private const string BearerSchemeName = "bearer";
+
+    /// <summary>
+    /// 没有本地化时成功响应的说明。
+    /// </summary>
+    private const string SuccessText = "Success";
+
+    /// <summary>
+    /// 没有本地化时失败响应的说明。
+    /// </summary>
+    private const string ErrorText = "Error";
 
     /// <summary>
     /// 生成文档的 UTF-8 JSON；标题与版本给定，其余（<c>servers</c>、认证方案、普通端点、摘要）都不带。
@@ -65,10 +81,23 @@ public static partial class OpenApiDocumentBuilder
             writer.WriteStartObject();
             writer.WriteString("openapi", "3.1.0");
             writer.WriteStartObject("info");
-            writer.WriteString("title", source.Title);
+            if (context.Group is { } group)
+            {
+                writer.WriteString("title", context.Text(GroupKey(group, "name")) ?? group.Name);
+                if (context.Text(GroupKey(group, "description")) is { } groupDescription)
+                {
+                    writer.WriteString("description", groupDescription);
+                }
+            }
+            else
+            {
+                writer.WriteString("title", source.Title);
+            }
+
             writer.WriteString("version", source.Version);
             writer.WriteEndObject();
             WriteServers(writer, source.Servers);
+            WriteTags(writer, context);
 
             writer.WriteStartObject("paths");
             foreach (var (template, methods) in context.Paths)
@@ -92,7 +121,7 @@ public static partial class OpenApiDocumentBuilder
             foreach (var (name, schema) in context.Components)
             {
                 writer.WritePropertyName(name);
-                schema.RootElement.WriteTo(writer);
+                WriteLocalizedSchema(writer, schema.RootElement, name, context);
             }
 
             writer.WriteEndObject();
@@ -108,11 +137,16 @@ public static partial class OpenApiDocumentBuilder
                 writer.WriteEndObject();
             }
 
-            WritePermissions(writer, context.ReferencedPermissions, source.Permissions);
+            WritePermissions(writer, context.ReferencedPermissions, source.Permissions, includeRegistered: context.Group is null);
             writer.WriteEndObject();
             if (context.Bearer)
             {
                 WriteSecurity(writer, required: true);
+            }
+
+            if (context.Group is null && source.Groups.Count > 0)
+            {
+                WriteTagGroups(writer, context);
             }
 
             writer.WriteEndObject();
@@ -149,6 +183,80 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
+    /// 写顶层 <c>tags</c>：文档里用到的每个标签，名字序数排序，带区域的显示名与说明（有才写）。
+    /// </summary>
+    private static void WriteTags(Utf8JsonWriter writer, BuildContext context)
+    {
+        if (context.UsedTags.Count == 0)
+        {
+            return;
+        }
+
+        writer.WriteStartArray("tags");
+        foreach (var tag in context.UsedTags)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("name", tag);
+            if (context.Text(TagKey(tag, "name")) is { } displayName)
+            {
+                writer.WriteString("x-displayName", displayName);
+            }
+
+            if (context.Text(TagKey(tag, "description")) is { } description)
+            {
+                writer.WriteString("description", description);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+    }
+
+    /// <summary>
+    /// 写全量文档的 <c>x-tagGroups</c>：各组按排序、名字列出组内用到的标签，没进任何组的标签归入最后一组。
+    /// </summary>
+    private static void WriteTagGroups(Utf8JsonWriter writer, BuildContext context)
+    {
+        var grouped = new HashSet<string>(StringComparer.Ordinal);
+        writer.WriteStartArray("x-tagGroups");
+        foreach (var group in context.Source.Groups.OrderBy(static g => g.Order).ThenBy(static g => g.Name, StringComparer.Ordinal))
+        {
+            var tags = context.GroupTags[group.Name].Where(context.UsedTags.Contains).ToList();
+            grouped.UnionWith(tags);
+            if (tags.Count > 0)
+            {
+                WriteTagGroup(writer, context.Text(GroupKey(group, "name")) ?? group.Name, tags);
+            }
+        }
+
+        var rest = context.UsedTags.Where(tag => !grouped.Contains(tag)).ToList();
+        if (rest.Count > 0)
+        {
+            WriteTagGroup(writer, context.Text(HttpMessages.OpenApiUngrouped) ?? "Other", rest);
+        }
+
+        writer.WriteEndArray();
+    }
+
+    /// <summary>
+    /// 写 <c>x-tagGroups</c> 的一项。
+    /// </summary>
+    private static void WriteTagGroup(Utf8JsonWriter writer, string name, IEnumerable<string> tags)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("name", name);
+        writer.WriteStartArray("tags");
+        foreach (var tag in tags)
+        {
+            writer.WriteStringValue(tag);
+        }
+
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
     /// 写 <c>security</c>：要求认证时挂 Bearer 方案，不要求时为空数组（覆盖全局要求）。
     /// </summary>
     private static void WriteSecurity(Utf8JsonWriter writer, bool required)
@@ -174,9 +282,14 @@ public static partial class OpenApiDocumentBuilder
         writer.WriteStartArray("tags");
         writer.WriteStringValue(descriptor.Contract.Resource);
         writer.WriteEndArray();
-        if (context.Source.Describe?.Invoke(descriptor.Id) is { } summary)
+        if (context.Text(OperationKey(descriptor.Id, ".title")) is { } summary)
         {
             writer.WriteString("summary", summary);
+        }
+
+        if (Join(context.Text(OperationKey(descriptor.Id, ".description")), AuthorizationText(descriptor.Contract.Permission, descriptor.Contract.Policy, context)) is { } description)
+        {
+            writer.WriteString("description", description);
         }
 
         if (descriptor.Contract.Stability != Stability.Stable)
@@ -202,10 +315,11 @@ public static partial class OpenApiDocumentBuilder
             ? requiredArray.EnumerateArray().Select(static e => e.GetString()!).ToHashSet(StringComparer.Ordinal)
             : [];
 
+        var requestKey = requestForParameters is { } titled ? SchemaKeyOf(titled.RootElement) : null;
         writer.WriteStartArray("parameters");
         foreach (var name in pathParameters)
         {
-            WriteParameter(writer, name, "path", required: true, PropertySchema(requestForParameters, name));
+            WriteParameter(writer, name, "path", required: true, PropertySchema(requestForParameters, name), PropertyText(requestKey, name, context));
         }
 
         // 没有请求体的方法：请求对象里除路由值以外的属性都从查询串绑定
@@ -215,7 +329,7 @@ public static partial class OpenApiDocumentBuilder
             {
                 if (!pathParameters.Contains(property.Name, StringComparer.Ordinal))
                 {
-                    WriteParameter(writer, property.Name, "query", required.Contains(property.Name), property.Value);
+                    WriteParameter(writer, property.Name, "query", required.Contains(property.Name), property.Value, PropertyText(requestKey, property.Name, context));
                 }
             }
         }
@@ -225,11 +339,16 @@ public static partial class OpenApiDocumentBuilder
         if (hasBody && (request is not null || requestName is not null))
         {
             writer.WriteStartObject("requestBody");
+            if (requestForParameters is { } body && RootText(body.RootElement, context) is { } bodyDescription)
+            {
+                writer.WriteString("description", bodyDescription);
+            }
+
             writer.WriteBoolean("required", true);
             writer.WriteStartObject("content");
             writer.WriteStartObject("application/json");
             writer.WritePropertyName("schema");
-            WriteSchemaOrReference(writer, request, requestName);
+            WriteSchemaOrReference(writer, request, requestName, context);
             writer.WriteEndObject();
             writer.WriteEndObject();
             writer.WriteEndObject();
@@ -237,19 +356,20 @@ public static partial class OpenApiDocumentBuilder
 
         writer.WriteStartObject("responses");
         writer.WriteStartObject(HttpRouteConvention.SuccessStatusCode(descriptor.Contract).ToString(CultureInfo.InvariantCulture));
-        writer.WriteString("description", "Success");
+        var responseRoot = response ?? (responseName is { } promotedResponse ? context.Component(promotedResponse) : null);
+        writer.WriteString("description", (responseRoot is { } described ? RootText(described.RootElement, context) : null) ?? context.Text(HttpMessages.OpenApiSuccess) ?? SuccessText);
         if (response is not null || responseName is not null)
         {
             writer.WriteStartObject("content");
             writer.WriteStartObject("application/json");
             writer.WritePropertyName("schema");
-            WriteSchemaOrReference(writer, response, responseName);
+            WriteSchemaOrReference(writer, response, responseName, context);
             writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
         writer.WriteEndObject();
-        WriteProblemResponse(writer);
+        WriteProblemResponse(writer, context);
         writer.WriteEndObject();
     }
 
@@ -279,14 +399,14 @@ public static partial class OpenApiDocumentBuilder
             writer.WriteString("summary", summary);
         }
 
-        if (endpoint.Description is { } description)
+        // 端点级 RequireXiHanPermission 的要求是 permission:<码> 策略，拆回权限码；其余（authenticated、命名策略）按策略名
+        var permission = endpoint.Requirement is { } requirement ? PermissionPolicy.CodeOf(requirement.Policy) : null;
+        var policy = endpoint.Requirement is { } named && permission is null ? named.Policy : null;
+        if (Join(endpoint.Description, AuthorizationText(permission, policy, context)) is { } description)
         {
             writer.WriteString("description", description);
         }
 
-        // 端点级 RequireXiHanPermission 的要求是 permission:<码> 策略，拆回权限码；其余（authenticated、命名策略）按策略名
-        var permission = endpoint.Requirement is { } requirement ? PermissionPolicy.CodeOf(requirement.Policy) : null;
-        var policy = endpoint.Requirement is { } named && permission is null ? named.Policy : null;
         var authorized = WriteAuthorization(writer, permission, policy, context);
         if (context.Bearer && !authorized)
         {
@@ -296,7 +416,7 @@ public static partial class OpenApiDocumentBuilder
         writer.WriteStartArray("parameters");
         foreach (var parameter in PathParameter().Matches(endpoint.Template).Select(static m => m.Groups["name"].Value))
         {
-            WriteParameter(writer, parameter, "path", required: true, null);
+            WriteParameter(writer, parameter, "path", required: true, null, null);
         }
 
         writer.WriteEndArray();
@@ -322,7 +442,7 @@ public static partial class OpenApiDocumentBuilder
         foreach (var produces in endpoint.Produces)
         {
             writer.WriteStartObject(produces.StatusCode.ToString(CultureInfo.InvariantCulture));
-            writer.WriteString("description", produces.StatusCode is >= 200 and < 300 ? "Success" : "Error");
+            writer.WriteString("description", produces.StatusCode is >= 200 and < 300 ? context.Text(HttpMessages.OpenApiSuccess) ?? SuccessText : context.Text(HttpMessages.OpenApiError) ?? ErrorText);
             // 有类型没写内容类型的按 JSON；只写了内容类型没有类型的按内容类型写（二进制下载）；两者都没有的没有正文
             var (contentTypes, type) = ResponseContent(produces);
             if (contentTypes.Count > 0)
@@ -342,9 +462,37 @@ public static partial class OpenApiDocumentBuilder
             writer.WriteEndObject();
         }
 
-        WriteProblemResponse(writer);
+        WriteProblemResponse(writer, context);
         writer.WriteEndObject();
     }
+
+    /// <summary>
+    /// 授权要求的那一行说明：权限（带显示名）、命名策略或只要求登录；没有要求或没有本地化时为 <see langword="null"/>。
+    /// </summary>
+    private static string? AuthorizationText(string? permission, string? policy, BuildContext context)
+    {
+        if (permission is not null)
+        {
+            return context.Source.Permissions is { } registry && registry.Find(permission).TryGetValue(out var definition)
+                ? context.Text(HttpMessages.OpenApiPermissionRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = permission, ["name"] = definition.DisplayName })
+                : context.Text(HttpMessages.OpenApiPermissionCodeRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = permission });
+        }
+
+        if (policy is null)
+        {
+            return null;
+        }
+
+        return string.Equals(policy, AuthenticatedPolicy.PolicyName, StringComparison.Ordinal)
+            ? context.Text(HttpMessages.OpenApiAuthenticationRequired)
+            : context.Text(HttpMessages.OpenApiPolicyRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["policy"] = policy });
+    }
+
+    /// <summary>
+    /// 两段说明之间空一行；都没有为 <see langword="null"/>。
+    /// </summary>
+    private static string? Join(string? first, string? second)
+        => first is null ? second : second is null ? first : first + "\n\n" + second;
 
     /// <summary>
     /// 写授权要求的扩展字段：权限码进 <c>x-xihan-permission</c> 并记入被引用集合，否则策略名进 <c>x-xihan-policy</c>；返回是否有要求。
@@ -469,10 +617,10 @@ public static partial class OpenApiDocumentBuilder
     /// <summary>
     /// 写 <c>default</c> 的 Problem Details 响应。
     /// </summary>
-    private static void WriteProblemResponse(Utf8JsonWriter writer)
+    private static void WriteProblemResponse(Utf8JsonWriter writer, BuildContext context)
     {
         writer.WriteStartObject("default");
-        writer.WriteString("description", "Error");
+        writer.WriteString("description", context.Text(HttpMessages.OpenApiError) ?? ErrorText);
         writer.WriteStartObject("content");
         writer.WriteStartObject("application/problem+json");
         writer.WriteStartObject("schema");
@@ -490,18 +638,23 @@ public static partial class OpenApiDocumentBuilder
         => request is { } r && r.RootElement.TryGetProperty("properties", out var properties) && properties.TryGetProperty(name, out var property) ? property : null;
 
     /// <summary>
-    /// 写一个参数对象。
+    /// 写一个参数对象；说明取区域覆盖或属性 Schema 的 <c>description</c>。
     /// </summary>
-    private static void WriteParameter(Utf8JsonWriter writer, string name, string location, bool required, JsonElement? schema)
+    private static void WriteParameter(Utf8JsonWriter writer, string name, string location, bool required, JsonElement? schema, string? localized)
     {
         writer.WriteStartObject();
         writer.WriteString("name", name);
         writer.WriteString("in", location);
+        if ((localized ?? (schema is { ValueKind: JsonValueKind.Object } described && described.TryGetProperty("description", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() : null)) is { } description)
+        {
+            writer.WriteString("description", description);
+        }
+
         writer.WriteBoolean("required", required);
         writer.WritePropertyName("schema");
         if (schema is { } element)
         {
-            element.WriteTo(writer);
+            WritePropertySchema(writer, element, localized);
         }
         else
         {
@@ -514,9 +667,9 @@ public static partial class OpenApiDocumentBuilder
     }
 
     /// <summary>
-    /// 写内联的 Schema 根对象（去掉 <c>$schema</c> 与已提升的 <c>$defs</c>），或已提升到组件时的 <c>$ref</c>。
+    /// 写内联的 Schema 根对象（去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，说明按区域），或已提升到组件时的 <c>$ref</c>。
     /// </summary>
-    private static void WriteSchemaOrReference(Utf8JsonWriter writer, JsonDocument? inline, string? componentName)
+    private static void WriteSchemaOrReference(Utf8JsonWriter writer, JsonDocument? inline, string? componentName, BuildContext context)
     {
         if (componentName is { } name)
         {
@@ -526,13 +679,153 @@ public static partial class OpenApiDocumentBuilder
             return;
         }
 
-        WriteSchema(writer, inline!.RootElement);
+        WriteLocalizedSchema(writer, inline!.RootElement, TitleOf(inline.RootElement), context);
     }
 
     /// <summary>
-    /// 写 Schema 根对象，去掉 <c>$schema</c> 与已提升的 <c>$defs</c>。
+    /// 写 Schema 根对象：去掉 <c>$schema</c> 与已提升的 <c>$defs</c>，根与直接属性的 <c>description</c> 有区域覆盖时替换（没有说明的补上）。
     /// </summary>
-    private static void WriteSchema(Utf8JsonWriter writer, JsonElement root)
+    private static void WriteLocalizedSchema(Utf8JsonWriter writer, JsonElement root, string? name, BuildContext context)
+    {
+        var key = name is null ? null : SchemaKey(name);
+        var rootText = key is null ? null : context.Text(key + ".description");
+        writer.WriteStartObject();
+        if (rootText is not null)
+        {
+            writer.WriteString("description", rootText);
+        }
+
+        foreach (var property in root.EnumerateObject())
+        {
+            if (_droppedKeys.Contains(property.Name, StringComparer.Ordinal) || (rootText is not null && property.NameEquals("description")))
+            {
+                continue;
+            }
+
+            if (key is not null && property.NameEquals("properties") && property.Value.ValueKind == JsonValueKind.Object)
+            {
+                writer.WriteStartObject("properties");
+                foreach (var member in property.Value.EnumerateObject())
+                {
+                    writer.WritePropertyName(member.Name);
+                    WritePropertySchema(writer, member.Value, context.Text(PropertyKey(key, member.Name)));
+                }
+
+                writer.WriteEndObject();
+                continue;
+            }
+
+            property.WriteTo(writer);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 写一个属性的 Schema；有区域覆盖时把 <c>description</c> 换成它（放在最前）。
+    /// </summary>
+    private static void WritePropertySchema(Utf8JsonWriter writer, JsonElement schema, string? localized)
+    {
+        if (localized is null || schema.ValueKind != JsonValueKind.Object)
+        {
+            schema.WriteTo(writer);
+            return;
+        }
+
+        writer.WriteStartObject();
+        writer.WriteString("description", localized);
+        foreach (var property in schema.EnumerateObject())
+        {
+            if (!property.NameEquals("description"))
+            {
+                property.WriteTo(writer);
+            }
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// 根 Schema 的说明：区域覆盖或 <c>description</c>。
+    /// </summary>
+    private static string? RootText(JsonElement root, BuildContext context)
+        => (SchemaKeyOf(root) is { } key ? context.Text(key + ".description") : null)
+            ?? (root.TryGetProperty("description", out var description) && description.ValueKind == JsonValueKind.String ? description.GetString() : null);
+
+    /// <summary>
+    /// 属性的区域说明（只有覆盖，没有覆盖为 <see langword="null"/>）。
+    /// </summary>
+    private static string? PropertyText(string? schemaKey, string property, BuildContext context)
+        => schemaKey is null ? null : context.Text(PropertyKey(schemaKey, property));
+
+    /// <summary>
+    /// 根 Schema 的 <c>title</c>。
+    /// </summary>
+    private static string? TitleOf(JsonElement root)
+        => root.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String ? title.GetString() : null;
+
+    /// <summary>
+    /// 按根 <c>title</c> 的 Schema 键前缀；没有 <c>title</c> 为 <see langword="null"/>。
+    /// </summary>
+    private static string? SchemaKeyOf(JsonElement root) => TitleOf(root) is { } title ? SchemaKey(title) : null;
+
+    /// <summary>
+    /// 操作文案的键：操作 ID 的 <c>-</c> 换 <c>_</c> 再加后缀。
+    /// </summary>
+    private static string OperationKey(string operationId, string suffix) => operationId.Replace('-', '_') + suffix;
+
+    /// <summary>
+    /// 标签文案的键：<c>openapi.tags.&lt;标签&gt;.&lt;项&gt;</c>。
+    /// </summary>
+    private static string TagKey(string tag, string part) => "openapi.tags." + tag.Replace('-', '_') + "." + part;
+
+    /// <summary>
+    /// 分组文案的键：<c>openapi.groups.&lt;组名&gt;.&lt;项&gt;</c>。
+    /// </summary>
+    private static string GroupKey(OpenApiGroup group, string part) => "openapi.groups." + group.Name.Replace('-', '_') + "." + part;
+
+    /// <summary>
+    /// Schema 文案的键前缀：<c>openapi.schemas.&lt;snake_case 的 Schema 名&gt;</c>。
+    /// </summary>
+    private static string SchemaKey(string name) => "openapi.schemas." + SnakeCase(name);
+
+    /// <summary>
+    /// 属性文案的键：<c>&lt;Schema 键前缀&gt;.properties.&lt;snake_case 的属性名&gt;</c>。
+    /// </summary>
+    private static string PropertyKey(string schemaKey, string property) => schemaKey + ".properties." + SnakeCase(property);
+
+    /// <summary>
+    /// snake_case：大写字母前加下划线（连续大写只在后接小写时断开），连字符换下划线。
+    /// </summary>
+    internal static string SnakeCase(string name)
+    {
+        var builder = new StringBuilder(name.Length + 8);
+        for (var i = 0; i < name.Length; i++)
+        {
+            var ch = name[i];
+            if (char.IsUpper(ch))
+            {
+                var breaks = i > 0 && (char.IsLower(name[i - 1]) || char.IsDigit(name[i - 1]) || (char.IsUpper(name[i - 1]) && i + 1 < name.Length && char.IsLower(name[i + 1])));
+                if (breaks)
+                {
+                    builder.Append('_');
+                }
+
+                builder.Append(char.ToLowerInvariant(ch));
+            }
+            else
+            {
+                builder.Append(ch == '-' ? '_' : ch);
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// 写 Schema 根对象，去掉 <c>$schema</c> 与已提升的 <c>$defs</c>（提升组件时用，不按区域改写）。
+    /// </summary>
+    private static void WriteStripped(Utf8JsonWriter writer, JsonElement root)
     {
         writer.WriteStartObject();
         foreach (var property in root.EnumerateObject())
@@ -549,13 +842,14 @@ public static partial class OpenApiDocumentBuilder
     /// <summary>
     /// 写 <c>components</c> 下的 <c>x-xihan-permissions</c>：键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>。
     /// </summary>
-    private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions)
+    private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions, bool includeRegistered)
     {
         // 收录范围 = 已发布操作与普通端点引用到的权限码 ∪ 注册表里登记的全部定义：
         // 授权界面要列出应用的全部权限，其中有些权限不被任何 HTTP 操作引用（只在 gRPC / MCP 暴露的操作），
         // 而被引用却没登记的权限码也要出现，前端才能按权限码对上条目——这种只写 code，因为没有定义可取
+        // 分组文档只收本组引用的权限码
         var codes = new SortedSet<string>(referencedPermissions, StringComparer.Ordinal);
-        if (permissions is not null)
+        if (permissions is not null && includeRegistered)
         {
             codes.UnionWith(permissions.All().Select(static p => p.Code));
         }
@@ -684,10 +978,25 @@ public static partial class OpenApiDocumentBuilder
         {
             Source = source;
             Bearer = source.AuthenticationSchemes.Any(static s => string.Equals(s, "Bearer", StringComparison.OrdinalIgnoreCase));
-            _operations = source.Registry.ExposedTo(Expose.Http)
-                .Where(static d => d.Contract.Stability != Stability.Internal)
-                .ToDictionary(static d => d.Id, d => (Descriptor: d, Route: source.Options.RouteFor(d)), StringComparer.Ordinal);
-            var endpoints = EndpointReader.Read(source.Endpoints);
+            var exposed = source.Registry.ExposedTo(Expose.Http).Where(static d => d.Contract.Stability != Stability.Internal).ToList();
+            // 组的标签：组内操作的资源段加额外标签；按全部操作算，分组文档与全量文档的 x-tagGroups 一致
+            GroupTags = source.Groups.ToDictionary(
+                static g => g.Name,
+                g => new SortedSet<string>(exposed.Where(d => g.Owners.Contains(d.OwnerId, StringComparer.Ordinal)).Select(static d => d.Contract.Resource).Concat(g.Tags), StringComparer.Ordinal),
+                StringComparer.Ordinal);
+            IReadOnlyList<EndpointDescription> endpoints = EndpointReader.Read(source.Endpoints);
+            if (source.Group is { } groupName)
+            {
+                Group = source.Groups.FirstOrDefault(g => string.Equals(g.Name, groupName, StringComparison.Ordinal))
+                    ?? throw new ArgumentException($"The OpenAPI group '{groupName}' is not declared.", nameof(source));
+                exposed = exposed.Where(d => Group.Owners.Contains(d.OwnerId, StringComparer.Ordinal)).ToList();
+                var tags = GroupTags[groupName];
+                endpoints = endpoints.Where(e => e.Tags.Any(tags.Contains)).ToList();
+            }
+
+            _operations = exposed.ToDictionary(static d => d.Id, d => (Descriptor: d, Route: source.Options.RouteFor(d)), StringComparer.Ordinal);
+            UsedTags.UnionWith(exposed.Select(static d => d.Contract.Resource));
+            UsedTags.UnionWith(endpoints.SelectMany(static e => e.Tags));
 
             // 先解析端点引用的 JSON 类型：引用不到在这里失败，提升的根在写操作前就定下来
             foreach (var endpoint in endpoints)
@@ -735,6 +1044,26 @@ public static partial class OpenApiDocumentBuilder
         /// 是否发布 Bearer 方案。
         /// </summary>
         public bool Bearer { get; }
+
+        /// <summary>
+        /// 只出这一组时的组；全量文档为 <see langword="null"/>。
+        /// </summary>
+        public OpenApiGroup? Group { get; }
+
+        /// <summary>
+        /// 各组的标签，按组名。
+        /// </summary>
+        public Dictionary<string, SortedSet<string>> GroupTags { get; }
+
+        /// <summary>
+        /// 文档里用到的标签，序数排序。
+        /// </summary>
+        public SortedSet<string> UsedTags { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 按键（与参数）取文档区域的文案；没有本地化或没有这条为 <see langword="null"/>。
+        /// </summary>
+        public string? Text(string key, IReadOnlyDictionary<string, object?>? arguments = null) => Source.Localize?.Invoke(key, arguments);
 
         /// <summary>
         /// 路径：模板 → 方法 → 写入动作，都按序数排序。
@@ -839,7 +1168,7 @@ public static partial class OpenApiDocumentBuilder
                 using var stripped = new MemoryStream();
                 using (var writer = new Utf8JsonWriter(stripped))
                 {
-                    WriteSchema(writer, document.RootElement);
+                    WriteStripped(writer, document.RootElement);
                 }
 
                 Components[name] = JsonDocument.Parse(stripped.ToArray());

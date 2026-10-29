@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "Passe une commande avec un nom et un montant ; nécessite la permission orders.write.",
-  "orders.list.description": "Liste les commandes du locataire courant par ordre de création ; nécessite la permission orders.read.",
+  "orders.create.description": "Passe une commande avec un nom et un montant.",
+  "orders.create.title": "Passer une commande",
+  "orders.list.description": "Liste les commandes du locataire courant par ordre de création.",
+  "orders.list.title": "Lister les commandes",
   "samples.order.name_blank": "Le nom de la commande ne doit pas être vide.",
   "samples.resource.missing": "La ressource d'exemple n'existe pas."
 }

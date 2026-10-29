@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "Требуется вход.",
+  "protocols.http.openapi_error": "Ошибка",
+  "protocols.http.openapi_permission_code_required": "Требуется разрешение {permission}.",
+  "protocols.http.openapi_permission_required": "Требуется разрешение {permission} ({name}).",
+  "protocols.http.openapi_policy_required": "Требуется политика {policy}.",
+  "protocols.http.openapi_success": "Успех",
+  "protocols.http.openapi_ungrouped": "Прочее"
+}

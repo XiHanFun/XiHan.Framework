@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "Requiere iniciar sesión.",
+  "protocols.http.openapi_error": "Error",
+  "protocols.http.openapi_permission_code_required": "Requiere el permiso {permission}.",
+  "protocols.http.openapi_permission_required": "Requiere el permiso {permission} ({name}).",
+  "protocols.http.openapi_policy_required": "Requiere la directiva {policy}.",
+  "protocols.http.openapi_success": "Correcto",
+  "protocols.http.openapi_ungrouped": "Otros"
+}

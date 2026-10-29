@@ -1,5 +1,6 @@
 #nullable enable
 XiHan.Framework.Protocols.Http.HttpErrors
+XiHan.Framework.Protocols.Http.HttpMessages
 XiHan.Framework.Protocols.Http.HttpProtocolCapabilities
 XiHan.Framework.Protocols.Http.HttpProtocolFeature
 XiHan.Framework.Protocols.Http.HttpProtocolFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
@@ -15,16 +16,31 @@ XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.init -> void
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Protocols.Http.Routing.HttpRoute!>!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentBuilder
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Deconstruct(out string! Name, out string! Title, out string! Url) -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink? other) -> bool
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Name.get -> string!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Name.init -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.OpenApiDocumentLink(string! Name, string! Title, string! Url) -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Title.get -> string!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Title.init -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Url.get -> string!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Url.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.AuthenticationSchemes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.AuthenticationSchemes.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Deconstruct(out XiHan.Framework.Kernel.Operations.OperationRegistry! Registry, out XiHan.Framework.Protocols.Http.HttpProtocolOptions! Options, out XiHan.Framework.Kernel.Security.PermissionRegistry? Permissions) -> void
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Describe.get -> System.Func<string!, string?>?
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Describe.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Endpoints.get -> System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Http.Endpoint!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Endpoints.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? other) -> bool
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Group.get -> string?
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Group.init -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup!>!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Groups.init -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Localize.get -> System.Func<string!, System.Collections.Generic.IReadOnlyDictionary<string!, object?>?, string?>?
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Localize.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.OpenApiDocumentSource(XiHan.Framework.Kernel.Operations.OperationRegistry! Registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! Options, XiHan.Framework.Kernel.Security.PermissionRegistry? Permissions) -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Options.get -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Permissions.get -> XiHan.Framework.Kernel.Security.PermissionRegistry?
@@ -38,9 +54,19 @@ XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Version.get -> stri
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Version.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointConventionBuilderExtensions
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup? other) -> bool
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Name.get -> string!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.OpenApiGroup(string! name, int order, System.Collections.Generic.IReadOnlyList<string!>! owners, System.Collections.Generic.IReadOnlyList<string!>? tags = null) -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Order.get -> int
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Owners.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Tags.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? other) -> bool
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup!>!
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Groups.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.OpenApiOptions() -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Servers.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Servers.init -> void
@@ -74,17 +100,32 @@ XiHan.Framework.Protocols.Http.Routing.OperationEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.Http.Routing.OperationRequestBinder
 const XiHan.Framework.Protocols.Http.HttpErrors.DuplicateRoute = "PROTOCOLS_CONFLICT_002" -> string!
 const XiHan.Framework.Protocols.Http.HttpErrors.OpenApiSchemaUnresolved = "PROTOCOLS_VALIDATION_010" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.CatalogName = "protocols.http" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiAuthenticationRequired = "protocols.http.openapi_authentication_required" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiError = "protocols.http.openapi_error" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiPermissionCodeRequired = "protocols.http.openapi_permission_code_required" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiPermissionRequired = "protocols.http.openapi_permission_required" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiPolicyRequired = "protocols.http.openapi_policy_required" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiSuccess = "protocols.http.openapi_success" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiUngrouped = "protocols.http.openapi_ungrouped" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Http = "protocols.http" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Http.HttpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Http" -> string!
 const XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.DefaultPattern = "/openapi.json" -> string!
+const XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.FullDocumentName = "all" -> string!
 const XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.IdentifierProperty = "id" -> string!
 override XiHan.Framework.Protocols.Http.HttpProtocolOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Http.HttpProtocolOptions.GetHashCode() -> int
 override XiHan.Framework.Protocols.Http.HttpProtocolOptions.ToString() -> string!
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.GetHashCode() -> int
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.ToString() -> string!
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.GetHashCode() -> int
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.ToString() -> string!
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.Equals(object? obj) -> bool
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.GetHashCode() -> int
+override XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.ToString() -> string!
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.GetHashCode() -> int
 override XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.ToString() -> string!
@@ -97,16 +138,23 @@ override XiHan.Framework.Protocols.Http.OpenApi.OperationSchemaReference.ToStrin
 override XiHan.Framework.Protocols.Http.Routing.HttpRoute.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Http.Routing.HttpRoute.GetHashCode() -> int
 override XiHan.Framework.Protocols.Http.Routing.HttpRoute.ToString() -> string!
+static XiHan.Framework.Protocols.Http.HttpMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Protocols.Http.HttpProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
 static XiHan.Framework.Protocols.Http.HttpProtocolOptions.operator !=(XiHan.Framework.Protocols.Http.HttpProtocolOptions? left, XiHan.Framework.Protocols.Http.HttpProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.Http.HttpProtocolOptions.operator ==(XiHan.Framework.Protocols.Http.HttpProtocolOptions? left, XiHan.Framework.Protocols.Http.HttpProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentBuilder.Build(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! options, XiHan.Framework.Kernel.Security.PermissionRegistry? permissions, string! title, string! version) -> byte[]!
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentBuilder.Build(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource! source) -> byte[]!
-static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.FromServices(System.IServiceProvider! services, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? options, System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Http.Endpoint!>! endpoints, string? locale = null) -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource!
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.operator !=(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink? right) -> bool
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.operator ==(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink? right) -> bool
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.FromServices(System.IServiceProvider! services, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? options, System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Http.Endpoint!>! endpoints, string? locale = null, string? group = null) -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource!
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.operator !=(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.operator ==(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointConventionBuilderExtensions.WithXiHanOperationSchema<TBuilder>(this TBuilder builder, string? request = null, string? response = null) -> TBuilder
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.GetXiHanOpenApiDocuments(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? options = null, string! pattern = "/openapi.json") -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink!>!
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.GroupPattern(string! pattern, string! group) -> string!
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.MapXiHanOpenApi(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? options = null, string! pattern = "/openapi.json") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.operator !=(XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup? right) -> bool
+static XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup.operator ==(XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.operator !=(XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.operator ==(XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions? right) -> bool
 static XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.operator !=(XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer? left, XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer? right) -> bool

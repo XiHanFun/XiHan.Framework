@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "Realiza un pedido con un nombre y un importe; requiere el permiso orders.write.",
-  "orders.list.description": "Enumera los pedidos del inquilino actual en orden de creación; requiere el permiso orders.read.",
+  "orders.create.description": "Realiza un pedido con un nombre y un importe.",
+  "orders.create.title": "Realizar un pedido",
+  "orders.list.description": "Enumera los pedidos del inquilino actual en orden de creación.",
+  "orders.list.title": "Listar pedidos",
   "samples.order.name_blank": "El nombre del pedido no puede estar en blanco.",
   "samples.resource.missing": "El recurso de ejemplo no existe."
 }

@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "Оформляет заказ с названием и суммой; требуется разрешение orders.write.",
-  "orders.list.description": "Перечисляет заказы текущего арендатора в порядке создания; требуется разрешение orders.read.",
+  "orders.create.description": "Оформляет заказ с названием и суммой.",
+  "orders.create.title": "Оформить заказ",
+  "orders.list.description": "Перечисляет заказы текущего арендатора в порядке создания.",
+  "orders.list.title": "Список заказов",
   "samples.order.name_blank": "Название заказа не может состоять только из пробелов.",
   "samples.resource.missing": "Ресурс примера не существует."
 }

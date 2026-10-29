@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// <c>MapXiHanOpenApi</c> 的文档选项：标题、版本与 <c>servers</c>。标题缺省取应用名，版本缺省取框架版本，<c>servers</c> 缺省不写。
+/// <c>MapXiHanOpenApi</c> 的文档选项。
 /// </summary>
+/// <remarks>
+/// 标题缺省取应用名，版本缺省取框架版本，<c>servers</c> 缺省不写，没有分组时只有一份全量文档。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record OpenApiOptions
 {
@@ -36,5 +39,40 @@ public sealed record OpenApiOptions
     {
         get => field;
         init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = [];
+
+    /// <summary>
+    /// 分组；为空列表时只有全量文档。
+    /// </summary>
+    /// <remarks>
+    /// 组名唯一，不能是 <c>all</c>（全量文档的名字）；一个特性只能属于一个组。
+    /// </remarks>
+    public IReadOnlyList<OpenApiGroup> Groups
+    {
+        get => field;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            var names = new HashSet<string>(StringComparer.Ordinal) { OpenApiEndpointRouteBuilderExtensions.FullDocumentName };
+            var owners = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var group in value)
+            {
+                ArgumentNullException.ThrowIfNull(group, nameof(value));
+                if (!names.Add(group.Name))
+                {
+                    throw new ArgumentException($"The OpenAPI group name '{group.Name}' is reserved or used twice.", nameof(value));
+                }
+
+                foreach (var owner in group.Owners)
+                {
+                    if (!owners.Add(owner))
+                    {
+                        throw new ArgumentException($"Feature '{owner}' belongs to more than one OpenAPI group.", nameof(value));
+                    }
+                }
+            }
+
+            field = [.. value];
+        }
     } = [];
 }

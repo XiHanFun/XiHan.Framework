@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "Gibt eine Bestellung mit Name und Betrag auf; erfordert die Berechtigung orders.write.",
-  "orders.list.description": "Listet die Bestellungen des aktuellen Mandanten in Erstellungsreihenfolge auf; erfordert die Berechtigung orders.read.",
+  "orders.create.description": "Gibt eine Bestellung mit Name und Betrag auf.",
+  "orders.create.title": "Bestellung aufgeben",
+  "orders.list.description": "Listet die Bestellungen des aktuellen Mandanten in Erstellungsreihenfolge auf.",
+  "orders.list.title": "Bestellungen auflisten",
   "samples.order.name_blank": "Der Bestellname darf nicht nur aus Leerzeichen bestehen.",
   "samples.resource.missing": "Die Beispielressource existiert nicht."
 }

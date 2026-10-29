@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "Requires sign-in.",
+  "protocols.http.openapi_error": "Error",
+  "protocols.http.openapi_permission_code_required": "Requires permission {permission}.",
+  "protocols.http.openapi_permission_required": "Requires permission {permission} ({name}).",
+  "protocols.http.openapi_policy_required": "Requires policy {policy}.",
+  "protocols.http.openapi_success": "Success",
+  "protocols.http.openapi_ungrouped": "Other"
+}

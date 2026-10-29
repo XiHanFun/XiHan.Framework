@@ -1,6 +1,8 @@
 {
-  "orders.create.description": "Faz um pedido com nome e valor; requer a permissão orders.write.",
-  "orders.list.description": "Lista os pedidos do locatário atual em ordem de criação; requer a permissão orders.read.",
+  "orders.create.description": "Faz um pedido com nome e valor.",
+  "orders.create.title": "Fazer um pedido",
+  "orders.list.description": "Lista os pedidos do locatário atual em ordem de criação.",
+  "orders.list.title": "Listar pedidos",
   "samples.order.name_blank": "O nome do pedido não pode estar em branco.",
   "samples.resource.missing": "O recurso de exemplo não existe."
 }
