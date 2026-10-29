@@ -293,6 +293,8 @@ XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware.InvokeAsync(XiHan.Framework.
 XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.<Clone>$() -> XiHan.Framework.Kernel.Pipeline.InvocationOrigin!
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.EndpointName.get -> string?
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.EndpointName.init -> void
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Equals(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? other) -> bool
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.InvocationOrigin() -> void
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Protocol.get -> string!
@@ -301,6 +303,8 @@ XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Referer.get -> string?
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Referer.init -> void
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.RemoteAddress.get -> string?
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.RemoteAddress.init -> void
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Route.get -> string?
+XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Route.init -> void
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Target.get -> string!
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.Target.init -> void
 XiHan.Framework.Kernel.Pipeline.InvocationOrigin.UserAgent.get -> string?

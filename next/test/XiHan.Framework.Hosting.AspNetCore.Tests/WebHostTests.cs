@@ -81,6 +81,7 @@ public sealed class WebHostTests
         });
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
         app.MapGet("/secure", () => "secure").RequireXiHanPermission("orders.read");
+        app.MapGet("/orders/{id}", static (string id) => id).WithName("orders.get");
         await app.StartAsync();
         return (app, app.GetTestClient(), captured);
     }
@@ -160,7 +161,7 @@ public sealed class WebHostTests
             http.Connection.RemoteIpAddress = IPAddress.Parse("::ffff:203.0.113.7");
         });
         Assert.Equal(
-            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /app/ok", RemoteAddress = "203.0.113.7", UserAgent = "probe/1.0", Referer = "https://admin.test/users" },
+            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /app/ok", RemoteAddress = "203.0.113.7", UserAgent = "probe/1.0", Referer = "https://admin.test/users", Route = "/ok" },
             captured.Context!.GetOrigin().ValueOrThrow());
 
         // 经反向代理：宿主在 UseXiHan() 之前 UseForwardedHeaders()，远端地址是转发头里的客户端；没有的头为 null
@@ -172,8 +173,27 @@ public sealed class WebHostTests
             http.Connection.RemoteIpAddress = IPAddress.Loopback;
         });
         Assert.Equal(
-            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /ok", RemoteAddress = "198.51.100.9" },
+            new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /ok", RemoteAddress = "198.51.100.9", Route = "/ok" },
             captured.Context!.GetOrigin().ValueOrThrow());
+    }
+
+    [Fact]
+    public async Task Origin_CarriesTheMatchedEndpointsRouteAndName()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+
+        // 命名的路由端点：模板与名字进来源，目标仍是实际路径；普通端点据此在 Observe 阶段被识别
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/orders/42")).StatusCode);
+        var named = captured.Context!.GetOrigin().ValueOrThrow();
+        Assert.Equal(("GET /orders/42", "/orders/{id}", "orders.get"), (named.Target, named.Route, named.EndpointName));
+
+        // 没有命名的端点只有模板；没有匹配到端点（404）两者都没有
+        await client.GetAsync("/ok");
+        Assert.Equal(("/ok", (string?)null), (captured.Context!.GetOrigin().ValueOrThrow().Route, captured.Context!.GetOrigin().ValueOrThrow().EndpointName));
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/nowhere")).StatusCode);
+        var unmatched = captured.Context!.GetOrigin().ValueOrThrow();
+        Assert.Equal(("GET /nowhere", (string?)null, (string?)null), (unmatched.Target, unmatched.Route, unmatched.EndpointName));
     }
 
     [Fact]

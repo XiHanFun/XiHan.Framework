@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
@@ -39,7 +40,7 @@ public static partial class HttpInvocation
     /// <summary>
     /// 从请求头构造调用上下文：<c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、
     /// <c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释）；
-    /// 调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>。
+    /// 调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
     /// </summary>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -118,12 +119,13 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// HTTP 请求的调用来源：方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer。
+    /// HTTP 请求的调用来源：方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer，以及路由匹配到的端点的路由模板与名字（<c>UseXiHan()</c> 在路由之后，端点已选定）。
     /// 远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4。
     /// </summary>
     private static InvocationOrigin OriginOf(HttpContext httpContext)
     {
         var request = httpContext.Request;
+        var endpoint = httpContext.GetEndpoint();
         var address = httpContext.Connection.RemoteIpAddress;
         if (address is { IsIPv4MappedToIPv6: true })
         {
@@ -138,6 +140,8 @@ public static partial class HttpInvocation
             RemoteAddress = address?.ToString(),
             UserAgent = HeaderOrNull(request.Headers.UserAgent.ToString()),
             Referer = HeaderOrNull(request.Headers.Referer.ToString()),
+            Route = (endpoint as RouteEndpoint)?.RoutePattern.RawText,
+            EndpointName = endpoint?.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName,
         };
     }
 
