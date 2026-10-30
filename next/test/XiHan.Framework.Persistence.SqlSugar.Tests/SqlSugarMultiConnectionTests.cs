@@ -8,6 +8,7 @@ using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -18,7 +19,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// 多库。
 /// </summary>
 /// <remarks>
-/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误。
+/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；管道外的作用域显式绑定分片后同样分落两库；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误。
 /// </remarks>
 public sealed class SqlSugarMultiConnectionTests : IDisposable
 {
@@ -94,6 +95,52 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     }
 
     [Fact]
+    public async Task ScopeOutsideThePipeline_BoundToADisabledTenant_WritesTenantRowsToItsShard()
+    {
+        using (var client = CreateClient(_second.ConnectionString))
+        {
+            client.CodeFirst.InitTables<ConformanceNote>();
+        }
+
+        // 停用的租户：管道里 Tenant 阶段会拒绝它，后台写入照样要落到它的库
+        await using var host = await StartShardedHostAsync(disabled: true);
+        var orderId = Guid.CreateVersion7();
+        var noteId = Guid.CreateVersion7();
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            // 先绑定，再解析持久化服务：客户端建立时带上分片连接
+            var bound = await scope.ServiceProvider.GetRequiredService<TenantShardScope>().BindTenantAsync("acme", CancellationToken.None);
+            Assert.Equal(_second.ConnectionString, bound.ValueOrThrow().ValueOrThrow().ConnectionString);
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
+            (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().AddAsync(new ConformanceOrder { Id = orderId, Name = "platform" }, CancellationToken.None)).ThrowIfFailure();
+            (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceNote, Guid>>().AddAsync(new ConformanceNote { Id = noteId, Text = "tenant" }, CancellationToken.None)).ThrowIfFailure();
+            (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
+
+            // 客户端已经建好：再绑定是错误，不静默沿用原连接
+            Assert.Throws<InvalidOperationException>(() => scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(new TenantShard("beta", _default.ConnectionString)));
+        }
+
+        using (var defaultClient = CreateClient(_default.ConnectionString))
+        using (var shardClient = CreateClient(_second.ConnectionString))
+        {
+            Assert.Equal([orderId], defaultClient.Queryable<ConformanceOrder>().ToList().Select(static o => o.Id));
+            Assert.Empty(defaultClient.Queryable<ConformanceNote>().ToList());
+            var note = Assert.Single(shardClient.Queryable<ConformanceNote>().ToList());
+            Assert.Equal((noteId, "acme"), (note.Id, note.TenantId));
+        }
+
+        // 没有绑定的作用域用默认连接：同一个租户的行在默认库里查不到
+        await using (var plain = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = plain.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme", IsReadOnly: true), CancellationToken.None);
+            Assert.False((await plain.ServiceProvider.GetRequiredService<IRepository<ConformanceNote, Guid>>().FindAsync(noteId, CancellationToken.None)).HasValue);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task ApplicationClient_WithSeveralConnections_PinsEntitiesByTenantAttribute()
     {
         // 方式二：应用自己注册带 default 与 audit 两个连接的客户端；启动建表按落点分组，[Tenant("audit")] 的实体在 audit 库建表
@@ -147,12 +194,13 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     /// 启动带默认库、租户 <c>acme</c> 分片到第二个库的宿主。
     /// </summary>
     /// <remarks>
-    /// 默认库建两种套件实体的表。
+    /// 默认库建两种套件实体的表；<paramref name="disabled"/> 时 <c>acme</c> 是停用的租户。
     /// </remarks>
-    private Task<TestHost> StartShardedHostAsync() => TestHost.StartAsync(
+    private Task<TestHost> StartShardedHostAsync(bool disabled = false) => TestHost.StartAsync(
         static b => b.UseFeature<InMemoryMultiTenancyFeature>().UseFeature(SqliteDatabase.CreateFeature()),
         [
             .. _default.Configuration,
+            new("XiHan:MultiTenancy:Tenants:acme:IsEnabled", disabled ? "false" : "true"),
             new("XiHan:MultiTenancy:Tenants:acme:Properties:" + TenantShardKeys.ConnectionString, _second.ConnectionString),
             new("XiHan:MultiTenancy:Tenants:acme:Properties:" + TenantShardKeys.DatabaseProvider, "sqlite"),
         ],

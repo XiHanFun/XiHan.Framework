@@ -60,3 +60,4 @@
 | [0054](0054-健康条目详情.md) | 健康条目详情：`ContributorStatus` 增加说明、检查时刻、耗时与标量数据，`PeriodicHealthContributor` 记下每次探测的时刻与耗时，容量类条目给出用量与上限，探针端点照写 | 已采纳 |
 | [0055](0055-缓存键管理与跨实例失效.md) | 缓存键管理与跨实例失效：可选的 `ICacheStoreInspector`（按前缀分页列键、读大小与存活时间、按前缀删除，内存与 Redis 实现）与 `ICacheChangeFeed`（共享存储的写入与删除通知，Redis 经频道转发、不回送），两级缓存据此即时失效各实例的 L1 | 已采纳 |
 | [0056](0056-运行信息.md) | 运行信息：新包 `Observability.Abstractions`（`IHostMonitor` 与七份记录，`ObservabilityCapabilities` 移入）与 `Observability.Host`（`observability.host@1`），读 CPU、内存、磁盘、网卡、GPU、主板与运行时长，只读 BCL、`/proc` 与 `/sys`、注册表与系统调用，不启动外部命令；后台采样求使用率与速率；读不到为 `null`；与 4.x 的差异列在 RFC-0023 | 已采纳 |
+| [0057](0057-管道外作用域绑定租户分片.md) | 管道外作用域绑定租户分片：作用域服务 `TenantShardScope` 的 `BindTenantAsync` / `Bind` 不经管道、不看租户是否启用、不受应用排空影响，须在首次创建持久化客户端之前，之后再绑定或改绑抛出；显式绑定优先于调用上下文；审计记录核对后保持平台级、落默认连接 | 已采纳 |

@@ -10,7 +10,8 @@
 | `MultiTenancyOptions` | 默认租户、是否必须有租户、是否核对存储、租户声明类型、分片缓存容量 |
 | `TenantResolutionMiddleware` | Tenant 阶段：解析 → 校验格式 → 核对存储（存在且启用）→ 写入安全上下文 → 解析分片写入调用上下文（装配了解析器时；失败即调用失败） |
 | `ITenantShardResolver`、`TenantShard`、`TenantShardKeys`、`TenantStoreShardResolver` | 租户分片：解析器契约（`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate`）、分片（连接串、小写提供者名、透传属性）、租户属性键（`ConnectionString`、`DatabaseProvider`、`Shard.*`）与从 `ITenantStore` 推出分片的默认解析器（按租户有界缓存） |
-| `TenantShardInvocationExtensions`、`TenantShardBinding` | 调用上下文里的分片（`GetTenantShard` / `SetTenantShard`）与持久化 Provider 在作用域内用的分片连接绑定（主值是分片连接串，属性并入分片属性与 `tenant` / `provider`） |
+| `TenantShardInvocationExtensions`、`TenantShardBinding` | 调用上下文里的分片（`GetTenantShard` / `SetTenantShard`）与持久化 Provider 在作用域内用的分片连接绑定（主值是分片连接串，属性并入分片属性与 `tenant` / `provider`；先看 `TenantShardScope` 的显式绑定，再看当前调用） |
+| `TenantShardScope` | 管道外的作用域显式绑定分片（ADR-0057）：`BindTenantAsync(tenantId)` 经分片解析器解析并绑定（不看租户是否启用、不受应用状态影响，共库租户不绑定），`Bind(shard)` 直接绑定；须在作用域首次创建持久化客户端之前，之后再绑定或改绑抛出 `InvalidOperationException`。多租户 Provider 登记为作用域服务 |
 
 解析顺序由 Provider 注册决定，默认先主体声明后 Baggage：已认证主体所属的租户优先于客户端自报的租户。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 

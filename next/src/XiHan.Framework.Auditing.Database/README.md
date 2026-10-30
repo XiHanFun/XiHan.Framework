@@ -45,6 +45,8 @@ await host.Services.GetRequiredService<DatabaseAuditTrail>().FlushAsync(ct);
 | --- | --- |
 | `DatabaseAuditingFeature` | 登记 `AuditRecord` 的仓储；被选中时把 `DatabaseAuditTrail` 绑定为 `IAuditSink` 与 `IAuditTrail` 并挂 `AuditMiddleware`（Observe 末尾）；启动后运行刷写循环，停止时先停循环再把队列里剩余的事件刷完 |
 | `Trail.AuditRecord` | 存储行：`Sequence`（写入序号）、`Timestamp`、`Action`、`Succeeded`、`ErrorCode` / `ErrorMessageKey` / `ErrorMessage` / `ErrorDetailsJson`、`TraceId`、`Resource`、`PrincipalId`、`TenantId`、`DetailsJson`；只追加，不软删除、无并发戳；租户只是普通列，不实现 `IMultiTenant`。字符串列显式声明长度（`[StringLength(n)]`：动作 256、错误码 64、消息键 256、trace-id 64、资源 1024、主体 256、租户 128），错误文案与两个 JSON 列是长文本（`[LongText]`），SqlSugar 与 EF Core 都据此建表（ADR-0036） |
+
+审计记录是平台级数据：落库与查询在根提供者的新作用域里进行，不绑定租户分片，独立库租户的记录也落应用默认连接，按租户列区分（RFC-0015，ADR-0057 核对）。
 | `Trail.DatabaseAuditTrail` | 单例接收器与查询：`WriteAsync` 进队列，`FlushAsync` 立即刷写并等待完成，`QueryAsync` 分页查询；`PendingCount` / `PersistedCount` / `FailedCount` / `DroppedCount` 计数 |
 | `DatabaseAuditingOptions` | `XiHan:Auditing:Database`：`QueueCapacity`（10000）、`BatchSize`（100）、`FlushIntervalSeconds`（1）、`LogEvents`（true） |
 
