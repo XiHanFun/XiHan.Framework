@@ -103,6 +103,14 @@ public interface IJobStore
     ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 运行历史的总数。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="RunsAsync"/> 同一组过滤项，不看分页。
+    /// </remarks>
+    ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 运行中的记录。
     /// </summary>
     /// <remarks>

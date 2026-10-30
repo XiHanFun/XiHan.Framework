@@ -77,6 +77,14 @@ public static class SchedulingMessages
     public const string RunNotFound = "scheduling.run.not_found";
 
     /// <summary>
+    /// 作业没有代码定义。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string CodeDefinitionNotFound = "scheduling.job.code_definition_not_found";
+
+    /// <summary>
     /// 运行被取消。
     /// </summary>
     /// <remarks>

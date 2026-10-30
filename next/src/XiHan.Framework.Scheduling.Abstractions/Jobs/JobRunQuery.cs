@@ -43,6 +43,27 @@ public sealed record JobRunQuery
     public DateTimeOffset? To { get; init; }
 
     /// <summary>
+    /// 触发器名。
+    /// </summary>
+    /// <remarks>
+    /// 只取由该触发器引起的运行；手动运行没有触发器名。
+    /// </remarks>
+    public string? Trigger { get; init; }
+
+    /// <summary>
+    /// 执行节点 ID。
+    /// </summary>
+    public string? Node { get; init; }
+
+    /// <summary>
+    /// 是否有错误。
+    /// </summary>
+    /// <remarks>
+    /// <see langword="true"/> 只取带错误码的运行，<see langword="false"/> 只取不带错误码的，<see langword="null"/> 不限定。
+    /// </remarks>
+    public bool? HasError { get; init; }
+
+    /// <summary>
     /// 跳过条数。
     /// </summary>
     /// <remarks>
@@ -75,6 +96,9 @@ public sealed record JobRunQuery
         return (Job is null || record.Job == Job.Value)
             && (States is not { Count: > 0 } || States.Contains(record.State))
             && (From is null || record.ScheduledAt >= From.Value)
-            && (To is null || record.ScheduledAt < To.Value);
+            && (To is null || record.ScheduledAt < To.Value)
+            && (Trigger is null || string.Equals(record.TriggerName, Trigger, StringComparison.Ordinal))
+            && (Node is null || string.Equals(record.NodeId, Node, StringComparison.Ordinal))
+            && (HasError is null || (record.ErrorCode is not null) == HasError.Value);
     }
 }

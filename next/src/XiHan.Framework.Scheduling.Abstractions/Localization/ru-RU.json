@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "Определение задания '{name}' недопустимо: {reason}",
+  "scheduling.job.code_definition_not_found": "У задания '{name}' нет определения в коде для восстановления.",
   "scheduling.job.failed": "Задание '{name}' выбросило необработанное исключение: {reason}",
   "scheduling.job.not_found": "Задание '{name}' не зарегистрировано.",
   "scheduling.job.running": "Задание '{name}' уже выполняется и не допускает параллельных запусков.",

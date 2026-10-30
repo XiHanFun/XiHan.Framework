@@ -16,6 +16,8 @@ XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.get -> string
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.ActiveRunId.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.AllowConcurrent.get -> bool
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.AllowConcurrent.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.CodeFingerprint.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.CodeFingerprint.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.ConcurrencyStamp.get -> string!
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.ConcurrencyStamp.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.Data.get -> string!
@@ -135,6 +137,7 @@ XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.AcquireDueAsync(System.DateTimeOffset dueBefore, int limit, string! nodeId, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!>!>>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.CancelRequestedRunsAsync(string! nodeId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<string!>!>>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.CompleteRunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.CountRunsAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DatabaseJobStore(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! clock) -> void
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DeleteJobsAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Scheduling.Database.Storage.DatabaseJobStore.DeleteTriggersAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.TriggerKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>

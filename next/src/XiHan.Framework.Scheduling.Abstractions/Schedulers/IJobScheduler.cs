@@ -104,4 +104,20 @@ public interface IJobScheduler
     /// 运行历史。
     /// </summary>
     ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 运行历史的总数。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="RunsAsync"/> 同一组过滤项，不看分页（ADR-0053）。
+    /// </remarks>
+    ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 把运行时改过的代码作业恢复为代码定义。
+    /// </summary>
+    /// <remarks>
+    /// 来源回到 <see cref="JobSource.Code"/>，保留暂停状态与同名触发器的进度；作业没有代码定义 → <see cref="SchedulingErrors.CodeDefinitionNotFound"/>（ADR-0053）。
+    /// </remarks>
+    ValueTask<IReadOnlyList<Result>> RestoreAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
 }

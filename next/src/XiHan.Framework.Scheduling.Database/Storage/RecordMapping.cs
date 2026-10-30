@@ -48,6 +48,7 @@ internal static class RecordMapping
             ActiveRunId = row.ActiveRunId,
             Source = (JobSource)row.Source,
             UpdatedAt = row.UpdatedAt,
+            CodeFingerprint = row.CodeFingerprint,
         };
     }
 
@@ -68,6 +69,7 @@ internal static class RecordMapping
         // 占用的运行 ID 由存储自己维护（独占开始 / 完成 / 失联恢复），替换定义不动它
         target.Source = source.Source;
         target.UpdatedAt = source.UpdatedAt;
+        target.CodeFingerprint = source.CodeFingerprint;
     }
 
     /// <summary>
@@ -238,6 +240,7 @@ internal static class RecordMapping
         row.ActiveRunId = record.ActiveRunId;
         row.Source = (int)record.Source;
         row.UpdatedAt = record.UpdatedAt;
+        row.CodeFingerprint = record.CodeFingerprint;
     }
 
     /// <summary>

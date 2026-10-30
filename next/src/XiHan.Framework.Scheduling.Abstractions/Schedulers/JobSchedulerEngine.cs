@@ -1,6 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -332,6 +335,22 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<Result>> RestoreAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        var results = new List<Result>(names.Count);
+        foreach (var name in names)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(_codeJobs.Find(name).TryGetValue(out var definition)
+                ? await ScheduleOneAsync(definition, JobSource.Code, cancellationToken, force: true).ConfigureAwait(false)
+                : Error.NotFound(SchedulingErrors.CodeDefinitionNotFound, SchedulingMessages.CodeDefinitionNotFound, MessageArguments.Of(("name", name.Value))));
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> UnscheduleAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
@@ -527,6 +546,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             .Select(job => BuildStatus(job, triggersByJob[job.Name].ToList(), runningByJob[job.Name].Count(), lastByJob.GetValueOrDefault(job.Name)))
             .ToList();
         return Result.Success(statuses);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return _store.CountRunsAsync(query, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -1253,7 +1279,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// <summary>
     /// 新增或替换一个作业及其触发器。
     /// </summary>
-    private async ValueTask<Result> ScheduleOneAsync(JobDefinition definition, JobSource source, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 按代码写入（<paramref name="source"/> 为 <see cref="JobSource.Code"/>）时记下代码定义的指纹；存储里是运行时改过、指纹没变的作业时保留运行时的修改，<paramref name="force"/> 为真时（恢复）照样按代码写入。
+    /// 运行时替换代码作业时来源记为 <see cref="JobSource.Overridden"/> 并带上原来的指纹。
+    /// </remarks>
+    private async ValueTask<Result> ScheduleOneAsync(JobDefinition definition, JobSource source, CancellationToken cancellationToken, bool force = false)
     {
         ArgumentNullException.ThrowIfNull(definition);
         if (!_types.KeyFor(definition.JobType).TryGetValue(out var typeKey))
@@ -1289,6 +1319,28 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
 
         var now = _clock.GetUtcNow();
         var current = existingMaybe.TryGetValue(out var found) ? found : null;
+        string? fingerprint = null;
+        if (source == JobSource.Code)
+        {
+            fingerprint = FingerprintOf(definition, typeKey);
+            if (current is { Source: JobSource.Overridden } overridden && !force)
+            {
+                if (string.Equals(overridden.CodeFingerprint, fingerprint, StringComparison.Ordinal))
+                {
+                    // 代码定义没变：保留运行时的修改
+                    return Result.Success();
+                }
+
+                LogOverrideDiscarded(_logger, definition.Name.Value);
+            }
+        }
+        else if (current is { Source: JobSource.Code or JobSource.Overridden } coded)
+        {
+            // 运行时替换代码作业：记为改过，指纹沿用，启动时据此判断代码有没有变
+            source = JobSource.Overridden;
+            fingerprint = coded.CodeFingerprint;
+        }
+
         var record = new JobRecord
         {
             Name = definition.Name,
@@ -1301,6 +1353,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             Paused = current?.Paused ?? false,
             Source = source,
             UpdatedAt = now,
+            CodeFingerprint = fingerprint,
         };
         var previousByName = previous.ToDictionary(static trigger => trigger.Name, StringComparer.Ordinal);
         var triggers = new List<TriggerRecord>(definition.Triggers.Count);
@@ -1791,6 +1844,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private static Error DefinitionInvalid(JobName name, string reason) => Error.Validation(SchedulingErrors.DefinitionInvalid, SchedulingMessages.DefinitionInvalid, MessageArguments.Of(("name", name.Value), ("reason", reason)));
 
     /// <summary>
+    /// 代码定义变了，运行时的修改被覆盖。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The code definition of job {Job} changed; the runtime changes made to it are replaced by the code definition.")]
+    private static partial void LogOverrideDiscarded(ILogger logger, string job);
+
+    /// <summary>
     /// 获取领导租约。
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Acquired the leader lease for '{Resource}'.")]
@@ -1843,4 +1902,30 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "A scheduler cycle threw.")]
     private static partial void LogTickThrew(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// 代码定义的指纹。
+    /// </summary>
+    /// <remarks>
+    /// 类型键、数据、标志、说明与各触发器（名字、计划文本、数据、优先级、misfire 策略、说明）按行拼接后的 SHA-256 十六进制。
+    /// </remarks>
+    private static string FingerprintOf(JobDefinition definition, string typeKey)
+    {
+        var text = new StringBuilder()
+            .Append(typeKey).Append('\n')
+            .Append(definition.Data?.ToJsonString() ?? "{}").Append('\n')
+            .Append(definition.AllowConcurrent).Append(definition.RunOnEveryInstance).Append(definition.RequestsRecovery).Append('\n')
+            .Append(definition.Description).Append('\n');
+        foreach (var trigger in definition.Triggers)
+        {
+            text.Append(trigger.Name).Append('\t')
+                .Append(trigger.Schedule.ToString()).Append('\t')
+                .Append(trigger.Data?.ToJsonString() ?? "{}").Append('\t')
+                .Append(trigger.Priority.ToString(CultureInfo.InvariantCulture)).Append('\t')
+                .Append(trigger.MisfirePolicy).Append('\t')
+                .Append(trigger.Description).Append('\n');
+        }
+
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+    }
 }

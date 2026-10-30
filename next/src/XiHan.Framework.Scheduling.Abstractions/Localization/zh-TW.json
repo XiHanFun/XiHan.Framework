@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "作業定義 '{name}' 不合法：{reason}",
+  "scheduling.job.code_definition_not_found": "作業 '{name}' 沒有程式碼定義，無法還原。",
   "scheduling.job.failed": "作業 '{name}' 擲出了未處理的例外：{reason}",
   "scheduling.job.not_found": "作業 '{name}' 未登記。",
   "scheduling.job.running": "作業 '{name}' 正在執行，且不允許並行執行。",
