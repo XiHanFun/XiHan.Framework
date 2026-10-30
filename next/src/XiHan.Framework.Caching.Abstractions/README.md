@@ -9,6 +9,7 @@
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 共享缓存的值序列化；`JsonCacheSerializer` 要求 `JsonSerializerOptions` 带 `TypeInfoResolver`（源生成上下文），`CreateReflectionBased()` 只用于允许反射的运行时；Provider 按"已注册的 `ICacheSerializer` → 已注册的 `JsonSerializerOptions`"顺序取序列化器 |
 | `CacheKey`、`CacheEntryOptions`、`CacheEntry` | 键（非空、无空白与控制字符、≤ 512；`IsValidPrefix` 校验前缀，可以为空）、过期（绝对或滑动，二选一）与批量写入的一项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的键管理（ADR-0055）：按前缀分页列键（`Limit` 1–1000，`Continuation` 续页）、读条目的载荷字节数 / 剩余存活 / 滑动窗口、按前缀删除（前缀不能为空）；管理界面把 `ICacheStore` 转成它使用，内存与 Redis 存储实现，远程插件不实现 |
+| `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理（ADR-0058）：进程内对象缓存的条目不在字节存储里，按前缀分页列键、看类型全名与剩余存活、按前缀删除；管理界面把缓存转成它、再把 `Store` 转成 `ICacheStoreInspector`，两份合起来是全部条目 |
 | `ICacheChangeFeed`、`CacheChange` | 可选的变更通知（ADR-0055）：本实例与其他实例对共享存储的写入与删除（键列表，或按前缀删除时的前缀），用来失效本地副本；本实例同步通知、其他实例经后端转发且不回送，尽力而为 |
 | `IDistributedLock`、`StoreDistributedLock`、`LockHandle` | 建立在"不存在才写 + 比较删"之上的租约锁 |
 | `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，处理中返回冲突，完成后回放结果 |
