@@ -58,3 +58,4 @@
 | [0052](0052-OpenAPI文案标签分组与字段说明.md) | OpenAPI 的文案、标签、分组与字段说明：`summary` / `description` 分取 `<操作 ID>.title` / `.description`，授权要求由生成器按区域附在说明末尾；顶层 `tags` 带 `x-displayName`（`openapi.tags.<资源段>.name`）；`OpenApiOptions.Groups` 每组一份文档、全量文档带 `x-tagGroups`、`GetXiHanOpenApiDocuments` 供 Scalar 登记；字段说明由源生成器从 XML 注释折进 Schema，可按区域覆盖 | 已采纳 |
 | [0053](0053-调度管理面.md) | 调度管理面：运行历史加触发器 / 节点 / 有无错误过滤与 `CountRunsAsync`；`JobTypeRegistry.Keys`；代码作业的运行时修改记为 `Overridden` 并存代码定义指纹，代码没改就保留、代码改了以代码为准，`RestoreAsync` 恢复为代码定义 | 已采纳 |
 | [0054](0054-健康条目详情.md) | 健康条目详情：`ContributorStatus` 增加说明、检查时刻、耗时与标量数据，`PeriodicHealthContributor` 记下每次探测的时刻与耗时，容量类条目给出用量与上限，探针端点照写 | 已采纳 |
+| [0055](0055-缓存键管理与跨实例失效.md) | 缓存键管理与跨实例失效：可选的 `ICacheStoreInspector`（按前缀分页列键、读大小与存活时间、按前缀删除，内存与 Redis 实现）与 `ICacheChangeFeed`（共享存储的写入与删除通知，Redis 经频道转发、不回送），两级缓存据此即时失效各实例的 L1 | 已采纳 |

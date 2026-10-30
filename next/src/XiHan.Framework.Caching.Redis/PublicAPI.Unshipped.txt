@@ -1,12 +1,17 @@
 #nullable enable
 XiHan.Framework.Caching.Redis.RedisCacheStore
+XiHan.Framework.Caching.Redis.RedisCacheStore.Dispose() -> void
 XiHan.Framework.Caching.Redis.RedisCacheStore.GetAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>>
 XiHan.Framework.Caching.Redis.RedisCacheStore.GetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>>!>
+XiHan.Framework.Caching.Redis.RedisCacheStore.InspectAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Caching.Abstractions.Stores.CacheEntryInfo!>>
+XiHan.Framework.Caching.Redis.RedisCacheStore.ListKeysAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage!>
 XiHan.Framework.Caching.Redis.RedisCacheStore.RedisCacheStore(StackExchange.Redis.IConnectionMultiplexer! connection, XiHan.Framework.Caching.Redis.RedisCachingOptions! options) -> void
 XiHan.Framework.Caching.Redis.RedisCacheStore.RemoveAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Caching.Redis.RedisCacheStore.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<long>
 XiHan.Framework.Caching.Redis.RedisCacheStore.RemoveManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<bool>!>
 XiHan.Framework.Caching.Redis.RedisCacheStore.SetAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Caching.Redis.RedisCacheStore.SetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheEntry!>! entries, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Caching.Redis.RedisCacheStore.Subscribe(System.Action<XiHan.Framework.Caching.Abstractions.Stores.CacheChange!>! handler) -> System.IDisposable!
 XiHan.Framework.Caching.Redis.RedisCacheStore.TryAddAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.Caching.Redis.RedisCacheStore.TryRemoveAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> expectedValue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.Caching.Redis.RedisCachingFeature
@@ -26,6 +31,8 @@ XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.get -> Sys
 XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.get -> string!
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.init -> void
+XiHan.Framework.Caching.Redis.RedisCachingOptions.PublishChanges.get -> bool
+XiHan.Framework.Caching.Redis.RedisCachingOptions.PublishChanges.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.RedisCachingOptions() -> void
 const XiHan.Framework.Caching.Redis.RedisCachingFeature.ConnectionBinding = "cache" -> string!
 const XiHan.Framework.Caching.Redis.RedisCachingFeature.HealthName = "caching.redis.connection" -> string!

@@ -1,9 +1,11 @@
 #nullable enable
 XiHan.Framework.Caching.Hybrid.HybridCache
+XiHan.Framework.Caching.Hybrid.HybridCache.Dispose() -> void
 XiHan.Framework.Caching.Hybrid.HybridCache.GetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<T>>
 XiHan.Framework.Caching.Hybrid.HybridCache.GetManyAsync<T>(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Maybe<T>>!>
 XiHan.Framework.Caching.Hybrid.HybridCache.GetOrCreateAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! factory, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
 XiHan.Framework.Caching.Hybrid.HybridCache.HybridCache(XiHan.Framework.Caching.Abstractions.Caches.ISharedCache! shared, XiHan.Framework.Caching.Hybrid.HybridCachingOptions! options, System.TimeProvider! clock) -> void
+XiHan.Framework.Caching.Hybrid.HybridCache.InvalidatesAcrossInstances.get -> bool
 XiHan.Framework.Caching.Hybrid.HybridCache.LocalCount.get -> int
 XiHan.Framework.Caching.Hybrid.HybridCache.RemoveAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.Caching.Hybrid.HybridCache.RemoveManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<bool>!>

@@ -63,6 +63,14 @@ public readonly record struct CacheKey
     }
 
     /// <summary>
+    /// 是否是合法的键前缀。
+    /// </summary>
+    /// <remarks>
+    /// 与键同文法，但可以为空（空前缀表示全部，ADR-0055）。
+    /// </remarks>
+    public static bool IsValidPrefix(string? value) => value is not null && (value.Length == 0 || IsValid(value));
+
+    /// <summary>
     /// 校验并返回。
     /// </summary>
     /// <remarks>

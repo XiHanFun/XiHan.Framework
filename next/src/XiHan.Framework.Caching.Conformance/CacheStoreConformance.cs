@@ -326,6 +326,64 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
+    /// 键管理：按前缀分页列出、读大小与存活时间、按前缀删除。
+    /// </summary>
+    /// <remarks>
+    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。续页可能重复同一个键（Redis 的 SCAN），按集合比较。
+    /// </remarks>
+    [Fact]
+    public async Task Inspector_ListsInspectsAndRemovesByPrefix()
+    {
+        var store = CreateStore();
+        Assert.SkipWhen(store is not ICacheStoreInspector, "The store does not implement ICacheStoreInspector.");
+        var inspector = (ICacheStoreInspector)store;
+        var prefix = $"conformance:{Guid.NewGuid():N}:";
+        var keys = Enumerable.Range(0, 5).Select(i => new CacheKey($"{prefix}{i}")).ToList();
+        await store.SetManyAsync([.. keys.Select(static key => new CacheEntry(key, Bytes("value"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5))))], CancellationToken.None).ConfigureAwait(false);
+        var outsider = Key();
+        await store.SetAsync(outsider, Bytes("outsider"), CacheEntryOptions.Default, CancellationToken.None).ConfigureAwait(false);
+
+        // 每页 2 个，走到续页为空：不漏前缀下的键，也不带出前缀外的键
+        var listed = new HashSet<string>(StringComparer.Ordinal);
+        string? continuation = null;
+        var pages = 0;
+        do
+        {
+            var page = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 2, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false);
+            Assert.All(page.Keys, key => Assert.StartsWith(prefix, key.Value, StringComparison.Ordinal));
+            listed.UnionWith(page.Keys.Select(static key => key.Value));
+            continuation = page.Continuation;
+            Assert.True(++pages <= 1000, "Listing should reach the last page.");
+        }
+        while (continuation is not null);
+        Assert.Equal(keys.Select(static key => key.Value).Order(StringComparer.Ordinal), listed.Order(StringComparer.Ordinal));
+
+        var info = (await inspector.InspectAsync(keys[0], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(keys[0], info.Key);
+        Assert.Equal(5, info.Size);
+        Assert.InRange(info.TimeToLive!.Value, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
+        Assert.Null(info.SlidingExpiration);
+
+        var sliding = Key();
+        await store.SetAsync(sliding, Bytes("w"), CacheEntryOptions.Sliding(TimeSpan.FromMinutes(2)), CancellationToken.None).ConfigureAwait(false);
+        var slidingInfo = (await inspector.InspectAsync(sliding, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(1, slidingInfo.Size);
+        Assert.Equal(TimeSpan.FromMinutes(2), slidingInfo.SlidingExpiration);
+        Assert.InRange(slidingInfo.TimeToLive!.Value, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2));
+        Assert.False((await inspector.InspectAsync(Key(), CancellationToken.None).ConfigureAwait(false)).HasValue);
+
+        Assert.Equal(5, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
+        Assert.All(await store.GetManyAsync(keys, CancellationToken.None).ConfigureAwait(false), static hit => Assert.False(hit.HasValue));
+        Assert.Equal("outsider", Text(await store.GetAsync(outsider, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).Keys);
+        Assert.Equal(0, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
+
+        // 空前缀不能删；不合法的前缀在构造查询时拒绝
+        await Assert.ThrowsAsync<ArgumentException>(async () => await inspector.RemoveByPrefixAsync(string.Empty, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+        Assert.Throws<ArgumentException>(() => new CacheKeyQuery { Prefix = "has space" });
+    }
+
+    /// <summary>
     /// 新的随机键。
     /// </summary>
     protected static CacheKey Key() => new($"conformance:{Guid.NewGuid():N}");
