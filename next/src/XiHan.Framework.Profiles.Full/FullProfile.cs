@@ -5,6 +5,7 @@ using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.Auditing.InMemory;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.FileSystem;
+using XiHan.Framework.Observability.Host;
 using XiHan.Framework.Observability.OpenTelemetry;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Standard;
@@ -21,7 +22,7 @@ namespace XiHan.Framework.Profiles.Full;
 /// Full 组合。
 /// </summary>
 /// <remarks>
-/// Standard + 对象存储、调度、审计的默认实现 + OpenTelemetry 导出 + HTTP / gRPC / MCP / CloudEvents 协议适配器。远程配置与密钥没有默认实现（.NET 原生文件与环境变量），按需装配 Provider。
+/// Standard + 对象存储、调度、审计的默认实现 + OpenTelemetry 导出与运行信息 + HTTP / gRPC / MCP / CloudEvents 协议适配器。远程配置与密钥没有默认实现（.NET 原生文件与环境变量），按需装配 Provider。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class FullProfile
@@ -43,6 +44,7 @@ public static class FullProfile
             .UseFeature<InMemoryWorkflowFeature>()
             .UseFeature<AIToolsFeature>()
             .UseFeature<OpenTelemetryObservabilityFeature>()
+            .UseFeature<HostObservabilityFeature>()
             .UseFeature<HttpProtocolFeature>()
             .UseFeature<GrpcProtocolFeature>()
             .UseFeature<McpProtocolFeature>()

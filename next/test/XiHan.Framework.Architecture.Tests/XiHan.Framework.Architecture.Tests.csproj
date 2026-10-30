@@ -78,6 +78,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Observability.Abstractions/XiHan.Framework.Observability.Abstractions.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Observability.Host/XiHan.Framework.Observability.Host.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Full/XiHan.Framework.Profiles.Full.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />

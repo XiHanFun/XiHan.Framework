@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Observability.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.Observability.Abstractions</RootNamespace>
+    <Description>XiHan Framework 可观测性契约（Ring 2）：能力 ID，以及进程与主机的运行信息（CPU、内存、磁盘、网卡、GPU、主板与运行时长）。</Description>
+    <PackageTags>xihan;framework;observability;monitoring;system-info</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </ItemGroup>
+</Project>

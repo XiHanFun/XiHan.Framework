@@ -1,5 +1,4 @@
 #nullable enable
-XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities
 XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults
 XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature
 XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryObservabilityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
@@ -37,8 +36,6 @@ XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Tracing.init ->
 XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
 XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol.Grpc = 0 -> XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
 XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol.HttpProtobuf = 1 -> XiHan.Framework.Observability.OpenTelemetry.OtlpProtocol
-const XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities.Export = "observability.export" -> string!
-const XiHan.Framework.Observability.OpenTelemetry.ObservabilityCapabilities.Version = 1 -> int
 const XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryDefaults.OtlpEndpointVariable = "OTEL_EXPORTER_OTLP_ENDPOINT" -> string!
 const XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.ConfigurationSection = "XiHan:Observability:OpenTelemetry" -> string!
 override XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions.Equals(object? obj) -> bool

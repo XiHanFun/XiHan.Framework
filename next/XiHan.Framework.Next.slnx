@@ -19,6 +19,7 @@
     <Project Path="src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
     <Project Path="src/XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
+    <Project Path="src/XiHan.Framework.Observability.Abstractions/XiHan.Framework.Observability.Abstractions.csproj" />
   </Folder>
   <Folder Name="/3.Providers/">
     <Project Path="src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
@@ -53,6 +54,7 @@
     <Project Path="src/XiHan.Framework.AI.OpenAI/XiHan.Framework.AI.OpenAI.csproj" />
     <Project Path="src/XiHan.Framework.AI.VectorData/XiHan.Framework.AI.VectorData.csproj" />
     <Project Path="src/XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
+    <Project Path="src/XiHan.Framework.Observability.Host/XiHan.Framework.Observability.Host.csproj" />
   </Folder>
   <Folder Name="/4.Hosting/">
     <Project Path="src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
@@ -155,6 +157,7 @@
     <Project Path="test/XiHan.Framework.AI.VectorData.Tests/XiHan.Framework.AI.VectorData.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Database.Tests/XiHan.Framework.Localization.Database.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Observability.OpenTelemetry.Tests/XiHan.Framework.Observability.OpenTelemetry.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Observability.Host.Tests/XiHan.Framework.Observability.Host.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Profiles.Full.Tests/XiHan.Framework.Profiles.Full.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.Generators.Tests/XiHan.Framework.Persistence.Generators.Tests.csproj" />

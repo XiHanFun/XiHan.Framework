@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Observability.Host</PackageId>
+    <RootNamespace>XiHan.Framework.Observability.Host</RootNamespace>
+    <Description>XiHan Framework 运行信息：读进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，后台采样 CPU 使用率与网卡速率；只读 BCL、/proc 与 /sys、注册表与系统调用，不启动外部命令。</Description>
+    <PackageTags>xihan;framework;observability;monitoring;system-info;hardware</PackageTags>
+    <!-- LibraryImport 生成代码需要 unsafe；源码本身不写 unsafe -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Observability.Abstractions/XiHan.Framework.Observability.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

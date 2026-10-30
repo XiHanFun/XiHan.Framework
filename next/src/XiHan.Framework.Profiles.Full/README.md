@@ -1,6 +1,6 @@
 # XiHan.Framework.Profiles.Full
 
-Full 组合包（Ring 6）：Standard + `ObjectStorage` / `Scheduling` / `Auditing` 的抽象与默认实现 + `Configuration` 抽象 + `Observability.OpenTelemetry` + `Protocols.Http` / `.Grpc` / `.Mcp` / `.CloudEvents`。中后台与 SaaS 服务从这里开始：一份操作契约同时在 HTTP、gRPC、MCP 上服务，零外部基础设施即可运行。
+Full 组合包（Ring 6）：Standard + `ObjectStorage` / `Scheduling` / `Auditing` 的抽象与默认实现 + `Configuration` 抽象 + `Observability.OpenTelemetry` 与 `Observability.Host` + `Protocols.Http` / `.Grpc` / `.Mcp` / `.CloudEvents`。中后台与 SaaS 服务从这里开始：一份操作契约同时在 HTTP、gRPC、MCP 上服务，零外部基础设施即可运行。
 
 ```csharp
 builder.AddXiHan(xihan => xihan

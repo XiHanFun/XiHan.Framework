@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Observability.Abstractions/XiHan.Framework.Observability.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

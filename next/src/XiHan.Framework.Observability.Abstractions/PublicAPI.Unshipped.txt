@@ -1,0 +1,237 @@
+XiHan.Framework.Observability.Abstractions.BoardInfo
+XiHan.Framework.Observability.Abstractions.BoardInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.BoardInfo!
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosDate.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosDate.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosVendor.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosVendor.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosVersion.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.BiosVersion.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.BoardInfo() -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.Equals(XiHan.Framework.Observability.Abstractions.BoardInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.BoardInfo.Manufacturer.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.Manufacturer.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.Product.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.Product.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.SerialNumber.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.SerialNumber.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.SystemManufacturer.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.SystemManufacturer.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.SystemProduct.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.SystemProduct.init -> void
+XiHan.Framework.Observability.Abstractions.BoardInfo.Version.get -> string?
+XiHan.Framework.Observability.Abstractions.BoardInfo.Version.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo
+XiHan.Framework.Observability.Abstractions.DiskInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.DiskInfo!
+XiHan.Framework.Observability.Abstractions.DiskInfo.AvailableBytes.get -> long
+XiHan.Framework.Observability.Abstractions.DiskInfo.AvailableBytes.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.Device.get -> string?
+XiHan.Framework.Observability.Abstractions.DiskInfo.Device.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.DiskInfo() -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.Equals(XiHan.Framework.Observability.Abstractions.DiskInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.DiskInfo.Format.get -> string?
+XiHan.Framework.Observability.Abstractions.DiskInfo.Format.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.FreeBytes.get -> long
+XiHan.Framework.Observability.Abstractions.DiskInfo.FreeBytes.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.Label.get -> string?
+XiHan.Framework.Observability.Abstractions.DiskInfo.Label.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.Name.get -> string!
+XiHan.Framework.Observability.Abstractions.DiskInfo.Name.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.TotalBytes.get -> long
+XiHan.Framework.Observability.Abstractions.DiskInfo.TotalBytes.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.Type.get -> System.IO.DriveType
+XiHan.Framework.Observability.Abstractions.DiskInfo.Type.init -> void
+XiHan.Framework.Observability.Abstractions.DiskInfo.UsagePercent.get -> double?
+XiHan.Framework.Observability.Abstractions.DiskInfo.UsedBytes.get -> long
+XiHan.Framework.Observability.Abstractions.GpuInfo
+XiHan.Framework.Observability.Abstractions.GpuInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.GpuInfo!
+XiHan.Framework.Observability.Abstractions.GpuInfo.DeviceId.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.DeviceId.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.Driver.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.Driver.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.DriverVersion.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.DriverVersion.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.Equals(XiHan.Framework.Observability.Abstractions.GpuInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.GpuInfo.GpuInfo() -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.MemoryBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.GpuInfo.MemoryBytes.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.Name.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.Name.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.TemperatureCelsius.get -> double?
+XiHan.Framework.Observability.Abstractions.GpuInfo.TemperatureCelsius.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.Vendor.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.Vendor.init -> void
+XiHan.Framework.Observability.Abstractions.GpuInfo.VendorId.get -> string?
+XiHan.Framework.Observability.Abstractions.GpuInfo.VendorId.init -> void
+XiHan.Framework.Observability.Abstractions.IHostMonitor
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadBoard() -> XiHan.Framework.Observability.Abstractions.BoardInfo!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadDisks() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.DiskInfo!>!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadGpus() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.GpuInfo!>!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadMemory() -> XiHan.Framework.Observability.Abstractions.MemoryInfo!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadNetworkInterfaces() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo!>!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadProcessor() -> XiHan.Framework.Observability.Abstractions.ProcessorInfo!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadRuntime() -> XiHan.Framework.Observability.Abstractions.RuntimeInfo!
+XiHan.Framework.Observability.Abstractions.MemoryInfo
+XiHan.Framework.Observability.Abstractions.MemoryInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.MemoryInfo!
+XiHan.Framework.Observability.Abstractions.MemoryInfo.AvailableBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.MemoryInfo.AvailableBytes.init -> void
+XiHan.Framework.Observability.Abstractions.MemoryInfo.CachedBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.MemoryInfo.CachedBytes.init -> void
+XiHan.Framework.Observability.Abstractions.MemoryInfo.Equals(XiHan.Framework.Observability.Abstractions.MemoryInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.MemoryInfo.FreeBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.MemoryInfo.FreeBytes.init -> void
+XiHan.Framework.Observability.Abstractions.MemoryInfo.MemoryInfo() -> void
+XiHan.Framework.Observability.Abstractions.MemoryInfo.TotalBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.MemoryInfo.TotalBytes.init -> void
+XiHan.Framework.Observability.Abstractions.MemoryInfo.UsagePercent.get -> double?
+XiHan.Framework.Observability.Abstractions.MemoryInfo.UsedBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.BytesReceived.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.BytesReceived.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.BytesSent.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.BytesSent.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Description.get -> string?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Description.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.DnsServers.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.DnsServers.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Equals(XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Gateways.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Gateways.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.IPv4Addresses.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.IPv4Addresses.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.IPv6Addresses.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.IPv6Addresses.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Id.get -> string!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Id.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Name.get -> string!
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Name.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.NetworkInterfaceInfo() -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PacketsReceived.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PacketsReceived.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PacketsSent.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PacketsSent.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PhysicalAddress.get -> string?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.PhysicalAddress.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.ReceiveBytesPerSecond.get -> double?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.ReceiveBytesPerSecond.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.SendBytesPerSecond.get -> double?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.SendBytesPerSecond.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.SpeedBitsPerSecond.get -> long?
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.SpeedBitsPerSecond.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Status.get -> System.Net.NetworkInformation.OperationalStatus
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Status.init -> void
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Type.get -> System.Net.NetworkInformation.NetworkInterfaceType
+XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Type.init -> void
+XiHan.Framework.Observability.Abstractions.ObservabilityCapabilities
+XiHan.Framework.Observability.Abstractions.ProcessorInfo
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.ProcessorInfo!
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Architecture.get -> System.Runtime.InteropServices.Architecture
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Architecture.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.CacheBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.CacheBytes.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Equals(XiHan.Framework.Observability.Abstractions.ProcessorInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.FrequencyMhz.get -> double?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.FrequencyMhz.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.LogicalCores.get -> int
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.LogicalCores.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Name.get -> string?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Name.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.PhysicalCores.get -> int?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.PhysicalCores.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.ProcessorInfo() -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.UsagePercent.get -> double?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.UsagePercent.init -> void
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Vendor.get -> string?
+XiHan.Framework.Observability.Abstractions.ProcessorInfo.Vendor.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.RuntimeInfo!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Equals(XiHan.Framework.Observability.Abstractions.RuntimeInfo? other) -> bool
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Framework.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Framework.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen0Collections.get -> int
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen0Collections.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen1Collections.get -> int
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen1Collections.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen2Collections.get -> int
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Gen2Collections.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.HandleCount.get -> int?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.HandleCount.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Interactive.get -> bool
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.Interactive.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.MachineName.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.MachineName.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ManagedHeapBytes.get -> long
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ManagedHeapBytes.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsArchitecture.get -> System.Runtime.InteropServices.Architecture
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsArchitecture.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsDescription.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsDescription.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsPlatform.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsPlatform.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsVersion.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.OsVersion.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.PrivateBytes.get -> long?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.PrivateBytes.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessArchitecture.get -> System.Runtime.InteropServices.Architecture
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessArchitecture.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessCpuUsagePercent.get -> double?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessCpuUsagePercent.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessId.get -> int
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessId.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessName.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessName.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessStartedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessStartedAt.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessUptime.get -> System.TimeSpan?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ProcessUptime.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.RuntimeIdentifier.get -> string!
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.RuntimeIdentifier.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.RuntimeInfo() -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.SystemStartedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.SystemStartedAt.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.SystemUptime.get -> System.TimeSpan?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.SystemUptime.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ThreadCount.get -> int?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.ThreadCount.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.UserName.get -> string?
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.UserName.init -> void
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.WorkingSetBytes.get -> long
+XiHan.Framework.Observability.Abstractions.RuntimeInfo.WorkingSetBytes.init -> void
+const XiHan.Framework.Observability.Abstractions.ObservabilityCapabilities.Export = "observability.export" -> string!
+const XiHan.Framework.Observability.Abstractions.ObservabilityCapabilities.Host = "observability.host" -> string!
+const XiHan.Framework.Observability.Abstractions.ObservabilityCapabilities.Version = 1 -> int
+override XiHan.Framework.Observability.Abstractions.BoardInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.BoardInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.BoardInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.DiskInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.DiskInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.DiskInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.GpuInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.GpuInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.GpuInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.MemoryInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.MemoryInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.MemoryInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.ProcessorInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.ProcessorInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.ProcessorInfo.ToString() -> string!
+override XiHan.Framework.Observability.Abstractions.RuntimeInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Abstractions.RuntimeInfo.GetHashCode() -> int
+override XiHan.Framework.Observability.Abstractions.RuntimeInfo.ToString() -> string!
+static XiHan.Framework.Observability.Abstractions.BoardInfo.operator !=(XiHan.Framework.Observability.Abstractions.BoardInfo? left, XiHan.Framework.Observability.Abstractions.BoardInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.BoardInfo.operator ==(XiHan.Framework.Observability.Abstractions.BoardInfo? left, XiHan.Framework.Observability.Abstractions.BoardInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.DiskInfo.operator !=(XiHan.Framework.Observability.Abstractions.DiskInfo? left, XiHan.Framework.Observability.Abstractions.DiskInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.DiskInfo.operator ==(XiHan.Framework.Observability.Abstractions.DiskInfo? left, XiHan.Framework.Observability.Abstractions.DiskInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.GpuInfo.operator !=(XiHan.Framework.Observability.Abstractions.GpuInfo? left, XiHan.Framework.Observability.Abstractions.GpuInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.GpuInfo.operator ==(XiHan.Framework.Observability.Abstractions.GpuInfo? left, XiHan.Framework.Observability.Abstractions.GpuInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.MemoryInfo.operator !=(XiHan.Framework.Observability.Abstractions.MemoryInfo? left, XiHan.Framework.Observability.Abstractions.MemoryInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.MemoryInfo.operator ==(XiHan.Framework.Observability.Abstractions.MemoryInfo? left, XiHan.Framework.Observability.Abstractions.MemoryInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.operator !=(XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo? left, XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo.operator ==(XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo? left, XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.ProcessorInfo.operator !=(XiHan.Framework.Observability.Abstractions.ProcessorInfo? left, XiHan.Framework.Observability.Abstractions.ProcessorInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.ProcessorInfo.operator ==(XiHan.Framework.Observability.Abstractions.ProcessorInfo? left, XiHan.Framework.Observability.Abstractions.ProcessorInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.RuntimeInfo.operator !=(XiHan.Framework.Observability.Abstractions.RuntimeInfo? left, XiHan.Framework.Observability.Abstractions.RuntimeInfo? right) -> bool
+static XiHan.Framework.Observability.Abstractions.RuntimeInfo.operator ==(XiHan.Framework.Observability.Abstractions.RuntimeInfo? left, XiHan.Framework.Observability.Abstractions.RuntimeInfo? right) -> bool
