@@ -18,18 +18,20 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 public static class TenantShardBinding
 {
     /// <summary>
-    /// 当前作用域的调用带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>。
+    /// 作用域带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>。
     /// </summary>
     /// <remarks>
-    /// 读的是 Tenant 阶段写进上下文的分片，不触存储、不阻塞。
+    /// 先看 <see cref="TenantShardScope"/> 的显式绑定，再看 Tenant 阶段写进当前调用上下文的分片；不触存储、不阻塞。持久化 Provider 在创建客户端时调用，此后作用域不能再绑定分片（ADR-0057）。
     /// </remarks>
     public static Maybe<BindingValue> Resolve(IServiceProvider scopedServices, string bindingName, string bindingType, Maybe<BindingValue> fallback)
     {
         ArgumentNullException.ThrowIfNull(scopedServices);
         ArgumentException.ThrowIfNullOrWhiteSpace(bindingName);
         ArgumentException.ThrowIfNullOrWhiteSpace(bindingType);
-        var accessor = scopedServices.GetService<IInvocationAccessor>();
-        if (accessor is null || !accessor.Current.TryGetValue(out var context) || !context.GetTenantShard().TryGetValue(out var shard))
+        var scope = scopedServices.GetService<TenantShardScope>();
+        scope?.MarkConnected();
+        var chosen = scope is { Shard.HasValue: true } ? scope.Shard : InvocationShard(scopedServices);
+        if (!chosen.TryGetValue(out var shard))
         {
             return Maybe.None<BindingValue>();
         }
@@ -56,4 +58,10 @@ public static class TenantShardBinding
 
         return Maybe.Some(new BindingValue(original?.Name ?? bindingName, original?.Type ?? bindingType, shard.ConnectionString, properties));
     }
+
+    /// <summary>
+    /// 当前调用上下文里的分片。
+    /// </summary>
+    private static Maybe<TenantShard> InvocationShard(IServiceProvider scopedServices)
+        => scopedServices.GetService<IInvocationAccessor>() is { } accessor && accessor.Current.TryGetValue(out var context) ? context.GetTenantShard() : Maybe.None<TenantShard>();
 }

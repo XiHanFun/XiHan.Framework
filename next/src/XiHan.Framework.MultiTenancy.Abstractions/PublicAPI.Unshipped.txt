@@ -41,6 +41,12 @@ XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard.TenantShard(strin
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardBinding
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardInvocationExtensions
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope.Bind(XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard! shard) -> void
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope.BindTenantAsync(string! tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>>>
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope.IsConnected.get -> bool
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope.Shard.get -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShard!>
+XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardScope.TenantShardScope(XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver? resolver = null) -> void
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.CachedCount.get -> int
 XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantStoreShardResolver.Invalidate(string? tenantId = null) -> void

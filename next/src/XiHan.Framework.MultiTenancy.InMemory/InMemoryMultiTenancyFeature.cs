@@ -75,5 +75,8 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         {
             context.Services.TryAddSingleton<ITenantShardResolver, TenantStoreShardResolver>();
         }
+
+        // 管道外的作用域经它显式绑定分片（ADR-0057）；没有分片解析器时按租户绑定成功且不绑定
+        context.Services.TryAddScoped(static sp => new TenantShardScope(sp.GetService<ITenantShardResolver>()));
     }
 }
