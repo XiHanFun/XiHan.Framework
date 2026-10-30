@@ -277,6 +277,16 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        lock (_lock)
+        {
+            return ValueTask.FromResult(Result.Success((long)_runs.Values.Count(query.Matches)));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunningAsync(JobName? job, CancellationToken cancellationToken)
     {
         lock (_lock)

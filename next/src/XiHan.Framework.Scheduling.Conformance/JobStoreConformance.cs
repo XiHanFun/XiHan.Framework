@@ -49,10 +49,13 @@ public abstract class JobStoreConformance
             Assert.False(again.Paused);
             Assert.Equal("v", again.Data["k"]!.GetValue<string>());
             Assert.False((await store.FindJobAsync(new JobName("conf.store.none"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            // 替换定义与暂停状态；占用的运行 ID 由存储保留
+            // 替换定义、暂停状态、来源与代码定义的指纹；占用的运行 ID 由存储保留
             a.Paused = true;
+            a.Source = JobSource.Overridden;
+            a.CodeFingerprint = "F00D";
             Assert.True((await store.SaveJobsAsync([a], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-            Assert.True((await store.FindJobAsync(a.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Paused);
+            var overridden = (await store.FindJobAsync(a.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
+            Assert.Equal((true, JobSource.Overridden, "F00D"), (overridden.Paused, overridden.Source, overridden.CodeFingerprint));
             var occupying = Run(b.Name, "node-a", DateTimeOffset.UtcNow);
             Assert.True((await store.TryBeginRunAsync(occupying, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             b.Description = "replaced";
@@ -158,7 +161,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 独占开始、完成释放与解除阻塞、历史查询、最近一次、取消请求与清理。
+    /// 独占开始、完成释放与解除阻塞、历史查询与计数、最近一次、取消请求与清理。
     /// </summary>
     [Fact]
     public async Task Runs_ExclusiveBegin_CompleteUnblocks_QueryLastCancelPurge()
@@ -211,6 +214,15 @@ public abstract class JobStoreConformance
             Assert.Equal([second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal([second.Id, first.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, From = now, To = now.AddSeconds(2) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal("v", all[0].Data["k"]!.GetValue<string>());
+            // 触发器名、执行节点、有无错误；总数与列表同一组过滤项，不看分页
+            Assert.Equal([third.Id, second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, Node = "node-b" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
+            Assert.Equal([first.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = true }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
+            Assert.Equal([third.Id, second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
+            Assert.Empty((await store.RunsAsync(new JobRunQuery { Job = job.Name, Trigger = "other" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Trigger = "t", Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(1, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(2, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Node = "node-b", HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(0, (await store.CountRunsAsync(new JobRunQuery { Job = new JobName("conf.store.none") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             // 最近一次已结束的运行按结束时刻取
             var last = Assert.Single((await store.LastRunsAsync([job.Name, other.Name], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(second.Id, last.Id);

@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "ジョブ定義 '{name}' が不正です：{reason}",
+  "scheduling.job.code_definition_not_found": "ジョブ '{name}' にはコード定義がないため、復元できません。",
   "scheduling.job.failed": "ジョブ '{name}' が未処理の例外をスローしました: {reason}",
   "scheduling.job.not_found": "ジョブ '{name}' は登録されていません。",
   "scheduling.job.running": "ジョブ '{name}' は既に実行中で、同時実行は許可されていません。",

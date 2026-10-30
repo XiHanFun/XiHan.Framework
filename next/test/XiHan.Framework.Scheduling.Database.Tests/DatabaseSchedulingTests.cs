@@ -194,6 +194,58 @@ public sealed class DatabaseSchedulingTests
         Assert.False(lease.IsHeld);
     }
 
+    [Fact]
+    public async Task CodeJobs_KeepRuntimeChanges_UntilTheCodeDefinitionChanges()
+    {
+        await using var database = new SqliteDatabase();
+        var log = new OverlapLog();
+        var name = new JobName("db.code");
+        string CronText(string expression) => JobSchedule.FromCron(expression).ToString();
+        var starts = 0;
+        async Task<JobStatus> StartAsync(string cron, Func<TestHost, Task> act)
+        {
+            var node = $"node-{++starts}";
+            await using var host = await database.StartHostAsync(NodeSettings(node, "0.05"), services =>
+            {
+                Register(services, log);
+                services.AddJob<OverlapProbeJob>(name, JobSchedule.FromCron(cron));
+            });
+            // 节点写过心跳时首个周期已过：代码作业已经同步（每次启动换一个节点 ID，上一个宿主的心跳与租约不算）
+            var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
+            var store = host.Services.GetRequiredService<IJobStore>();
+            await WaitUntilAsync(async () => (await store.NodesAsync(CancellationToken.None)).ValueOrThrow().Any(n => n.Id == node));
+            await act(host);
+            return (await engine.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+        }
+
+        // 第一次启动按代码写入；运行时改计划后来源是改过
+        var first = await StartAsync("0 3 * * *", async host =>
+        {
+            var scheduler = host.Services.GetRequiredService<IJobScheduler>();
+            Assert.Equal(JobSource.Code, (await scheduler.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Job.Source);
+            Assert.True((await scheduler.ScheduleAsync(new JobDefinition(name, JobSchedule.FromCron("0 4 * * *"), typeof(OverlapProbeJob)), CancellationToken.None)).IsSuccess);
+        });
+        Assert.Equal((JobSource.Overridden, CronText("0 4 * * *")), (first.Job.Source, first.Triggers[0].Schedule.ToString()));
+
+        // 代码没改再启动：保留运行时的修改
+        var second = await StartAsync("0 3 * * *", static _ => Task.CompletedTask);
+        Assert.Equal((JobSource.Overridden, CronText("0 4 * * *")), (second.Job.Source, second.Triggers[0].Schedule.ToString()));
+
+        // 代码改了：以代码为准；再改再恢复，回到代码定义；没有代码定义的不能恢复
+        var third = await StartAsync("0 5 * * *", async host =>
+        {
+            var scheduler = host.Services.GetRequiredService<IJobScheduler>();
+            Assert.Equal(CronText("0 5 * * *"), (await scheduler.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Triggers[0].Schedule.ToString());
+            Assert.True((await scheduler.ScheduleAsync(new JobDefinition(name, JobSchedule.FromCron("0 6 * * *"), typeof(OverlapProbeJob)), CancellationToken.None)).IsSuccess);
+            var restored = await scheduler.RestoreAsync([name, new JobName("db.none")], CancellationToken.None);
+            Assert.True(restored[0].IsSuccess);
+            Assert.Equal(SchedulingErrors.CodeDefinitionNotFound, restored[1].Error?.Code);
+            Assert.Contains(JobTypeRegistry.KeyOf(typeof(OverlapProbeJob)), host.Services.GetRequiredService<JobTypeRegistry>().Keys);
+            Assert.Equal(0, (await scheduler.CountRunsAsync(new JobRunQuery { Job = name, HasError = true }, CancellationToken.None)).ValueOrThrow());
+        });
+        Assert.Equal((JobSource.Code, CronText("0 5 * * *")), (third.Job.Source, third.Triggers[0].Schedule.ToString()));
+    }
+
     /// <summary>
     /// 一个节点的引擎配置：节点 ID、轮询周期与 0.2 秒的维护周期。
     /// </summary>

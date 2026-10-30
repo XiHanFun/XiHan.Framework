@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "Job definition '{name}' is invalid: {reason}",
+  "scheduling.job.code_definition_not_found": "Job '{name}' has no code definition to restore.",
   "scheduling.job.failed": "Job '{name}' threw an unhandled exception: {reason}",
   "scheduling.job.not_found": "Job '{name}' is not registered.",
   "scheduling.job.running": "Job '{name}' is already running and does not allow concurrent runs.",

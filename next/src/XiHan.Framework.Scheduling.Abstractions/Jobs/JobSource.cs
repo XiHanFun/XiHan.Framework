@@ -20,4 +20,12 @@ public enum JobSource
     /// 运行时登记（<see cref="Schedulers.IJobScheduler.ScheduleAsync"/>），只存在于存储。
     /// </summary>
     Runtime = 1,
+
+    /// <summary>
+    /// 代码登记、运行时改过的作业。
+    /// </summary>
+    /// <remarks>
+    /// 由 <see cref="Schedulers.IJobScheduler.ScheduleAsync"/> 替换代码作业而来；启动时代码定义没变就保留运行时的修改（ADR-0053）。
+    /// </remarks>
+    Overridden = 2,
 }

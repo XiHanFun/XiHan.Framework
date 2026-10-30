@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "작업 정의 '{name}'이(가) 잘못되었습니다: {reason}",
+  "scheduling.job.code_definition_not_found": "작업 '{name}'에는 코드 정의가 없어 복원할 수 없습니다.",
   "scheduling.job.failed": "작업 '{name}'에서 처리되지 않은 예외가 발생했습니다: {reason}",
   "scheduling.job.not_found": "작업 '{name}'이(가) 등록되지 않았습니다.",
   "scheduling.job.running": "작업 '{name}'이(가) 이미 실행 중이며 동시 실행을 허용하지 않습니다.",

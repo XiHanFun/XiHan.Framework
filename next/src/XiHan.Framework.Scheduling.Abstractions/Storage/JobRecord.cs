@@ -72,6 +72,14 @@ public sealed class JobRecord
     public DateTimeOffset UpdatedAt { get; set; }
 
     /// <summary>
+    /// 代码定义的指纹。
+    /// </summary>
+    /// <remarks>
+    /// 代码作业最近一次按代码写入时的定义指纹（SHA-256 十六进制）；运行时登记的作业为 <see langword="null"/>。启动时据此判断代码定义有没有变（ADR-0053）。
+    /// </remarks>
+    public string? CodeFingerprint { get; set; }
+
+    /// <summary>
     /// 深拷贝。
     /// </summary>
     public JobRecord Clone() => new()
@@ -87,5 +95,6 @@ public sealed class JobRecord
         ActiveRunId = ActiveRunId,
         Source = Source,
         UpdatedAt = UpdatedAt,
+        CodeFingerprint = CodeFingerprint,
     };
 }

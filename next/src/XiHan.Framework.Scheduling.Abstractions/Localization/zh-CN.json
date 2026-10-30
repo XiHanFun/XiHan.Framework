@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "作业定义 '{name}' 不合法：{reason}",
+  "scheduling.job.code_definition_not_found": "作业 '{name}' 没有代码定义，无法恢复。",
   "scheduling.job.failed": "作业 '{name}' 抛出了未处理的异常：{reason}",
   "scheduling.job.not_found": "作业 '{name}' 未登记。",
   "scheduling.job.running": "作业 '{name}' 正在运行，且不允许并发运行。",

@@ -1,5 +1,6 @@
 {
   "scheduling.definition.invalid": "A definição de job '{name}' é inválida: {reason}",
+  "scheduling.job.code_definition_not_found": "O trabalho '{name}' não tem uma definição em código para restaurar.",
   "scheduling.job.failed": "O trabalho '{name}' lançou uma exceção não tratada: {reason}",
   "scheduling.job.not_found": "O trabalho '{name}' não está registrado.",
   "scheduling.job.running": "O trabalho '{name}' já está em execução e não permite execuções concorrentes.",

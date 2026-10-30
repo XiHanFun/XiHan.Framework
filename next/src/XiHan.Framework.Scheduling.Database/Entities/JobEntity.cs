@@ -81,6 +81,15 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     /// </summary>
     public DateTimeOffset UpdatedAt { get; set; }
 
+    /// <summary>
+    /// 代码定义的指纹。
+    /// </summary>
+    /// <remarks>
+    /// SHA-256 十六进制；运行时登记的作业为 <see langword="null"/>（ADR-0053）。
+    /// </remarks>
+    [StringLength(64)]
+    public string? CodeFingerprint { get; set; }
+
     /// <inheritdoc />
     [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;

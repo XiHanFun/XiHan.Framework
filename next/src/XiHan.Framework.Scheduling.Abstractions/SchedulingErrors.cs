@@ -35,6 +35,14 @@ public static class SchedulingErrors
     public const string RunNotFound = "SCHEDULING_NOTFOUND_004";
 
     /// <summary>
+    /// 作业没有代码定义。
+    /// </summary>
+    /// <remarks>
+    /// 不能恢复为代码定义（ADR-0053）。
+    /// </remarks>
+    public const string CodeDefinitionNotFound = "SCHEDULING_NOTFOUND_005";
+
+    /// <summary>
     /// 作业定义不合法（触发器名重复、日历未登记、计划不合法）。
     /// </summary>
     public const string DefinitionInvalid = "SCHEDULING_VALIDATION_001";

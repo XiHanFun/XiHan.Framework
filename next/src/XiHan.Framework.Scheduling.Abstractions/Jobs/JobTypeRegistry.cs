@@ -25,6 +25,14 @@ public sealed class JobTypeRegistry
     private readonly Dictionary<Type, string> _keys = [];
 
     /// <summary>
+    /// 已登记的类型键。
+    /// </summary>
+    /// <remarks>
+    /// 按序数排序；管理界面据此列出运行时新建作业可选的类型（ADR-0053）。
+    /// </remarks>
+    public IReadOnlyList<string> Keys => [.. _types.Keys.Order(StringComparer.Ordinal)];
+
+    /// <summary>
     /// 类型的默认键：类型全名。
     /// </summary>
     public static string KeyOf(Type jobType)

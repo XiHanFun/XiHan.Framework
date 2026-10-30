@@ -299,6 +299,15 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
+    public async ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var filtered = Filter(query);
+        return StoreInvocation.OrUnavailable(await _invocation.RunAsync<long>(async ctx =>
+            Result.Success(await StoreInvocation.Repository<JobRunEntity>(ctx).CountAsync(filtered, ctx.CancellationToken).ConfigureAwait(false)), cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
     public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunningAsync(JobName? job, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<JobRunEntity>().Where(new Specification<JobRunEntity>(run => run.State == RunningRun));
@@ -729,8 +738,11 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 把查询的过滤项逐项翻译成条件：作业等值，状态集合取 <c>IN</c>，计划时刻按范围比较。
+    /// 把查询的过滤项翻译成条件。
     /// </summary>
+    /// <remarks>
+    /// 作业、触发器名、节点等值，状态集合取 <c>IN</c>，计划时刻按范围比较，有无错误看错误码是否为空。
+    /// </remarks>
     private static EntityQuery<JobRunEntity> Filter(JobRunQuery query)
     {
         var filtered = EntityQuery.All<JobRunEntity>();
@@ -762,6 +774,23 @@ public sealed class DatabaseJobStore : IJobStore
         if (query.To is { } to)
         {
             filtered = filtered.Where(new Specification<JobRunEntity>(run => run.ScheduledAt < to));
+        }
+
+        if (query.Trigger is { } trigger)
+        {
+            filtered = filtered.Where(new Specification<JobRunEntity>(run => run.TriggerName == trigger));
+        }
+
+        if (query.Node is { } node)
+        {
+            filtered = filtered.Where(new Specification<JobRunEntity>(run => run.NodeId == node));
+        }
+
+        if (query.HasError is { } hasError)
+        {
+            filtered = hasError
+                ? filtered.Where(new Specification<JobRunEntity>(static run => run.ErrorCode != null))
+                : filtered.Where(new Specification<JobRunEntity>(static run => run.ErrorCode == null));
         }
 
         return filtered;
