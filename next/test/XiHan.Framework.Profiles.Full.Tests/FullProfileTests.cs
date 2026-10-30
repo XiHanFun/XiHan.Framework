@@ -46,6 +46,7 @@ public sealed class FullProfileTests
         ["xihan.workflow.inmemory"] = ["workflow.execution"],
         ["xihan.ai.tools"] = ["ai.tools"],
         ["xihan.observability.opentelemetry"] = ["observability.export"],
+        ["xihan.observability.host"] = ["observability.host"],
         ["xihan.protocols.http"] = ["protocols.http"],
         ["xihan.protocols.grpc"] = ["protocols.grpc"],
         ["xihan.protocols.mcp"] = ["protocols.mcp"],

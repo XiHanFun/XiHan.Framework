@@ -19,6 +19,7 @@
     <ProjectReference Include="../XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
     <ProjectReference Include="../XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Observability.OpenTelemetry/XiHan.Framework.Observability.OpenTelemetry.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Observability.Host/XiHan.Framework.Observability.Host.csproj" />
     <ProjectReference Include="../XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
     <ProjectReference Include="../XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
     <ProjectReference Include="../XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />

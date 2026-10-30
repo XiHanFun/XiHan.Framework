@@ -25,7 +25,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OpenTelemetryObs
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel`、`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol` 与 `OpenTelemetry.Exporter.Console`。
+依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`（能力 ID）、`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol` 与 `OpenTelemetry.Exporter.Console`。
 
 ## 状态
 
