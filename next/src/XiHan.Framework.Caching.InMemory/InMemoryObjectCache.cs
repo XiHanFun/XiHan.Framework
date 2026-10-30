@@ -11,10 +11,10 @@ namespace XiHan.Framework.Caching.InMemory;
 /// 进程内的类型化缓存。
 /// </summary>
 /// <remarks>
-/// 直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。<see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。
+/// 直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。<see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。对象条目不在字节存储里，经 <see cref="ICacheInspector"/> 列出与查看（ADR-0058）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryObjectCache : ISharedCache
+public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
 {
     /// <summary>
     /// 直接保存对象引用的有界 LRU 表。
@@ -89,6 +89,21 @@ public sealed class InMemoryObjectCache : ISharedCache
         _table.SetMany(items);
         return ValueTask.CompletedTask;
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。
+    /// </remarks>
+    public ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(_table.ListKeys(query));
+
+    /// <inheritdoc />
+    public ValueTask<Maybe<CachedObjectInfo>> InspectAsync(CacheKey key, CancellationToken cancellationToken)
+        => ValueTask.FromResult(_table.Peek(key.Value) is { } entry
+            ? Maybe.Some(new CachedObjectInfo(key, entry.Value.GetType().FullName ?? entry.Value.GetType().Name, entry.TimeToLive, entry.Sliding))
+            : Maybe.None<CachedObjectInfo>());
+
+    /// <inheritdoc />
+    public ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken) => ValueTask.FromResult(_table.RemoveByPrefix(prefix));
 
     /// <inheritdoc />
     public ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken) => ValueTask.FromResult(_table.Remove(key.Value));

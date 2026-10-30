@@ -166,22 +166,29 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 前缀下仍存活的键。
+    /// 按前缀分页列出仍存活的键。
     /// </summary>
     /// <remarks>
-    /// 按序数排序，从 <paramref name="after"/> 之后取至多 <paramref name="limit"/> 个；不更新访问顺序。
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键；不更新访问顺序（ADR-0055）。
     /// </remarks>
-    public IReadOnlyList<string> KeysWithPrefix(string prefix, string? after, int limit)
+    public CacheKeyPage ListKeys(CacheKeyQuery query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+        List<string> keys;
         lock (_gate)
         {
             var now = timeProvider.GetUtcNow();
-            return [.. _index.Values
-                .Where(node => node.Value.Key.StartsWith(prefix, StringComparison.Ordinal) && node.Value.ExpiresAt > now && (after is null || string.CompareOrdinal(node.Value.Key, after) > 0))
+            var after = query.Continuation;
+            // 多取一个判断是否还有下一页
+            keys = [.. _index.Values
+                .Where(node => node.Value.Key.StartsWith(query.Prefix, StringComparison.Ordinal) && node.Value.ExpiresAt > now && (after is null || string.CompareOrdinal(node.Value.Key, after) > 0))
                 .Select(static node => node.Value.Key)
                 .Order(StringComparer.Ordinal)
-                .Take(limit)];
+                .Take(query.Limit + 1)];
         }
+
+        var page = keys.Take(query.Limit).Select(static key => new CacheKey(key)).ToList();
+        return new CacheKeyPage(page, keys.Count > query.Limit ? page[^1].Value : null);
     }
 
     /// <summary>
@@ -190,21 +197,34 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     /// <remarks>
     /// 不存在或已过期为 <see langword="null"/>。
     /// </remarks>
-    public (TValue Value, DateTimeOffset ExpiresAt, TimeSpan? Sliding)? Peek(string key)
+    public (TValue Value, TimeSpan? TimeToLive, TimeSpan? Sliding)? Peek(string key)
     {
         lock (_gate)
         {
-            return _index.TryGetValue(key, out var node) && node.Value.ExpiresAt > timeProvider.GetUtcNow()
-                ? (node.Value.Value, node.Value.ExpiresAt, node.Value.Sliding)
-                : null;
+            var now = timeProvider.GetUtcNow();
+            if (!_index.TryGetValue(key, out var node) || node.Value.ExpiresAt <= now)
+            {
+                return null;
+            }
+
+            var expiresAt = node.Value.ExpiresAt;
+            return (node.Value.Value, expiresAt == DateTimeOffset.MaxValue ? null : expiresAt - now, node.Value.Sliding);
         }
     }
 
     /// <summary>
     /// 删除前缀下的全部条目，返回其中仍存活的个数。
     /// </summary>
-    public int RemovePrefix(string prefix)
+    /// <remarks>
+    /// 前缀为空或不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    public long RemoveByPrefix(string prefix)
     {
+        if (string.IsNullOrEmpty(prefix) || !CacheKey.IsValidPrefix(prefix))
+        {
+            throw new ArgumentException($"Cache key prefix '{prefix}' is invalid or empty.", nameof(prefix));
+        }
+
         lock (_gate)
         {
             var now = timeProvider.GetUtcNow();
