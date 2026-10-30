@@ -45,7 +45,7 @@ public sealed class SetVariableActivity : IActivity
                     return ValueTask.FromResult(Result.Failure<ActivityOutcome>(evaluated.Error!));
                 }
 
-                outputs[name] = result?.DeepClone();
+                outputs[name] = result.OrNull()?.DeepClone();
             }
         }
 

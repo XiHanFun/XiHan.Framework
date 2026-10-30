@@ -78,7 +78,7 @@ public sealed class ForEachActivity : IResumableActivity
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(evaluated.Error!));
         }
 
-        if (itemsNode is not JsonArray items)
+        if (itemsNode.OrNull() is not JsonArray items)
         {
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(ItemsProperty, "must evaluate to an array")));
         }

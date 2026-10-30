@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 表达式语言。
 /// </summary>
 /// <remarks>
-/// 算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误。
+/// 算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误、null 结果是成功的无值。
 /// </remarks>
 public sealed class ExpressionTests
 {
@@ -74,7 +74,7 @@ public sealed class ExpressionTests
         Assert.True(Bool("lastError.missing == null", scope));
         Assert.Equal(1m, Number("items[0]", scope));
         Assert.Equal(3m, Number("items[1 + 1]", scope));
-        Assert.Equal(_now, _evaluator.Evaluate("now()", scope).ValueOrThrow()!.GetValue<DateTimeOffset>());
+        Assert.Equal(_now, _evaluator.Evaluate("now()", scope).ValueOrThrow().ValueOrThrow().GetValue<DateTimeOffset>());
         Assert.True(Bool("date('2026-01-02') > date('2026-01-01') && now() > date('2026-10-25')", scope));
     }
 
@@ -86,6 +86,24 @@ public sealed class ExpressionTests
         Assert.Equal("plain", _evaluator.Render("plain", scope).ValueOrThrow());
         Assert.Equal(WorkflowErrors.ExpressionInvalid, _evaluator.Render("oops {{ name", scope).Error?.Code);
         Assert.Equal(WorkflowErrors.ExpressionInvalid, _evaluator.Render("{{ nope }}", scope).Error?.Code);
+    }
+
+    [Fact]
+    public void NullResults_AreEmptySuccesses_NotFailures()
+    {
+        var scope = Scope(new JsonObject { ["lastError"] = new JsonObject { ["code"] = "X" }, ["nothing"] = null });
+
+        // 字面量 null、缺少的成员、值为 null 的变量：成功且无值（修复前构造成功结果时抛 ArgumentNullException）
+        Assert.False(_evaluator.Evaluate("null", scope).ValueOrThrow().HasValue);
+        Assert.False(_evaluator.Evaluate("lastError.missing", scope).ValueOrThrow().HasValue);
+        Assert.False(_evaluator.Evaluate("nothing", scope).ValueOrThrow().HasValue);
+
+        // 模板里无值渲染成空串；条件要的是布尔，无值不是布尔
+        Assert.Equal("[] X", _evaluator.Render("[{{ lastError.missing }}] {{ lastError.code }}", scope).ValueOrThrow());
+        Assert.Equal(WorkflowErrors.ExpressionInvalid, _evaluator.EvaluateCondition("lastError.missing", scope).Error?.Code);
+
+        // 未知根变量仍是错误，不是无值
+        Assert.Equal(WorkflowErrors.ExpressionInvalid, _evaluator.Evaluate("nope", scope).Error?.Code);
     }
 
     [Fact]
@@ -111,8 +129,8 @@ public sealed class ExpressionTests
         var scope = Scope([]);
         for (var i = 0; i < 3; i++)
         {
-            Assert.Equal(2m, evaluator.Evaluate("1 + 1", scope).ValueOrThrow()!.GetValue<decimal>());
-            Assert.Equal(4m, evaluator.Evaluate("2 + 2", scope).ValueOrThrow()!.GetValue<decimal>());
+            Assert.Equal(2m, evaluator.Evaluate("1 + 1", scope).ValueOrThrow().ValueOrThrow().GetValue<decimal>());
+            Assert.Equal(4m, evaluator.Evaluate("2 + 2", scope).ValueOrThrow().ValueOrThrow().GetValue<decimal>());
         }
 
         // With 的临时值覆盖同名变量，不改变量本身
@@ -129,12 +147,12 @@ public sealed class ExpressionTests
     /// <summary>
     /// 求值成数字。
     /// </summary>
-    private static decimal Number(string expression, ExpressionScope scope) => WorkflowValues.TryConvert<decimal>(_evaluator.Evaluate(expression, scope).ValueOrThrow(), out var number) ? number : throw new InvalidOperationException("Not a number.");
+    private static decimal Number(string expression, ExpressionScope scope) => WorkflowValues.TryConvert<decimal>(_evaluator.Evaluate(expression, scope).ValueOrThrow().ValueOrThrow(), out var number) ? number : throw new InvalidOperationException("Not a number.");
 
     /// <summary>
     /// 求值成字符串。
     /// </summary>
-    private static string Text(string expression, ExpressionScope scope) => _evaluator.Evaluate(expression, scope).ValueOrThrow()!.GetValue<string>();
+    private static string Text(string expression, ExpressionScope scope) => _evaluator.Evaluate(expression, scope).ValueOrThrow().ValueOrThrow().GetValue<string>();
 
     /// <summary>
     /// 求值成条件。

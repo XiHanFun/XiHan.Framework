@@ -1174,7 +1174,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                     return evaluated.Error!;
                 }
 
-                session.Variables.Set(variable, value?.DeepClone());
+                session.Variables.Set(variable, value.OrNull()?.DeepClone());
             }
         }
 

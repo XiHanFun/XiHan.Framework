@@ -142,9 +142,9 @@ public class ActivityContext
     /// 把字符串属性当表达式求值。
     /// </summary>
     /// <remarks>
-    /// 非字符串属性原样返回；没有属性返回 <see langword="null"/>。
+    /// 非字符串属性原样作为有值返回；没有属性是成功的无值（ADR-0059）。
     /// </remarks>
-    public Result<JsonNode?> EvaluateProperty(string name)
+    public Result<Maybe<JsonNode>> EvaluateProperty(string name)
     {
         var value = Property(name);
         if (value is JsonValue scalar && scalar.TryGetValue<string>(out var expression))
@@ -152,7 +152,7 @@ public class ActivityContext
             return Evaluator.Evaluate(expression, Scope());
         }
 
-        return Result.Success(value);
+        return Result.Success(Maybe.From(value));
     }
 
     /// <summary>

@@ -495,7 +495,7 @@ public sealed class UserTaskActivity : IResumableActivity
                 return evaluated.Error!;
             }
 
-            if (value is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var evaluatedAt))
+            if (value.OrNull() is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var evaluatedAt))
             {
                 dueAt = evaluatedAt;
                 return null;
@@ -539,7 +539,7 @@ public sealed class UserTaskActivity : IResumableActivity
                 return evaluated.Error!;
             }
 
-            result.AddRange(WorkflowValues.ToStringList(value));
+            result.AddRange(WorkflowValues.ToStringList(value.OrNull()));
         }
 
         if (rulesProperty is not null)

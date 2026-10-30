@@ -132,7 +132,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
                     return evaluated.Error!;
                 }
 
-                variables[variable] = result?.DeepClone();
+                variables[variable] = result.OrNull()?.DeepClone();
             }
         }
 
