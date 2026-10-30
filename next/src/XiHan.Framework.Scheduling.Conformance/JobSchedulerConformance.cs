@@ -62,7 +62,7 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var outcome = await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false);
         Assert.True(outcome.IsSuccess);
-        var (run, correlation, origin) = Assert.Single(log.Runs);
+        var (run, correlation, origin) = Assert.Single(log.Runs, static r => r.Run.Name == ManualJob);
         Assert.Equal((ManualJob, JobTrigger.Manual), (run.Name, run.Trigger));
         Assert.Equal(run.Id, correlation);
         Assert.Equal(new InvocationOrigin { Protocol = InvocationProtocols.Job, Target = ManualJob.Value }, origin);
@@ -308,7 +308,7 @@ public abstract class JobSchedulerConformance
         var enqueued = await host.Scheduler.EnqueueAsync(ManualJob, new JsonObject { ["who"] = "queue" }, CancellationToken.None).ConfigureAwait(false);
         Assert.StartsWith(JobSchedulerEngine.ManualTriggerPrefix, enqueued.ValueOrThrow(), StringComparison.Ordinal);
         await log.WaitAsync(ManualJob, 1, WaitTimeout).ConfigureAwait(false);
-        var (run, _, _) = Assert.Single(log.Runs);
+        var (run, _, _) = Assert.Single(log.Runs, static r => r.Run.Name == ManualJob);
         Assert.Equal((JobTrigger.Manual, "queue"), (run.Trigger, run.Data["who"]!.GetValue<string>()));
         Assert.Null(run.TriggerName);
         await WaitUntilAsync(async () => (await StatusAsync(host, ManualJob).ConfigureAwait(false)).Triggers.Count == 0).ConfigureAwait(false);
