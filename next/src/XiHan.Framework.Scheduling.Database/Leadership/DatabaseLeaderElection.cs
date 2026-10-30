@@ -75,7 +75,7 @@ public sealed partial class DatabaseLeaderElection : ILeaderElection
             return string.Equals(attempt.Error!.Code, KernelErrors.Unexpected, StringComparison.Ordinal) ? Held(resource) : Unavailable(resource, attempt.Error);
         }
 
-        if (expiresAt is not { } expires)
+        if (!expiresAt.TryGetValue(out var expires))
         {
             return Held(resource);
         }

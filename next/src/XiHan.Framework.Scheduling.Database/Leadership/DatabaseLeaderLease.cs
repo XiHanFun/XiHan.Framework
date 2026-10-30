@@ -86,7 +86,7 @@ internal sealed partial class DatabaseLeaderLease : LeaderLease
             return DatabaseLeaderElection.Unavailable(Resource, renewed.Error!);
         }
 
-        if (expiresAt is not { } extended)
+        if (!expiresAt.TryGetValue(out var extended))
         {
             _lost = true;
             return DatabaseLeaderElection.Held(Resource);

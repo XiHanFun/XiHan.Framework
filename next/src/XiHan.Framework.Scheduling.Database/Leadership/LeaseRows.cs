@@ -39,10 +39,10 @@ internal sealed class LeaseRows
     /// 尝试获取。
     /// </summary>
     /// <remarks>
-    /// 行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回空值；其余失败原样返回。
+    /// 行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回成功的无值；其余失败原样返回。
     /// </remarks>
-    public ValueTask<Result<DateTimeOffset?>> TryAcquireAsync(string resource, string holder, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
-        => _invocation.RunAsync<DateTimeOffset?>(async ctx =>
+    public ValueTask<Result<Maybe<DateTimeOffset>>> TryAcquireAsync(string resource, string holder, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
+        => _invocation.RunAsync<Maybe<DateTimeOffset>>(async ctx =>
         {
             var repository = StoreInvocation.Repository<SchedulerLeaseEntity>(ctx);
             var now = _clock.GetUtcNow();
@@ -51,41 +51,41 @@ internal sealed class LeaseRows
             {
                 var expires = now + timeToLive;
                 var added = await repository.AddAsync(new SchedulerLeaseEntity { Id = resource, Holder = holder, Token = token, ExpiresAt = expires }, ctx.CancellationToken).ConfigureAwait(false);
-                return added.IsSuccess ? Result.Success<DateTimeOffset?>(expires) : Contended(added.Error!);
+                return added.IsSuccess ? Until(expires) : Contended(added.Error!);
             }
 
             // 未过期的租约属于别人（或还没释放的自己）：不可重入，只能等
             if (row.ExpiresAt > now)
             {
-                return Result.Success<DateTimeOffset?>(null);
+                return Taken();
             }
 
             row.Holder = holder;
             row.Token = token;
             row.ExpiresAt = now + timeToLive;
             var updated = await repository.UpdateAsync(row, ctx.CancellationToken).ConfigureAwait(false);
-            return updated.IsSuccess ? Result.Success<DateTimeOffset?>(row.ExpiresAt) : Contended(updated.Error!);
+            return updated.IsSuccess ? Until(row.ExpiresAt) : Contended(updated.Error!);
         }, cancellationToken);
 
     /// <summary>
     /// 续约。
     /// </summary>
     /// <remarks>
-    /// 行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回空值。
+    /// 行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回成功的无值。
     /// </remarks>
-    public ValueTask<Result<DateTimeOffset?>> RenewAsync(string resource, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
-        => _invocation.RunAsync<DateTimeOffset?>(async ctx =>
+    public ValueTask<Result<Maybe<DateTimeOffset>>> RenewAsync(string resource, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
+        => _invocation.RunAsync<Maybe<DateTimeOffset>>(async ctx =>
         {
             var repository = StoreInvocation.Repository<SchedulerLeaseEntity>(ctx);
             var found = await repository.FindAsync(resource, ctx.CancellationToken).ConfigureAwait(false);
             if (!found.TryGetValue(out var row) || !string.Equals(row.Token, token, StringComparison.Ordinal))
             {
-                return Result.Success<DateTimeOffset?>(null);
+                return Taken();
             }
 
             row.ExpiresAt = _clock.GetUtcNow() + timeToLive;
             var updated = await repository.UpdateAsync(row, ctx.CancellationToken).ConfigureAwait(false);
-            return updated.IsSuccess ? Result.Success<DateTimeOffset?>(row.ExpiresAt) : Contended(updated.Error!);
+            return updated.IsSuccess ? Until(row.ExpiresAt) : Contended(updated.Error!);
         }, cancellationToken);
 
     /// <summary>
@@ -111,6 +111,19 @@ internal sealed class LeaseRows
     /// <summary>
     /// 写入失败归类：与别的节点撞上（先插入、先接管、先删除）是被占用，其余原样返回。
     /// </summary>
-    private static Result<DateTimeOffset?> Contended(Error error)
-        => RecordQueries.IsRace(error) ? Result.Success<DateTimeOffset?>(null) : Result.Failure<DateTimeOffset?>(error);
+    private static Result<Maybe<DateTimeOffset>> Contended(Error error)
+        => RecordQueries.IsRace(error) ? Taken() : Result.Failure<Maybe<DateTimeOffset>>(error);
+
+    /// <summary>
+    /// 拿到了，到期时刻是 <paramref name="expiresAt"/>。
+    /// </summary>
+    private static Result<Maybe<DateTimeOffset>> Until(DateTimeOffset expiresAt) => Result.Success(Maybe.Some(expiresAt));
+
+    /// <summary>
+    /// 被占用或已失去。
+    /// </summary>
+    /// <remarks>
+    /// 是成功的无值，不是失败：原语的成功结果不能携带 <see langword="null"/>。
+    /// </remarks>
+    private static Result<Maybe<DateTimeOffset>> Taken() => Result.Success(Maybe.None<DateTimeOffset>());
 }
