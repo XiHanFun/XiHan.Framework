@@ -23,18 +23,21 @@ public interface IWorkflowExpressionEvaluator
     /// <summary>
     /// 求值。
     /// </summary>
-    Result<JsonNode?> Evaluate(string expression, ExpressionScope scope);
+    /// <remarks>
+    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）。
+    /// </remarks>
+    Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope);
 
     /// <summary>
     /// 求布尔值。
     /// </summary>
     /// <remarks>
-    /// 结果不是布尔即失败。
+    /// 结果不是布尔（含无值）即失败。
     /// </remarks>
     Result<bool> EvaluateCondition(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（null 为空串，容器为 JSON）。
+    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（无值为空串，容器为 JSON）。
     /// </summary>
     Result<string> Render(string source, ExpressionScope scope);
 }

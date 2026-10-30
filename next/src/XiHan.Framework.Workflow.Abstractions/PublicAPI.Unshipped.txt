@@ -2,7 +2,7 @@
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Clock.get -> System.TimeProvider!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Definition.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
-XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.EvaluateProperty(string! name) -> XiHan.Framework.Primitives.Result<System.Text.Json.Nodes.JsonNode?>
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.EvaluateProperty(string! name) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<System.Text.Json.Nodes.JsonNode!>>
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Evaluator.get -> XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Invocation.get -> XiHan.Framework.Primitives.InvocationContext!
@@ -530,12 +530,12 @@ XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope.Now.get -> Sys
 XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope.TryResolve(string! name, out System.Text.Json.Nodes.JsonNode? value) -> bool
 XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope.With(string! name, System.Text.Json.Nodes.JsonNode? value) -> XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope!
 XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator
-XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator.Evaluate(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<System.Text.Json.Nodes.JsonNode?>
+XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator.Evaluate(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<System.Text.Json.Nodes.JsonNode!>>
 XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator.EvaluateCondition(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<bool>
 XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator.Render(string! source, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<string!>
 XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator.Validate(string! expression) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator
-XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator.Evaluate(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<System.Text.Json.Nodes.JsonNode?>
+XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator.Evaluate(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<System.Text.Json.Nodes.JsonNode!>>
 XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator.EvaluateCondition(string! expression, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<bool>
 XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator.Render(string! source, XiHan.Framework.Workflow.Abstractions.Expressions.ExpressionScope! scope) -> XiHan.Framework.Primitives.Result<string!>
 XiHan.Framework.Workflow.Abstractions.Expressions.WorkflowExpressionEvaluator.Validate(string! expression) -> XiHan.Framework.Primitives.Result

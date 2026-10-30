@@ -15,7 +15,7 @@
 | `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskCompletion` … | 待办与查询、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
 | `IWorkflowExternalTaskService`、`ExternalTask` … | 外部工作者按主题领取（加锁）、完成、失败（重试或故障）、延长锁 |
 | `IAssigneeProvider`、`AssigneeResolver`、`AssigneeRuleTypes` | 指派规则：内置 `User` / `Starter` / `Expression`，应用登记自己的类型 |
-| `IWorkflowExpressionEvaluator`、`ExpressionScope` | 无依赖的小语言：比较、算术、成员与索引、内置函数，`{{ }}` 模板 |
+| `IWorkflowExpressionEvaluator`、`ExpressionScope` | 无依赖的小语言：比较、算术、成员与索引、内置函数，`{{ }}` 模板；`Evaluate` 与 `ActivityContext.EvaluateProperty` 返回 `Result<Maybe<JsonNode>>`，结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串（ADR-0059） |
 | `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock` | Provider 契约：批量写入，不按租户过滤；实例查询带多状态 / 发起人 / 时间范围 / 分页与计数 |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与按保留期清理（`RetentionDays`、`HousekeepingIntervalSeconds`），Provider 特性启动 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.instance.*` / `node.*` / `task.*` / `external.*` / `custom` 消息（CloudEvents 信封） |

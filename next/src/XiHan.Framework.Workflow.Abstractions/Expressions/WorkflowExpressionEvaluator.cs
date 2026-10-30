@@ -53,13 +53,14 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <inheritdoc />
-    public Result<JsonNode?> Evaluate(string expression, ExpressionScope scope)
+    public Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope)
     {
         ArgumentNullException.ThrowIfNull(expression);
         ArgumentNullException.ThrowIfNull(scope);
         try
         {
-            return Result.Success(Get(expression)(scope));
+            // 原语的成功结果不携带 null：null 结果是成功的无值
+            return Result.Success(Maybe.From(Get(expression)(scope)));
         }
         catch (ExpressionException exception)
         {
@@ -76,7 +77,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             return evaluated.Error!;
         }
 
-        if (value is JsonValue scalar && !scalar.TryGetValue<string>(out _) && WorkflowValues.TryBool(scalar, out var flag))
+        if (value.OrNull() is JsonValue scalar && !scalar.TryGetValue<string>(out _) && WorkflowValues.TryBool(scalar, out var flag))
         {
             return flag;
         }
@@ -114,11 +115,11 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
                 return evaluated.Error!;
             }
 
-            builder.Append(value switch
+            builder.Append(value.OrNull() switch
             {
                 null => string.Empty,
                 JsonValue scalar => WorkflowValues.AsString(scalar),
-                _ => value.ToJsonString(),
+                var node => node.ToJsonString(),
             });
             position = close + 2;
         }

@@ -52,7 +52,7 @@ public sealed class ExpressionAssigneeProvider : IAssigneeProvider
 
         var evaluated = _evaluator.Evaluate(resolution.Rule.Values[0], resolution.Activity.Scope());
         return ValueTask.FromResult(evaluated.TryGetValue(out var value)
-            ? Result.Success(WorkflowValues.ToStringList(value))
+            ? Result.Success(WorkflowValues.ToStringList(value.OrNull()))
             : Result.Failure<IReadOnlyList<string>>(evaluated.Error!));
     }
 }

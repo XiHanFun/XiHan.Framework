@@ -103,7 +103,7 @@ public sealed class DelayActivity : IResumableActivity
                 return evaluated.Error!;
             }
 
-            if (value is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var until))
+            if (value.OrNull() is JsonValue scalar && DateTimeOffset.TryParse(WorkflowValues.AsString(scalar), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var until))
             {
                 return until;
             }
@@ -117,7 +117,7 @@ public sealed class DelayActivity : IResumableActivity
             return duration.Error!;
         }
 
-        if (!WorkflowValues.TryConvert<double>(seconds, out var total) || total <= 0 || !double.IsFinite(total))
+        if (!WorkflowValues.TryConvert<double>(seconds.OrNull(), out var total) || total <= 0 || !double.IsFinite(total))
         {
             return ActivityContext.PropertyInvalid(DurationProperty, "must be a positive number of seconds");
         }

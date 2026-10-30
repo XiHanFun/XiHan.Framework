@@ -53,7 +53,7 @@ public abstract class WorkflowEngineConformance
             .AddVariable("x", required: true)
             .AddStart()
             .AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.OutputsProperty, new JsonObject { ["y"] = 2 }))
-            .AddNode("b", ActivityTypes.SetVariable, configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["z"] = "x + y", ["greeting"] = "'hi ' + upper(name)" }))
+            .AddNode("b", ActivityTypes.SetVariable, configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["z"] = "x + y", ["greeting"] = "'hi ' + upper(name)", ["nothing"] = "null" }))
             .AddEnd()
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "end")
             .Build();
@@ -68,6 +68,8 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
         Assert.Equal(42, instance.Variables["z"]!.GetValue<decimal>());
         Assert.Equal("hi BOB", instance.Variables["greeting"]!.GetValue<string>());
+        // 求出 null 的表达式写成值为 null 的变量，不让实例出错（ADR-0059）
+        Assert.True(instance.Variables.TryGetPropertyValue("nothing", out var nothing) && nothing is null);
         Assert.NotNull(instance.EndedAt);
         Assert.Equal(("alice", "doc-1"), (instance.StarterId, instance.CorrelationId));
 
