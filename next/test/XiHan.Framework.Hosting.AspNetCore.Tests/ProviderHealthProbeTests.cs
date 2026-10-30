@@ -36,5 +36,10 @@ public sealed class ProviderHealthProbeTests
         Assert.Equal("pass", body.RootElement.GetProperty("status").GetString());
         var contribution = Assert.Single(body.RootElement.GetProperty("contributions").EnumerateArray(), static c => c.GetProperty("id").GetString() == InMemoryCachingFeature.HealthName);
         Assert.Equal("Ready", contribution.GetProperty("state").GetString());
+        // 条目的数据照写（容量类条目给出用量与上限）；特性没有这些字段
+        var data = contribution.GetProperty("data");
+        Assert.Equal((0, 0), (data.GetProperty("storeEntries").GetInt32(), data.GetProperty("cacheEntries").GetInt32()));
+        Assert.True(data.GetProperty("capacity").GetInt32() > 0);
+        Assert.All(body.RootElement.GetProperty("features").EnumerateArray(), static f => Assert.DoesNotContain(f.EnumerateObject(), static p => p.Name is "data" or "durationMs"));
     }
 }

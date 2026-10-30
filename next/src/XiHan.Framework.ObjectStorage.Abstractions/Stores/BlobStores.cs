@@ -210,7 +210,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
                 return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message)));
             }
 
-            added = new Entry(definition, provider, store, new ContributorStatus(HealthPrefix + definition.Name, LifecycleState.Started));
+            added = new Entry(definition, provider, store, new ContributorStatus(HealthPrefix + definition.Name, LifecycleState.Started) { Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["provider"] = provider.Name } });
             lock (_entries)
             {
                 _entries.TryGetValue(definition.Name, out replaced);
@@ -385,6 +385,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
         ContributorStatus status;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_probeInterval);
+        var started = _clock.GetTimestamp();
         try
         {
             var probed = await entry.Provider.ProbeAsync(entry.Store, timeout.Token).ConfigureAwait(false);
@@ -398,6 +399,8 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
         {
             return;
         }
+
+        status = status with { CheckedAt = _clock.GetUtcNow(), Duration = _clock.GetElapsedTime(started) };
 
         lock (_entries)
         {

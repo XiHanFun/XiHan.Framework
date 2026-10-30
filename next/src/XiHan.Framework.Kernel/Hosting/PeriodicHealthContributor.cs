@@ -62,7 +62,8 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     /// <param name="interval">重探间隔，也是单次探测的超时；必须为正。</param>
     /// <param name="clock">时钟。</param>
     /// <param name="loggerFactory">日志工厂。</param>
-    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory)
+    /// <param name="description">条目检查的是什么；可空。</param>
+    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory, string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(probe);
@@ -78,7 +79,8 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
         _probe = probe;
         _clock = clock;
         _logger = loggerFactory.CreateLogger<PeriodicHealthContributor>();
-        _status = new ContributorStatus(name, LifecycleState.Started);
+        Description = description;
+        _status = new ContributorStatus(name, LifecycleState.Started) { Description = description };
     }
 
     /// <summary>
@@ -90,6 +92,11 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     /// 重探间隔，也是单次探测的超时。
     /// </summary>
     public TimeSpan Interval { get; }
+
+    /// <summary>
+    /// 条目检查的是什么。
+    /// </summary>
+    public string? Description { get; }
 
     /// <summary>
     /// 最近一次探测完成的时刻。
@@ -160,6 +167,7 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
         // 每次探测各有超时：探针卡住不能拖住循环，也不能让首探拖住宿主启动；超时与间隔取同一个值
         using var timeout = new CancellationTokenSource(Interval, _clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        var started = _clock.GetTimestamp();
         Result outcome;
         try
         {
@@ -176,7 +184,7 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
             outcome = Error.Unavailable(KernelErrors.HealthProbeFailed, KernelMessages.HealthProbeFailed, MessageArguments.Of(("name", Name), ("reason", exception.Message)));
         }
 
-        Apply(outcome);
+        Apply(outcome, _clock.GetElapsedTime(started));
     }
 
     /// <inheritdoc />
@@ -194,14 +202,15 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     /// <remarks>
     /// 成功 Ready、失败 Degraded；状态或错误码变化时记日志。
     /// </remarks>
-    private void Apply(Result outcome)
+    private void Apply(Result outcome, TimeSpan duration)
     {
         var previous = _status;
-        var current = outcome.IsSuccess
+        var now = _clock.GetUtcNow();
+        var current = (outcome.IsSuccess
             ? new ContributorStatus(Name, LifecycleState.Ready)
-            : new ContributorStatus(Name, LifecycleState.Degraded, outcome.Error);
+            : new ContributorStatus(Name, LifecycleState.Degraded, outcome.Error)) with { Description = Description, CheckedAt = now, Duration = duration };
         _status = current;
-        LastProbedAt = _clock.GetUtcNow();
+        LastProbedAt = now;
 
         // 只在状态或错误码变化时记日志，稳定的失败不刷屏
         if (previous.State == current.State && string.Equals(previous.Error?.Code, current.Error?.Code, StringComparison.Ordinal))

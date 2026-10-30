@@ -46,12 +46,11 @@ public sealed class InMemoryCacheHealthContributor : IHealthContributor
     public IReadOnlyList<ContributorStatus> Check()
     {
         // 用量达到容量即 Degraded：LRU 不拒绝写入，所以这是唯一能看出"缓存太小"的信号
-        var full = _store.Count >= _capacity || _cache.Count >= _capacity;
-        return
-        [
-            full
-                ? new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(CachingErrors.CapacityReached, CachingMessages.CapacityReached, MessageArguments.Of(("capacity", _capacity))))
-                : new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Ready),
-        ];
+        var (stored, cached) = (_store.Count, _cache.Count);
+        var full = stored >= _capacity || cached >= _capacity;
+        var status = full
+            ? new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(CachingErrors.CapacityReached, CachingMessages.CapacityReached, MessageArguments.Of(("capacity", _capacity))))
+            : new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Ready);
+        return [status with { Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["storeEntries"] = stored, ["cacheEntries"] = cached, ["capacity"] = _capacity } }];
     }
 }

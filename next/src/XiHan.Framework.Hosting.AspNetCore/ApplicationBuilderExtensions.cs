@@ -123,7 +123,13 @@ public static class ApplicationBuilderExtensions
             pass ? "pass" : "fail",
             snapshot.State.ToString(),
             snapshot.Features.Select(static f => new FeatureHealth(f.Manifest.Id, f.State.ToString(), f.Error?.Code)).ToList(),
-            snapshot.Contributions.Select(static c => new FeatureHealth(c.Name, c.State.ToString(), c.Error?.Code)).ToList());
+            snapshot.Contributions.Select(static c => new FeatureHealth(c.Name, c.State.ToString(), c.Error?.Code)
+            {
+                Description = c.Description,
+                CheckedAt = c.CheckedAt,
+                DurationMs = c.Duration?.TotalMilliseconds,
+                Data = c.Data.Count > 0 ? c.Data : null,
+            }).ToList());
 
         httpContext.Response.StatusCode = pass ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
         return httpContext.Response.WriteAsJsonAsync(response, HostingJsonContext.Default.HealthResponse, cancellationToken: httpContext.RequestAborted);
