@@ -36,7 +36,15 @@ XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder
 XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.CheckedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.CheckedAt.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Data.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Data.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Deconstruct(out string! Id, out string! State, out string? Error) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Description.get -> string?
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Description.init -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.DurationMs.get -> double?
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.DurationMs.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? other) -> bool
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.get -> string?
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.init -> void

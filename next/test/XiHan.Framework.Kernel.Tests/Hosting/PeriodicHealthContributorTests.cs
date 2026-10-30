@@ -52,6 +52,36 @@ public sealed class PeriodicHealthContributorTests
     }
 
     [Fact]
+    public async Task Probe_RecordsCheckedAtDuration_AndDescription()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 30, 8, 0, 0, TimeSpan.Zero));
+        await using var contributor = new PeriodicHealthContributor(Name, probe: _ =>
+        {
+            // 探测本身花了 2 秒
+            clock.Advance(TimeSpan.FromSeconds(2));
+            return ValueTask.FromResult(Result.Success());
+        }, TimeSpan.FromSeconds(15), clock, NullLoggerFactory.Instance, "store connectivity");
+
+        // 还没探过：带说明，没有检查时刻与耗时
+        var initial = Assert.Single(contributor.Check());
+        Assert.Equal(("store connectivity", null, null), (initial.Description, initial.CheckedAt, initial.Duration));
+
+        await contributor.ProbeAsync(CancellationToken.None);
+        var status = Assert.Single(contributor.Check());
+        Assert.Equal((LifecycleState.Ready, "store connectivity", clock.GetUtcNow(), TimeSpan.FromSeconds(2)), (status.State, status.Description, status.CheckedAt, status.Duration));
+    }
+
+    [Fact]
+    public void StatusData_AcceptsScalars_AndRejectsOtherValues()
+    {
+        var status = new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { ["used"] = 3L, ["ratio"] = 0.5, ["mode"] = "lru", ["full"] = false, ["none"] = null } };
+        Assert.Equal(5, status.Data.Count);
+        Assert.Empty(new ContributorStatus(Name, LifecycleState.Ready).Data);
+        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { ["bad"] = new object() } });
+        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { [" "] = 1 } });
+    }
+
+    [Fact]
     public void Constructor_RejectsNonPositiveInterval_AndBlankName()
     {
         var clock = new FakeTimeProvider();

@@ -4,7 +4,7 @@
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`IHealthContributor`（额外健康条目，如插件；条目 Degraded / Failed 让应用 Degraded 但不退出）、`PeriodicHealthContributor`（Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`）、`AddXiHan()` |
+| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`IHealthContributor`（额外健康条目，如插件；条目 Degraded / Failed 让应用 Degraded 但不退出）、`PeriodicHealthContributor`（Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`；条目带检查时刻、耗时与可选的说明）、`ContributorStatus`（名字、状态、错误，以及说明 / 检查时刻 / 耗时 / 标量数据，ADR-0054）、`AddXiHan()` |
 | `Capabilities` | `[Capability]`、`CapabilityResolver`、`ResolvedGraph`、`ResolvedNode` |
 | `Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`（按类型 `UseAt` / 按实例 `UseInstance` / 同类型多实例按名 `UseNamedInstance`）、`PipelineStep`、`PipelineStage`（原语层）、`Placement`、内置中间件 `ObserveMiddleware`、`DeadlineMiddleware`（`Resilience` 区的 `ResilienceMiddleware`、`Validation` 区的 `ValidationMiddleware` 也是内置）；`IInvocationAccessor`（作用域服务，调用链深处不传上下文的服务取当前调用的上下文，调用之外为无值）；`InvocationOrigin` / `InvocationProtocols` 与 `GetOrigin()` / `SetOrigin()`（调用来源：协议、请求目标、远端地址、User-Agent、来源页、端点的路由模板与名字，由协议适配器建上下文时写入，内部调用没有，RFC-0003 规则 6，ADR-0043 / ADR-0048）。阶段内基准次序按 `Placement`、归属清单 ID 字典序、注册序号，只保证可复现、不表达依赖：要用到别的包中间件产出的（如认证后的主体、解析后的租户）必须显式 `Before` / `After` 约束，例如应用的会话门禁要声明 `After<SessionGateMiddleware, AuthenticationMiddleware>()` |
 | `Diagnostics` | `ActivitySource` / `Meter` 桥、`IAuditSink` |

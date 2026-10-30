@@ -14,4 +14,18 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 /// </remarks>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(HealthResponse))]
+// 健康条目数据的值是运行期才知道类型的标量：逐一登记，源生成的序列化按运行时类型找到它们
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(byte))]
+[JsonSerializable(typeof(sbyte))]
+[JsonSerializable(typeof(short))]
+[JsonSerializable(typeof(ushort))]
+[JsonSerializable(typeof(int))]
+[JsonSerializable(typeof(uint))]
+[JsonSerializable(typeof(long))]
+[JsonSerializable(typeof(ulong))]
+[JsonSerializable(typeof(float))]
+[JsonSerializable(typeof(double))]
+[JsonSerializable(typeof(decimal))]
 internal sealed partial class HostingJsonContext : JsonSerializerContext;

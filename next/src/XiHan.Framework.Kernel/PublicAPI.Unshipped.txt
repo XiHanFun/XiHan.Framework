@@ -104,8 +104,16 @@ XiHan.Framework.Kernel.Hosting.BindingValue.Value.init -> void
 XiHan.Framework.Kernel.Hosting.ConfigurationDirectory
 XiHan.Framework.Kernel.Hosting.ContributorStatus
 XiHan.Framework.Kernel.Hosting.ContributorStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.ContributorStatus!
+XiHan.Framework.Kernel.Hosting.ContributorStatus.CheckedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Kernel.Hosting.ContributorStatus.CheckedAt.init -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.ContributorStatus(string! Name, XiHan.Framework.Primitives.LifecycleState State, XiHan.Framework.Primitives.Error? Error = null) -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Data.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Data.init -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Deconstruct(out string! Name, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error) -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Description.get -> string?
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Description.init -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Duration.get -> System.TimeSpan?
+XiHan.Framework.Kernel.Hosting.ContributorStatus.Duration.init -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Equals(XiHan.Framework.Kernel.Hosting.ContributorStatus? other) -> bool
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Error.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Error.init -> void
@@ -182,11 +190,12 @@ XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.get -> bool
 XiHan.Framework.Kernel.Hosting.KernelOptions.UseBuiltInMiddleware.init -> void
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Description.get -> string?
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Interval.get -> System.TimeSpan
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.LastProbedAt.get -> System.DateTimeOffset?
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.Name.get -> string!
-XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.PeriodicHealthContributor(string! name, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>>! probe, System.TimeSpan interval, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.PeriodicHealthContributor(string! name, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>>! probe, System.TimeSpan interval, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, string? description = null) -> void
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
