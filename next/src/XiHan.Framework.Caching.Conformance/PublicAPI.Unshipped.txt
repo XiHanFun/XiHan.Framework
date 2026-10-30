@@ -3,6 +3,7 @@ XiHan.Framework.Caching.Conformance.CacheStoreConformance
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.BatchMethods_EmptyInput_ReturnEmpty() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.CacheStoreConformance() -> void
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.DistributedLock_IsExclusive_ReleasableAndExpiring() -> System.Threading.Tasks.Task!
+XiHan.Framework.Caching.Conformance.CacheStoreConformance.Inspector_ListsInspectsAndRemovesByPrefix() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.LargeValue_RoundTrips() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.RemoveMany_ReportsPerKey() -> System.Threading.Tasks.Task!
 XiHan.Framework.Caching.Conformance.CacheStoreConformance.Remove_ReportsExistence() -> System.Threading.Tasks.Task!

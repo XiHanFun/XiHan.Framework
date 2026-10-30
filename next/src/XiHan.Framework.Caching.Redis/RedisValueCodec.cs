@@ -47,6 +47,23 @@ internal static class RedisValueCodec
     }
 
     /// <summary>
+    /// 只看头部：头部字节数与滑动窗口。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="head"/> 至少是值的前 9 个字节（值更短时是整个值）；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// </remarks>
+    public static (int HeaderLength, TimeSpan? Sliding) Header(byte[] head)
+    {
+        ArgumentNullException.ThrowIfNull(head);
+        return head.Length switch
+        {
+            > 0 when head[0] == Absolute => (1, null),
+            >= 1 + sizeof(long) when head[0] == Sliding => (1 + sizeof(long), TimeSpan.FromMilliseconds(BinaryPrimitives.ReadInt64LittleEndian(head.AsSpan(1)))),
+            _ => throw new InvalidOperationException("The Redis cache value has an invalid header and was not written in this provider's format."),
+        };
+    }
+
+    /// <summary>
     /// 解码。
     /// </summary>
     /// <remarks>

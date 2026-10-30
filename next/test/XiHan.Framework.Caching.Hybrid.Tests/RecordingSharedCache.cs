@@ -28,6 +28,19 @@ internal sealed class RecordingSharedCache : ISharedCache
     {
         var options = new InMemoryCachingOptions();
         _inner = new InMemoryObjectCache(new InMemoryCacheStore(options, clock), options, clock);
+        Store = _inner.Store;
+    }
+
+    /// <summary>
+    /// 创建，对外的字节存储换成指定的。
+    /// </summary>
+    /// <remarks>
+    /// 数据仍存在内部的内存缓存里；两级缓存只从 <see cref="Store"/> 订阅变更。
+    /// </remarks>
+    public RecordingSharedCache(TimeProvider clock, ICacheStore store)
+        : this(clock)
+    {
+        Store = store;
     }
 
     /// <summary>
@@ -36,7 +49,7 @@ internal sealed class RecordingSharedCache : ISharedCache
     public List<string> Operations { get; } = [];
 
     /// <inheritdoc />
-    public ICacheStore Store => _inner.Store;
+    public ICacheStore Store { get; }
 
     /// <inheritdoc />
     public ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)

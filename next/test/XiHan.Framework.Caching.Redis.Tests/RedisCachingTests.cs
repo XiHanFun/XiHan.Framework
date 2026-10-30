@@ -58,6 +58,9 @@ public sealed class RedisCachingTests
         Assert.Equal("cfg:6379", configured.Configuration);
         Assert.Equal("app:", configured.KeyPrefix);
         Assert.Equal(TimeSpan.FromMinutes(1), configured.DefaultTimeToLive);
+        Assert.True(configured.PublishChanges);
+        Assert.False(RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:PublishChanges", "false")), binding).PublishChanges);
+        Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:PublishChanges", "maybe")), binding));
 
         Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(), default));
         Assert.Throws<ArgumentException>(() => RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:DefaultTimeToLiveSeconds", "-1")), binding));

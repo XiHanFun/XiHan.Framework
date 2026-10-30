@@ -121,6 +121,24 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
+    /// 删除前缀下的全部条目，返回删除数。
+    /// </summary>
+    public int RemovePrefix(string prefix)
+    {
+        lock (_gate)
+        {
+            var matched = _entries.Where(pair => pair.Key.StartsWith(prefix, StringComparison.Ordinal)).Select(static pair => pair.Value).ToList();
+            foreach (var node in matched)
+            {
+                _entries.Remove(node.Value.Key);
+                _order.Remove(node);
+            }
+
+            return matched.Count;
+        }
+    }
+
+    /// <summary>
     /// 删除。
     /// </summary>
     /// <remarks>

@@ -166,6 +166,61 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
+    /// 前缀下仍存活的键。
+    /// </summary>
+    /// <remarks>
+    /// 按序数排序，从 <paramref name="after"/> 之后取至多 <paramref name="limit"/> 个；不更新访问顺序。
+    /// </remarks>
+    public IReadOnlyList<string> KeysWithPrefix(string prefix, string? after, int limit)
+    {
+        lock (_gate)
+        {
+            var now = timeProvider.GetUtcNow();
+            return [.. _index.Values
+                .Where(node => node.Value.Key.StartsWith(prefix, StringComparison.Ordinal) && node.Value.ExpiresAt > now && (after is null || string.CompareOrdinal(node.Value.Key, after) > 0))
+                .Select(static node => node.Value.Key)
+                .Order(StringComparer.Ordinal)
+                .Take(limit)];
+        }
+    }
+
+    /// <summary>
+    /// 读一个仍存活的条目，不更新访问顺序与滑动过期。
+    /// </summary>
+    /// <remarks>
+    /// 不存在或已过期为 <see langword="null"/>。
+    /// </remarks>
+    public (TValue Value, DateTimeOffset ExpiresAt, TimeSpan? Sliding)? Peek(string key)
+    {
+        lock (_gate)
+        {
+            return _index.TryGetValue(key, out var node) && node.Value.ExpiresAt > timeProvider.GetUtcNow()
+                ? (node.Value.Value, node.Value.ExpiresAt, node.Value.Sliding)
+                : null;
+        }
+    }
+
+    /// <summary>
+    /// 删除前缀下的全部条目，返回其中仍存活的个数。
+    /// </summary>
+    public int RemovePrefix(string prefix)
+    {
+        lock (_gate)
+        {
+            var now = timeProvider.GetUtcNow();
+            var matched = _index.Values.Where(node => node.Value.Key.StartsWith(prefix, StringComparison.Ordinal)).ToList();
+            var live = 0;
+            foreach (var node in matched)
+            {
+                live += node.Value.ExpiresAt > now ? 1 : 0;
+                Evict(node);
+            }
+
+            return live;
+        }
+    }
+
+    /// <summary>
     /// 清空全部条目。
     /// </summary>
     public void Clear()

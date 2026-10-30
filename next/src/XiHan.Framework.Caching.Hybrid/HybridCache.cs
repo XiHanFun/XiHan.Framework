@@ -11,10 +11,11 @@ namespace XiHan.Framework.Caching.Hybrid;
 /// 两级缓存。
 /// </summary>
 /// <remarks>
-/// L1 是进程内对象引用（有界 LRU，存活时间不超过 <see cref="HybridCachingOptions.LocalTimeToLive"/>），L2 是被选中的 <see cref="ISharedCache"/>。读：L1 命中直接返回，未命中读 L2 并回填；批量读只把 L1 未命中的键一次交给 L2。写与删：先 L2 再 L1。别的实例的写入与删除不会主动失效本实例的 L1。L1 直接存对象引用，调用方不得修改取回的对象。
+/// L1 是进程内对象引用（有界 LRU，存活时间不超过 <see cref="HybridCachingOptions.LocalTimeToLive"/>），L2 是被选中的 <see cref="ISharedCache"/>。读：L1 命中直接返回，未命中读 L2 并回填；批量读只把 L1 未命中的键一次交给 L2。写与删：先 L2 再 L1。
+/// L2 的存储实现了 <see cref="ICacheChangeFeed"/> 时（Redis），本实例与其他实例对存储的写入与删除让 L1 里的这些键（或前缀）立即失效；没有时别的实例的写入要等 <see cref="HybridCachingOptions.LocalTimeToLive"/> 才看得到（ADR-0055）。L1 直接存对象引用，调用方不得修改取回的对象。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class HybridCache : ICache
+public sealed class HybridCache : ICache, IDisposable
 {
     /// <summary>
     /// L2。
@@ -37,6 +38,14 @@ public sealed class HybridCache : ICache
     private readonly LocalEntryTable _local;
 
     /// <summary>
+    /// 对 L2 存储变更的订阅。
+    /// </summary>
+    /// <remarks>
+    /// 存储没有变更通知时为 <see langword="null"/>。
+    /// </remarks>
+    private readonly IDisposable? _changes;
+
+    /// <summary>
     /// 创建。
     /// </summary>
     public HybridCache(ISharedCache shared, HybridCachingOptions options, TimeProvider clock)
@@ -45,6 +54,32 @@ public sealed class HybridCache : ICache
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _local = new LocalEntryTable(options.LocalCapacity, clock);
+        _changes = shared.Store is ICacheChangeFeed feed ? feed.Subscribe(Invalidate) : null;
+    }
+
+    /// <summary>
+    /// 是否订阅了 L2 存储的变更。
+    /// </summary>
+    public bool InvalidatesAcrossInstances => _changes is not null;
+
+    /// <inheritdoc />
+    public void Dispose() => _changes?.Dispose();
+
+    /// <summary>
+    /// 存储变了：失效 L1 里的这些键或前缀。
+    /// </summary>
+    private void Invalidate(CacheChange change)
+    {
+        if (change.Prefix is { } prefix)
+        {
+            _local.RemovePrefix(prefix);
+            return;
+        }
+
+        foreach (var key in change.Keys)
+        {
+            _local.Remove(key.Value);
+        }
     }
 
     /// <summary>

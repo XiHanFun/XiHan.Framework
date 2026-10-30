@@ -40,6 +40,14 @@ public sealed record RedisCachingOptions
     public string KeyPrefix { get; init; } = "xihan:";
 
     /// <summary>
+    /// 写入与删除后是否向变更频道发布通知。
+    /// </summary>
+    /// <remarks>
+    /// 默认开：其他实例的两级缓存据此失效 L1（ADR-0055）；发后不等，不增加写入的往返。
+    /// </remarks>
+    public bool PublishChanges { get; init; } = true;
+
+    /// <summary>
     /// 未指定过期时的存活时间。
     /// </summary>
     /// <remarks>
@@ -81,6 +89,13 @@ public sealed record RedisCachingOptions
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)
         {
             options = options with { KeyPrefix = prefix };
+        }
+
+        if (configuration[$"{ConfigurationSection}:PublishChanges"] is { } publish)
+        {
+            options = bool.TryParse(publish, out var enabled)
+                ? options with { PublishChanges = enabled }
+                : throw new ArgumentException($"{ConfigurationSection}:PublishChanges must be 'true' or 'false', but was '{publish}'.");
         }
 
         var ttl = configuration[$"{ConfigurationSection}:DefaultTimeToLiveSeconds"];

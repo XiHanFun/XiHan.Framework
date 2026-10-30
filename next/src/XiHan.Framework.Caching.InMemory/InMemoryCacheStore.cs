@@ -13,12 +13,20 @@ namespace XiHan.Framework.Caching.InMemory;
 /// 写入复制字节，读取返回不可修改的视图；批量方法一次加锁逐项处理。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryCacheStore : ICacheStore
+public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
 {
     /// <summary>
     /// 承载字节条目的有界 LRU 表。
     /// </summary>
     private readonly BoundedLruTable<byte[]> _table;
+
+    /// <summary>
+    /// 时钟。
+    /// </summary>
+    /// <remarks>
+    /// 剩余存活时间按它计算。
+    /// </remarks>
+    private readonly TimeProvider _clock;
 
     /// <summary>
     /// 创建存储。
@@ -28,12 +36,49 @@ public sealed class InMemoryCacheStore : ICacheStore
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(timeProvider);
         _table = new BoundedLruTable<byte[]>(options.MaxEntries, options.DefaultTimeToLive, timeProvider);
+        _clock = timeProvider;
     }
 
     /// <summary>
     /// 当前条目数（含尚未清理的过期条目）。
     /// </summary>
     public int Count => _table.Count;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。
+    /// </remarks>
+    public ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        // 多取一个判断是否还有下一页
+        var keys = _table.KeysWithPrefix(query.Prefix, query.Continuation, query.Limit + 1);
+        var page = keys.Take(query.Limit).Select(static key => new CacheKey(key)).ToList();
+        return ValueTask.FromResult(new CacheKeyPage(page, keys.Count > query.Limit ? page[^1].Value : null));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Maybe<CacheEntryInfo>> InspectAsync(CacheKey key, CancellationToken cancellationToken)
+    {
+        if (_table.Peek(key.Value) is not { } entry)
+        {
+            return ValueTask.FromResult(Maybe.None<CacheEntryInfo>());
+        }
+
+        var remaining = entry.ExpiresAt == DateTimeOffset.MaxValue ? (TimeSpan?)null : entry.ExpiresAt - _clock.GetUtcNow();
+        return ValueTask.FromResult(Maybe.Some(new CacheEntryInfo(key, entry.Value.Length, remaining, entry.Sliding)));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(prefix) || !CacheKey.IsValidPrefix(prefix))
+        {
+            throw new ArgumentException($"Cache key prefix '{prefix}' is invalid or empty.", nameof(prefix));
+        }
+
+        return ValueTask.FromResult((long)_table.RemovePrefix(prefix));
+    }
 
     /// <inheritdoc />
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)

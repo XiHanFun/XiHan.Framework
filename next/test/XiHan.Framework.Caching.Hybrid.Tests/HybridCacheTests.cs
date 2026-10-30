@@ -11,9 +11,9 @@ namespace XiHan.Framework.Caching.Hybrid.Tests;
 /// 两级缓存。
 /// </summary>
 /// <remarks>
-/// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、选项解析。
+/// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、存储变更失效 L1、选项解析。
 /// </remarks>
-public sealed class HybridCacheTests
+public sealed class HybridCacheTests : IDisposable
 {
     /// <summary>
     /// 固定起点的可控时钟。
@@ -38,6 +38,9 @@ public sealed class HybridCacheTests
         _shared = new RecordingSharedCache(_clock);
         _cache = new HybridCache(_shared, new HybridCachingOptions { LocalCapacity = 3, LocalTimeToLive = TimeSpan.FromSeconds(30) }, _clock);
     }
+
+    /// <inheritdoc />
+    public void Dispose() => _cache.Dispose();
 
     [Fact]
     public async Task Get_FillsLocal_ThenServesFromLocal()
@@ -150,6 +153,37 @@ public sealed class HybridCacheTests
 
         // 类型不匹配按未命中处理，交给 L2 判定
         Assert.False((await _cache.GetAsync<int>("k", CancellationToken.None)).HasValue);
+    }
+
+    [Fact]
+    public async Task StoreChanges_InvalidateLocal_ByKeyAndPrefix()
+    {
+        var feed = new FeedingStore(_clock);
+        var shared = new RecordingSharedCache(_clock, feed);
+        var cache = new HybridCache(shared, new HybridCachingOptions { LocalTimeToLive = TimeSpan.FromMinutes(5) }, _clock);
+        Assert.True(cache.InvalidatesAcrossInstances);
+        Assert.False(_cache.InvalidatesAcrossInstances);
+
+        await cache.SetAsync<string>("user:1", "a", CacheEntryOptions.Default, CancellationToken.None);
+        await cache.SetAsync<string>("user:2", "b", CacheEntryOptions.Default, CancellationToken.None);
+        await cache.SetAsync<string>("role:1", "c", CacheEntryOptions.Default, CancellationToken.None);
+
+        // 别的实例改了 L2：通知到达前 L1 仍是旧值，到达后回 L2 取新值
+        await shared.SetAsync<string>("user:1", "a2", CacheEntryOptions.Default, CancellationToken.None);
+        shared.Operations.Clear();
+        Assert.Equal("a", (await cache.GetAsync<string>("user:1", CancellationToken.None)).ValueOrThrow());
+        feed.Raise(CacheChange.ForKeys(["user:1"]));
+        Assert.Equal("a2", (await cache.GetAsync<string>("user:1", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(["get:user:1"], shared.Operations);
+        Assert.Equal(3, cache.LocalCount);
+
+        // 按前缀删除失效前缀下的全部 L1 条目
+        feed.Raise(CacheChange.ForPrefix("user:"));
+        Assert.Equal(1, cache.LocalCount);
+
+        // 释放即退订
+        cache.Dispose();
+        Assert.Equal(0, feed.SubscriberCount);
     }
 
     [Fact]

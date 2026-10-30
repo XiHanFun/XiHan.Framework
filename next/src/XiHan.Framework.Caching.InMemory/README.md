@@ -6,6 +6,7 @@
 
 - 有界 LRU：`XiHan:Caching:InMemory:MaxEntries`（默认 10000），满时淘汰最久未访问的条目。
 - 过期：绝对存活或滑动过期；都不设时用 `XiHan:Caching:InMemory:DefaultTimeToLiveSeconds`（默认 300）。过期条目在访问时清理。
+- 字节存储实现 `ICacheStoreInspector`（ADR-0055）：按键的序数顺序分页列出（续页标记是上一页最后一个键），读载荷字节数、剩余存活与滑动窗口（不更新访问顺序与滑动过期），按前缀删除返回其中仍存活的条数。
 - 字节存储写入复制字节，读取返回不可修改的视图；类型化缓存（`ICache` / `ISharedCache`）直接存对象引用、不序列化，调用方不得修改取回的对象。
 - 被选中提供 `caching.distributed` 时注册 `ISharedCache`、`ICacheStore`（字节级契约，指向同一个存储）、分布式锁与幂等中间件；当另一个显式 Provider（如 `Caching.Redis`）被选中提供 `caching.distributed` 时，本包只注册 `ICache`。
 
