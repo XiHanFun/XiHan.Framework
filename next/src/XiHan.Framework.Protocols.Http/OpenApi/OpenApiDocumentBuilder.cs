@@ -140,7 +140,7 @@ public static partial class OpenApiDocumentBuilder
                 writer.WriteEndObject();
             }
 
-            WritePermissions(writer, context.ReferencedPermissions, source.Permissions, includeRegistered: context.Group is null);
+            WritePermissions(writer, context, includeRegistered: context.Group is null);
             writer.WriteEndObject();
             if (context.Bearer)
             {
@@ -231,7 +231,8 @@ public static partial class OpenApiDocumentBuilder
         writer.WriteStartArray("x-tagGroups");
         foreach (var group in context.Source.Groups.OrderBy(static g => g.Order).ThenBy(static g => g.Name, StringComparer.Ordinal))
         {
-            var tags = context.GroupTags[group.Name].Where(context.UsedTags.Contains).ToList();
+            // 一个资源的操作分属几个特性时，标签在几个组里都有：只归排序靠前的那一组，界面上不重复出现
+            var tags = context.GroupTags[group.Name].Where(tag => context.UsedTags.Contains(tag) && !grouped.Contains(tag)).ToList();
             grouped.UnionWith(tags);
             if (tags.Count > 0)
             {
@@ -491,8 +492,9 @@ public static partial class OpenApiDocumentBuilder
     {
         if (permission is not null)
         {
-            return context.Source.Permissions is { } registry && registry.Find(permission).TryGetValue(out var definition)
-                ? context.Text(HttpMessages.OpenApiPermissionRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = permission, ["name"] = definition.DisplayName })
+            var name = PermissionText(permission, "name", context) ?? DefinitionOf(context.Source.Permissions, permission)?.DisplayName;
+            return name is not null
+                ? context.Text(HttpMessages.OpenApiPermissionRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = permission, ["name"] = name })
                 : context.Text(HttpMessages.OpenApiPermissionCodeRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = permission });
         }
 
@@ -505,6 +507,24 @@ public static partial class OpenApiDocumentBuilder
             ? context.Text(HttpMessages.OpenApiAuthenticationRequired)
             : context.Text(HttpMessages.OpenApiPolicyRequired, new Dictionary<string, object?>(StringComparer.Ordinal) { ["policy"] = policy });
     }
+
+    /// <summary>
+    /// 权限的区域文案。
+    /// </summary>
+    /// <remarks>
+    /// 键为 <c>permissions.&lt;权限码&gt;.&lt;项&gt;</c>（权限码的 <c>-</c> 换 <c>_</c>）；没有为 <see langword="null"/>。
+    /// </remarks>
+    private static string? PermissionText(string code, string part, BuildContext context)
+        => context.Text("permissions." + code.Replace('-', '_') + "." + part);
+
+    /// <summary>
+    /// 注册表里的权限定义。
+    /// </summary>
+    /// <remarks>
+    /// 没有注册表或没登记为 <see langword="null"/>。
+    /// </remarks>
+    private static PermissionDefinition? DefinitionOf(PermissionRegistry? permissions, string code)
+        => permissions is not null && permissions.Find(code).TryGetValue(out var definition) ? definition : null;
 
     /// <summary>
     /// 两段说明之间空一行。
@@ -890,15 +910,17 @@ public static partial class OpenApiDocumentBuilder
     /// 写 <c>components</c> 下的 <c>x-xihan-permissions</c>。
     /// </summary>
     /// <remarks>
-    /// 键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>。
+    /// 键是权限码（按序数排序），值是 <c>code</c>、<c>displayName</c> 与（非空时的）<c>description</c>；
+    /// 显示名与说明先取区域文案（<c>permissions.&lt;权限码&gt;.name</c> / <c>.description</c>），没有再取定义的。
     /// </remarks>
-    private static void WritePermissions(Utf8JsonWriter writer, SortedSet<string> referencedPermissions, PermissionRegistry? permissions, bool includeRegistered)
+    private static void WritePermissions(Utf8JsonWriter writer, BuildContext context, bool includeRegistered)
     {
+        var permissions = context.Source.Permissions;
         // 收录范围 = 已发布操作与普通端点引用到的权限码 ∪ 注册表里登记的全部定义：
         // 授权界面要列出应用的全部权限，其中有些权限不被任何 HTTP 操作引用（只在 gRPC / MCP 暴露的操作），
         // 而被引用却没登记的权限码也要出现，前端才能按权限码对上条目——这种只写 code，因为没有定义可取
         // 分组文档只收本组引用的权限码
-        var codes = new SortedSet<string>(referencedPermissions, StringComparer.Ordinal);
+        var codes = new SortedSet<string>(context.ReferencedPermissions, StringComparer.Ordinal);
         if (permissions is not null && includeRegistered)
         {
             codes.UnionWith(permissions.All().Select(static p => p.Code));
@@ -909,13 +931,15 @@ public static partial class OpenApiDocumentBuilder
         {
             writer.WriteStartObject(code);
             writer.WriteString("code", code);
-            if (permissions is not null && permissions.Find(code).TryGetValue(out var definition))
+            var definition = DefinitionOf(permissions, code);
+            if ((PermissionText(code, "name", context) ?? definition?.DisplayName) is { } displayName)
             {
-                writer.WriteString("displayName", definition.DisplayName);
-                if (definition.Description is { } description)
-                {
-                    writer.WriteString("description", description);
-                }
+                writer.WriteString("displayName", displayName);
+            }
+
+            if ((PermissionText(code, "description", context) ?? definition?.Description) is { } description)
+            {
+                writer.WriteString("description", description);
             }
 
             writer.WriteEndObject();

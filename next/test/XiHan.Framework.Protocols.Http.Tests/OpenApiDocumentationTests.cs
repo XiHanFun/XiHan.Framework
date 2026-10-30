@@ -58,6 +58,8 @@ public sealed class OpenApiDocumentationTests
         ["openapi.schemas.order_request.properties.id"] = "订单编号。",
         ["openapi.schemas.order_line.properties.sku_code"] = "商品货号。",
         ["openapi.schemas.order_reply.description"] = "订单处理结果。",
+        ["permissions.orders.read.name"] = "读取订单",
+        ["permissions.billing.view.description"] = "查看账单明细。",
     };
 
     /// <summary>
@@ -93,6 +95,7 @@ public sealed class OpenApiDocumentationTests
         Assert.False(bare.TryGetProperty("summary", out _));
         Assert.False(bare.TryGetProperty("description", out _));
         Assert.Equal("Error", bare.GetProperty("responses").GetProperty("default").GetProperty("description").GetString());
+        Assert.Equal("Read orders", plain.RootElement.GetProperty("components").GetProperty("x-xihan-permissions").GetProperty("orders.read").GetProperty("displayName").GetString());
     }
 
     [Fact]
@@ -103,17 +106,20 @@ public sealed class OpenApiDocumentationTests
 
         // 顶层 tags：用到的每个标签按名字排序，name 是资源码，显示名与说明有才写
         var tags = root.GetProperty("tags").EnumerateArray().ToList();
-        Assert.Equal(["exports", "invoices", "notes", "orders"], tags.Select(static t => t.GetProperty("name").GetString()));
-        var orders = tags[3];
+        Assert.Equal(["audits", "exports", "invoices", "notes", "orders"], tags.Select(static t => t.GetProperty("name").GetString()));
+        var orders = tags[4];
         Assert.Equal(("订单", "订单的增查。"), (orders.GetProperty("x-displayName").GetString(), orders.GetProperty("description").GetString()));
-        Assert.False(tags[1].TryGetProperty("x-displayName", out _));
+        Assert.False(tags[2].TryGetProperty("x-displayName", out _));
 
         // x-tagGroups：按排序（账单 5 在订单 10 前），组名是显示名；没进任何组的标签归入最后的「其他」
         var groups = root.GetProperty("x-tagGroups").EnumerateArray().Select(static g => (g.GetProperty("name").GetString(), string.Join(",", g.GetProperty("tags").EnumerateArray().Select(static t => t.GetString())))).ToList();
-        Assert.Equal([("账单服务", "exports,invoices"), ("订单服务", "orders"), ("其他", "notes")], groups);
+        // audits 的操作分属订单与账单两个特性：只归排序靠前的账单组，不重复出现
+        Assert.Equal([("账单服务", "audits,exports,invoices"), ("订单服务", "orders"), ("其他", "notes")], groups);
 
-        // 全量文档收录全部登记的权限
-        Assert.True(root.GetProperty("components").GetProperty("x-xihan-permissions").TryGetProperty("billing.view", out _));
+        // 全量文档收录全部登记的权限；显示名与说明先取区域文案，没有再取定义的
+        var permissions = root.GetProperty("components").GetProperty("x-xihan-permissions");
+        Assert.Equal(("读取订单", false), (permissions.GetProperty("orders.read").GetProperty("displayName").GetString(), permissions.GetProperty("orders.read").TryGetProperty("description", out _)));
+        Assert.Equal(("View billing", "查看账单明细。"), (permissions.GetProperty("billing.view").GetProperty("displayName").GetString(), permissions.GetProperty("billing.view").GetProperty("description").GetString()));
     }
 
     [Fact]
@@ -123,8 +129,8 @@ public sealed class OpenApiDocumentationTests
         var root = orders.RootElement;
         Assert.Equal("订单服务", root.GetProperty("info").GetProperty("title").GetString());
         Assert.False(root.GetProperty("info").TryGetProperty("description", out _));
-        Assert.Equal(["/orders", "/orders/{id}"], root.GetProperty("paths").EnumerateObject().Select(static p => p.Name));
-        Assert.Equal(["orders"], root.GetProperty("tags").EnumerateArray().Select(static t => t.GetProperty("name").GetString()));
+        Assert.Equal(["/audits", "/orders", "/orders/{id}"], root.GetProperty("paths").EnumerateObject().Select(static p => p.Name));
+        Assert.Equal(["audits", "orders"], root.GetProperty("tags").EnumerateArray().Select(static t => t.GetProperty("name").GetString()));
         Assert.False(root.TryGetProperty("x-tagGroups", out _));
         // 分组文档只收本组引用的权限码（显示名照旧）
         var permissions = root.GetProperty("components").GetProperty("x-xihan-permissions");
@@ -133,7 +139,7 @@ public sealed class OpenApiDocumentationTests
 
         // 账单组：自己的操作加按额外标签入组的普通端点，组说明进 info
         using var billing = Build("billing");
-        Assert.Equal(["/exports/{id}", "/invoices"], billing.RootElement.GetProperty("paths").EnumerateObject().Select(static p => p.Name));
+        Assert.Equal(["/audits/{id}", "/exports/{id}", "/invoices"], billing.RootElement.GetProperty("paths").EnumerateObject().Select(static p => p.Name));
         Assert.Equal(("账单服务", "开票与导出。"), (billing.RootElement.GetProperty("info").GetProperty("title").GetString(), billing.RootElement.GetProperty("info").GetProperty("description").GetString()));
         Assert.Empty(billing.RootElement.GetProperty("components").GetProperty("x-xihan-permissions").EnumerateObject());
 
@@ -232,9 +238,12 @@ public sealed class OpenApiDocumentationTests
         registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"), "xihan.test.orders")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("invoices.list", expose: Expose.Http, policy: "billing.admins"), "xihan.test.billing")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("notes.list", expose: Expose.Http), "xihan.test.misc")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("audits.list", expose: Expose.Http), "xihan.test.orders")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("audits.get", expose: Expose.Http), "xihan.test.billing")).ThrowIfFailure();
         var permissions = new PermissionRegistry();
-        permissions.Add(new PermissionDefinition("orders.read", "读取订单")).ThrowIfFailure();
-        permissions.Add(new PermissionDefinition("billing.view", "查看账单")).ThrowIfFailure();
+        // 定义里是英文显示名（与 BasicApp 相同），中文由区域文案给出
+        permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
+        permissions.Add(new PermissionDefinition("billing.view", "View billing")).ThrowIfFailure();
         var export = new RouteEndpoint(
             static _ => Task.CompletedTask,
             RoutePatternFactory.Parse("/exports/{id}"),

@@ -41,7 +41,7 @@
   - `summary` 取 `<操作 ID>.title`，`description` 取 `<操作 ID>.description`（RFC-0011 已定的两个键，与 MCP `tools/list` 共用）。
   - 各自没有就不写，不互相顶替。
   - 文案不再手写授权要求：生成器按契约在 `description` 末尾空一行附上，文案在框架目录 `protocols.http.openapi_*`（十种区域）。
-    - 权限是「需要权限 <码>（<显示名>）」，权限没登记时只有码。
+    - 权限是「需要权限 <码>（<显示名>）」：显示名先取 `permissions.<权限码>.name`（按区域），没有再取权限定义的（BasicApp 的定义是英文），都没有时只有码。`x-xihan-permissions` 的显示名与说明同样先取 `permissions.<权限码>.name` / `.description`。
     - 命名策略是「需要策略 <名>」。
     - `authenticated` 是「需要登录」。
   - `x-xihan-permission` / `x-xihan-policy` 照旧。
@@ -50,7 +50,7 @@
   - `x-displayName`（Scalar 认）取 `openapi.tags.<资源段>.name`，`description` 取 `openapi.tags.<资源段>.description`。
 - **分组**：`OpenApiOptions.Groups` 声明 `OpenApiGroup`（名字、排序、所属特性的清单 ID、额外标签）。
   - 操作按 `OwnerId` 入组；普通端点按标签入组，组的标签是组内操作的资源段加额外标签。
-  - 全量文档带 `x-tagGroups`（显示名取 `openapi.groups.<组名>.name`，没进组的归「其他」）。
+  - 全量文档带 `x-tagGroups`（显示名取 `openapi.groups.<组名>.name`，没进组的归「其他」）。一个标签只出现一次：资源的操作分属几个特性时（BasicApp 的 `auth.*` 分在 Identity 与 Access），归排序靠前的那一组，Scalar 左栏不重复列出。
   - 每组一份文档 `/openapi/<组名>.json`：只含本组的操作、端点、组件与引用到的权限码。
   - `GetXiHanOpenApiDocuments()` 列出全部文档（全量文档名为 `all`），宿主据此调用 Scalar 的 `AddDocument`。
 - **字段说明**：
