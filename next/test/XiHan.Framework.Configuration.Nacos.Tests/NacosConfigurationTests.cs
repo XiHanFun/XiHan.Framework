@@ -15,7 +15,7 @@ namespace XiHan.Framework.Configuration.Nacos.Tests;
 /// Nacos Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、接进配置构建器、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5（HTTP 桩）、接进配置构建器、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class NacosConfigurationTests
 {
@@ -93,6 +93,43 @@ public sealed class NacosConfigurationTests
         var document = (await properties.FetchAsync(dataId, null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.Equal("hello", document.Values["Greeting"]);
         Assert.Equal("2", document.Values["Nested:Count"]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Fetch_VersionIsTheContentMd5_SoListeningRecognisesIt(bool header)
+    {
+        // Nacos 按 UTF-8 计算内容 MD5，监听时拿报来的值逐字比较；期望值由独立工具算出，含非 ASCII 字符以覆盖编码
+        const string Document = """{"Greeting":"你好"}""";
+        const string DocumentMd5 = "f54abb65c17e7fa3db719d8636acdc25";
+        // 有响应头是 Nacos 的常态（HttpClient 把它归入内容头），没有时（如经过去掉它的代理）客户端自己算
+        using var handler = new NacosStubHandler { Content = Document, ContentMd5 = DocumentMd5, SendContentMd5Header = header };
+        using var http = new HttpClient(handler, disposeHandler: false);
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = ["http://nacos.test:8848"] }, http, TimeProvider.System);
+
+        var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+        Assert.Equal(DocumentMd5, document.Version);
+        Assert.Equal("你好", document.Values["Greeting"]);
+
+        // 以这个版本监听：服务端认出未变化，返回无值，不再取整份文档
+        var unchanged = await client.FetchAsync("orders", document.Version, CancellationToken.None);
+        Assert.False(unchanged.ValueOrThrow().HasValue);
+        Assert.Equal(DocumentMd5, Assert.Single(handler.ListenedMd5));
+        Assert.Equal(1, handler.Fetches);
+    }
+
+    [Fact]
+    public async Task Fetch_ContentMd5Header_IsTakenAsIs()
+    {
+        // 响应头给出的值原样作版本，不按内容重算
+        using var handler = new NacosStubHandler { Content = """{"Greeting":"hello"}""", ContentMd5 = "0123456789abcdef0123456789abcdef", SendContentMd5Header = true };
+        using var http = new HttpClient(handler, disposeHandler: false);
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = ["http://nacos.test:8848"] }, http, TimeProvider.System);
+
+        var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+
+        Assert.Equal("0123456789abcdef0123456789abcdef", document.Version);
     }
 
     [Fact]

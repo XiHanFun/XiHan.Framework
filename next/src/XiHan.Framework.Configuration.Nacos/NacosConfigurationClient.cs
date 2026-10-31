@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// Nacos 远程配置客户端。
 /// </summary>
 /// <remarks>
-/// 命名空间即 <c>dataId</c>，版本是服务端给出的内容 MD5（响应头 <c>Content-MD5</c>）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。
+/// 命名空间即 <c>dataId</c>，版本是内容的 MD5（取响应头 <c>Content-MD5</c>，没有时按 UTF-8 自己算）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisposable
@@ -167,7 +168,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     /// 取整份内容。
     /// </summary>
     /// <remarks>
-    /// 不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；没有时退到内容的 SHA-256，此时监听接口认不出这个版本、每个窗口都会报告变化，退化成普通轮询但仍然正确。
+    /// 不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；它是内容头，<c>HttpClient</c> 把它归入 <c>Content.Headers</c>，按原文读取不经解析。没有时（如经过去掉该头的代理）按服务端的算法自己算内容的 MD5，监听接口照样认得这个版本。
     /// </remarks>
     private async Task<Maybe<(string Text, string Version)>> GetContentAsync(string dataId, CancellationToken cancellationToken)
     {
@@ -179,7 +180,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
 
         await EnsureSuccessAsync(response, "fetch", cancellationToken).ConfigureAwait(false);
         var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        var version = response.Headers.TryGetValues("Content-MD5", out var md5) ? md5.FirstOrDefault() : null;
+        var version = response.Content.Headers.NonValidated.TryGetValues("Content-MD5", out var md5) ? md5.FirstOrDefault() : null;
         return Maybe.Some((text, string.IsNullOrWhiteSpace(version) ? Fingerprint(text) : version));
     }
 
@@ -349,7 +350,11 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 服务端没有给出 MD5 时的内容指纹（SHA-256 小写十六进制）。
+    /// 服务端没有给出 MD5 时自己算的内容 MD5（小写十六进制）。
     /// </summary>
-    private static string Fingerprint(string content) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
+    /// <remarks>
+    /// 监听接口拿客户端报来的值与服务端存的内容 MD5（按 UTF-8 编码计算）逐字比较，换成别的摘要永远对不上，每个窗口都报告变化。
+    /// </remarks>
+    [SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "Nacos 监听协议以配置内容的 MD5 标识版本，只用于与服务端比对是否变化，不用于任何安全目的。")]
+    private static string Fingerprint(string content) => Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));
 }

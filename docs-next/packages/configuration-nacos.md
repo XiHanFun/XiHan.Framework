@@ -20,7 +20,7 @@
 - 配置构建期：`builder.Configuration.AddXiHanNacos(nacosOptions, remoteOptions)` 按选项自建客户端（`NacosConfigurationClient.Create`），交给 `AddXiHanRemoteConfiguration`，于是 Nacos 里的文档成为一个配置源，首次同步加载、之后轮询重载。这一步发生在容器建立之前，绝大多数应用只需要它。
 - 运行期：`UseFeature<NacosConfigurationFeature>()` 从 `XiHan:Configuration:Nacos` 读选项，经 `IHttpClientFactory` 建客户端，并在本包被选为 `configuration.remote@1` 的提供者时登记为 `IRemoteConfigurationClient`，供其他组件按需取文档。
 
-客户端用 Nacos 的 v1 HTTP 配置接口（与 Nacos 2.x 兼容）。命名空间参数是 Nacos 的 `dataId`，`Group` 与 `Tenant` 来自选项。版本是服务端在响应头 `Content-MD5` 里给出的内容 MD5，与 Nacos 监听接口的约定一致；`knownVersion` 非空时先以该 MD5 调监听接口长轮询，服务端报告变化才取整份文档，窗口到期或调用方取消都返回无值。
+客户端用 Nacos 的 v1 HTTP 配置接口（与 Nacos 2.x 兼容）。命名空间参数是 Nacos 的 `dataId`，`Group` 与 `Tenant` 来自选项。版本是内容的 MD5，取服务端在响应头 `Content-MD5` 里给出的值，与 Nacos 监听接口的约定一致；`knownVersion` 非空时先以该 MD5 调监听接口长轮询，服务端报告变化才取整份文档，窗口到期或调用方取消都返回无值。
 
 ## 何时使用
 
@@ -133,7 +133,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 - 格式：`Json` 要求根是对象，嵌套对象按 `A:B` 展平，数组按下标，`null` 保留为空值；`Properties` 把 `a.b=c` 展平成 `a:b`，`#` 与 `!` 开头的行是注释。文档不合法返回 `CONFIGURATION_VALIDATION_001`。
 - 登录：配置了 `Username` 与 `Password` 时调用 `/nacos/v1/auth/login` 取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
-- 版本：服务端没有给出 `Content-MD5` 时，客户端改用内容的 SHA-256 作版本；监听接口认不出这个版本，每个窗口都会报告变化，退化成普通轮询，结果仍然正确。
+- 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
 - 地址的路径部分会被接口路径替换，Nacos 部署在自定义上下文路径下时不适用。
 - 一致性：通过 `Configuration.Conformance` 的 `RemoteConfigurationClientConformance`（Nacos 2.5.1）。测试需要真实服务，设置 `XIHAN_TEST_NACOS`（如 `http://localhost:8848`）后运行，开启鉴权的服务再设 `XIHAN_TEST_NACOS_USERNAME` / `XIHAN_TEST_NACOS_PASSWORD`。Nacos 3.x 默认开启鉴权且 v1 接口不再可用，未验证。
 
