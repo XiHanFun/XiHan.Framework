@@ -63,3 +63,4 @@
 | [0057](0057-管道外作用域绑定租户分片.md) | 管道外作用域绑定租户分片：作用域服务 `TenantShardScope` 的 `BindTenantAsync` / `Bind` 不经管道、不看租户是否启用、不受应用排空影响，须在首次创建持久化客户端之前，之后再绑定或改绑抛出；显式绑定优先于调用上下文；审计记录核对后保持平台级、落默认连接 | 已采纳 |
 | [0058](0058-对象缓存的键管理.md) | 对象缓存的键管理：可选接口 `ICacheInspector`（按前缀分页列键、类型全名与剩余存活、按前缀删除），`InMemoryObjectCache` 实现；管理界面与字节存储的 `ICacheStoreInspector` 合起来得到全部条目并分清所在的层 | 已采纳 |
 | [0059](0059-表达式求值的空结果.md) | 表达式求值的空结果：`IWorkflowExpressionEvaluator.Evaluate` 与 `ActivityContext.EvaluateProperty` 改为 `Result<Maybe<JsonNode>>`，null 结果是成功的无值而不是在构造成功结果时抛 `ArgumentNullException`；条件、模板与写回变量的语义不变 | 已采纳 |
+| [0060](0060-作业重试与执行时限.md) | 作业重试与执行时限：`JobDefinition.Retry`（次数、固定或指数退避、上限）与 `Timeout`，随作业持久化并在状态里带出；失败（含超时）重试为新运行（`Retry` 触发、`Attempt` 与 `RetryOf`），集群作业写一次性触发器、每实例作业在本实例等待，取消与失联不重试；超时取消令牌并记 `SCHEDULING_TIMEOUT_001` | 已采纳 |

@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "The leader lease store for '{resource}' is unavailable: {reason}",
   "scheduling.run.canceled": "Run '{id}' was canceled.",
   "scheduling.run.not_found": "Run '{id}' does not exist or has already finished.",
+  "scheduling.run.timed_out": "Run '{id}' exceeded its time limit of {timeout}.",
   "scheduling.scheduler.unavailable": "The job scheduler is not running.",
   "scheduling.store.capacity": "The job store '{store}' is full (limit {limit}).",
   "scheduling.store.unavailable": "The job store is unavailable: {reason}",

@@ -37,6 +37,19 @@ public sealed class JobRunRecord
     public JobTrigger Trigger { get; set; }
 
     /// <summary>
+    /// 第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 从 1 起。
+    /// </remarks>
+    public int Attempt { get; set; } = 1;
+
+    /// <summary>
+    /// 重试时为首次运行的 ID。
+    /// </summary>
+    public string? RetryOf { get; set; }
+
+    /// <summary>
     /// 计划的运行时刻。
     /// </summary>
     public DateTimeOffset ScheduledAt { get; set; }
@@ -87,7 +100,7 @@ public sealed class JobRunRecord
     /// <summary>
     /// 还原为运行。
     /// </summary>
-    public JobRun ToRun() => new(Id, Job, TriggerName, ScheduledAt, Trigger, (JsonObject)Data.DeepClone());
+    public JobRun ToRun() => new(Id, Job, TriggerName, ScheduledAt, Trigger, (JsonObject)Data.DeepClone()) { Attempt = Attempt, RetryOf = RetryOf };
 
     /// <summary>
     /// 还原为结果：成功，或按错误码与消息还原的失败（文案按原样还原，不再翻译）。
@@ -114,6 +127,8 @@ public sealed class JobRunRecord
         TriggerName = TriggerName,
         Trigger = Trigger,
         ScheduledAt = ScheduledAt,
+        Attempt = Attempt,
+        RetryOf = RetryOf,
         StartedAt = StartedAt,
         CompletedAt = CompletedAt,
         State = State,

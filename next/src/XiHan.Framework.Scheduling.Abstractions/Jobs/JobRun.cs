@@ -20,6 +20,26 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 public sealed record JobRun(string Id, JobName Name, string? TriggerName, DateTimeOffset ScheduledAt, JobTrigger Trigger, JsonObject Data)
 {
     /// <summary>
+    /// 第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 从 1 起，重试一次加一（ADR-0060）。
+    /// </remarks>
+    public int Attempt
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The attempt starts at 1.");
+    } = 1;
+
+    /// <summary>
+    /// 重试时为首次运行的 ID。
+    /// </summary>
+    /// <remarks>
+    /// 首次运行为空。
+    /// </remarks>
+    public string? RetryOf { get; init; }
+
+    /// <summary>
     /// 生成新的运行 ID。
     /// </summary>
     public static string NewId() => Guid.CreateVersion7().ToString("N");

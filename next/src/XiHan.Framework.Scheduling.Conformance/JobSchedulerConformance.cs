@@ -392,6 +392,115 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
+    /// 失败的运行按重试策略再跑，成功即止、次数用尽即止。
+    /// </summary>
+    /// <remarks>
+    /// 重试的触发来源、第几次尝试与首次运行 ID；手动触发拿到第一次的结果；每个实例各自运行的作业在本实例重试（ADR-0060）。
+    /// </remarks>
+    [Fact]
+    public async Task Retry_FailedRuns_AreRetried_UntilSuccessOrExhausted()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var flaky = new JobName("conformance.retry.flaky");
+        var hopeless = new JobName("conformance.retry.hopeless");
+        var local = new JobName("conformance.retry.local");
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(flaky, typeof(RecordingJob)) { Retry = JobRetryPolicy.Fixed(3, TimeSpan.FromMilliseconds(100)), Data = new JsonObject { ["failBeforeAttempt"] = 3 } }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(hopeless, typeof(RecordingJob)) { Retry = JobRetryPolicy.Exponential(1, TimeSpan.FromMilliseconds(100)), Data = new JsonObject { ["failBeforeAttempt"] = 99 } }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(local, typeof(RecordingJob)) { RunOnEveryInstance = true, Retry = JobRetryPolicy.Fixed(2, TimeSpan.FromMilliseconds(100)), Data = new JsonObject { ["failBeforeAttempt"] = 2 } }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        // 手动触发拿到第一次的结果；之后两次重试，第三次成功
+        Assert.Equal("CONFORMANCE_CONFLICT_002", (await host.Scheduler.TriggerAsync(flaky, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        await WaitUntilAsync(async () => (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = flaky, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow() == 1).ConfigureAwait(false);
+        var runs = await AttemptsAsync(host, flaky).ConfigureAwait(false);
+        Assert.Equal([1, 2, 3], runs.Select(static run => run.Attempt));
+        Assert.Equal([JobRunState.Failed, JobRunState.Failed, JobRunState.Succeeded], runs.Select(static run => run.State));
+        Assert.Equal([JobTrigger.Manual, JobTrigger.Retry, JobTrigger.Retry], runs.Select(static run => run.Trigger));
+        Assert.Equal([null, runs[0].Id, runs[0].Id], runs.Select(static run => run.RetryOf));
+        Assert.All(runs.Skip(1), run => Assert.Equal(runs[0].Data.ToJsonString(), run.Data.ToJsonString()));
+
+        // 次数用尽：失败一次、重试一次就不再跑
+        Assert.True((await host.Scheduler.EnqueueAsync(hopeless, null, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        await WaitUntilAsync(async () => (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = hopeless, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow() == 2).ConfigureAwait(false);
+        await Task.Delay(500).ConfigureAwait(false);
+        var exhausted = await AttemptsAsync(host, hopeless).ConfigureAwait(false);
+        Assert.Equal([(1, JobTrigger.Manual), (2, JobTrigger.Retry)], exhausted.Select(static run => (run.Attempt, run.Trigger)));
+
+        // 每个实例各自运行的作业：在本实例重试
+        Assert.Equal("CONFORMANCE_CONFLICT_002", (await host.Scheduler.TriggerAsync(local, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        await WaitUntilAsync(async () => (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = local, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow() == 1).ConfigureAwait(false);
+        var localRuns = await AttemptsAsync(host, local).ConfigureAwait(false);
+        Assert.Equal([(1, JobRunState.Failed), (2, JobRunState.Succeeded)], localRuns.Select(static run => (run.Attempt, run.State)));
+        Assert.Equal((JobTrigger.Retry, localRuns[0].Id), (localRuns[1].Trigger, localRuns[1].RetryOf));
+    }
+
+    /// <summary>
+    /// 超过执行时限的运行记为超时失败并重试，被取消的运行不重试。
+    /// </summary>
+    [Fact]
+    public async Task Timeout_FailsAndRetries_ButCanceledRunsAreNotRetried()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var slow = new JobName("conformance.timeout.slow");
+        var cancelable = new JobName("conformance.timeout.cancelable");
+        var stalling = new JsonObject { ["delayMilliseconds"] = 10_000 };
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(slow, typeof(RecordingJob)) { Timeout = TimeSpan.FromMilliseconds(200), Retry = JobRetryPolicy.Fixed(1, TimeSpan.FromMilliseconds(50)), Data = stalling }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(cancelable, typeof(RecordingJob)) { Retry = JobRetryPolicy.Fixed(3, TimeSpan.FromMilliseconds(50)), Data = stalling }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        Assert.Equal(SchedulingErrors.RunTimedOut, (await host.Scheduler.TriggerAsync(slow, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        await WaitUntilAsync(async () => (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = slow, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow() == 2).ConfigureAwait(false);
+        var timedOut = await AttemptsAsync(host, slow).ConfigureAwait(false);
+        Assert.Equal([(1, SchedulingErrors.RunTimedOut), (2, SchedulingErrors.RunTimedOut)], timedOut.Select(static run => (run.Attempt, run.ErrorCode)));
+
+        var triggered = host.Scheduler.TriggerAsync(cancelable, CancellationToken.None).AsTask();
+        await log.WaitAsync(cancelable, 1, WaitTimeout).ConfigureAwait(false);
+        var running = Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = cancelable, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.True((await host.Scheduler.CancelRunAsync(running.Id, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(SchedulingErrors.RunCanceled, (await triggered.ConfigureAwait(false)).Error?.Code);
+        await Task.Delay(400).ConfigureAwait(false);
+        Assert.Equal(JobRunState.Canceled, Assert.Single(await AttemptsAsync(host, cancelable).ConfigureAwait(false)).State);
+    }
+
+    /// <summary>
+    /// 重试策略与执行时限在状态里，运行时可改，可恢复为代码定义。
+    /// </summary>
+    [Fact]
+    public async Task RetryAndTimeout_AreInTheStatus_OverriddenAndRestored()
+    {
+        var log = new RecordingJobLog();
+        var coded = new JobName("conformance.retry.coded");
+        var codeRetry = JobRetryPolicy.Fixed(2, TimeSpan.FromSeconds(1));
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            services.AddJob<RecordingJob>(new JobDefinition(coded, JobSchedule.Manual, typeof(RecordingJob)) { Retry = codeRetry, Timeout = TimeSpan.FromSeconds(30) });
+        }).ConfigureAwait(false);
+        await WaitUntilAsync(async () => (await host.Scheduler.StatusAsync(coded, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue).ConfigureAwait(false);
+        var status = await StatusAsync(host, coded).ConfigureAwait(false);
+        Assert.Equal((codeRetry, TimeSpan.FromSeconds(30), JobSource.Code), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
+
+        var runtimeRetry = JobRetryPolicy.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
+        Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(coded, typeof(RecordingJob)) { Retry = runtimeRetry }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        status = await StatusAsync(host, coded).ConfigureAwait(false);
+        Assert.Equal((runtimeRetry, null, JobSource.Overridden), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
+
+        Assert.True((await host.Scheduler.RestoreAsync([coded], CancellationToken.None).ConfigureAwait(false))[0].IsSuccess);
+        status = await StatusAsync(host, coded).ConfigureAwait(false);
+        Assert.Equal((codeRetry, TimeSpan.FromSeconds(30), JobSource.Code), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
+    }
+
+    /// <summary>
+    /// 一个作业的全部运行，按尝试次数排序。
+    /// </summary>
+    protected static async Task<IReadOnlyList<JobRunRecord>> AttemptsAsync(JobSchedulerHost host, JobName name)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        var runs = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = name }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        return [.. runs.OrderBy(static run => run.Attempt)];
+    }
+
+    /// <summary>
     /// 作业的状态（必须存在）。
     /// </summary>
     protected static async Task<JobStatus> StatusAsync(JobSchedulerHost host, JobName name)

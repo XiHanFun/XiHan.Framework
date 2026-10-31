@@ -93,6 +93,14 @@ public static class SchedulingMessages
     public const string RunCanceled = "scheduling.run.canceled";
 
     /// <summary>
+    /// 运行超过执行时限。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>timeout</c>。
+    /// </remarks>
+    public const string RunTimedOut = "scheduling.run.timed_out";
+
+    /// <summary>
     /// 领导租约被占用。
     /// </summary>
     /// <remarks>

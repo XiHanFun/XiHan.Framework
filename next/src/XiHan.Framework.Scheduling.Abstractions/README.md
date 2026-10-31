@@ -4,11 +4,12 @@
 
 | 契约 | 用途 |
 | --- | --- |
-| `JobName`、`TriggerKey`、`JobDefinition`、`JobTriggerDefinition` | 作业名（主题文法）；作业（类型、触发器、数据、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`）与触发器（计划、数据、优先级、misfire 策略） |
+| `JobName`、`TriggerKey`、`JobDefinition`、`JobTriggerDefinition` | 作业名（主题文法）；作业（类型、触发器、数据、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`）与触发器（计划、数据、优先级、misfire 策略） |
+| `JobRetryPolicy`、`JobRetryBackoff` | 失败运行的重试（ADR-0060）：`MaxRetries` 1–100、`Delay`、固定或指数退避与 `MaxDelay` 上限（等待最长 30 天）；被取消与失联的运行不重试；重试是新运行，`Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行；集群唯一的作业写成存储里的一次性触发器，每个实例各自运行的作业在本实例进程内等待 |
 | `JobSchedule`、`CronExpression`、`MisfirePolicy` | 计划：`Manual` / `Every(interval, repeatCount)` / `FromCron(expr, timeZoneId)` / `Once(at)`，可带 `StartAt` / `EndAt` / `Calendar`，文本往返；cron 为 Quartz 文法超集（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日） |
 | `IJobCalendar`、`JobCalendars`、`HolidayCalendar` / `WeeklyCalendar` / `DailyCalendar` / `CronCalendar` / `CompositeCalendar`、`JobPlanner` | 排除日历按名登记（`AddJobCalendar`），推算下一次时跳过被排除的时刻 |
 | `IJob`、`AddJob<TJob>(...)`、`AddJobType<TJob>()`、`JobRegistry`、`JobTypeRegistry` | 作业是作用域服务；代码登记的作业启动时写入存储；运行时登记的作业引用类型键；`JobTypeRegistry.Keys` 列出可选类型（ADR-0053） |
-| `JobDispatcher`、`JobRun` | 每次运行在新作用域、新上下文（关联 ID = 运行 ID）里经完整内核管道执行；`Data` = 作业数据 ← 触发器数据 ← 手动数据；异常翻译为 `SCHEDULING_UNEXPECTED_001` |
+| `JobDispatcher`、`JobRun` | 每次运行在新作用域、新上下文（关联 ID = 运行 ID）里经完整内核管道执行；`Data` = 作业数据 ← 触发器数据 ← 手动数据；`Attempt` / `RetryOf` 标出第几次尝试；异常翻译为 `SCHEDULING_UNEXPECTED_001`；超过 `Timeout` 取消令牌、作业返回之前时限已过记为 `SCHEDULING_TIMEOUT_001` |
 | `IJobScheduler`、`JobStatus`、`JobTriggerStatus`、`JobRunRecord`、`JobRunQuery` | 全批量：登记 / 删除 / 暂停 / 恢复（作业与触发器两级）、本地触发并等待、入队给集群、取消运行、状态、运行历史（按作业、状态、时间、触发器、节点、有无错误筛选，`CountRunsAsync` 给总数）、`RestoreAsync` 把运行时改过的代码作业恢复为代码定义 |
 | `IJobStore`、`JobRecord`、`TriggerRecord`、`SchedulerNodeRecord` | Provider 契约：原子抢占到期触发器、独占开始运行、完成释放并解除阻塞、历史与节点、失联恢复 |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（Provider 装配并启停）：轮询周期、节点 ID、并发上限、misfire 阈值、租约、节点失联、维护周期、历史保留 |

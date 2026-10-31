@@ -39,6 +39,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public const string RecoveryTriggerPrefix = "recovery-";
 
     /// <summary>
+    /// 重试的一次性触发器名前缀。
+    /// </summary>
+    public const string RetryTriggerPrefix = "retry-";
+
+    /// <summary>
     /// 一次性触发器的优先级：高于普通触发器，入队的运行先于到期的计划。
     /// </summary>
     private const int TransientPriority = 10;
@@ -117,6 +122,14 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 本地触发器的推算状态，按触发器键文本。
     /// </summary>
     private readonly Dictionary<string, LocalTriggerState> _local = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 本实例等待中的重试。
+    /// </summary>
+    /// <remarks>
+    /// 每个实例各自运行的作业的重试只在失败的实例上进行，不进存储。
+    /// </remarks>
+    private readonly List<PendingRetry> _localRetries = [];
 
     /// <summary>
     /// 轮询周期之间互斥：循环与手动 <see cref="PollOnceAsync"/> 不重叠。
@@ -294,6 +307,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             _lease = null;
         }
 
+        lock (_lock)
+        {
+            // 本实例未到期的重试随进程结束（RFC-0013）
+            _localRetries.Clear();
+        }
+
         _timer?.Dispose();
         _timer = null;
         _stopping.Dispose();
@@ -324,6 +343,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public async ValueTask<IReadOnlyList<Result>> ScheduleAsync(IReadOnlyList<JobDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);
+        // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
+        await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
         var results = new List<Result>(definitions.Count);
         foreach (var definition in definitions)
         {
@@ -338,6 +359,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public async ValueTask<IReadOnlyList<Result>> RestoreAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
+        // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
+        await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
         var results = new List<Result>(names.Count);
         foreach (var name in names)
         {
@@ -354,6 +377,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public async ValueTask<IReadOnlyList<Result>> UnscheduleAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
+        // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
+        await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
         var results = new List<Result>(names.Count);
         foreach (var name in names)
         {
@@ -642,6 +667,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         await ApplyCancelRequestsAsync(cancellationToken).ConfigureAwait(false);
         await RefreshLocalIfDueAsync(now, cancellationToken).ConfigureAwait(false);
         await FireLocalTriggersAsync(now, cancellationToken).ConfigureAwait(false);
+        await FireLocalRetriesAsync(now, cancellationToken).ConfigureAwait(false);
         await AcquireAndFireAsync(now, cancellationToken).ConfigureAwait(false);
     }
 
@@ -914,7 +940,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
                 state.NextFireAt = state.Trigger.Schedule.Kind == JobScheduleKind.Interval ? null : NextFire(state.Trigger.Schedule, run, state.FireCount);
             }
 
-            StartBackground(record, jobRun, jobType, completedAt =>
+            StartBackground(record, jobRun, jobType, state.Job, completedAt =>
             {
                 lock (_lock)
                 {
@@ -1022,7 +1048,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
-        var run = JobRun.Create(job.Name, scheduledAt, trigger.RunAs, trigger.Transient ? null : trigger.Name, Merge(job.Data, trigger.Data, null));
+        var run = JobRun.Create(job.Name, scheduledAt, trigger.RunAs, trigger.Transient ? null : trigger.Name, Merge(job.Data, trigger.Data, null)) with { Attempt = trigger.Attempt, RetryOf = trigger.RetryOf };
         var record = NewRecord(run, now);
         var begun = await _store.TryBeginRunAsync(record, exclusive: !job.AllowConcurrent, cancellationToken).ConfigureAwait(false);
         if (!begun.TryGetValue(out var started))
@@ -1067,7 +1093,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             await SaveTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
         }
 
-        StartBackground(record, run, jobType, interval ? completedAt => FinishIntervalTriggerAsync(trigger, completedAt) : null);
+        StartBackground(record, run, jobType, job, interval ? completedAt => FinishIntervalTriggerAsync(trigger, completedAt) : null);
     }
 
     /// <summary>
@@ -1122,7 +1148,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// <remarks>
     /// 结束后执行 <paramref name="completed"/>。
     /// </remarks>
-    private void StartBackground(JobRunRecord record, JobRun run, Type jobType, Func<DateTimeOffset, ValueTask>? completed)
+    private void StartBackground(JobRunRecord record, JobRun run, Type jobType, JobRecord job, Func<DateTimeOffset, ValueTask>? completed)
     {
         var cancellation = new CancellationTokenSource();
         var running = new RunningRun(record, cancellation);
@@ -1135,7 +1161,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         {
             try
             {
-                await ExecuteAsync(running, run, jobType, CancellationToken.None).ConfigureAwait(false);
+                await ExecuteAsync(running, run, jobType, job, CancellationToken.None).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -1200,7 +1226,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
 
         try
         {
-            return await ExecuteAsync(running, run, job.Type, cancellationToken).ConfigureAwait(false);
+            return await ExecuteAsync(running, run, job.Type, job.Record, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -1223,33 +1249,47 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 执行一次运行并写回结果。
     /// </summary>
     /// <remarks>
-    /// 调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果。
+    /// 调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果；作业返回之前执行时限已过记为超时失败。失败（不含取消）按作业的重试策略排下一次尝试（ADR-0060）。
     /// </remarks>
-    private async ValueTask<Result> ExecuteAsync(RunningRun running, JobRun run, Type jobType, CancellationToken callerToken)
+    private async ValueTask<Result> ExecuteAsync(RunningRun running, JobRun run, Type jobType, JobRecord job, CancellationToken callerToken)
     {
         var record = running.Record;
         await PublishAsync(SchedulingTopics.RunStarted, EventOf(record), CancellationToken.None).ConfigureAwait(false);
-        Result result;
-        var canceled = false;
+        // 执行时限是另一个按时钟取消的源，与取消请求合成作业拿到的令牌
+        using var deadline = job.Timeout is { } limit ? new CancellationTokenSource(limit, _clock) : null;
+        using var linked = deadline is null ? null : CancellationTokenSource.CreateLinkedTokenSource(running.Cancellation.Token, deadline.Token);
+        var token = linked?.Token ?? running.Cancellation.Token;
+        Result? returned = null;
+        var expired = false;
         try
         {
-            result = await _dispatcher.DispatchAsync(run, jobType, running.Cancellation.Token).ConfigureAwait(false);
+            returned = await _dispatcher.DispatchAsync(run, jobType, token).ConfigureAwait(false);
+            expired = deadline?.IsCancellationRequested == true;
         }
-        catch (OperationCanceledException) when (running.Cancellation.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            canceled = true;
-            result = Error.Conflict(SchedulingErrors.RunCanceled, SchedulingMessages.RunCanceled, MessageArguments.Of(("id", run.Id)));
+            // 取消请求或超时，下面归类
+            expired = deadline?.IsCancellationRequested == true;
         }
         finally
         {
             running.Cancellation.Dispose();
         }
 
-        // 管道把取消翻译成失败结果（KERNEL_CANCELLED_001）而不是抛出：令牌已请求取消且结果失败即视为取消
-        if (!canceled && result.IsFailure && running.Cancellation.IsCancellationRequested)
+        // 管道把取消翻译成失败结果（KERNEL_CANCELLED_001）而不是抛出：取消请求在先且没有成功即视为取消，其次是超时
+        var canceled = running.Cancellation.IsCancellationRequested && returned is not { IsSuccess: true };
+        Result result;
+        if (canceled)
         {
-            canceled = true;
             result = Error.Conflict(SchedulingErrors.RunCanceled, SchedulingMessages.RunCanceled, MessageArguments.Of(("id", run.Id)));
+        }
+        else if (expired)
+        {
+            result = new Error(SchedulingErrors.RunTimedOut, SchedulingMessages.RunTimedOut, MessageArguments.Of(("id", run.Id), ("timeout", job.Timeout)));
+        }
+        else
+        {
+            result = returned!.Value;
         }
 
         record.CompletedAt = _clock.GetUtcNow();
@@ -1268,12 +1308,117 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         }
 
         await PublishAsync(canceled ? SchedulingTopics.RunCanceled : result.IsSuccess ? SchedulingTopics.RunSucceeded : SchedulingTopics.RunFailed, EventOf(record), CancellationToken.None).ConfigureAwait(false);
+        if (record.State == JobRunState.Failed && job.Retry is { } policy && run.Attempt <= policy.MaxRetries)
+        {
+            await ScheduleRetryAsync(job, run, policy, record.CompletedAt.Value).ConfigureAwait(false);
+        }
+
         if (canceled && callerToken.IsCancellationRequested)
         {
             throw new OperationCanceledException(callerToken);
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// 按重试策略排下一次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 集群唯一的作业写成存储里的一次性触发器，任一节点到期抢占；每个实例各自运行的作业在本实例进程内等待。
+    /// </remarks>
+    private async ValueTask ScheduleRetryAsync(JobRecord job, JobRun failed, JobRetryPolicy policy, DateTimeOffset failedAt)
+    {
+        var due = failedAt + policy.DelayFor(failed.Attempt);
+        var retryOf = failed.RetryOf ?? failed.Id;
+        if (job.RunOnEveryInstance)
+        {
+            lock (_lock)
+            {
+                _localRetries.Add(new PendingRetry(job.Name, (JsonObject)failed.Data.DeepClone(), failed.Attempt + 1, retryOf, due));
+            }
+
+            return;
+        }
+
+        var trigger = TransientTrigger(job.Name, RetryTriggerPrefix + JobRun.NewId(), JobTrigger.Retry, failed.Data, due);
+        trigger.Attempt = failed.Attempt + 1;
+        trigger.RetryOf = retryOf;
+        var saved = await _store.SaveTriggersAsync([trigger], CancellationToken.None).ConfigureAwait(false);
+        if (saved.IsFailure)
+        {
+            LogStoreFailed(_logger, "retry-trigger", saved.Error!.Code);
+        }
+    }
+
+    /// <summary>
+    /// 运行本实例到期的重试。
+    /// </summary>
+    /// <remarks>
+    /// 以存储里的当前作业为准：作业没了即丢弃，暂停了就等恢复，不允许并发的等本实例上的运行结束。
+    /// </remarks>
+    private async ValueTask FireLocalRetriesAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        List<PendingRetry> due;
+        lock (_lock)
+        {
+            due = [.. _localRetries.Where(retry => retry.DueAt <= now)];
+            _localRetries.RemoveAll(retry => retry.DueAt <= now);
+        }
+
+        foreach (var retry in due)
+        {
+            var found = await _store.FindJobAsync(retry.Job, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var maybe))
+            {
+                LogStoreFailed(_logger, "retry-job", found.Error!.Code);
+                Requeue(retry);
+                continue;
+            }
+
+            if (!maybe.TryGetValue(out var job))
+            {
+                continue;
+            }
+
+            bool busy;
+            lock (_lock)
+            {
+                busy = !job.AllowConcurrent && _running.Values.Any(running => running.Record.Job == job.Name);
+            }
+
+            if (job.Paused || busy)
+            {
+                Requeue(retry);
+                continue;
+            }
+
+            if (!_types.Find(job.JobTypeName).TryGetValue(out var jobType))
+            {
+                LogTypeMissing(_logger, job.Name.Value, job.JobTypeName);
+                continue;
+            }
+
+            var run = JobRun.Create(job.Name, retry.DueAt, JobTrigger.Retry, null, retry.Data) with { Attempt = retry.Attempt, RetryOf = retry.RetryOf };
+            var record = NewRecord(run, now);
+            var begun = await _store.TryBeginRunAsync(record, exclusive: false, cancellationToken).ConfigureAwait(false);
+            if (!begun.TryGetValue(out _))
+            {
+                LogStoreFailed(_logger, "begin-run", begun.Error!.Code);
+                Requeue(retry);
+                continue;
+            }
+
+            StartBackground(record, run, jobType, job, null);
+        }
+
+        void Requeue(PendingRetry retry)
+        {
+            lock (_lock)
+            {
+                _localRetries.Add(retry);
+            }
+        }
     }
 
     /// <summary>
@@ -1350,6 +1495,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             RunOnEveryInstance = definition.RunOnEveryInstance,
             RequestsRecovery = definition.RequestsRecovery,
             Description = definition.Description,
+            Retry = definition.Retry,
+            Timeout = definition.Timeout,
             Paused = current?.Paused ?? false,
             Source = source,
             UpdatedAt = now,
@@ -1610,6 +1757,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
                 RunOnEveryInstance = definition.RunOnEveryInstance,
                 RequestsRecovery = definition.RequestsRecovery,
                 Description = definition.Description,
+                Retry = definition.Retry,
+                Timeout = definition.Timeout,
                 Source = JobSource.Code,
             });
         }
@@ -1747,6 +1896,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         TriggerName = run.TriggerName,
         Trigger = run.Trigger,
         ScheduledAt = run.ScheduledAt,
+        Attempt = run.Attempt,
+        RetryOf = run.RetryOf,
         StartedAt = startedAt,
         State = JobRunState.Running,
         NodeId = NodeId,
@@ -1829,6 +1980,8 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         CompletedAt = record.CompletedAt,
         ErrorCode = record.ErrorCode,
         ErrorMessage = record.ErrorMessage,
+        Attempt = record.Attempt,
+        RetryOf = record.RetryOf,
         NodeId = record.NodeId,
         At = _clock.GetUtcNow(),
     };
@@ -1907,7 +2060,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 代码定义的指纹。
     /// </summary>
     /// <remarks>
-    /// 类型键、数据、标志、说明与各触发器（名字、计划文本、数据、优先级、misfire 策略、说明）按行拼接后的 SHA-256 十六进制。
+    /// 类型键、数据、标志、说明、重试策略与执行时限（设置了才计入，ADR-0060）与各触发器（名字、计划文本、数据、优先级、misfire 策略、说明）按行拼接后的 SHA-256 十六进制。
     /// </remarks>
     private static string FingerprintOf(JobDefinition definition, string typeKey)
     {
@@ -1916,6 +2069,19 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             .Append(definition.Data?.ToJsonString() ?? "{}").Append('\n')
             .Append(definition.AllowConcurrent).Append(definition.RunOnEveryInstance).Append(definition.RequestsRecovery).Append('\n')
             .Append(definition.Description).Append('\n');
+        if (definition.Retry is { } retry)
+        {
+            text.Append("retry ").Append(retry.MaxRetries.ToString(CultureInfo.InvariantCulture)).Append(' ')
+                .Append(retry.Delay.Ticks.ToString(CultureInfo.InvariantCulture)).Append(' ')
+                .Append(retry.Backoff).Append(' ')
+                .Append(retry.MaxDelay?.Ticks.ToString(CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        if (definition.Timeout is { } timeout)
+        {
+            text.Append("timeout ").Append(timeout.Ticks.ToString(CultureInfo.InvariantCulture)).Append('\n');
+        }
+
         foreach (var trigger in definition.Triggers)
         {
             text.Append(trigger.Name).Append('\t')

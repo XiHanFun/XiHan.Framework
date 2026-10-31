@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "O armazenamento de concessões de líder para '{resource}' está indisponível: {reason}",
   "scheduling.run.canceled": "A execução '{id}' foi cancelada.",
   "scheduling.run.not_found": "A execução '{id}' não existe ou já terminou.",
+  "scheduling.run.timed_out": "A execução '{id}' excedeu o limite de tempo de {timeout}.",
   "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução.",
   "scheduling.store.capacity": "O armazenamento de jobs '{store}' está cheio (limite {limit}).",
   "scheduling.store.unavailable": "O armazenamento de jobs está indisponível: {reason}",

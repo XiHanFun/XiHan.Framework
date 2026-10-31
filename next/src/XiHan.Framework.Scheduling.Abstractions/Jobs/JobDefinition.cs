@@ -90,7 +90,32 @@ public sealed record JobDefinition
     public bool RequestsRecovery { get; init; }
 
     /// <summary>
+    /// 失败运行的重试策略。
+    /// </summary>
+    /// <remarks>
+    /// 空为不重试（ADR-0060）。
+    /// </remarks>
+    public JobRetryPolicy? Retry { get; init; }
+
+    /// <summary>
+    /// 单次执行时限。
+    /// </summary>
+    /// <remarks>
+    /// 到时取消作业拿到的令牌，作业返回之前时限已过即记为失败（<see cref="SchedulingErrors.RunTimedOut"/>）；空为不限，取值大于零、不超过 30 天（ADR-0060）。
+    /// </remarks>
+    public TimeSpan? Timeout
+    {
+        get => field;
+        init => field = value is null || (value > TimeSpan.Zero && value <= TimeoutLimit) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive and at most 30 days.");
+    }
+
+    /// <summary>
     /// 说明。
     /// </summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// 执行时限的上限。
+    /// </summary>
+    public static TimeSpan TimeoutLimit { get; } = TimeSpan.FromDays(30);
 }

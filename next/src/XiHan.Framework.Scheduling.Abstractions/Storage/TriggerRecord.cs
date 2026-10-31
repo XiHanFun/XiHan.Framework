@@ -104,6 +104,19 @@ public sealed class TriggerRecord
     public JobTrigger RunAs { get; set; }
 
     /// <summary>
+    /// 由它产生的运行是第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 重试触发器大于 1，其余为 1。
+    /// </remarks>
+    public int Attempt { get; set; } = 1;
+
+    /// <summary>
+    /// 重试触发器所重试的首次运行 ID。
+    /// </summary>
+    public string? RetryOf { get; set; }
+
+    /// <summary>
     /// 键。
     /// </summary>
     public TriggerKey Key => new(Job, Name);
@@ -135,5 +148,7 @@ public sealed class TriggerRecord
         Local = Local,
         Transient = Transient,
         RunAs = RunAs,
+        Attempt = Attempt,
+        RetryOf = RetryOf,
     };
 }

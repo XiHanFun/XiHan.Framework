@@ -64,6 +64,19 @@ public sealed record SchedulingEventData
     public string? ErrorMessage { get; init; }
 
     /// <summary>
+    /// 第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 运行事件才有。
+    /// </remarks>
+    public int? Attempt { get; init; }
+
+    /// <summary>
+    /// 重试时为首次运行的 ID。
+    /// </summary>
+    public string? RetryOf { get; init; }
+
+    /// <summary>
     /// 节点 ID。
     /// </summary>
     public required string NodeId { get; init; }

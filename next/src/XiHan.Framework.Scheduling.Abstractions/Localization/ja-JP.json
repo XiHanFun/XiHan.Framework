@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "'{resource}' のリーダーリースストアは利用できません: {reason}",
   "scheduling.run.canceled": "実行 '{id}' はキャンセルされました。",
   "scheduling.run.not_found": "実行 '{id}' は存在しないか、すでに終了しています。",
+  "scheduling.run.timed_out": "実行 '{id}' が制限時間 {timeout} を超えました。",
   "scheduling.scheduler.unavailable": "ジョブスケジューラーは実行されていません。",
   "scheduling.store.capacity": "ジョブストア '{store}' は満杯です（上限 {limit}）。",
   "scheduling.store.unavailable": "ジョブストアを利用できません：{reason}",

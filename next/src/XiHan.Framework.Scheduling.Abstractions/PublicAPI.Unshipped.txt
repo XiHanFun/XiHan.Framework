@@ -31,6 +31,8 @@ XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData!
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.At.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.At.init -> void
+XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.Attempt.get -> int?
+XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.Attempt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.CompletedAt.get -> System.DateTimeOffset?
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.CompletedAt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.Equals(XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData? other) -> bool
@@ -42,6 +44,8 @@ XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.Job.get -> st
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.Job.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.NodeId.get -> string!
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.NodeId.init -> void
+XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.RetryOf.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.RunId.get -> string?
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.RunId.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.ScheduledAt.get -> System.DateTimeOffset?
@@ -73,8 +77,12 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.JobType.get -> System
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Name.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.RequestsRecovery.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.RequestsRecovery.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Retry.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Retry.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.RunOnEveryInstance.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.RunOnEveryInstance.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Timeout.get -> System.TimeSpan?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Timeout.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Triggers.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerDefinition!>!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.Triggers.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher
@@ -103,8 +111,26 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Add(XiHan.Framework.Sch
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Find(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition!>
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.JobRegistry() -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Jobs.get -> System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition!>!
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff.Exponential = 1 -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff.Fixed = 0 -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy!
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Backoff.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryBackoff
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Backoff.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Delay.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Delay.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.DelayFor(int retry) -> System.TimeSpan
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Equals(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy? other) -> bool
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.JobRetryPolicy(int maxRetries, System.TimeSpan delay) -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.MaxDelay.get -> System.TimeSpan?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.MaxDelay.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.MaxRetries.get -> int
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.MaxRetries.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Attempt.get -> int
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Attempt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Data.get -> System.Text.Json.Nodes.JsonObject!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Data.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Deconstruct(out string! Id, out XiHan.Framework.Scheduling.Abstractions.Jobs.JobName Name, out string? TriggerName, out System.DateTimeOffset ScheduledAt, out XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger Trigger, out System.Text.Json.Nodes.JsonObject! Data) -> void
@@ -114,6 +140,8 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Id.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.JobRun(string! Id, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName Name, string? TriggerName, System.DateTimeOffset ScheduledAt, XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger Trigger, System.Text.Json.Nodes.JsonObject! Data) -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Name.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Name.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.RetryOf.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.ScheduledAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.ScheduledAt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Trigger.get -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
@@ -144,6 +172,8 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.To.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Trigger.get -> string?
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Trigger.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Attempt.get -> int
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Attempt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.CancelRequested.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.CancelRequested.set -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Clone() -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!
@@ -162,6 +192,8 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Job.set -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.JobRunRecord() -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.NodeId.get -> string!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.NodeId.set -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.RetryOf.set -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.ScheduledAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.ScheduledAt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.StartedAt.get -> System.DateTimeOffset
@@ -297,6 +329,7 @@ XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerExtensions
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger.Manual = 1 -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger.Recovery = 2 -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
+XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger.Retry = 3 -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger.Schedule = 0 -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTriggerRequest
 XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTriggerRequest.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTriggerRequest!
@@ -419,10 +452,14 @@ XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Paused.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Paused.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.RequestsRecovery.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.RequestsRecovery.set -> void
+XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Retry.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy?
+XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Retry.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.RunOnEveryInstance.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.RunOnEveryInstance.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Source.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobSource
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Source.set -> void
+XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Timeout.get -> System.TimeSpan?
+XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.Timeout.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.UpdatedAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Abstractions.Storage.JobRecord.UpdatedAt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.SchedulerNodeRecord
@@ -439,6 +476,8 @@ XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.AcquiredAt.get -> 
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.AcquiredAt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.AcquiredBy.get -> string?
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.AcquiredBy.set -> void
+XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Attempt.get -> int
+XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Attempt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Clone() -> XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Data.get -> System.Text.Json.Nodes.JsonObject!
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Data.set -> void
@@ -463,6 +502,8 @@ XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.PreviousFireAt.get
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.PreviousFireAt.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Priority.get -> int
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Priority.set -> void
+XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.RetryOf.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.RunAs.get -> XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.RunAs.set -> void
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord.Schedule.get -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!
@@ -495,11 +536,13 @@ const XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics.RunStarted
 const XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics.RunSucceeded = "scheduling.run.succeeded" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics.Source = "/scheduling" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.MaxLength = 128 -> int
+const XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.MaxRetriesLimit = 100 -> int
 const XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerDefinition.DefaultName = "default" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerDefinition.DefaultPriority = 5 -> int
 const XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerEngine.ManualTriggerPrefix = "manual-" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerEngine.RecoveryTriggerPrefix = "recovery-" -> string!
+const XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerEngine.RetryTriggerPrefix = "retry-" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions.ConfigurationSection = "XiHan:Scheduling" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Jobs = "scheduling.jobs" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Leader = "scheduling.leader" -> string!
@@ -514,6 +557,7 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseHeld = "SCHE
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseUnavailable = "SCHEDULING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunCanceled = "SCHEDULING_CONFLICT_003" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunNotFound = "SCHEDULING_NOTFOUND_004" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunTimedOut = "SCHEDULING_TIMEOUT_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.SchedulerUnavailable = "SCHEDULING_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.StoreCapacity = "SCHEDULING_UNAVAILABLE_004" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.StoreUnavailable = "SCHEDULING_UNAVAILABLE_003" -> string!
@@ -529,6 +573,7 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseHeld = "sc
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseUnavailable = "scheduling.lease.unavailable" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunCanceled = "scheduling.run.canceled" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunNotFound = "scheduling.run.not_found" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunTimedOut = "scheduling.run.timed_out" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.SchedulerUnavailable = "scheduling.scheduler.unavailable" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.StoreCapacity = "scheduling.store.capacity" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.StoreUnavailable = "scheduling.store.unavailable" -> string!
@@ -544,6 +589,9 @@ override XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.ToString() -> stri
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.Equals(object? obj) -> bool
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.GetHashCode() -> int
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.ToString() -> string!
+override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Equals(object? obj) -> bool
+override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.GetHashCode() -> int
+override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.ToString() -> string!
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Equals(object? obj) -> bool
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.GetHashCode() -> int
 override XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.ToString() -> string!
@@ -576,6 +624,7 @@ override XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.GetHashCo
 override XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.ToString() -> string!
 static XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.operator !=(XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData? left, XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.operator ==(XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData? left, XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.TimeoutLimit.get -> System.TimeSpan
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher.GetRun(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!>
@@ -586,6 +635,10 @@ static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.operator !=(XiHan.Fr
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Exponential(int maxRetries, System.TimeSpan delay, System.TimeSpan? maxDelay = null) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy!
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.Fixed(int maxRetries, System.TimeSpan delay) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy!
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy? right) -> bool
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.Create(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name, System.DateTimeOffset scheduledAt, XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger trigger, string? triggerName = null, System.Text.Json.Nodes.JsonObject? data = null) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.NewId() -> string!
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun? right) -> bool
@@ -641,5 +694,6 @@ static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtens
 static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.GetJobCalendars(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars!
 static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.GetJobRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry!
 static XiHan.Framework.Scheduling.Abstractions.SchedulingServiceCollectionExtensions.GetJobTypeRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry!
+static readonly XiHan.Framework.Scheduling.Abstractions.Jobs.JobRetryPolicy.DelayLimit -> System.TimeSpan
 ~override XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.Equals(object obj) -> bool
 ~override XiHan.Framework.Scheduling.Abstractions.Jobs.TriggerKey.Equals(object obj) -> bool

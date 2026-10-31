@@ -49,6 +49,8 @@ internal static class RecordMapping
             Source = (JobSource)row.Source,
             UpdatedAt = row.UpdatedAt,
             CodeFingerprint = row.CodeFingerprint,
+            Retry = RetryOf(row),
+            Timeout = row.TimeoutMilliseconds is { } timeout ? TimeSpan.FromMilliseconds(timeout) : null,
         };
     }
 
@@ -70,6 +72,11 @@ internal static class RecordMapping
         target.Source = source.Source;
         target.UpdatedAt = source.UpdatedAt;
         target.CodeFingerprint = source.CodeFingerprint;
+        target.RetryMaxRetries = source.RetryMaxRetries;
+        target.RetryDelayMilliseconds = source.RetryDelayMilliseconds;
+        target.RetryBackoff = source.RetryBackoff;
+        target.RetryMaxDelayMilliseconds = source.RetryMaxDelayMilliseconds;
+        target.TimeoutMilliseconds = source.TimeoutMilliseconds;
     }
 
     /// <summary>
@@ -108,6 +115,8 @@ internal static class RecordMapping
             Local = row.Local,
             Transient = row.Transient,
             RunAs = (JobTrigger)row.RunAs,
+            Attempt = row.Attempt ?? 1,
+            RetryOf = row.RetryOf,
         };
     }
 
@@ -135,6 +144,8 @@ internal static class RecordMapping
         target.Local = source.Local;
         target.Transient = source.Transient;
         target.RunAs = source.RunAs;
+        target.Attempt = source.Attempt;
+        target.RetryOf = source.RetryOf;
     }
 
     /// <summary>
@@ -164,6 +175,8 @@ internal static class RecordMapping
             TriggerName = row.TriggerName,
             Trigger = (JobTrigger)row.Trigger,
             ScheduledAt = row.ScheduledAt,
+            Attempt = row.Attempt ?? 1,
+            RetryOf = row.RetryOf,
             StartedAt = row.StartedAt,
             CompletedAt = row.CompletedAt,
             State = (JobRunState)row.State,
@@ -186,6 +199,8 @@ internal static class RecordMapping
         target.TriggerName = source.TriggerName;
         target.Trigger = source.Trigger;
         target.ScheduledAt = source.ScheduledAt;
+        target.Attempt = source.Attempt;
+        target.RetryOf = source.RetryOf;
         target.StartedAt = source.StartedAt;
         target.CompletedAt = source.CompletedAt;
         target.State = source.State;
@@ -241,6 +256,11 @@ internal static class RecordMapping
         row.Source = (int)record.Source;
         row.UpdatedAt = record.UpdatedAt;
         row.CodeFingerprint = record.CodeFingerprint;
+        row.RetryMaxRetries = record.Retry?.MaxRetries;
+        row.RetryDelayMilliseconds = record.Retry is { } retry ? (long)retry.Delay.TotalMilliseconds : null;
+        row.RetryBackoff = record.Retry is null ? null : (int)record.Retry.Backoff;
+        row.RetryMaxDelayMilliseconds = record.Retry?.MaxDelay is { } maxDelay ? (long)maxDelay.TotalMilliseconds : null;
+        row.TimeoutMilliseconds = record.Timeout is { } timeout ? (long)timeout.TotalMilliseconds : null;
     }
 
     /// <summary>
@@ -265,6 +285,8 @@ internal static class RecordMapping
         row.Local = record.Local;
         row.Transient = record.Transient;
         row.RunAs = (int)record.RunAs;
+        row.Attempt = record.Attempt;
+        row.RetryOf = record.RetryOf;
     }
 
     /// <summary>
@@ -276,6 +298,8 @@ internal static class RecordMapping
         row.TriggerName = record.TriggerName;
         row.Trigger = (int)record.Trigger;
         row.ScheduledAt = record.ScheduledAt;
+        row.Attempt = record.Attempt;
+        row.RetryOf = record.RetryOf;
         row.StartedAt = record.StartedAt;
         row.CompletedAt = record.CompletedAt;
         row.State = (int)record.State;
@@ -285,6 +309,21 @@ internal static class RecordMapping
         row.CancelRequested = record.CancelRequested;
         row.Data = record.Data.ToJsonString();
     }
+
+    /// <summary>
+    /// 行上的重试策略。
+    /// </summary>
+    /// <remarks>
+    /// 次数与等待时间都有值才算有策略；时间按毫秒存。
+    /// </remarks>
+    private static JobRetryPolicy? RetryOf(JobEntity row)
+        => row.RetryMaxRetries is { } retries && row.RetryDelayMilliseconds is { } delay
+            ? new JobRetryPolicy(retries, TimeSpan.FromMilliseconds(delay))
+            {
+                Backoff = (JobRetryBackoff)(row.RetryBackoff ?? 0),
+                MaxDelay = row.RetryMaxDelayMilliseconds is { } maxDelay ? TimeSpan.FromMilliseconds(maxDelay) : null,
+            }
+            : null;
 
     /// <summary>
     /// JSON 文本 → 对象。

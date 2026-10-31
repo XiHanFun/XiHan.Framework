@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "Хранилище аренды лидера для '{resource}' недоступно: {reason}",
   "scheduling.run.canceled": "Запуск '{id}' был отменён.",
   "scheduling.run.not_found": "Запуск '{id}' не существует или уже завершён.",
+  "scheduling.run.timed_out": "Запуск '{id}' превысил лимит времени {timeout}.",
   "scheduling.scheduler.unavailable": "Планировщик заданий не запущен.",
   "scheduling.store.capacity": "Хранилище заданий '{store}' заполнено (лимит {limit}).",
   "scheduling.store.unavailable": "Хранилище заданий недоступно: {reason}",

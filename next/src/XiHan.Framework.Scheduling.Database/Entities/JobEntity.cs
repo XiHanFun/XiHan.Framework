@@ -90,6 +90,37 @@ public sealed class JobEntity : IEntity<string>, IHasConcurrencyStamp
     [StringLength(64)]
     public string? CodeFingerprint { get; set; }
 
+    /// <summary>
+    /// 重试次数。
+    /// </summary>
+    /// <remarks>
+    /// 与等待时间同时为空表示不重试（ADR-0060）。
+    /// </remarks>
+    public int? RetryMaxRetries { get; set; }
+
+    /// <summary>
+    /// 第一次重试前的等待（毫秒）。
+    /// </summary>
+    public long? RetryDelayMilliseconds { get; set; }
+
+    /// <summary>
+    /// 等待方式（<c>JobRetryBackoff</c> 的整数值）。
+    /// </summary>
+    public int? RetryBackoff { get; set; }
+
+    /// <summary>
+    /// 指数退避的等待上限（毫秒）。
+    /// </summary>
+    public long? RetryMaxDelayMilliseconds { get; set; }
+
+    /// <summary>
+    /// 单次执行时限（毫秒）。
+    /// </summary>
+    /// <remarks>
+    /// 空为不限。
+    /// </remarks>
+    public long? TimeoutMilliseconds { get; set; }
+
     /// <inheritdoc />
     [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;

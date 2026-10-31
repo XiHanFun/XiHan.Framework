@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "El almacén de concesiones de líder para '{resource}' no está disponible: {reason}",
   "scheduling.run.canceled": "La ejecución '{id}' se ha cancelado.",
   "scheduling.run.not_found": "La ejecución '{id}' no existe o ya ha terminado.",
+  "scheduling.run.timed_out": "La ejecución '{id}' superó su límite de tiempo de {timeout}.",
   "scheduling.scheduler.unavailable": "El programador de trabajos no está en ejecución.",
   "scheduling.store.capacity": "El almacén de trabajos '{store}' está lleno (límite {limit}).",
   "scheduling.store.unavailable": "El almacén de trabajos no está disponible: {reason}",
