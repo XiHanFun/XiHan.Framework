@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
@@ -17,7 +18,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 /// 雪花标识特性。
 /// </summary>
 /// <remarks>
-/// 应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册，应装配在本特性之前）租约分配，没有锁或机器位已满即启动失败，不做随机机器位。
+/// 应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册）租约分配，没有锁或机器位已满即启动失败，不做随机机器位。清单声明可选依赖 <c>caching.distributed@1</c>：装配了它的 Provider 时本特性排在其后启动、在其前停止，租约在锁存储可用时取得与释放，与 <c>UseFeature</c> 的先后无关；固定机器位又没有任何 <c>caching.distributed</c> Provider 时按可选依赖缺失进入 Degraded。调用里抛出的机器位不可用与时钟回拨由本特性登记在 Resilience 阶段的中间件转为 UNAVAILABLE 结果（ADR-0063）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SnowflakeIdFeature : IHostedFeature
@@ -44,9 +45,15 @@ public sealed class SnowflakeIdFeature : IHostedFeature
         Primitives = 1,
         Stability = Stability.Preview,
         Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            // 只为启停顺序：租约要在锁存储启动之后取得、停止之前释放；固定机器位时用不到锁，所以是可选依赖
+            new CapabilityRequirement(CachingCapabilities.Distributed, CachingCapabilities.Version, optional: true),
+        ],
         Contributes = new Contributions
         {
+            Pipeline = [new PipelineContribution(typeof(SnowflakeUnavailableMiddleware).FullName!, PipelineStage.Resilience)],
             Config = new ConfigContribution("XiHan:Persistence"),
             Health = [LeasedWorkerIdSource.HealthName],
         },
@@ -70,7 +77,7 @@ public sealed class SnowflakeIdFeature : IHostedFeature
             _leasing = true;
             // 锁在解析时才取：没有的话启动期就以明确的错误码中断，而不是等第一次生成才失败
             context.Services.AddSingleton(sp => new LeasedWorkerIdSource(
-                sp.GetService<IDistributedLock>() ?? throw new FrameworkException(PersistenceErrors.WorkerIdUnavailable, $"No '{nameof(IDistributedLock)}' is registered to lease a snowflake worker ID; set '{SnowflakeOptions.ConfigurationSection}:WorkerId' or assemble a 'caching.distributed' provider before '{Manifest.Id}'."),
+                sp.GetService<IDistributedLock>() ?? throw new FrameworkException(PersistenceErrors.WorkerIdUnavailable, $"No '{nameof(IDistributedLock)}' is registered to lease a snowflake worker ID; set '{SnowflakeOptions.ConfigurationSection}:WorkerId' or assemble a 'caching.distributed' provider for '{Manifest.Id}' to lease from."),
                 options,
                 sp.GetRequiredService<TimeProvider>(),
                 sp.GetRequiredService<ILoggerFactory>()));
@@ -80,6 +87,8 @@ public sealed class SnowflakeIdFeature : IHostedFeature
 
         context.Services.AddSingleton<SnowflakeIdGenerator>();
         context.Services.TryAddSingleton<IIdGenerator<long>>(static sp => sp.GetRequiredService<SnowflakeIdGenerator>());
+        // Resilience 阶段末尾：内层的幂等标记已清除、工作单元已回滚，重试会重新执行；熔断与截止时间在外层照常计数
+        context.AddMiddleware<SnowflakeUnavailableMiddleware>(PipelineStage.Resilience);
     }
 
     /// <inheritdoc />

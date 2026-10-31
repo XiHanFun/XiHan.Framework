@@ -60,9 +60,8 @@ public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Gu
 Profile 不装配雪花标识，应用显式选用：
 
 1. 决定机器位的来源：配置 `XiHan:Persistence:Snowflake:WorkerId` 固定一个值，或装配一个 `caching.distributed` 的 Provider（如 `Caching.Redis`）由分布式锁租约分配。
-2. 走租约分配时，缓存 Provider 在 `SnowflakeIdFeature` 之前 `UseFeature`：同层特性按装配顺序启动、逆序停止，雪花特性停止时要能释放租约。
-3. `UseFeature<SnowflakeIdFeature>()`。
-4. 在需要的地方注入 `IIdGenerator<long>`（或具体类型 `SnowflakeIdGenerator`）。
+2. `UseFeature<SnowflakeIdFeature>()`。它的清单声明可选依赖 `caching.distributed@1`：装配了缓存 Provider 时，能力图谱把它排在雪花特性之前，先启动、后停止，租约在锁存储可用时取得、停止时先释放，与两者 `UseFeature` 的先后无关。
+3. 在需要的地方注入 `IIdGenerator<long>`（或具体类型 `SnowflakeIdGenerator`）。
 
 ```csharp
 using XiHan.Framework.Caching.Redis;
@@ -74,7 +73,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(x => x
     .UseStandardProfile()
-    // Redis 锁跨实例协调机器位；缓存 Provider 装配在雪花特性之前
+    // Redis 锁跨实例协调机器位；它先于雪花特性启动、后于它停止，与这里的先后无关
     .UseFeature<RedisCachingFeature>()
     .UseFeature<SnowflakeIdFeature>());
 ```
@@ -89,7 +88,7 @@ builder.AddXiHan(x => x
 }
 ```
 
-固定机器位时不需要缓存 Provider，只配置 `WorkerId`：
+固定机器位时不需要缓存 Provider，只配置 `WorkerId`。没有装配任何 `caching.distributed` Provider 时，可选依赖缺失，雪花特性的状态是 Degraded（应用从 Ready 压成 Degraded，探针不受影响），生成照常：
 
 ```json
 {
@@ -177,12 +176,19 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 
 ## 失败与错误码
 
-`NewId()` 返回 `long`，没有 `Result` 可走，失败以携带错误码的 `FrameworkException` 抛出。异常从处理器里冒出时，Observe 阶段把它转为 `KERNEL_UNEXPECTED_001` 结果，原错误码作为内层错误保留，HTTP 上是 500；要按 UNAVAILABLE（503）回给调用方的应用，自己捕获 `FrameworkException` 并按 `Code` 转成结果。
+`NewId()` 返回 `long`，没有 `Result` 可走，失败以携带错误码的 `FrameworkException` 抛出。
+
+调用里抛出时，`SnowflakeIdFeature` 登记在 Resilience 阶段末尾的中间件把这两个错误码转成同码的 UNAVAILABLE 结果，消息键分别是 `persistence.snowflake.clock_moved_backwards` 与 `persistence.snowflake.worker_unavailable`。HTTP 上是 503，gRPC 是 `Unavailable`，调用方可以重试。
+
+- 中间件在幂等与工作单元之外：异常经过内层时，工作单元已回滚，幂等标记已清除，带同一幂等键重试会重新执行。
+- 截止时间与熔断在它外层，照常计数。
+- 别的异常不受影响，仍由 Observe 阶段转成 `KERNEL_UNEXPECTED_001`。
+- 管道之外（后台任务直接调用生成器）仍是异常，调用方自己处理。
 
 | 错误码 | 何时出现 | 怎样恢复 |
 | --- | --- | --- |
-| `PERSISTENCE_UNAVAILABLE_004` | 时钟回拨超过容忍阈值 | 时钟追上上一个时间戳后自动恢复 |
-| `PERSISTENCE_UNAVAILABLE_005` | 没有机器位：未配置 `WorkerId` 且没有分布式锁、1024 个机器位都被占用（启动时）；租约尚未取得或已丢失（生成时） | 启动时的情况修正装配后重启；租约丢失由续约循环重新分配 |
+| `PERSISTENCE_UNAVAILABLE_004` | 时钟回拨超过容忍阈值（调用里是 503） | 时钟追上上一个时间戳后自动恢复 |
+| `PERSISTENCE_UNAVAILABLE_005` | 没有机器位：未配置 `WorkerId` 且没有分布式锁、1024 个机器位都被占用（启动时）；租约尚未取得或已丢失（生成时，调用里是 503） | 启动时的情况修正装配后重启；租约丢失由续约循环重新分配 |
 
 ## 解析标识
 

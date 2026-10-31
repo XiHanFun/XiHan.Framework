@@ -95,9 +95,20 @@ public static class PersistenceMessages
     public const string StoreUnavailable = "persistence.store.unavailable";
 
     /// <summary>
-    /// 雪花标识的机器位租约尚未取得或已丢失（健康项）。
+    /// 雪花标识的机器位租约尚未取得或已丢失。
     /// </summary>
+    /// <remarks>
+    /// 健康项与调用结果共用。
+    /// </remarks>
     public const string WorkerIdUnavailable = "persistence.snowflake.worker_unavailable";
+
+    /// <summary>
+    /// 时钟回拨超过容忍阈值，暂不生成雪花标识。
+    /// </summary>
+    /// <remarks>
+    /// 生成器以异常抛出，调用里由 <see cref="Identifiers.SnowflakeIdFeature"/> 的中间件转为结果时使用。
+    /// </remarks>
+    public const string ClockMovedBackwards = "persistence.snowflake.clock_moved_backwards";
 
     /// <summary>
     /// 延迟装载的目录。

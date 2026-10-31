@@ -117,7 +117,7 @@ Sequence  = 三位数字，域内唯一，发布后不复用
 | `ArgumentException` 及其子类 | 参数与配置值非法 |
 | `FrameworkException(code, message, inner)` | 带错误码的框架异常；`ToError()` 转成 `Error`（文本以 `Literal` 承载） |
 
-调用期间未处理的异常由 Observe 阶段捕获，记录日志并转成 `KERNEL_UNEXPECTED_001` 结果，调用方收到 500，不会看到异常细节。
+调用期间未处理的异常由 Observe 阶段捕获，记录日志并转成 `KERNEL_UNEXPECTED_001` 结果，调用方收到 500，不会看到异常细节。雪花标识生成器的 `PERSISTENCE_UNAVAILABLE_004` / `005` 例外：`SnowflakeIdFeature` 在 Resilience 阶段把它们转成同码的 UNAVAILABLE 结果，调用方收到 503，见[标识生成](./distributed-ids#失败与错误码)。
 
 ## 翻译成协议
 

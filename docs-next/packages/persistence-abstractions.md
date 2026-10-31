@@ -6,7 +6,7 @@
 | --- | --- |
 | 包 ID | `XiHan.Framework.Persistence.Abstractions` |
 | 环层 | Ring 2（抽象） |
-| 能力 | 定义 `persistence.relational@1`（`persistence.document@1` 预留），由 Provider 提供；可选特性 `SnowflakeIdFeature` 依赖 `kernel.hosting@1` |
+| 能力 | 定义 `persistence.relational@1`（`persistence.document@1` 预留），由 Provider 提供；可选特性 `SnowflakeIdFeature` 依赖 `kernel.hosting@1`，可选依赖 `caching.distributed@1`（只为启停顺序） |
 | 特性入口 | `SnowflakeIdFeature`（可选，雪花标识） |
 | 配置节 | `XiHan:Persistence:Snowflake` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
@@ -41,7 +41,7 @@
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 ```
 
-这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或在雪花特性之前装配 Redis 等跨进程的缓存 Provider，见[标识生成](../guide/distributed-ids#启用雪花标识)。
+这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或装配 Redis 等跨进程的缓存 Provider（先后不限，能力图谱让它先启后停），见[标识生成](../guide/distributed-ids#启用雪花标识)。
 
 ## 配置
 
@@ -139,7 +139,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
-- 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`；租约状态以健康项 `persistence.snowflake.worker` 上报。
+- 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
 
 错误码：
 
@@ -154,8 +154,8 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
 | `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
-| `PERSISTENCE_UNAVAILABLE_004` | `PersistenceErrors.ClockMovedBackwards` | 雪花生成器时钟回拨超过阈值（抛异常） |
-| `PERSISTENCE_UNAVAILABLE_005` | `PersistenceErrors.WorkerIdUnavailable` | 雪花生成器没有可用的机器位（抛异常；健康项上报） |
+| `PERSISTENCE_UNAVAILABLE_004` | `PersistenceErrors.ClockMovedBackwards` | 雪花生成器时钟回拨超过阈值（抛异常；调用里转为结果，HTTP 503） |
+| `PERSISTENCE_UNAVAILABLE_005` | `PersistenceErrors.WorkerIdUnavailable` | 雪花生成器没有可用的机器位（抛异常；调用里转为结果，HTTP 503；健康项上报） |
 
 错误文案的消息键在 `PersistenceMessages`（目录名 `persistence`），10 种区域的译文嵌入在本包，Provider 装配时注册目录。
 
