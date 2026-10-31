@@ -71,9 +71,8 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
         try
         {
             var now = _timeProvider.GetUtcNow();
-            // 只取到期的：退避中的与死信的不占批次，永久失败的消息不会挡住后面的消息。
-            // 或条件放在最前：SqlSugar 把 A && B && (可空值 == null || …) 译成丢了 OR 的 SQL（SQLite 语法错误），先写或条件则译对
-            var due = new Specification<OutboxMessage>(m => (m.NextAttemptAt == null || m.NextAttemptAt <= now) && m.DispatchedAt == null && m.DeadLetteredAt == null);
+            // 只取到期的：退避中的与死信的不占批次，永久失败的消息不会挡住后面的消息
+            var due = new Specification<OutboxMessage>(m => m.DispatchedAt == null && m.DeadLetteredAt == null && (m.NextAttemptAt == null || m.NextAttemptAt <= now));
             var pending = await outbox.ListAsync(EntityQuery.All<OutboxMessage>().Where(due).OrderBy(static m => m.CreatedAt).Page(0, _options.BatchSize), cancellationToken).ConfigureAwait(false);
             var dispatched = pending.Count == 0 ? 0 : await DispatchAsync(pending, outbox, now, cancellationToken).ConfigureAwait(false);
             await PurgeAsync(outbox, now, cancellationToken).ConfigureAwait(false);
