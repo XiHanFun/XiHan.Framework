@@ -9,9 +9,9 @@
 | `InMemoryWorkflowInstanceLock` | 每个实例一个进程内信号量，没人用时回收；等待超时 → `WORKFLOW_TIMEOUT_001` |
 | `InMemoryWorkflowOptions` | `XiHan:Workflow:InMemory`：`MaxDefinitions`（1000）、`MaxInstances`（10000）、`MaxNodeInstances`（100000）、`MaxBookmarks`（100000）、`PollIntervalSeconds`（1）、`BatchSize`（100） |
 
-引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`）。
+引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`、`RetentionDays`、`HousekeepingIntervalSeconds`、`HttpTimeoutSeconds`），见 `Workflow.Abstractions`。两处选项的值写错都在启动时抛出。
 
-单进程：多实例部署换 `Workflow.Database`（后续）。通过 `Workflow.Conformance` 全部用例。
+单进程：实例锁与轮询只在本进程内有效，多实例部署换 `Workflow.Database`（租约行实例锁、领导节点轮询）。通过 `Workflow.Conformance` 全部用例。
 
 ## 依赖方向
 

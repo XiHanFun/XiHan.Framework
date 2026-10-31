@@ -9,7 +9,8 @@ AI 知识库的 `Microsoft.Extensions.VectorData` Provider（Ring 3，RFC-0022�
 | `KnowledgeVectorRecord` | 向量记录：`Id`、`DocumentId`、`ChunkIndex`、`Text`、`Metadata`（JSON）、`Vector` |
 
 ```csharp
-builder.Services.AddSingleton<VectorStore>(new InMemoryVectorStore());   // 或任何连接器
+// 连接器由应用选择并自行引用其包，本包与仓库都不引用任何连接器；例如 Semantic Kernel 的内存连接器（Microsoft.SemanticKernel.Connectors.InMemory），只适合开发
+builder.Services.AddSingleton<VectorStore>(new InMemoryVectorStore());
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OpenAIFeature>().UseFeature<VectorDataKnowledgeFeature>());
 
 await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "faq", Text = faqText }, ct);

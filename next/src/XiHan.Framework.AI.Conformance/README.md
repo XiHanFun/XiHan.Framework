@@ -8,13 +8,16 @@ AI 一致性套件（工具链，RFC-0022）：Provider 继承抽象测试类并
 | `AIProviderConformance` + `AIProviderHost` | `IAIProviderCatalog` 上的聊天与嵌入 Provider：应答、嵌入维度与批量条数、缓存与 `Invalidate`、未知名字 `AI_NOTFOUND_001` |
 | `HashingEmbeddingGenerator`、`HashingEmbeddingGeneratorFactory`、`HashingEmbeddingFeature` | 确定性的词袋哈希嵌入（`Kind = hashing`）与提供 `ai.embedding@1` 的特性，让知识库 Provider 的测试不依赖外部模型 |
 
+下面是 `AI.VectorData` 自己的一致性测试的写法。`TestVectorStore` 是测试项目里写的进程内 `VectorStore` 替身（`test/XiHan.Framework.AI.VectorData.Tests/TestVectorStore.cs`），仓库不引用任何向量库连接器；验证真实连接器时换成它的 `VectorStore`，并在测试项目里引用连接器的包。
+
 ```csharp
 public sealed class VectorDataKnowledgeStoreConformanceTests : KnowledgeStoreConformance
 {
     protected override async Task<KnowledgeStoreHost> StartAsync()
     {
         var host = await TestHost.StartAsync(static b => b.UseFeature<HashingEmbeddingFeature>().UseFeature<VectorDataKnowledgeFeature>(),
-            [new("XiHan:AI:Knowledge:Dimensions", "64")], services => services.AddSingleton<VectorStore>(new InMemoryVectorStore()));
+            [new("XiHan:AI:Providers:hash:Kind", "hashing"), new("XiHan:AI:Providers:hash:EmbeddingDimensions", "64"), new("XiHan:AI:Knowledge:Dimensions", "64")],
+            services => services.AddSingleton<VectorStore>(new TestVectorStore()));
         return new KnowledgeStoreHost(host.Services.GetRequiredService<IKnowledgeStore>(), 64, host);
     }
 }
