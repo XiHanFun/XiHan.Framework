@@ -91,7 +91,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `InMemorySecurityFeature` | 特性入口；`HealthName` = `security.inmemory.capacity` |
-| `InMemorySecurityOptions` | `MaxPrincipals`、`MaxGrants`、`Principals`、`Grants`；`FromConfiguration` 读取上面的配置 |
+| `InMemorySecurityOptions` | `MaxPrincipals`、`MaxGrants`、`TenantClaim`、`Principals`、`Grants`；`FromConfiguration` 读取上面的配置，`TenantClaim` 读 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`） |
 | `PrincipalRecord` | 配置里的一个主体：`Id`、`ApiKey`、`DisplayName`、`Roles`、`Tenant`、`Claims` |
 | `InMemoryPrincipalStore` | 主体存储：`FindByApiKey`（常量时间比较）、`Set`、`Remove`、`Capacity`、`Count` |
 | `ApiKeyAuthenticationHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
@@ -124,7 +124,7 @@ public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
 
 ## 行为与限制
 
-- 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条 `tenant` 声明（有 `Tenant` 时）、附加声明。租户声明的类型固定为 `tenant`，不跟随 `XiHan:MultiTenancy:TenantClaim`。
+- 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条租户声明（有 `Tenant` 时）、附加声明。租户声明的类型取 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`），与多租户的 `ClaimTenantResolver` 读同一个配置键，改了它 ApiKey 主体的租户照样被认出。
 - API Key 逐条做常量时间比较；找不到返回 `SECURITY_DENIED_003`。
 - 容量：新增主体超过 `MaxPrincipals`、新增授予超过 `MaxGrants` 时返回 `SECURITY_UNAVAILABLE_002`；替换已有主体、重复授予不占容量。配置里的条目超过上限时，构造存储即抛出 `FrameworkException`。
 - 授予存储按（主体，租户）分组保存：被容量拒绝的授予不留下任何条目，撤销某个主体在某个租户下的最后一条授予时连同这一组一起移除，授予与撤销反复进行也不会让存储增长。

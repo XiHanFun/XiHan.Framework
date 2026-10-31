@@ -12,10 +12,10 @@ namespace XiHan.Framework.Security.InMemory;
 /// <c>ApiKey</c> 方案的认证处理器。
 /// </summary>
 /// <remarks>
-/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）。
+/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）；角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>，租户声明类型取 <see cref="InMemorySecurityOptions.TenantClaim"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options) : IAuthenticationHandler
+public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options, InMemorySecurityOptions inMemoryOptions) : IAuthenticationHandler
 {
     /// <summary>
     /// 方案名 <c>ApiKey</c>。
@@ -38,6 +38,14 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
     /// </remarks>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
+    /// <summary>
+    /// 租户声明类型。
+    /// </summary>
+    /// <remarks>
+    /// 与多租户选项的 <c>TenantClaim</c> 读同一个配置键。
+    /// </remarks>
+    private readonly string _tenantClaim = (inMemoryOptions ?? throw new ArgumentNullException(nameof(inMemoryOptions))).TenantClaim;
+
     /// <inheritdoc />
     public string Scheme => SchemeName;
 
@@ -50,12 +58,12 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
             return ValueTask.FromResult(Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidApiKey)));
         }
 
-        // 角色写成 RoleClaim 声明、租户写成 tenant 声明，再附加记录里的其他声明；顺序固定便于断言
+        // 角色写成 RoleClaim 声明、租户写成 TenantClaim 声明（Tenant 阶段的声明解析器按同一类型读），再附加记录里的其他声明；顺序固定便于断言
         var claims = new List<KeyValuePair<string, string>>(record.Roles.Count + record.Claims.Count + 1);
         claims.AddRange(record.Roles.Select(role => new KeyValuePair<string, string>(_options.RoleClaim, role)));
         if (record.Tenant is not null)
         {
-            claims.Add(new KeyValuePair<string, string>("tenant", record.Tenant));
+            claims.Add(new KeyValuePair<string, string>(_tenantClaim, record.Tenant));
         }
 
         claims.AddRange(record.Claims);

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Security.Abstractions;
@@ -163,6 +164,43 @@ public sealed class InMemorySecurityTests
         Assert.Equal(["editor", "auditor"], principal.ClaimValues("role"));
         Assert.Equal(["acme"], principal.ClaimValues("tenant"));
         Assert.True(principal.HasClaim("email", "alice@example.com"));
+    }
+
+    [Fact]
+    public async Task ApiKeyTenantClaim_FollowsMultiTenancyTenantClaim_AndWinsOverBaggage()
+    {
+        // 改了 XiHan:MultiTenancy:TenantClaim 之后，ApiKey 主体的租户写成同一类型的声明，Tenant 阶段的声明解析器照样认出它
+        KeyValuePair<string, string?>[] configuration =
+        [
+            .. _configuration,
+            new("XiHan:MultiTenancy:TenantClaim", "tid"),
+            new("XiHan:MultiTenancy:Tenants:acme:DisplayName", "Acme"),
+            new("XiHan:MultiTenancy:Tenants:other:DisplayName", "Other"),
+        ];
+        Assert.Equal("tid", InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(configuration).Build()).TenantClaim);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<InMemoryMultiTenancyFeature>(), configuration);
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "other" });
+        Assert.True(AuthenticationCredential.TryParse("ApiKey dev-alice-key", out var credential));
+        context.SetCredential(credential);
+        SecurityContext? security = null;
+        var result = await host.App.InvokeAsync(context, ctx =>
+        {
+            security = ctx.GetSecurity();
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(security);
+        Assert.Equal(["acme"], security.Principal.ClaimValues("tid"));
+        Assert.Empty(security.Principal.ClaimValues("tenant"));
+        // 已认证主体的租户声明优先于调用方自报的 Baggage
+        Assert.Equal("acme", security.Tenant?.Id);
+
+        // 缺省仍是 tenant；空值不合法
+        Assert.Equal("tenant", new InMemorySecurityOptions().TenantClaim);
+        Assert.Throws<ArgumentException>(static () => new InMemorySecurityOptions { TenantClaim = " " });
     }
 
     [Fact]

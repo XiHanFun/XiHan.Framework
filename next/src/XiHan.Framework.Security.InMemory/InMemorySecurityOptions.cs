@@ -23,6 +23,14 @@ public sealed record InMemorySecurityOptions
     public const string ConfigurationSection = "XiHan:Security:InMemory";
 
     /// <summary>
+    /// 租户声明类型的配置键。
+    /// </summary>
+    /// <remarks>
+    /// 与多租户选项读同一个键，Tenant 阶段的声明解析器按它认租户声明（RFC-0008 认证第 4 条）。
+    /// </remarks>
+    public const string TenantClaimKey = "XiHan:MultiTenancy:TenantClaim";
+
+    /// <summary>
     /// 主体上限。
     /// </summary>
     /// <remarks>
@@ -47,6 +55,18 @@ public sealed record InMemorySecurityOptions
     } = 10_000;
 
     /// <summary>
+    /// 主体记录的租户写成声明时用的声明类型。
+    /// </summary>
+    /// <remarks>
+    /// 默认 <c>tenant</c>，从 <see cref="TenantClaimKey"/> 读取，与多租户选项的 <c>TenantClaim</c> 一致。
+    /// </remarks>
+    public string TenantClaim
+    {
+        get => field;
+        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The tenant claim type cannot be empty.", nameof(value));
+    } = "tenant";
+
+    /// <summary>
     /// 装载的主体。
     /// </summary>
     public IReadOnlyList<PrincipalRecord> Principals
@@ -68,7 +88,7 @@ public sealed record InMemorySecurityOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）。
+    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）；租户声明类型另从 <see cref="TenantClaimKey"/> 读取。
     /// </remarks>
     public static InMemorySecurityOptions FromConfiguration(IConfiguration configuration)
     {
@@ -82,6 +102,11 @@ public sealed record InMemorySecurityOptions
         if (ReadPositive(configuration, "MaxGrants") is { } maxGrants)
         {
             options = options with { MaxGrants = maxGrants };
+        }
+
+        if (configuration[TenantClaimKey] is { } tenantClaim)
+        {
+            options = options with { TenantClaim = tenantClaim };
         }
 
         var principals = new List<PrincipalRecord>();

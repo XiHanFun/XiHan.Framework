@@ -132,7 +132,7 @@ curl -H "baggage: xihan.tenant=acme" http://localhost:5000/whoami
 
 | 认证方式 | 租户声明从哪来 |
 | --- | --- |
-| `Security.InMemory` 的 ApiKey | 主体记录的 `Tenant`，写成类型为 `tenant` 的声明 |
+| `Security.InMemory` 的 ApiKey | 主体记录的 `Tenant`，写成类型为 `TenantClaim` 的声明（读同一个配置键 `XiHan:MultiTenancy:TenantClaim`） |
 | `Security.Jwt` / `Security.OpenIdConnect` | 令牌里类型等于 `TenantClaim` 的声明，声明按原始类型名保留 |
 
 因为声明解析器排在 Baggage 之前，已认证且带租户声明的主体不能用 Baggage 换到别的租户。以 SimpleApp 为例（`alice` 的记录是 `Tenant: acme`）：
@@ -146,10 +146,6 @@ curl -H "baggage: xihan.tenant=acme" http://localhost:5000/whoami
 | 匿名，不带 Baggage，`RequireTenant` 为假 | 无租户 |
 
 主体没有租户声明时（匿名调用、平台级账号），Baggage 自报的租户只经过文法与存储核对，框架不判断这个主体是否属于该租户。需要限制时在授权里判断，[授权](./authorization#自定义策略)一章给出了一个按租户声明核对的策略。
-
-::: warning ApiKey 处理器写死声明类型 tenant
-`ApiKeyAuthenticationHandler` 总是把主体记录的租户写成类型为 `tenant` 的声明，不读 `XiHan:MultiTenancy:TenantClaim`。改了 `TenantClaim` 之后，内存 ApiKey 主体的租户不再被 `ClaimTenantResolver` 识别。
-:::
 
 ## 持久化层的租户过滤
 

@@ -112,7 +112,7 @@ public static class CallerInfo
 }
 ```
 
-节名是主体 ID；`ApiKey` 必填且至少 8 个字符；`Roles` 逗号分隔；`Claims:*` 下的键值作为附加声明。认证成功的主体按顺序带上：每个角色一条 `RoleClaim` 类型的声明、一条 `tenant` 声明（有 `Tenant` 时）、附加声明。
+节名是主体 ID；`ApiKey` 必填且至少 8 个字符；`Roles` 逗号分隔；`Claims:*` 下的键值作为附加声明。认证成功的主体按顺序带上：每个角色一条 `RoleClaim` 类型的声明、一条租户声明（有 `Tenant` 时，类型取 `XiHan:MultiTenancy:TenantClaim`，缺省 `tenant`）、附加声明。
 
 `ApiKeyAuthenticationHandler` 逐条做常量时间比较，不用字典查找，耗时不随匹配位置泄露信息；找不到返回 `SECURITY_DENIED_003`。主体数上限 `XiHan:Security:InMemory:MaxPrincipals`，缺省 1000。
 

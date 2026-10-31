@@ -1,6 +1,6 @@
 #nullable enable
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler
-XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.ApiKeyAuthenticationHandler(XiHan.Framework.Security.InMemory.InMemoryPrincipalStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
+XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.ApiKeyAuthenticationHandler(XiHan.Framework.Security.InMemory.InMemoryPrincipalStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options, XiHan.Framework.Security.InMemory.InMemorySecurityOptions! inMemoryOptions) -> void
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore
@@ -36,6 +36,8 @@ XiHan.Framework.Security.InMemory.InMemorySecurityOptions.MaxPrincipals.get -> i
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.MaxPrincipals.init -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Principals.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.InMemory.PrincipalRecord!>!
 XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Principals.init -> void
+XiHan.Framework.Security.InMemory.InMemorySecurityOptions.TenantClaim.get -> string!
+XiHan.Framework.Security.InMemory.InMemorySecurityOptions.TenantClaim.init -> void
 XiHan.Framework.Security.InMemory.PrincipalRecord
 XiHan.Framework.Security.InMemory.PrincipalRecord.<Clone>$() -> XiHan.Framework.Security.InMemory.PrincipalRecord!
 XiHan.Framework.Security.InMemory.PrincipalRecord.ApiKey.get -> string!
@@ -55,6 +57,7 @@ XiHan.Framework.Security.InMemory.PrincipalRecord.Tenant.init -> void
 const XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.SchemeName = "ApiKey" -> string!
 const XiHan.Framework.Security.InMemory.InMemorySecurityFeature.HealthName = "security.inmemory.capacity" -> string!
 const XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ConfigurationSection = "XiHan:Security:InMemory" -> string!
+const XiHan.Framework.Security.InMemory.InMemorySecurityOptions.TenantClaimKey = "XiHan:MultiTenancy:TenantClaim" -> string!
 override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.GetHashCode() -> int
 override XiHan.Framework.Security.InMemory.InMemorySecurityOptions.ToString() -> string!
