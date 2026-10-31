@@ -9,6 +9,7 @@ using XiHan.Framework.Caching.Abstractions.Distributed;
 using XiHan.Framework.Caching.Abstractions.Idempotency;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Serialization;
+using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
@@ -21,7 +22,7 @@ namespace XiHan.Framework.Caching.Remote;
 /// 远程缓存 Provider 的能力包入口（RFC-0019）。
 /// </summary>
 /// <remarks>
-/// 提供 <c>caching.distributed@1</c>，存储由实现了操作集 <c>cache-entries.*</c> 的进程外插件承担；本包注册共享缓存、分布式锁与幂等中间件。插件由 <c>Plugins.OutOfProcess</c> 等插件宿主按目录发现并登记代理操作，本包不启动进程。
+/// 提供 <c>caching.distributed@1</c>，存储由实现了操作集 <c>cache-entries.*</c> 的进程外插件承担；本包注册字节存储 <c>ICacheStore</c>、共享缓存、分布式锁与幂等中间件。插件由 <c>Plugins.OutOfProcess</c> 等插件宿主按目录发现并登记代理操作，本包不启动进程。
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCachingFeature : IFeature
@@ -63,6 +64,8 @@ public sealed class RemoteCachingFeature : IFeature
         }
 
         context.Services.TryAddSingleton<ISharedCache>(static sp => new SerializingCache(sp.GetRequiredService<RemoteCacheStore>(), sp.GetRequiredService<ICacheSerializer>()));
+        // 与内存、Redis 实现一致：被选中的共享存储也以字节级契约登记，按接口取 ICacheStore 拿到的就是远程存储
+        context.Services.TryAddSingleton<ICacheStore>(static sp => sp.GetRequiredService<RemoteCacheStore>());
         context.Services.TryAddSingleton<IDistributedLock>(static sp => new StoreDistributedLock(sp.GetRequiredService<RemoteCacheStore>()));
         context.Services.AddXiHanDistributedCache(static sp => sp.GetRequiredService<RemoteCacheStore>());
         context.AddMiddleware<IdempotencyMiddleware>(PipelineStage.Idempotency);

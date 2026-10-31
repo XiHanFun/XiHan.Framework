@@ -45,6 +45,20 @@ public sealed class RemoteCachingTests
     }
 
     [Fact]
+    public async Task Feature_RegistersTheRemoteStoreAsICacheStore_InsteadOfTheInMemoryDefault()
+    {
+        // 解析服务不触及插件：没有插件也能核对登记
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryCachingFeature>().UseFeature<RemoteCachingFeature>());
+
+        var store = host.Services.GetRequiredService<ICacheStore>();
+
+        Assert.IsType<RemoteCacheStore>(store);
+        Assert.Same(host.Services.GetRequiredService<RemoteCacheStore>(), store);
+        Assert.Same(store, host.Services.GetRequiredService<ISharedCache>().Store);
+        Assert.Single(host.Services.GetServices<ICacheStore>());
+    }
+
+    [Fact]
     public async Task Store_FailsAsUnavailable_WhenNoPluginProvidesTheOperations()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<RemoteCachingFeature>(), [new("XiHan:Caching:Remote:TimeoutMilliseconds", "500")]);

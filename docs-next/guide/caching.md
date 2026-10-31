@@ -9,7 +9,7 @@
 | 能力 | 服务 | 默认实现 | 显式 Provider |
 | --- | --- | --- | --- |
 | `caching.local@1` | `ICache`：进程内缓存 | `Caching.InMemory` | `Caching.Hybrid`（两级缓存） |
-| `caching.distributed@1` | `ISharedCache`、`IDistributedLock`、`IDistributedCache`、Idempotency 阶段中间件；内存与 Redis 实现另登记 `ICacheStore` | `Caching.InMemory`（只在单实例下正确） | `Caching.Redis`、`Caching.Remote` |
+| `caching.distributed@1` | `ISharedCache`、`ICacheStore`（字节存储）、`IDistributedLock`、`IDistributedCache`、Idempotency 阶段中间件 | `Caching.InMemory`（只在单实例下正确） | `Caching.Redis`、`Caching.Remote` |
 
 `Caching.InMemory` 同时声明两个能力，[`Profiles.Standard`](../packages/profiles-standard) 已经装配它，所以不加任何 Provider 时两种缓存都能用。再 `UseFeature` 一个显式 Provider 就顶替对应能力：装配 `Caching.Redis` 后共享缓存、锁与幂等改由 Redis 承担，进程内的 `ICache` 仍由内存实现提供；被顶替的能力内存实现不再注册服务，也不登记重复的幂等中间件。
 
@@ -268,7 +268,7 @@ public sealed class DailyReport(IDistributedLock locks)
 }
 ```
 
-被占用时返回无值，不产生错误码；`CACHING_CONFLICT_001` 已登记，但框架不产出它，应用要把占用报告成失败时可以用。`LockHandle` 只释放一次，重复释放返回 `false`。存活时间要大于工作的最长耗时，需要续约的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现，`ICacheStore` 由内存与 Redis Provider 登记在容器里（远程 Provider 只能经 `ISharedCache.Store` 取到）。
+被占用时返回无值，不产生错误码；`CACHING_CONFLICT_001` 已登记，但框架不产出它，应用要把占用报告成失败时可以用。`LockHandle` 只释放一次，重复释放返回 `false`。存活时间要大于工作的最长耗时，需要续约的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现，`ICacheStore` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，与 `ISharedCache.Store` 是同一个实例。
 
 雪花 ID 的机器位租约就用这把锁，见[标识生成](./distributed-ids)。
 

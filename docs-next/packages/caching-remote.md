@@ -34,7 +34,7 @@
 
 每个操作按 ID 从宿主的操作登记表取代理操作，经 `IOperationInvoker.ExecuteAsync` 直接执行，不经过管道：存储会被幂等中间件在管道里使用，走管道会递归，这些内部调用也不需要授权与幂等。键与过期选项在 .NET 侧先按 `CacheKey` / `CacheEntryOptions` 校验，再编码成操作集的 JSON。
 
-在存储之上，特性注册 `ISharedCache`（`SerializingCache` + `RemoteCacheStore`）、`IDistributedLock`、`IDistributedCache` 与 Idempotency 阶段的 `IdempotencyMiddleware`。本包不登记 `ICacheStore` 接口，需要字节存储时从 `ISharedCache.Store` 取。
+在存储之上，特性注册 `ICacheStore`（就是 `RemoteCacheStore`，与内存、Redis 实现一样按接口登记）、`ISharedCache`（`SerializingCache` + `RemoteCacheStore`）、`IDistributedLock`、`IDistributedCache` 与 Idempotency 阶段的 `IdempotencyMiddleware`。从容器按接口取 `ICacheStore` 与取 `ISharedCache.Store` 得到的是同一个实例。
 
 ## 何时使用
 
