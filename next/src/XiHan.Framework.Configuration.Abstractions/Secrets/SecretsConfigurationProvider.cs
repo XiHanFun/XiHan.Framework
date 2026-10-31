@@ -84,7 +84,7 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
         Apply(lookups, initial: true);
         if (_options.RefreshInterval is { } interval && _loop is null)
         {
-            _timer = new PeriodicTimer(interval);
+            _timer = new PeriodicTimer(interval, _options.Clock);
             var (timer, stopping) = (_timer, _stopping.Token);
             _loop = Task.Run(() => RefreshAsync(timer, stopping), CancellationToken.None);
         }

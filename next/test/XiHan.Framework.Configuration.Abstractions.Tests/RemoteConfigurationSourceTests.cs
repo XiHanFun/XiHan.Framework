@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Configuration.Abstractions.Remote;
 using XiHan.Framework.Primitives;
 
@@ -18,9 +19,12 @@ public sealed class RemoteConfigurationSourceTests
     {
         var remote = new InMemoryRemoteConfiguration();
         remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "hello", ["Items:0"] = "a", ["Items:1"] = "b", ["Items:10"] = "c" });
+        // 轮询只由用例推进时钟触发
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
         var root = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["Orders:Local"] = "yes", ["Orders:Items:2"] = "local" })
-            .AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = TimeSpan.FromMilliseconds(30) })
+            .AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = interval, Clock = clock })
             .Build();
         using var disposable = root as IDisposable;
 
@@ -33,10 +37,12 @@ public sealed class RemoteConfigurationSourceTests
         var reloaded = new TaskCompletionSource();
         ChangeToken.OnChange(root.GetReloadToken, () => reloaded.TrySetResult());
         remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "bye" });
+        Assert.Equal(1, remote.Fetches);
+        await PollAsync(clock, interval, remote);
         await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("bye", root["Orders:Greeting"]);
         Assert.Null(root["Orders:Items:0"]);
-        Assert.True(remote.Fetches >= 2);
+        Assert.Equal(2, remote.Fetches);
     }
 
     [Fact]
@@ -54,9 +60,13 @@ public sealed class RemoteConfigurationSourceTests
 
         remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "hello" });
         errors.Clear();
-        var root = new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = TimeSpan.FromMilliseconds(20), OnError = errors.Add }).Build();
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
+        var root = new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = interval, Clock = clock, OnError = errors.Add }).Build();
         using var disposable = root as IDisposable;
         remote.Fail = Error.Unavailable(ConfigurationErrors.RemoteUnavailable, ConfigurationMessages.RemoteUnavailable, MessageArguments.Of(("namespace", "orders"), ("reason", "down")));
+        await PollAsync(clock, interval, remote);
+        await PollAsync(clock, interval, remote);
         await WaitUntilAsync(() => errors.Count >= 2);
         Assert.Equal("hello", root["Greeting"]);
 
@@ -64,6 +74,7 @@ public sealed class RemoteConfigurationSourceTests
         remote.Fail = null;
         remote.Throw = true;
         var before = errors.Count;
+        await PollAsync(clock, interval, remote);
         await WaitUntilAsync(() => errors.Count > before);
         Assert.Equal(ConfigurationErrors.RemoteUnavailable, errors[^1].Code);
         Assert.Equal("hello", root["Greeting"]);
@@ -83,6 +94,8 @@ public sealed class RemoteConfigurationSourceTests
         Assert.Throws<ArgumentOutOfRangeException>(static () => new RemoteConfigurationOptions("a") { PollInterval = TimeSpan.Zero });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new RemoteConfigurationOptions("a") { LoadTimeout = TimeSpan.Zero });
         Assert.Null(new RemoteConfigurationOptions("a") { PollInterval = null }.PollInterval);
+        Assert.Same(TimeProvider.System, new RemoteConfigurationOptions("a").Clock);
+        Assert.Throws<ArgumentNullException>(static () => new RemoteConfigurationOptions("a") { Clock = null! });
         Assert.Throws<ArgumentException>(static () => new ConfigurationDocument("", new Dictionary<string, string?>()));
         Assert.Throws<ArgumentException>(static () => new ConfigurationDocument("1", new Dictionary<string, string?> { [""] = "x" }));
         Assert.Equal("version 1, 0 keys", ConfigurationDocument.Empty("1").ToString());
@@ -99,6 +112,16 @@ public sealed class RemoteConfigurationSourceTests
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             return default(Maybe<ConfigurationDocument>);
         }
+    }
+
+    /// <summary>
+    /// 推进一个轮询周期，等这次取值开始。
+    /// </summary>
+    private static Task PollAsync(FakeTimeProvider clock, TimeSpan interval, InMemoryRemoteConfiguration remote)
+    {
+        var fetches = remote.Fetches;
+        clock.Advance(interval);
+        return WaitUntilAsync(() => remote.Fetches > fetches);
     }
 
     /// <summary>

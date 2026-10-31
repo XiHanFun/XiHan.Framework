@@ -11,6 +11,8 @@ XiHan.Framework.Configuration.Abstractions.Remote.IRemoteConfigurationClient.Fet
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationBuilderExtensions
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.<Clone>$() -> XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions!
+XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.Clock.get -> System.TimeProvider!
+XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.Clock.init -> void
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.Equals(XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions? other) -> bool
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.LoadTimeout.get -> System.TimeSpan
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.LoadTimeout.init -> void
@@ -53,6 +55,8 @@ XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.Version.get -> st
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationBuilderExtensions
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.<Clone>$() -> XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions!
+XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.Clock.get -> System.TimeProvider!
+XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.Clock.init -> void
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.Equals(XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions? other) -> bool
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.LoadTimeout.get -> System.TimeSpan
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationOptions.LoadTimeout.init -> void
