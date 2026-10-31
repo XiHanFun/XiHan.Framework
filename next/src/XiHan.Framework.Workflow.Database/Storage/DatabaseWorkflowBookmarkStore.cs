@@ -96,6 +96,24 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(key);
+        if (limit <= 0)
+        {
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>([]));
+        }
+
+        // 无租户写成字面量 null：与值为 null 的变量比较会被翻译成 = @参数(NULL)，永远不匹配
+        // 到期条件先写比较再写判空：SqlSugar 把可空 DateTimeOffset 的 `== null || <= 参数` 这一写法翻译失败（KERNEL_UNEXPECTED_001），反过来写正常
+        var filter = tenantId is null
+            ? new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == key && record.TenantId == null && (record.DueAt <= now || record.DueAt == null))
+            : new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == key && record.TenantId == tenantId && (record.DueAt <= now || record.DueAt == null));
+        return ListAsync(ByCreation(filter), limit, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(signalName);

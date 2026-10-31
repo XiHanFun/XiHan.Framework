@@ -214,6 +214,43 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
+    /// 用例 6：可领取的书签按租户与到期时刻限量查询。
+    /// </summary>
+    /// <remarks>
+    /// 按种类、键、租户与到期时刻过滤，创建时间升序，条数受上限约束。到期时刻为空或不晚于此刻才可领取（恰好等于此刻也算）；租户按相等比较，空只匹配无租户的书签。
+    /// </remarks>
+    [Fact]
+    public async Task Bookmarks_Available_FilterByKindKeyTenantAndDue_WithLimit()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        // 取整到秒：恰好等于此刻的到期时刻要原样存取，不受各存储时间精度的影响
+        var now = DateTimeOffset.UtcNow;
+        now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
+        var fresh = Bookmark("inst-1", "ni-1", BookmarkKinds.External, "pay", null, now.AddSeconds(-3));
+        var expired = Bookmark("inst-2", "ni-2", BookmarkKinds.External, "pay", now.AddSeconds(-1), now.AddSeconds(-2));
+        var boundary = Bookmark("inst-3", "ni-3", BookmarkKinds.External, "pay", now, now.AddSeconds(-1));
+        var locked = Bookmark("inst-4", "ni-4", BookmarkKinds.External, "pay", now.AddMinutes(5), now.AddSeconds(-4));
+        var tenant = Bookmark("inst-5", "ni-5", BookmarkKinds.External, "pay", null, now.AddSeconds(-5));
+        tenant.TenantId = "t1";
+        var otherTopic = Bookmark("inst-6", "ni-6", BookmarkKinds.External, "ship", null, now.AddSeconds(-6));
+        var otherKind = Bookmark("inst-7", "ni-7", BookmarkKinds.UserTask, "pay", null, now.AddSeconds(-7));
+        Assert.True((await host.Bookmarks.SaveAsync([fresh, expired, boundary, locked, tenant, otherTopic, otherKind], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        Assert.Equal([fresh.Id, expired.Id, boundary.Id], await AvailableAsync(host, null, now, 10).ConfigureAwait(false));
+        Assert.Equal([fresh.Id, expired.Id], await AvailableAsync(host, null, now, 2).ConfigureAwait(false));
+        Assert.Equal([tenant.Id], await AvailableAsync(host, "t1", now, 10).ConfigureAwait(false));
+        Assert.Empty(await AvailableAsync(host, "t2", now, 10).ConfigureAwait(false));
+        Assert.Equal([locked.Id, fresh.Id, expired.Id, boundary.Id], await AvailableAsync(host, null, now.AddMinutes(10), 10).ConfigureAwait(false));
+        Assert.Empty(await AvailableAsync(host, null, now, 0).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 主题 <c>pay</c> 的外部任务书签里可领取的 ID。
+    /// </summary>
+    private static async Task<List<string>> AvailableAsync(WorkflowStoreHost host, string? tenantId, DateTimeOffset now, int limit)
+        => (await host.Bookmarks.AvailableAsync(BookmarkKinds.External, "pay", tenantId, now, limit, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
+
+    /// <summary>
     /// 一个最小的定义。
     /// </summary>
     protected static WorkflowDefinition Definition(string name, int version, WorkflowDefinitionStatus status) => new()

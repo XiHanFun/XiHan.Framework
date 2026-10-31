@@ -828,6 +828,7 @@ XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson
 XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowNameJsonConverter
 XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowNameJsonConverter.WorkflowNameJsonConverter() -> void
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore
+XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.AvailableAsync(string! kind, string! key, string? tenantId, System.DateTimeOffset now, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ByInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ByKindAndKeyAsync(string! kind, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.BySignalAsync(string! signalName, string? correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
@@ -1213,6 +1214,7 @@ const XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskPayloadKey
 const XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskPayloadKeys.Payload = "payload" -> string!
 const XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskPayloadKeys.Topic = "topic" -> string!
 const XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskPayloadKeys.WorkerId = "workerId" -> string!
+const XiHan.Framework.Workflow.Abstractions.ExternalTasks.IWorkflowExternalTaskService.MaxTasksPerFetch = 100 -> int
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.DefinitionTimer = "DefinitionTimer" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.External = "External" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.InstanceTimeout = "InstanceTimeout" -> string!

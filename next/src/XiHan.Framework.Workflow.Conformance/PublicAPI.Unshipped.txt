@@ -65,6 +65,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.WorkflowEngineHos
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Claim_Release_AndGuards() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.ExternalTask_FetchCompleteFailAndLock() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.ExternalTask_FetchTakesTheOldestFirst_UpToMaxTasks() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Query_FiltersAndPages() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Return_JumpsBack_AndRecordsHistory() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.TaskMetadata_PriorityDueFormKey_AndReminder() -> System.Threading.Tasks.Task!
@@ -72,6 +73,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Threshold_Al
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Urge_PublishesEvent() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.WorkflowTaskConformance() -> void
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Available_FilterByKindKeyTenantAndDue_WithLimit() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!

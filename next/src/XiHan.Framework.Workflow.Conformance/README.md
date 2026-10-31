@@ -4,7 +4,7 @@
 
 | 类型 | 用途 |
 | --- | --- |
-| `WorkflowStoreConformance` + `WorkflowStoreHost` | 三个存储与实例锁：按 ID / 名字 / 版本 / 最新已发布查、列表排序与过滤、批量写与删、级联、快照语义、到期 / 种类与键 / 信号查询、锁的互斥与超时（锁等待上限配置在 1 秒以内） |
+| `WorkflowStoreConformance` + `WorkflowStoreHost` | 三个存储与实例锁：按 ID / 名字 / 版本 / 最新已发布查、列表排序与过滤、批量写与删、级联、快照语义、到期 / 种类与键 / 信号查询、可领取书签按租户与到期时刻限量查询、锁的互斥与超时（锁等待上限配置在 1 秒以内） |
 | `WorkflowEngineConformance` + `WorkflowEngineHost` | 装配了 Provider 的宿主上跑引擎：顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时（`PollAsync` 轮询一次）、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、租户隔离 |
 | `ConformanceLog`、`RecordActivity`、`RecordingOutcomeHandler` | 套件登记进容器的记录器（兼消息发布者）、活动与结果处理器 |
 

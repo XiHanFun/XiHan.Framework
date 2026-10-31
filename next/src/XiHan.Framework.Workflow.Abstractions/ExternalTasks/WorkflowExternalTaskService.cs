@@ -88,32 +88,23 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "lockDuration must be positive")));
         }
 
-        if (maxTasks < 1)
+        if (maxTasks is < 1 or > IWorkflowExternalTaskService.MaxTasksPerFetch)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "maxTasks must be at least 1")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", $"maxTasks must be between 1 and {IWorkflowExternalTaskService.MaxTasksPerFetch}")));
         }
 
-        var found = await _bookmarks.ByKindAndKeyAsync(BookmarkKinds.External, topic, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var bookmarks))
+        // 本租户、此刻可领取（书签到期时刻为空或已过：未锁定、锁已过期或已到 notBefore）与条数都下推到存储查询，不读回该主题的全部书签；
+        // 实例是否运行中、锁与 notBefore 的精确判定在锁内重读后再确认
+        var now = _clock.GetUtcNow();
+        var found = await _bookmarks.AvailableAsync(BookmarkKinds.External, topic, CurrentTenantId(), now, maxTasks, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var candidates))
         {
             return found.Error!;
         }
 
-        // 锁外先筛：本租户、未锁定或锁已过期、已到可领取时刻；实例是否运行中在锁内再确认
-        var tenant = CurrentTenantId();
-        var now = _clock.GetUtcNow();
-        var candidates = bookmarks
-            .Where(bookmark => string.Equals(bookmark.TenantId, tenant, StringComparison.Ordinal) && IsFetchable(bookmark, now))
-            .OrderBy(static bookmark => bookmark.CreatedAt)
-            .ToList();
         var fetched = new List<ExternalTask>();
         foreach (var peek in candidates)
         {
-            if (fetched.Count >= maxTasks)
-            {
-                break;
-            }
-
             cancellationToken.ThrowIfCancellationRequested();
             ExternalTask? task = null;
             var locked = await WithLockedBookmarkAsync(peek, async (bookmark, instance) =>

@@ -44,6 +44,14 @@ public interface IWorkflowBookmarkStore
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string kind, string key, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 一个租户下种类与键匹配、此刻可以领取的书签，创建时间升序，最多 <paramref name="limit"/> 条。
+    /// </summary>
+    /// <remarks>
+    /// 可以领取：<c>DueAt</c> 为空或不晚于 <paramref name="now"/>。租户按相等比较，<see langword="null"/> 只匹配无租户的书签。外部任务的领取用它把租户、可领取时刻与条数一起下推到存储查询，不读回该主题的全部书签。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 信号书签。
     /// </summary>
     /// <remarks>

@@ -433,7 +433,7 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
 }
 ```
 
-领取只返回当前租户下该主题未锁定（或锁已过期）且已到可领取时刻的任务；`ExtendLockAsync` 延长锁。没有持有未过期的锁时完成、失败、延长都返回 `WORKFLOW_DENIED_002`。锁到期的任务由轮询自动解锁，别的工作者可以重新领取。
+领取只返回当前租户下该主题未锁定（或锁已过期）且已到可领取时刻的任务，按创建时间最多 `maxTasks` 条。`maxTasks` 取 1 到 `IWorkflowExternalTaskService.MaxTasksPerFetch`（100），越界返回 `WORKFLOW_VALIDATION_002`；条数与租户、可领取时刻一起下推到存储查询。候选在实例锁内重读确认，被别的工作者抢先或实例已不在运行中的跳过，所以一次领到的可能少于 `maxTasks`，空手而归不代表主题下没有任务。`ExtendLockAsync` 延长锁。没有持有未过期的锁时完成、失败、延长都返回 `WORKFLOW_DENIED_002`。锁到期的任务由轮询自动解锁，别的工作者可以重新领取。
 
 ## 查询实例
 

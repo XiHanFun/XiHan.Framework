@@ -104,7 +104,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
 | `WorkflowVariables` | `JsonObject` 变量的视图与类型化读取（`Get<T>`、`TryGet<T>`） |
-| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock` | Provider 契约 |
+| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock` | Provider 契约；书签存储的 `AvailableAsync` 按种类、键、租户与可领取时刻限量查询，供外部任务领取下推条数 |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理；引擎选项 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`）、能力 ID |

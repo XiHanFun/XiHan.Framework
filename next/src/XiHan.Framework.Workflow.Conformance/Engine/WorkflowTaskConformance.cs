@@ -379,6 +379,7 @@ public abstract class WorkflowTaskConformance
         Assert.Single(log.EventsOf(WorkflowTopics.ExternalCreated).Where(data => data.InstanceId == instance.Id));
         Assert.Equal(WorkflowErrors.InputInvalid, (await FetchAsync(host, "w1", TimeSpan.Zero).ConfigureAwait(false)).Error?.Code);
         Assert.Equal(WorkflowErrors.InputInvalid, (await FetchAsync(host, "w1", TimeSpan.FromMinutes(1), 0).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.InputInvalid, (await FetchAsync(host, "w1", TimeSpan.FromMinutes(1), IWorkflowExternalTaskService.MaxTasksPerFetch + 1).ConfigureAwait(false)).Error?.Code);
         var task = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal((instance.Id, "pay", PaymentTopic, 1), (task.InstanceId, task.NodeId, task.Topic, task.Attempt));
         Assert.Equal(("o-1", 3, "o-1"), (task.Payload?["order"]?.GetValue<string>(), task.Payload?["retries"]?.GetValue<int>(), task.Variables?["orderId"]?.GetValue<string>()));
@@ -427,6 +428,44 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(WorkflowErrors.ExternalTaskDenied, (await CompleteExternalAsync(host, taken.Id, "w1").ConfigureAwait(false)).Error?.Code);
         Assert.Equal(WorkflowInstanceStatus.Completed, (await CompleteExternalAsync(host, taken.Id, "w2").ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(3, log.EventsOf(WorkflowTopics.ExternalCreated).Count);
+    }
+
+    /// <summary>
+    /// 用例 8：外部任务按创建先后领取，每次至多 <c>maxTasks</c> 条。
+    /// </summary>
+    /// <remarks>
+    /// 锁住的不再出现在下一次领取里；别的租户的任务领不到；上限内的 <c>maxTasks</c> 都受理。
+    /// </remarks>
+    [Fact]
+    public async Task ExternalTask_FetchTakesTheOldestFirst_UpToMaxTasks()
+    {
+        var log = new ConformanceLog();
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            services.AddSingleton<TimeProvider>(clock);
+        }).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-external-batch")
+            .AddStart()
+            .AddExternalTask("pay", PaymentTopic)
+            .AddEnd()
+            .AddTransition("start", "pay").AddTransition("pay", "end")
+            .Build()).ConfigureAwait(false);
+        var started = new List<string>();
+        for (var index = 0; index < 3; index++)
+        {
+            started.Add((await host.StartAsync("conf-external-batch").ConfigureAwait(false)).ValueOrThrow().Id);
+            clock.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        _ = (await host.StartAsync("conf-external-batch", tenantId: "t-other").ConfigureAwait(false)).ValueOrThrow();
+
+        var first = (await FetchAsync(host, "w1", TimeSpan.FromMinutes(1), 2).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(started.Take(2), first.Select(static task => task.InstanceId));
+        var second = (await FetchAsync(host, "w2", TimeSpan.FromMinutes(1), IWorkflowExternalTaskService.MaxTasksPerFetch).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([started[2]], second.Select(static task => task.InstanceId));
+        Assert.Empty((await FetchAsync(host, "w3", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>

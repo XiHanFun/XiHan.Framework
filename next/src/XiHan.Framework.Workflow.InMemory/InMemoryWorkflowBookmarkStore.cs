@@ -125,6 +125,22 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(key);
+        lock (_lock)
+        {
+            IReadOnlyList<WorkflowBookmark> available = Ordered(_bookmarks.Values.Where(entry =>
+                    string.Equals(entry.Bookmark.Kind, kind, StringComparison.Ordinal)
+                    && string.Equals(entry.Bookmark.Key, key, StringComparison.Ordinal)
+                    && string.Equals(entry.Bookmark.TenantId, tenantId, StringComparison.Ordinal)
+                    && (entry.Bookmark.DueAt is not { } dueAt || dueAt <= now)), Math.Max(0, limit));
+            return ValueTask.FromResult(Result.Success(available));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(signalName);
@@ -212,6 +228,6 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     /// <summary>
     /// 创建时间升序、同刻按写入顺序，深拷贝。
     /// </summary>
-    private static List<WorkflowBookmark> Ordered(IEnumerable<(WorkflowBookmark Bookmark, long Sequence)> entries)
-        => entries.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence).Select(static entry => WorkflowJson.Clone(entry.Bookmark)).ToList();
+    private static List<WorkflowBookmark> Ordered(IEnumerable<(WorkflowBookmark Bookmark, long Sequence)> entries, int limit = int.MaxValue)
+        => entries.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence).Take(limit).Select(static entry => WorkflowJson.Clone(entry.Bookmark)).ToList();
 }
