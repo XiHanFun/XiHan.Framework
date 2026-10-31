@@ -41,3 +41,12 @@ ADR-0005 把 `Persistence.SqlSugar` 留到 P5 随迁移提供。[06-BasicApp迁�
 - 新包 `XiHan.Framework.Persistence.SqlSugar`（Ring 3，`persistence.relational@1`，Preview）与测试 `Persistence.SqlSugar.Tests`（SQLite 跑 `Persistence.Conformance` 全部用例）。
 - 规范 `package-ids.md` 的技术名加 `SqlSugar`，RFC-0005 的 Provider 表加一行。
 - BasicApp 迁移（P5-04）先以方式二接入既有客户端，再逐模块把原生 SqlSugar 查询收进仓储。
+
+## 修订说明（2026-11-01）
+
+「理由」里的批量写法以代码为准。实体类型没有 `new()` 约束，用不了 SqlSugar 的泛型构建器，批量写入走按对象入口：
+- 插入 `InsertableByObject(list)`。
+- 更新 `UpdateableByObject(list)`。
+- 删除 `DeleteableByObject(list)`，按主键删除，不是 `Deleteable().In(ids)`。
+
+开启差异日志的实体走泛型构建器（ADR-0044）。各自仍是一次调用，批量优先照样成立。

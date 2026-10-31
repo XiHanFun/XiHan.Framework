@@ -18,7 +18,7 @@ public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, IHasCreationTime
     /// 待发布的领域事件缓冲。
     /// </summary>
     /// <remarks>
-    /// 工作单元提交后由持久化子系统取走并清空。
+    /// 仓储写入成功后登记到工作单元，Transaction 阶段在提交前交给领域事件派发器，派发器发布成功后清空（ADR-0025）。
     /// </remarks>
     private readonly DomainEventBuffer _events = new();
 
@@ -86,7 +86,7 @@ public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, IHasCreationTime
     /// 清空已发布的领域事件。
     /// </summary>
     /// <remarks>
-    /// 由持久化子系统在事件取走后调用。
+    /// 由领域事件派发器在发布成功后、提交前调用。
     /// </remarks>
     public void ClearDomainEvents() => _events.Clear();
 }

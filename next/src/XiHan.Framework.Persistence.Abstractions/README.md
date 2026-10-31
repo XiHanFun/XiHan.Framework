@@ -28,6 +28,8 @@ builder.AddXiHan(x => x.UseFeature<InMemoryCachingFeature>().UseFeature<Snowflak
 // 或配置 XiHan:Persistence:Snowflake:WorkerId=7 固定机器位，不需要缓存 Provider
 ```
 
+> 警告：上例的 `InMemoryCachingFeature` 只在一个进程内加锁，只适合单实例。多实例部署时每个实例都会租到机器位 0，生成重复的标识。多实例要装配跨进程的 `caching.distributed` Provider（如 `Caching.Redis`），或给每个实例配置互不相同的 `WorkerId`（如 StatefulSet 序号）。
+
 | 配置键（`XiHan:Persistence:Snowflake`） | 缺省 | 说明 |
 | --- | --- | --- |
 | `Epoch` | `2026-01-01T00:00:00Z` | 时间戳起点（ISO 8601，无时区按 UTC）；同一套数据一经写入不得再改 |

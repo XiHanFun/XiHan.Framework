@@ -29,7 +29,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 
 - 工作单元在首次写入时经 `AsTenant()` 在客户端的全部连接上 `BeginTran`（只读调用不开事务），提交即逐连接 `CommitTran`，回滚即逐连接 `RollbackTran`；之后首次触及的连接由 SqlSugar 在取连接时补开事务。跨连接是顺序提交，不是两阶段提交：后一个连接提交失败时前一个已经提交，需要严格原子性的写入放在同一个库。SqlSugar 没有变更跟踪，仓储的每次写入立即执行。
 - 多库（ADR-0022）：客户端可以带多个连接（`ConfigId`），每种实体落在哪个连接由 `IEntityConnectionSelector` 决定，默认实现 `SqlSugarConnectionSelector` 的规则按顺序：实体带 SqlSugar `[Tenant(configId)]` → 该连接（不存在是装配错误，抛携带 `PERSISTENCE_VALIDATION_004` 的 `FrameworkException`，不回退；缺省规则下已登记实体在启动时就校验，`shard` 除外）；实体实现 `IMultiTenant` 且客户端有 `SqlSugarConnections.Shard`（`shard`）连接 → 分片连接；其余 → 根（默认）连接。应用在装配前 `AddSingleton<IEntityConnectionSelector>` 可替换规则。`SqlSugarUnitOfWork.ConnectionFor(Type)` 暴露选择结果。
-- 写入用 `Insertable` / `Updateable` / `Deleteable`；批量方法一次主键 `IN` 查询取回目标行、逐项校验后一次 `Insertable(list)` / `Updateable(list)` / `Deleteable().In(ids)`，不在循环里逐条执行。
+- 写入用 SqlSugar 的按对象入口 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject`（实体类型没有 `new()` 约束，用不了泛型构建器；开启差异日志的实体改走泛型构建器 `Insertable<T>` / `Updateable<T>` / `Deleteable<T>`）；批量方法一次主键 `IN` 查询取回目标行、逐项校验后把列表交给同一入口一次写入（删除按主键），不在循环里逐条执行。
 - 软删除与租户过滤以表达式显式施加在每个查询上，不用全局查询过滤器；无租户的调用看不到任何多租户实体。
 - 更新与删除先在事务内加行锁取回当前行（`TranLock`：`FOR UPDATE` / `UPDLOCK`；SQLite 不支持行锁，由其数据库级写锁保证），游离实例的并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；行被锁住，读取与写入之间别人改不了它。
 - 更新把调用方实例整行写入，其中创建时间、租户与删除标记先换成当前行的值：游离实例或读出后改过的实例都不能借更新改租户、改创建时间或打删除标记。

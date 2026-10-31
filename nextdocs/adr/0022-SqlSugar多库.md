@@ -41,3 +41,10 @@ ADR-0018 把租户分片做成"Tenant 阶段解析一次、持久化 Provider �
 - `Persistence.SqlSugar` 公开面（Preview）：新增 `SqlSugarConnections`、`IEntityConnectionSelector`、`SqlSugarConnectionSelector`、`SqlSugarUnitOfWork.ConnectionFor(Type)`；`SqlSugarUnitOfWork` 构造函数多一个选择器参数；方式一创建的客户端默认连接 `ConfigId` 从空变为 `default`。
 - `Persistence.SqlSugar.Tests`：分片用例改为断言所选连接；新增多连接用例（一次调用同时写默认库与分片库、失败一起回滚、`[Tenant]` 覆盖、方式二多连接）。
 - RFC-0005 的 SqlSugar 行与 RFC-0007 的分片条目改为实体级落点；ADR-0013 状态注明被本决策修订。
+
+## 修订说明（2026-11-01）
+
+两处以代码为准：
+- `IEntityConnectionSelector` 的方法是 `ConnectionFor(Type entityType, ISqlSugarClient client)`，不是 `Select`；`SqlSugarUnitOfWork.ConnectionFor(Type)` 转调它。
+- 方式一（特性按回调创建客户端）里，回调改不了 `ConfigId`。特性先置好 `ConfigId`（默认连接 `default`、分片连接 `shard`），调用回调后再改回去：`ConfigId` 是落点规则的依据，以特性为准。要别的 `ConfigId` 就用方式二，应用自己注册 `ISqlSugarClient`。
+- `[Tenant]` 指向客户端里不存在的连接是装配错误，错误码为 `PERSISTENCE_VALIDATION_004`，不是 `PERSISTENCE_UNAVAILABLE_003`。缺省落点规则下，带 `[Tenant]` 的已登记实体在启动时就校验（`shard` 只在带分片的调用里存在，不在启动时校验）。
