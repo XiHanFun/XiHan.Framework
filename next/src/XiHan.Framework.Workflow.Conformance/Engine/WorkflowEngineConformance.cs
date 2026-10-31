@@ -3,7 +3,9 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
@@ -1009,6 +1011,134 @@ public abstract class WorkflowEngineConformance
         Assert.Single(results, static result => result.Error?.Code == WorkflowErrors.ActiveInstanceExists);
         var instances = (await host.Services.GetRequiredService<IWorkflowInstanceStore>().ListAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationId = "race-1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(results.Single(static result => result.IsSuccess).ValueOrThrow().Id, Assert.Single(instances).Id);
+    }
+
+    /// <summary>
+    /// 用例 25：定义的名字与版本按租户隔离。
+    /// </summary>
+    /// <remarks>
+    /// 两个租户的同名定义各自从版本 1 编号；按名字或 ID 启动、目录的查找、列表、按 ID 的改动与新版本都看不到别的租户的定义；全局定义各租户都能启动，本租户有同名已发布定义时优先用它；无租户的调用看得到全部。
+    /// </remarks>
+    [Fact]
+    public async Task Definitions_AreIsolatedPerTenant()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+
+        // 同名定义各自编号：t1 发布 v1，t2 只有 v1 草稿
+        var t1 = await AsTenantAsync(host, "t1", sp => PublishAsync(sp, Labeled("conf-tenant-def", "t1"))).ConfigureAwait(false);
+        var t2 = await AsTenantAsync(host, "t2", async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().CreateAsync(Labeled("conf-tenant-def", "t2"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        Assert.Equal((1, "t1"), (t1.Version, t1.TenantId));
+        Assert.Equal((1, "t2"), (t2.Version, t2.TenantId));
+
+        // t2 启动不到 t1 的定义：按名字（当前租户或请求带的租户）、按 ID 都是不存在
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-def")).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.StartAsync("conf-tenant-def", tenantId: "t2").ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = t1.Id }, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+        var started = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, "conf-tenant-def")).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((t1.Id, "t1"), (started.DefinitionId, started.TenantId));
+
+        // t2 的目录看不到、改不动 t1 的定义；新版本以 t2 自己的最新版本为底
+        await AsTenantAsync(host, "t2", async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.False((await catalog.FindAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal([t2.Id], (await catalog.ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.DisableAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.ArchiveAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.UpdateAsync(t1 with { DisplayName = "taken" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            var next = (await catalog.NewVersionAsync("conf-tenant-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal((2, "t2", "t2"), (next.Version, next.TenantId, next.Nodes.Single(static node => node.Id == "a").Properties[RecordActivity.LabelProperty]!.GetValue<string>()));
+            return true;
+        }).ConfigureAwait(false);
+        Assert.Equal(WorkflowDefinitionStatus.Published, (await AsTenantAsync(host, "t1", async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().FindAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow()).ConfigureAwait(false)).Status);
+
+        // 全局定义：各租户都能按名字启动，实例属于调用方租户；本租户发布了同名定义后优先用本租户的
+        var shared = await AsTenantAsync(host, null, sp => PublishAsync(sp, Labeled("conf-tenant-shared", "global"))).ConfigureAwait(false);
+        Assert.Null(shared.TenantId);
+        var fromShared = (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((shared.Id, "t2"), (fromShared.DefinitionId, fromShared.TenantId));
+        var own = await AsTenantAsync(host, "t2", sp => PublishAsync(sp, Labeled("conf-tenant-shared", "t2"))).ConfigureAwait(false);
+        Assert.Equal((1, "t2"), (own.Version, own.TenantId));
+        Assert.Equal(own.Id, (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow().DefinitionId);
+        Assert.Equal(shared.Id, (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow().DefinitionId);
+
+        // 迁移只迁到同一名字空间里的同名版本：全局定义的实例不能迁到租户的同名定义上
+        var waitingGlobal = await AsTenantAsync(host, null, sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
+        var waitingOwn = await AsTenantAsync(host, "t1", sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
+        var running = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = waitingGlobal.Id }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((WorkflowInstanceStatus.Running, "t1"), (running.Status, running.TenantId));
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.EngineAsync(engine => engine.MigrateAsync(new WorkflowMigration(running.Id, waitingOwn.Id), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+
+        // 重用策略只在同一租户里查重：别的租户同一关联 ID 的实例既不挡住启动，也不会被当成已有实例返回
+        var reuse = new WorkflowStartRequest { DefinitionId = waitingGlobal.Id, CorrelationId = "conf-doc", ReusePolicy = WorkflowReusePolicy.RejectActive };
+        var inT1 = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var inT2 = (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse with { ReusePolicy = WorkflowReusePolicy.ReturnActive }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        Assert.NotEqual(inT1.Id, inT2.Id);
+        Assert.Equal(("t1", "t2"), (inT1.TenantId, inT2.TenantId));
+        Assert.Equal(WorkflowErrors.ActiveInstanceExists, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+
+        // 无租户的调用看得到全部租户的定义
+        var all = await AsTenantAsync(host, null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        Assert.Equal(["t1", "t2", "t2"], all.Select(static definition => definition.TenantId).Order(StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// 带标签记录节点的定义：开始 → 记录 → 结束。
+    /// </summary>
+    private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)
+        .AddStart().AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.LabelProperty, label)).AddEnd()
+        .AddTransition("start", "a").AddTransition("a", "end")
+        .Build();
+
+    /// <summary>
+    /// 停在一小时延时上的定义：开始 → 等待 → 结束。
+    /// </summary>
+    private static WorkflowDefinition Waiting(string name) => WorkflowDefinitionBuilder.Create(name)
+        .AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+        .AddTransition("start", "wait").AddTransition("wait", "end")
+        .Build();
+
+    /// <summary>
+    /// 在给定作用域里建草稿并发布。
+    /// </summary>
+    private static async ValueTask<WorkflowDefinition> PublishAsync(IServiceProvider services, WorkflowDefinition definition)
+    {
+        var catalog = services.GetRequiredService<IWorkflowDefinitionCatalog>();
+        var created = (await catalog.CreateAsync(definition, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        return (await catalog.PublishAsync(created.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+    }
+
+    /// <summary>
+    /// 在给定作用域里按名字启动最新已发布版本。
+    /// </summary>
+    private static ValueTask<Result<WorkflowInstance>> StartByNameAsync(IServiceProvider services, string name)
+        => services.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = name }, CancellationToken.None);
+
+    /// <summary>
+    /// 以给定租户（空为无租户）在一次经管道的调用里执行。
+    /// </summary>
+    /// <remarks>
+    /// 租户写进调用的安全上下文，目录与引擎经调用上下文访问器读到它。
+    /// </remarks>
+    private static async ValueTask<T> AsTenantAsync<T>(WorkflowEngineHost host, string? tenantId, Func<IServiceProvider, ValueTask<T>> action)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
+        var outcome = default(T);
+        var invoked = await host.Services.GetRequiredService<App>().InvokeAsync(context, async invocation =>
+        {
+            if (tenantId is not null)
+            {
+                invocation.SetTenant(new TenantContext(tenantId));
+            }
+
+            outcome = await action(invocation.Services).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        Assert.True(invoked.IsSuccess);
+        return outcome!;
     }
 
     /// <summary>

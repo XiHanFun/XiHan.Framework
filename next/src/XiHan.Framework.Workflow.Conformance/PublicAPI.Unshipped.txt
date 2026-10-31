@@ -24,6 +24,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Compensate_ActivityAndOnFault() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Control_SuspendResumeCancelTerminate() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Decision_PicksMatchingTransition_OrDefault() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definitions_AreIsolatedPerTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definitions_Lifecycle_AndOutcomeHandlers() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Delay_AndNodeTimeout_ResumeByPolling() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.DelayedStart_AndReusePolicy() -> System.Threading.Tasks.Task!
@@ -76,6 +77,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.WorkflowTask
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Available_FilterByKindKeyTenantAndDue_WithLimit() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_NameQueries_AreScopedToTheTenantNamespace() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Lock_IsExclusivePerInstance_AndTimesOut() -> System.Threading.Tasks.Task!

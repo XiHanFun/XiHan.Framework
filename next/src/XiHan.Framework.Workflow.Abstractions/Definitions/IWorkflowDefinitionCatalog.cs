@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义目录。
 /// </summary>
 /// <remarks>
-/// 定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。
+/// 定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。定义按租户隔离：名字与版本号在租户（全局定义为空）的名字空间里编号；有租户的调用看得到本租户与全局定义、只改得动本租户的，别的按不存在处理；无租户的调用看得到、改得动全部。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionCatalog
@@ -18,7 +18,7 @@ public interface IWorkflowDefinitionCatalog
     /// 新建草稿。
     /// </summary>
     /// <remarks>
-    /// 分配新 ID，版本号 = 同名最大版本 + 1，状态 Draft，租户缺省取当前调用的租户；返回存下的定义。
+    /// 分配新 ID，状态 Draft，租户缺省取当前调用的租户，版本号 = 该租户名字空间里同名最大版本 + 1；返回存下的定义。
     /// </remarks>
     ValueTask<Result<WorkflowDefinition>> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken);
 
@@ -35,6 +35,9 @@ public interface IWorkflowDefinitionCatalog
     /// <summary>
     /// 以该名字的最新版本为底复制一个新草稿。
     /// </summary>
+    /// <remarks>
+    /// 只在当前调用租户的名字空间里找，新草稿属于同一名字空间；没有 → <see cref="WorkflowErrors.DefinitionNotFound"/>。
+    /// </remarks>
     ValueTask<Result<WorkflowDefinition>> NewVersionAsync(WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
@@ -60,6 +63,9 @@ public interface IWorkflowDefinitionCatalog
     /// <summary>
     /// 找已发布版本：给了版本号就找该版本（须 Published），否则最新已发布版本。
     /// </summary>
+    /// <remarks>
+    /// 先找当前调用租户的名字空间，没有再找全局定义。
+    /// </remarks>
     ValueTask<Result<Maybe<WorkflowDefinition>>> FindPublishedAsync(WorkflowName name, int? version, CancellationToken cancellationToken);
 
     /// <summary>

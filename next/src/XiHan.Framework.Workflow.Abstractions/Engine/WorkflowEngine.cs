@@ -537,7 +537,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                     return ValueTask.FromResult<Result>(StatusConflict(instance));
                 }
 
-                if (target.Name != instance.DefinitionName)
+                // 迁到同一名字空间里同名的另一个版本：别的租户的同名定义是另一条流程
+                if (target.Name != instance.DefinitionName || !string.Equals(target.TenantId, session.Definition.TenantId, StringComparison.Ordinal))
                 {
                     return ValueTask.FromResult<Result>(Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", migration.TargetDefinitionId))));
                 }
@@ -1516,7 +1517,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// 按重用策略查重并写入新实例。
     /// </summary>
     /// <remarks>
-    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由定义名与关联 ID 推出：并发的同键启动串行化，后到者一定看得到先到者写入的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
+    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由实例租户、定义名与关联 ID 推出：并发的同键启动串行化，后到者一定看得到先到者写入的实例。查重只看同一租户的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
     /// </remarks>
     private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> CreateInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
     {
@@ -1525,7 +1526,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return await SaveNewInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
         }
 
-        var acquired = await _lock.AcquireAsync(ReuseLockKey(definition.Name, correlation), cancellationToken).ConfigureAwait(false);
+        var tenantId = InstanceTenantId(request, definition);
+        var acquired = await _lock.AcquireAsync(ReuseLockKey(tenantId, definition.Name, correlation), cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -1533,18 +1535,19 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         await using (handle.ConfigureAwait(false))
         {
-            // 重用策略：同名定义在同一关联 ID 下已有未结束的实例
-            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
+            // 重用策略：同一租户里同名定义在同一关联 ID 下已有未结束的实例。查询的租户为空时不限定租户，所以租户在结果上再按相等比较一次
+            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], TenantId = tenantId, Limit = WorkflowInstanceQuery.MaxLimit }, cancellationToken).ConfigureAwait(false);
             if (!active.TryGetValue(out var activeList))
             {
                 return active.Error!;
             }
 
-            if (activeList.Count > 0)
+            var existing = activeList.FirstOrDefault(instance => string.Equals(instance.TenantId, tenantId, StringComparison.Ordinal));
+            if (existing is not null)
             {
                 if (request.ReusePolicy == WorkflowReusePolicy.ReturnActive)
                 {
-                    return (activeList[0], false);
+                    return (existing, false);
                 }
 
                 return Error.Conflict(WorkflowErrors.ActiveInstanceExists, WorkflowMessages.ActiveInstanceExists, MessageArguments.Of(("name", definition.Name.Value), ("correlation", correlation)));
@@ -1597,7 +1600,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             ParentInstanceId = request.ParentInstanceId,
             ParentNodeInstanceId = request.ParentNodeInstanceId,
             Depth = request.Depth,
-            TenantId = request.TenantId ?? CurrentTenantId() ?? definition.TenantId,
+            TenantId = InstanceTenantId(request, definition),
             CreatedAt = now,
             StartedAt = now,
         };
@@ -1612,19 +1615,29 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
+    /// 新实例属于的租户。
+    /// </summary>
+    /// <remarks>
+    /// 请求给的，缺省当前调用的，都没有时取定义的（无租户的调用按 ID 启动租户的定义）。
+    /// </remarks>
+    private string? InstanceTenantId(WorkflowStartRequest request, WorkflowDefinition definition) => request.TenantId ?? CurrentTenantId() ?? definition.TenantId;
+
+    /// <summary>
     /// 重用策略查重时的锁键。
     /// </summary>
     /// <remarks>
-    /// <c>start.</c> 加上定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。定义名不含换行，以换行拼接不会有歧义。
+    /// <c>start.</c> 加上租户、定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。租户与定义名都不含换行、合法租户不为空串，以换行拼接不会有歧义。
     /// </remarks>
-    private static string ReuseLockKey(WorkflowName name, string correlation)
-        => "start." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(name.Value, "\n", correlation))));
+    private static string ReuseLockKey(string? tenantId, WorkflowName name, string correlation)
+        => "start." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(tenantId, "\n", name.Value, "\n", correlation))));
 
     /// <summary>
     /// 找请求指向的已发布定义。
     /// </summary>
     private async ValueTask<Result<WorkflowDefinition>> FindPublishedDefinitionAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
+        // 名字解析与可见性都按实例将属于的租户：请求给的，缺省当前调用的；都没有时是全局名字空间
+        var tenantId = request.TenantId ?? CurrentTenantId();
         Result<Maybe<WorkflowDefinition>> found;
         string name;
         if (!string.IsNullOrWhiteSpace(request.DefinitionId))
@@ -1635,9 +1648,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         else if (request.Name is { } workflowName)
         {
             name = workflowName.Value;
-            found = request.Version is { } version
-                ? await _definitions.FindAsync(workflowName, version, cancellationToken).ConfigureAwait(false)
-                : await _definitions.FindLatestPublishedAsync(workflowName, cancellationToken).ConfigureAwait(false);
+            found = await WorkflowDefinitionNamespace.FindPublishedAsync(_definitions, workflowName, request.Version, tenantId, cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -1649,7 +1660,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return found.Error!;
         }
 
-        if (!maybe.TryGetValue(out var definition) || definition.Status != WorkflowDefinitionStatus.Published)
+        // 别的租户的定义按不存在处理：不能拿另一个租户的流程跑出本租户的实例
+        if (!maybe.TryGetValue(out var definition) || definition.Status != WorkflowDefinitionStatus.Published || !WorkflowDefinitionNamespace.IsVisible(definition, tenantId))
         {
             return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", name)));
         }

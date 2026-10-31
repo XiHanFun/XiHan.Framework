@@ -42,10 +42,10 @@ public abstract class WorkflowStoreConformance
 
         var found = (await host.Definitions.FindAsync(v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
         Assert.Equal((v2.Name, 2, WorkflowDefinitionStatus.Draft), (found.Name, found.Version, found.Status));
-        Assert.Equal(1, (await host.Definitions.FindAsync(new WorkflowName("conf-def"), 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Version);
-        Assert.Equal(v1.Id, (await host.Definitions.FindLatestPublishedAsync("conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.Equal(2, (await host.Definitions.MaxVersionAsync("conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(0, (await host.Definitions.MaxVersionAsync("conf-none", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.Definitions.FindAsync(new WorkflowName("conf-def"), 1, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Version);
+        Assert.Equal(v1.Id, (await host.Definitions.FindLatestPublishedAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        Assert.Equal(2, (await host.Definitions.MaxVersionAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(0, (await host.Definitions.MaxVersionAsync("conf-none", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.False((await host.Definitions.FindAsync("missing", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
 
         var listed = (await host.Definitions.ListAsync(null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
@@ -58,7 +58,7 @@ public abstract class WorkflowStoreConformance
 
         Assert.True((await host.Definitions.DeleteAsync([v2.Id, "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.False((await host.Definitions.FindAsync(v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.Equal(1, (await host.Definitions.MaxVersionAsync("conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.Definitions.MaxVersionAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
@@ -242,6 +242,33 @@ public abstract class WorkflowStoreConformance
         Assert.Empty(await AvailableAsync(host, "t2", now, 10).ConfigureAwait(false));
         Assert.Equal([locked.Id, fresh.Id, expired.Id, boundary.Id], await AvailableAsync(host, null, now.AddMinutes(10), 10).ConfigureAwait(false));
         Assert.Empty(await AvailableAsync(host, null, now, 0).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 7：按名字的查询以租户为名字空间。
+    /// </summary>
+    /// <remarks>
+    /// 版本号、按名字与版本找、最新已发布都只看租户相等的定义，空租户只匹配全局定义。
+    /// </remarks>
+    [Fact]
+    public async Task Definitions_NameQueries_AreScopedToTheTenantNamespace()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var global = Definition("conf-ns", 1, WorkflowDefinitionStatus.Published);
+        var t1First = Definition("conf-ns", 1, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
+        var t1Second = Definition("conf-ns", 2, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
+        var t1Draft = Definition("conf-ns", 3, WorkflowDefinitionStatus.Draft) with { TenantId = "t1" };
+        Assert.True((await host.Definitions.SaveAsync([global, t1First, t1Second, t1Draft], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        var name = new WorkflowName("conf-ns");
+
+        Assert.Equal((1, 3, 0), ((await host.Definitions.MaxVersionAsync(name, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), (await host.Definitions.MaxVersionAsync(name, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), (await host.Definitions.MaxVersionAsync(name, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
+        Assert.Equal(global.Id, (await host.Definitions.FindAsync(name, 1, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        Assert.Equal(t1First.Id, (await host.Definitions.FindAsync(name, 1, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        Assert.False((await host.Definitions.FindAsync(name, 2, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        Assert.False((await host.Definitions.FindAsync(name, 1, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        Assert.Equal(global.Id, (await host.Definitions.FindLatestPublishedAsync(name, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        Assert.Equal(t1Second.Id, (await host.Definitions.FindLatestPublishedAsync(name, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        Assert.False((await host.Definitions.FindLatestPublishedAsync(name, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
     }
 
     /// <summary>

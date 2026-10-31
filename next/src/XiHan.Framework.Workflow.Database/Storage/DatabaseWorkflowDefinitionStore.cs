@@ -58,32 +58,33 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken)
     {
         var value = name.Value;
-        return FirstAsync(EntityQuery.All<WorkflowDefinitionRecord>().Where(new Specification<WorkflowDefinitionRecord>(record => record.Name == value && record.Version == version)), cancellationToken);
+        return FirstAsync(EntityQuery.All<WorkflowDefinitionRecord>().Where(InNamespace(value, tenantId)).Where(new Specification<WorkflowDefinitionRecord>(record => record.Version == version)), cancellationToken);
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
     {
         var value = name.Value;
         var published = nameof(WorkflowDefinitionStatus.Published);
         return FirstAsync(
             EntityQuery.All<WorkflowDefinitionRecord>()
-                .Where(new Specification<WorkflowDefinitionRecord>(record => record.Name == value && record.Status == published))
+                .Where(InNamespace(value, tenantId))
+                .Where(new Specification<WorkflowDefinitionRecord>(record => record.Status == published))
                 .OrderBy(static record => record.Version, descending: true),
             cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, CancellationToken cancellationToken)
+    public async ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
     {
         var value = name.Value;
         return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
         {
             var query = EntityQuery.All<WorkflowDefinitionRecord>()
-                .Where(new Specification<WorkflowDefinitionRecord>(record => record.Name == value))
+                .Where(InNamespace(value, tenantId))
                 .OrderBy(static record => record.Version, descending: true)
                 .Page(0, 1);
             var top = await StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx).ListAsync(query, ctx.CancellationToken).ConfigureAwait(false);
@@ -137,6 +138,17 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
             return await RecordQueries.RemoveManyAsync(repository, rows, ctx.CancellationToken).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false));
     }
+
+    /// <summary>
+    /// 一个名字空间里的该名字：租户按相等比较。
+    /// </summary>
+    /// <remarks>
+    /// 无租户写成字面量 null：与值为 null 的变量比较会被翻译成 <c>= @参数(NULL)</c>，永远不匹配。
+    /// </remarks>
+    private static Specification<WorkflowDefinitionRecord> InNamespace(string name, string? tenantId)
+        => tenantId is null
+            ? new Specification<WorkflowDefinitionRecord>(record => record.Name == name && record.TenantId == null)
+            : new Specification<WorkflowDefinitionRecord>(record => record.Name == name && record.TenantId == tenantId);
 
     /// <summary>
     /// 取查询的第一条。

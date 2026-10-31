@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Storage;
 /// 定义存储。
 /// </summary>
 /// <remarks>
-/// 不按租户过滤，写入按批量。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// 不按租户过滤，写入按批量。按名字的查询以租户为名字空间：<c>tenantId</c> 按相等比较，<see langword="null"/> 只匹配全局定义（无租户）。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionStore
@@ -29,22 +29,28 @@ public interface IWorkflowDefinitionStore
     ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按名字与版本找。
-    /// </summary>
-    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// 该名字下版本号最大的已发布定义。
-    /// </summary>
-    ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// 该名字下的最大版本号。
+    /// 在一个名字空间里按名字与版本找。
     /// </summary>
     /// <remarks>
-    /// 没有为 0。
+    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）。
     /// </remarks>
-    ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一个名字空间里该名字下版本号最大的已发布定义。
+    /// </summary>
+    /// <remarks>
+    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）。
+    /// </remarks>
+    ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一个名字空间里该名字下的最大版本号。
+    /// </summary>
+    /// <remarks>
+    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）；没有为 0。
+    /// </remarks>
+    ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 列表：名字升序、版本降序。

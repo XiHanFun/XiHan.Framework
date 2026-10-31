@@ -176,17 +176,28 @@ var definition = parsed.ValueOrThrow();
 
 | 方法 | 允许的状态 | 作用 |
 | --- | --- | --- |
-| `CreateAsync(definition)` | — | 新建草稿：新 ID，版本号 = 同名最大版本 + 1，租户缺省取当前调用的租户 |
+| `CreateAsync(definition)` | — | 新建草稿：新 ID，租户缺省取当前调用的租户，版本号 = 该租户名字空间里同名最大版本 + 1 |
 | `UpdateAsync(definition)` | `Draft` | 整体替换草稿，名字、版本、租户不变 |
 | `PublishAsync(ids)` | `Draft` | 先校验再发布；带 `Start.Cron` 的定义同时排一个定时启动书签 |
-| `NewVersionAsync(name)` | — | 以最新版本为底复制出一个草稿 |
+| `NewVersionAsync(name)` | — | 以当前租户名字空间里的最新版本为底复制出一个草稿 |
 | `DisableAsync(ids)` | `Published` | 停用，删除定时启动书签 |
 | `ArchiveAsync(ids)` | 任意 | 归档，删除定时启动书签 |
 | `DeleteAsync(ids)` | `Draft` | 删除草稿 |
-| `FindAsync(id)` / `FindPublishedAsync(name, version)` / `ListAsync(name, status)` | — | 查询；`version` 为空取最新已发布版本 |
+| `FindAsync(id)` / `FindPublishedAsync(name, version)` / `ListAsync(name, status)` | — | 查询；`version` 为空取最新已发布版本，按名字先找本租户再找全局定义 |
 | `ActivityTypes()` | — | 已登记活动的描述符（类型、显示名、分类、输入属性），供设计器列出可用节点 |
 
 状态不允许时返回 `WORKFLOW_CONFLICT_002`。按标识的操作都是批量、逐项结果，单条写法是 `WorkflowDefinitionCatalogExtensions` 里的扩展方法。
+
+### 定义的租户
+
+定义属于一个租户（`TenantId`），或是全局定义（`TenantId` 为空）。每个租户和全局各是一个名字空间：同名定义在不同名字空间里各自从版本 1 编号，互不占号。调用方的租户取当前调用的租户，没有租户的调用（平台）落在全局名字空间。
+
+| 调用方 | 看得到（查找、列表、启动） | 改得动（更新、发布、停用、归档、删除） |
+| --- | --- | --- |
+| 有租户 | 本租户与全局定义 | 只有本租户的定义 |
+| 无租户 | 全部 | 全部 |
+
+看不到、改不动的定义一律按不存在处理，返回 `WORKFLOW_NOTFOUND_001`，不暴露别的租户有没有这个定义。按名字解析（启动、`FindPublishedAsync`、子流程与 `ForEach`）先在调用方租户的名字空间里找，没有已发布的匹配版本再找全局定义；租户发布了同名定义后就用它自己的。全局定义适合做各租户共用的流程模板。
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -241,13 +252,13 @@ public sealed class LeaveApplications(IWorkflowEngine engine)
 
 | 字段 | 说明 |
 | --- | --- |
-| `Name` + `Version` / `DefinitionId` | 找定义；`Version` 为空取最新已发布版本。定义不存在或不是 `Published` → `WORKFLOW_NOTFOUND_001` |
+| `Name` + `Version` / `DefinitionId` | 找定义；`Version` 为空取最新已发布版本，按名字先找实例租户的名字空间再找全局定义。定义不存在、不是 `Published` 或属于别的租户 → `WORKFLOW_NOTFOUND_001` |
 | `Variables` | 初始变量；声明了的变量缺省时补默认值，缺必填 → `WORKFLOW_VALIDATION_002` |
 | `StarterId` | 发起人，`Starter` 指派规则与 `ExcludeStarter` 用它 |
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重 |
-| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
+| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重只看同一租户的实例；查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
 | `StartAt` | 延迟启动：开始节点以定时书签挂起到该时刻 |
-| `TenantId` | 实例租户，缺省取当前调用的租户 |
+| `TenantId` | 实例租户，缺省取当前调用的租户；都没有时取定义的租户 |
 | `DisplayName`、`InstanceId` | 实例显示名与指定的实例 ID |
 
 返回的是第一个波次结束后的实例：流程一路走到 `End` 时状态已是 `Completed`，停在用户任务上时是 `Running`。定义有实例级超时时，启动时就排好 `InstanceTimeout` 书签，到期按 `TimeoutAction` 让实例故障或终止。
@@ -623,7 +634,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 
 ## 存储与实例锁
 
-Provider 实现四个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock`。三个存储都按批量写入、不按租户过滤、不做乐观并发：写入由实例锁串行化。`IWorkflowInstanceLock.AcquireAsync(instanceId)` 等待超过 `LockTimeout`（缺省 10 秒）返回 `WORKFLOW_TIMEOUT_001`，锁不可重入。存储不可达 → `WORKFLOW_UNAVAILABLE_001`，内存实现容量已满 → `WORKFLOW_UNAVAILABLE_002`。
+Provider 实现四个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock`。三个存储都按批量写入、不按租户过滤、不做乐观并发：写入由实例锁串行化。定义存储按名字的三个查询（`FindAsync(name, version, tenantId)`、`FindLatestPublishedAsync`、`MaxVersionAsync`）以租户为名字空间，租户按相等比较，空只匹配全局定义。`IWorkflowInstanceLock.AcquireAsync(instanceId)` 等待超过 `LockTimeout`（缺省 10 秒）返回 `WORKFLOW_TIMEOUT_001`，锁不可重入。存储不可达 → `WORKFLOW_UNAVAILABLE_001`，内存实现容量已满 → `WORKFLOW_UNAVAILABLE_002`。
 
 | 方面 | Workflow.InMemory | Workflow.Database |
 | --- | --- | --- |

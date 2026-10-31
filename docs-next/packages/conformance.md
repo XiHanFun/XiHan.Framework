@@ -39,7 +39,7 @@
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 7 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 15 + 5 + 2 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 4 |
-| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 6 + 24 + 8 |
+| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 7 + 25 + 8 |
 
 ## AI
 
@@ -224,8 +224,8 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `WorkflowStoreConformance` | `StartAsync()` 返回 `WorkflowStoreHost(definitions, instances, bookmarks, instanceLock, host)` | 定义按 ID / 名字 / 版本 / 最新已发布查找、列表排序与过滤、批量写与删、级联、快照语义、书签按到期 / 种类与键 / 信号查询、可领取书签按租户与到期时刻限量查询、实例锁的互斥与超时（锁等待上限配置在 1 秒以内） |
-| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、租户隔离、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型） |
+| `WorkflowStoreConformance` | `StartAsync()` 返回 `WorkflowStoreHost(definitions, instances, bookmarks, instanceLock, host)` | 定义按 ID / 名字 / 版本 / 最新已发布查找、列表排序与过滤、批量写与删、级联、快照语义、书签按到期 / 种类与键 / 信号查询、可领取书签按租户与到期时刻限量查询、定义按名字的查询以租户为名字空间、实例锁的互斥与超时（锁等待上限配置在 1 秒以内） |
+| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、租户隔离（任务、信号与定义的名字空间）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型） |
 | `WorkflowTaskConformance` | 同 `WorkflowEngineConformance` 的 `StartAsync` | 会签阈值（按人数或百分比）、认领与释放、退回与历史、催办事件、条件查询与分页、任务元数据（优先级、到期、表单键）与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、按创建先后限量领取与条数上限 |
 
 `ConformanceLog`（兼消息发布者）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例。

@@ -78,31 +78,31 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var definition = _definitions.Values.FirstOrDefault(candidate => candidate.Name == name && candidate.Version == version);
+            var definition = _definitions.Values.FirstOrDefault(candidate => candidate.Name == name && candidate.Version == version && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal));
             return ValueTask.FromResult(Result.Success(definition is null ? Maybe.None<WorkflowDefinition>() : Maybe.Some(WorkflowJson.Clone(definition))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var definition = _definitions.Values.Where(candidate => candidate.Name == name && candidate.Status == WorkflowDefinitionStatus.Published).OrderByDescending(static candidate => candidate.Version).FirstOrDefault();
+            var definition = _definitions.Values.Where(candidate => candidate.Name == name && candidate.Status == WorkflowDefinitionStatus.Published && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal)).OrderByDescending(static candidate => candidate.Version).FirstOrDefault();
             return ValueTask.FromResult(Result.Success(definition is null ? Maybe.None<WorkflowDefinition>() : Maybe.Some(WorkflowJson.Clone(definition))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, CancellationToken cancellationToken)
+    public ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var max = _definitions.Values.Where(candidate => candidate.Name == name).Select(static candidate => candidate.Version).DefaultIfEmpty(0).Max();
+            var max = _definitions.Values.Where(candidate => candidate.Name == name && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal)).Select(static candidate => candidate.Version).DefaultIfEmpty(0).Max();
             return ValueTask.FromResult(Result.Success(max));
         }
     }
