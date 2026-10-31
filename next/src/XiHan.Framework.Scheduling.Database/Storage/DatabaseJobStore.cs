@@ -282,6 +282,27 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
+    public async ValueTask<Result<bool>> BlockTriggerAsync(TriggerRecord trigger, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(trigger);
+        var row = RecordMapping.ToEntity(trigger);
+        row.AcquiredBy = null;
+        row.AcquiredAt = null;
+        return StoreInvocation.OrUnavailable(await _invocation.RunAsync<bool>(async ctx =>
+        {
+            var held = await HoldIfOccupiedAsync(StoreInvocation.Repository<JobEntity>(ctx), StoreInvocation.Repository<JobRunEntity>(ctx), trigger.Job, ctx.CancellationToken).ConfigureAwait(false);
+            if (!held.TryGetValue(out var blocked))
+            {
+                return held;
+            }
+
+            row.State = blocked ? BlockedTrigger : WaitingTrigger;
+            var written = await RecordQueries.UpsertAsync(StoreInvocation.Repository<TriggerEntity>(ctx), [row], RecordMapping.Copy, ctx.CancellationToken).ConfigureAwait(false);
+            return written.IsSuccess ? Result.Success(blocked) : written.Error!;
+        }, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
     public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -564,6 +585,47 @@ public sealed class DatabaseJobStore : IJobStore
     {
         var found = await runs.FindAsync(runId, cancellationToken).ConfigureAwait(false);
         return found.TryGetValue(out var row) && row.State == RunningRun;
+    }
+
+    /// <summary>
+    /// 作业仍被占用时带并发戳改写一次作业行。
+    /// </summary>
+    /// <remarks>
+    /// 运行结束（<see cref="CompleteRunAsync"/>）同样带并发戳改写这一行之后才解除阻塞：两边谁后提交谁看到对方，阻塞不会写在解除之后。撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。作业不存在 → 作业未登记。
+    /// </remarks>
+    private static async ValueTask<Result<bool>> HoldIfOccupiedAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobName job, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var outcome = await TryHoldOnceAsync(jobs, runs, job, cancellationToken).ConfigureAwait(false);
+            if (outcome.IsSuccess || !RecordQueries.IsRace(outcome.Error!) || attempt + 1 >= MaxAttempts)
+            {
+                return outcome;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 一次确认占用的尝试。
+    /// </summary>
+    /// <remarks>
+    /// 占用指向的运行还在进行才算被占（与独占开始同一判定），被占时原样写回作业行换一个并发戳。
+    /// </remarks>
+    private static async ValueTask<Result<bool>> TryHoldOnceAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobName job, CancellationToken cancellationToken)
+    {
+        var found = await jobs.FindAsync(job.Value, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var row))
+        {
+            return JobNotFound(job);
+        }
+
+        if (row.ActiveRunId is not { } active || !await IsRunningAsync(runs, active, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        var touched = await jobs.UpdateAsync(row, cancellationToken).ConfigureAwait(false);
+        return touched.IsSuccess ? Result.Success(true) : touched.Error!;
     }
 
     /// <summary>

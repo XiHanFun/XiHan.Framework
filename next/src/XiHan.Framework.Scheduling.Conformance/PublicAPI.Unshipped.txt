@@ -23,6 +23,7 @@ XiHan.Framework.Scheduling.Conformance.JobSchedulerHost.JobSchedulerHost(XiHan.F
 XiHan.Framework.Scheduling.Conformance.JobSchedulerHost.Scheduler.get -> XiHan.Framework.Scheduling.Abstractions.Schedulers.IJobScheduler!
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance.AcquireDue_IsAtomicAcrossNodes_OrderedByDueThenPriority_AndSkipsOthers() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobStoreConformance.BlockTrigger_HoldsOnlyWhileOccupied_AndWaitsOnceReleased() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance.JobStoreConformance() -> void
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Jobs_SaveFindListDelete_CascadeTriggers_AndSnapshot() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Nodes_HeartbeatList_AndRecoverLostNodes() -> System.Threading.Tasks.Task!

@@ -143,14 +143,15 @@ public sealed class DatabaseSchedulingTests
         var store = host.Services.GetRequiredService<IJobStore>();
         await WaitUntilAsync(async () => (await store.FindJobAsync(job, CancellationToken.None)).ValueOrThrow().HasValue);
 
-        // 伪造一个很久没心跳的节点：它抢占了一条触发器、独占运行着一次运行
+        // 伪造一个很久没心跳的节点：它抢占了一条触发器、独占运行着一次运行。
+        // 心跳最后写：节点记录一出现就可能被领导者判为失联、恢复并删除，那之后才写进去的运行再也没有节点认领
         var now = DateTimeOffset.UtcNow;
-        Assert.True((await store.HeartbeatAsync(new SchedulerNodeRecord { Id = "node-ghost", StartedAt = now.AddHours(-1), LastHeartbeatAt = now.AddHours(-1) }, CancellationToken.None)).IsSuccess);
         var trigger = new TriggerRecord { Job = job, Name = "ghost", Schedule = JobSchedule.Every(TimeSpan.FromHours(1)), State = TriggerState.Acquired, AcquiredBy = "node-ghost", AcquiredAt = now, NextFireAt = now.AddHours(1) };
         Assert.True((await store.SaveTriggersAsync([trigger], CancellationToken.None)).IsSuccess);
         var ghostRun = new JobRunRecord { Id = JobRun.NewId(), Job = job, NodeId = "node-ghost", TriggerName = "ghost", ScheduledAt = now, StartedAt = now, State = JobRunState.Running, Data = new JsonObject { ["who"] = "ghost" } };
         Assert.True((await store.TryBeginRunAsync(ghostRun, true, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(ghostRun.Id, (await store.FindJobAsync(job, CancellationToken.None)).ValueOrThrow().ValueOrThrow().ActiveRunId);
+        Assert.True((await store.HeartbeatAsync(new SchedulerNodeRecord { Id = "node-ghost", StartedAt = now.AddHours(-1), LastHeartbeatAt = now.AddHours(-1) }, CancellationToken.None)).IsSuccess);
 
         // 领导者在下个维护周期发现失联：运行记为 Lost、占用释放、触发器回到等待、节点删除；要求恢复的作业以恢复触发器重新运行一次
         await log.WaitAsync(job, 1, TimeSpan.FromSeconds(10));

@@ -259,6 +259,28 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<bool>> BlockTriggerAsync(TriggerRecord trigger, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(trigger);
+        lock (_lock)
+        {
+            if (!_jobs.TryGetValue(trigger.Job.Value, out var job))
+            {
+                return ValueTask.FromResult<Result<bool>>(Error.NotFound(SchedulingErrors.JobNotFound, SchedulingMessages.JobNotFound, MessageArguments.Of(("name", trigger.Job.Value))));
+            }
+
+            // 与运行结束同一把锁：占用仍在才阻塞，已释放就直接回到等待
+            var occupied = job.ActiveRunId is { } active && _runs.TryGetValue(active, out var current) && current.State == JobRunState.Running;
+            var stored = trigger.Clone();
+            stored.State = occupied ? TriggerState.Blocked : TriggerState.Waiting;
+            stored.AcquiredBy = null;
+            stored.AcquiredAt = null;
+            _triggers[stored.Key.ToString()] = stored;
+            return ValueTask.FromResult(Result.Success(occupied));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
