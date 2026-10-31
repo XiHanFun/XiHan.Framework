@@ -54,7 +54,16 @@ internal sealed class WatPlugin : IDisposable
     /// <paramref name="operation"/> 是宿主操作 ID；请求不带元数据，即插件自己不给截止时间。
     /// </remarks>
     public static WatPlugin Invoking(string operation, IReadOnlyList<string> permissions)
-        => Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8) }, permissions);
+        => Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8) }, permissions, null);
+
+    /// <summary>
+    /// 生成一个贡献中间件的插件。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="pipeline"/> 是清单的 <c>contributes.pipeline</c>；<c>xihan_middleware</c> 总是回 <c>CONTINUE</c>。
+    /// </remarks>
+    public static WatPlugin WithMiddleware(JsonArray pipeline)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline);
 
     /// <summary>
     /// 生成一个经 <c>xihan.publish</c> 发布一条消息的插件。
@@ -70,7 +79,7 @@ internal sealed class WatPlugin : IDisposable
                 ["type"] = "wat.created",
                 ["data"] = Convert.ToBase64String("{}"u8),
             }),
-        }, permissions);
+        }, permissions, null);
 
     /// <inheritdoc />
     public void Dispose()
@@ -88,8 +97,14 @@ internal sealed class WatPlugin : IDisposable
     /// <summary>
     /// 写清单与模块文本。
     /// </summary>
-    private static WatPlugin Create(string import, JsonObject request, IReadOnlyList<string> permissions)
+    private static WatPlugin Create(string import, JsonObject request, IReadOnlyList<string> permissions, JsonArray? pipeline)
     {
+        var contributes = new JsonObject { ["operations"] = new JsonArray(Operation) };
+        if (pipeline is not null)
+        {
+            contributes["pipeline"] = pipeline;
+        }
+
         var manifest = new JsonObject
         {
             ["id"] = PluginId,
@@ -99,7 +114,7 @@ internal sealed class WatPlugin : IDisposable
             ["stability"] = "experimental",
             ["kind"] = "plugin",
             ["isolation"] = "wasm",
-            ["contributes"] = new JsonObject { ["operations"] = new JsonArray(Operation) },
+            ["contributes"] = contributes,
             ["permissions"] = new JsonArray(permissions.Select(static p => (JsonNode)p).ToArray()),
             ["activation"] = new JsonArray("onStartup"),
             ["entry"] = "plugin.wat",
@@ -127,6 +142,7 @@ internal sealed class WatPlugin : IDisposable
         var okData = Place("""{"status":{"ok":true}}""");
         var healthData = Place("""{"state":"LIFECYCLE_STATE_READY"}""");
         var requestData = Place(request.ToJsonString());
+        var continueData = Place("""{"action":"MIDDLEWARE_ACTION_CONTINUE"}""");
         if (offset >= HeapStart)
         {
             throw new InvalidOperationException("The data segments overflow into the heap.");
@@ -136,6 +152,10 @@ internal sealed class WatPlugin : IDisposable
         var call = import == "invoke"
             ? $"(call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))"
             : $"(drop (call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))) (call $pack (i32.const {okData.Offset}) (i32.const {okData.Length}))";
+        // 贡献了中间件才导出 xihan_middleware：总是回 CONTINUE
+        var middleware = pipeline is null
+            ? string.Empty
+            : $"(func (export \"xihan_middleware\") (param i32 i32) (result i64) (call $pack (i32.const {continueData.Offset}) (i32.const {continueData.Length})))";
         var module = $$"""
             (module
               (import "xihan" "{{import}}" (func $callback (param i32 i32) (result i64)))
@@ -158,6 +178,7 @@ internal sealed class WatPlugin : IDisposable
               (func (export "xihan_stop") (param i32 i32) (result i64) (call $pack (i32.const {{okData.Offset}}) (i32.const {{okData.Length}})))
               (func (export "xihan_health") (param i32 i32) (result i64) (call $pack (i32.const {{healthData.Offset}}) (i32.const {{healthData.Length}})))
               (func (export "xihan_invoke") (param i32 i32) (result i64) {{call}})
+              {{middleware}}
             )
             """;
 

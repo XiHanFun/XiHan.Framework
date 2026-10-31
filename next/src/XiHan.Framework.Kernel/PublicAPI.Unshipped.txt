@@ -341,7 +341,9 @@ XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Placement.init -> void
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Stage.get -> XiHan.Framework.Primitives.PipelineStage
 XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor.Stage.init -> void
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder
+XiHan.Framework.Kernel.Pipeline.PipelineBuilder.After(string! middleware, string! other) -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.After<TMiddleware, TOther>() -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
+XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Before(string! middleware, string! other) -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Before<TMiddleware, TOther>() -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Build(XiHan.Framework.Kernel.Pipeline.PipelineStep! terminal) -> XiHan.Framework.Kernel.Pipeline.PipelineStep!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Describe() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor!>!

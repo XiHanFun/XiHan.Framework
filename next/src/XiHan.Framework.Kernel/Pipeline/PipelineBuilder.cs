@@ -70,7 +70,7 @@ public sealed class PipelineBuilder
     /// 在指定阶段添加一个带名字的中间件实例。
     /// </summary>
     /// <remarks>
-    /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用。
+    /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用，改用按名字的 <see cref="Before(string, string)"/> / <see cref="After(string, string)"/>。
     /// </remarks>
     public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
     {
@@ -106,6 +106,36 @@ public sealed class PipelineBuilder
     {
         var registration = Require(typeof(TMiddleware));
         registration.After.Add(typeof(TOther));
+        return this;
+    }
+
+    /// <summary>
+    /// 按名字约束一个中间件位于另一个之前。
+    /// </summary>
+    /// <remarks>
+    /// 名字是按名字登记的实例名，或只登记一次、没有名字的中间件的类型全名（RFC-0004 第 7 条）；同类型有多个命名实例时用它代替 <see cref="Before{TMiddleware, TOther}"/>。<paramref name="middleware"/> 必须已登记；<paramref name="other"/> 在排序时解析，未登记、有歧义或不在同一阶段抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// </remarks>
+    /// <param name="middleware">要排在前面的中间件名。</param>
+    /// <param name="other">要排在后面的中间件名。</param>
+    public PipelineBuilder Before(string middleware, string other)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(other);
+        RequireByName(middleware).BeforeNames.Add(other);
+        return this;
+    }
+
+    /// <summary>
+    /// 按名字约束一个中间件位于另一个之后。
+    /// </summary>
+    /// <remarks>
+    /// 名字的含义与解析同 <see cref="Before(string, string)"/>。
+    /// </remarks>
+    /// <param name="middleware">要排在后面的中间件名。</param>
+    /// <param name="other">要排在前面的中间件名。</param>
+    public PipelineBuilder After(string middleware, string other)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(other);
+        RequireByName(middleware).AfterNames.Add(other);
         return this;
     }
 
@@ -249,6 +279,48 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
+    /// 取按名字唯一确定的注册。
+    /// </summary>
+    /// <remarks>
+    /// 未注册或有歧义时抛出 <see cref="KernelErrors.PipelineRegistration"/>。约束必须在注册之后声明。
+    /// </remarks>
+    private Registration RequireByName(string middleware)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(middleware);
+        return FindByName(middleware) ?? throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{middleware}' is not registered, so no ordering constraint can be declared for it.");
+    }
+
+    /// <summary>
+    /// 按名字找注册。
+    /// </summary>
+    /// <remarks>
+    /// 名字匹配按名字登记的实例名，或没有名字的注册的类型全名。恰好一个返回它，没有返回空，多个（不同类型的实例同名，或实例名与某个类型全名相同）抛出。
+    /// </remarks>
+    private Registration? FindByName(string middleware)
+    {
+        Registration? found = null;
+        foreach (var registration in _registrations)
+        {
+            var matches = registration.Name is { } name
+                ? string.Equals(name, middleware, StringComparison.Ordinal)
+                : string.Equals(registration.Middleware.FullName, middleware, StringComparison.Ordinal);
+            if (!matches)
+            {
+                continue;
+            }
+
+            if (found is not null)
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, $"The middleware name '{middleware}' matches several registrations, so ordering constraints by name are ambiguous for it.");
+            }
+
+            found = registration;
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// 计算全部中间件的最终顺序。
     /// </summary>
     /// <remarks>
@@ -302,6 +374,20 @@ public sealed class PipelineBuilder
                 successors[other].Add(registration);
                 indegree[registration]++;
             }
+
+            foreach (var later in registration.BeforeNames)
+            {
+                var other = ResolveNamedTarget(registration, later, stage);
+                successors[registration].Add(other);
+                indegree[other]++;
+            }
+
+            foreach (var earlier in registration.AfterNames)
+            {
+                var other = ResolveNamedTarget(registration, earlier, stage);
+                successors[other].Add(registration);
+                indegree[registration]++;
+            }
         }
 
         var ordered = new List<Registration>(candidates.Count);
@@ -349,6 +435,26 @@ public sealed class PipelineBuilder
         if (other.Stage != stage)
         {
             throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{source.Middleware.FullName}' (stage '{stage.ToManifestName()}') and '{target.FullName}' (stage '{other.Stage.ToManifestName()}') are not in the same stage, so no relative order can be declared between them.");
+        }
+
+        return other;
+    }
+
+    /// <summary>
+    /// 解析按名字的约束指向的中间件。
+    /// </summary>
+    /// <remarks>
+    /// 必须已注册、名字唯一且与 <paramref name="source"/> 在同一阶段，否则抛出 <see cref="KernelErrors.PipelineRegistration"/>。
+    /// </remarks>
+    /// <param name="source">声明约束的中间件。</param>
+    /// <param name="target">约束指向的中间件名。</param>
+    /// <param name="stage">当前阶段。</param>
+    private Registration ResolveNamedTarget(Registration source, string target, PipelineStage stage)
+    {
+        var other = FindByName(target) ?? throw new FrameworkException(KernelErrors.PipelineRegistration, $"The ordering constraint of middleware '{source.Label}' references unregistered middleware '{target}'.");
+        if (other.Stage != stage)
+        {
+            throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{source.Label}' (stage '{stage.ToManifestName()}') and '{target}' (stage '{other.Stage.ToManifestName()}') are not in the same stage, so no relative order can be declared between them.");
         }
 
         return other;
@@ -429,6 +535,21 @@ public sealed class PipelineBuilder
         /// 必须位于这些中间件之后。
         /// </summary>
         public List<Type> After { get; } = [];
+
+        /// <summary>
+        /// 必须位于这些名字的中间件之前。
+        /// </summary>
+        public List<string> BeforeNames { get; } = [];
+
+        /// <summary>
+        /// 必须位于这些名字的中间件之后。
+        /// </summary>
+        public List<string> AfterNames { get; } = [];
+
+        /// <summary>
+        /// 错误信息里的称呼：类型全名，带名字时附 <c>[名字]</c>。
+        /// </summary>
+        public string Label => Name is null ? Middleware.FullName ?? Middleware.Name : $"{Middleware.FullName}[{Name}]";
 
         /// <summary>
         /// 对外公开的描述。

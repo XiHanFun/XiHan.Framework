@@ -53,6 +53,51 @@ public sealed class PipelineBuilderTests
     }
 
     [Fact]
+    public void NamedConstraints_OrderNamedInstancesAmongThemselvesAndAgainstTypes()
+    {
+        var log = new List<string>();
+        // 基准次序：B（归属 xihan.a）、first、second（归属 xihan.plugins.p，按登记顺序）
+        var builder = new PipelineBuilder()
+            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.p")
+            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.p")
+            .UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a")
+            .After("p:first", "p:second")
+            .Before("p:second", typeof(MiddlewareB).FullName!);
+
+        var order = builder.Describe().Select(static d => d.Name ?? d.Middleware.Name).ToList();
+
+        // second 先于 B 与 first，B 与 first 之间保持基准次序
+        Assert.Equal(["p:second", "MiddlewareB", "p:first"], order);
+    }
+
+    [Fact]
+    public void NamedConstraints_RejectUnknownAmbiguousAndCrossStageNames_AndDetectCycles()
+    {
+        var log = new List<string>();
+        var builder = new PipelineBuilder()
+            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe)
+            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe)
+            .UseAt<MiddlewareC>(PipelineStage.Handle);
+
+        // 主体在声明时就要已登记
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.Before("p:missing", "p:first")).Code);
+
+        // 目标在排序时解析：未登记、跨阶段都是登记错误
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => new PipelineBuilder().UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe).After("p:first", "p:missing").Describe()).Code);
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => new PipelineBuilder().UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe).UseAt<MiddlewareC>(PipelineStage.Handle).Before("p:first", typeof(MiddlewareC).FullName!).Describe()).Code);
+
+        // 不同类型的实例同名：按名字有歧义
+        var ambiguous = new PipelineBuilder()
+            .UseNamedInstance("shared", new MiddlewareA(log), PipelineStage.Observe)
+            .UseNamedInstance("shared", new MiddlewareB(log), PipelineStage.Observe);
+        Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => ambiguous.Before("shared", "shared")).Code);
+
+        // 按名字的约束同样参与成环检测
+        builder.Before("p:first", "p:second").Before("p:second", "p:first");
+        Assert.Equal(KernelErrors.PipelineCycle, Assert.Throws<FrameworkException>(() => builder.Describe()).Code);
+    }
+
+    [Fact]
     public void Describe_OrdersByStageThenPlacementThenOwnerThenRegistration()
     {
         var builder = new PipelineBuilder()

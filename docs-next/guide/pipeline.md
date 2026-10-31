@@ -124,6 +124,7 @@ builder.AddXiHan(xihan => xihan
 | `UseInstance<T>(instance, stage, placement, owner)` | 登记一个已创建的实例，不进容器 |
 | `UseNamedInstance(name, instance, stage, placement, owner)` | 同一类型登记多个实例，按名字区分，打印为 `类型名[名字]` |
 | `Before<T, TOther>()` / `After<T, TOther>()` | 同阶段内的次序约束 |
+| `Before(名字, 目标)` / `After(名字, 目标)` | 按名字的次序约束：名字是 `UseNamedInstance` 的实例名，或只登记一次的中间件类型全名 |
 
 清单里的 `Contributes.Pipeline` 用 `PipelineContribution` 声明中间件归属的阶段，供 `graph` 命令与插件宿主读取；真正生效的仍是 `Configure` 里的登记，两者应保持一致。
 
@@ -140,7 +141,7 @@ builder.AddXiHan(xihan => xihan
 归属字典序只保证结果可复现，不表达依赖：`xihan.basicapp.identity` 会排在 `xihan.security.jwt` 之前。一个中间件要用到另一个包中间件的产出（认证后的主体、解析后的租户、开启的工作单元）时，必须用 `After` / `Before` 声明，例如 `pipeline.After<SessionGateMiddleware, AuthenticationMiddleware>()`。内核不按清单的 `Requires` 推导中间件次序。
 :::
 
-同一类型默认只能登记一次，重复登记报 `KERNEL_PIPELINE_003`；需要多个实例时用 `UseNamedInstance`，此时不能再用按类型的 `Before` / `After` 约束它。
+同一类型默认只能登记一次，重复登记报 `KERNEL_PIPELINE_003`；需要多个实例时用 `UseNamedInstance`，此时不能再用按类型的 `Before` / `After` 约束它，改用按名字的 `Before(名字, 目标)` / `After(名字, 目标)`：约束主体在声明时须已登记，目标在排序时解析，未登记、同一个名字对应多个中间件或跨阶段同样报 `KERNEL_PIPELINE_003`。Wasm 插件清单里的 `before` / `after` 就是这样落到管道上的（[插件](./plugins)）。
 
 ## 打印与检查
 

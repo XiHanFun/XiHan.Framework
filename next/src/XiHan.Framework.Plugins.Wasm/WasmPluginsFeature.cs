@@ -91,16 +91,45 @@ public sealed class WasmPluginsFeature : IHostedFeature
                 }
             }
 
-            foreach (var contribution in runtime.Manifest.Contributes.Pipeline)
-            {
-                // 每个贡献项一个实例，按"清单 ID:中间件名"登记，归属为清单 ID；相对约束按类型声明，Wasm 中间件不使用
-                context.Pipeline.UseNamedInstance($"{runtime.Manifest.Id}:{contribution.Middleware}", new WasmMiddleware(runtime, contribution.Middleware, contribution.Stage), contribution.Stage, Placement.End, runtime.Manifest.Id);
-            }
+            UseMiddleware(context.Pipeline, runtime);
         }
 
         context.Services.AddSingleton(host);
         context.Services.AddSingleton<IPluginHost>(host);
         context.Services.AddSingleton<IHealthContributor>(host);
+    }
+
+    /// <summary>
+    /// 把清单贡献的中间件插进对应阶段并声明相对次序。
+    /// </summary>
+    /// <remarks>
+    /// 每个贡献项一个实例，以 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c> 为名登记，归属为清单 ID（<c>spec/plugin/wasm.md</c> §6）。<c>before</c> / <c>after</c> 的每一项先按本插件的中间件名解析，否则原样作为管道里的中间件名（另一个插件的 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c>，或只登记一次的宿主中间件类型全名）；目标在构建管道时解析，未登记、有歧义或跨阶段由内核报错。
+    /// </remarks>
+    private static void UseMiddleware(PipelineBuilder pipeline, WasmPluginRuntime runtime)
+    {
+        var contributions = runtime.Manifest.Contributes.Pipeline;
+        var own = contributions.Select(static c => c.Middleware).ToHashSet(StringComparer.Ordinal);
+        string Name(string middleware) => $"{runtime.Manifest.Id}:{middleware}";
+        string Target(string reference) => own.Contains(reference) ? Name(reference) : reference;
+
+        foreach (var contribution in contributions)
+        {
+            pipeline.UseNamedInstance(Name(contribution.Middleware), new WasmMiddleware(runtime, contribution.Middleware, contribution.Stage), contribution.Stage, Placement.End, runtime.Manifest.Id);
+        }
+
+        // 约束在本插件的中间件都登记之后声明：互相引用的两项不论清单里谁先谁后都能找到对方
+        foreach (var contribution in contributions)
+        {
+            foreach (var later in contribution.Before)
+            {
+                pipeline.Before(Name(contribution.Middleware), Target(later));
+            }
+
+            foreach (var earlier in contribution.After)
+            {
+                pipeline.After(Name(contribution.Middleware), Target(earlier));
+            }
+        }
     }
 
     /// <inheritdoc />

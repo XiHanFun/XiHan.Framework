@@ -274,7 +274,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | before | `SHORT_CIRCUIT` | 把应答里的失败结果写为调用结果，不进入下游；结果缺失或不是失败按 `KERNEL_VALIDATION_001` 处理 |
 | after | 任意 | 只观察下游结果，动作与 Baggage 忽略 |
 
-中间件只看得到元数据、操作 ID 与结果，看不到也改不了载荷，需要载荷的逻辑写成操作。每次钩子调用的时限是 `MiddlewareTimeoutMilliseconds`（缺省 100 毫秒）。中间件陷阱、超时或无响应时调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃处理并重建：安全相关的阶段不能失败即放行。参考实现把每个中间件放在所在阶段的末尾，清单里的 `before` / `after` 目前不参与排序。示例 `samples/EchoWasmPlugin` 的 `echo-guard` 在 `observe` 阶段把租户 `blocked` 短路为 `ECHOWASM_DENIED_001`。
+中间件只看得到元数据、操作 ID 与结果，看不到也改不了载荷，需要载荷的逻辑写成操作。每次钩子调用的时限是 `MiddlewareTimeoutMilliseconds`（缺省 100 毫秒）。中间件陷阱、超时或无响应时调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃处理并重建：安全相关的阶段不能失败即放行。每个中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段（基准位置是阶段末尾），清单的 `before` / `after` 按 RFC-0004 参与排序：每一项先按本插件 `contributes.pipeline` 里的中间件名解析，否则原样作为管道里的中间件名，即另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名（如 `after` 一项写租户解析中间件的类型全名，插件中间件就排在它后面）。目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`，在宿主构建或打印管道时报出。示例 `samples/EchoWasmPlugin` 的 `echo-guard` 在 `observe` 阶段把租户 `blocked` 短路为 `ECHOWASM_DENIED_001`。
 
 ::: warning Windows 上 Wasm 宿主的可执行项目要关闭 CET 兼容
 wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突；.NET 9 起 apphost 默认开启 CET 兼容，影子栈强制时第一次陷阱就让整个进程 fail-fast（退出码 `0xC0000409`）。宿主、测试与一致性套件的可执行项目都要设 `<CETCompat>false</CETCompat>`。`WasmPluginHost` 创建时检测进程的影子栈策略，强制时以 `PLUGINS_UNAVAILABLE_003` 抛出 `FrameworkException`。Linux 与 macOS 不受影响。

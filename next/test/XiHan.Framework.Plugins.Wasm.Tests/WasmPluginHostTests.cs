@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel;
@@ -62,6 +63,46 @@ public sealed class WasmPluginHostTests
         var health = host.App.Health();
         Assert.Equal(LifecycleState.Ready, health.State);
         Assert.Equal(LifecycleState.Ready, Assert.Single(health.Contributions, static c => c.Name == "plugins." + EchoWasmPluginHost.PluginId).State);
+    }
+
+    [Fact]
+    public async Task Middleware_IsOrderedByTheManifestBeforeAndAfter()
+    {
+        // 基准次序：宿主的 Marker（归属 xihan.app.marker 排在 xihan.tests.wat 前）、first、second（清单顺序）。
+        // first 声明在本插件的 second 之后，second 声明在宿主中间件（类型全名）之前：结果 second、Marker、first
+        using var plugin = WatPlugin.WithMiddleware(new JsonArray(
+            new JsonObject { ["middleware"] = "first", ["stage"] = "observe", ["after"] = new JsonArray("second") },
+            new JsonObject { ["middleware"] = "second", ["stage"] = "observe", ["before"] = new JsonArray(typeof(MarkerMiddleware).FullName) }));
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<WasmPluginsFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.app.marker"))
+            {
+                OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, owner: "xihan.app.marker"),
+            }),
+            [new("XiHan:Plugins:Wasm:Directories:0", plugin.Directory)]);
+        Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).Describe(WatPlugin.PluginId)!.Status.State);
+
+        var observe = host.App.DescribePipeline().Split('\n').Where(static line => line.StartsWith("observe ", StringComparison.Ordinal)).Select(static line => line[13..]).ToList();
+
+        Assert.Equal(
+            [
+                $"{typeof(WasmMiddleware).FullName}[{WatPlugin.PluginId}:second]",
+                typeof(MarkerMiddleware).FullName,
+                $"{typeof(WasmMiddleware).FullName}[{WatPlugin.PluginId}:first]",
+            ],
+            observe.Where(static line => !line.StartsWith("XiHan.Framework.Kernel.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task Middleware_ReferencingAnUnknownMiddleware_FailsThePipelineBuild()
+    {
+        using var plugin = WatPlugin.WithMiddleware(new JsonArray(new JsonObject { ["middleware"] = "guard", ["stage"] = "observe", ["before"] = new JsonArray("xihan.other:missing") }));
+
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", plugin.Directory)]);
+
+        // 与按类型声明的约束一样，目标在排序时解析：构建或打印管道时以配置错误失败
+        var exception = Assert.Throws<FrameworkException>(() => host.App.DescribePipeline());
+        Assert.Equal(KernelErrors.PipelineRegistration, exception.Code);
+        Assert.Contains("xihan.other:missing", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
