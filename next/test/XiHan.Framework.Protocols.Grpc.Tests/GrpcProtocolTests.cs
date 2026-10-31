@@ -260,5 +260,7 @@ public sealed class GrpcProtocolTests
 
         var duplicate = await Assert.ThrowsAsync<FrameworkException>(static () => StartAsync(null, ("XiHan:Protocols:Grpc:Methods:orders.get", "Orders/List")));
         Assert.Equal(GrpcErrors.DuplicateMethod, duplicate.Code);
+        // 与 HTTP 的路由重复（PROTOCOLS_CONFLICT_002）是不同的失败，序号不能共用
+        Assert.Equal("PROTOCOLS_CONFLICT_004", duplicate.Code);
     }
 }

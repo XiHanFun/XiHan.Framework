@@ -65,7 +65,7 @@ grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-k
 | 情形 | 错误码 |
 | --- | --- |
 | 推导或配置的服务 / 方法名不合法 | `PROTOCOLS_VALIDATION_007` |
-| 两个操作得到同一个服务 / 方法名 | `PROTOCOLS_CONFLICT_002` |
+| 两个操作得到同一个服务 / 方法名 | `PROTOCOLS_CONFLICT_004` |
 | 暴露给 gRPC 的操作没有 Schema，或 Schema 映射不成 protobuf（嵌套数组、映射里的映射） | `PROTOCOLS_VALIDATION_006` |
 | 同名消息在不同操作里形状不同 | `PROTOCOLS_CONFLICT_003` |
 

@@ -55,6 +55,22 @@ public sealed partial class NamingTests
     }
 
     [Fact]
+    public void ErrorCodes_AreRegisteredOnce()
+    {
+        // 域内序号唯一（conventions/error-codes.md）：同一个错误码登记两次，意味着它对应两种不同的失败
+        var path = Path.Combine(Workspace.SpecRoot, "conventions", "error-codes.md");
+        var codes = File.ReadAllLines(path)
+            .Select(static line => RegisteredErrorCode().Match(line))
+            .Where(static match => match.Success)
+            .Select(static match => match.Groups["code"].Value)
+            .ToList();
+        var duplicates = codes.GroupBy(static code => code, StringComparer.Ordinal).Where(static g => g.Count() > 1).Select(static g => g.Key).ToList();
+
+        Assert.True(codes.Count >= 100, $"Only {codes.Count} error codes were found, which suggests the table failed to parse: '{path}'.");
+        Assert.True(duplicates.Count == 0, "Error codes registered more than once: " + string.Join(", ", duplicates));
+    }
+
+    [Fact]
     public void PackageIds_FollowGrammar()
     {
         var failures = new List<string>();
@@ -179,6 +195,15 @@ public sealed partial class NamingTests
             yield return Assembly.Load(new AssemblyName(project.PackageId));
         }
     }
+
+    /// <summary>
+    /// 错误码登记表一行的正则。
+    /// </summary>
+    /// <remarks>
+    /// 行首单元格是反引号括起的错误码，捕获错误码本身。
+    /// </remarks>
+    [GeneratedRegex(@"^\|\s*`(?<code>[A-Z]+_[A-Z]+_[0-9]{3})`\s*\|")]
+    private static partial Regex RegisteredErrorCode();
 
     /// <summary>
     /// PascalCase 标识符的正则。

@@ -96,7 +96,7 @@ XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Message.get -> XiHan.Framewo
 XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.Message.init -> void
 XiHan.Framework.Protocols.Grpc.Proto.ProtoValueType.ProtoValueType(XiHan.Framework.Protocols.Grpc.Proto.ProtoKind Kind, XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage? Message) -> void
 XiHan.Framework.Protocols.Grpc.Services.OperationGrpcEndpointRouteBuilderExtensions
-const XiHan.Framework.Protocols.Grpc.GrpcErrors.DuplicateMethod = "PROTOCOLS_CONFLICT_002" -> string!
+const XiHan.Framework.Protocols.Grpc.GrpcErrors.DuplicateMethod = "PROTOCOLS_CONFLICT_004" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.InvalidMethodName = "PROTOCOLS_VALIDATION_007" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.MessageConflict = "PROTOCOLS_CONFLICT_003" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcErrors.RequestMalformed = "PROTOCOLS_VALIDATION_005" -> string!

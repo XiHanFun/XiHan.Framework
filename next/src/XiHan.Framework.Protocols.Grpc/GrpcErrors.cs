@@ -32,7 +32,7 @@ public static class GrpcErrors
     /// <summary>
     /// 两个操作得到同一个服务 / 方法名（启动失败）。
     /// </summary>
-    public const string DuplicateMethod = "PROTOCOLS_CONFLICT_002";
+    public const string DuplicateMethod = "PROTOCOLS_CONFLICT_004";
 
     /// <summary>
     /// 同名 protobuf 消息在不同操作里形状不同（启动失败）。
