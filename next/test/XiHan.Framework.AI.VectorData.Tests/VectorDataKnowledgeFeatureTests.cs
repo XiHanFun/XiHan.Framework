@@ -62,7 +62,7 @@ public sealed class VectorDataKnowledgeFeatureTests
         var billingOnly = (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "reset password", Top = 5, Filter = new RetrievalFilter { Metadata = new Dictionary<string, string> { ["area"] = "billing" } } }, CancellationToken.None)).ValueOrThrow();
         Assert.All(billingOnly, chunk => Assert.Equal("billing", chunk.DocumentId));
 
-        var prompt = host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("how do I reset my password", chunks);
+        var prompt = host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("how do I reset my password", chunks).ValueOrThrow();
         Assert.Contains("[1] (document: password", prompt, StringComparison.Ordinal);
         Assert.EndsWith("how do I reset my password", prompt, StringComparison.Ordinal);
 

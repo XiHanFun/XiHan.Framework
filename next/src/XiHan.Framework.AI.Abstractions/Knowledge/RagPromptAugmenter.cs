@@ -12,7 +12,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <see cref="IRagPromptAugmenter"/> 的实现。
 /// </summary>
 /// <remarks>
-/// <see cref="KnowledgeOptions.PromptName"/> 指向的模板（占位符 <c>{context}</c>、<c>{question}</c>）优先，否则内置英文模板。
+/// 配置了 <see cref="KnowledgeOptions.PromptName"/> 就用它指向的模板（占位符 <c>{context}</c>、<c>{question}</c>），找不到或渲染失败返回错误；没有配置用内置英文模板。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RagPromptAugmenter : IRagPromptAugmenter
@@ -43,7 +43,7 @@ public sealed class RagPromptAugmenter : IRagPromptAugmenter
     }
 
     /// <inheritdoc />
-    public string Augment(string question, IReadOnlyList<RetrievedChunk> chunks)
+    public Result<string> Augment(string question, IReadOnlyList<RetrievedChunk> chunks)
     {
         ArgumentNullException.ThrowIfNull(question);
         ArgumentNullException.ThrowIfNull(chunks);
@@ -61,12 +61,17 @@ public sealed class RagPromptAugmenter : IRagPromptAugmenter
         }
 
         var arguments = MessageArguments.Of(("context", context.ToString()), ("question", question));
-        // 配置的模板渲染失败（没有占位符之类）时退回内置模板，不让检索结果丢失
-        if (_options.PromptName is not null && _prompts.Find(_options.PromptName).TryGetValue(out var template) && template.Render(arguments).TryGetValue(out var rendered))
+        if (_options.PromptName is null)
         {
-            return rendered;
+            return new AIPromptTemplate("rag", BuiltInTemplate).Render(arguments).ValueOrThrow();
         }
 
-        return new AIPromptTemplate("rag", BuiltInTemplate).Render(arguments).ValueOrThrow();
+        // 配置了模板就只用它：找不到或渲染失败都是配置错误，如实返回，不悄悄换成内置模板
+        if (!_prompts.Find(_options.PromptName).TryGetValue(out var template))
+        {
+            return Error.NotFound(AIErrors.PromptNotFound, AIMessages.PromptNotFound, MessageArguments.Of(("name", _options.PromptName)));
+        }
+
+        return template.Render(arguments);
     }
 }

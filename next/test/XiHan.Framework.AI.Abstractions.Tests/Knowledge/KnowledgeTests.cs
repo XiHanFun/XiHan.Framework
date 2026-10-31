@@ -30,6 +30,15 @@ public sealed class KnowledgeTests
         ("XiHan:AI:Knowledge:Top", "2"),
     ];
 
+    /// <summary>
+    /// 提示增强用例的两个检索结果。
+    /// </summary>
+    private static readonly RetrievedChunk[] _chunks =
+    [
+        new RetrievedChunk { Id = "a#0", DocumentId = "a", ChunkIndex = 0, Text = "first", Score = 0.9 },
+        new RetrievedChunk { Id = "b#1", DocumentId = "b", ChunkIndex = 1, Text = "second", Score = 0.5 },
+    ];
+
     [Fact]
     public void FixedWindow_ChunksWithOverlap_AndNormalizesNewlines()
     {
@@ -143,15 +152,29 @@ public sealed class KnowledgeTests
     {
         await using var host = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "CTX:{context}|Q:{question}"));
         var augmenter = host.Services.GetRequiredService<IRagPromptAugmenter>();
-        var chunks = new[] { new RetrievedChunk { Id = "a#0", DocumentId = "a", ChunkIndex = 0, Text = "first", Score = 0.9 }, new RetrievedChunk { Id = "b#1", DocumentId = "b", ChunkIndex = 1, Text = "second", Score = 0.5 } };
-        var configured = augmenter.Augment("why?", chunks);
+        var configured = augmenter.Augment("why?", _chunks).ValueOrThrow();
         Assert.StartsWith("CTX:[1] (document: a, chunk: 0)\nfirst\n\n[2] (document: b, chunk: 1)\nsecond\n\n|Q:why?", configured, StringComparison.Ordinal);
-        Assert.Equal("why?", augmenter.Augment("why?", []));
+        Assert.Equal("why?", augmenter.Augment("why?", []).ValueOrThrow());
 
         await using var plain = await StartAsync(new FakeKnowledgeStore());
-        var builtIn = plain.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", chunks);
+        var builtIn = plain.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks).ValueOrThrow();
         Assert.Contains("# Knowledge snippets\n[1] (document: a, chunk: 0)\nfirst", builtIn, StringComparison.Ordinal);
         Assert.EndsWith("# Question\nwhy?", builtIn, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Augmenter_ReportsAMissingOrUnrenderableConfiguredPrompt_InsteadOfFallingBack()
+    {
+        await using var missing = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"));
+        var notFound = missing.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
+        Assert.Equal(AIErrors.PromptNotFound, notFound.Error?.Code);
+
+        await using var broken = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "Answer in {language}: {question}\n{context}"));
+        var unrenderable = broken.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
+        Assert.Equal(AIErrors.RequestInvalid, unrenderable.Error?.Code);
+
+        // 没有块时原样返回问题，不碰模板
+        Assert.Equal("why?", missing.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", []).ValueOrThrow());
     }
 
     /// <summary>

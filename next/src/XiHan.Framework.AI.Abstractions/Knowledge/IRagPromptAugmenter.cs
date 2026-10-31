@@ -15,7 +15,7 @@ public interface IRagPromptAugmenter
     /// 增强。
     /// </summary>
     /// <remarks>
-    /// 没有块时原样返回问题。
+    /// 没有块时原样返回问题。配置了 <see cref="KnowledgeOptions.PromptName"/> 时用它指向的模板：找不到 → <see cref="AIErrors.PromptNotFound"/>，渲染失败（模板引用了 <c>{context}</c>、<c>{question}</c> 以外的占位符）→ <see cref="AIErrors.RequestInvalid"/>，不退回内置模板。没有配置时用内置英文模板。
     /// </remarks>
-    string Augment(string question, IReadOnlyList<RetrievedChunk> chunks);
+    Result<string> Augment(string question, IReadOnlyList<RetrievedChunk> chunks);
 }

@@ -281,7 +281,7 @@ public sealed class AssistantsFeature : IFeature
 | `IKnowledgeIngestor` | `IngestAsync(requests)` 批量摄入，每篇文档一个 `Result<int>`（写入的块数）；`RemoveAsync(collection, documentIds)` 按文档删除 |
 | `IChunkingStrategy` | 内置 `FixedWindowChunkingStrategy`：按字符的固定窗口，重叠裁到 `[0, MaxChunkSize − 1]`，换行统一为 `\n`，空白块丢弃 |
 | `IKnowledgeRetriever` | `RetrieveAsync(query)`：问题嵌入 → 向量搜索 → 按 `MinScore` 过滤 |
-| `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词 |
+| `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词，返回 `Result<string>` |
 
 ```csharp
 using Microsoft.Extensions.AI;
@@ -316,7 +316,12 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
         }
 
         var prompt = augmenter.Augment(question, chunks);
-        var reply = await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, prompt)] }, cancellationToken);
+        if (!prompt.TryGetValue(out var text))
+        {
+            return prompt.Error!;
+        }
+
+        var reply = await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, text)] }, cancellationToken);
         return reply.Map(static response => response.Text);
     }
 }
@@ -327,7 +332,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
-- `Augment` 用 `XiHan:AI:Knowledge:PromptName` 指向的模板（占位符 `{context}`、`{question}`），没配置、找不到或渲染失败时用内置英文模板；检索结果为空时原样返回问题。
+- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`）：模板不存在返回 `AI_NOTFOUND_002`，模板引用了别的占位符、渲染失败返回 `AI_VALIDATION_001`，不会悄悄换成内置模板。没配置时用内置英文模板。
 - 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
 
 `AI.VectorData` 把 `IKnowledgeStore` 映射到应用登记的 `Microsoft.Extensions.VectorData` 的 `VectorStore`，任何连接器都行；容器里没有 `VectorStore` 时启动失败。集合定义、距离函数与过滤的下推方式见 [AI.VectorData 包](../packages/ai-vectordata)。
