@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
@@ -69,6 +70,38 @@ public sealed class WasmCallbackTests
             Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
             Assert.Equal(1, allowed.Published);
         }
+    }
+
+    [Fact]
+    public async Task Invoke_IsBoundByTheOuterDeadline_WhenTheRequestCarriesNone()
+    {
+        // 插件经 xihan.invoke 调用一直等待的宿主操作，请求里没有截止时间：新调用要随外层调用在截止时间被取消（wasm.md §4）
+        var probe = new CancellationProbe();
+        using var plugin = WatPlugin.Invoking("waits.create", [WasmHostFunctions.PipelinePermission]);
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.PipelinePermission], ctx =>
+        {
+            ctx.Services.AddSingleton(probe);
+            ctx.AddOperation<WaitOperation, PingRequest, PingResponse>(new OperationContract("waits.create"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
+        });
+
+        var response = await CallAsync(host, DateTimeOffset.UtcNow.AddMilliseconds(300));
+
+        Assert.Equal(KernelErrors.DeadlineExceeded, response.Outcome.Error?.Code);
+        Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "the host operation behind xihan.invoke must be cancelled at the outer deadline");
+    }
+
+    [Fact]
+    public async Task Publish_IsBoundByTheOuterDeadline()
+    {
+        var probe = new CancellationProbe();
+        var publisher = new ProbePublisher(probe);
+        using var plugin = WatPlugin.Publishing("wat.events", [WasmHostFunctions.MessagingPermission]);
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.MessagingPermission], services: s => s.AddSingleton<IMessagePublisher>(publisher));
+
+        await CallAsync(host, DateTimeOffset.UtcNow.AddMilliseconds(300));
+
+        Assert.Equal(1, publisher.Published);
+        Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "xihan.publish must be cancelled at the outer deadline");
     }
 
     /// <summary>

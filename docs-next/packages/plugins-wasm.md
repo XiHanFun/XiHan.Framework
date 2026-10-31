@@ -19,7 +19,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走导入 `xihan.log`。
 
-回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
 

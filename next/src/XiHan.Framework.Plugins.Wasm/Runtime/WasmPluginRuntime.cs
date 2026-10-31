@@ -318,7 +318,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             if (_instance is { } instance && State is LifecycleState.Configured or LifecycleState.Started or LifecycleState.Ready or LifecycleState.Degraded)
             {
                 SetState(LifecycleState.Draining, null);
-                var stopped = await CallAsync<StopResponse>(instance, "xihan_stop", new StopRequest { GraceSeconds = (uint)Math.Ceiling(_host.Options.CallTimeout.TotalSeconds), Reason = reason }, _host.Options.CallTimeout, cancellationToken).ConfigureAwait(false);
+                var stopped = await CallAsync<StopResponse>(instance, "xihan_stop", new StopRequest { GraceSeconds = (uint)Math.Ceiling(_host.Options.CallTimeout.TotalSeconds), Reason = reason }, _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
                 if (stopped.IsFailure)
                 {
                     LogStopFailed(Logger, Manifest.Id, stopped.Error!.Code);
@@ -344,15 +344,15 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         }
 
         var request = new InvokeRequest { Operation = operation, Payload = ByteString.CopyFrom(payload.Span), Metadata = PluginMetadata.FromContext(context) };
-        var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.CancellationToken).ConfigureAwait(false);
+        var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
         if (!response.TryGetValue(out var invoked))
         {
-            return response.Error!;
+            return Expired(response.Error!, context);
         }
 
         return invoked.Status is { Ok: true }
             ? Result.Success<object>(new PluginPayload(invoked.Payload.Memory))
-            : PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!;
+            : Expired(PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!, context);
     }
 
     /// <summary>
@@ -367,8 +367,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         }
 
         var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
-        var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.CancellationToken).ConfigureAwait(false);
-        return response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : response.Error!;
+        var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
+        var delivered = response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
+        return delivered.IsSuccess ? delivered : Expired(delivered.Error!, context);
     }
 
     /// <summary>
@@ -395,7 +396,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             request.Outcome = PluginErrorMapper.ToStatus(downstream);
         }
 
-        return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, cancellationToken).ConfigureAwait(false);
+        return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -551,7 +552,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         }
 
         _instance = instance;
-        var handshake = await CallAsync<HandshakeResponse>(instance, "xihan_handshake", BuildHandshake(), _host.Options.CallTimeout, cancellationToken).ConfigureAwait(false);
+        var handshake = await CallAsync<HandshakeResponse>(instance, "xihan_handshake", BuildHandshake(), _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
         if (!handshake.TryGetValue(out var response))
         {
             await DropInstanceAsync().ConfigureAwait(false);
@@ -624,7 +625,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private async Task<Result> StepAsync<TResponse>(WasmInstance instance, string export, IMessage request, Func<TResponse, Status?> status, string phase, CancellationToken cancellationToken)
         where TResponse : IMessage<TResponse>, new()
     {
-        var called = await CallAsync<TResponse>(instance, export, request, _host.Options.CallTimeout, cancellationToken).ConfigureAwait(false);
+        var called = await CallAsync<TResponse>(instance, export, request, _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
         Error error;
         if (called.TryGetValue(out var response))
         {
@@ -652,10 +653,17 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// <remarks>
     /// 陷阱、超时与无响应都让实例失效（在途的崩溃处理由 <see cref="HandleCrashAsync"/> 负责）。
     /// </remarks>
-    private async Task<Result<TResponse>> CallAsync<TResponse>(WasmInstance instance, string export, IMessage request, TimeSpan timeout, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> CallAsync<TResponse>(WasmInstance instance, string export, IMessage request, TimeSpan timeout, DateTimeOffset? deadline, CancellationToken cancellationToken)
         where TResponse : IMessage<TResponse>, new()
     {
         var encoded = PluginJsonCodec.Encode(request);
+        // 当前调用的截止时间：调用上下文的截止时间（操作与事件），或从进入这里算起的时限（排队时间计入），期间的导入回调都受它与取消约束（wasm.md §4）
+        var budget = _host.Clock.GetUtcNow() + timeout;
+        if (deadline is { } limit && limit < budget)
+        {
+            budget = limit;
+        }
+
         WasmCallOutcome outcome;
         var reentrant = _functions.Pump.IsReentrant;
         if (reentrant && !ReferenceEquals(_instance, instance))
@@ -676,7 +684,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 }
 
                 // Wasm 执行是同步的 CPU 工作：放到线程池，不占用调用方的异步链
-                outcome = await Task.Run(() => instance.Call(export, encoded, timeout), cancellationToken).ConfigureAwait(false);
+                outcome = await Task.Run(() => _functions.RunCall(() => instance.Call(export, encoded, timeout), budget, cancellationToken), cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -862,7 +870,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 return;
             }
 
-            var health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, token).ConfigureAwait(false);
+            var health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, null, token).ConfigureAwait(false);
             if (health.TryGetValue(out var response))
             {
                 failures = 0;
@@ -996,6 +1004,15 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     private TimeSpan Timeout(InvocationContext context)
         => context.RemainingTime(_host.Clock.GetUtcNow()) is { } remaining && remaining > TimeSpan.Zero && remaining < _host.Options.CallTimeout ? remaining : _host.Options.CallTimeout;
+
+    /// <summary>
+    /// 截止时间已过时把取消报告为超时。
+    /// </summary>
+    /// <remarks>
+    /// 回调随外层调用的截止时间取消时，插件可能把取消原样返回：调用方的截止时间到了，应当得到超时（与进程外映射一致）。
+    /// </remarks>
+    private Error Expired(Error error, InvocationContext context)
+        => error.Code == KernelErrors.Cancelled && context.IsExpired(_host.Clock.GetUtcNow()) ? new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded) : error;
 
     /// <summary>
     /// 丢弃当前实例并停止它的健康轮询。

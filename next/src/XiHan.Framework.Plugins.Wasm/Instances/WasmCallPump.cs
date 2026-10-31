@@ -83,19 +83,21 @@ internal sealed class WasmCallPump : IDisposable
     /// 宿主导入函数等待管道。
     /// </summary>
     /// <remarks>
-    /// 在执行线程上边等边泵再入工作；不在执行线程上时退化为普通等待。
+    /// 在执行线程上边等边泵再入工作；不在执行线程上时退化为普通等待。<paramref name="cancellationToken"/> 取消时不再等待、抛出 <see cref="OperationCanceledException"/>，任务本身照常继续（回调受外层调用的截止时间约束，<c>wasm.md</c> §4）。
     /// </remarks>
-    public T Wait<T>(Task<T> task)
+    public T Wait<T>(Task<T> task, CancellationToken cancellationToken)
     {
         if (Environment.CurrentManagedThreadId != Volatile.Read(ref _owner))
         {
-            return task.GetAwaiter().GetResult();
+            return task.WaitAsync(cancellationToken).GetAwaiter().GetResult();
         }
 
         task.ContinueWith(static (_, state) => ((SemaphoreSlim)state!).Release(), _signal, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        using var cancelled = cancellationToken.Register(static state => ((SemaphoreSlim)state!).Release(), _signal);
         while (!task.IsCompleted)
         {
-            _signal.Wait();
+            cancellationToken.ThrowIfCancellationRequested();
+            _signal.Wait(CancellationToken.None);
             Drain();
         }
 

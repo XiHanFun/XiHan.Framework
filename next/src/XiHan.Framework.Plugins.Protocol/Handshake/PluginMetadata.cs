@@ -51,9 +51,9 @@ internal static partial class PluginMetadata
     /// 元数据 → 新的调用上下文（宿主回调时使用）。
     /// </summary>
     /// <remarks>
-    /// 不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。
+    /// 不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。给了 <paramref name="notAfter"/> 时截止时间取它与元数据里的截止时间中较早者（元数据没给时就是它），插件不能借回调把截止时间往后推。
     /// </remarks>
-    public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string principalId, CancellationToken cancellationToken)
+    public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string principalId, CancellationToken cancellationToken, DateTimeOffset? notAfter = null)
     {
         string? traceId = null;
         string? spanId = null;
@@ -79,6 +79,11 @@ internal static partial class PluginMetadata
                     baggage[key] = value;
                 }
             }
+        }
+
+        if (notAfter is { } cap && (deadline is null || cap < deadline))
+        {
+            deadline = cap;
         }
 
         // 回调不能冒充别的主体：xihan.principal 一律改写成插件的清单 ID（invocation.md §5）

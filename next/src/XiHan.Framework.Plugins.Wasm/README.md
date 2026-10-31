@@ -32,7 +32,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<WasmPluginsFeature>());
 
 - 配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`、校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予）、编译模块并校验导出 / 导入表、实例化并 `xihan_handshake`、核对清单。声明的操作登记为代理操作，消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（`handle` 阶段不允许）。
 - 启动阶段启动 `onStartup` 的插件（`xihan_configure` → `xihan_start` → 健康轮询）；`onOperation:` / `onEvent:` 的插件在握手后丢弃实例，首次调用时再实例化。
-- 运行期：每插件一个实例、调用串行；调用在上下文剩余时间（没有时取 `CallTimeout`）内经 epoch 中断强制停止；回调 `xihan.invoke` / `xihan.publish` 以插件身份执行，所需权限须在清单声明且已授予，嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一执行线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+- 运行期：每插件一个实例、调用串行；调用在上下文剩余时间（没有时取 `CallTimeout`）内经 epoch 中断强制停止；回调 `xihan.invoke` / `xihan.publish` 以插件身份执行，所需权限须在清单声明且已授予，受当前调用的截止时间与取消约束（新调用的截止时间取请求元数据与当前调用中较早者，发布随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一执行线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 - 中间件：进入下游前后各调一次 `xihan_middleware`，before 可短路（必须给出失败）或改写已登记 Baggage，after 只观察；陷阱、超时或无响应都关闭调用（`PLUGINS_UNAVAILABLE_001`）。
 - 陷阱、超时与无响应把插件记为 `Failed` 并按 1 秒起翻倍、上限 60 秒的退避重建实例，`RestartWindow` 内超过 `RestartLimit` 次后保持 `Failed`；每个插件是应用的健康条目 `plugins.<清单 ID>`。
 - 沙箱：线性内存与栈上限、无网络、文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到工作目录的 `stdout.log` / `stderr.log`，日志应走 `xihan.log`。

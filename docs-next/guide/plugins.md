@@ -262,7 +262,7 @@ await app.RunAsync();
 | 调用操作 | `Host.Invoke` | `xihan.invoke` | `capability:kernel.pipeline`（须在清单声明且已授予，下同） | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
 | 发布消息 | `Host.Publish` | `xihan.publish` | `capability:messaging.queue` | 按主题分组批量经宿主消息发布器发布，逐项返回结果；宿主没有发布器时每项为 `PLUGINS_UNAVAILABLE_001` |
 
-进程外插件回调时必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated` + `PLUGINS_DENIED_002`；令牌只对本次进程有效，宿主端点只接受本机连接。Wasm 回调的嵌套深度上限 8，超过返回 `PLUGINS_UNAVAILABLE_002`；回调期间管道可能再次进入同一插件（它自己的中间件、操作或订阅），再入在同一线程上、导入函数返回前同步完成，受外层调用的截止时间约束，模块跨导入调用不得持有不可重入的锁。
+进程外插件回调时必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated` + `PLUGINS_DENIED_002`；令牌只对本次进程有效，宿主端点只接受本机连接。Wasm 回调受当前调用（宿主进入模块的那次导出调用）的截止时间与取消约束：`xihan.invoke` 发起的新调用，截止时间取请求元数据与当前调用中较早者，请求不带截止时间也一样受限，`xihan.publish` 的发布同样随当前调用取消；到期宿主不再等待，导入返回 `KERNEL_TIMEOUT_001`。嵌套深度上限 8，超过返回 `PLUGINS_UNAVAILABLE_002`；回调期间管道可能再次进入同一插件（它自己的中间件、操作或订阅），再入在同一线程上、导入函数返回前同步完成，受外层调用的截止时间约束，模块跨导入调用不得持有不可重入的锁。
 
 ## Wasm 插件贡献中间件
 
