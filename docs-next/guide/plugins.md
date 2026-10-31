@@ -230,7 +230,7 @@ await app.RunAsync();
 | 重启上限 | 10 分钟窗口内 5 次，超过后保持 `Failed`，直到 `UnloadAsync` + `LoadAsync` | `RestartLimit`、`RestartWindowSeconds` |
 | 停止宽限 | 进程外取 `XiHan:Kernel:StopTimeoutSeconds`（缺省 30 秒） | `StopGraceSeconds`（进程外） |
 
-进程外插件停止时，宿主发 `Stop`（带宽限秒数与原因 `shutdown` / `unload` / `restart`），在宽限内等进程退出，超时则终止整个进程树并记为 `Failed`（`PLUGINS_TIMEOUT_001`）。宿主停止时按与登记相反的顺序停止插件。重启后是新进程、新会话令牌、重新握手，声明必须与首次一致，否则 `PLUGINS_VALIDATION_004`。
+进程外插件停止时，宿主发 `Stop`（带宽限秒数与原因 `shutdown` / `unload` / `restart`），在宽限内等进程退出；超时先发终止信号（关闭插件的 stdin，Unix 上同时发 SIGTERM，Windows 没有 SIGTERM、关闭 stdin 即等价信号），5 秒内仍未退出才终止整个进程树，两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。宿主停止时按与登记相反的顺序停止插件。重启后是新进程、新会话令牌、重新握手，声明必须与首次一致，否则 `PLUGINS_VALIDATION_004`。
 
 ## 代理操作经完整管道
 

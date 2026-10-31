@@ -57,6 +57,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 时钟（终止时的等待按它计时）。
+    /// </summary>
+    private readonly TimeProvider _clock;
+
+    /// <summary>
     /// 进程退出时以退出码完成。
     /// </summary>
     private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -80,11 +85,12 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// <summary>
     /// 创建句柄并开始监视退出与 stderr。
     /// </summary>
-    private PluginProcess(Process process, string pluginId, string sessionToken, ILogger logger)
+    private PluginProcess(Process process, string pluginId, string sessionToken, ILogger logger, TimeProvider clock)
     {
         _process = process;
         _pluginId = pluginId;
         _logger = logger;
+        _clock = clock;
         SessionToken = sessionToken;
         _ = MonitorExitAsync();
         _ = PumpAsync(process.StandardError);
@@ -176,7 +182,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
             return Error.Unexpected(PluginErrors.Unexpected, PluginMessages.ProcessFailed, details: MessageArguments.Of(("id", launch.PluginId), ("phase", "launch"), ("reason", exception.Message)));
         }
 
-        var handle = new PluginProcess(process, launch.PluginId, launch.SessionToken, logger);
+        var handle = new PluginProcess(process, launch.PluginId, launch.SessionToken, logger, clock);
         var line = await handle.ReadHandshakeLineAsync(launch.HandshakeTimeout, clock, cancellationToken).ConfigureAwait(false);
         if (!line.TryGetValue(out var endpoint))
         {
@@ -222,22 +228,15 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// <summary>
     /// 终止进程树并等待退出。
     /// </summary>
-    public async Task KillAsync()
-    {
-        try
-        {
-            if (!_process.HasExited)
-            {
-                _process.Kill(entireProcessTree: true);
-            }
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or Win32Exception or NotSupportedException)
-        {
-            // 进程已经退出或无法再被操作：按已退出处理
-        }
+    public Task KillAsync() => ProcessTermination.KillAsync(_process, _exited.Task, _clock);
 
-        await Task.WhenAny(_exited.Task, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
-    }
+    /// <summary>
+    /// 停止超时后的终止：先发终止信号，5 秒内仍未退出再终止进程树（<c>lifecycle.md</c> §5）。
+    /// </summary>
+    /// <remarks>
+    /// 终止信号是关闭 stdin，Unix 上同时发 SIGTERM。返回进程是否在信号之后自行退出。
+    /// </remarks>
+    public Task<bool> TerminateAsync() => ProcessTermination.TerminateAsync(_process, _exited.Task, CloseInput, _clock);
 
     /// <summary>
     /// 关闭 stdin（让插件自行退出）、释放通道、终止仍在运行的进程并释放句柄。

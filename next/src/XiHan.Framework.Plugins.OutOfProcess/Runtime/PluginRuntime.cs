@@ -600,7 +600,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
 
             if (!await process.WaitForExitAsync(grace, _host.Clock, cancellationToken).ConfigureAwait(false))
             {
+                // 宽限内没有退出：先发终止信号（关闭 stdin，Unix 上再发 SIGTERM），5 秒后仍在才终止进程树（lifecycle.md §5）
                 LogStopTimeout(Logger, Manifest.Id, grace);
+                var exited = await process.TerminateAsync().ConfigureAwait(false);
+                LogTerminated(Logger, Manifest.Id, exited ? "exited after the termination signal" : "was killed");
                 await DiscardAsync(process).ConfigureAwait(false);
                 Fail(Timeout("stop"));
                 return;
@@ -955,6 +958,12 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// <summary>
     /// 记录停止超时。
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} did not exit within {Grace}; terminating the process.")]
+    [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} did not exit within {Grace}; sending the termination signal.")]
     private static partial void LogStopTimeout(ILogger logger, string pluginId, TimeSpan grace);
+
+    /// <summary>
+    /// 记录停止超时后的终止结局。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} {Outcome}.")]
+    private static partial void LogTerminated(ILogger logger, string pluginId, string outcome);
 }

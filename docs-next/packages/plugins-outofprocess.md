@@ -58,7 +58,7 @@ app.Run();
 | `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载 |
 | `HandshakeTimeoutSeconds` | 正数 | 10 | 读到握手行并完成 `Handshake` 的时限 |
 | `StartTimeoutSeconds` | 正数 | 30 | `Configure` 与 `Start` 各自的时限 |
-| `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds`（缺省 30） | 停止宽限，超时终止进程树 |
+| `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds`（缺省 30） | 停止宽限；超时先发终止信号，5 秒后仍未退出再终止进程树 |
 | `HealthIntervalSeconds` | 正数 | 10 | 健康推送断开后的轮询间隔 |
 | `HealthFailures` | 非负整数，至少 1 | 3 | 连续多少次健康轮询失败视为进程失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次，之后保持 `Failed` |
@@ -138,7 +138,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 发现失败不阻止应用启动：清单不合法、权限未授予、可执行文件不存在的插件被跳过，不出现在 `Plugins` 里；握手失败的插件以 `Failed` 留在宿主里。插件操作与应用操作重名是配置错误，启动失败。
 - 崩溃（进程非 `Stop` 引起的退出，或健康轮询连续失败后被终止）进入 `Failed`（`PLUGINS_UNEXPECTED_002`），按 1 秒起翻倍、上限 60 秒退避重启；窗口内超过 `RestartLimit` 次后保持 `Failed`，直到 `UnloadAsync` + `LoadAsync`。重启后的握手声明必须与首次一致。
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
-- 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时终止进程树并记为 `Failed`（`PLUGINS_TIMEOUT_001`）。
+- 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时先发终止信号：关闭插件的 stdin，Unix 上同时发 SIGTERM（Windows 没有 SIGTERM，关闭 stdin 就是等价的信号）→ 5 秒内仍未退出才终止进程树；两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。插件应把 SIGTERM 与 stdin 关闭都当作立即收尾退出的请求。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由；卸载后调用返回 `PLUGINS_UNAVAILABLE_001`。
 - 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
