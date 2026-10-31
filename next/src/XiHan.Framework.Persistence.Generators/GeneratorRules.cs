@@ -55,4 +55,16 @@ internal static class GeneratorRules
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XHP004：值类型实现了 <c>IEntity&lt;TKey&gt;</c>，不能作仓储的实体。
+    /// </summary>
+    public static readonly DiagnosticDescriptor ValueTypeEntity = new(
+        "XHP004",
+        "Value type implementing IEntity<TKey> is not registered",
+        "'{0}' implements IEntity<TKey> but is a value type; repositories require a class (or record class), so no registration is generated",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
 }

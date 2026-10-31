@@ -15,7 +15,7 @@
 
 ## 概述
 
-实体多了以后，逐个写 `AddRepository<TEntity, TKey>()` 与 `modelBuilder.Entity<T>()` 容易漏。生成器扫描当前项目里实现 `IEntity<TKey>`（直接实现或经 `IAggregateRoot<TKey>`）的非抽象、非静态的顶层类，生成一个文件 `GeneratedEntities.g.cs`：
+实体多了以后，逐个写 `AddRepository<TEntity, TKey>()` 与 `modelBuilder.Entity<T>()` 容易漏。生成器扫描当前项目里实现 `IEntity<TKey>`（直接实现或经 `IAggregateRoot<TKey>`）的非抽象、非静态的顶层类（含 `record` 与 `record class`），生成一个文件 `GeneratedEntities.g.cs`：
 
 | 生成物 | 位置 | 内容 |
 | --- | --- | --- |
@@ -98,7 +98,7 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 
 ## 行为与限制
 
-- 只扫描当前项目里的 `class` 声明：抽象类、静态类不生成；`record` 声明不被识别，`record` 实体要手写 `AddRepository`。分部类的多个声明只登记一次。
+- 扫描当前项目里的 `class` 与 `record`（`record class`）声明：抽象的、静态的不生成；分部类型的多个声明只登记一次。值类型（`struct`、`record struct`）实现 `IEntity<TKey>` 时报 `XHP004` 警告、不生成登记：仓储要求实体是类。
 - 实体按完整类型名排序后输出，生成结果稳定。
 - 没有实体时不生成任何文件，引用生成器的项目也就没有 `GeneratedEntities`。
 - `RootNamespace` 中的非法字符会被整理成合法的命名空间名。
@@ -108,6 +108,7 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 | `XHP001` | Error | 实体类经多个 `IEntity<TKey>` 声明了不同的键类型 | 只实现一个 `IEntity<TKey>`；该实体不生成 |
 | `XHP002` | Error | 实体类是嵌套类型，或不是 `public` / `internal` | 改为顶层的 `public` 或 `internal` 类；该实体不生成 |
 | `XHP003` | Warning | 要生成的 `<实体>Filters` 与已有类型同名 | 该实体的过滤规约不生成，仓储登记照常生成 |
+| `XHP004` | Warning | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>` | 改成 `class` 或 `record class`；该类型不生成登记 |
 
 ## 相关
 

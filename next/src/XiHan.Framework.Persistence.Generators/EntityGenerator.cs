@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.Generators;
 /// 从实现 <c>IEntity&lt;TKey&gt;</c> 的实体类生成 <c>GeneratedEntities</c>。
 /// </summary>
 /// <remarks>
-/// 仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）。
+/// 实体类含 <c>record</c>（<c>record class</c>）；值类型（<c>struct</c>、<c>record struct</c>）不能作仓储的实体，报 XHP004 不登记，不静默跳过。生成仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）。
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class EntityGenerator : IIncrementalGenerator
@@ -59,10 +59,12 @@ public sealed class EntityGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var entities = context.SyntaxProvider.CreateSyntaxProvider(
-                static (node, _) => node is ClassDeclarationSyntax { BaseList: not null } declaration
+                // 类、record（含 record struct）与结构都进来：值类型在 CreateModel 里报诊断，不在这里悄悄漏掉
+                static (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax or StructDeclarationSyntax
+                    && ((TypeDeclarationSyntax)node) is { BaseList: not null } declaration
                     && !declaration.Modifiers.Any(SyntaxKind.AbstractKeyword)
                     && !declaration.Modifiers.Any(SyntaxKind.StaticKeyword),
-                static (syntaxContext, token) => syntaxContext.SemanticModel.GetDeclaredSymbol((ClassDeclarationSyntax)syntaxContext.Node, token))
+                static (syntaxContext, token) => syntaxContext.SemanticModel.GetDeclaredSymbol((TypeDeclarationSyntax)syntaxContext.Node, token))
             .Where(static symbol => symbol is not null && ImplementsEntity(symbol))
             .Select(static (symbol, _) => symbol!);
 
@@ -139,6 +141,13 @@ public sealed class EntityGenerator : IIncrementalGenerator
     private static EntityModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, INamedTypeSymbol entityInterface, INamedTypeSymbol? softDeletable, INamedTypeSymbol? multiTenant, Compilation compilation)
     {
         var location = symbol.Locations.FirstOrDefault() ?? Location.None;
+        // 仓储要求实体是引用类型（IRepository<TEntity, TKey> 的 class 约束）：值类型登记了也编译不过
+        if (symbol.IsValueType)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.ValueTypeEntity, location, symbol.Name));
+            return null;
+        }
+
         var keys = new List<ITypeSymbol>();
         foreach (var implemented in symbol.AllInterfaces)
         {

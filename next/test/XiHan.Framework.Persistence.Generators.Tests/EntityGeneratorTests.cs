@@ -162,6 +162,42 @@ public sealed class EntityGeneratorTests
     }
 
     [Fact]
+    public void Records_AreRegistered_AndValueTypeEntities_AreReported()
+    {
+        var (compile, generator, generated) = Run("""
+            using System;
+            using XiHan.Framework.Domain.Entities;
+            namespace Demo.App;
+            public sealed record Invoice(Guid Id, string Number) : IEntity<Guid>;
+            public sealed record class Payment : IEntity<long>, ISoftDeletable
+            {
+                public long Id { get; init; }
+                public bool IsDeleted { get; set; }
+                public DateTimeOffset? DeletedAt { get; set; }
+            }
+            internal sealed partial record Receipt : IEntity<int> { public int Id { get; init; } }
+            internal sealed partial record Receipt;
+            public abstract record DraftRecord : IEntity<Guid> { public Guid Id { get; init; } }
+            public readonly record struct Point(int Id) : IEntity<int>;
+            public struct Cell : IEntity<int> { public int Id { get; set; } }
+            """, withEntityFrameworkCore: true);
+
+        Assert.Empty(compile);
+        // record class 与带 record 修饰的类一样登记仓储、登记进 EF Core 模型、生成过滤规约；partial 只登记一次，抽象的跳过
+        Assert.Contains("AddRepository<global::Demo.App.Invoice, global::System.Guid>(services);", generated, StringComparison.Ordinal);
+        Assert.Contains("AddRepository<global::Demo.App.Payment, long>(services);", generated, StringComparison.Ordinal);
+        Assert.Equal(1, generated.Split("AddRepository<global::Demo.App.Receipt, int>").Length - 1);
+        Assert.Contains("modelBuilder.Entity<global::Demo.App.Invoice>();", generated, StringComparison.Ordinal);
+        Assert.Contains("public static class PaymentFilters", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("DraftRecord", generated, StringComparison.Ordinal);
+        // 值类型不能作仓储的实体：逐个报 XHP004，不登记
+        Assert.Equal(["Cell", "Point"], generator.Where(static d => d.Id == "XHP004").Select(static d => d.GetMessage(System.Globalization.CultureInfo.InvariantCulture).Split('\'')[1]).OrderBy(static name => name, StringComparer.Ordinal));
+        Assert.All(generator, static d => Assert.Equal(DiagnosticSeverity.Warning, d.Severity));
+        Assert.DoesNotContain("Point", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cell", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NoEntities_GeneratesNothing()
     {
         var (compile, generator, generated) = Run("namespace Demo.App; public sealed class Plain { }", withEntityFrameworkCore: false);
