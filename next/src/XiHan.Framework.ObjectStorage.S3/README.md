@@ -10,7 +10,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 { "XiHan": { "ObjectStorage": { "S3": { "ServiceUrl": "http://localhost:9000", "Region": "us-east-1", "AccessKey": "minioadmin", "SecretKey": "minioadmin", "ForcePathStyle": true, "EnsureBuckets": false } } } }
 ```
 
-绑定 `objectstorage`（`storage:object`，可选）存在时覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`。
+绑定 `objectstorage`（`blob`，可选；类型取 RFC-0016 的绑定类型词表）存在时覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`。
 
 ## 规则
 

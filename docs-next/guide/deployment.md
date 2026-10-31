@@ -128,6 +128,8 @@ Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.g
 | `queue` | `rabbitmq:4-alpine` | `amqp://guest:guest@<绑定名>:5672` | `AddRabbitMQ(<绑定名>)` |
 | `blob` | `minio/minio` | `http://<绑定名>:9000` | `AddContainer(<绑定名>, "minio/minio")` |
 
+这四种类型与框架 Provider 声明的绑定对应：持久化的 `db`（`connection:relational`）、`Caching.Redis` 的 `cache`（`cache:distributed`）、`Messaging.RabbitMQ` 的 `queue`（`queue`）、`ObjectStorage.S3` 的 `objectstorage`（`blob`）。`Messaging.Kafka` 的 `stream`（类型 `stream`）与 `Configuration.Nacos` 的 `nacos`（类型 `configuration:remote`）不在其中，`xihan pack` 目前不支持，用到它们时自己提供 `XiHan:Bindings:<名字>`，或只用各自的配置节。
+
 Compose 里的账号口令是本地联调用的固定开发值。应用服务的 healthcheck 用镜像里的就绪探针请求 `http://127.0.0.1:<ports.http>/health/ready`，`interval`、`timeout`、`start_period` 分别取 `probes.periodSeconds`、`timeoutSeconds`、`startupSeconds`：
 
 ```yaml

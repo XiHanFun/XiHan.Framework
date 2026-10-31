@@ -34,7 +34,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
     /// 连接绑定名。
     /// </summary>
     /// <remarks>
-    /// <c>objectstorage</c>，类型 <c>storage:object</c>，可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>。
+    /// <c>objectstorage</c>，类型 <c>blob</c>（RFC-0016 的绑定类型词表），可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>。
     /// </remarks>
     public const string ConnectionBinding = "objectstorage";
 
@@ -65,7 +65,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
             new CapabilityDeclaration(ObjectStorageCapabilities.Presign, ObjectStorageCapabilities.Version),
         ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "storage:object", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "blob", required: false)],
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:ObjectStorage"),

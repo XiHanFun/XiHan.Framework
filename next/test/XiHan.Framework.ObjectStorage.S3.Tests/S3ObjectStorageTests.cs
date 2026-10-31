@@ -58,7 +58,7 @@ public sealed class S3ObjectStorageTests
     [Fact]
     public void Options_BindingOverridesConfiguration()
     {
-        var binding = new BindingValue(S3ObjectStorageFeature.ConnectionBinding, "storage:object", "https://s3.example.com", new Dictionary<string, string>(StringComparer.Ordinal)
+        var binding = new BindingValue(S3ObjectStorageFeature.ConnectionBinding, "blob", "https://s3.example.com", new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["region"] = "eu-west-1",
             ["accessKey"] = "bound-ak",

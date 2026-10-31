@@ -126,7 +126,9 @@ kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通�
 | `queue` | `queue` | `Messaging.RabbitMQ` | `XiHan:Messaging:RabbitMQ:Configuration` 没配时用主值 |
 | `stream` | `stream` | `Messaging.Kafka` | `XiHan:Messaging:Kafka:BootstrapServers` 没配时用主值 |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | `XiHan:Configuration:Nacos:ServerAddresses` 没配时用主值 |
-| `objectstorage` | `storage:object` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
+| `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
+
+`xihan pack` 的应用清单只认 `connection:relational`、`cache:distributed`、`queue`、`blob` 四种绑定类型（见[部署](./deployment)），`stream` 与 `configuration:remote` 两种绑定要应用自己提供。
 
 应用自己的特性声明绑定的写法：
 

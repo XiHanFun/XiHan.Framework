@@ -6,7 +6,7 @@
 | --- | --- |
 | 包 ID | `XiHan.Framework.ObjectStorage.S3` |
 | 环层 | Ring 3（实现） |
-| 能力 | 提供 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `objectstorage`（`storage:object`） |
+| 能力 | 提供 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `objectstorage`（`blob`） |
 | 特性入口 | `S3ObjectStorageFeature` |
 | 配置节 | `XiHan:ObjectStorage:S3` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` 4.0.102.3 |
@@ -73,7 +73,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 绑定 `objectstorage` 存在时覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
 
 ```text
-/bindings/objectstorage/type          storage:object
+/bindings/objectstorage/type          blob
 /bindings/objectstorage/uri           http://minio:9000
 /bindings/objectstorage/accessKey     dev-access-key
 /bindings/objectstorage/secretKey     dev-secret-key
