@@ -81,12 +81,20 @@ xihan pack --output deploy/orders --only dockerfile,kustomize
 
 ### Dockerfile
 
-生成的 Dockerfile 以 `mcr.microsoft.com/dotnet/sdk:10.0` 发布，运行阶段用 chiseled 镜像 `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled`（没有 shell 与包管理器），以 `USER $APP_UID` 非 root 运行；Kestrel 端点与内核停止超时以环境变量写入。`samples/KubernetesApp/deploy/Dockerfile`：
+生成的 Dockerfile 以 `mcr.microsoft.com/dotnet/sdk:10.0` 发布，运行阶段用 chiseled 镜像 `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled`（没有 shell 与包管理器），以 `USER $APP_UID` 非 root 运行；Kestrel 端点与内核停止超时以环境变量写入。chiseled 镜像里没有 `curl` 与 `wget`，构建阶段因此另外从内联源码编译一个就绪探针，复制到运行镜像的 `/xihan/healthprobe`，供 Compose 的 healthcheck 使用（见下文）。`samples/KubernetesApp/deploy/Dockerfile`（探针的项目与源码两段 heredoc 略去）：
 
 ```dockerfile
 # syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG TARGETARCH
+# 就绪探针：chiseled 运行镜像里没有 shell、curl 与 wget，Compose 的 healthcheck 用它探测 /health/ready
+COPY <<"EOF" /xihan/healthprobe-src/XiHanHealthProbe.csproj
+…
+EOF
+COPY <<"EOF" /xihan/healthprobe-src/Program.cs
+…
+EOF
+RUN dotnet publish /xihan/healthprobe-src/XiHanHealthProbe.csproj --configuration Release --output /xihan/healthprobe-src/publish
 WORKDIR /src
 COPY . .
 RUN dotnet publish "samples/KubernetesApp/KubernetesApp.csproj" --configuration Release --arch $TARGETARCH --output /app/publish --self-contained false
@@ -94,6 +102,7 @@ RUN dotnet publish "samples/KubernetesApp/KubernetesApp.csproj" --configuration 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
+COPY --from=build /xihan/healthprobe-src/publish /xihan/healthprobe
 ENV Kestrel__Endpoints__Http__Url=http://0.0.0.0:8080
 ENV Kestrel__Endpoints__Grpc__Url=http://0.0.0.0:8081 Kestrel__Endpoints__Grpc__Protocols=Http2
 ENV XiHan__Kernel__StopTimeoutSeconds=25
@@ -102,7 +111,7 @@ USER $APP_UID
 ENTRYPOINT ["dotnet", "KubernetesApp.dll"]
 ```
 
-`image.aot` 为真时，构建阶段先装 `clang` 与 `zlib1g-dev`，以 `--self-contained true -p:PublishAot=true` 发布，运行阶段换成 `mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled`，入口是原生可执行文件。
+`image.aot` 为真时，构建阶段先装 `clang` 与 `zlib1g-dev`，以 `--self-contained true -p:PublishAot=true` 发布，运行阶段换成 `mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled`，入口是原生可执行文件；就绪探针也以 Native AOT 发布（探针项目里声明 `PublishAot`），运行镜像只复制它的原生可执行文件 `/xihan/healthprobe/XiHanHealthProbe`。
 
 ### Kustomize
 
@@ -119,7 +128,17 @@ Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.g
 | `queue` | `rabbitmq:4-alpine` | `amqp://guest:guest@<绑定名>:5672` | `AddRabbitMQ(<绑定名>)` |
 | `blob` | `minio/minio` | `http://<绑定名>:9000` | `AddContainer(<绑定名>, "minio/minio")` |
 
-Compose 里的账号口令是本地联调用的固定开发值。生成的应用服务 healthcheck 是 `dotnet --version`，只说明运行时在，不探测 `/health/ready`；`image.aot` 为真时运行镜像里没有 `dotnet`，这条 healthcheck 不会通过。
+Compose 里的账号口令是本地联调用的固定开发值。应用服务的 healthcheck 用镜像里的就绪探针请求 `http://127.0.0.1:<ports.http>/health/ready`，`interval`、`timeout`、`start_period` 分别取 `probes.periodSeconds`、`timeoutSeconds`、`startupSeconds`：
+
+```yaml
+    healthcheck:
+      test: ["CMD", "dotnet", "/xihan/healthprobe/XiHanHealthProbe.dll", "8080", "/health/ready"]
+      interval: 10s
+      timeout: 2s
+      start_period: 60s
+```
+
+`image.aot` 为真时运行镜像里没有 `dotnet`，`test` 直接执行原生探针 `/xihan/healthprobe/XiHanHealthProbe`。探针向本机端口发一次 HTTP/1.1 `GET`，2xx 退出 0，其余状态、连接失败或 10 秒无应答退出 1。Kubernetes 用 `httpGet` 探针，不使用它。
 
 ## 资源绑定
 

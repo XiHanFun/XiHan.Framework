@@ -11,7 +11,9 @@ services:
       - "8081:8081"
     stop_grace_period: 25s
     healthcheck:
-      test: ["CMD", "dotnet", "--version"]
+      test: ["CMD", "dotnet", "/xihan/healthprobe/XiHanHealthProbe.dll", "8080", "/health/ready"]
       interval: 10s
+      timeout: 2s
+      start_period: 60s
     environment:
       ASPNETCORE_ENVIRONMENT: Production

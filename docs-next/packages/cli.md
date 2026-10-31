@@ -99,7 +99,7 @@ xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则�
 
 - Ctrl+C 先取消当前命令，让它按取消语义收尾，而不是直接终止进程。
 - `pack` 只读清单与它引用的文件（项目、构建上下文、`config.files`），不构建项目、不调用 Docker 或 kubectl。
-- 生成的 Compose 应用服务 healthcheck 是 `dotnet --version`，不探测 `/health/ready`，Native AOT 镜像里没有 `dotnet`。
+- 生成的 Compose 应用服务 healthcheck 用 Dockerfile 随镜像构建的就绪探针 `/xihan/healthprobe` 请求 `/health/ready`（chiseled 镜像里没有 `curl` 与 `wget`；AOT 镜像里是原生可执行文件，否则以 `dotnet` 运行框架依赖的探针），`interval` / `timeout` / `start_period` 取 `probes` 的三个秒数。
 - `CliMessages.Catalog` 是工具的消息目录（目录名 `cli`），10 种区域各一个文件。
 
 ## 相关

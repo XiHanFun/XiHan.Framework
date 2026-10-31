@@ -38,6 +38,14 @@ public sealed class PackagerTests
         Assert.Contains("ENTRYPOINT [\"dotnet\", \"Orders.dll\"]", dockerfile, StringComparison.Ordinal);
         Assert.DoesNotContain("clang", dockerfile, StringComparison.Ordinal);
         Assert.Contains("**/bin/", files["Dockerfile.dockerignore"], StringComparison.Ordinal);
+
+        // 就绪探针：构建阶段从内联源码编译（框架依赖），整个发布目录复制进运行镜像
+        Assert.Contains("COPY <<\"EOF\" /xihan/healthprobe-src/XiHanHealthProbe.csproj\n", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("COPY <<\"EOF\" /xihan/healthprobe-src/Program.cs\n", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("RUN dotnet publish /xihan/healthprobe-src/XiHanHealthProbe.csproj --configuration Release --output /xihan/healthprobe-src/publish\n", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("COPY --from=build /xihan/healthprobe-src/publish /xihan/healthprobe\n", dockerfile, StringComparison.Ordinal);
+        Assert.DoesNotContain("<PublishAot>", dockerfile, StringComparison.Ordinal);
+        Assert.True(dockerfile.IndexOf("XiHanHealthProbe.csproj --configuration", StringComparison.Ordinal) < dockerfile.IndexOf("COPY . .", StringComparison.Ordinal), "the probe is built before the application sources so its layers stay cached");
     }
 
     [Fact]
@@ -64,6 +72,27 @@ public sealed class PackagerTests
         Assert.Contains("ENTRYPOINT [\"./Orders\"]", dockerfile, StringComparison.Ordinal);
         Assert.Contains("EXPOSE 8080\n", dockerfile, StringComparison.Ordinal);
         Assert.DoesNotContain("Grpc", dockerfile, StringComparison.Ordinal);
+
+        // runtime-deps 里没有 dotnet：就绪探针也以 Native AOT 发布（项目里声明 PublishAot），只复制原生可执行文件
+        Assert.Contains("    <PublishAot>true</PublishAot>\n  </PropertyGroup>", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("RUN dotnet publish /xihan/healthprobe-src/XiHanHealthProbe.csproj --configuration Release --arch $TARGETARCH --output /xihan/healthprobe-src/publish\n", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("COPY --from=build /xihan/healthprobe-src/publish/XiHanHealthProbe /xihan/healthprobe/XiHanHealthProbe\n", dockerfile, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Compose_HealthCheck_ProbesTheReadyEndpointWithTheBundledProbe()
+    {
+        using var fixture = new ManifestFixture();
+        var compose = Generate(fixture, PackKinds.Compose).Files["compose.yaml"];
+
+        Assert.Contains("    healthcheck:\n      test: [\"CMD\", \"dotnet\", \"/xihan/healthprobe/XiHanHealthProbe.dll\", \"8080\", \"/health/ready\"]\n      interval: 10s\n      timeout: 3s\n      start_period: 45s\n", compose, StringComparison.Ordinal);
+        Assert.DoesNotContain("--version", compose, StringComparison.Ordinal);
+
+        // AOT：运行镜像里没有 dotnet，直接执行原生探针
+        using var aot = new ManifestFixture("""{ "name": "simple", "project": "Orders.csproj", "ports": { "http": 9000 }, "image": { "aot": true } }""");
+        var aotCompose = Generate(aot, PackKinds.Compose).Files["compose.yaml"];
+        Assert.Contains("test: [\"CMD\", \"/xihan/healthprobe/XiHanHealthProbe\", \"9000\", \"/health/ready\"]\n      interval: 10s\n      timeout: 2s\n      start_period: 60s\n", aotCompose, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"dotnet\"", aotCompose, StringComparison.Ordinal);
     }
 
     [Fact]

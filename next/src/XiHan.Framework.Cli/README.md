@@ -14,7 +14,7 @@ xihan version
 
 | 命令 | 说明 |
 | --- | --- |
-| `pack` | 从 `xihan.app.json`（规范：`spec/packaging/app-manifest.md`）生成 `Dockerfile` + `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例、kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`；逐行输出写出的文件 |
+| `pack` | 从 `xihan.app.json`（规范：`spec/packaging/app-manifest.md`）生成 `Dockerfile` + `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例、kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`；逐行输出写出的文件。chiseled 运行镜像里没有 shell 与 `curl`，Dockerfile 在构建阶段另外从内联源码编译就绪探针 `/xihan/healthprobe`，Compose 的 healthcheck 用它请求 `/health/ready` |
 | `migrate <来源版本>` | 按来源版本的规则集改写应用代码（通用约定：`spec/migration/README.md`；语法级 Roslyn 重写，不加载 MSBuild 工作区）：`--path` 目录、`.csproj` 或 `.slnx`（默认当前目录），`--fixers` 选规则子集（仍按规则集顺序），`--dry-run` 只报告不写文件，`--report` 把 JSON 报告写到文件。执行分两遍：先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则>): …` 标记，再跑一遍零改动。跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。当前没有登记任何规则集：4.x 单独维护，不提供 4.x → 5.0 迁移（ADR-0021），任何来源版本都报 `CLI_VALIDATION_002` |
 | `graph` / `pipeline` / `operations` / `invoke` | 转发给应用自己的命令行宿主（`Hosting.CommandLine`）：`dotnet run --project <project> --configuration <c> -- <命令> …`；项目取 `--project`，否则取当前目录清单的 `project` |
 | `version` | 框架版本 |

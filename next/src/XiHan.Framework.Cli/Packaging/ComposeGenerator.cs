@@ -37,8 +37,11 @@ internal static class ComposeGenerator
 
         yaml.Pair(4, "stop_grace_period", manifest.Shutdown.GraceSeconds.ToString(CultureInfo.InvariantCulture) + "s")
             .Line(4, "healthcheck:")
-            .Line(6, "test: [\"CMD\", \"dotnet\", \"--version\"]")
+            // chiseled 镜像里没有 shell 与 curl：调用 Dockerfile 随镜像构建的就绪探针
+            .Line(6, "test: " + HealthProbe.ComposeTest(manifest))
             .Pair(6, "interval", manifest.Probes.PeriodSeconds.ToString(CultureInfo.InvariantCulture) + "s")
+            .Pair(6, "timeout", manifest.Probes.TimeoutSeconds.ToString(CultureInfo.InvariantCulture) + "s")
+            .Pair(6, "start_period", manifest.Probes.StartupSeconds.ToString(CultureInfo.InvariantCulture) + "s")
             .Line(4, "environment:");
         foreach (var (binding, settings) in manifest.Bindings.OrderBy(static b => b.Key, StringComparer.Ordinal))
         {
