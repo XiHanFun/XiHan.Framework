@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Data.Common;
 using System.Linq.Expressions;
 using SqlSugar;
 using XiHan.Framework.Domain.Entities;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// SqlSugar 仓储。
 /// </summary>
 /// <remarks>
-/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入。实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。<see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值。新增撞上主键约束（检查之后别的事务提交了同一标识）时另开一个不在事务里的连接核对标识确已存在，就按标识重复报告，工作单元随后只能回滚（PostgreSQL 系语句失败后事务已中止，不能在原事务里再查）。实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。<see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
 /// </remarks>
 /// <param name="unitOfWork">本作用域的工作单元。</param>
 /// <param name="timeProvider">审计字段使用的时间源。</param>
@@ -167,7 +168,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        await InsertAsync(entity).ConfigureAwait(false);
+        if (await InsertCheckedAsync(entity, [entity.Id]).ConfigureAwait(false) is { } duplicate)
+        {
+            return duplicate;
+        }
+
         _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
@@ -220,9 +225,18 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return results;
         }
 
-        // 通过校验的项一次多行插入
+        // 通过校验的项一次多行插入；写入阶段才撞上的标识重复对这些项统一报告
         cancellationToken.ThrowIfCancellationRequested();
-        await InsertAsync(pending).ConfigureAwait(false);
+        if (await InsertCheckedAsync(pending, Distinct(pending.Select(static e => e.Id))).ConfigureAwait(false) is { } duplicate)
+        {
+            foreach (var index in pendingIndexes)
+            {
+                results[index] = duplicate;
+            }
+
+            return results;
+        }
+
         foreach (var index in pendingIndexes)
         {
             results[index] = Result.Success();
@@ -252,7 +266,8 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return StaleStamp(entity.Id);
         }
 
-        PersistenceConventions.ApplyOnUpdate(entity, _timeProvider.GetUtcNow());
+        // 创建时间、租户与删除标记沿用当前行：调用方实例上的值不写入
+        PersistenceConventions.ApplyOnUpdate(entity, existing, _timeProvider.GetUtcNow());
         cancellationToken.ThrowIfCancellationRequested();
         // 行已在本事务内加锁，按主键整行写入；影响 0 行只可能是行在锁定前已被删除，按冲突报告
         if (await UpdateAsync(entity).ConfigureAwait(false) == 0)
@@ -301,7 +316,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
                 continue;
             }
 
-            PersistenceConventions.ApplyOnUpdate(entity, now);
+            PersistenceConventions.ApplyOnUpdate(entity, existing, now);
             rows[entity.Id] = entity;
             pending.Add(entity);
             pendingIndexes.Add(index);
@@ -552,6 +567,39 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         return range is null ? source.SplitTable() : source.SplitTable(range.From.UtcDateTime, range.To.UtcDateTime);
+    }
+
+    /// <summary>
+    /// 插入单个实体或实体列表，写入撞上主键约束时核对是否为并发新增的同一标识。
+    /// </summary>
+    /// <remarks>
+    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。PostgreSQL 系语句失败后整个事务进入中止状态，不能在原事务里再查，所以另开一个不在事务里的连接（<c>CopyNew</c>，同一份连接配置）查这些标识：有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）并把工作单元标为失败，提交时回滚并返回同一错误；一个都不存在说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
+    /// </remarks>
+    private async Task<Error?> InsertCheckedAsync(object entityOrList, List<TKey> ids)
+    {
+        try
+        {
+            await InsertAsync(entityOrList).ConfigureAwait(false);
+            return null;
+        }
+        catch (DbException)
+        {
+            List<TKey> taken;
+            using (var fresh = Client.CopyNew())
+            {
+                taken = await Split(fresh.Queryable<TEntity>().In(ids)).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false);
+            }
+
+            var collided = ids.FindIndex(taken.Contains);
+            if (collided < 0)
+            {
+                throw;
+            }
+
+            var duplicate = Duplicate(ids[collided]);
+            _unitOfWork.Fail(duplicate);
+            return duplicate;
+        }
     }
 
     /// <summary>

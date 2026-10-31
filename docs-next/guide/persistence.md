@@ -21,7 +21,7 @@
 `Profiles.Standard` 已包含内存实现。应用再 `UseFeature` 一个显式 Provider 就顶替它，被顶替的默认实现不装配、不启动。三个 Provider 通过同一套 `Persistence.Conformance` 用例，业务代码（实体、仓储调用、查询）换 Provider 时不改。
 
 ::: warning 内存仓储只用于开发与测试
-内存实现每种实体一张有界的表（缺省 100000 条），存的是对象引用，不检测跨工作单元的并发冲突，一次提交跨多张表时也不是原子的。生产环境装配 EF Core 或 SqlSugar Provider。
+内存实现每种实体一张有界的表（缺省 100000 条），数据只在进程内。读写交出与存入的都是浅复制的副本，集合、嵌套对象等引用类型字段在副本之间共享，不在隔离范围内。生产环境装配 EF Core 或 SqlSugar Provider。
 :::
 
 各 Provider 的装配与差异见 [Persistence.InMemory](../packages/persistence-inmemory)、[Persistence.EntityFrameworkCore](../packages/persistence-entityframeworkcore)、[Persistence.SqlSugar](../packages/persistence-sqlsugar)。
@@ -130,12 +130,12 @@ var lastMonth = EntityQuery.All<Order>().Within(DateTimeOffset.UtcNow.AddMonths(
 | 方法 | 写入的字段 | 可恢复失败 |
 | --- | --- | --- |
 | `AddAsync(entity, ct)` | 创建时间、当前租户、新的并发戳 | `PERSISTENCE_CONFLICT_002` 标识已存在（含已软删除与其他租户的行）；`PERSISTENCE_VALIDATION_001` 多租户实体没有当前租户 |
-| `UpdateAsync(entity, ct)` | 修改时间、新的并发戳 | `PERSISTENCE_NOTFOUND_001` 不存在或不可见；`PERSISTENCE_CONFLICT_001` 游离实例的并发戳与当前值不同 |
-| `RemoveAsync(entity, ct)` | 软删除实体写删除标记与删除时间；其余物理删除 | `PERSISTENCE_NOTFOUND_001` |
+| `UpdateAsync(entity, ct)` | 修改时间、新的并发戳；创建时间、租户与删除标记沿用存储值 | `PERSISTENCE_NOTFOUND_001` 不存在或不可见；`PERSISTENCE_CONFLICT_001` 游离实例的并发戳与当前值不同 |
+| `RemoveAsync(entity, ct)` | 软删除实体在存储的当前行上写删除标记与删除时间；其余物理删除 | `PERSISTENCE_NOTFOUND_001` |
 
-写入成功后，调用方传入的实例上就是协议字段的新值：新增后的创建时间与并发戳、更新后的修改时间与并发戳、软删除后的删除标记与删除时间。同一工作单元里，写入对随后的查找与查询可见（读己之写），提交前对其他工作单元不可见。
+写入成功后，调用方传入的实例上就是协议字段的值：新增后的创建时间与并发戳、更新后的修改时间与并发戳（以及存储里的创建时间与租户）、软删除后的删除标记与删除时间。同一工作单元里，写入对随后的查找与查询可见（读己之写），提交前对其他工作单元不可见，回滚后存储里不留痕迹。
 
-更新时**修改查找得到的实例再写回**。传入一个自己构造的游离实例时，三个 Provider 都按它整行写入，`CreatedAt`、`TenantId` 等字段也会被它的值覆盖；实现 `IHasConcurrencyStamp` 的实体会先比对并发戳，戳不同即冲突。已软删除的实体对仓储不可见，再更新或删除都返回 `PERSISTENCE_NOTFOUND_001`。下例的错误码与消息键 `SampleMessages.ResourceMissing` 是 SimpleApp 自己定义的。
+更新时**修改查找得到的实例再写回**。也可以传一个自己构造的游离实例：三个 Provider 都按它写入业务字段；实现 `IHasConcurrencyStamp` 的实体会先比对并发戳，戳不同即冲突。协议字段只由 Provider 写：创建时间、租户与删除标记沿用存储里当前行的值，调用方实例上的这些值（游离实例带的，或读出后改的）一律不生效，更新不能把实体改到别的租户或改掉创建时间。已软删除的实体对仓储不可见，再更新或删除都返回 `PERSISTENCE_NOTFOUND_001`。下例的错误码与消息键 `SampleMessages.ResourceMissing` 是 SimpleApp 自己定义的。
 
 ```csharp
 using XiHan.Framework.Kernel.Operations;
@@ -168,12 +168,24 @@ public sealed class RenameOrder(IRepository<Order, Guid> orders) : IOperation<Re
 
 操作不调用提交：处理器返回成功，Transaction 阶段提交；返回失败或抛出异常，整个工作单元回滚。
 
+### 并发新增同一标识
+
+两个调用同时新增同一标识，检查时对方都还没提交，各自的重复判定都会通过。先提交的保留，后到的以 `PERSISTENCE_CONFLICT_002` 失败，不会静默覆盖：
+
+| Provider | 后到者在哪里失败 |
+| --- | --- |
+| 内存 | 提交时：提交按每个写过的标识首次读到的状态校验，发现标识已被提交 |
+| EF Core | 写入时：插入撞上主键约束（PostgreSQL 等要等对方提交后才报错），仓储在同一事务里核对标识确已存在，返回标识重复 |
+| SqlSugar | 写入时：同上；PostgreSQL 语句失败后事务已中止，仓储另开连接核对 |
+
+数据库报错后核对不到这个标识（别的唯一索引冲突、外键冲突等），异常照常抛出，调用以 `KERNEL_UNEXPECTED_001` 结束。关系型 Provider 返回标识重复之后，这个工作单元只能回滚：处理器忽略这次失败、返回成功，提交也会回滚并返回同一错误。
+
 ## 批量方法
 
 对多个实体的读写用批量方法，不在循环里调用单条方法（ADR-0012《批量优先》）。单条是批量的特例，两者语义相同：
 
 - `AddRangeAsync`、`UpdateRangeAsync`、`RemoveRangeAsync` 返回与入参等长、顺序一一对应的 `IReadOnlyList<Result>`。标识重复、缺租户、不存在、并发冲突按项报告。
-- 通过校验的项一次写入：内存实现一次进覆盖层；EF Core 用一次 `IN` 查询取回目标行、逐项校验后一次 `SaveChanges`；SqlSugar 用一次主键 `IN` 查询取回目标行，再一次多行插入、更新或删除。写入阶段的失败对本次写入的全部项统一报告。
+- 通过校验的项一次写入：内存实现一次进覆盖层；EF Core 用一次 `IN` 查询取回目标行、逐项校验后一次 `SaveChanges`；SqlSugar 用一次主键 `IN` 查询取回目标行，再一次多行插入、更新或删除。写入阶段的失败对本次写入的全部项统一报告，包括写入时才撞上的标识重复（见下文「并发新增同一标识」），这时 `id` 是第一个撞上的标识。
 - 批内重复项按入参顺序逐项施加：同一标识新增两次，第二次返回 `PERSISTENCE_CONFLICT_002`；同一实体删除两次，第二次返回 `PERSISTENCE_NOTFOUND_001`；实现 `IHasConcurrencyStamp` 的实体，同一标识的游离实例更新两次，第二次因并发戳已刷新返回 `PERSISTENCE_CONFLICT_001`。
 - 空集合不访问数据库、返回空列表，但仍要求活动的工作单元。
 - 进入数据库之前检查取消；写入是一步，不在中途取消留下半批。
@@ -222,6 +234,7 @@ public sealed class ArchiveOrders(IRepository<Order, Guid> orders) : IOperation<
 - 实现 `ISoftDeletable` 的实体：删除只打标；查询默认排除，`IncludeDeleted = true` 时包含。已软删除的实体不能经仓储恢复，需要恢复时用 Provider 的客户端。
 - 实现 `IMultiTenant` 的实体：当前租户是工作单元的 `TenantId`，管道里取自 Tenant 阶段写入的安全上下文。新增时写入当前租户；查询只返回同一租户的行；没有当前租户的调用看不到任何多租户实体，新增返回 `PERSISTENCE_VALIDATION_001`。
 - 新增时的重复判定不看可见性：已软删除或属于其他租户的同键行同样与新标识冲突。
+- 租户只在新增时写入：更新与删除沿用存储的租户，不能借更新把实体搬到别的租户。
 
 租户如何解析见[多租户](./multi-tenancy)，按租户分库时连接怎么选见[多租户的租户分片](./multi-tenancy#租户分片)。SqlSugar 还支持在一次调用里让平台表落默认库、租户表落分片库，见 [Persistence.SqlSugar 包](../packages/persistence-sqlsugar#多库落点)。
 
@@ -315,8 +328,8 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）、只读工作单元写入 | 状态错误抛异常；只读写入返回 `Result` |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
-| `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配 | `Result` |
-| `PERSISTENCE_CONFLICT_002` | 新增的标识已存在 | `Result` |
+| `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
+| `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
 | `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达；SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接 | 健康项；后者抛 `FrameworkException` |

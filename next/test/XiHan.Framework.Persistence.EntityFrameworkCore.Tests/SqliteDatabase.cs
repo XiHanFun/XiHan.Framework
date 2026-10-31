@@ -3,6 +3,7 @@
 
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -42,19 +43,26 @@ internal sealed class SqliteDatabase : IDisposable
     /// 创建以 <see cref="ConformanceDbContext"/> 与 SQLite 装配的 EF Core 特性。
     /// </summary>
     /// <remarks>
-    /// 连接串来自宿主解析的绑定。
+    /// 连接串来自宿主解析的绑定。给了拦截器就挂到上下文上。
     /// </remarks>
-    public static IFeature CreateFeature()
-        => new EntityFrameworkCorePersistenceFeature<ConformanceDbContext>(static (binding, options) => options.UseSqlite(binding.ValueOrThrow().Value));
+    public static IFeature CreateFeature(IInterceptor? interceptor = null)
+        => new EntityFrameworkCorePersistenceFeature<ConformanceDbContext>((binding, options) =>
+        {
+            options.UseSqlite(binding.ValueOrThrow().Value);
+            if (interceptor is not null)
+            {
+                options.AddInterceptors(interceptor);
+            }
+        });
 
     /// <summary>
     /// 启动带本数据库、三种套件实体与指定时钟的宿主。
     /// </summary>
     /// <remarks>
-    /// 不传时钟则用系统时钟。
+    /// 不传时钟则用系统时钟；给了拦截器就挂到上下文上。
     /// </remarks>
-    public Task<TestHost> StartHostAsync(TimeProvider? timeProvider = null) => TestHost.StartAsync(
-        builder => builder.UseFeature(CreateFeature()),
+    public Task<TestHost> StartHostAsync(TimeProvider? timeProvider = null, IInterceptor? interceptor = null) => TestHost.StartAsync(
+        builder => builder.UseFeature(CreateFeature(interceptor)),
         Configuration,
         services =>
         {

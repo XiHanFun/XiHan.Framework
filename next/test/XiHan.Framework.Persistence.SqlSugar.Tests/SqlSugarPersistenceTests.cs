@@ -19,7 +19,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// SqlSugar Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析、协议约定、游离实体更新与并发戳、只读工作单元、状态机、建表开关与应用自注册的客户端。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析、协议约定、游离实体更新与并发戳、新增撞上主键约束（检查之后同一标识被占）时的标识重复与只能回滚的提交、只读工作单元、状态机、建表开关与应用自注册的客户端。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class SqlSugarPersistenceTests : IDisposable
 {
@@ -174,6 +174,50 @@ public sealed class SqlSugarPersistenceTests : IDisposable
         })).ThrowIfFailure();
         Assert.Equal("keep-me", tombstone!.Name);
         Assert.True(tombstone.IsDeleted);
+    }
+
+    [Fact]
+    public async Task Add_WhenTheIdIsCommittedBetweenCheckAndWrite_ReturnsDuplicate_AndTheCommitOnlyRollsBack()
+    {
+        var blind = new BlindedIdCheck();
+        await using var host = await TestHost.StartAsync(
+            builder => builder.UseFeature(new SqlSugarPersistenceFeature((binding, config) =>
+            {
+                config.DbType = DbType.Sqlite;
+                config.ConnectionString = binding.ValueOrThrow().Value;
+                config.AopEvents = new AopEvents { OnExecutingChangeSql = blind.Rewrite };
+            })),
+            _database.Configuration,
+            static services =>
+            {
+                services.AddSingleton(TimeProvider.System);
+                services.AddRepository<ConformanceOrder, Guid>();
+            });
+        var id = Guid.CreateVersion7();
+        var other = Guid.CreateVersion7();
+        (await RunAsync(host, ctx => Repository(ctx).AddAsync(new ConformanceOrder { Id = id, Name = "first" }, ctx.CancellationToken))).ThrowIfFailure();
+        blind.Arm(id);
+        Result added = Result.Success();
+
+        // 处理器忽略了新增的失败，接着写别的行并返回成功：工作单元已标为失败，提交只回滚并返回同一错误
+        var outcome = await RunAsync(host, async ctx =>
+        {
+            added = await Repository(ctx).AddAsync(new ConformanceOrder { Id = id, Name = "mine" }, ctx.CancellationToken);
+            (await Repository(ctx).AddAsync(new ConformanceOrder { Id = other, Name = "other" }, ctx.CancellationToken)).ThrowIfFailure();
+            return Result.Success();
+        });
+
+        Assert.True(blind.Fired);
+        Assert.Equal(PersistenceErrors.Duplicate, added.Error?.Code);
+        Assert.Equal(id, added.Error!.Details!["id"]);
+        Assert.Equal(PersistenceErrors.Duplicate, outcome.Error?.Code);
+        IReadOnlyList<ConformanceOrder> rows = [];
+        (await RunAsync(host, async ctx =>
+        {
+            rows = await Repository(ctx).ListAsync(EntityQuery.All<ConformanceOrder>(), ctx.CancellationToken);
+            return Result.Success();
+        })).ThrowIfFailure();
+        Assert.Equal("first", Assert.Single(rows).Name);
     }
 
     [Fact]

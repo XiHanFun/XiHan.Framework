@@ -216,6 +216,7 @@ static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.ope
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnAdd<TEntity>(TEntity! entity, string? tenantId, System.DateTimeOffset now) -> XiHan.Framework.Primitives.Result
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnUpdate<TEntity>(TEntity! entity, System.DateTimeOffset now) -> void
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.IsDeleted<TEntity>(TEntity! entity) -> bool
+static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.ApplyOnUpdate<TEntity>(TEntity! entity, TEntity! stored, System.DateTimeOffset now) -> void
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.IsVisibleTo<TEntity>(TEntity! entity, string? tenantId) -> bool
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.NewStamp() -> string!
 static XiHan.Framework.Persistence.Abstractions.PersistenceConventions.TrySoftDelete<TEntity>(TEntity! entity, System.DateTimeOffset now) -> bool

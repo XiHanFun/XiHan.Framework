@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。
+/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -29,6 +29,14 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 为假表示本工作单元尚未写入。
     /// </remarks>
     private bool _transactionOpen;
+
+    /// <summary>
+    /// 写入阶段记下的失败。
+    /// </summary>
+    /// <remarks>
+    /// 非空时提交只回滚并返回它。
+    /// </remarks>
+    private Error? _failure;
 
     /// <summary>
     /// 创建。
@@ -119,6 +127,13 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
+        // 写入阶段已失败（并发新增撞上同一标识）：调用方忽略了那次失败也不能提交；PostgreSQL 对已中止的事务执行 COMMIT 会静默回滚，提交成功是假象
+        if (_failure is { } failure)
+        {
+            await RollbackAsync(cancellationToken).ConfigureAwait(false);
+            return failure;
+        }
+
         // 没有事务说明本工作单元只读过数据，无需提交；多连接按顺序逐个提交，后一个失败时前一个已经提交（顺序提交，不是两阶段提交）
         if (_transactionOpen)
         {
@@ -151,5 +166,17 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
             await Client.AsTenant().RollbackTranAsync().ConfigureAwait(false);
             _transactionOpen = false;
         }
+    }
+
+    /// <summary>
+    /// 标为失败。
+    /// </summary>
+    /// <remarks>
+    /// 仓储在写入阶段发现并发新增撞上同一标识时调用；只记第一次。
+    /// </remarks>
+    internal void Fail(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        _failure ??= error;
     }
 }

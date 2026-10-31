@@ -54,7 +54,7 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
             return;
         }
 
-        // 提交失败（并发冲突、标识重复、容量已满）覆盖调用结果，让调用方看到真实的持久化错误
+        // 提交失败（并发冲突、标识重复、容量已满；含写入阶段已失败却被处理器忽略的标识重复）覆盖调用结果，让调用方看到真实的持久化错误
         var commit = await unitOfWork.CommitAsync(context.CancellationToken).ConfigureAwait(false);
         if (commit.IsFailure)
         {

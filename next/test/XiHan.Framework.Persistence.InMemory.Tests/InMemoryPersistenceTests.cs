@@ -7,6 +7,7 @@ using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.InMemory.Tests;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Persistence.InMemory.Tests;
 /// 内存 Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚与并发提交。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚、读写都复制、提交时按首次读到的状态校验（并发新增同一标识、行被改或被删）且跨表原子、并发提交。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class InMemoryPersistenceTests
 {
@@ -67,6 +68,15 @@ public sealed class InMemoryPersistenceTests
         var unitOfWork = new InMemoryUnitOfWork(store);
         return (store, unitOfWork, new InMemoryRepository<Widget, Guid>(store, unitOfWork, new FakeTimeProvider(_now)));
     }
+
+    /// <summary>
+    /// 在已有工作单元上打开订单仓储。
+    /// </summary>
+    /// <remarks>
+    /// 订单带并发戳，用来验证提交时的戳校验。
+    /// </remarks>
+    private static InMemoryRepository<ConformanceOrder, Guid> Orders(InMemoryStore store, InMemoryUnitOfWork unitOfWork)
+        => new(store, unitOfWork, new FakeTimeProvider(_now));
 
     [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
@@ -200,6 +210,136 @@ public sealed class InMemoryPersistenceTests
 
         Assert.All(results, static r => Assert.True(r.IsSuccess));
         Assert.Equal(writers, store.Table<Widget, Guid>().Count);
+    }
+
+    [Fact]
+    public async Task Reads_ReturnCopies_ChangesNotWrittenBackNeverReachTheStore()
+    {
+        var (store, first, repository) = Arrange();
+        var id = Guid.NewGuid();
+        await first.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await repository.AddAsync(new Widget { Id = id, Name = "v1" }, CancellationToken.None);
+        Assert.True((await first.CommitAsync(CancellationToken.None)).IsSuccess);
+
+        // 表的公开读取交出的也是副本
+        store.Table<Widget, Guid>().Find(id).ValueOrThrow().Name = "tampered";
+        store.Table<Widget, Guid>().Snapshot()[0].Name = "tampered";
+
+        // 读出的实例改了却没经仓储写回：本工作单元随后的读取、提交后的表都看不到
+        var (_, second, secondRepository) = Open(store);
+        await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        (await secondRepository.FindAsync(id, CancellationToken.None)).ValueOrThrow().Name = "v2";
+        (await secondRepository.ListAsync(EntityQuery.All<Widget>(), CancellationToken.None))[0].Name = "v2";
+        (await secondRepository.FindManyAsync([id], CancellationToken.None))[0].Name = "v2";
+        Assert.Equal("v1", (await secondRepository.FindAsync(id, CancellationToken.None)).ValueOrThrow().Name);
+        Assert.True((await second.CommitAsync(CancellationToken.None)).IsSuccess);
+
+        Assert.Equal("v1", store.Table<Widget, Guid>().Find(id).ValueOrThrow().Name);
+    }
+
+    [Fact]
+    public async Task Writes_StoreCopies_CallerChangesAfterTheWriteDoNotLeak()
+    {
+        var (store, unitOfWork, repository) = Arrange();
+        var id = Guid.NewGuid();
+        var widget = new Widget { Id = id, Name = "v1" };
+        await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await repository.AddAsync(widget, CancellationToken.None);
+
+        // 写入之后再改调用方实例：覆盖层与表里都还是写入时的值
+        widget.Name = "changed";
+        Assert.Equal("v1", (await repository.FindAsync(id, CancellationToken.None)).ValueOrThrow().Name);
+        Assert.True((await unitOfWork.CommitAsync(CancellationToken.None)).IsSuccess);
+        widget.Name = "changed-again";
+
+        Assert.Equal("v1", store.Table<Widget, Guid>().Find(id).ValueOrThrow().Name);
+    }
+
+    [Fact]
+    public async Task Commit_AddOfAnIdCommittedMeanwhile_ReturnsDuplicate_AndKeepsTheFirstRow()
+    {
+        var store = new InMemoryStore(new InMemoryPersistenceOptions());
+        var id = Guid.NewGuid();
+        var (_, first, firstRepository) = Open(store);
+        var (_, second, secondRepository) = Open(store);
+        await first.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+
+        // 两个覆盖层都看不到对方未提交的新增，各自的新增都成功
+        Assert.True((await firstRepository.AddAsync(new Widget { Id = id, Name = "first" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await secondRepository.AddAsync(new Widget { Id = id, Name = "second" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await first.CommitAsync(CancellationToken.None)).IsSuccess);
+        var commit = await second.CommitAsync(CancellationToken.None);
+
+        Assert.Equal(PersistenceErrors.Duplicate, commit.Error?.Code);
+        Assert.Equal(UnitOfWorkState.RolledBack, second.State);
+        Assert.Equal("first", store.Table<Widget, Guid>().Find(id).ValueOrThrow().Name);
+    }
+
+    [Fact]
+    public async Task Commit_UpdateOfARowChangedOrRemovedMeanwhile_ReturnsConcurrency()
+    {
+        var store = new InMemoryStore(new InMemoryPersistenceOptions());
+        var orderId = Guid.NewGuid();
+        var widgetId = Guid.NewGuid();
+        var (_, seed, widgets) = Open(store);
+        await seed.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await Orders(store, seed).AddAsync(new ConformanceOrder { Id = orderId, Name = "v1" }, CancellationToken.None);
+        await widgets.AddAsync(new Widget { Id = widgetId, Name = "v1" }, CancellationToken.None);
+        Assert.True((await seed.CommitAsync(CancellationToken.None)).IsSuccess);
+
+        // 带并发戳的行：两个工作单元都基于同一个戳更新，先提交的生效，后提交的冲突
+        var (_, first, _) = Open(store);
+        var (_, second, _) = Open(store);
+        await first.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await RenameAsync(Orders(store, first), "first");
+        await RenameAsync(Orders(store, second), "second");
+        Assert.True((await first.CommitAsync(CancellationToken.None)).IsSuccess);
+        Assert.Equal(PersistenceErrors.Concurrency, (await second.CommitAsync(CancellationToken.None)).Error?.Code);
+        Assert.Equal("first", store.Table<ConformanceOrder, Guid>().Find(orderId).ValueOrThrow().Name);
+
+        // 不带并发戳的行：更新期间被别的工作单元物理删除，提交冲突而不是把它写回来
+        var (_, updater, updaterRepository) = Open(store);
+        var (_, remover, removerRepository) = Open(store);
+        await updater.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await remover.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        var widget = (await updaterRepository.FindAsync(widgetId, CancellationToken.None)).ValueOrThrow();
+        widget.Name = "updated";
+        Assert.True((await updaterRepository.UpdateAsync(widget, CancellationToken.None)).IsSuccess);
+        Assert.True((await removerRepository.RemoveAsync((await removerRepository.FindAsync(widgetId, CancellationToken.None)).ValueOrThrow(), CancellationToken.None)).IsSuccess);
+        Assert.True((await remover.CommitAsync(CancellationToken.None)).IsSuccess);
+        Assert.Equal(PersistenceErrors.Concurrency, (await updater.CommitAsync(CancellationToken.None)).Error?.Code);
+        Assert.False(store.Table<Widget, Guid>().Find(widgetId).HasValue);
+
+        // 读出改名再更新
+        async Task RenameAsync(InMemoryRepository<ConformanceOrder, Guid> orders, string name)
+        {
+            var order = (await orders.FindAsync(orderId, CancellationToken.None)).ValueOrThrow();
+            order.Name = name;
+            Assert.True((await orders.UpdateAsync(order, CancellationToken.None)).IsSuccess);
+        }
+    }
+
+    [Fact]
+    public async Task Commit_ConflictInOneTable_LeavesEveryTableUntouched()
+    {
+        var store = new InMemoryStore(new InMemoryPersistenceOptions());
+        var orderId = Guid.NewGuid();
+        var (_, first, _) = Open(store);
+        var (_, second, secondWidgets) = Open(store);
+        await first.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+
+        // 第二个工作单元写两张表，其中订单与第一个工作单元先提交的新增撞上同一标识
+        await Orders(store, first).AddAsync(new ConformanceOrder { Id = orderId, Name = "first" }, CancellationToken.None);
+        await secondWidgets.AddAsync(new Widget { Id = Guid.NewGuid(), Name = "w" }, CancellationToken.None);
+        await Orders(store, second).AddAsync(new ConformanceOrder { Id = orderId, Name = "second" }, CancellationToken.None);
+        Assert.True((await first.CommitAsync(CancellationToken.None)).IsSuccess);
+
+        Assert.Equal(PersistenceErrors.Duplicate, (await second.CommitAsync(CancellationToken.None)).Error?.Code);
+        Assert.Equal(0, store.Table<Widget, Guid>().Count);
+        Assert.Equal("first", store.Table<ConformanceOrder, Guid>().Find(orderId).ValueOrThrow().Name);
     }
 
     [Fact]

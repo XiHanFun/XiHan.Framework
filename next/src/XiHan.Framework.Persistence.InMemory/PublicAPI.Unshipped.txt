@@ -29,7 +29,6 @@ XiHan.Framework.Persistence.InMemory.InMemoryStore.InMemoryStore(XiHan.Framework
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Options.get -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Table<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity!, TKey>!
 XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Apply(System.Collections.Generic.IReadOnlyDictionary<TKey, TEntity!>! upserts, System.Collections.Generic.IReadOnlySet<TKey>! removals) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Capacity.get -> int
 XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Count.get -> int
 XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Find(TKey id) -> XiHan.Framework.Primitives.Maybe<TEntity!>
@@ -37,22 +36,10 @@ XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.InMemoryTable(
 XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Snapshot() -> System.Collections.Generic.IReadOnlyList<TEntity!>!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.Changes<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity!, TKey>!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.Apply(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> XiHan.Framework.Primitives.Result
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IPendingChanges.HasChanges.get -> bool
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.InMemoryUnitOfWork(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> void
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IsReadOnly.get -> bool
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Apply(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> XiHan.Framework.Primitives.Result
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.HasChanges.get -> bool
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Lookup(TKey id) -> (bool Found, bool Removed, TEntity? Entity)
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Overlay(System.Collections.Generic.IEnumerable<TEntity!>! snapshot) -> System.Collections.Generic.IEnumerable<TEntity!>!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.PendingChanges() -> void
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Remove(TKey id) -> void
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.PendingChanges<TEntity, TKey>.Upsert(TEntity! entity) -> void
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.TenantId.get -> string?

@@ -166,7 +166,7 @@ public abstract class RepositoryConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var id = Guid.CreateVersion7();
         (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
-        // 只记录戳的值：内存实现返回的是同一对象引用，不能拿对象本身做前后对比
+        // 只记录戳的值，更新后与新读出的实例比较
         var originalStamp = (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().ConcurrencyStamp;
         Clock.Advance(TimeSpan.FromHours(1));
 
@@ -744,6 +744,181 @@ public abstract class RepositoryConformance
 
         (await RunAsync(bare, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "plain" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
         Assert.Single(await ListAsync<ConformanceOrder, Guid>(bare, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 22：更新沿用存储的创建时间与删除标记，删除也不改创建时间。
+    /// </summary>
+    /// <remarks>
+    /// 自己构造的游离实例与读出后改过的实例两种：调用方实例上的创建时间、删除标记一律不生效，写入成功后调用方实例拿到存储里的值；软删除只打标，创建时间仍是新增时的值。
+    /// </remarks>
+    [Fact]
+    public async Task Update_And_Remove_KeepStoredCreationTimeAndDeletionMarker()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var id = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        var stamp = (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().ConcurrencyStamp;
+        Clock.Advance(TimeSpan.FromHours(1));
+
+        // 游离实例：并发戳对得上，创建时间与删除标记是调用方编的
+        var detached = new ConformanceOrder { Id = id, Name = "v2", ConcurrencyStamp = stamp, CreatedAt = Epoch.AddYears(3), IsDeleted = true, DeletedAt = Epoch.AddYears(3) };
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).UpdateAsync(detached, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        Assert.Equal(Epoch, detached.CreatedAt);
+        Assert.False(detached.IsDeleted);
+        Assert.Null(detached.DeletedAt);
+        var afterDetached = (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal("v2", afterDetached.Name);
+        Assert.Equal(Epoch, afterDetached.CreatedAt);
+        Assert.Equal(Clock.GetUtcNow(), afterDetached.ModifiedAt);
+
+        // 读出后改过的实例
+        Clock.Advance(TimeSpan.FromHours(1));
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var order = (await repository.FindAsync(id, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            order.Name = "v3";
+            order.CreatedAt = Epoch.AddDays(-5);
+            order.IsDeleted = true;
+            return await repository.UpdateAsync(order, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false)).ThrowIfFailure();
+        var afterModified = (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal("v3", afterModified.Name);
+        Assert.Equal(Epoch, afterModified.CreatedAt);
+        Assert.False(afterModified.IsDeleted);
+
+        // 删除前改了创建时间：墓碑上仍是新增时的值
+        Clock.Advance(TimeSpan.FromHours(1));
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var order = (await repository.FindAsync(id, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            order.CreatedAt = Epoch.AddDays(-5);
+            return await repository.RemoveAsync(order, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false)).ThrowIfFailure();
+        var tombstone = Assert.Single(await ListAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>() with { IncludeDeleted = true }).ConfigureAwait(false));
+        Assert.True(tombstone.IsDeleted);
+        Assert.Equal(Clock.GetUtcNow(), tombstone.DeletedAt);
+        Assert.Equal(Epoch, tombstone.CreatedAt);
+    }
+
+    /// <summary>
+    /// 用例 23：更新不能把实体改到别的租户。
+    /// </summary>
+    /// <remarks>
+    /// 游离实例带着别的租户、读出后改了租户，两种更新都成功，但行仍属于新增时的租户，别的租户看不到它；调用方实例拿回存储里的租户。
+    /// </remarks>
+    [Fact]
+    public async Task Update_KeepsStoredTenant()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var id = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceNote, Guid>(context).AddAsync(new ConformanceNote { Id = id, Text = "hi" }, context.CancellationToken), tenantId: "t1").ConfigureAwait(false)).ThrowIfFailure();
+
+        var detached = new ConformanceNote { Id = id, TenantId = "t2", Text = "moved" };
+        (await RunAsync(host, context => Repository<ConformanceNote, Guid>(context).UpdateAsync(detached, context.CancellationToken), tenantId: "t1").ConfigureAwait(false)).ThrowIfFailure();
+        Assert.Equal("t1", detached.TenantId);
+        var afterDetached = (await FindAsync<ConformanceNote, Guid>(host, id, tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal("moved", afterDetached.Text);
+        Assert.Equal("t1", afterDetached.TenantId);
+        Assert.False((await FindAsync<ConformanceNote, Guid>(host, id, tenantId: "t2").ConfigureAwait(false)).HasValue);
+
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceNote, Guid>(context);
+            var note = (await repository.FindAsync(id, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            note.TenantId = "t2";
+            note.Text = "again";
+            return await repository.UpdateAsync(note, context.CancellationToken).ConfigureAwait(false);
+        }, tenantId: "t1").ConfigureAwait(false)).ThrowIfFailure();
+        Assert.Equal("again", (await FindAsync<ConformanceNote, Guid>(host, id, tenantId: "t1").ConfigureAwait(false)).ValueOrThrow().Text);
+        Assert.False((await FindAsync<ConformanceNote, Guid>(host, id, tenantId: "t2").ConfigureAwait(false)).HasValue);
+        Assert.Equal(0, await CountAsync<ConformanceNote, Guid>(host, EntityQuery.All<ConformanceNote>(), tenantId: "t2").ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 24：两个工作单元先后新增同一标识，检查时对方尚未提交。
+    /// </summary>
+    /// <remarks>
+    /// 只有一个成功，另一个以 <see cref="PersistenceErrors.Duplicate"/> 结束，留下的是成功者的行，不会静默覆盖。第一个调用新增后停在提交之前，第二个调用此时开始：关系型 Provider 里第二个调用的写入要等第一个提交后才失败，所以它跑在另一个线程上；内存实现里谁先提交谁成功，后提交的在提交时失败。断言不依赖哪一个先完成。
+    /// </remarks>
+    [Fact]
+    public async Task ConcurrentAdds_OfSameId_OneSucceeds_OtherReturnsDuplicate()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var id = Guid.CreateVersion7();
+        var firstAdded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = RunAsync(host, async context =>
+        {
+            var added = await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "first" }, context.CancellationToken).ConfigureAwait(false);
+            firstAdded.SetResult();
+            await releaseFirst.Task.ConfigureAwait(false);
+            return added;
+        });
+        await firstAdded.Task.ConfigureAwait(false);
+        var second = Task.Run(() => RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "second" }, context.CancellationToken)));
+        releaseFirst.SetResult();
+        var results = await Task.WhenAll(first, second).ConfigureAwait(false);
+
+        Assert.Single(results, static r => r.IsSuccess);
+        Assert.Equal(PersistenceErrors.Duplicate, Assert.Single(results, static r => r.IsFailure).Error?.Code);
+        var winner = results[0].IsSuccess ? "first" : "second";
+        Assert.Equal(winner, (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().Name);
+    }
+
+    /// <summary>
+    /// 用例 25：回滚的调用不在存储里留下任何痕迹。
+    /// </summary>
+    /// <remarks>
+    /// 读出的实例改名后更新、另一个读出的实例删除，调用以失败结束：存储里的名称、并发戳、修改时间与删除标记都是调用前的值。更新之后、提交之前，另一个工作单元读到的也是旧值。
+    /// </remarks>
+    [Fact]
+    public async Task RolledBackWrites_LeaveStoredEntitiesUntouched()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var renamed = Guid.CreateVersion7();
+        var removed = Guid.CreateVersion7();
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [new ConformanceOrder { Id = renamed, Name = "a" }, new ConformanceOrder { Id = removed, Name = "b" }],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+        var stamps = (await FindManyAsync<ConformanceOrder, Guid>(host, [renamed, removed]).ConfigureAwait(false)).Select(static o => o.ConcurrencyStamp).ToList();
+        Clock.Advance(TimeSpan.FromHours(1));
+        var rejection = Error.Literal("CONFORMANCE_VALIDATION_001", "Rejected by the business rule.");
+        Maybe<ConformanceOrder> seenByOther = default;
+
+        var outcome = await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var order = (await repository.FindAsync(renamed, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            order.Name = "a2";
+            (await repository.UpdateAsync(order, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            var doomed = (await repository.FindAsync(removed, context.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            (await repository.RemoveAsync(doomed, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+
+            // 尚未提交时另一个工作单元读同一行
+            await using var other = context.Services.CreateAsyncScope();
+            var otherUnitOfWork = other.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await otherUnitOfWork.BeginAsync(UnitOfWorkOptions.Default, context.CancellationToken).ConfigureAwait(false);
+            seenByOther = await other.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().FindAsync(renamed, context.CancellationToken).ConfigureAwait(false);
+            await otherUnitOfWork.RollbackAsync(context.CancellationToken).ConfigureAwait(false);
+            return rejection;
+        }).ConfigureAwait(false);
+
+        Assert.Equal(rejection, outcome.Error);
+        Assert.Equal("a", seenByOther.ValueOrThrow().Name);
+        Assert.Equal(stamps[0], seenByOther.ValueOrThrow().ConcurrencyStamp);
+        var current = await FindManyAsync<ConformanceOrder, Guid>(host, [renamed, removed]).ConfigureAwait(false);
+        Assert.Equal(["a", "b"], current.Select(static o => o.Name));
+        Assert.Equal(stamps, current.Select(static o => o.ConcurrencyStamp));
+        Assert.All(current, static o =>
+        {
+            Assert.Null(o.ModifiedAt);
+            Assert.False(o.IsDeleted);
+            Assert.Null(o.DeletedAt);
+        });
     }
 
     /// <summary>

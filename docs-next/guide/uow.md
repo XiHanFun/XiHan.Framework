@@ -13,7 +13,7 @@
 | `IsReadOnly` | 是否只读 |
 | `DomainEvents` | 本工作单元写过的聚合（`DomainEventTracker`），按首次写入顺序、同一实例只记一次 |
 | `BeginAsync(options, ct)` | 开始，只能调用一次；`UnitOfWorkOptions(TenantId, IsReadOnly)`，`UnitOfWorkOptions.Default` 为无租户、可写 |
-| `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突等以失败结果返回 |
+| `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突、标识重复、容量已满以失败结果返回 |
 | `RollbackAsync(ct)` | 回滚 |
 
 工作单元由持久化 Provider 实现并注册；Provider 的特性同时把 `UnitOfWorkMiddleware` 登记到 Transaction 阶段。
@@ -44,11 +44,12 @@
 | 处理器抛出异常 | 回滚 | Unexpected |
 | 有待派发事件但没有派发器 | 回滚 | `PERSISTENCE_VALIDATION_003` |
 | 派发器返回失败 | 回滚 | 派发器的失败 |
-| 提交时并发冲突（EF Core 的并发令牌在提交时不匹配） | 回滚 | `PERSISTENCE_CONFLICT_001` |
+| 提交时并发冲突（EF Core 的并发令牌在提交时不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉） | 回滚 | `PERSISTENCE_CONFLICT_001` |
+| 提交时标识重复（内存实现发现新增的标识已被别人提交；关系型 Provider 写入时已撞上主键、处理器却返回了成功） | 回滚 | `PERSISTENCE_CONFLICT_002` |
 | 提交时内存表超出容量 | 回滚 | `PERSISTENCE_UNAVAILABLE_002` |
 | 只读工作单元有未提交的变更 | 回滚 | `PERSISTENCE_VALIDATION_002` |
 
-标识重复在 `AddAsync` / `AddRangeAsync` 时就按项返回 `PERSISTENCE_CONFLICT_002`，不留到提交。
+标识重复在 `AddAsync` / `AddRangeAsync` 时就按项返回 `PERSISTENCE_CONFLICT_002`，不留到提交。两个工作单元并发新增同一标识时，后到者在关系型 Provider 上于写入时得到它，之后提交只回滚并返回同一错误；在内存实现上于提交时得到它（见[持久化的并发新增同一标识](./persistence#并发新增同一标识)）。
 
 ## 各 Provider 的事务
 
@@ -57,9 +58,9 @@
 | 写入去向 | 本工作单元的覆盖层 | 每次写入立即 `SaveChanges`，在数据库事务内 | 每次写入立即执行，在数据库事务内 |
 | 事务开启 | 不需要 | 第一次写入时 `BeginTransaction` | 第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务 |
 | 读己之写 | 覆盖层叠在已提交的表上 | 同一事务 | 同一事务 |
-| 提交 | 逐表原子应用覆盖层 | 保存残余变更后提交事务 | 逐连接顺序提交 |
+| 提交 | 涉及的表依次加锁，逐表校验首次读到的状态后应用覆盖层 | 保存残余变更后提交事务 | 逐连接顺序提交 |
 | 回滚 | 丢弃覆盖层 | 回滚事务并清空变更跟踪器 | 逐连接回滚 |
-| 原子性边界 | 单张表；跨表的提交不是原子的 | 一个 `DbContext` 一个连接 | 每个连接各自原子；跨连接是顺序提交，不是两阶段提交 |
+| 原子性边界 | 一次提交涉及的全部表：任一张表校验失败，所有表都不改 | 一个 `DbContext` 一个连接 | 每个连接各自原子；跨连接是顺序提交，不是两阶段提交 |
 | 作用域结束仍未提交 | — | 释放事务即回滚 | 回滚 |
 
 SqlSugar 跨连接的顺序提交意味着：后一个连接提交失败时，前一个已经提交。需要严格原子性的写入放在同一个库，详见 [Persistence.SqlSugar 包](../packages/persistence-sqlsugar#多库落点)。
@@ -193,6 +194,7 @@ if (pending.Count > 0)
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在没有活动工作单元时使用 | `FrameworkException` |
 | `PERSISTENCE_CONFLICT_001` | 提交时乐观并发冲突 | 提交结果 |
+| `PERSISTENCE_CONFLICT_002` | 提交时标识重复（并发新增同一标识） | 提交结果 |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存表在提交时超出容量 | 提交结果 |
 
 其余持久化错误码见[持久化](./persistence#失败与错误码)。

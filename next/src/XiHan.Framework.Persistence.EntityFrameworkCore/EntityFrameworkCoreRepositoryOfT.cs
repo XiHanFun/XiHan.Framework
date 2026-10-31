@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Queries;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 仓储。
 /// </summary>
 /// <remarks>
-/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告，工作单元随后只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -37,6 +38,14 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 按闭合泛型只判断一次，查询过滤据此决定是否追加租户条件。
     /// </remarks>
     private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
+
+    /// <summary>
+    /// 实体是否实现 <see cref="IHasCreationTime"/>。
+    /// </summary>
+    /// <remarks>
+    /// 按闭合泛型只判断一次，更新时据此决定是否把创建时间恢复为原值。
+    /// </remarks>
+    private static readonly bool _hasCreationTime = typeof(IHasCreationTime).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
     /// 本作用域的工作单元。
@@ -131,7 +140,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
 
         // 立即保存：同一工作单元内后续的 Find 与查询都能看到新行，事务提交前对其他连接不可见
         Set.Add(entity);
-        await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        if (await SaveAddedAsync([entity], cancellationToken).ConfigureAwait(false) is { } duplicate)
+        {
+            return duplicate;
+        }
+
         _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
@@ -183,8 +196,9 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         // 通过校验的项一次写入：写入阶段的失败对这些项统一报告
-        Set.AddRange(pending.Select(index => entities[index]));
-        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        var added = pending.Select(index => entities[index]).ToList();
+        Set.AddRange(added);
+        Result saved = await SaveAddedAsync(added, cancellationToken).ConfigureAwait(false) is { } duplicate ? duplicate : Result.Success();
         foreach (var index in pending)
         {
             results[index] = saved;
@@ -207,7 +221,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         var existing = await Set.FindAsync([entity.Id], cancellationToken).ConfigureAwait(false);
-        if (existing is null || !IsVisible(existing, includeDeleted: false))
+        if (existing is null || !IsStoredVisible(existing))
         {
             return NotFound(entity.Id);
         }
@@ -257,7 +271,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         {
             var entity = entities[index];
             ArgumentNullException.ThrowIfNull(entity);
-            if (!rows.TryGetValue(entity.Id, out var existing) || !IsVisible(existing, includeDeleted: false))
+            if (!rows.TryGetValue(entity.Id, out var existing) || !IsStoredVisible(existing))
             {
                 results[index] = NotFound(entity.Id);
                 continue;
@@ -306,7 +320,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         var existing = await Set.FindAsync([entity.Id], cancellationToken).ConfigureAwait(false);
-        if (existing is null || !IsVisible(existing, includeDeleted: false))
+        if (existing is null || !IsStoredVisible(existing))
         {
             return NotFound(entity.Id);
         }
@@ -346,13 +360,13 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         var now = _timeProvider.GetUtcNow();
         var results = new Result[entities.Count];
         var pending = new List<(int Index, TEntity Existing)>(entities.Count);
-        // 软删除打标后跟踪实例立即不可见；物理删除的实例仍可见，用已删除集合让同一实体第二次成为 NotFound
+        // 可见性按原值判定，批内打过标、标过删除的行在保存前仍判为可见：用已删除集合让同一实体第二次成为 NotFound
         var removed = new HashSet<TKey>();
         for (var index = 0; index < entities.Count; index++)
         {
             var entity = entities[index];
             ArgumentNullException.ThrowIfNull(entity);
-            if (!rows.TryGetValue(entity.Id, out var existing) || !IsVisible(existing, includeDeleted: false) || !removed.Add(entity.Id))
+            if (!rows.TryGetValue(entity.Id, out var existing) || !IsStoredVisible(existing) || !removed.Add(entity.Id))
             {
                 results[index] = NotFound(entity.Id);
                 continue;
@@ -456,10 +470,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 在跟踪实例上准备一次更新。
     /// </summary>
     /// <remarks>
-    /// 传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例；最后刷新审计字段。
+    /// 传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例。之后创建时间、租户与删除标记回到原值，最后刷新审计字段。
     /// </remarks>
     private Error? Stage(TEntity existing, TEntity entity, DateTimeOffset now)
     {
+        var entry = Context.Entry(existing);
         if (!ReferenceEquals(existing, entity))
         {
             if (existing is IHasConcurrencyStamp current && entity is IHasConcurrencyStamp incoming
@@ -468,9 +483,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
                 return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.StaleStamp, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
             }
 
-            Context.Entry(existing).CurrentValues.SetValues(entity);
+            entry.CurrentValues.SetValues(entity);
         }
 
+        KeepStored(entry);
         PersistenceConventions.ApplyOnUpdate(existing, now);
         return null;
     }
@@ -479,10 +495,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 在跟踪实例上准备一次删除。
     /// </summary>
     /// <remarks>
-    /// 软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
+    /// 创建时间与租户先回到原值（调用方改过跟踪实例也不生效）。软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
     /// </remarks>
     private void StageRemoval(TEntity existing, DateTimeOffset now)
     {
+        KeepStored(Context.Entry(existing));
         if (!PersistenceConventions.TrySoftDelete(existing, now))
         {
             Set.Remove(existing);
@@ -490,10 +507,55 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 把跟踪实例上由协议写入的修改时间、并发戳与软删除标记复制到调用方的游离实例。
+    /// 把创建时间、租户与删除标记恢复为跟踪实例的原值。
     /// </summary>
+    /// <remarks>
+    /// 原值是最近一次从数据库读出或保存时的值，即存储里的当前值：这些字段只在新增与删除时由协议写入，调用方实例上的值（游离实例复制过来的，或直接改在跟踪实例上的）一律不生效。
+    /// </remarks>
+    private static void KeepStored(EntityEntry<TEntity> entry)
+    {
+        if (_hasCreationTime)
+        {
+            Restore(entry, nameof(IHasCreationTime.CreatedAt));
+        }
+
+        if (_isMultiTenant)
+        {
+            Restore(entry, nameof(IMultiTenant.TenantId));
+        }
+
+        if (_isSoftDeletable)
+        {
+            Restore(entry, nameof(ISoftDeletable.IsDeleted));
+            Restore(entry, nameof(ISoftDeletable.DeletedAt));
+        }
+
+        // 按属性名访问映射的列，与查询里的 EF.Property 一致
+        static void Restore(EntityEntry<TEntity> entry, string name)
+        {
+            var property = entry.Property(name);
+            property.CurrentValue = property.OriginalValue;
+        }
+    }
+
+    /// <summary>
+    /// 把跟踪实例上的协议字段复制到调用方的游离实例。
+    /// </summary>
+    /// <remarks>
+    /// 修改时间、并发戳与软删除标记是这次写入的结果，创建时间与租户是存储里的值：写入成功后调用方实例与存储一致。
+    /// </remarks>
     private static void CopyAuditBack(TEntity source, TEntity target)
     {
+        if (source is IHasCreationTime sourceCreated && target is IHasCreationTime targetCreated)
+        {
+            targetCreated.CreatedAt = sourceCreated.CreatedAt;
+        }
+
+        if (source is IMultiTenant sourceTenant && target is IMultiTenant targetTenant)
+        {
+            targetTenant.TenantId = sourceTenant.TenantId;
+        }
+
         if (source is IHasModificationTime sourceModified && target is IHasModificationTime targetModified)
         {
             targetModified.ModifiedAt = sourceModified.ModifiedAt;
@@ -547,6 +609,41 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
+    /// 保存一次新增。
+    /// </summary>
+    /// <remarks>
+    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。这时 SaveChanges 已回到它自动建的保存点，事务仍可用：把这次新增的实体移出跟踪，在同一事务里查这些标识，有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）并把工作单元标为失败，提交时返回同一错误；一个都不存在说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
+    /// </remarks>
+    private async Task<Error?> SaveAddedAsync(IReadOnlyList<TEntity> added, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException)
+        {
+            foreach (var entity in added)
+            {
+                Context.Entry(entity).State = EntityState.Detached;
+            }
+
+            var ids = Distinct(added.Select(static e => e.Id));
+            // 不跟踪、只取主键列：对方的行只用来判定，不进本工作单元的跟踪器
+            var taken = (await Set.AsNoTracking().Where(e => ids.Contains(EF.Property<TKey>(e, nameof(IEntity<TKey>.Id)))).Select(e => EF.Property<TKey>(e, nameof(IEntity<TKey>.Id))).ToListAsync(cancellationToken).ConfigureAwait(false)).ToHashSet();
+            var collided = ids.FindIndex(taken.Contains);
+            if (collided < 0)
+            {
+                throw;
+            }
+
+            var duplicate = Duplicate(ids[collided]);
+            _unitOfWork.Fail(duplicate);
+            return duplicate;
+        }
+    }
+
+    /// <summary>
     /// 在可见性过滤之上追加查询自身的过滤规约。
     /// </summary>
     private IQueryable<TEntity> Filtered(EntityQuery<TEntity> query)
@@ -575,6 +672,23 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         return source;
+    }
+
+    /// <summary>
+    /// 写入路径上判定跟踪实例对当前调用是否可见：按存储里的租户与删除标记。
+    /// </summary>
+    /// <remarks>
+    /// 跟踪实例可能已被调用方改过（查找拿到的就是它），所以读原值（最近一次读出或保存时的值）而不是当前值；不修改实例。
+    /// </remarks>
+    private bool IsStoredVisible(TEntity existing)
+    {
+        var entry = Context.Entry(existing);
+        if (_isMultiTenant && !string.Equals((string?)entry.Property(nameof(IMultiTenant.TenantId)).OriginalValue, _unitOfWork.TenantId, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return !_isSoftDeletable || entry.Property(nameof(ISoftDeletable.IsDeleted)).OriginalValue is not true;
     }
 
     /// <summary>

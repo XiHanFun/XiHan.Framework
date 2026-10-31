@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// 内存工作单元。
 /// </summary>
 /// <remarks>
-/// 变更先进覆盖层（读己之写），提交时按表原子应用；回滚丢弃。
+/// 变更先进覆盖层（读己之写），提交时按涉及的表依次加锁，逐表校验每个写过的标识首次读到的状态（新增的标识已被别人提交即标识重复，更新或删除的行已被删、带戳的行戳已变即并发冲突），全部通过才逐表应用，跨表原子；回滚丢弃覆盖层。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
@@ -58,6 +58,9 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 校验失败（标识重复、并发冲突、容量已满）时任何一张表都不改，工作单元记为回滚，失败作为结果返回。
+    /// </remarks>
     public Task<Result> CommitAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
@@ -68,24 +71,15 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         // 只读工作单元允许仓储把变更写进覆盖层，但在提交点统一拒绝并回滚，而不是在每次写入时判断
         if (IsReadOnly && _pending.Values.Any(static p => p.HasChanges))
         {
+            _pending.Clear();
             State = UnitOfWorkState.RolledBack;
             return Task.FromResult<Result>(Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly));
         }
 
-        // 每张表各自原子应用；跨表不是一个事务，某张表失败时先前已应用的表不会撤销，工作单元整体记为回滚
-        foreach (var pending in _pending.Values)
-        {
-            var applied = pending.Apply(_store);
-            if (applied.IsFailure)
-            {
-                State = UnitOfWorkState.RolledBack;
-                return Task.FromResult(applied);
-            }
-        }
-
+        var committed = Commit();
         _pending.Clear();
-        State = UnitOfWorkState.Committed;
-        return Task.FromResult(Result.Success());
+        State = committed.IsSuccess ? UnitOfWorkState.Committed : UnitOfWorkState.RolledBack;
+        return Task.FromResult(committed);
     }
 
     /// <inheritdoc />
@@ -100,7 +94,7 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     /// <summary>
     /// 取实体的覆盖层。
     /// </summary>
-    public PendingChanges<TEntity, TKey> Changes<TEntity, TKey>()
+    internal PendingChanges<TEntity, TKey> Changes<TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
@@ -114,10 +108,56 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     }
 
     /// <summary>
+    /// 把覆盖层校验后应用到存储。
+    /// </summary>
+    /// <remarks>
+    /// 涉及的表按 <see cref="IInMemoryTable.Order"/> 依次加锁（各工作单元同一次序，不会互相等死），在全部锁内先逐表校验、再逐表应用，失败时一张表都不改。
+    /// </remarks>
+    private Result Commit()
+    {
+        var targets = _pending.Values
+            .Where(static p => p.HasChanges)
+            .Select(p => (Pending: p, Table: p.Table(_store)))
+            .OrderBy(static t => t.Table.Order)
+            .ToList();
+        var entered = 0;
+        try
+        {
+            foreach (var (_, table) in targets)
+            {
+                table.Gate.Enter();
+                entered++;
+            }
+
+            foreach (var (pending, _) in targets)
+            {
+                var validated = pending.Validate(_store);
+                if (validated.IsFailure)
+                {
+                    return validated;
+                }
+            }
+
+            foreach (var (pending, _) in targets)
+            {
+                pending.Apply(_store);
+            }
+
+            return Result.Success();
+        }
+        finally
+        {
+            for (var index = entered - 1; index >= 0; index--)
+            {
+                targets[index].Table.Gate.Exit();
+            }
+        }
+    }
+
+    /// <summary>
     /// 覆盖层的非泛型视图。
     /// </summary>
-    [ApiLevel(Stability.Preview, "5.0")]
-    public interface IPendingChanges
+    internal interface IPendingChanges
     {
         /// <summary>
         /// 是否有变更。
@@ -125,16 +165,34 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         bool HasChanges { get; }
 
         /// <summary>
-        /// 应用到存储。
+        /// 提交的目标表。
         /// </summary>
-        Result Apply(InMemoryStore store);
+        IInMemoryTable Table(InMemoryStore store);
+
+        /// <summary>
+        /// 校验能否应用。
+        /// </summary>
+        /// <remarks>
+        /// 调用方持有目标表的锁。
+        /// </remarks>
+        Result Validate(InMemoryStore store);
+
+        /// <summary>
+        /// 应用到目标表。
+        /// </summary>
+        /// <remarks>
+        /// 调用方持有目标表的锁，且刚校验通过。
+        /// </remarks>
+        void Apply(InMemoryStore store);
     }
 
     /// <summary>
     /// 一种实体在本工作单元内的覆盖层。
     /// </summary>
-    [ApiLevel(Stability.Preview, "5.0")]
-    public sealed class PendingChanges<TEntity, TKey> : IPendingChanges
+    /// <remarks>
+    /// 存的是副本：仓储写入时复制调用方实例，读取时再复制一次交出去，覆盖层里的对象只在提交时成为表里的行。
+    /// </remarks>
+    internal sealed class PendingChanges<TEntity, TKey> : IPendingChanges
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
@@ -154,15 +212,26 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         /// </remarks>
         private readonly HashSet<TKey> _removals = [];
 
+        /// <summary>
+        /// 每个写过的标识首次写入时读到的已提交状态：当时是否有行、行上的并发戳。
+        /// </summary>
+        /// <remarks>
+        /// 提交时据此校验别的工作单元在此期间有没有提交过同一标识。
+        /// </remarks>
+        private readonly Dictionary<TKey, (bool Existed, string? Stamp)> _bases = [];
+
         /// <inheritdoc />
         public bool HasChanges => _upserts.Count > 0 || _removals.Count > 0;
 
         /// <summary>
         /// 新增或更新。
         /// </summary>
-        public void Upsert(TEntity entity)
+        /// <param name="entity">覆盖层自己的副本。</param>
+        /// <param name="committed">这次写入所依据的已提交行；标识已在覆盖层里时不用它。</param>
+        public void Upsert(TEntity entity, TEntity? committed)
         {
             ArgumentNullException.ThrowIfNull(entity);
+            Track(entity.Id, committed);
             // 同一工作单元内先删后加：撤销删除标记，让实体重新可见
             _removals.Remove(entity.Id);
             _upserts[entity.Id] = entity;
@@ -171,8 +240,11 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         /// <summary>
         /// 物理删除。
         /// </summary>
-        public void Remove(TKey id)
+        /// <param name="id">标识。</param>
+        /// <param name="committed">这次删除所依据的已提交行；标识已在覆盖层里时不用它。</param>
+        public void Remove(TKey id, TEntity? committed)
         {
+            Track(id, committed);
             // 同一工作单元内先加后删：丢弃未提交的新增，并对表里可能存在的同键行记录删除
             _upserts.Remove(id);
             _removals.Add(id);
@@ -181,6 +253,9 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         /// <summary>
         /// 在覆盖层里查：已删除返回标记。
         /// </summary>
+        /// <remarks>
+        /// 返回的是覆盖层自己的对象，调用方不得修改或交出。
+        /// </remarks>
         public (bool Found, bool Removed, TEntity? Entity) Lookup(TKey id)
         {
             if (_removals.Contains(id))
@@ -192,13 +267,16 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         }
 
         /// <summary>
-        /// 把覆盖层合并到表快照上。
+        /// 把覆盖层合并到表的行上。
         /// </summary>
-        public IEnumerable<TEntity> Overlay(IEnumerable<TEntity> snapshot)
+        /// <remarks>
+        /// 返回的是表与覆盖层自己的对象，调用方不得修改或交出。
+        /// </remarks>
+        public IEnumerable<TEntity> Overlay(IEnumerable<TEntity> rows)
         {
-            ArgumentNullException.ThrowIfNull(snapshot);
-            // 快照里被覆盖层删除或更新的行先跳过，再补上覆盖层的实体，保证每个标识只出现一次且以本工作单元的版本为准
-            foreach (var entity in snapshot)
+            ArgumentNullException.ThrowIfNull(rows);
+            // 表里被覆盖层删除或更新的行先跳过，再补上覆盖层的实体，保证每个标识只出现一次且以本工作单元的版本为准
+            foreach (var entity in rows)
             {
                 if (_removals.Contains(entity.Id) || _upserts.ContainsKey(entity.Id))
                 {
@@ -215,10 +293,30 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         }
 
         /// <inheritdoc />
-        public Result Apply(InMemoryStore store)
+        public IInMemoryTable Table(InMemoryStore store)
         {
             ArgumentNullException.ThrowIfNull(store);
-            return store.Table<TEntity, TKey>().Apply(_upserts, _removals);
+            return store.Table<TEntity, TKey>();
         }
+
+        /// <inheritdoc />
+        public Result Validate(InMemoryStore store)
+        {
+            ArgumentNullException.ThrowIfNull(store);
+            return store.Table<TEntity, TKey>().Validate(_upserts, _removals, _bases);
+        }
+
+        /// <inheritdoc />
+        public void Apply(InMemoryStore store)
+        {
+            ArgumentNullException.ThrowIfNull(store);
+            store.Table<TEntity, TKey>().Apply(_upserts, _removals);
+        }
+
+        /// <summary>
+        /// 首次写入一个标识时记下所依据的已提交状态。
+        /// </summary>
+        private void Track(TKey id, TEntity? committed)
+            => _bases.TryAdd(id, committed is null ? (false, null) : (true, (committed as IHasConcurrencyStamp)?.ConcurrencyStamp));
     }
 }

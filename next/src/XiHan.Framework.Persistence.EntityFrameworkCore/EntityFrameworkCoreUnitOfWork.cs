@@ -2,7 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
@@ -13,7 +15,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败，此后提交只回滚并返回那个错误。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWork, IAsyncDisposable
@@ -25,6 +27,14 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     /// 为 <see langword="null"/> 表示本工作单元尚未写入。
     /// </remarks>
     private IDbContextTransaction? _transaction;
+
+    /// <summary>
+    /// 写入阶段记下的失败。
+    /// </summary>
+    /// <remarks>
+    /// 非空时提交只回滚并返回它。
+    /// </remarks>
+    private Error? _failure;
 
     /// <summary>
     /// 本作用域的 DbContext。
@@ -83,6 +93,13 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
+        // 写入阶段已失败（并发新增撞上同一标识）：调用方忽略了那次失败也不能提交
+        if (_failure is { } failure)
+        {
+            await RollbackAsync(cancellationToken).ConfigureAwait(false);
+            return failure;
+        }
+
         // 只读工作单元里仓储已在写入前拒绝；这里兜住绕过仓储直接改跟踪实体的情况
         if (IsReadOnly && Context.ChangeTracker.HasChanges())
         {
@@ -95,6 +112,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             // 仓储每次写入都已保存；这里只处理调用方直接修改跟踪实体而未经仓储的残余变更，并保证它们落在事务内
             if (Context.ChangeTracker.HasChanges())
             {
+                KeepStored(Context.ChangeTracker);
                 await EnsureTransactionAsync(cancellationToken).ConfigureAwait(false);
                 await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -136,6 +154,52 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
         {
             await _transaction.DisposeAsync().ConfigureAwait(false);
             _transaction = null;
+        }
+    }
+
+    /// <summary>
+    /// 标为失败。
+    /// </summary>
+    /// <remarks>
+    /// 仓储在写入阶段发现并发新增撞上同一标识时调用；只记第一次。
+    /// </remarks>
+    internal void Fail(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        _failure ??= error;
+    }
+
+    /// <summary>
+    /// 残余变更里的创建时间与租户回到原值。
+    /// </summary>
+    /// <remarks>
+    /// 这两个字段只在新增时写入：绕过仓储直接改跟踪实体也不能把行改到别的租户或改掉创建时间。
+    /// </remarks>
+    private static void KeepStored(ChangeTracker tracker)
+    {
+        foreach (var entry in tracker.Entries())
+        {
+            if (entry.State != EntityState.Modified)
+            {
+                continue;
+            }
+
+            if (entry.Entity is IHasCreationTime)
+            {
+                Restore(entry, nameof(IHasCreationTime.CreatedAt));
+            }
+
+            if (entry.Entity is IMultiTenant)
+            {
+                Restore(entry, nameof(IMultiTenant.TenantId));
+            }
+        }
+
+        // 按属性名访问映射的列，与仓储一致
+        static void Restore(EntityEntry entry, string name)
+        {
+            var property = entry.Property(name);
+            property.CurrentValue = property.OriginalValue;
         }
     }
 }

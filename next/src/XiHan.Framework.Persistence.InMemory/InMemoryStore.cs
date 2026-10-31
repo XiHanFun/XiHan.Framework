@@ -27,6 +27,14 @@ public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthC
     private readonly ConcurrentDictionary<Type, object> _tables = new();
 
     /// <summary>
+    /// 最近分配的建表序号。
+    /// </summary>
+    /// <remarks>
+    /// 表的加锁次序；并发建表时落选的那张也会占一个序号，不影响次序的唯一性。
+    /// </remarks>
+    private long _order;
+
+    /// <summary>
     /// 选项。
     /// </summary>
     public InMemoryPersistenceOptions Options { get; } = options ?? throw new ArgumentNullException(nameof(options));
@@ -37,7 +45,7 @@ public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthC
     public InMemoryTable<TEntity, TKey> Table<TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
-        => (InMemoryTable<TEntity, TKey>)_tables.GetOrAdd(typeof(TEntity), _ => new InMemoryTable<TEntity, TKey>(Options.MaxEntitiesPerType));
+        => (InMemoryTable<TEntity, TKey>)_tables.GetOrAdd(typeof(TEntity), _ => new InMemoryTable<TEntity, TKey>(Options.MaxEntitiesPerType) { Order = Interlocked.Increment(ref _order) });
 
     /// <summary>
     /// 清空全部表。

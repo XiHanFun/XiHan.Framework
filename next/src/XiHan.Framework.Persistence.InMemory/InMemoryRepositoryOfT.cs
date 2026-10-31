@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// 内存仓储。
 /// </summary>
 /// <remarks>
-/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。批量方法在同一次调用里逐项进入覆盖层，提交时由表原子应用。
+/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。读写都复制：查找与查询交出的是副本，写入存的是调用方实例的副本，调用方在读出的实例上的修改不经仓储写回就碰不到表与覆盖层。更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标。批量方法在同一次调用里逐项进入覆盖层，提交时由工作单元校验后原子应用。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMemoryUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -44,7 +44,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(id);
         var changes = Active.Changes<TEntity, TKey>();
-        return ValueTask.FromResult(Lookup(changes, id).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false) ? Maybe.Some(entity) : default);
+        return ValueTask.FromResult(Lookup(changes, id, out _).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false) ? Maybe.Some(EntityCopy.Of(entity)) : default);
     }
 
     /// <inheritdoc />
@@ -58,9 +58,9 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         {
             ArgumentNullException.ThrowIfNull(id);
             // 重复标识只返回一次，顺序按入参
-            if (seen.Add(id) && Lookup(changes, id).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false))
+            if (seen.Add(id) && Lookup(changes, id, out _).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false))
             {
-                found.Add(entity);
+                found.Add(EntityCopy.Of(entity));
             }
         }
 
@@ -81,7 +81,8 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
                 : (ordering.Descending ? items.OrderByDescending(key) : items.OrderBy(key));
         }
 
-        return Task.FromResult<IReadOnlyList<TEntity>>(items.Skip(query.Skip).Take(query.Take).ToList());
+        // 过滤、排序、分页都在表与覆盖层自己的对象上做，只复制最终交出的那一页
+        return Task.FromResult<IReadOnlyList<TEntity>>(items.Skip(query.Skip).Take(query.Take).Select(EntityCopy.Of).ToList());
     }
 
     /// <inheritdoc />
@@ -182,11 +183,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     /// 新增一项。
     /// </summary>
     /// <remarks>
-    /// 重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并进覆盖层。
+    /// 重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并把副本放进覆盖层。别的工作单元在此之后提交了同一标识，由提交时的校验报告重复。
     /// </remarks>
     private Result Add(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
-        if (Lookup(changes, entity.Id).HasValue)
+        if (Lookup(changes, entity.Id, out var committed).HasValue)
         {
             return Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
         }
@@ -197,7 +198,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
             return applied;
         }
 
-        changes.Upsert(entity);
+        changes.Upsert(EntityCopy.Of(entity), committed);
         _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
@@ -206,25 +207,24 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     /// 更新一项。
     /// </summary>
     /// <remarks>
-    /// 目标须存在且可见；游离实例的并发戳与当前值不同即冲突，之后刷新审计字段并进覆盖层。
+    /// 目标须存在且可见；调用方实例的并发戳与当前值不同即冲突。之后沿用当前行的创建时间、租户与删除标记，刷新修改时间与并发戳，把副本放进覆盖层。
     /// </remarks>
     private Result Update(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
-        if (!Lookup(changes, entity.Id).TryGetValue(out var existing) || !IsVisible(existing, includeDeleted: false))
+        if (!Lookup(changes, entity.Id, out var committed).TryGetValue(out var current) || !IsVisible(current, includeDeleted: false))
         {
             return NotFound(entity.Id);
         }
 
-        // 同一实例（读己之写拿到的引用）不比对；游离实例先比对并发戳，与 EF Core 实现一致
-        if (!ReferenceEquals(existing, entity)
-            && existing is IHasConcurrencyStamp current && entity is IHasConcurrencyStamp incoming
-            && !string.Equals(current.ConcurrencyStamp, incoming.ConcurrencyStamp, StringComparison.Ordinal))
+        // 调用方手里的总是副本（读出时复制过），一律比对并发戳，与 SqlSugar 实现一致
+        if (current is IHasConcurrencyStamp stored && entity is IHasConcurrencyStamp incoming
+            && !string.Equals(stored.ConcurrencyStamp, incoming.ConcurrencyStamp, StringComparison.Ordinal))
         {
             return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.StaleStamp, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", entity.Id)));
         }
 
-        PersistenceConventions.ApplyOnUpdate(entity, now);
-        changes.Upsert(entity);
+        PersistenceConventions.ApplyOnUpdate(entity, current, now);
+        changes.Upsert(EntityCopy.Of(entity), committed);
         _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
     }
@@ -233,22 +233,28 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     /// 删除一项。
     /// </summary>
     /// <remarks>
-    /// 目标须存在且可见；软删除是一次打标更新，走 Upsert，物理删除才进入覆盖层的删除集合。
+    /// 目标须存在且可见。软删除在当前行的副本上打标（调用方实例上的其他改动不写入），作为一次更新进覆盖层，删除标记再同步回调用方实例；物理删除才进入覆盖层的删除集合。
     /// </remarks>
     private Result Remove(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
-        if (!Exists(changes, entity.Id))
+        if (!Lookup(changes, entity.Id, out var committed).TryGetValue(out var current) || !IsVisible(current, includeDeleted: false))
         {
             return NotFound(entity.Id);
         }
 
-        if (PersistenceConventions.TrySoftDelete(entity, now))
+        var tombstone = EntityCopy.Of(current);
+        if (PersistenceConventions.TrySoftDelete(tombstone, now))
         {
-            changes.Upsert(entity);
+            changes.Upsert(tombstone, committed);
+            if (tombstone is ISoftDeletable marked && entity is ISoftDeletable target)
+            {
+                target.IsDeleted = marked.IsDeleted;
+                target.DeletedAt = marked.DeletedAt;
+            }
         }
         else
         {
-            changes.Remove(entity.Id);
+            changes.Remove(entity.Id, committed);
         }
 
         _unitOfWork.DomainEvents.Track(entity);
@@ -264,32 +270,30 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     /// 先查覆盖层，再查表。
     /// </summary>
     /// <remarks>
-    /// 覆盖层标记为删除的视为不存在。
+    /// 覆盖层标记为删除的视为不存在。返回的是覆盖层或表自己的对象，只用于判定，交给调用方之前必须复制。<paramref name="committed"/> 是从表里读到的行（标识已在覆盖层里时为 <see langword="null"/>）：写入以它为依据，提交时据此校验。
     /// </remarks>
-    private Maybe<TEntity> Lookup(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id)
+    private Maybe<TEntity> Lookup(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id, out TEntity? committed)
     {
         var (found, removed, pending) = changes.Lookup(id);
-        return found ? (removed ? default : Maybe.From(pending)) : _store.Table<TEntity, TKey>().Find(id);
+        if (found)
+        {
+            committed = null;
+            return removed ? default : Maybe.From(pending);
+        }
+
+        committed = _store.Table<TEntity, TKey>().Row(id);
+        return Maybe.From(committed);
     }
 
     /// <summary>
-    /// 实体是否存在且对当前调用可见（未软删除、租户匹配）。
+    /// 把覆盖层合并到表的行上，再施加可见性与查询过滤。
     /// </summary>
     /// <remarks>
-    /// 删除以此判定目标。
-    /// </remarks>
-    private bool Exists(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id)
-        => Lookup(changes, id).TryGetValue(out var entity) && IsVisible(entity, includeDeleted: false);
-
-    /// <summary>
-    /// 把覆盖层合并到表快照上，再施加可见性与查询过滤。
-    /// </summary>
-    /// <remarks>
-    /// 排序与分页由调用方处理。
+    /// 排序与分页由调用方处理。返回的是覆盖层与表自己的对象。
     /// </remarks>
     private IEnumerable<TEntity> Visible(EntityQuery<TEntity> query)
     {
-        var items = Active.Changes<TEntity, TKey>().Overlay(_store.Table<TEntity, TKey>().Snapshot())
+        var items = Active.Changes<TEntity, TKey>().Overlay(_store.Table<TEntity, TKey>().Rows())
             .Where(entity => IsVisible(entity, query.IncludeDeleted));
         return query.Filter is null ? items : items.Where(query.Filter.IsSatisfiedBy);
     }

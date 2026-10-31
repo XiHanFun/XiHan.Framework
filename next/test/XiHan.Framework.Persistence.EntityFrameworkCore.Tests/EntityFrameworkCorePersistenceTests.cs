@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
@@ -19,7 +20,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 /// EF Core Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析、模型约定、游离实体更新与并发戳、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析、模型约定、游离实体更新与并发戳、新增撞上主键约束（检查之后同一标识被占）时的标识重复与只能回滚的提交、残余变更不改创建时间、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 {
@@ -130,6 +131,74 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task Add_WhenTheIdIsTakenBetweenCheckAndWrite_ReturnsDuplicate_AndTheCommitOnlyRollsBack()
+    {
+        var raced = Guid.CreateVersion7();
+        var other = Guid.CreateVersion7();
+        await using var host = await _database.StartHostAsync(interceptor: new RacingInsertInterceptor(raced));
+        Result added = Result.Success();
+
+        // 处理器忽略了新增的失败，接着写别的行并返回成功：工作单元已标为失败，提交只回滚并返回同一错误
+        var outcome = await RunAsync(host, async ctx =>
+        {
+            added = await Repository(ctx).AddAsync(new ConformanceOrder { Id = raced, Name = "mine" }, ctx.CancellationToken);
+            (await Repository(ctx).AddAsync(new ConformanceOrder { Id = other, Name = "other" }, ctx.CancellationToken)).ThrowIfFailure();
+            return Result.Success();
+        });
+
+        Assert.Equal(PersistenceErrors.Duplicate, added.Error?.Code);
+        Assert.Equal(raced, added.Error!.Details!["id"]);
+        Assert.Equal(PersistenceErrors.Duplicate, outcome.Error?.Code);
+        Assert.False((await FindAsync(host, raced)).HasValue);
+        Assert.False((await FindAsync(host, other)).HasValue);
+    }
+
+    [Fact]
+    public async Task AddRange_WhenAnIdIsTakenBetweenCheckAndWrite_ReportsDuplicateForTheWholeWrite()
+    {
+        var raced = Guid.CreateVersion7();
+        await using var host = await _database.StartHostAsync(interceptor: new RacingInsertInterceptor(raced));
+        IReadOnlyList<Result> results = [];
+
+        var outcome = await RunAsync(host, async ctx =>
+        {
+            results = await Repository(ctx).AddRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "a" }, new ConformanceOrder { Id = raced, Name = "b" }], ctx.CancellationToken);
+            return Result.Success();
+        });
+
+        // 一次多行写入整体失败：两项都报告标识重复，指向撞上的标识
+        Assert.All(results, result =>
+        {
+            Assert.Equal(PersistenceErrors.Duplicate, result.Error?.Code);
+            Assert.Equal(raced, result.Error!.Details!["id"]);
+        });
+        Assert.Equal(PersistenceErrors.Duplicate, outcome.Error?.Code);
+        Assert.Empty(await ListAllAsync(host));
+    }
+
+    [Fact]
+    public async Task Commit_KeepsStoredCreationTimeAndTenant_ForTrackedEntitiesChangedOutsideTheRepository()
+    {
+        await using var host = await _database.StartHostAsync();
+        var id = Guid.CreateVersion7();
+        (await RunAsync(host, ctx => Repository(ctx).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, ctx.CancellationToken))).ThrowIfFailure();
+        var createdAt = (await FindAsync(host, id)).ValueOrThrow().CreatedAt;
+
+        // 绕过仓储直接改跟踪实例：提交时保存残余变更，但创建时间回到原值
+        (await RunAsync(host, async ctx =>
+        {
+            var order = (await Repository(ctx).FindAsync(id, ctx.CancellationToken)).ValueOrThrow();
+            order.Name = "v2";
+            order.CreatedAt = createdAt.AddYears(-1);
+            return Result.Success();
+        })).ThrowIfFailure();
+
+        var current = (await FindAsync(host, id)).ValueOrThrow();
+        Assert.Equal("v2", current.Name);
+        Assert.Equal(createdAt, current.CreatedAt);
+    }
+
+    [Fact]
     public async Task ReadOnlyUnitOfWork_RejectsWritesImmediately()
     {
         await using var host = await _database.StartHostAsync();
@@ -190,4 +259,32 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     /// </summary>
     private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));
+
+    /// <summary>
+    /// 在新调用内按标识查找订单。
+    /// </summary>
+    private static async Task<Maybe<ConformanceOrder>> FindAsync(TestHost host, Guid id)
+    {
+        Maybe<ConformanceOrder> found = default;
+        (await RunAsync(host, async ctx =>
+        {
+            found = await Repository(ctx).FindAsync(id, ctx.CancellationToken);
+            return Result.Success();
+        })).ThrowIfFailure();
+        return found;
+    }
+
+    /// <summary>
+    /// 在新调用内列出全部订单（含已软删除）。
+    /// </summary>
+    private static async Task<IReadOnlyList<ConformanceOrder>> ListAllAsync(TestHost host)
+    {
+        IReadOnlyList<ConformanceOrder> items = [];
+        (await RunAsync(host, async ctx =>
+        {
+            items = await Repository(ctx).ListAsync(EntityQuery.All<ConformanceOrder>() with { IncludeDeleted = true }, ctx.CancellationToken);
+            return Result.Success();
+        })).ThrowIfFailure();
+        return items;
+    }
 }

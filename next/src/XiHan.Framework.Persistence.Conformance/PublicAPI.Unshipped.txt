@@ -70,6 +70,7 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_DuplicateId_Re
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Add_IsReadableInSameUnitOfWork_AndVisibleAfterCommit() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.BatchMethods_EmptyInputReturnsEmpty_AndRequireUnitOfWork() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Clock.get -> XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConcurrentAdds_OfSameId_OneSucceeds_OtherReturnsDuplicate() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_AreDispatchedOnCommit_AndCleared() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_DispatchFailureRollsBack_AndMissingDispatcherIsRejected() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Exception_RollsBack_AndBecomesUnexpectedOutcome() -> System.Threading.Tasks.Task!
@@ -84,10 +85,13 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_PlainEntity
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_SoftDeletable_HidesEntity_UntilIncludeDeleted() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.RepositoryConformance() -> void
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Repository_OutsideTransactionStage_Throws() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.RolledBackWrites_LeaveStoredEntitiesUntouched() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? extra = null) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.UncommittedWrite_IsInvisibleToOtherUnitOfWork() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.UpdateRange_RefreshesStamps_AndReportsStaleOrMissingPerItem() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_KeepStoredCreationTimeAndDeletionMarker() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_Missing_ReturnNotFound() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_KeepsStoredTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.CreateGenerator(System.TimeProvider! clock) -> XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>!
 abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!

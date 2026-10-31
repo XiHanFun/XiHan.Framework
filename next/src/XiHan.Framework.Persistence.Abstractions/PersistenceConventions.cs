@@ -52,6 +52,9 @@ public static class PersistenceConventions
     /// <summary>
     /// 更新前：写入修改时间并刷新并发戳。
     /// </summary>
+    /// <remarks>
+    /// 只处理这两个字段；调用方实例是游离实例或读出后改过的副本时用带存储行的重载，创建时间、租户与删除标记要沿用存储值。
+    /// </remarks>
     public static void ApplyOnUpdate<TEntity>(TEntity entity, DateTimeOffset now)
         where TEntity : class
     {
@@ -65,6 +68,42 @@ public static class PersistenceConventions
         {
             stamp.ConcurrencyStamp = NewStamp();
         }
+    }
+
+    /// <summary>
+    /// 更新前：沿用存储行的创建时间、租户与删除标记，再写入修改时间并刷新并发戳。
+    /// </summary>
+    /// <remarks>
+    /// 创建时间与租户只在新增时写入，删除标记只经删除写入：调用方实例上的这些值一律不生效，在这里换成 <paramref name="stored"/>（存储里的当前行）的值，更新不能把行改到别的租户或改掉创建时间。两者是同一实例时只写修改时间与并发戳。
+    /// </remarks>
+    /// <param name="entity">要写入的调用方实例。</param>
+    /// <param name="stored">存储里的当前行。</param>
+    /// <param name="now">当前时刻。</param>
+    public static void ApplyOnUpdate<TEntity>(TEntity entity, TEntity stored, DateTimeOffset now)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(stored);
+        if (!ReferenceEquals(entity, stored))
+        {
+            if (entity is IHasCreationTime creation && stored is IHasCreationTime storedCreation)
+            {
+                creation.CreatedAt = storedCreation.CreatedAt;
+            }
+
+            if (entity is IMultiTenant tenant && stored is IMultiTenant storedTenant)
+            {
+                tenant.TenantId = storedTenant.TenantId;
+            }
+
+            if (entity is ISoftDeletable deletable && stored is ISoftDeletable storedDeletable)
+            {
+                deletable.IsDeleted = storedDeletable.IsDeleted;
+                deletable.DeletedAt = storedDeletable.DeletedAt;
+            }
+        }
+
+        ApplyOnUpdate(entity, now);
     }
 
     /// <summary>

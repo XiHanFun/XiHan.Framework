@@ -52,7 +52,7 @@ public interface IUnitOfWork
     /// 提交。
     /// </summary>
     /// <remarks>
-    /// 并发冲突以 <see cref="PersistenceErrors.Concurrency"/> 返回，标识重复以 <see cref="PersistenceErrors.Duplicate"/> 返回。
+    /// 并发冲突以 <see cref="PersistenceErrors.Concurrency"/> 返回，标识重复以 <see cref="PersistenceErrors.Duplicate"/> 返回，都不抛异常。两个工作单元先后新增同一标识时后到者失败：内存实现在提交时发现；关系型 Provider 在写入时由主键约束发现，仓储返回标识重复后本工作单元的提交只回滚并返回同一错误。
     /// </remarks>
     Task<Result> CommitAsync(CancellationToken cancellationToken);
 
