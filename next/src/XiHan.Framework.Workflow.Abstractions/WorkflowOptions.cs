@@ -118,52 +118,118 @@ public sealed record WorkflowOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>。
+    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理。
     /// </remarks>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new WorkflowOptions();
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxNodeExecutionsPerBurst"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var burst))
+        if (Integer(configuration, "MaxNodeExecutionsPerBurst", 1) is { } burst)
         {
             options = options with { MaxNodeExecutionsPerBurst = burst };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxSubWorkflowDepth"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var depth))
+        if (Integer(configuration, "MaxSubWorkflowDepth", 0) is { } depth)
         {
             options = options with { MaxSubWorkflowDepth = depth };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:LockTimeoutSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var lockSeconds))
+        if (Seconds(configuration, "LockTimeoutSeconds") is { } lockTimeout)
         {
-            options = options with { LockTimeout = TimeSpan.FromSeconds(lockSeconds) };
+            options = options with { LockTimeout = lockTimeout };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:NotResumableBackoffSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var backoff))
+        if (Seconds(configuration, "NotResumableBackoffSeconds") is { } backoff)
         {
-            options = options with { NotResumableBackoff = TimeSpan.FromSeconds(backoff) };
+            options = options with { NotResumableBackoff = backoff };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:ExpressionCacheSize"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var cache))
+        if (Integer(configuration, "ExpressionCacheSize", 1) is { } cache)
         {
             options = options with { ExpressionCacheSize = cache };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:RetentionDays"], NumberStyles.Float, CultureInfo.InvariantCulture, out var retention))
+        if (Days(configuration, "RetentionDays") is { } retention)
         {
-            options = options with { Retention = TimeSpan.FromDays(retention) };
+            options = options with { Retention = retention };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:HousekeepingIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var housekeeping))
+        if (Seconds(configuration, "HousekeepingIntervalSeconds") is { } housekeeping)
         {
-            options = options with { HousekeepingInterval = TimeSpan.FromSeconds(housekeeping) };
+            options = options with { HousekeepingInterval = housekeeping };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:HttpTimeoutSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var http))
+        if (Seconds(configuration, "HttpTimeoutSeconds") is { } http)
         {
-            options = options with { HttpTimeout = TimeSpan.FromSeconds(http) };
+            options = options with { HttpTimeout = http };
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// 读取整数键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static int? Integer(IConfiguration configuration, string key, int minimum)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
+        }
+
+        return value >= minimum ? value : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be at least {minimum}.");
+    }
+
+    /// <summary>
+    /// 读取以秒计的正时长键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static TimeSpan? Seconds(IConfiguration configuration, string key)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of seconds, but was '{raw}'.");
+        }
+
+        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be positive.");
+    }
+
+    /// <summary>
+    /// 读取以天计的非负时长键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，负数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static TimeSpan? Days(IConfiguration configuration, string key)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var days) || !double.IsFinite(days))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of days, but was '{raw}'.");
+        }
+
+        return days >= 0 ? TimeSpan.FromDays(days) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must not be negative.");
     }
 }

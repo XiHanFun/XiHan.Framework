@@ -94,42 +94,86 @@ public sealed record InMemoryWorkflowOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// <c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。
+    /// <c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理。
     /// </remarks>
     public static InMemoryWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemoryWorkflowOptions();
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxDefinitions"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var definitions))
+        if (Integer(configuration, "MaxDefinitions", 1) is { } definitions)
         {
             options = options with { MaxDefinitions = definitions };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxInstances"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var instances))
+        if (Integer(configuration, "MaxInstances", 1) is { } instances)
         {
             options = options with { MaxInstances = instances };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxNodeInstances"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var nodes))
+        if (Integer(configuration, "MaxNodeInstances", 1) is { } nodes)
         {
             options = options with { MaxNodeInstances = nodes };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:MaxBookmarks"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var bookmarks))
+        if (Integer(configuration, "MaxBookmarks", 1) is { } bookmarks)
         {
             options = options with { MaxBookmarks = bookmarks };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:PollIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+        if (Seconds(configuration, "PollIntervalSeconds") is { } poll)
         {
-            options = options with { PollInterval = TimeSpan.FromSeconds(seconds) };
+            options = options with { PollInterval = poll };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:BatchSize"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var batch))
+        if (Integer(configuration, "BatchSize", 1) is { } batch)
         {
             options = options with { BatchSize = batch };
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// 读取整数键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static int? Integer(IConfiguration configuration, string key, int minimum)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
+        }
+
+        return value >= minimum ? value : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be at least {minimum}.");
+    }
+
+    /// <summary>
+    /// 读取以秒计的正时长键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static TimeSpan? Seconds(IConfiguration configuration, string key)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of seconds, but was '{raw}'.");
+        }
+
+        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be positive.");
     }
 }

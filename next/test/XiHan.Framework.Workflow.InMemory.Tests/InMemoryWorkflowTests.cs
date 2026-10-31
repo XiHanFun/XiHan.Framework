@@ -62,14 +62,49 @@ public sealed class InMemoryWorkflowTests
             [$"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds"] = "1.5",
             [$"{WorkflowOptions.ConfigurationSection}:NotResumableBackoffSeconds"] = "60",
             [$"{WorkflowOptions.ConfigurationSection}:ExpressionCacheSize"] = "11",
+            [$"{WorkflowOptions.ConfigurationSection}:RetentionDays"] = "7.5",
+            [$"{WorkflowOptions.ConfigurationSection}:HousekeepingIntervalSeconds"] = "120",
+            [$"{WorkflowOptions.ConfigurationSection}:HttpTimeoutSeconds"] = "45",
         }).Build();
 
         var options = InMemoryWorkflowOptions.FromConfiguration(configuration);
         Assert.Equal((5, 6, 7, 8, TimeSpan.FromMilliseconds(500), 9), (options.MaxDefinitions, options.MaxInstances, options.MaxNodeInstances, options.MaxBookmarks, options.PollInterval, options.BatchSize));
         var engine = WorkflowOptions.FromConfiguration(configuration);
         Assert.Equal((10, 3, TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(60), 11), (engine.MaxNodeExecutionsPerBurst, engine.MaxSubWorkflowDepth, engine.LockTimeout, engine.NotResumableBackoff, engine.ExpressionCacheSize));
+        Assert.Equal((TimeSpan.FromDays(7.5), TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(45)), (engine.Retention, engine.HousekeepingInterval, engine.HttpTimeout));
+        Assert.Equal(TimeSpan.Zero, WorkflowOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{WorkflowOptions.ConfigurationSection}:RetentionDays"] = "0" }).Build()).Retention);
         Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryWorkflowOptions { MaxInstances = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new WorkflowOptions { LockTimeout = TimeSpan.Zero });
+    }
+
+    [Theory]
+    [InlineData("XiHan:Workflow:MaxNodeExecutionsPerBurst", "many")]
+    [InlineData("XiHan:Workflow:MaxNodeExecutionsPerBurst", "0")]
+    [InlineData("XiHan:Workflow:MaxSubWorkflowDepth", "-1")]
+    [InlineData("XiHan:Workflow:LockTimeoutSeconds", "10s")]
+    [InlineData("XiHan:Workflow:LockTimeoutSeconds", "0")]
+    [InlineData("XiHan:Workflow:NotResumableBackoffSeconds", "-5")]
+    [InlineData("XiHan:Workflow:ExpressionCacheSize", "1e4")]
+    [InlineData("XiHan:Workflow:RetentionDays", "a week")]
+    [InlineData("XiHan:Workflow:RetentionDays", "-1")]
+    [InlineData("XiHan:Workflow:HousekeepingIntervalSeconds", "NaN")]
+    [InlineData("XiHan:Workflow:HttpTimeoutSeconds", "")]
+    [InlineData("XiHan:Workflow:InMemory:MaxDefinitions", "lots")]
+    [InlineData("XiHan:Workflow:InMemory:MaxInstances", "0")]
+    [InlineData("XiHan:Workflow:InMemory:MaxNodeInstances", "1.5")]
+    [InlineData("XiHan:Workflow:InMemory:MaxBookmarks", "-1")]
+    [InlineData("XiHan:Workflow:InMemory:PollIntervalSeconds", "fast")]
+    [InlineData("XiHan:Workflow:InMemory:BatchSize", "0")]
+    public void Options_InvalidValues_Throw_InsteadOfFallingBackToDefaults(string key, string value)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [key] = value }).Build();
+
+        var thrown = Assert.ThrowsAny<ArgumentException>(() =>
+        {
+            _ = WorkflowOptions.FromConfiguration(configuration);
+            _ = InMemoryWorkflowOptions.FromConfiguration(configuration);
+        });
+        Assert.Contains(key, thrown.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -107,7 +107,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `XiHan:Workflow:Database:HolderId` | 字符串 | `机器名:进程 ID:8 位随机十六进制` | 租约持有者标识，每个节点唯一 |
 | `XiHan:Workflow:Database:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项重探间隔 |
 
-引擎选项（`LockTimeoutSeconds`、`MaxNodeExecutionsPerBurst`、`RetentionDays` 等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
+值写错即启动失败：解析不了抛 `ArgumentException`，超出取值范围抛 `ArgumentOutOfRangeException`，消息带出配置键与原值；`HolderId` 空白视为未配置。引擎选项（`LockTimeoutSeconds`、`MaxNodeExecutionsPerBurst`、`RetentionDays` 等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
 
 ```json
 {

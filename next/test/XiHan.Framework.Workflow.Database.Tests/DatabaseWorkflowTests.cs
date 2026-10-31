@@ -116,10 +116,11 @@ public sealed class DatabaseWorkflowTests
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:BatchSize"] = "9",
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:LockLeaseSeconds"] = "30",
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:HolderId"] = "node-7",
+            [$"{DatabaseWorkflowOptions.ConfigurationSection}:HealthProbeIntervalSeconds"] = "20",
         }).Build();
 
         var options = DatabaseWorkflowOptions.FromConfiguration(configuration);
-        Assert.Equal((TimeSpan.FromMilliseconds(500), 9, TimeSpan.FromSeconds(30), "node-7"), (options.PollInterval, options.BatchSize, options.LockLease, options.HolderId));
+        Assert.Equal((TimeSpan.FromMilliseconds(500), 9, TimeSpan.FromSeconds(30), "node-7", TimeSpan.FromSeconds(20)), (options.PollInterval, options.BatchSize, options.LockLease, options.HolderId, options.HealthProbeInterval));
 
         var defaults = new DatabaseWorkflowOptions();
         Assert.Equal((TimeSpan.FromSeconds(1), 100, TimeSpan.FromSeconds(60)), (defaults.PollInterval, defaults.BatchSize, defaults.LockLease));
@@ -129,6 +130,21 @@ public sealed class DatabaseWorkflowTests
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseWorkflowOptions { BatchSize = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseWorkflowOptions { LockLease = TimeSpan.Zero });
         Assert.Throws<ArgumentException>(static () => new DatabaseWorkflowOptions { HolderId = " " });
+    }
+
+    [Theory]
+    [InlineData("PollIntervalSeconds", "soon")]
+    [InlineData("PollIntervalSeconds", "0")]
+    [InlineData("BatchSize", "ten")]
+    [InlineData("BatchSize", "0")]
+    [InlineData("LockLeaseSeconds", "-30")]
+    [InlineData("HealthProbeIntervalSeconds", "Infinity")]
+    public void Options_InvalidValues_Throw_InsteadOfFallingBackToDefaults(string key, string value)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{DatabaseWorkflowOptions.ConfigurationSection}:{key}"] = value }).Build();
+
+        var thrown = Assert.ThrowsAny<ArgumentException>(() => DatabaseWorkflowOptions.FromConfiguration(configuration));
+        Assert.Contains($"{DatabaseWorkflowOptions.ConfigurationSection}:{key}", thrown.Message, StringComparison.Ordinal);
     }
 
     [Fact]

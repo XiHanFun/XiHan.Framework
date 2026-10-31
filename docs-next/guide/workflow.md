@@ -672,7 +672,7 @@ Provider 实现四个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 }
 ```
 
-解析不了的值（如把数字写成文字）被忽略、沿用缺省值，启动时不报错；能解析但超出取值范围的数字（如 `LockTimeoutSeconds` 为 0）启动时抛 `ArgumentOutOfRangeException`。Provider 自己的键见 [Workflow.InMemory](../packages/workflow-inmemory#配置) 与 [Workflow.Database](../packages/workflow-database#配置)。
+配置值写错即启动失败，不按缺省处理：解析不了的值（如把数字写成文字、写成 `NaN`）抛 `ArgumentException`，能解析但超出取值范围的值（如 `LockTimeoutSeconds` 为 0）抛 `ArgumentOutOfRangeException`，消息都带出完整的配置键与原值。Provider 自己的键见 [Workflow.InMemory](../packages/workflow-inmemory#配置) 与 [Workflow.Database](../packages/workflow-database#配置)。
 
 ## 错误码
 

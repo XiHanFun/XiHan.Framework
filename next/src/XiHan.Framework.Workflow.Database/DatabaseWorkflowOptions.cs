@@ -93,25 +93,25 @@ public sealed record DatabaseWorkflowOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// <c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理；<c>HolderId</c> 空白视为未配置，与调度选项的 <c>NodeId</c> 一致。
     /// </remarks>
     public static DatabaseWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseWorkflowOptions();
-        if (double.TryParse(configuration[$"{ConfigurationSection}:PollIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+        if (Seconds(configuration, "PollIntervalSeconds") is { } poll)
         {
-            options = options with { PollInterval = TimeSpan.FromSeconds(seconds) };
+            options = options with { PollInterval = poll };
         }
 
-        if (int.TryParse(configuration[$"{ConfigurationSection}:BatchSize"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var batch))
+        if (Integer(configuration, "BatchSize", 1) is { } batch)
         {
             options = options with { BatchSize = batch };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:LockLeaseSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var lease))
+        if (Seconds(configuration, "LockLeaseSeconds") is { } lease)
         {
-            options = options with { LockLease = TimeSpan.FromSeconds(lease) };
+            options = options with { LockLease = lease };
         }
 
         if (configuration[$"{ConfigurationSection}:HolderId"] is { } holder && !string.IsNullOrWhiteSpace(holder))
@@ -119,11 +119,55 @@ public sealed record DatabaseWorkflowOptions
             options = options with { HolderId = holder };
         }
 
-        if (double.TryParse(configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var probe))
+        if (Seconds(configuration, "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = options with { HealthProbeInterval = TimeSpan.FromSeconds(probe) };
+            options = options with { HealthProbeInterval = probe };
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// 读取整数键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static int? Integer(IConfiguration configuration, string key, int minimum)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
+        }
+
+        return value >= minimum ? value : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be at least {minimum}.");
+    }
+
+    /// <summary>
+    /// 读取以秒计的正时长键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// </remarks>
+    private static TimeSpan? Seconds(IConfiguration configuration, string key)
+    {
+        var raw = configuration[$"{ConfigurationSection}:{key}"];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of seconds, but was '{raw}'.");
+        }
+
+        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be positive.");
     }
 }

@@ -80,7 +80,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 { "XiHan": { "Workflow": { "LockTimeoutSeconds": 10, "MaxSubWorkflowDepth": 16, "RetentionDays": 90 } } }
 ```
 
-解析不了的值被忽略、沿用缺省值；能解析但超出范围的值启动时抛 `ArgumentOutOfRangeException`。
+配置值写错即启动失败，不按缺省处理：解析不了的值（如把数字写成文字、写成 `NaN`）抛 `ArgumentException`，能解析但超出取值范围的值（如 `LockTimeoutSeconds` 为 0）抛 `ArgumentOutOfRangeException`，消息都带出完整的配置键与原值。
 
 ## 主要类型
 

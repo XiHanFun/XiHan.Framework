@@ -56,7 +56,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
 | `XiHan:Workflow:InMemory:PollIntervalSeconds` | 正数 | 1 | 到期书签的轮询周期 |
 | `XiHan:Workflow:InMemory:BatchSize` | 整数 ≥ 1 | 100 | 每次轮询最多恢复的书签数 |
 
-引擎选项（锁超时、波次上限、子流程深度、保留期等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
+值写错即启动失败：解析不了抛 `ArgumentException`，超出取值范围抛 `ArgumentOutOfRangeException`，消息带出配置键与原值。引擎选项（锁超时、波次上限、子流程深度、保留期等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
 
 ```json
 {
