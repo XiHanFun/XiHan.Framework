@@ -78,7 +78,7 @@ app.Run();
 
 1. `Otlp:Enabled` 显式为 `true` / `false` 时按它。
 2. 没写 `Otlp:Enabled` 时，配置了 `Otlp:Endpoint` 或设置了环境变量 `OTEL_EXPORTER_OTLP_ENDPOINT` 就启用 OTLP 导出器，否则不导出，也不会向本机的空端口反复重试。
-3. 有 `Otlp:Endpoint` 时按它与 `Otlp:Protocol`（`Grpc` 或 `HttpProtobuf`）建一个跨三类信号的导出器；只靠环境变量时，端点与协议都按 OpenTelemetry 的标准环境变量与默认端口（gRPC 4317、HTTP 4318）决定，`Otlp:Protocol` 不参与。
+3. 有 `Otlp:Endpoint` 时按它与 `Otlp:Protocol`（`Grpc` 或 `HttpProtobuf`）建一个跨三类信号的导出器；只靠环境变量时，端点与协议都按 OpenTelemetry 的标准环境变量与默认端口（gRPC 4317、HTTP 4318）决定；写了 `Otlp:Protocol` 却没写 `Otlp:Endpoint` 时装配失败（`ArgumentException`），不会被静默忽略。
 4. `Console` 为 `true` 时三类信号同时写到控制台导出器，只用于开发。
 
 容器与 Kubernetes 里通常只给环境变量：
@@ -232,7 +232,7 @@ internal sealed partial class MonitorJsonContext : JsonSerializerContext;
 | `XiHan:Observability:OpenTelemetry:SamplingRatio` | 0 到 1 | 1 | 根 Span 的采样比例 |
 | `XiHan:Observability:OpenTelemetry:Otlp:Enabled` | bool | 自动 | 强制开关 OTLP 导出器 |
 | `XiHan:Observability:OpenTelemetry:Otlp:Endpoint` | 绝对 URI | — | OTLP 端点 |
-| `XiHan:Observability:OpenTelemetry:Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | 配置了端点时的 OTLP 协议 |
+| `XiHan:Observability:OpenTelemetry:Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | OTLP 协议，只能与 `Otlp:Endpoint` 一起写 |
 | `XiHan:Observability:OpenTelemetry:Console` | bool | `false` | 同时写控制台导出器 |
 | `XiHan:Observability:OpenTelemetry:Sources` | 逗号分隔 | — | 追加订阅的 Activity 源 |
 | `XiHan:Observability:OpenTelemetry:Meters` | 逗号分隔 | — | 追加订阅的 Meter |

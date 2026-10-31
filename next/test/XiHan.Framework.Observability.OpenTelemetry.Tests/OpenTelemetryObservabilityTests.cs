@@ -101,6 +101,22 @@ public sealed class OpenTelemetryObservabilityTests
     }
 
     [Fact]
+    public async Task OtlpProtocol_WithoutEndpoint_FailsInsteadOfBeingIgnored()
+    {
+        // 没有端点时导出器只看标准环境变量，配置里的协议不会生效：装配时报出来
+        var error = Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Protocol", "HttpProtobuf"))));
+        Assert.Contains("Otlp:Endpoint", error.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Enabled", "true"), ("Otlp:Protocol", "Grpc"))));
+        await Assert.ThrowsAsync<ArgumentException>(static () => TestHost.StartAsync(
+            static b => b.UseFeature<OpenTelemetryObservabilityFeature>(),
+            [new("XiHan:Observability:OpenTelemetry:Otlp:Protocol", "HttpProtobuf")]));
+
+        // 与端点一起配置时照常生效
+        var options = OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Protocol", "HttpProtobuf"), ("Otlp:Endpoint", "http://collector:4318")));
+        Assert.Equal(OtlpProtocol.HttpProtobuf, options.OtlpProtocol);
+    }
+
+    [Fact]
     public void Options_ParseAndValidate_AndOtlpIsAutoDetected()
     {
         var options = OpenTelemetryOptions.FromConfiguration(Configuration(
@@ -128,7 +144,7 @@ public sealed class OpenTelemetryObservabilityTests
 
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("SamplingRatio", "2"))));
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Endpoint", "not a uri"))));
-        Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Protocol", "udp"))));
+        Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Endpoint", "http://c:4317"), ("Otlp:Protocol", "udp"))));
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Tracing", "maybe"))));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new OpenTelemetryOptions { SamplingRatio = -0.1 });
         Assert.Throws<ArgumentException>(static () => new OpenTelemetryOptions { ServiceName = " " });

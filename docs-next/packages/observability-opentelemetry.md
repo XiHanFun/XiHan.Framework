@@ -64,7 +64,7 @@ app.Run();
 | `SamplingRatio` | 0 到 1 | 1 | 根 Span 的采样比例 |
 | `Otlp:Enabled` | bool | 自动 | 不写时：有 `Otlp:Endpoint` 或环境变量 `OTEL_EXPORTER_OTLP_ENDPOINT` 即启用 |
 | `Otlp:Endpoint` | 绝对 URI | — | OTLP 端点 |
-| `Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | 只在配置了 `Otlp:Endpoint` 时生效 |
+| `Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | 只能与 `Otlp:Endpoint` 一起写，只写协议时装配失败 |
 | `Console` | bool | `false` | 三类信号同时写控制台导出器 |
 | `Sources` | 逗号分隔 | — | 追加订阅的 Activity 源 |
 | `Meters` | 逗号分隔 | — | 追加订阅的 Meter |
@@ -150,7 +150,7 @@ public sealed class TracingTests
 - 能力没被选中时（另有显式 Provider 提供 `observability.export@1`）只登记选项，不注册任何提供者。
 - `Tracing`、`Metrics`、`Logging` 为假时对应的提供者不注册，`TracerProvider` 等服务不存在。
 - `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样（ADR-0065）。
-- 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量与默认端口决定，`Otlp:Protocol` 不参与。
+- 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量（`OTEL_EXPORTER_OTLP_ENDPOINT`、`OTEL_EXPORTER_OTLP_PROTOCOL`）与默认端口决定；配置里只写 `Otlp:Protocol` 不写 `Otlp:Endpoint` 时装配失败，不静默忽略。
 - 本包没有健康条目；导出失败由 OpenTelemetry SDK 自身处理，不影响调用。
 
 ## 相关

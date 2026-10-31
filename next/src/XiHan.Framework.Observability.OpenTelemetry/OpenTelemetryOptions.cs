@@ -102,7 +102,7 @@ public sealed record OpenTelemetryOptions
     /// OTLP 协议。
     /// </summary>
     /// <remarks>
-    /// 默认 gRPC。
+    /// 默认 gRPC，只与 <see cref="OtlpEndpoint"/> 一起生效；配置里写了协议却没写端点时 <see cref="FromConfiguration"/> 抛出参数异常。没有端点时导出器按标准环境变量 <c>OTEL_EXPORTER_OTLP_PROTOCOL</c> 决定协议。
     /// </remarks>
     public OtlpProtocol OtlpProtocol { get; init; }
 
@@ -180,6 +180,12 @@ public sealed record OpenTelemetryOptions
             options = Enum.TryParse<OtlpProtocol>(protocol, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed)
                 ? options with { OtlpProtocol = parsed }
                 : throw new ArgumentException($"{ConfigurationSection}:Otlp:Protocol must be 'Grpc' or 'HttpProtobuf', but was '{protocol}'.");
+
+            // 没有端点时导出器只看标准环境变量，配置里的协议不会生效：在装配时报出来，不静默忽略（RFC-0023）
+            if (options.OtlpEndpoint is null)
+            {
+                throw new ArgumentException($"{ConfigurationSection}:Otlp:Protocol only applies together with {ConfigurationSection}:Otlp:Endpoint; set the endpoint as well, or leave both unset and use OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_PROTOCOL.");
+            }
         }
 
         return options with { Sources = List(section, "Sources"), Meters = List(section, "Meters") };
