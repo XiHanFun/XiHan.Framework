@@ -19,7 +19,7 @@ namespace XiHan.Framework.MultiTenancy.InMemory;
 /// 内存多租户的能力包入口。
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>multitenancy.context@1</c>，注册租户存储、解析器（先声明后 Baggage）与 Tenant 阶段中间件。健康项 <see cref="HealthName"/> 在租户存储满时 Degraded。
+/// 默认提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，只为被选中的能力注册：租户上下文是租户存储、解析器（先声明后 Baggage）、Tenant 阶段中间件与健康项 <see cref="HealthName"/>（租户存储满时 Degraded），分片是从租户存储推出分片的解析器。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMultiTenancyFeature : IFeature
@@ -61,15 +61,21 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
         // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
         context.Services.AddMessageCatalog(MultiTenancyMessages.Catalog);
         context.Services.AddSingleton(MultiTenancyOptions.FromConfiguration(context.Configuration));
-        context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
-        context.Services.AddSingleton<InMemoryTenantStore>();
-        context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
-        // 存储自己就是健康项的贡献者：直接看租户数与容量
-        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
-        // 解析器的注册顺序就是解析顺序：先信已认证主体的声明，再看调用方自报的 Baggage，防止自报租户覆盖身份里的租户
-        context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
-        context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
-        context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);
+        // 只为被选中的能力注册：另有显式 Provider 提供租户上下文时，存储、解析器、健康项与中间件都归它（同类型中间件在管道里只能出现一次），
+        // 本包若仍被选中提供分片，分片解析器从那个 Provider 的 ITenantStore 推出分片
+        if (context.Node.IsSelectedFor(MultiTenancyCapabilities.Context))
+        {
+            context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
+            context.Services.AddSingleton<InMemoryTenantStore>();
+            context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+            // 存储自己就是健康项的贡献者：直接看租户数与容量
+            context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+            // 解析器的注册顺序就是解析顺序：先信已认证主体的声明，再看调用方自报的 Baggage，防止自报租户覆盖身份里的租户
+            context.Services.AddSingleton<ITenantResolver, ClaimTenantResolver>();
+            context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
+            context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);
+        }
+
         // 分片能力被选中时，从租户属性推出分片；应用自己的分片 Provider 顶替本包时这里不注册
         if (context.Node.IsSelectedFor(MultiTenancyCapabilities.Sharding))
         {

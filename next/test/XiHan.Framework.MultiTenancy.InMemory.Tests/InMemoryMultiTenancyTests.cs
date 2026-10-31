@@ -3,9 +3,11 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Resolution;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -94,5 +96,54 @@ public sealed class InMemoryMultiTenancyTests
         Assert.Equal("Acme", seen?.DisplayName);
         Assert.Equal(MultiTenancyErrors.Disabled, disabled.Error?.Code);
         Assert.True(none.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Feature_YieldsTenantContext_ToAnExplicitProvider_AndStillProvidesSharding()
+    {
+        // 应用自带只提供 multitenancy.context@1 的 Provider，复用抽象包的 Tenant 阶段中间件；本包仍被选中提供分片
+        var appStore = new InMemoryTenantStore(new InMemoryMultiTenancyOptions
+        {
+            Tenants = [new TenantInfo { Id = "app-tenant", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=app" } }],
+        });
+        var appProvider = new StubFeature(TestManifests.Create("xihan.app.tenancy", provides: ["multitenancy.context@1"], requires: ["kernel.hosting@1"]))
+        {
+            OnConfigure = context =>
+            {
+                context.Services.AddSingleton<ITenantStore>(appStore);
+                context.Services.AddSingleton<ITenantResolver, BaggageTenantResolver>();
+                context.AddMiddleware<TenantResolutionMiddleware>(PipelineStage.Tenant);
+            },
+        };
+
+        await using var host = await TestHost.StartAsync(
+            b => b.UseFeature<InMemoryMultiTenancyFeature>().UseFeature(appProvider),
+            [new("XiHan:MultiTenancy:Tenants:acme:DisplayName", "Acme")]);
+
+        // 中间件只登记一次，存储、解析器与健康项都是应用 Provider 的，本包只留分片
+        var node = host.App.Graph.Nodes.Single(static n => n.Manifest.Id == "xihan.multitenancy.inmemory");
+        Assert.False(node.IsSelectedFor(MultiTenancyCapabilities.Context));
+        Assert.True(node.IsSelectedFor(MultiTenancyCapabilities.Sharding));
+        Assert.Single(host.Services.GetServices<ITenantResolver>());
+        Assert.Same(appStore, host.Services.GetRequiredService<ITenantStore>());
+        Assert.Null(host.Services.GetService<InMemoryTenantStore>());
+        Assert.DoesNotContain(host.Services.GetServices<IHealthContributor>(), static c => c is InMemoryTenantStore);
+        Assert.IsType<TenantStoreShardResolver>(host.Services.GetRequiredService<ITenantShardResolver>());
+
+        TenantContext? seen = null;
+        Maybe<TenantShard> shard = default;
+        var ok = await host.InvokeAsync(ctx =>
+        {
+            seen = ctx.GetSecurity().Tenant;
+            shard = ctx.GetTenantShard();
+            return ValueTask.CompletedTask;
+        }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "app-tenant" });
+        var configured = await host.InvokeAsync(static _ => ValueTask.CompletedTask, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme" });
+
+        Assert.True(ok.IsSuccess, ok.ToString());
+        Assert.Equal("app-tenant", seen?.Id);
+        Assert.Equal("Host=app", shard.ValueOrThrow().ConnectionString);
+        // 本包配置里的租户不再参与：核对走应用的存储
+        Assert.Equal(MultiTenancyErrors.NotFound, configured.Error?.Code);
     }
 }

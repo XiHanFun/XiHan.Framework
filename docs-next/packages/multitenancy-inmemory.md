@@ -15,15 +15,13 @@
 
 ## 概述
 
-`InMemoryTenantStore` 是一张按租户 ID 索引的并发字典，读取无锁，新增与替换在同一把锁里先查容量再写入，并发新增不会越过上限。特性在 `Configure` 里注册：
+`InMemoryTenantStore` 是一张按租户 ID 索引的并发字典，读取无锁，新增与替换在同一把锁里先查容量再写入，并发新增不会越过上限。特性在 `Configure` 里只为被选中的能力注册：
 
-- `MultiTenancyOptions` 与 `InMemoryMultiTenancyOptions`（都从配置读取）、`InMemoryTenantStore` 与 `ITenantStore`。
-- 解析器 `ClaimTenantResolver` → `BaggageTenantResolver`，注册顺序即解析顺序。
-- Tenant 阶段的 `TenantResolutionMiddleware`。
-- 分片能力被选中时的 `TenantStoreShardResolver`；作用域服务 `TenantShardScope`（与是否选中分片无关）。
-- 健康项 `multitenancy.inmemory.capacity`，由存储自己同步计算。
+- 总是注册 `MultiTenancyOptions`（从配置读取）与作用域服务 `TenantShardScope`（与是否选中分片无关）。
+- 租户上下文能力被选中时：`InMemoryMultiTenancyOptions`、`InMemoryTenantStore` 与 `ITenantStore`；解析器 `ClaimTenantResolver` → `BaggageTenantResolver`，注册顺序即解析顺序；Tenant 阶段的 `TenantResolutionMiddleware`；健康项 `multitenancy.inmemory.capacity`，由存储自己同步计算。
+- 分片能力被选中时的 `TenantStoreShardResolver`。
 
-清单角色是 `default`：装配一个显式的多租户 Provider（如 `MultiTenancy.Database`）后本包被顶替，不装配、不启动。
+清单角色是 `default`：装配一个显式的多租户 Provider（如 `MultiTenancy.Database`）后本包被顶替，不装配、不启动。应用自带的 Provider 只提供 `multitenancy.context@1` 时，本包只提供分片：存储、解析器、健康项与 Tenant 阶段中间件都由应用的 Provider 注册（它可以复用抽象包的 `TenantResolutionMiddleware`），分片从它的 `ITenantStore` 推出。
 
 ## 何时使用
 
