@@ -100,6 +100,8 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 }
 ```
 
+取值不合表中的类型与范围（时长不是正数、内存与栈上限或 `HealthFailures` 不是正整数、`RestartLimit` 不是非负整数，含小数）时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动；配置与属性的范围一致，`0` 不会漏到属性赋值时才失败。
+
 ## 主要类型
 
 | 类型 | 说明 |

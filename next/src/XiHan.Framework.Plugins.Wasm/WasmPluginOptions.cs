@@ -190,7 +190,7 @@ public sealed record WasmPluginOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。
+    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。取值范围与属性一致：时长是正数，<c>MemoryLimitBytes</c>、<c>StackLimitBytes</c>、<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数；不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝。
     /// </remarks>
     public static WasmPluginOptions FromConfiguration(IConfiguration configuration)
     {
@@ -210,47 +210,47 @@ public sealed record WasmPluginOptions
             WorkDirectory = section["WorkDirectory"],
         };
 
-        if (Number(section, "MemoryLimitBytes") is { } memory)
+        if (Integer(section, "MemoryLimitBytes", minimum: 1) is { } memory)
         {
-            options = options with { MemoryLimitBytes = (long)memory };
+            options = options with { MemoryLimitBytes = memory };
         }
 
-        if (Number(section, "StackLimitBytes") is { } stack)
+        if (Integer(section, "StackLimitBytes", minimum: 1, maximum: int.MaxValue) is { } stack)
         {
             options = options with { StackLimitBytes = (int)stack };
         }
 
-        if (Number(section, "EpochIntervalMilliseconds") is { } epoch)
+        if (Positive(section, "EpochIntervalMilliseconds") is { } epoch)
         {
             options = options with { EpochInterval = TimeSpan.FromMilliseconds(epoch) };
         }
 
-        if (Number(section, "CallTimeoutSeconds") is { } call)
+        if (Positive(section, "CallTimeoutSeconds") is { } call)
         {
             options = options with { CallTimeout = TimeSpan.FromSeconds(call) };
         }
 
-        if (Number(section, "MiddlewareTimeoutMilliseconds") is { } middleware)
+        if (Positive(section, "MiddlewareTimeoutMilliseconds") is { } middleware)
         {
             options = options with { MiddlewareTimeout = TimeSpan.FromMilliseconds(middleware) };
         }
 
-        if (Number(section, "HealthIntervalSeconds") is { } health)
+        if (Positive(section, "HealthIntervalSeconds") is { } health)
         {
             options = options with { HealthInterval = TimeSpan.FromSeconds(health) };
         }
 
-        if (Number(section, "RestartWindowSeconds") is { } window)
+        if (Positive(section, "RestartWindowSeconds") is { } window)
         {
             options = options with { RestartWindow = TimeSpan.FromSeconds(window) };
         }
 
-        if (Number(section, "HealthFailures") is { } failures)
+        if (Integer(section, "HealthFailures", minimum: 1, maximum: int.MaxValue) is { } failures)
         {
             options = options with { HealthFailures = (int)failures };
         }
 
-        if (Number(section, "RestartLimit") is { } limit)
+        if (Integer(section, "RestartLimit", minimum: 0, maximum: int.MaxValue) is { } limit)
         {
             options = options with { RestartLimit = (int)limit };
         }
@@ -259,12 +259,12 @@ public sealed record WasmPluginOptions
     }
 
     /// <summary>
-    /// 读取一个数。
+    /// 读取一个正数（时长）。
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是非负数则抛出。
+    /// 未配置为空，不是正数则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。
     /// </remarks>
-    private static double? Number(IConfiguration section, string name)
+    private static double? Positive(IConfiguration section, string name)
     {
         var text = section[name];
         if (text is null)
@@ -272,8 +272,31 @@ public sealed record WasmPluginOptions
             return null;
         }
 
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value >= 0
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0 && double.IsFinite(value)
             ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a non-negative number, but was '{text}'.");
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{text}'.");
+    }
+
+    /// <summary>
+    /// 读取一个整数。
+    /// </summary>
+    /// <remarks>
+    /// 未配置为空，不是整数或不在 [<paramref name="minimum"/>, <paramref name="maximum"/>] 内则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。
+    /// </remarks>
+    private static long? Integer(IConfiguration section, string name, long minimum, long maximum = long.MaxValue)
+    {
+        var text = section[name];
+        if (text is null)
+        {
+            return null;
+        }
+
+        if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum && value <= maximum)
+        {
+            return value;
+        }
+
+        var range = minimum == 0 ? "a non-negative integer" : "a positive integer";
+        throw new ArgumentException($"{ConfigurationSection}:{name} must be {range}{(maximum < long.MaxValue ? $" not greater than {maximum}" : string.Empty)}, but was '{text}'.");
     }
 }

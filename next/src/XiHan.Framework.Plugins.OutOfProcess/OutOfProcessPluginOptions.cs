@@ -187,12 +187,12 @@ public sealed record OutOfProcessPluginOptions
             options = options with { RestartWindow = window };
         }
 
-        if (Integer(section, "HealthFailures") is { } failures)
+        if (Integer(section, "HealthFailures", minimum: 1) is { } failures)
         {
             options = options with { HealthFailures = failures };
         }
 
-        if (Integer(section, "RestartLimit") is { } limit)
+        if (Integer(section, "RestartLimit", minimum: 0) is { } limit)
         {
             options = options with { RestartLimit = limit };
         }
@@ -223,9 +223,9 @@ public sealed record OutOfProcessPluginOptions
     /// 读取整数。
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是非负整数则抛出。
+    /// 未配置为空，不是整数或小于 <paramref name="minimum"/> 则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。
     /// </remarks>
-    private static int? Integer(IConfiguration section, string name)
+    private static int? Integer(IConfiguration section, string name, int minimum)
     {
         var text = section[name];
         if (text is null)
@@ -233,8 +233,8 @@ public sealed record OutOfProcessPluginOptions
             return null;
         }
 
-        return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= 0
+        return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum
             ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a non-negative integer, but was '{text}'.");
+            : throw new ArgumentException($"{ConfigurationSection}:{name} must be {(minimum == 0 ? "a non-negative integer" : "a positive integer")}, but was '{text}'.");
     }
 }

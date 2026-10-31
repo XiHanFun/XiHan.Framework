@@ -60,7 +60,7 @@ app.Run();
 | `StartTimeoutSeconds` | 正数 | 30 | `Configure` 与 `Start` 各自的时限 |
 | `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds`（缺省 30） | 停止宽限；超时先发终止信号，5 秒后仍未退出再终止进程树 |
 | `HealthIntervalSeconds` | 正数 | 10 | 健康推送断开后的轮询间隔 |
-| `HealthFailures` | 非负整数，至少 1 | 3 | 连续多少次健康轮询失败视为进程失效 |
+| `HealthFailures` | 正整数 | 3 | 连续多少次健康轮询失败视为进程失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重启次数的时间窗 |
 | `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins` | 插件工作目录的根，每个插件一个子目录，宿主停止时不删除 |
@@ -85,7 +85,7 @@ app.Run();
 }
 ```
 
-时长不是正数、整数为负时，`OutOfProcessPluginOptions.FromConfiguration` 以 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发；绑定从 `XiHan:Bindings:<名字>` 取，只下发清单声明的绑定。
+时长不是正数、`HealthFailures` 不是正整数、`RestartLimit` 不是非负整数时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发；绑定从 `XiHan:Bindings:<名字>` 取，只下发清单声明的绑定。
 
 ## 主要类型
 

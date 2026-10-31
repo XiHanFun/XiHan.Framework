@@ -260,4 +260,26 @@ public sealed class WasmPluginHostTests
         Assert.Equal(TimeSpan.FromSeconds(30), options.CallTimeout);
         Assert.Throws<ArgumentException>(() => WasmPluginOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Plugins:Wasm:MemoryLimitBytes"] = "-1" }).Build()));
     }
+
+    [Theory]
+    [InlineData("MemoryLimitBytes", "0", "a positive integer")]
+    [InlineData("MemoryLimitBytes", "1.5", "a positive integer")]
+    [InlineData("StackLimitBytes", "3000000000", "a positive integer not greater than 2147483647")]
+    [InlineData("EpochIntervalMilliseconds", "0", "a positive number")]
+    [InlineData("CallTimeoutSeconds", "0", "a positive number")]
+    [InlineData("MiddlewareTimeoutMilliseconds", "0", "a positive number")]
+    [InlineData("HealthIntervalSeconds", "0", "a positive number")]
+    [InlineData("RestartWindowSeconds", "0", "a positive number")]
+    [InlineData("HealthFailures", "0", "a positive integer")]
+    [InlineData("HealthFailures", "2.5", "a positive integer")]
+    [InlineData("RestartLimit", "-1", "a non-negative integer")]
+    public void Options_FromConfiguration_RejectWhatThePropertiesReject_WithTheConfigurationKey(string key, string value, string expected)
+    {
+        // 配置与属性的取值范围一致：0 等不合规的值以带配置键的 ArgumentException 拒绝，不再漏到属性赋值时抛出不带键的 ArgumentOutOfRangeException
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{WasmPluginOptions.ConfigurationSection}:{key}"] = value }).Build();
+
+        var exception = Assert.Throws<ArgumentException>(() => WasmPluginOptions.FromConfiguration(configuration));
+
+        Assert.Contains($"{WasmPluginOptions.ConfigurationSection}:{key} must be {expected}", exception.Message, StringComparison.Ordinal);
+    }
 }
