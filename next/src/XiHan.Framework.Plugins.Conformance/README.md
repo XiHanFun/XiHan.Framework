@@ -36,12 +36,14 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 5. 每个声明的操作都返回带 `status` 的应答。
 6. 向声明的订阅投递消息得到确认。
 7. 每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答。
+8. 陷阱之后从同一个模块重建实例：重走握手的声明与首次相同，配置、启动之后报可服务状态并照常应答（`wasm.md` §5）。用 `TrapOperation` 指定故意陷阱的操作；不指定时跳过。
 
 ```csharp
 public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 {
     protected override string PluginDirectory => "<EchoWasmPlugin 的 plugin 目录>";
     protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string> { "echoes.trap", "echoes.spin" };
+    protected override string? TrapOperation => "echoes.trap";
 }
 ```
 

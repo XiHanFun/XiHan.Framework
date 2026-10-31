@@ -18,5 +18,8 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
     protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal) { "echoes.trap", "echoes.spin" };
 
     /// <inheritdoc />
+    protected override string? TrapOperation => "echoes.trap";
+
+    /// <inheritdoc />
     protected override IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal) { ["echoes.create"] = """{"text":"conformance"}""" };
 }

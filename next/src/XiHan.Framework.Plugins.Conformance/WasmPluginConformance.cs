@@ -64,6 +64,14 @@ public abstract class WasmPluginConformance
     protected virtual IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>
+    /// 故意陷阱的操作 ID。
+    /// </summary>
+    /// <remarks>
+    /// 用例 8（陷阱后重建）用它触发陷阱；为空时跳过该用例。通常也应列进 <see cref="ExcludedOperations"/>。
+    /// </remarks>
+    protected virtual string? TrapOperation => null;
+
+    /// <summary>
     /// 用例 1：模块是 reactor、导出表与导入表符合 ABI v1、<c>xihan_abi_version</c> 返回 1。
     /// </summary>
     [Fact]
@@ -231,6 +239,33 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
+    /// 用例 8：陷阱之后可以从同一个模块重建实例。
+    /// </summary>
+    /// <remarks>
+    /// 新实例重走握手、配置、启动，声明与首次相同并恢复服务（<c>wasm.md</c> §5）。以 <see cref="TrapOperation"/> 触发陷阱；没有给出时跳过。
+    /// </remarks>
+    [Fact]
+    public void Trap_ThenANewInstance_HandshakesTheSameAndServes()
+    {
+        var trap = TrapOperation;
+        Assert.SkipWhen(trap is null, "No trapping operation is named; override TrapOperation to cover rebuilds after a trap.");
+        using var session = Open();
+        Assert.Contains(trap, session.Manifest.Contributes.Operations);
+        Start(session);
+
+        var trapped = session.Instance.Call("xihan_invoke", PluginJsonCodec.Encode(new InvokeRequest { Operation = trap, Payload = ByteString.CopyFromUtf8("{}") }), TimeSpan.FromSeconds(30));
+        Assert.True(trapped.Status == WasmCallStatus.Trapped, $"Operation '{trap}' must trap, but the call ended with {trapped.Status} {trapped.Detail}.");
+
+        // 宿主丢弃陷阱后的实例、从同一个模块重建：握手声明必须与首次一致，配置与启动之后照常服务
+        using var rebuilt = Rebuild(session);
+        Assert.True(rebuilt.Handshake.IsSameAs(session.Handshake), "The handshake of the rebuilt instance must declare the same operations, subscriptions and catalogs as the first one.");
+        Start(rebuilt);
+        Assert.Contains(rebuilt.Call<HealthResponse>("xihan_health", new HealthRequest()).State, _serving);
+        var response = rebuilt.Call<InvokeResponse>("xihan_invoke", new InvokeRequest { Operation = "conformance.missing", Payload = ByteString.CopyFromUtf8("{}") });
+        Assert.Equal(KernelErrors.UnknownOperation, response.Status?.Error?.Code);
+    }
+
+    /// <summary>
     /// 编译、校验、实例化并握手。
     /// </summary>
     private WasmSession Open()
@@ -244,17 +279,40 @@ public abstract class WasmPluginConformance
         Assert.True(module.IsSuccess, module.Error?.Message);
         var workDirectory = Path.Combine(Path.GetTempPath(), "xihan-plugins-conformance", manifest.Id);
         Directory.CreateDirectory(workDirectory);
+        return Handshake(new WasmSession(engine, module.ValueOrThrow(), Instantiate(engine, module.ValueOrThrow(), manifest, workDirectory), manifest, workDirectory, ownsModule: true));
+    }
+
+    /// <summary>
+    /// 从会话的模块再建一个实例并握手（宿主陷阱后的重建）。
+    /// </summary>
+    /// <remarks>
+    /// 新会话不拥有引擎与模块，先于原会话释放。
+    /// </remarks>
+    private static WasmSession Rebuild(WasmSession session)
+        => Handshake(new WasmSession(session.Engine, session.Module, Instantiate(session.Engine, session.Module, session.Manifest, session.WorkDirectory), session.Manifest, session.WorkDirectory, ownsModule: false));
+
+    /// <summary>
+    /// 实例化模块。
+    /// </summary>
+    private static WasmInstance Instantiate(Engine engine, WasmModule module, Manifest manifest, string workDirectory)
+    {
         var context = new WasmHostContext(engine, new WasmPluginOptions(), new ConfigurationBuilder().Build(), TimeProvider.System, 1, "en-US", "conformance", workDirectory);
         var functions = new WasmHostFunctions(manifest, new PermissionGrant(manifest.Permissions), context, NullLogger.Instance);
         var wasi = new WasiConfiguration().WithStandardOutput(Path.Combine(workDirectory, "stdout.log")).WithStandardError(Path.Combine(workDirectory, "stderr.log"));
-        var instance = new WasmInstance(engine, module.ValueOrThrow(), functions, wasi, 64L * 1024 * 1024, TimeSpan.FromMilliseconds(10), TimeSpan.FromSeconds(30));
-        var session = new WasmSession(engine, module.ValueOrThrow(), instance, manifest, workDirectory);
+        return new WasmInstance(engine, module, functions, wasi, 64L * 1024 * 1024, TimeSpan.FromMilliseconds(10), TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// 握手并核对，失败时释放会话。
+    /// </summary>
+    private static WasmSession Handshake(WasmSession session)
+    {
         try
         {
             var request = new HandshakeRequest { Primitives = 1, InstanceId = "conformance", Host = new HostInfo { FrameworkVersion = FrameworkInfo.Version, Sdk = "dotnet", SdkVersion = Environment.Version.ToString(), Application = "conformance" }, DefaultLocale = "en-US" };
             request.ProtocolVersions.AddRange(PluginProtocol.SupportedVersions);
             var response = session.Call<HandshakeResponse>("xihan_handshake", request);
-            var validated = HandshakeValidator.Validate(manifest, response, 1, PluginIsolation.Wasm);
+            var validated = HandshakeValidator.Validate(session.Manifest, response, 1, PluginIsolation.Wasm);
             Assert.True(validated.IsSuccess, validated.Error?.Message);
             session.Handshake = validated.ValueOrThrow();
             return session;
@@ -280,8 +338,13 @@ public abstract class WasmPluginConformance
     /// <summary>
     /// 一个已握手的被测实例。
     /// </summary>
-    private sealed class WasmSession(Engine engine, WasmModule module, WasmInstance instance, Manifest manifest, string workDirectory) : IDisposable
+    private sealed class WasmSession(Engine engine, WasmModule module, WasmInstance instance, Manifest manifest, string workDirectory, bool ownsModule) : IDisposable
     {
+        /// <summary>
+        /// 引擎。
+        /// </summary>
+        public Engine Engine { get; } = engine;
+
         /// <summary>
         /// 模块。
         /// </summary>
@@ -327,8 +390,11 @@ public abstract class WasmPluginConformance
         public void Dispose()
         {
             Instance.Dispose();
-            Module.Dispose();
-            engine.Dispose();
+            if (ownsModule)
+            {
+                Module.Dispose();
+                Engine.Dispose();
+            }
         }
     }
 }

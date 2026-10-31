@@ -36,7 +36,7 @@
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance` | 4 + 3 |
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 10 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 27 + 3 |
-| [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 7 |
+| [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 15 + 5 + 2 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 4 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 7 + 26 + 8 |
@@ -165,11 +165,11 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 | 基类 | 稳定性 | 实现 | 可覆写 |
 | --- | --- | --- | --- |
 | `PluginProtocolConformance` | Preview | `PluginDirectory`：含 `xihan.manifest.json` 与 `entry` 指向的可执行文件 | `Timeout`（每次协议调用，缺省 15 秒）、`ConfigurationJson`（缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作） |
-| `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`、`ExcludedOperations` |
+| `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`、`ExcludedOperations`、`TrapOperation`（故意陷阱的操作，给出时才跑陷阱后重建用例） |
 
 进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，`Health` 与 `WatchHealth` 报可服务状态且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出。
 
-Wasm 用例（在进程内实例化模块）：模块是 reactor、导出与导入表符合 ABI v1、`xihan_abi_version` 返回 1；握手协商出版本 1、清单一致、声明在范围内、没有流式操作，声明了订阅 / 中间件就导出了对应函数；`xihan_configure` / `xihan_start` 成功、`xihan_health` 报可服务状态、`xihan_stop` 成功；未声明的操作以 `KERNEL_NOTFOUND_001` 的失败状态应答；每个声明的操作都返回带 `status` 的应答；订阅投递得到确认；每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答。
+Wasm 用例（在进程内实例化模块）：模块是 reactor、导出与导入表符合 ABI v1、`xihan_abi_version` 返回 1；握手协商出版本 1、清单一致、声明在范围内、没有流式操作，声明了订阅 / 中间件就导出了对应函数；`xihan_configure` / `xihan_start` 成功、`xihan_health` 报可服务状态、`xihan_stop` 成功；未声明的操作以 `KERNEL_NOTFOUND_001` 的失败状态应答；每个声明的操作都返回带 `status` 的应答；订阅投递得到确认；每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答；`TrapOperation` 陷阱之后，从同一个模块重建的实例重走握手、声明与首次相同，配置、启动后报可服务状态并照常应答。
 
 ```csharp
 using XiHan.Framework.Plugins.Conformance;
@@ -180,6 +180,9 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 
     // 故意陷阱与忙等的操作不调用
     protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal) { "echoes.trap", "echoes.spin" };
+
+    // 陷阱后重建用例用它触发陷阱
+    protected override string? TrapOperation => "echoes.trap";
 }
 ```
 
