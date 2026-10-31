@@ -53,7 +53,7 @@ app.Run();
 
 ## 配置
 
-Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（不写时缺省也是 `openai`）：
+Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填，不写时启动失败）：
 
 ```json
 {
@@ -82,7 +82,7 @@ Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（不写�
 
 | 键 | 说明 |
 | --- | --- |
-| `Endpoint` | 绝对 URI；空表示官方端点 |
+| `Endpoint` | 绝对的 http(s) 地址；空表示官方端点，写错时启动失败 |
 | `ApiKey` | 空时用占位凭据 `no-key` |
 | `ChatModel` | 解析聊天客户端时必填，缺失返回 `AI_VALIDATION_001` |
 | `EmbeddingModel` | 解析嵌入生成器时必填，缺失返回 `AI_VALIDATION_001` |

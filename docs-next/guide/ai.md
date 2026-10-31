@@ -81,7 +81,7 @@ app.Run();
 
 `IAIProviderCatalog` 按名字解析客户端：`ResolveChatClient(name)`、`ResolveEmbeddingGenerator(name)` 返回 `Result`，名字为空时取默认 Provider。默认聊天 Provider 是 `DefaultProvider`；没写且只配了一个 Provider 时就是它。默认嵌入 Provider 是 `DefaultEmbeddingProvider`，没写时同默认聊天 Provider。
 
-每个 Provider 有一个种类 `Kind`（转成小写，缺省 `openai`），由登记的 `IChatClientFactory` / `IEmbeddingGeneratorFactory` 的 `Kind` 匹配；Provider 包以 `AddAIChatClientFactory<T>()`、`AddAIEmbeddingGeneratorFactory<T>()` 登记工厂，同一种类登记两次以后者为准。Provider 名字、提示词名字与 `XiHan:AI:Knowledge:Collection` 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`，不合法时构造选项抛出 `ArgumentException`。
+每个 Provider 有一个种类 `Kind`（必填，转成小写），由登记的 `IChatClientFactory` / `IEmbeddingGeneratorFactory` 的 `Kind` 匹配；Provider 包以 `AddAIChatClientFactory<T>()`、`AddAIEmbeddingGeneratorFactory<T>()` 登记工厂，同一种类登记两次以后者为准。Provider 名字、提示词名字与 `XiHan:AI:Knowledge:Collection` 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`，不合法时构造选项抛出 `ArgumentException`。
 
 解析结果按名字缓存，同名并发解析只建一个实例。`Invalidate(name)` 释放缓存的实例，下次解析重建；`name` 为空时清全部。选项在装配时从配置读一次，`Invalidate` 用的仍是这份选项，改了 `XiHan:AI:Providers` 要重启应用才生效。
 
@@ -338,8 +338,8 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 | --- | --- | --- | --- |
 | `XiHan:AI:DefaultProvider` | string | 只有一个 Provider 时取它 | 默认聊天 Provider |
 | `XiHan:AI:DefaultEmbeddingProvider` | string | 同 `DefaultProvider` | 默认嵌入 Provider |
-| `XiHan:AI:Providers:<name>:Kind` | string | `openai` | Provider 种类，转成小写后匹配工厂 |
-| `XiHan:AI:Providers:<name>:Endpoint` | 绝对 URI | 空，即 Provider 的官方端点 | 模型端点 |
+| `XiHan:AI:Providers:<name>:Kind` | string | 必填 | Provider 种类，转成小写后匹配工厂 |
+| `XiHan:AI:Providers:<name>:Endpoint` | 绝对的 http(s) 地址 | 空，即 Provider 的官方端点 | 模型端点 |
 | `XiHan:AI:Providers:<name>:ApiKey` | string | 空 | API 密钥；空时由 Provider 决定 |
 | `XiHan:AI:Providers:<name>:ChatModel` | string | — | 聊天模型，解析聊天客户端时必填 |
 | `XiHan:AI:Providers:<name>:EmbeddingModel` | string | — | 嵌入模型，解析嵌入生成器时必填 |
@@ -358,8 +358,8 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 | `XiHan:AI:Knowledge:EmbeddingProvider` | string | 默认嵌入 Provider | 知识库用的嵌入 Provider |
 | `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名 |
 
-::: warning 端点写错时会回落到官方端点
-`Endpoint` 不是绝对 URI（例如漏了 `http://`）时被当作没有配置，OpenAI 兼容 Provider 改连官方端点并带上配置的 `ApiKey`；`EmbeddingDimensions`、`TimeoutSeconds` 与知识库的数值写错时同样按缺省处理。上线前核对这几个值。
+::: warning 配置值写错时启动失败
+读取 `XiHan:AI` 时值不合法即抛出 `ArgumentException`，应用启动失败，异常消息带出完整的配置键与原值：Provider 缺 `Kind`；`Endpoint` 不是绝对的 http(s) 地址（例如漏了 `http://`，写错的端点不会退回官方端点、把 `ApiKey` 发出去）；`EmbeddingDimensions` 与知识库的数值不是要求的整数；`TimeoutSeconds` 不是正数；护栏的两个开关不是 `true` / `false`；提示词缺 `Template`。`Endpoint` 不写或写空串表示官方端点。
 :::
 
 ## 错误码

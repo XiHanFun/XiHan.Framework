@@ -46,12 +46,12 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | --- | --- | --- |
 | `DefaultProvider` | 只有一个 Provider 时取它 | 默认聊天 Provider |
 | `DefaultEmbeddingProvider` | 同 `DefaultProvider` | 默认嵌入 Provider |
-| `Providers:<name>:Kind` | `openai` | 种类，转小写后与工厂的 `Kind` 匹配 |
-| `Providers:<name>:Endpoint` | 空 | 绝对 URI；空表示 Provider 的官方端点 |
+| `Providers:<name>:Kind` | 必填 | 种类，转小写后与工厂的 `Kind` 匹配 |
+| `Providers:<name>:Endpoint` | 空 | 绝对的 http(s) 地址；空表示 Provider 的官方端点 |
 | `Providers:<name>:ApiKey` | 空 | 空时由 Provider 决定 |
 | `Providers:<name>:ChatModel`、`EmbeddingModel` | — | 解析对应客户端时必填 |
 | `Providers:<name>:EmbeddingDimensions` | 模型缺省 | 至少 1 |
-| `Providers:<name>:TimeoutSeconds` | 100 | 单次调用超时 |
+| `Providers:<name>:TimeoutSeconds` | 100 | 单次调用超时，正数 |
 | `Providers:<name>:Properties:<key>` | — | 透传给工厂的字符串 |
 | `Tools:<操作 ID>` | 按约定推导 | 覆盖操作工具名 |
 | `Prompts:<name>:Template`、`Description` | — | 配置里的提示词 |
@@ -78,7 +78,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 }
 ```
 
-`Endpoint` 不是绝对 URI，或数值项写错时按缺省处理，不报错。
+值不合法时 `AIOptions.FromConfiguration` 抛出 `ArgumentException`，消息带出配置键与原值，应用启动失败：Provider 缺 `Kind`、`Endpoint` 不是绝对的 http(s) 地址、数值项不是要求的整数或正数、布尔项不是 `true` / `false`、提示词缺 `Template`。
 
 ## 主要类型
 

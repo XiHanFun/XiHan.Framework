@@ -15,7 +15,7 @@ namespace XiHan.Framework.AI.Abstractions;
 /// AI 子系统选项（配置节 <c>XiHan:AI</c>）。
 /// </summary>
 /// <remarks>
-/// 默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。
+/// 默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。读取配置时值不合法即抛出 <see cref="ArgumentException"/>（启动失败），不按缺省处理。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AIOptions
@@ -79,6 +79,9 @@ public sealed record AIOptions
     /// <summary>
     /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// Provider 缺 <c>Kind</c>、<c>Endpoint</c> 不是绝对的 http(s) 地址、数值项不是要求的整数或正数、布尔项不是 <c>true</c> / <c>false</c>、提示词缺模板时抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static AIOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -101,11 +104,8 @@ public sealed record AIOptions
         var prompts = new List<AIPromptTemplate>();
         foreach (var child in section.GetSection("Prompts").GetChildren())
         {
-            var template = child["Template"] ?? child.Value;
-            if (template is not null)
-            {
-                prompts.Add(new AIPromptTemplate(child.Key, template, child["Description"]));
-            }
+            var template = child["Template"] ?? child.Value ?? throw new ArgumentException($"'{child.Path}:Template' is required.", nameof(configuration));
+            prompts.Add(new AIPromptTemplate(child.Key, template, child["Description"]));
         }
 
         return new AIOptions
@@ -134,20 +134,23 @@ public sealed record AIOptions
             }
         }
 
-        var options = new AIProviderOptions(section.Key, section["Kind"] ?? "openai")
+        // 种类没有缺省：写漏了不能悄悄当成 openai，把请求与密钥发给官方端点
+        var kind = section["Kind"];
+        if (string.IsNullOrWhiteSpace(kind))
         {
-            Endpoint = Uri.TryCreate(section["Endpoint"], UriKind.Absolute, out var endpoint) ? endpoint : null,
+            throw new ArgumentException($"'{section.Path}:Kind' is required.", nameof(section));
+        }
+
+        var options = new AIProviderOptions(section.Key, kind)
+        {
+            Endpoint = ReadHttpUrl(section, "Endpoint"),
             ApiKey = section["ApiKey"],
             ChatModel = section["ChatModel"],
             EmbeddingModel = section["EmbeddingModel"],
+            EmbeddingDimensions = ReadInt(section, "EmbeddingDimensions", minimum: 1),
             Properties = properties,
         };
-        if (int.TryParse(section["EmbeddingDimensions"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var dimensions))
-        {
-            options = options with { EmbeddingDimensions = dimensions };
-        }
-
-        if (double.TryParse(section["TimeoutSeconds"], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+        if (ReadPositiveNumber(section, "TimeoutSeconds") is { } seconds)
         {
             options = options with { Timeout = TimeSpan.FromSeconds(seconds) };
         }
@@ -160,10 +163,10 @@ public sealed record AIOptions
     /// </summary>
     private static AIGuardrailOptions ReadGuardrails(IConfigurationSection section) => new()
     {
-        Enabled = bool.TryParse(section["Enabled"], out var enabled) && enabled,
+        Enabled = ReadBool(section, "Enabled") ?? false,
         BlockedKeywords = ReadList(section.GetSection("BlockedKeywords")),
         InjectionPatterns = ReadList(section.GetSection("InjectionPatterns")),
-        UseBuiltInInjectionHeuristics = !bool.TryParse(section["UseBuiltInInjectionHeuristics"], out var heuristics) || heuristics,
+        UseBuiltInInjectionHeuristics = ReadBool(section, "UseBuiltInInjectionHeuristics") ?? true,
     };
 
     /// <summary>
@@ -177,27 +180,101 @@ public sealed record AIOptions
             options = options with { Collection = collection };
         }
 
-        if (int.TryParse(section["Dimensions"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var dimensions))
+        if (ReadInt(section, "Dimensions", minimum: 1) is { } dimensions)
         {
             options = options with { Dimensions = dimensions };
         }
 
-        if (int.TryParse(section["ChunkSize"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var size))
+        if (ReadInt(section, "ChunkSize", minimum: 1) is { } size)
         {
             options = options with { ChunkSize = size };
         }
 
-        if (int.TryParse(section["ChunkOverlap"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var overlap))
+        if (ReadInt(section, "ChunkOverlap", minimum: 0) is { } overlap)
         {
             options = options with { ChunkOverlap = overlap };
         }
 
-        if (int.TryParse(section["Top"], NumberStyles.Integer, CultureInfo.InvariantCulture, out var top))
+        if (ReadInt(section, "Top", minimum: 1) is { } top)
         {
             options = options with { Top = top };
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// 读取整数键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是整数或小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    private static int? ReadInt(IConfigurationSection section, string key, int minimum)
+    {
+        var raw = section[key];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum
+            ? value
+            : throw new ArgumentException($"'{section.Path}:{key}' must be an integer of at least {minimum}, but the value is '{raw}'.", nameof(section));
+    }
+
+    /// <summary>
+    /// 读取正数键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是有限的正数抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    private static double? ReadPositiveNumber(IConfigurationSection section, string key)
+    {
+        var raw = section[key];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && double.IsFinite(value) && value > 0
+            ? value
+            : throw new ArgumentException($"'{section.Path}:{key}' must be a positive number, but the value is '{raw}'.", nameof(section));
+    }
+
+    /// <summary>
+    /// 读取布尔键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省返回 <see langword="null"/>，不是 <c>true</c> / <c>false</c> 抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    private static bool? ReadBool(IConfigurationSection section, string key)
+    {
+        var raw = section[key];
+        if (raw is null)
+        {
+            return null;
+        }
+
+        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"'{section.Path}:{key}' must be 'true' or 'false', but the value is '{raw}'.", nameof(section));
+    }
+
+    /// <summary>
+    /// 读取 http(s) 地址键。
+    /// </summary>
+    /// <remarks>
+    /// 缺省或空串返回 <see langword="null"/>，不是绝对的 http 或 https 地址抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    private static Uri? ReadHttpUrl(IConfigurationSection section, string key)
+    {
+        var raw = section[key];
+        if (string.IsNullOrEmpty(raw))
+        {
+            return null;
+        }
+
+        return Uri.TryCreate(raw, UriKind.Absolute, out var value) && AIProviderOptions.IsHttpUrl(value)
+            ? value
+            : throw new ArgumentException($"'{section.Path}:{key}' must be an absolute http or https URL, but the value is '{raw}'.", nameof(section));
     }
 
     /// <summary>

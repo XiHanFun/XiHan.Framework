@@ -43,9 +43,13 @@ public sealed record AIProviderOptions
     /// 端点。
     /// </summary>
     /// <remarks>
-    /// 空表示 Provider 的官方端点。
+    /// 空表示 Provider 的官方端点；有值时必须是绝对的 http 或 https 地址，否则抛出 <see cref="ArgumentException"/>，不会退回官方端点、把密钥发给它。
     /// </remarks>
-    public Uri? Endpoint { get; init; }
+    public Uri? Endpoint
+    {
+        get => field;
+        init => field = value is null || IsHttpUrl(value) ? value : throw new ArgumentException($"The endpoint '{value}' must be an absolute http or https URL.", nameof(value));
+    }
 
     /// <summary>
     /// API 密钥。
@@ -93,4 +97,9 @@ public sealed record AIProviderOptions
     /// 透传给工厂的属性。
     /// </summary>
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 是绝对的 http 或 https 地址。
+    /// </summary>
+    internal static bool IsHttpUrl(Uri value) => value.IsAbsoluteUri && (value.Scheme == Uri.UriSchemeHttp || value.Scheme == Uri.UriSchemeHttps);
 }

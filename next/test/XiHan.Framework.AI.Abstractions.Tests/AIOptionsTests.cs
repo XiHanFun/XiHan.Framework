@@ -10,6 +10,9 @@ namespace XiHan.Framework.AI.Abstractions.Tests;
 /// <summary>
 /// 选项读取与校验。
 /// </summary>
+/// <remarks>
+/// 值不合法即抛出，不按缺省处理。
+/// </remarks>
 public sealed class AIOptionsTests
 {
     [Fact]
@@ -27,6 +30,8 @@ public sealed class AIOptionsTests
             ["XiHan:AI:Providers:cloud:EmbeddingDimensions"] = "256",
             ["XiHan:AI:Providers:cloud:TimeoutSeconds"] = "12.5",
             ["XiHan:AI:Providers:cloud:Properties:organization"] = "org-1",
+            ["XiHan:AI:Providers:local:Kind"] = "openai",
+            ["XiHan:AI:Providers:local:Endpoint"] = "",
             ["XiHan:AI:Providers:local:ChatModel"] = "qwen",
             ["XiHan:AI:Tools:orders.create"] = "place_order",
             ["XiHan:AI:Guardrails:Enabled"] = "true",
@@ -73,5 +78,42 @@ public sealed class AIOptionsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new KnowledgeOptions { Dimensions = 0 });
         Assert.ThrowsAny<ArgumentException>(() => new KnowledgeOptions { Collection = "Bad Name" });
         Assert.Throws<ArgumentOutOfRangeException>(() => new KnowledgeQuery { Text = "x", Top = 0 });
+        Assert.Throws<ArgumentException>(() => new AIProviderOptions("ok", "openai") { Endpoint = new Uri("ftp://example.com/v1") });
+        Assert.Equal("http://localhost:11434/v1", new AIProviderOptions("ok", "openai") { Endpoint = new Uri("http://localhost:11434/v1") }.Endpoint!.ToString());
+    }
+
+    [Theory]
+    [InlineData("XiHan:AI:Providers:cloud:Kind", "", "XiHan:AI:Providers:cloud:Kind")]
+    [InlineData("XiHan:AI:Providers:cloud:Endpoint", "api.example.com/v1", "XiHan:AI:Providers:cloud:Endpoint")]
+    [InlineData("XiHan:AI:Providers:cloud:Endpoint", "localhost:11434/v1", "XiHan:AI:Providers:cloud:Endpoint")]
+    [InlineData("XiHan:AI:Providers:cloud:EmbeddingDimensions", "large", "XiHan:AI:Providers:cloud:EmbeddingDimensions")]
+    [InlineData("XiHan:AI:Providers:cloud:EmbeddingDimensions", "0", "XiHan:AI:Providers:cloud:EmbeddingDimensions")]
+    [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "5m", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
+    [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "-1", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
+    [InlineData("XiHan:AI:Guardrails:Enabled", "yes", "XiHan:AI:Guardrails:Enabled")]
+    [InlineData("XiHan:AI:Guardrails:UseBuiltInInjectionHeuristics", "off", "XiHan:AI:Guardrails:UseBuiltInInjectionHeuristics")]
+    [InlineData("XiHan:AI:Knowledge:Dimensions", "1,536", "XiHan:AI:Knowledge:Dimensions")]
+    [InlineData("XiHan:AI:Knowledge:ChunkSize", "0", "XiHan:AI:Knowledge:ChunkSize")]
+    [InlineData("XiHan:AI:Knowledge:ChunkOverlap", "-5", "XiHan:AI:Knowledge:ChunkOverlap")]
+    [InlineData("XiHan:AI:Knowledge:Top", "three", "XiHan:AI:Knowledge:Top")]
+    [InlineData("XiHan:AI:Prompts:rag:Description", "no template", "XiHan:AI:Prompts:rag:Template")]
+    public void InvalidValues_Throw_InsteadOfFallingBackToDefaults(string key, string value, string reported)
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["XiHan:AI:Providers:cloud:Kind"] = "openai",
+            ["XiHan:AI:Providers:cloud:ApiKey"] = "sk-test",
+            [key] = value,
+        };
+
+        var thrown = Assert.ThrowsAny<ArgumentException>(() => AIOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(settings).Build()));
+        Assert.Contains(reported, thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MissingKind_Throws()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:AI:Providers:local:ChatModel"] = "qwen" }).Build();
+        Assert.Contains("XiHan:AI:Providers:local:Kind", Assert.ThrowsAny<ArgumentException>(() => AIOptions.FromConfiguration(configuration)).Message, StringComparison.Ordinal);
     }
 }

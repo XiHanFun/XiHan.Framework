@@ -4,7 +4,7 @@ AI 契约（Ring 2，RFC-0022，ADR-0017）：以 `Microsoft.Extensions.AI` 的 
 
 | 类型 | 用途 |
 | --- | --- |
-| `AIOptions`、`AIProviderOptions` | `XiHan:AI`：`DefaultProvider`、`DefaultEmbeddingProvider`、`Providers:<name>`（`Kind`、`Endpoint`、`ApiKey`、`ChatModel`、`EmbeddingModel`、`EmbeddingDimensions`、`TimeoutSeconds`、`Properties`）、`Tools:<操作 ID>`、`Guardrails`、`Knowledge`、`Prompts:<name>` |
+| `AIOptions`、`AIProviderOptions` | `XiHan:AI`：`DefaultProvider`、`DefaultEmbeddingProvider`、`Providers:<name>`（`Kind` 必填、`Endpoint`、`ApiKey`、`ChatModel`、`EmbeddingModel`、`EmbeddingDimensions`、`TimeoutSeconds`、`Properties`）、`Tools:<操作 ID>`、`Guardrails`、`Knowledge`、`Prompts:<name>`；值不合法即抛出 `ArgumentException`（启动失败） |
 | `IAIProviderCatalog` | 按名字解析 `IChatClient` / `IEmbeddingGenerator<string, Embedding<float>>`，缓存到 `Invalidate`；Provider 包实现 `IChatClientFactory` / `IEmbeddingGeneratorFactory` |
 | `IAIChat`、`AIChatRequest` | 提示词渲染 → 工具绑定 → 护栏 → 解析 Provider → 调用；`CompleteAsync` / `StreamAsync` |
 | `IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail` | 输入护栏；内置关键词与提示注入护栏由 `XiHan:AI:Guardrails:Enabled` 开启 |
