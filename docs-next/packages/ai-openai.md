@@ -20,7 +20,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 - `OpenAIChatClientFactory`：`OpenAIClient` → `GetChatClient(ChatModel).AsIChatClient()`，再套上 Microsoft.Extensions.AI 的函数调用循环（`UseFunctionInvocation`），模型发起的工具调用在客户端里自动执行。
 - `OpenAIEmbeddingGeneratorFactory`：`GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)`。
 
-`OpenAIClient` 的网络超时取 Provider 的 `TimeoutSeconds`（缺省 100 秒）；`Endpoint` 为空时连官方端点；`ApiKey` 为空时用占位凭据，供不校验密钥的本地端点使用。装配与启动不访问网络，客户端在第一次解析时创建并按 Provider 名缓存。
+`OpenAIClient` 的网络超时只取 Provider 的 `TimeoutSeconds`（缺省 100 秒）；`Endpoint` 为空时连官方端点；`ApiKey` 为空时用占位凭据，供不校验密钥的本地端点使用。装配与启动不访问网络，客户端在第一次解析时创建并按 Provider 名缓存。
 
 ## 何时使用
 
@@ -103,20 +103,24 @@ Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填�
 
 ## 使用示例
 
-经代理或在测试里替换传输时，在 `Program.cs` 里登记名为 `xihan.ai.openai` 的 `HttpClient`，本包从 `IHttpClientFactory` 取它发请求：
+经代理或在测试里替换传输时，在 `Program.cs` 里给名为 `xihan.ai.openai` 的 `HttpClient` 配置处理器，本包从 `IHttpClientFactory` 取它发请求：
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// 工厂建出的 HttpClient 自带 100 秒的 Timeout，比 TimeoutSeconds 更早生效时调大它
-builder.Services.AddHttpClient("xihan.ai.openai", static client => client.Timeout = TimeSpan.FromMinutes(5));
+// 经公司代理访问模型端点；超时不在这里设，由 Provider 的 TimeoutSeconds 决定
+builder.Services.AddHttpClient("xihan.ai.openai")
+    .ConfigurePrimaryHttpMessageHandler(static () => new SocketsHttpHandler { Proxy = new WebProxy("http://proxy.internal:8080") });
 ```
+
+`WebProxy` 在 `System.Net` 命名空间。
 
 `AddHttpClient` 来自 `Microsoft.Extensions.Http`。聊天、工具与护栏的用法见 [AI](../guide/ai#聊天入口)。
 
 ## 行为与限制
 
-- 容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`），本包就从它取名为 `xihan.ai.openai` 的客户端发请求，没有专门登记这个名字时取到的是缺省配置的客户端；`HttpClient.Timeout` 缺省 100 秒，会与 `TimeoutSeconds` 叠加生效，取较短者。
+- 容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`），本包就从它取名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时取到的是工厂的缺省客户端，应用用 `ConfigureHttpClientDefaults` 给全部客户端加的处理器（如弹性处理器）同样作用于它。
+- 超时只以 `TimeoutSeconds` 为准：取到的客户端的 `HttpClient.Timeout` 由本包置为不限，与 SDK 自己的传输一样，不会被缺省的 100 秒截断；在 `AddHttpClient` 里设的 `Timeout` 不生效。
 - 端点返回错误或不可达记 `AI_UNAVAILABLE_001`，超时记 `AI_TIMEOUT_001`；这两项在 `IAIChat` 里映射，直接从目录取客户端的调用拿到的是 SDK 的原始异常。
 - 缓存、遥测等横切逻辑可以叠加在目录解析出的客户端上，用 Microsoft.Extensions.AI 自己的中间件。
 - 通过 `AI.Conformance` 的 `AIProviderConformance`。
