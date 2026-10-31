@@ -305,6 +305,25 @@ public sealed class WebHostTests
     }
 
     [Fact]
+    public async Task Baggage_KeepsOnlyRegisteredKeys_InboundAndOutbound()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+
+        // 入站：格式合法但未登记的 xihan. 键与别的系统的键都不进上下文（RFC-0003 规则 3，与插件协议、消息扩展属性一致）
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.Add("baggage", "xihan.tenant=t-1,xihan.custom=x,xihan.principal=p-1,other=1");
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(request)).StatusCode);
+        Assert.Equal(new Dictionary<string, string> { [BaggageKeys.Tenant] = "t-1", [BaggageKeys.Principal] = "p-1" }, captured.Context!.Baggage);
+        Assert.False(HttpInvocation.ParseBaggage("xihan.custom=x").ContainsKey("xihan.custom"));
+
+        // 出站：进程内用的未登记键不写进 baggage 头
+        var inProcess = captured.Context.WithBaggage("xihan.custom", "x");
+        Assert.Equal("x", inProcess.Baggage["xihan.custom"]);
+        Assert.Equal("xihan.tenant=t-1,xihan.principal=p-1", HttpInvocation.FormatBaggage(inProcess.Baggage));
+    }
+
+    [Fact]
     public void ProblemResponse_MapsKindsToStatusCodes()
     {
         Assert.Equal(400, ProblemResponse.StatusCodeFor(Error.Literal("ORDERS_VALIDATION_001", "x")));

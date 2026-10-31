@@ -47,7 +47,7 @@ public static partial class HttpInvocation
     /// 从请求头构造调用上下文。
     /// </summary>
     /// <remarks>
-    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留 <c>xihan.</c> 键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
+    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
     /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -228,10 +228,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 解析 W3C <c>baggage</c> 头，只保留格式合法的 <c>xihan.</c> 键。
+    /// 解析 W3C <c>baggage</c> 头，只保留已登记的键。
     /// </summary>
     /// <remarks>
-    /// 值按 URL 解码。
+    /// 值按 URL 解码；格式合法但未登记的 <c>xihan.</c> 键与其他键都丢弃（RFC-0003 规则 3）。
     /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
 
@@ -256,9 +256,9 @@ public static partial class HttpInvocation
                 continue;
             }
 
-            // 只收 xihan. 前缀且格式合法的键，其他键不属于本框架，直接丢弃
+            // 只收已登记的键（与插件协议、消息扩展属性一致）：别的系统的键与未登记的 xihan. 键都不进上下文
             var key = pair[..separator].Trim();
-            if (!BaggageKeys.IsWellFormed(key))
+            if (!BaggageKeys.IsRegistered(key))
             {
                 continue;
             }
@@ -272,10 +272,13 @@ public static partial class HttpInvocation
     /// <summary>
     /// 把 Baggage 编码为 W3C <c>baggage</c> 头的值。
     /// </summary>
+    /// <remarks>
+    /// 只写已登记的键，进程内用的其他 <c>xihan.</c> 键不出进程（RFC-0003 规则 3）。
+    /// </remarks>
     public static string FormatBaggage(IReadOnlyDictionary<string, string> baggage)
     {
         ArgumentNullException.ThrowIfNull(baggage);
-        return string.Join(",", baggage.Select(static pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"));
+        return string.Join(",", baggage.Where(static pair => BaggageKeys.IsRegistered(pair.Key)).Select(static pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"));
     }
 
     /// <summary>

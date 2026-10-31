@@ -112,7 +112,7 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 | --- | --- |
 | 成功值非空 | `Result.Success<T>(value)` 拒绝 `null`；可能没有值时用 `Result<Maybe<T>>` |
 | 消息键文法 | `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`，首段是领域，最长 128 个字符（`MessageTemplate.MaxKeyLength`） |
-| Baggage 键 | 键名格式 `xihan.<name>`（`BaggageKeys.IsWellFormed`），登记表见 `BaggageKeys.Registered`；HTTP 宿主入站只保留格式合法的 `xihan.` 键；主体只传 ID，敏感信息不进 Baggage |
+| Baggage 键 | 键名格式 `xihan.<name>`（`BaggageKeys.IsWellFormed`），登记表见 `BaggageKeys.Registered`；各载体入站只收已登记的键、出站只写已登记的键（`BaggageKeys.IsRegistered`），格式合法的其他键只在进程内可用；主体只传 ID，敏感信息不进 Baggage |
 | 清单校验 | `Manifest.Validate()` 校验字段格式与跨字段约束，失败为 `PRIMITIVES_VALIDATION_001` |
 
 | 错误码 | 情形 |

@@ -53,7 +53,7 @@ public static partial class BaggageKeys
     /// 键名是否已登记。
     /// </summary>
     /// <remarks>
-    /// 未登记的键在 Egress 阶段被剥离。
+    /// 载体的入站只收已登记的键，出站只写已登记的键；未登记的键只在进程内可用（RFC-0003 规则 3）。
     /// </remarks>
     public static bool IsRegistered(string? key) => key is not null && Registered.Contains(key, StringComparer.Ordinal);
 

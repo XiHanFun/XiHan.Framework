@@ -118,7 +118,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realti
 
 - `UseXiHan()` 要在路由之后、端点之前；`WebApplication` 自动加的路由在管道开头，直接调用即可。需要真实客户端地址时，在它之前调用 `UseForwardedHeaders()`。
 - 成功的调用不改动响应；失败时只有响应尚未开始写出才写 Problem Details，端点已写正文时保留端点的内容。
-- `baggage` 只保留格式合法的 `xihan.` 键；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 解析失败视为没有截止时间。
+- `baggage` 只保留已登记的键，`HttpInvocation.FormatBaggage` 出站也只写已登记的键（RFC-0003 规则 3）；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 解析失败视为没有截止时间。
 - 查询串令牌只在 `QueryTokenPaths` 登记的前缀下接受，前缀不能为空或 `/`；方案 `XiHan` 只认带 `PipelineBypassMetadata` 的端点。
 - Problem Details 由 `ProblemResponse.WriteTo` 手写、探针由源生成上下文序列化，不经反射。
 
