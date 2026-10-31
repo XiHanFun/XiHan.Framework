@@ -94,17 +94,17 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     /// </summary>
     private async Task<byte[]> InvokeAsync(GrpcOperation operation, byte[] request, ServerCallContext call)
     {
-        // 未处于服务状态时还没有调用上下文：直接以 Unavailable 拒绝
-        if (!_app.State.IsServing())
-        {
-            throw new RpcException(new Status(StatusCode.Unavailable, KernelMessages.NotServing.L(("state", _app.State.ToString()))));
-        }
-
         var httpContext = call.GetHttpContext();
         var context = HttpInvocation.CreateContext(httpContext);
         // 协议与请求目标改记 gRPC 方法全名；远端地址与 User-Agent 沿用承载它的 HTTP/2 请求
         context.SetOrigin(context.GetOrigin().ValueOrThrow() with { Protocol = InvocationProtocols.Grpc, Target = call.Method });
         call.ResponseTrailers.Add(TraceIdTrailer, context.TraceId);
+
+        // 未处于服务状态（启动中、停止中）不进管道，但与其他失败一样带错误码与 trace-id 尾部元数据、文案按 accept-language 翻译
+        if (!_app.State.IsServing())
+        {
+            throw Fail(call, context, Error.Unavailable(KernelErrors.NotServing, KernelMessages.NotServing, MessageArguments.Of(("state", _app.State.ToString()))));
+        }
 
         var json = new ArrayBufferWriter<byte>();
         try

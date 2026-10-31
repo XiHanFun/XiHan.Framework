@@ -113,7 +113,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 - 暴露给 gRPC 的操作必须有 Schema；名字、Schema 与消息形状的问题都在映射时失败，应用启动不起来。
 - 线上缺席的布尔、数值、`repeated`、`map` 字段按 proto3 默认值补进 JSON；字符串、字节、嵌套消息缺席即缺席。
 - 字符串枚举映射为 `string`，不建 proto `enum`；`integer` 无格式与 `decimal` 映射为十进制文本。
-- 应用未就绪时直接以 `Unavailable` 拒绝，此时还没有调用上下文。
+- 应用未就绪（启动中或正在停止）时以 `Unavailable` 拒绝、不进管道：尾部元数据带 `xihan-error-code: KERNEL_UNAVAILABLE_001` 与 `xihan-trace-id`，`grpc-message` 按 `accept-language` 翻译。
 
 | KIND | gRPC 状态 |
 | --- | --- |

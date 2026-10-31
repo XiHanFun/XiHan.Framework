@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
@@ -160,6 +161,31 @@ public sealed class GrpcProtocolTests
         var denied = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", [], ("authorization", "ApiKey dev-bob-key"), ("accept-language", "ja-JP")).ResponseAsync);
         Assert.Equal(StatusCode.PermissionDenied, denied.StatusCode);
         Assert.Equal("権限 'orders.write' がありません。", denied.Status.Detail);
+    }
+
+    [Fact]
+    public async Task NotServing_IsUnavailable_WithErrorCodeAndTraceIdTrailers()
+    {
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+
+        // 内核停止后 ASP.NET Core 仍在收请求：gRPC 方法绕过 UseXiHan()，由适配器自己拒绝
+        await app.Services.GetRequiredService<App>().StopAsync(CancellationToken.None);
+        var stopped = await Assert.ThrowsAsync<RpcException>(async () => await Call(
+            channel,
+            "Orders",
+            "Get",
+            ProtoBytes.StringField(1, "42"),
+            ("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"),
+            ("accept-language", "zh-CN")).ResponseAsync);
+
+        Assert.Equal(StatusCode.Unavailable, stopped.StatusCode);
+        Assert.Equal(KernelErrors.NotServing, stopped.Trailers.GetValue("xihan-error-code"));
+        Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", stopped.Trailers.GetValue("xihan-trace-id"));
+        // 文案按 accept-language 翻译；调用没有进管道，操作没有执行
+        Assert.Equal($"应用处于 {app.Services.GetRequiredService<App>().State} 状态，暂不接收请求。", stopped.Status.Detail);
+        Assert.Empty(app.Services.GetRequiredService<OriginLog>().Origins);
     }
 
     [Fact]

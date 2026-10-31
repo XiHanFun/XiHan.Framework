@@ -136,7 +136,7 @@ gRPC 元数据就是 HTTP/2 头，上下文映射与 HTTP 相同：`traceparent`
 | `CANCELLED` | `Cancelled` |
 | 其他 | `Internal` |
 
-`grpc-message` 是按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code` 是框架错误码，`xihan-trace-id` 是 trace-id，成功时也有。适配器自己的失败：请求不是合法 protobuf 或与 Schema 不符为 `InvalidArgument` + `PROTOCOLS_VALIDATION_005`；响应编码不成 protobuf 为 `Internal` + `PROTOCOLS_UNEXPECTED_001`；未登记的方法为 `Unimplemented`（gRPC 服务端默认）；应用未就绪为 `Unavailable`，此时还没有调用上下文。
+`grpc-message` 是按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code` 是框架错误码，`xihan-trace-id` 是 trace-id，成功时也有。适配器自己的失败：请求不是合法 protobuf 或与 Schema 不符为 `InvalidArgument` + `PROTOCOLS_VALIDATION_005`；响应编码不成 protobuf 为 `Internal` + `PROTOCOLS_UNEXPECTED_001`；未登记的方法为 `Unimplemented`（gRPC 服务端默认）；应用未就绪（启动中或正在停止）为 `Unavailable` + `KERNEL_UNAVAILABLE_001`，不进管道，但与其他失败一样带两个尾部元数据，文案按 `accept-language` 翻译。
 
 ## MCP
 
