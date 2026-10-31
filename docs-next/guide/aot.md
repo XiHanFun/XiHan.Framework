@@ -56,16 +56,19 @@ internal sealed partial class ShopJsonContext : JsonSerializerContext;
 
 ## 发布 AOT 应用
 
-仓库的 `next/samples/SimpleApp` 是 AOT 冒烟项目，CI 每次都以 `PublishAot=true` 发布它。按它的写法：
+仓库的 `next/samples/SimpleApp` 是 AOT 冒烟项目，项目文件里声明了 `PublishAot`，CI 每次都以 Native AOT 发布它。按它的写法：
 
 1. 只引用兼容 AOT 的包，持久化用 `Persistence.InMemory` 或自己实现兼容 AOT 的 Provider。
-2. 项目文件打开最小 API 的请求委托生成器，去掉端点参数绑定里的反射：
+2. 项目文件声明 `PublishAot`，并打开最小 API 的请求委托生成器，去掉端点参数绑定里的反射：
 
    ```xml
    <PropertyGroup>
+     <PublishAot>true</PublishAot>
      <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
    </PropertyGroup>
    ```
+
+   `PublishAot` 要写在项目文件里，不要在命令行传 `-p:PublishAot=true`：命令行属性是全局属性，会一路传给引用的项目。引用了 netstandard2.0 的分析器或生成器项目（如 `Kernel.Generators`）时，这些项目会报 NETSDK1207。
 
 3. 把源生成的上下文放到 HTTP JSON 解析链最前面，端点返回的类型不走反射序列化：
 
@@ -78,7 +81,7 @@ internal sealed partial class ShopJsonContext : JsonSerializerContext;
 5. 发布：
 
    ```bash
-   dotnet publish -c Release -p:PublishAot=true -o ./publish
+   dotnet publish -c Release -o ./publish
    ```
 
 发布时出现的裁剪或 AOT 警告都要处理，不要用 `NoWarn` 压掉；它们通常指向某个未登记的序列化类型或引用了不兼容 AOT 的包。

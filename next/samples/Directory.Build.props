@@ -6,7 +6,7 @@
     <!-- 生成文档文件只为让 IDE0005（未使用的 using）在构建期生效；CS1591：示例与基准不要求 XML 文档 -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- 示例保持 AOT 友好：CI 以 -p:PublishAot=true 发布做冒烟 -->
+    <!-- 示例保持 AOT 友好：SimpleApp 在项目里声明 PublishAot，CI 以 Native AOT 发布做冒烟 -->
     <IsAotCompatible>true</IsAotCompatible>
     <NoWarn>$(NoWarn);CA1515;CS1591</NoWarn>
   </PropertyGroup>

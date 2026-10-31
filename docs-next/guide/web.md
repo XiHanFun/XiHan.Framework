@@ -244,7 +244,7 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.T
 internal sealed partial class AppJsonContext : JsonSerializerContext;
 ```
 
-操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。仓库 CI 以 `dotnet publish next/samples/SimpleApp/SimpleApp.csproj -p:PublishAot=true` 做冒烟，示例装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见[序列化与 Native AOT](./aot)。
+操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。仓库 CI 以 `dotnet publish next/samples/SimpleApp/SimpleApp.csproj` 做 Native AOT 冒烟（`PublishAot` 在项目文件里声明），示例装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见[序列化与 Native AOT](./aot)。
 
 ## 行为与错误码
 

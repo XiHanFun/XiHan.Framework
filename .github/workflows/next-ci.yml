@@ -108,7 +108,8 @@ jobs:
 
       - name: AOT 发布冒烟
         # 内核零反射、源生成序列化：示例必须能以 Native AOT 发布
-        run: dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -p:PublishAot=true -o ${{ runner.temp }}/aot
+        # PublishAot 由 SimpleApp 项目声明；不在命令行传，否则作为全局属性传给 netstandard2.0 的分析器与生成器（NETSDK1207）
+        run: dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -o ${{ runner.temp }}/aot
 
       - name: 上传测试结果与包
         if: always()
