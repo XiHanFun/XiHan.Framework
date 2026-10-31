@@ -327,7 +327,8 @@ public abstract class JobSchedulerConformance
         await log.WaitAsync(ManualJob, 1, WaitTimeout).ConfigureAwait(false);
         var running = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         var run = Assert.Single(running);
-        Assert.Equal(log.Runs[0].Run.Id, run.Id);
+        // 套件同时登记了每 100 毫秒触发的间隔作业，它也写同一份记录：按作业名取，不按先后
+        Assert.Equal(log.Runs.First(r => r.Run.Name == ManualJob).Run.Id, run.Id);
         Assert.True((await host.Scheduler.CancelRunAsync(run.Id, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         var outcome = await triggered.ConfigureAwait(false);
         Assert.Equal(SchedulingErrors.RunCanceled, outcome.Error?.Code);

@@ -2,16 +2,20 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.Conformance;
+using XiHan.Framework.Scheduling.Database.Leadership;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 让 <see cref="Leadership.DatabaseLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
+/// 让 <see cref="DatabaseLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
 /// </summary>
 /// <remarks>
-/// 对着 SQLite。套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主。
+/// 对着 SQLite。套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主；选举用套件给的时钟构造，租约行的到期时刻也按它写。
 /// </remarks>
 public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConformance, IAsyncLifetime
 {
@@ -21,9 +25,9 @@ public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConfo
     private SqliteDatabase? _database;
 
     /// <summary>
-    /// 已启动的宿主里的选举。
+    /// 已启动的宿主。
     /// </summary>
-    private ILeaderElection? _election;
+    private TestHost? _host;
 
     /// <summary>
     /// 启动宿主。
@@ -31,8 +35,7 @@ public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConfo
     public async ValueTask InitializeAsync()
     {
         _database = new SqliteDatabase();
-        var host = await _database.StartHostAsync();
-        _election = host.Services.GetRequiredService<ILeaderElection>();
+        _host = await _database.StartHostAsync();
     }
 
     /// <summary>
@@ -48,6 +51,9 @@ public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConfo
     }
 
     /// <inheritdoc />
-    protected override ILeaderElection CreateElection()
-        => _election ?? throw new InvalidOperationException("The host has not been started.");
+    protected override ILeaderElection CreateElection(TimeProvider clock)
+    {
+        var host = _host ?? throw new InvalidOperationException("The host has not been started.");
+        return new DatabaseLeaderElection(host.Services, host.App, host.Services.GetRequiredService<SchedulerOptions>(), clock, host.Services.GetRequiredService<ILoggerFactory>());
+    }
 }

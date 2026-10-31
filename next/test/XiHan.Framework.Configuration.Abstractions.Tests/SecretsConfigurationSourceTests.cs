@@ -39,6 +39,13 @@ public sealed class SecretsConfigurationSourceTests
 
         var reloaded = new TaskCompletionSource();
         ChangeToken.OnChange(root.GetReloadToken, () => reloaded.TrySetResult());
+
+        // 重读到同样的内容不触发重载：等几次重读真的发生过，而不是固定睡眠
+        var reads = store.Reads;
+        await WaitUntilAsync(() => store.Reads >= reads + 3);
+        Assert.False(reloaded.Task.IsCompleted);
+
+        // 值变了才触发，重载时已是新值
         store.Put("orders/db", "pw2");
         await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("pw2", root["ConnectionStrings:Orders"]);

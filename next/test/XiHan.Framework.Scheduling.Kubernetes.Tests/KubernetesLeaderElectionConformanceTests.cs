@@ -20,10 +20,10 @@ public sealed class KubernetesLeaderElectionConformanceTests : LeaderElectionCon
     protected override TimeSpan LeaseTimeToLive => TimeSpan.FromSeconds(1);
 
     /// <inheritdoc />
-    protected override ILeaderElection CreateElection()
+    protected override ILeaderElection CreateElection(TimeProvider clock)
     {
         var options = new KubernetesSchedulingOptions { Lease = "conformance", Namespace = "tests", Holder = "pod-" + Guid.NewGuid().ToString("N")[..6], Token = FakeLeaseApi.Token, ApiServer = new Uri("https://api.test") };
         var client = new KubernetesLeaseClient(new HttpClient(new FakeLeaseApi()) { BaseAddress = options.ApiServer }, options);
-        return new KubernetesLeaderElection(client, options, TimeProvider.System, NullLoggerFactory.Instance);
+        return new KubernetesLeaderElection(client, options, clock, NullLoggerFactory.Instance);
     }
 }
