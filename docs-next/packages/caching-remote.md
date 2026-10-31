@@ -69,7 +69,7 @@ builder.AddXiHan(xihan => xihan
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Caching:Remote:TimeoutMilliseconds` | 正整数 | 5000 | 每次操作的截止时间，超时按存储不可用处理；不是正整数时按缺省值 |
+| `XiHan:Caching:Remote:TimeoutMilliseconds` | 正整数 | 5000 | 每次操作的截止时间，超时按存储不可用处理；不是正整数时装配抛 `ArgumentException` |
 
 ```json
 {

@@ -33,12 +33,20 @@ public sealed class RemoteCachingOptions
     /// <summary>
     /// 从配置读取：<c>TimeoutMilliseconds</c>。
     /// </summary>
+    /// <remarks>
+    /// 未配置用默认值；配置了但不是正整数时抛出 <see cref="ArgumentException"/>，与其他选项一致，不静默退回默认值。
+    /// </remarks>
     public static RemoteCachingOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var timeout = configuration[$"{ConfigurationSection}:TimeoutMilliseconds"];
-        return int.TryParse(timeout, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds > 0
+        if (timeout is null)
+        {
+            return new RemoteCachingOptions();
+        }
+
+        return int.TryParse(timeout, NumberStyles.None, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds > 0
             ? new RemoteCachingOptions { Timeout = TimeSpan.FromMilliseconds(milliseconds) }
-            : new RemoteCachingOptions();
+            : throw new ArgumentException($"{ConfigurationSection}:TimeoutMilliseconds must be a positive integer, but was '{timeout}'.");
     }
 }

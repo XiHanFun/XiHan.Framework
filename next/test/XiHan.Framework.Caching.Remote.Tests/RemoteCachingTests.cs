@@ -85,6 +85,13 @@ public sealed class RemoteCachingTests
         Assert.Equal(TimeSpan.FromMilliseconds(1500), RemoteCachingOptions.FromConfiguration(configuration).Timeout);
         Assert.Equal(TimeSpan.FromSeconds(5), RemoteCachingOptions.FromConfiguration(new ConfigurationBuilder().Build()).Timeout);
         Assert.Throws<ArgumentOutOfRangeException>(static () => new RemoteCachingOptions { Timeout = TimeSpan.Zero });
+
+        // 配置了但不合法时抛出，不静默退回 5 秒
+        foreach (var invalid in new[] { "0", "-5", "abc", "1.5", "" })
+        {
+            var bad = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Caching:Remote:TimeoutMilliseconds", invalid)]).Build();
+            Assert.Throws<ArgumentException>(() => RemoteCachingOptions.FromConfiguration(bad));
+        }
     }
 
     [Fact]

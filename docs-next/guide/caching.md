@@ -453,11 +453,11 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Caching:Redis:HealthProbeIntervalSeconds` | 数字 | 15 | 健康项 `caching.redis.connection` 的重探间隔 |
 | `XiHan:Caching:Hybrid:LocalCapacity` | 整数 | 10000 | 两级缓存 L1 的条目上限 |
 | `XiHan:Caching:Hybrid:LocalTimeToLiveSeconds` | 数字 | 30 | L1 存活时间上限 |
-| `XiHan:Caching:Remote:TimeoutMilliseconds` | 整数 | 5000 | 远程 Provider 每次操作的截止时间 |
+| `XiHan:Caching:Remote:TimeoutMilliseconds` | 正整数 | 5000 | 远程 Provider 每次操作的截止时间 |
 | `XiHan:Caching:Idempotency:TimeToLiveSeconds` | 数字 | 86400 | 已完成调用结果的保留时间 |
 | `XiHan:Caching:Idempotency:InProgressTimeToLiveSeconds` | 数字 | 60 | 「处理中」标记的保留时间，也是处理器崩溃后同一个键被封锁的最长时间 |
 
-数值项不是正数、布尔项不是 `true` / `false` 时装配抛出 `ArgumentException`；`TimeoutMilliseconds` 例外，非法值按 5000 处理。
+数值项不是正数、布尔项不是 `true` / `false` 时装配抛出 `ArgumentException`。
 
 ## 健康项与错误码
 
