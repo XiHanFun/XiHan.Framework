@@ -76,7 +76,7 @@ await builder.Build().RunAsync();
 | 类型 | 说明 |
 | --- | --- |
 | `HostApplicationBuilderExtensions.AddXiHan` | 在 `IHostApplicationBuilder` 上装配应用 |
-| `AppBuilder` | `UseFeature<T>()`、`UseFeature(instance)`、`UseProvider`、`UseOptions`、`UseServiceBindingRoot`、`ConfigurePipeline`、`Pipeline`；只能构建一次 |
+| `AppBuilder` | `UseFeature<T>()`、`UseFeature(instance)`、`UseProvider`、`UseOptions`、`UseServiceBindingRoot`、`ConfigurePipeline`（归属缺省 `app`，按类型登记的中间件构建时补登记为单例）、`Pipeline`；只能构建一次 |
 | `App` | 运行中的应用：`State`、`Graph`、`Features`、`Health()`、`InvokeAsync`、`CreateContext`、`DescribeGraph()`、`DescribePipeline()` |
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`、`AddOperation`、`GetBinding` / `TryGetBinding` |

@@ -144,6 +144,9 @@ public sealed class AppBuilder
     /// <summary>
     /// 应用级地向管道贡献中间件。
     /// </summary>
+    /// <remarks>
+    /// 归属缺省为 <see cref="PipelineBuilder.AppOwner"/>；按类型登记的中间件在 <see cref="Build"/> 时以单例补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）。
+    /// </remarks>
     public AppBuilder ConfigurePipeline(Action<PipelineBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -242,6 +245,10 @@ public sealed class AppBuilder
             feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations));
             runtimes.Add(new FeatureRuntime(node, feature));
         }
+
+        // 按类型登记的中间件（特性的 AddMiddleware 与应用的 ConfigurePipeline 一样）补登记为单例：应用自己的登记不覆盖，
+        // 不会等到第一次调用才因为容器里没有它而失败
+        Pipeline.RegisterServices(Services);
 
         // 宿主可能已经注册了时间源、日志与审计，这里只补缺省实现，不覆盖。
         Services.TryAddSingleton(TimeProvider.System);

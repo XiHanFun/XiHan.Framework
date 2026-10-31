@@ -106,11 +106,10 @@ public void Configure(FeatureContext context)
 }
 ```
 
-应用也可以不经特性直接登记，此时要自己在容器里注册中间件类型：
+应用也可以不经特性直接登记，归属缺省为 `app`。按类型登记的中间件与特性登记的一样，构建应用时内核以单例补登记进容器；应用自己注册过（比如按作用域注册）就沿用它的注册：
 
 ```csharp
 builder.Services.AddSingleton(new MaintenanceOptions { ReadOnly = false });
-builder.Services.AddSingleton<MaintenanceModeMiddleware>();
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .ConfigurePipeline(pipeline => pipeline.UseAt<MaintenanceModeMiddleware>(PipelineStage.Resilience)));
@@ -122,7 +121,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `UseAt<T>(stage, placement, owner)` | 按类型登记到指定阶段，`owner` 缺省 `"app"` |
 | `Use<T>()` | 不指定阶段，归入 `Transaction` 阶段末尾 |
-| `UseInstance<T>(instance, stage, placement, owner)` | 登记一个已创建的实例 |
+| `UseInstance<T>(instance, stage, placement, owner)` | 登记一个已创建的实例，不进容器 |
 | `UseNamedInstance(name, instance, stage, placement, owner)` | 同一类型登记多个实例，按名字区分，打印为 `类型名[名字]` |
 | `Before<T, TOther>()` / `After<T, TOther>()` | 同阶段内的次序约束 |
 

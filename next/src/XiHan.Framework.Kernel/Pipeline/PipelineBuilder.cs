@@ -1,8 +1,10 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Pipeline;
@@ -11,7 +13,7 @@ namespace XiHan.Framework.Kernel.Pipeline;
 /// 按固定阶段组装执行管道（RFC-0004）。
 /// </summary>
 /// <remarks>
-/// 特性在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。
+/// 特性（<c>FeatureContext.AddMiddleware</c>）与应用（<c>AppBuilder.ConfigurePipeline</c>）在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。按类型登记的中间件由 <c>AppBuilder.Build</c> 以单例补登记进容器；不经 <c>AppBuilder</c> 直接使用时由调用方注册。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PipelineBuilder
@@ -40,16 +42,19 @@ public sealed class PipelineBuilder
     /// <remarks>
     /// 等价于 <c>UseAt&lt;T&gt;(PipelineStage.Transaction)</c>。
     /// </remarks>
-    public PipelineBuilder Use<TMiddleware>()
+    public PipelineBuilder Use<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>()
         where TMiddleware : class, IPipelineMiddleware
         => UseAt<TMiddleware>(PipelineStage.Transaction);
 
     /// <summary>
     /// 在指定阶段添加从调用作用域解析的中间件。
     /// </summary>
-    public PipelineBuilder UseAt<TMiddleware>(PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
+    /// <remarks>
+    /// 构建应用时内核以单例把中间件类型补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）。
+    /// </remarks>
+    public PipelineBuilder UseAt<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
         where TMiddleware : class, IPipelineMiddleware
-        => Add(typeof(TMiddleware), null, stage, placement, owner, static services => services.GetRequiredService<TMiddleware>());
+        => Add(typeof(TMiddleware), null, stage, placement, owner, static services => services.GetRequiredService<TMiddleware>(), static services => services.TryAddSingleton<TMiddleware>());
 
     /// <summary>
     /// 在指定阶段添加一个已创建的中间件实例。
@@ -58,7 +63,7 @@ public sealed class PipelineBuilder
         where TMiddleware : class, IPipelineMiddleware
     {
         ArgumentNullException.ThrowIfNull(instance);
-        return Add(typeof(TMiddleware), null, stage, placement, owner, _ => instance);
+        return Add(typeof(TMiddleware), null, stage, placement, owner, _ => instance, register: null);
     }
 
     /// <summary>
@@ -71,7 +76,7 @@ public sealed class PipelineBuilder
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(instance);
-        return Add(instance.GetType(), name, stage, placement, owner, _ => instance);
+        return Add(instance.GetType(), name, stage, placement, owner, _ => instance, register: null);
     }
 
     /// <summary>
@@ -136,6 +141,21 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
+    /// 把按类型登记的中间件以单例补登记进容器。
+    /// </summary>
+    /// <remarks>
+    /// 由 <c>AppBuilder.Build</c> 在全部特性装配之后调用；已有的登记（含应用自己的 Scoped 登记）不覆盖，按实例登记的不进容器。
+    /// </remarks>
+    internal void RegisterServices(IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        foreach (var registration in _registrations)
+        {
+            registration.Register?.Invoke(services);
+        }
+    }
+
+    /// <summary>
     /// 构建管道委托。
     /// </summary>
     /// <remarks>
@@ -169,7 +189,8 @@ public sealed class PipelineBuilder
     /// <param name="placement">阶段内位置。</param>
     /// <param name="owner">注册者。</param>
     /// <param name="resolve">每次调用时取得中间件实例的方法。</param>
-    private PipelineBuilder Add(Type middleware, string? name, PipelineStage stage, Placement placement, string owner, Func<IServiceProvider, IPipelineMiddleware> resolve)
+    /// <param name="register">把中间件类型登记进容器的方法；按实例登记为空。</param>
+    private PipelineBuilder Add(Type middleware, string? name, PipelineStage stage, Placement placement, string owner, Func<IServiceProvider, IPipelineMiddleware> resolve, Action<IServiceCollection>? register)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(owner);
         if (!Enum.IsDefined(stage))
@@ -185,7 +206,7 @@ public sealed class PipelineBuilder
                 : $"Middleware '{middleware.FullName}' named '{name}' is already registered; instance names must be unique within a type.");
         }
 
-        var registration = new Registration(middleware, name, stage, placement, owner, _registrations.Count, resolve);
+        var registration = new Registration(middleware, name, stage, placement, owner, _registrations.Count, resolve, register);
         _registrations.Add(registration);
         _byKey[key] = registration;
         return this;
@@ -350,7 +371,8 @@ public sealed class PipelineBuilder
     /// <param name="owner">注册者。</param>
     /// <param name="sequence">注册序号，同位置同归属时的决胜键。</param>
     /// <param name="resolve">每次调用时取得中间件实例的方法。</param>
-    private sealed class Registration(Type middleware, string? name, PipelineStage stage, Placement placement, string owner, int sequence, Func<IServiceProvider, IPipelineMiddleware> resolve)
+    /// <param name="register">把中间件类型登记进容器的方法；按实例登记为空。</param>
+    private sealed class Registration(Type middleware, string? name, PipelineStage stage, Placement placement, string owner, int sequence, Func<IServiceProvider, IPipelineMiddleware> resolve, Action<IServiceCollection>? register)
     {
         /// <summary>
         /// 中间件类型。
@@ -389,6 +411,14 @@ public sealed class PipelineBuilder
         /// 每次调用时取得中间件实例的方法。
         /// </summary>
         public Func<IServiceProvider, IPipelineMiddleware> Resolve { get; } = resolve;
+
+        /// <summary>
+        /// 把中间件类型登记进容器的方法。
+        /// </summary>
+        /// <remarks>
+        /// 按实例登记为空。
+        /// </remarks>
+        public Action<IServiceCollection>? Register { get; } = register;
 
         /// <summary>
         /// 必须位于这些中间件之前。

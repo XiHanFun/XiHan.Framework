@@ -216,6 +216,40 @@ public sealed class AppTests
     }
 
     [Fact]
+    public async Task ConfigurePipeline_RegistersTypedMiddleware_LikeFeatures_WithoutOverridingTheApp()
+    {
+        // 应用经 ConfigurePipeline 按类型登记、没有自己注册中间件类型：构建时内核补登记为单例，第一次调用不再因容器里没有它而失败
+        var log = new List<string>();
+        var (provider, app) = Hosts.BuildApp(b =>
+        {
+            b.Services.AddSingleton(log);
+            // 应用自己按作用域注册的中间件不被覆盖
+            b.Services.AddScoped<MiddlewareB>();
+            b.ConfigurePipeline(static pipeline => pipeline.UseAt<MiddlewareA>(PipelineStage.Authorize).UseAt<MiddlewareB>(PipelineStage.Handle));
+        });
+        using var _ = provider;
+        await app.StartAsync(CancellationToken.None);
+
+        using var scope = provider.CreateScope();
+        var result = await app.InvokeAsync(Hosts.Context(scope.ServiceProvider), _ =>
+        {
+            log.Add("handler");
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.Equal(["enter:A", "enter:B", "handler", "exit:B", "exit:A"], log);
+        Assert.Same(provider.GetRequiredService<MiddlewareA>(), provider.GetRequiredService<MiddlewareA>());
+        using var other = provider.CreateScope();
+        Assert.NotSame(scope.ServiceProvider.GetRequiredService<MiddlewareB>(), other.ServiceProvider.GetRequiredService<MiddlewareB>());
+
+        // 按实例登记的不进容器
+        var (instanceProvider, _) = Hosts.BuildApp(static b => b.ConfigurePipeline(static pipeline => pipeline.UseInstance(new MiddlewareC([]), PipelineStage.Handle)));
+        using var __ = instanceProvider;
+        Assert.Null(instanceProvider.GetService<MiddlewareC>());
+    }
+
+    [Fact]
     public void Build_WithoutBuiltInMiddleware_LeavesPipelineEmpty()
     {
         var (provider, app) = Hosts.BuildApp(static b => b.UseOptions(new KernelOptions { UseBuiltInMiddleware = false }));
