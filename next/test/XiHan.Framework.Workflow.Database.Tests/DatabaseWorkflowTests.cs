@@ -34,9 +34,10 @@ public sealed class DatabaseWorkflowTests
     {
         await using var database = new SqliteDatabase();
         var host = await database.StartHostAsync([new($"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds", "2")]);
-        var instanceLock = host.Services.GetRequiredService<IWorkflowInstanceLock>();
-        Assert.IsType<DatabaseWorkflowInstanceLock>(instanceLock);
-        var now = DateTimeOffset.UtcNow;
+        Assert.IsType<DatabaseWorkflowInstanceLock>(host.Services.GetRequiredService<IWorkflowInstanceLock>());
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        var instanceLock = CreateLock(host, clock);
+        var now = clock.GetUtcNow();
 
         // 死节点留下的过期行立即被接管；还有 300ms 到期的行等到期后接管；远未到期的行等到超时
         await SeedLockAsync(host, "inst-dead", "dead-node:1", now.AddSeconds(-5));
@@ -47,12 +48,17 @@ public sealed class DatabaseWorkflowTests
         var holder = await HolderAsync(host, "inst-dead");
         Assert.StartsWith(host.Services.GetRequiredService<DatabaseWorkflowOptions>().HolderId, holder, StringComparison.Ordinal);
 
-        var started = DateTimeOffset.UtcNow;
-        var soon = await instanceLock.AcquireAsync("inst-soon", CancellationToken.None);
-        Assert.True(soon.IsSuccess);
-        Assert.True(DateTimeOffset.UtcNow - started >= TimeSpan.FromMilliseconds(200), "The lock must wait for the live lease to expire.");
+        // 时钟不动，行就不会到期：重试几轮也拿不到；推进过到期时刻才接管
+        var soon = instanceLock.AcquireAsync("inst-soon", CancellationToken.None).AsTask();
+        await Task.Delay(200);
+        Assert.False(soon.IsCompleted, "The lock must wait for the live lease to expire.");
+        clock.Advance(TimeSpan.FromMilliseconds(301));
+        Assert.True((await soon.WaitAsync(TimeSpan.FromSeconds(10))).IsSuccess);
 
-        var blocked = await instanceLock.AcquireAsync("inst-live", CancellationToken.None);
+        // 等待上限按时钟计：推进过上限即超时，别人的行不动
+        var live = instanceLock.AcquireAsync("inst-live", CancellationToken.None).AsTask();
+        clock.Advance(TimeSpan.FromSeconds(2.001));
+        var blocked = await live.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(WorkflowErrors.LockTimeout, blocked.Error?.Code);
         Assert.Equal("live-node:3", await HolderAsync(host, "inst-live"));
 
@@ -60,7 +66,7 @@ public sealed class DatabaseWorkflowTests
         await dead.ValueOrThrow().DisposeAsync();
         await dead.ValueOrThrow().DisposeAsync();
         Assert.Null(await HolderAsync(host, "inst-dead"));
-        await soon.ValueOrThrow().DisposeAsync();
+        await (await soon).ValueOrThrow().DisposeAsync();
         Assert.Null(await HolderAsync(host, "inst-soon"));
         Assert.Equal("live-node:3", await HolderAsync(host, "inst-live"));
     }
@@ -74,12 +80,27 @@ public sealed class DatabaseWorkflowTests
             new($"{DatabaseWorkflowOptions.ConfigurationSection}:LockLeaseSeconds", "0.3"),
             new($"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds", "0.8"),
         ]);
-        var instanceLock = host.Services.GetRequiredService<IWorkflowInstanceLock>();
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        var instanceLock = CreateLock(host, clock);
+        var step = TimeSpan.FromMilliseconds(50);
 
         var first = (await instanceLock.AcquireAsync("inst-renew", CancellationToken.None)).ValueOrThrow();
-        // 等待超过租约时长：持有者在后台续约，第二个获取者仍拿不到
-        var second = await instanceLock.AcquireAsync("inst-renew", CancellationToken.None);
-        Assert.Equal(WorkflowErrors.LockTimeout, second.Error?.Code);
+        var second = instanceLock.AcquireAsync("inst-renew", CancellationToken.None).AsTask();
+        // 推进时间超过租约时长与等待上限：每一步之前等持有者的续约把到期时刻推到这一步之外，第二个获取者始终拿不到
+        while (!second.IsCompleted)
+        {
+            await WaitUntilAsync(async () => second.IsCompleted || await ExpiresAtAsync(host, "inst-renew") - clock.GetUtcNow() > step);
+            clock.Advance(step);
+            await Task.Yield();
+        }
+
+        var outcome = await second;
+        if (outcome.TryGetValue(out var leaked))
+        {
+            await leaked.DisposeAsync();
+        }
+
+        Assert.Equal(WorkflowErrors.LockTimeout, outcome.Error?.Code);
         await first.DisposeAsync();
         var third = await instanceLock.AcquireAsync("inst-renew", CancellationToken.None);
         Assert.True(third.IsSuccess);
@@ -288,6 +309,29 @@ public sealed class DatabaseWorkflowTests
             (await repository.AddAsync(new WorkflowLockRecord { Id = id, Holder = holder, ExpiresAt = expiresAt }, context.CancellationToken)).ThrowIfFailure();
         });
         seeded.ThrowIfFailure();
+    }
+
+    /// <summary>
+    /// 按手动时钟构造的实例锁。
+    /// </summary>
+    /// <remarks>
+    /// 选项与宿主里登记的相同，只有时钟换掉。
+    /// </remarks>
+    private static DatabaseWorkflowInstanceLock CreateLock(TestHost host, TimeProvider clock)
+        => new(host.Services, host.App, host.Services.GetRequiredService<WorkflowOptions>(), host.Services.GetRequiredService<DatabaseWorkflowOptions>(), clock, host.Services.GetRequiredService<ILoggerFactory>());
+
+    /// <summary>
+    /// 读租约行的到期时刻。
+    /// </summary>
+    private static async Task<DateTimeOffset> ExpiresAtAsync(TestHost host, string id)
+    {
+        DateTimeOffset expiresAt = default;
+        (await host.InvokeAsync(async context =>
+        {
+            var found = await context.Services.GetRequiredService<IRepository<WorkflowLockRecord, string>>().FindAsync(id, context.CancellationToken);
+            expiresAt = found.ValueOrThrow().ExpiresAt;
+        })).ThrowIfFailure();
+        return expiresAt;
     }
 
     /// <summary>

@@ -360,7 +360,12 @@ public abstract class WorkflowTaskConformance
     public async Task ExternalTask_FetchCompleteFailAndLock()
     {
         var log = new ConformanceLog();
-        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            services.AddSingleton<TimeProvider>(clock);
+        }).ConfigureAwait(false);
         await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-external")
             .AddStart()
             .AddExternalTask("pay", PaymentTopic, new JsonObject { ["order"] = "{{ orderId }}", ["retries"] = 3 })
@@ -377,7 +382,7 @@ public abstract class WorkflowTaskConformance
         var task = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal((instance.Id, "pay", PaymentTopic, 1), (task.InstanceId, task.NodeId, task.Topic, task.Attempt));
         Assert.Equal(("o-1", 3, "o-1"), (task.Payload?["order"]?.GetValue<string>(), task.Payload?["retries"]?.GetValue<int>(), task.Variables?["orderId"]?.GetValue<string>()));
-        Assert.True(task.LockedUntil > DateTimeOffset.UtcNow.AddSeconds(30));
+        Assert.True(task.LockedUntil > clock.GetUtcNow().AddSeconds(30));
         Assert.Empty((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
 
         Assert.Equal(WorkflowErrors.ExternalTaskDenied, (await CompleteExternalAsync(host, task.Id, "w2").ConfigureAwait(false)).Error?.Code);
@@ -399,7 +404,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(WorkflowErrors.ExternalTaskDenied, (await FailAsync(host, attempt.Id, "w2", "boom", TimeSpan.FromMilliseconds(10)).ConfigureAwait(false)).Error?.Code);
         Assert.True((await FailAsync(host, attempt.Id, "w1", "boom", TimeSpan.FromMilliseconds(10)).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(retried.Id).ConfigureAwait(false)).Status);
-        await Task.Delay(40).ConfigureAwait(false);
+        clock.Advance(TimeSpan.FromMilliseconds(40));
         await host.PollAsync().ConfigureAwait(false);
         var again = Assert.Single((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal((retried.Id, 2, "o-2"), (again.InstanceId, again.Attempt, again.Payload?["order"]?.GetValue<string>()));
@@ -415,7 +420,7 @@ public abstract class WorkflowTaskConformance
         var shortLock = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMilliseconds(50)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(expiring.Id, shortLock.InstanceId);
         Assert.Empty((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
-        await Task.Delay(80).ConfigureAwait(false);
+        clock.Advance(TimeSpan.FromMilliseconds(80));
         Assert.True(await host.PollAsync().ConfigureAwait(false) >= 1);
         var taken = Assert.Single((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal((expiring.Id, 1), (taken.InstanceId, taken.Attempt));

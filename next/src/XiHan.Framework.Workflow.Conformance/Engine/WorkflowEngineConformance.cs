@@ -795,17 +795,26 @@ public abstract class WorkflowEngineConformance
     public async Task DelayedStart_AndReusePolicy()
     {
         var log = new ConformanceLog();
-        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            services.AddSingleton<TimeProvider>(clock);
+        }).ConfigureAwait(false);
         var definition = WorkflowDefinitionBuilder.Create("conf-start")
             .AddStart().AddNode("a", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "wait").AddTransition("wait", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
-        var delayed = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", StartAt = DateTimeOffset.UtcNow.AddMilliseconds(100) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var delayed = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", StartAt = clock.GetUtcNow().AddMinutes(1) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, delayed.Status);
         var startBookmark = Assert.Single(await host.BookmarksAsync(delayed.Id).ConfigureAwait(false));
         Assert.Equal((BookmarkKinds.Timer, "start"), (startBookmark.Kind, startBookmark.NodeId));
         Assert.DoesNotContain(log.Executed, entry => entry.InstanceId == delayed.Id);
+        // 到期前轮询不启动；推进到启动时刻后轮询才启动
+        await host.PollAsync().ConfigureAwait(false);
+        Assert.DoesNotContain(log.Executed, entry => entry.InstanceId == delayed.Id);
+        clock.Advance(TimeSpan.FromMinutes(1));
         await WaitUntilAsync(async () =>
         {
             await host.PollAsync().ConfigureAwait(false);
