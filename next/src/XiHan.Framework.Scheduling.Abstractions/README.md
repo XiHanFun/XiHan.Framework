@@ -11,7 +11,7 @@
 | `IJob`、`AddJob<TJob>(...)`、`AddJobType<TJob>()`、`JobRegistry`、`JobTypeRegistry` | 作业是作用域服务；代码登记的作业启动时写入存储；运行时登记的作业引用类型键；`JobTypeRegistry.Keys` 列出可选类型（ADR-0053） |
 | `JobDispatcher`、`JobRun` | 每次运行在新作用域、新上下文（关联 ID = 运行 ID）里经完整内核管道执行；`Data` = 作业数据 ← 触发器数据 ← 手动数据；`Attempt` / `RetryOf` 标出第几次尝试；异常翻译为 `SCHEDULING_UNEXPECTED_001`；超过 `Timeout` 取消令牌、作业返回之前时限已过记为 `SCHEDULING_TIMEOUT_001` |
 | `IJobScheduler`、`JobStatus`、`JobTriggerStatus`、`JobRunRecord`、`JobRunQuery` | 全批量：登记 / 删除 / 暂停 / 恢复（作业与触发器两级）、本地触发并等待、入队给集群、取消运行、状态、运行历史（按作业、状态、时间、触发器、节点、有无错误筛选，`CountRunsAsync` 给总数）、`RestoreAsync` 把运行时改过的代码作业恢复为代码定义 |
-| `IJobStore`、`JobRecord`、`TriggerRecord`、`SchedulerNodeRecord` | Provider 契约：原子抢占到期触发器、独占开始运行、完成释放并解除阻塞、历史与节点、失联恢复 |
+| `IJobStore`、`JobRecord`、`TriggerRecord`、`SchedulerNodeRecord` | Provider 契约：原子抢占到期触发器、独占开始运行、完成释放并解除阻塞、与释放互斥的阻塞写入、历史与节点、失联恢复 |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（Provider 装配并启停）：轮询周期、节点 ID、并发上限、misfire 阈值、租约、节点失联、维护周期、历史保留 |
 | `ILeaderElection`、`LeaderLease` | 租约式领导选举：获取、续约、释放、过期 |
 | `SchedulingTopics`、`SchedulingEventData` | 装配了消息能力时发布 `scheduling.job.*` / `scheduling.run.*` 事件 |

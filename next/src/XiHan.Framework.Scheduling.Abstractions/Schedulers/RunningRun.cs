@@ -33,9 +33,17 @@ internal sealed class RunningRun
     /// 运行结束后的收尾。
     /// </summary>
     /// <remarks>
-    /// 间隔触发器推算下一次、本地触发器计数；在运行记录标为完成之前执行，只执行一次。
+    /// 间隔触发器写下一次时刻（仍由本节点持有）、本地触发器计数；在运行记录标为完成之前执行，只执行一次。
     /// </remarks>
     public Func<DateTimeOffset, ValueTask>? Finish { get; set; }
+
+    /// <summary>
+    /// 运行标为完成之后的收尾。
+    /// </summary>
+    /// <remarks>
+    /// 间隔触发器放回等待：占用已释放，别的节点抢到它也能开始运行；只执行一次。
+    /// </remarks>
+    public Func<DateTimeOffset, ValueTask>? Release { get; set; }
 
     /// <summary>
     /// 运行任务。

@@ -98,6 +98,14 @@ public interface IJobStore
     ValueTask<Result> CompleteRunAsync(JobRunRecord run, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 把抢占到的触发器存为阻塞。
+    /// </summary>
+    /// <remarks>
+    /// 用在 <see cref="TryBeginRunAsync"/> 因作业被占用返回 <see langword="false"/> 之后：同一个原子操作里确认作业的 <see cref="JobRecord.ActiveRunId"/> 仍指向未结束的运行，是则存为 <see cref="TriggerState.Blocked"/> 并返回 <see langword="true"/>；占用已释放（上一次恰在此时结束）则存为 <see cref="TriggerState.Waiting"/> 并返回 <see langword="false"/>。两种情况都清掉 <c>AcquiredBy</c> / <c>AcquiredAt</c>，其余字段按传入的写入。与 <see cref="CompleteRunAsync"/> 的释放互斥：阻塞的触发器总能在占用释放时回到等待。作业不存在 → <see cref="SchedulingErrors.JobNotFound"/>。
+    /// </remarks>
+    ValueTask<Result<bool>> BlockTriggerAsync(TriggerRecord trigger, CancellationToken cancellationToken);
+
+    /// <summary>
     /// 运行历史查询。
     /// </summary>
     ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);

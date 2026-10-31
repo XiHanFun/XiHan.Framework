@@ -198,7 +198,7 @@ public sealed class CleanupJob : IJob
 
 ## 并发、本地作业与失联恢复
 
-`AllowConcurrent = false`（缺省）的作业在整个集群同一时刻最多一次运行。按计划的触发遇到上一次没结束时，触发器转为 `Blocked`，到期时刻不变；上一次结束时存储把它改回 `Waiting`，届时按 misfire 策略处理。手动 `TriggerAsync` 遇到同样情况直接返回 `SCHEDULING_CONFLICT_001`。
+`AllowConcurrent = false`（缺省）的作业在整个集群同一时刻最多一次运行。按计划的触发遇到上一次没结束时，触发器转为 `Blocked`，到期时刻不变；上一次结束时存储把它改回 `Waiting`，届时按 misfire 策略处理。确认占用与写入阻塞由存储一次完成（`BlockTriggerAsync`），上一次恰好在这时结束，触发器就直接回到 `Waiting`。间隔计划的触发器在运行标为完成之后才回到等待，不会被自己的上一次阻塞。手动 `TriggerAsync` 遇到同样情况直接返回 `SCHEDULING_CONFLICT_001`。
 
 `RunOnEveryInstance = true` 的作业是本地作业：每个实例按自己的时钟推算并运行，不经存储抢占，运行同样写入历史。本地作业的「不允许并发」只在本实例内判定，跳过的那次从现在推算下一次。本地触发器集合每 10 个轮询周期从存储刷新一次，本实例改动后立即刷新，所以别的节点运行时改了本地作业，本节点最多 10 个周期后看到。
 

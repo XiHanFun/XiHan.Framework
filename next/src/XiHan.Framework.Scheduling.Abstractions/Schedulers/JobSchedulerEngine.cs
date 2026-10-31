@@ -1090,11 +1090,14 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
 
         if (!started)
         {
-            // 上一次未结束：阻塞到它结束，存储在结束时把它改回等待，到期时刻不变，届时按 misfire 策略处理
-            trigger.State = TriggerState.Blocked;
-            trigger.AcquiredBy = null;
-            trigger.AcquiredAt = null;
-            await SaveTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
+            // 上一次未结束：阻塞到它结束，存储在结束时把它改回等待，到期时刻不变，届时按 misfire 策略处理；
+            // 确认占用与写入阻塞由存储一次完成，上一次恰在此时结束则直接回到等待，不会阻塞在一个再也不会结束的运行上
+            var blocked = await _store.BlockTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
+            if (blocked.IsFailure)
+            {
+                LogStoreFailed(_logger, "block-trigger", blocked.Error!.Code);
+            }
+
             return;
         }
 
@@ -1120,52 +1123,70 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             await SaveTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
         }
 
-        StartBackground(record, run, jobType, job, interval ? completedAt => FinishIntervalTriggerAsync(trigger, completedAt) : null);
+        StartBackground(
+            record,
+            run,
+            jobType,
+            job,
+            interval ? completedAt => FinishIntervalTriggerAsync(trigger, completedAt) : null,
+            interval ? completedAt => ReleaseIntervalTriggerAsync(trigger, completedAt) : null);
     }
 
     /// <summary>
-    /// 间隔触发器在运行结束后推算下一次。
+    /// 间隔触发器在运行结束时写下一次时刻。
     /// </summary>
     /// <remarks>
-    /// 重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
+    /// 在运行标为完成之前执行：触发器仍由本节点持有，状态里已能看到下一次。重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
     /// </remarks>
     private ValueTask FinishIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
         => UnderTriggerLockAsync(() => FinishIntervalTriggerLockedAsync(trigger, completedAt), CancellationToken.None);
 
     /// <summary>
-    /// 在锁内推算间隔触发器的下一次。
+    /// 在锁内写间隔触发器的下一次时刻。
     /// </summary>
     private async ValueTask FinishIntervalTriggerLockedAsync(TriggerRecord trigger, DateTimeOffset completedAt)
     {
-        var found = await _store.TriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
-        if (!found.TryGetValue(out var triggers))
-        {
-            LogStoreFailed(_logger, "finish-trigger", found.Error!.Code);
-            return;
-        }
-
-        var fresh = triggers.FirstOrDefault(candidate => string.Equals(candidate.Name, trigger.Name, StringComparison.Ordinal));
+        var fresh = await FreshTriggerAsync(trigger, "finish-trigger").ConfigureAwait(false);
         if (fresh is null)
         {
             return;
         }
 
-        var next = NextFire(fresh.Schedule, completedAt, fresh.FireCount);
         if (fresh.State == TriggerState.Paused)
         {
-            fresh.NextFireAt = next;
             fresh.AcquiredBy = null;
             fresh.AcquiredAt = null;
         }
-        else if (fresh.State == TriggerState.Acquired && string.Equals(fresh.AcquiredBy, NodeId, StringComparison.Ordinal))
-        {
-            ReleaseTrigger(fresh, next);
-        }
-        else
+        else if (!IsHeldHere(fresh))
         {
             return;
         }
 
+        fresh.NextFireAt = NextFire(fresh.Schedule, completedAt, fresh.FireCount);
+        await SaveTriggerAsync(fresh, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 间隔触发器在运行标为完成之后放回等待。
+    /// </summary>
+    /// <remarks>
+    /// 占用此时已释放：别的节点不会在本次运行结束前抢到它、再因占用未释放把它阻塞。重读存储里的状态，只在仍由本节点持有时写回；下一次按同一结束时刻推算，没有下一次即完成（一次性的删除）。
+    /// </remarks>
+    private ValueTask ReleaseIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
+        => UnderTriggerLockAsync(() => ReleaseIntervalTriggerLockedAsync(trigger, completedAt), CancellationToken.None);
+
+    /// <summary>
+    /// 在锁内放回间隔触发器。
+    /// </summary>
+    private async ValueTask ReleaseIntervalTriggerLockedAsync(TriggerRecord trigger, DateTimeOffset completedAt)
+    {
+        var fresh = await FreshTriggerAsync(trigger, "release-trigger").ConfigureAwait(false);
+        if (fresh is null || !IsHeldHere(fresh))
+        {
+            return;
+        }
+
+        ReleaseTrigger(fresh, NextFire(fresh.Schedule, completedAt, fresh.FireCount));
         if (fresh.Transient && fresh.State == TriggerState.Complete)
         {
             await _store.DeleteTriggersAsync([fresh.Key], CancellationToken.None).ConfigureAwait(false);
@@ -1176,37 +1197,40 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
+    /// 重读一条触发器在存储里的当前状态。
+    /// </summary>
+    /// <remarks>
+    /// 读失败记日志；已被删除为 <see langword="null"/>。
+    /// </remarks>
+    private async ValueTask<TriggerRecord?> FreshTriggerAsync(TriggerRecord trigger, string operation)
+    {
+        var found = await _store.TriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
+        if (!found.TryGetValue(out var triggers))
+        {
+            LogStoreFailed(_logger, operation, found.Error!.Code);
+            return null;
+        }
+
+        return triggers.FirstOrDefault(candidate => string.Equals(candidate.Name, trigger.Name, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// 触发器仍由本节点抢占持有。
+    /// </summary>
+    private bool IsHeldHere(TriggerRecord trigger)
+        => trigger.State == TriggerState.Acquired && string.Equals(trigger.AcquiredBy, NodeId, StringComparison.Ordinal);
+
+    /// <summary>
     /// 后台运行。
     /// </summary>
     /// <remarks>
-    /// 结束后执行 <paramref name="completed"/>。
+    /// 运行标为完成之前执行 <paramref name="completed"/>，之后执行 <paramref name="released"/>。
     /// </remarks>
-    private void StartBackground(JobRunRecord record, JobRun run, Type jobType, JobRecord job, Func<DateTimeOffset, ValueTask>? completed)
+    private void StartBackground(JobRunRecord record, JobRun run, Type jobType, JobRecord job, Func<DateTimeOffset, ValueTask>? completed, Func<DateTimeOffset, ValueTask>? released = null)
     {
         var cancellation = new CancellationTokenSource();
-        var running = new RunningRun(record, cancellation);
-        if (completed is not null)
-        {
-            // 收尾只执行一次：正常在运行标为完成之前（ExecuteAsync 里），执行中途抛出时在这里补上
-            var finished = 0;
-            running.Finish = async completedAt =>
-            {
-                if (Interlocked.Exchange(ref finished, 1) != 0)
-                {
-                    return;
-                }
-
-                try
-                {
-                    await completed(completedAt).ConfigureAwait(false);
-                }
-                catch (Exception exception)
-                {
-                    LogRunThrew(_logger, exception, run.Name.Value, run.Id);
-                }
-            };
-        }
-
+        // 两段收尾各只执行一次：正常在 ExecuteAsync 里运行标为完成的前后，执行中途抛出时在这里补上
+        var running = new RunningRun(record, cancellation) { Finish = Once(completed, run), Release = Once(released, run) };
         lock (_lock)
         {
             _running[record.Id] = running;
@@ -1228,14 +1252,52 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             }
             finally
             {
+                var now = _clock.GetUtcNow();
                 if (running.Finish is { } finish)
                 {
-                    await finish(_clock.GetUtcNow()).ConfigureAwait(false);
+                    await finish(now).ConfigureAwait(false);
+                }
+
+                if (running.Release is { } release)
+                {
+                    await release(now).ConfigureAwait(false);
                 }
 
                 Forget(record.Id);
             }
         }, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// 包成只执行一次的收尾。
+    /// </summary>
+    /// <remarks>
+    /// 抛出的异常记日志，不影响运行的结果。
+    /// </remarks>
+    private Func<DateTimeOffset, ValueTask>? Once(Func<DateTimeOffset, ValueTask>? action, JobRun run)
+    {
+        if (action is null)
+        {
+            return null;
+        }
+
+        var done = 0;
+        return async completedAt =>
+        {
+            if (Interlocked.Exchange(ref done, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                await action(completedAt).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                LogRunThrew(_logger, exception, run.Name.Value, run.Id);
+            }
+        };
     }
 
     /// <summary>
@@ -1354,6 +1416,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         if (completed.IsFailure)
         {
             LogStoreFailed(_logger, "complete-run", completed.Error!.Code);
+        }
+
+        // 标为完成、占用释放之后间隔触发器才回到等待
+        if (running.Release is { } release)
+        {
+            await release(record.CompletedAt.Value).ConfigureAwait(false);
         }
 
         if (result.IsFailure && !canceled)

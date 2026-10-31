@@ -245,6 +245,51 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
+    /// 阻塞只在作业仍被占用时生效。
+    /// </summary>
+    /// <remarks>
+    /// 判定被占之后上一次才结束时，它解除阻塞那一刻触发器还没写成阻塞：阻塞写入要看到占用已释放、直接回到等待。
+    /// </remarks>
+    [Fact]
+    public async Task BlockTrigger_HoldsOnlyWhileOccupied_AndWaitsOnceReleased()
+    {
+        var (store, host) = await CreateAsync().ConfigureAwait(false);
+        await using (host.ConfigureAwait(false))
+        {
+            var job = Job("conf.store.block");
+            Assert.True((await store.SaveJobsAsync([job], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            var now = DateTimeOffset.UtcNow;
+            var trigger = Trigger(job.Name, "t", now, state: TriggerState.Acquired);
+            trigger.AcquiredBy = "node-b";
+            trigger.AcquiredAt = now;
+            Assert.True((await store.SaveTriggersAsync([trigger], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.Equal(SchedulingErrors.JobNotFound, (await store.BlockTriggerAsync(Trigger(new JobName("conf.store.none"), "t", now), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+
+            // 占用中：存为阻塞并清掉抢占者，到期时刻照写；占用的运行结束时解除
+            var first = Run(job.Name, "node-a", now);
+            Assert.True((await store.TryBeginRunAsync(first, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.True((await store.BlockTriggerAsync(trigger, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            var blocked = Assert.Single((await store.TriggersAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal((TriggerState.Blocked, null, null, now), (blocked.State, blocked.AcquiredBy, blocked.AcquiredAt, blocked.NextFireAt));
+            first.State = JobRunState.Succeeded;
+            first.CompletedAt = now.AddSeconds(1);
+            Assert.True((await store.CompleteRunAsync(first, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.Equal(TriggerState.Waiting, Assert.Single((await store.TriggersAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).State);
+
+            // 判定被占之后、写入阻塞之前上一次结束了：不阻塞在一个不会再结束的运行上
+            var second = Run(job.Name, "node-a", now.AddSeconds(2));
+            Assert.True((await store.TryBeginRunAsync(second, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.False((await store.TryBeginRunAsync(Run(job.Name, "node-b", now.AddSeconds(3)), true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            second.State = JobRunState.Succeeded;
+            second.CompletedAt = now.AddSeconds(4);
+            Assert.True((await store.CompleteRunAsync(second, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.False((await store.BlockTriggerAsync(trigger, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            var waiting = Assert.Single((await store.TriggersAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal((TriggerState.Waiting, null, now), (waiting.State, waiting.AcquiredBy, waiting.NextFireAt));
+        }
+    }
+
+    /// <summary>
     /// 节点心跳、列表与失联恢复。
     /// </summary>
     [Fact]
