@@ -9,6 +9,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 
@@ -18,7 +19,7 @@ namespace XiHan.Framework.AI.Abstractions.Tools;
 /// 把一个操作契约桥接成模型工具。
 /// </summary>
 /// <remarks>
-/// 参数序列化成请求 JSON，在新作用域、复制了调用方 Baggage 与截止时间的新上下文里经完整管道执行；成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
+/// 参数序列化成请求 JSON，在新作用域的新上下文里经完整管道执行。新上下文复制调用方的追踪 ID、Baggage、截止时间与安全上下文（主体与租户），工具以调用方身份执行、Authorize 阶段照常按契约判定；凭据不复制，不重新认证。成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OperationAIFunction : AIFunction
@@ -94,6 +95,9 @@ public sealed class OperationAIFunction : AIFunction
             traceId: _caller.TraceId,
             deadline: _caller.Deadline,
             baggage: new Dictionary<string, string>(_caller.Baggage, StringComparer.Ordinal));
+        // 以调用方身份执行：主体与租户取调用方此刻的安全上下文（调用方已在自己的管道里认证过）。不复制凭据，Authenticate 阶段没有凭据可认证即保留这个主体，
+        // Authorize 阶段以它按契约判定——工具既不能绕过授权，也不会因为丢了身份被当成匿名一律拒绝
+        context.SetSecurity(_caller.GetSecurity());
         var response = await _invoker.InvokeAsync(context, new OperationRequest(_descriptor.Id, payload)).ConfigureAwait(false);
         if (response.IsSuccess)
         {

@@ -172,7 +172,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - `IAIChat` 是作用域服务；没有当前调用时工具绑定到本作用域新建的调用上下文。
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。
 - 工具目录在 `AIToolsFeature` 启动时构建；稳定性为 `Internal` 的操作不进目录。
-- 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间与 Baggage 复制自调用方，凭据与安全上下文不复制；失败以 `{"error","message"}` JSON 交给模型。
+- 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先删旧块再写新块，不是原子替换；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
 
