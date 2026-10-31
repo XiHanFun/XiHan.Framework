@@ -271,5 +271,20 @@ public sealed class MessageContractTests
         Assert.Equal(7, outbox.BatchSize);
         Assert.Equal(TimeSpan.FromSeconds(1), OutboxOptions.FromConfiguration(Build()).PollInterval);
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:BatchSize", "lots"))));
+
+        var retry = OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:MaxAttempts", "4"), ("XiHan:Messaging:Outbox:RetryDelaySeconds", "2.5"), ("XiHan:Messaging:Outbox:MaxRetryDelaySeconds", "60"), ("XiHan:Messaging:Outbox:DispatchedRetentionSeconds", "0")));
+        Assert.Equal(4, retry.MaxAttempts);
+        Assert.Equal(TimeSpan.FromSeconds(2.5), retry.RetryDelay);
+        Assert.Equal(TimeSpan.FromMinutes(1), retry.MaxRetryDelay);
+        Assert.Equal(TimeSpan.Zero, retry.DispatchedRetention);
+        var defaults = OutboxOptions.FromConfiguration(Build());
+        Assert.Equal(10, defaults.MaxAttempts);
+        Assert.Equal(TimeSpan.FromSeconds(5), defaults.RetryDelay);
+        Assert.Equal(TimeSpan.FromMinutes(5), defaults.MaxRetryDelay);
+        Assert.Equal(TimeSpan.FromDays(1), defaults.DispatchedRetention);
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:MaxAttempts", "0"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:RetryDelaySeconds", "0"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:DispatchedRetentionSeconds", "-1"))));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { DispatchedRetention = TimeSpan.FromSeconds(-1) });
     }
 }

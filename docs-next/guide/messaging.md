@@ -248,11 +248,24 @@ builder.AddXiHan(xihan => xihan
 
 装配后 `IMessagePublisher` 被替换成 `OutboxPublisher`：
 
-1. 有活动工作单元时（操作与消息处理器的 Transaction 阶段都开着），发布写成 `OutboxMessage` 行（主题、CloudEvents 结构化 JSON、创建时间），批量发布用仓储的 `AddRangeAsync` 一次写入，随业务事务提交或回滚。没有活动工作单元时直接发布到代理。
-2. 后台的 `OutboxDispatcher` 每隔 `PollInterval` 跑一轮，每轮一个工作单元：按创建时间取最多 `BatchSize` 条未投递的消息，按主题分组各一次 `PublishManyAsync`，成功的记 `DispatchedAt`，失败的累加 `Attempts` 并记 `LastError`，最后一次批量更新。
-3. 单轮异常记日志后继续下一轮，只有停止才退出循环。
+1. 有活动工作单元时（操作与消息处理器的 Transaction 阶段都开着），发布写成 `OutboxMessage` 行（主题、CloudEvents 结构化 JSON、创建时间，`NextAttemptAt` 等于创建时间），批量发布用仓储的 `AddRangeAsync` 一次写入，随业务事务提交或回滚。没有活动工作单元时直接发布到代理。
+2. 后台的 `OutboxDispatcher` 每隔 `PollInterval` 跑一轮，每轮一个工作单元：按创建时间取最多 `BatchSize` 条到期的消息（未投递、未进死信、`NextAttemptAt` 为空或已到），按主题分组各一次 `PublishManyAsync`，最后一次批量写回。
+3. 删掉超过保留期的已投递行，每轮最多 `BatchSize` 行，与投递同一工作单元。
+4. 单轮异常记日志后继续下一轮，只有停止才退出循环。
 
-投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。发件箱没有尝试上限，失败的消息每一轮都会再试；投递成功的行只记投递时间、不删除，清理由应用按 `DispatchedAt` 自己做。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。
+每条取到的消息计一次尝试（`Attempts`），结果写回行上：
+
+| 结果 | 行的变化 |
+| --- | --- |
+| 发布成功 | 记 `DispatchedAt`，清掉 `LastError`；`DispatchedRetention` 为 0 时当场删除 |
+| 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `RetryDelay × 2^(Attempts − 1)`，不超过 `MaxRetryDelay` |
+| 发布失败，次数达到 `MaxAttempts` | 记 `DeadLetteredAt` 进死信，日志 Error 级别 |
+| 载荷无法解码 | 直接进死信（重试也解不开），`LastError` 是 `MESSAGING_VALIDATION_002` |
+| 代理整批抛出（不可达） | 本轮回滚，不计尝试，下一轮再来 |
+
+退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
+
+投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。表结构：`Topic` 长 128，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）。
 
 ## 队列与流
 
@@ -292,7 +305,11 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次） |
 | `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题 / 队列后缀 |
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
-| `XiHan:Messaging:Outbox:BatchSize` | 正整数 | 100 | 发件箱每轮最多投递条数 |
+| `XiHan:Messaging:Outbox:BatchSize` | 正整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数 |
+| `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
+| `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
+| `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
+| `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
 | `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 内存代理的主题数上限，超出时发布到新主题返回 `MESSAGING_UNAVAILABLE_003` |
 | `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |

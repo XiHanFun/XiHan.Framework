@@ -94,12 +94,16 @@ XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Attempts.get -> int
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Attempts.set -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.CreatedAt.get -> System.DateTimeOffset
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.CreatedAt.set -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.DeadLetteredAt.get -> System.DateTimeOffset?
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.DeadLetteredAt.set -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.DispatchedAt.get -> System.DateTimeOffset?
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.DispatchedAt.set -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Id.get -> System.Guid
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Id.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.LastError.get -> string?
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.LastError.set -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.NextAttemptAt.get -> System.DateTimeOffset?
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.NextAttemptAt.set -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.OutboxMessage() -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Payload.get -> byte[]!
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage.Payload.set -> void
@@ -109,10 +113,19 @@ XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions!
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.BatchSize.get -> int
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.BatchSize.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.Equals(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? other) -> bool
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxAttempts.get -> int
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxAttempts.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxRetryDelay.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxRetryDelay.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.OutboxOptions() -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.PollInterval.get -> System.TimeSpan
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.PollInterval.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelay.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelay.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelayAfter(int attempts) -> System.TimeSpan
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher.OutboxPublisher(XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork! unitOfWork, XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage!, System.Guid>! outbox, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker! broker, System.TimeProvider! timeProvider, XiHan.Framework.Kernel.Pipeline.IInvocationAccessor? invocation = null) -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>

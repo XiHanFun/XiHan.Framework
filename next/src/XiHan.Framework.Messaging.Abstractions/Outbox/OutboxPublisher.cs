@@ -126,5 +126,6 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
         Topic = topic,
         Payload = CloudEventsFormat.Encode(envelope),
         CreatedAt = now,
+        NextAttemptAt = now,
     };
 }
