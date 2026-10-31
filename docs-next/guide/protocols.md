@@ -235,7 +235,7 @@ MCP 协议版本 `2025-06-18`，消息为 JSON-RPC 2.0，HTTP 上是 Streamable 
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
 ```
 
-stdio 调用不带凭据、租户与区域，以匿名主体执行：要求权限或登录的操作经 stdio 调用总是得到 `isError` 结果，`--authorization`、`--tenant` 这些选项只作用于 `invoke`。调用来源只有协议 `mcp` 与 tool 名。宿主的写法见[命令行宿主](./command-line)。
+`mcp` 命令接受与 `invoke` 相同的上下文选项，作用于整个会话里的每个 `tools/call`：凭据 `--authorization '<scheme> <value>'` 或环境变量 `XIHAN_AUTHORIZATION`（选项优先，MCP 规范要求 stdio 服务端从运行环境取凭据），`--tenant`、`--correlation`、`--locale`（`tools/list` 的标题与描述、失败文案按它翻译），`--timeout <秒>` 是每个 `tools/call` 的时限。每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误，退出码 64。调用来源只有协议 `mcp` 与 tool 名。宿主的写法见[命令行宿主](./command-line)。
 
 ### 选项
 

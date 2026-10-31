@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Hosting.CommandLine.Commands;
+using XiHan.Framework.Hosting.CommandLine.Parsing;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
@@ -45,6 +46,7 @@ public sealed class McpStdioTests
         builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersFeature)));
         builder.Services.AddXiHanCommandLine();
         builder.Services.AddSingleton<OriginLog>();
+        builder.Services.AddSingleton<CallLog>();
         var host = builder.Build();
         await host.StartAsync();
         return host;
@@ -88,6 +90,99 @@ public sealed class McpStdioTests
 
             // mcp 命令已注册进命令行宿主
             Assert.Contains(host.Services.GetServices<ICommand>(), static c => c.Name == "mcp" && c.DescriptionKey == McpMessages.StdioDescription);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    /// <summary>
+    /// 以给定的命令行参数执行 <c>mcp</c> 命令，输入是逐行拼起来的消息。
+    /// </summary>
+    /// <remarks>
+    /// 返回退出码、stdout 的各行与 stderr。
+    /// </remarks>
+    private static async Task<(int ExitCode, List<string> Lines, string Error)> RunCommandAsync(IHost host, string[] args, params string[] messages)
+    {
+        var output = new StringWriter();
+        var error = new StringWriter();
+        await using var scope = host.Services.CreateAsyncScope();
+        var command = new McpStdioCommand(new StringReader(string.Join('\n', messages)));
+        var exitCode = await command.ExecuteAsync(new CommandContext(CommandLineParser.Parse(["mcp", .. args]), scope.ServiceProvider, output, error, CancellationToken.None));
+        var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
+        return (exitCode, lines, error.ToString());
+    }
+
+    [Fact]
+    public async Task Command_CarriesCredentialTenantLocaleAndTimeout_IntoEveryToolCall()
+    {
+        using var host = await StartAsync();
+        try
+        {
+            var (exitCode, lines, error) = await RunCommandAsync(
+                host,
+                ["--authorization", "ApiKey dev-alice-key", "--tenant", "acme", "--locale", "zh-cn", "--correlation", "c-1", "--timeout", "30"],
+                """{"jsonrpc":"2.0","id":1,"method":"tools/list"}""",
+                """{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"x","page":1}}}""",
+                """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"7","page":1}}}""");
+
+            Assert.Equal(CommandLineExitCodes.Success, exitCode);
+            Assert.Empty(error);
+            Assert.Equal(3, lines.Count);
+
+            // tools/list 的标题按 --locale 翻译
+            using var listed = JsonDocument.Parse(lines[0]);
+            var get = listed.RootElement.GetProperty("result").GetProperty("tools").EnumerateArray().Single(static t => t.GetProperty("name").GetString() == "orders_get");
+            Assert.Equal("读取订单", get.GetProperty("title").GetString());
+
+            // 需要 orders.write 的 tool：凭据来自 --authorization，在这次调用的 Authenticate 阶段认证后放行
+            using var created = JsonDocument.Parse(lines[1]);
+            Assert.False(created.RootElement.GetProperty("result").TryGetProperty("isError", out _), lines[1]);
+            Assert.Equal("orders.create", created.RootElement.GetProperty("result").GetProperty("structuredContent").GetProperty("operation").GetString());
+
+            // 每个 tools/call 都带会话的主体、租户、区域、关联与时限
+            var calls = host.Services.GetRequiredService<CallLog>().Calls;
+            Assert.Equal(2, calls.Count);
+            Assert.All(calls, static call => Assert.Equal(("alice", "acme", "zh-CN", "c-1", true), call));
+            Assert.Equal(
+                [new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = "orders_create" }, new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = "orders_get" }],
+                host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Command_InvalidCredential_FailsEachProtectedCall_AndInvalidOptionsNeverStartTheSession()
+    {
+        using var host = await StartAsync();
+        try
+        {
+            // 凭据格式对但无效：stdio 没有外层认证，需要认证的 tools/call 是 isError，会话继续，不需要认证的照常执行
+            var (exitCode, lines, _) = await RunCommandAsync(
+                host,
+                ["--authorization", "ApiKey wrong-key", "--locale", "zh-CN"],
+                """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"x"}}}""",
+                """{"jsonrpc":"2.0","id":2,"method":"ping"}""");
+            Assert.Equal(CommandLineExitCodes.Success, exitCode);
+            Assert.Equal(2, lines.Count);
+            using var denied = JsonDocument.Parse(lines[0]);
+            Assert.True(denied.RootElement.GetProperty("result").GetProperty("isError").GetBoolean());
+            Assert.StartsWith("SECURITY_DENIED_003: ", denied.RootElement.GetProperty("result").GetProperty("content")[0].GetProperty("text").GetString(), StringComparison.Ordinal);
+            Assert.Empty(host.Services.GetRequiredService<CallLog>().Calls);
+
+            // 选项不合法：不进入会话、不读输入，stderr 一行用法错误，退出码 64
+            foreach (var args in new[] { new[] { "--authorization", "garbage" }, ["--timeout", "0"] })
+            {
+                var (code, output, error) = await RunCommandAsync(host, args, """{"jsonrpc":"2.0","id":1,"method":"ping"}""");
+                Assert.Equal(CommandLineExitCodes.Usage, code);
+                Assert.Empty(output);
+                using var failure = JsonDocument.Parse(error);
+                Assert.Equal(CommandLineErrors.UsageInvalid, failure.RootElement.GetProperty("code").GetString());
+            }
         }
         finally
         {

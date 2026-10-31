@@ -22,11 +22,11 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 两种传输：
 
 - Streamable HTTP：`MapXiHanMcp()` 映射 `POST /mcp`，一条消息一个答复，通知回 202，不开 SSE、不建会话。`/mcp` 经过 `UseXiHan()`，请求凭据在外层认证，凭据无效时整个请求 401。
-- stdio：命令行宿主的 `mcp` 命令（`McpStdioCommand`），stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；调用不带凭据、租户与区域，以匿名主体执行。
+- stdio：命令行宿主的 `mcp` 命令（`McpStdioCommand`），stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
 
 ## 何时使用
 
-要让 MCP 客户端（编程助手、对话应用）调用应用的业务操作时用它。HTTP 传输适合远程服务，stdio 适合客户端在本机以子进程启动的工具；要求权限的操作只能经 HTTP 传输带凭据调用。
+要让 MCP 客户端（编程助手、对话应用）调用应用的业务操作时用它。HTTP 传输适合远程服务，stdio 适合客户端在本机以子进程启动的工具；要求权限的操作经 HTTP 传输时由请求头带凭据，经 stdio 时由启动参数或环境变量带凭据。
 
 ## 安装与启用
 
@@ -83,7 +83,7 @@ app.Run();
 | `McpProtocolFeature` | 特性入口 |
 | `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`；`ToolNameFor(contract)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioCommand` | 命令行宿主的 `mcp` 命令 |
+| `Transports.McpStdioCommand` | 命令行宿主的 `mcp` 命令；会话上下文取自命令行选项与环境变量 |
 | `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输 |
 | `Server.McpServer` | JSON-RPC 服务端：`HandleAsync`、`Tools`、`FindTool`；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Server.McpReply` | 一条答复与是否为不合法消息（HTTP 400） |

@@ -11,7 +11,7 @@ MCP（Model Context Protocol）是 AI 工具调用外部工具的开放协议。
 | 传输 | 启用方式 | 认证 | 适用 |
 | --- | --- | --- | --- |
 | Streamable HTTP | Web 应用加入 `McpProtocolFeature`，`app.MapXiHanMcp()`，端点 `POST /mcp` | 请求头 `Authorization` 由 `UseXiHan()` 在外层认证 | 需要身份与权限的操作；连接已在运行的开发服务器 |
-| stdio | 命令行宿主加入 `McpProtocolFeature` 后运行 `mcp` 命令，AI 工具以子进程方式启动 | 没有凭据，调用是匿名的 | 不要求权限的操作，如本地工具类应用 |
+| stdio | 命令行宿主加入 `McpProtocolFeature` 后运行 `mcp` 命令，AI 工具以子进程方式启动 | 环境变量 `XIHAN_AUTHORIZATION` 或启动参数 `--authorization`，每个 `tools/call` 在管道里认证；不给就是匿名 | 本机以子进程启动的工具类应用 |
 
 HTTP 传输的 Web 应用：
 
@@ -56,7 +56,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
 ```
 
-stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。
+stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。`mcp` 命令接受与 `invoke` 相同的上下文选项：`--authorization`（或环境变量 `XIHAN_AUTHORIZATION`）、`--tenant`、`--correlation`、`--locale`、`--timeout`，作用于会话里的每个 `tools/call`。
 
 ## 在各工具中配置
 
@@ -76,7 +76,8 @@ stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。
     },
     "shop-cli": {
       "command": "dotnet",
-      "args": ["run", "--project", "src/Shop.Cli", "--", "mcp"]
+      "args": ["run", "--project", "src/Shop.Cli", "--", "mcp", "--locale", "zh-CN"],
+      "env": { "XIHAN_AUTHORIZATION": "ApiKey dev-alice-key" }
     }
   }
 }
@@ -125,12 +126,13 @@ stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。
 ```toml
 [mcp_servers.shop-cli]
 command = "dotnet"
-args = ["run", "--project", "src/Shop.Cli", "--", "mcp"]
+args = ["run", "--project", "src/Shop.Cli", "--", "mcp", "--locale", "zh-CN"]
+env = { XIHAN_AUTHORIZATION = "ApiKey dev-alice-key" }
 ```
 
 ### 其他工具
 
-支持 MCP 的工具都可以按上面两种形式配置：HTTP 传输填端点地址与 `Authorization` 头，stdio 传输填启动命令与 `mcp` 参数。
+支持 MCP 的工具都可以按上面两种形式配置：HTTP 传输填端点地址与 `Authorization` 头，stdio 传输填启动命令与 `mcp` 参数，凭据放进环境变量 `XIHAN_AUTHORIZATION`（比写在参数里更不容易出现在进程列表与日志中）。
 
 ## 使用约束
 

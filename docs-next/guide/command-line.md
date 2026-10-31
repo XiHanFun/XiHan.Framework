@@ -49,7 +49,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | `pipeline` | 管道阶段与中间件（`App.DescribePipeline()`） |
 | `operations` | 操作登记表，每行 `ID<TAB>稳定性<TAB>暴露的协议<TAB>permission=…`、`policy=…` 或 `-` |
 | `invoke <操作 ID>` | 调用操作，见下一节 |
-| `mcp` | `Protocols.Mcp` 注册：MCP 的 stdio 传输 |
+| `mcp` | `Protocols.Mcp` 注册：MCP 的 stdio 传输，接受与 `invoke` 相同的上下文选项 |
 
 没有命令时（包括只写了 `--help`）把用法写到 stderr 并返回 64；写了命令再带 `--help` 时把用法写到 stdout 并返回 0。
 
@@ -170,7 +170,7 @@ public static class ToolMessages
 builder.Services.AddXiHanCommand<VersionCommand>();
 ```
 
-`CommandContext` 提供解析结果（`CommandLine`、`Arguments`、`Option(name)`、`HasOption(name)`）、作用域服务（`Services`）、输出流与取消令牌。命令要调用操作时，用 `CommandLineInvocation.Create(context, operationId)` 按同一套选项建调用上下文，失败用 `CommandLineFailure.WriteAsync` 写 stderr 并得到退出码，与 `invoke` 一致。命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
+`CommandContext` 提供解析结果（`CommandLine`、`Arguments`、`Option(name)`、`HasOption(name)`）、作用域服务（`Services`）、输出流与取消令牌。命令要调用操作时，用 `CommandLineInvocation.Create(context, operationId)` 按同一套选项建调用上下文（一条命令里发起多次独立调用时用 `Create(context, services, operationId)`，每次在自己的服务作用域里建，`mcp` 命令就是这样为每个 `tools/call` 建上下文），失败用 `CommandLineFailure.WriteAsync` 写 stderr 并得到退出码，与 `invoke` 一致。命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
 
 ## MCP stdio
 
@@ -180,7 +180,13 @@ builder.Services.AddXiHanCommand<VersionCommand>();
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
 ```
 
-答复里的 tool `greetings_create` 带消息目录里的本地化描述。stdio 调用不带凭据、租户与区域，以匿名主体执行，`--authorization` 等选项与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；要求权限或登录的操作经 stdio 调用总是得到 `isError` 结果。tool 的规则见 [gRPC、MCP 与 CloudEvents](./protocols#mcp)。
+答复里的 tool `greetings_create` 带消息目录里的本地化描述。`mcp` 命令接受与 `invoke` 相同的上下文选项，作用于整个会话里的每个 `tools/call`：凭据 `--authorization '<scheme> <value>'` 或环境变量 `XIHAN_AUTHORIZATION`（选项优先，MCP 规范要求 stdio 服务端从运行环境取凭据），`--tenant`、`--correlation`、`--locale`（`tools/list` 的标题与描述、失败文案按它翻译），`--timeout <秒>` 是每个 `tools/call` 的时限。每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误，退出码 64。
+
+```bash
+XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project next/samples/SimpleCli -- mcp --tenant acme --locale zh-CN
+```
+
+tool 的规则见 [gRPC、MCP 与 CloudEvents](./protocols#mcp)。
 
 ## 相关
 

@@ -19,6 +19,7 @@ internal sealed class OrdersOperation : IOperation<OrderRequest, OrderReply>
     public ValueTask<Result<OrderReply>> HandleAsync(OrderRequest request, InvocationContext context)
     {
         context.Services.GetService<OriginLog>()?.Record(context);
+        context.Services.GetService<CallLog>()?.Record(context);
         if (request.Name == "fail")
         {
             return ValueTask.FromResult<Result<OrderReply>>(Error.Conflict("ORDERS_CONFLICT_001", "orders.order.rejected"));

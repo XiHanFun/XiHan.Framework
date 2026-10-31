@@ -16,7 +16,7 @@ app pipeline                               # 管道阶段与中间件（App.Desc
 app operations                             # 登记表：ID、稳定性、暴露的协议、权限或策略
 app invoke greetings.create --name Ada     # 字段选项拼成载荷；或 --json '{"name":"Ada"}'、--data request.json
 app greetings create --name Ada --times 2  # <resource> <verb> 是 invoke 的简写
-app mcp                                    # Protocols.Mcp 注册的 stdio 传输
+app mcp --tenant acme                      # Protocols.Mcp 注册的 stdio 传输，上下文选项同 invoke
 ```
 
 ## 规则

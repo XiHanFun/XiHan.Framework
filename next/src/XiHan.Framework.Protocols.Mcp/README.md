@@ -9,7 +9,7 @@ app.UseXiHan();        // 构造上下文、认证请求凭据、回写 Problem 
 app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/call
 ```
 
-命令行宿主里同一个服务端经 stdio 提供：`builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`（`McpStdioCommand`），MCP 客户端以子进程方式连接。
+命令行宿主里同一个服务端经 stdio 提供：`builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`（`McpStdioCommand`），MCP 客户端以子进程方式连接。会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`（`spec/protocol/mcp.md`）。
 
 ## 规则
 

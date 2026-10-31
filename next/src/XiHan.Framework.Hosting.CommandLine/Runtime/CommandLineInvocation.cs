@@ -46,6 +46,22 @@ public static class CommandLineInvocation
     public static Result<InvocationContext> Create(CommandContext context, string operationId)
     {
         ArgumentNullException.ThrowIfNull(context);
+        return Create(context, context.Services, operationId);
+    }
+
+    /// <summary>
+    /// 从命令环境在给定的服务作用域里构造调用上下文。
+    /// </summary>
+    /// <remarks>
+    /// 选项映射与 <see cref="Create(CommandContext, string)"/> 相同，服务取自 <paramref name="services"/>：供一条命令里发起多次独立调用的宿主（如 MCP 的 stdio 传输）为每次调用建自己的作用域与上下文，截止时间按构造时刻换算。
+    /// </remarks>
+    /// <param name="context">命令环境。</param>
+    /// <param name="services">本次调用的服务作用域。</param>
+    /// <param name="operationId">被调用的操作 ID，记为调用来源的请求目标。</param>
+    public static Result<InvocationContext> Create(CommandContext context, IServiceProvider services, string operationId)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(operationId);
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal);
         if (context.Option("tenant").TryGetValue(out var tenant))
@@ -71,10 +87,10 @@ public static class CommandLineInvocation
                 return Error.Validation(CommandLineErrors.UsageInvalid, CommandLineMessages.InvokeTimeoutInvalid);
             }
 
-            deadline = (context.Services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow() + TimeSpan.FromSeconds(seconds);
+            deadline = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow() + TimeSpan.FromSeconds(seconds);
         }
 
-        var invocation = App.CreateContext(context.Services, context.CancellationToken, deadline: deadline, baggage: baggage);
+        var invocation = App.CreateContext(services, context.CancellationToken, deadline: deadline, baggage: baggage);
         invocation.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.CommandLine, Target = operationId });
 
         // 凭据只做格式拆分，不在这里验证；解释交给安全子系统的 Authenticate 阶段
