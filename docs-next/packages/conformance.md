@@ -196,7 +196,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 | --- | --- | --- |
 | `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, host)`；回调 `configure` 里套件登记 `RecordingJob` 与 `RecordingJobLog`；可覆写 `WaitTimeout`（缺省 10 秒） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复 |
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
-| `LeaderElectionConformance` | `CreateElection()` 返回 `ILeaderElection`；可覆写 `LeaseTimeToLive`（缺省 400 毫秒）、`ExpirationGrace`（缺省 300 毫秒） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期 |
+| `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期 |
 
 `RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`，用来构造重试与超时场景。`Scheduling.InMemory`、`Scheduling.Database` 通过三套用例，`Scheduling.Kubernetes` 通过领导选举用例（以内存 API Server 桩验证）。
 
