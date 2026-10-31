@@ -18,6 +18,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Tests;
 /// <remarks>
 /// 帮助、内置命令、invoke 与简写、载荷来源、上下文选项、失败映射与退出码。
 /// </remarks>
+[Collection(nameof(ProcessEnvironmentGroup))]
 public sealed class CommandLineRunnerTests : IAsyncLifetime
 {
     /// <summary>

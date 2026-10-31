@@ -13,6 +13,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 /// <summary>
 /// <c>XIHAN_CONFIG_PATH</c>：目录里的文件晚于 appsettings 装载并优先，文件变化触发重载。
 /// </summary>
+[Collection(nameof(ProcessEnvironmentGroup))]
 public sealed class ConfigurationDirectoryHostTests
 {
     [Fact]
