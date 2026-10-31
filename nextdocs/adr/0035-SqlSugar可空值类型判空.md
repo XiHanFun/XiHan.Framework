@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0005-persistence.md` 修订）。
+已采纳（`spec/rfcs/0005-persistence.md` 修订）。2026-11-01 修订：判空改写成 `SqlFunc.EqualsNull`，逻辑非下推到叶子，见文末「修订」。
 
 ## 日期
 
@@ -39,3 +39,52 @@ BasicApp 6.0 的 N1 第一批发现：规约 `s.RevokedAt == null`（`DateTimeOf
 - 行为变化只在原先错的地方：`DateTimeOffset?` / `int?` / `Guid?` 等与 null 的比较从永假（`== null`）或永真（`!= null`）变成按存在性过滤。
 - 公开 API 不变；`NullableComparisonRewriter` 是内部类型。
 - BasicApp 侧原先改成 `HasValue` 的规约可以保留，两种写法现在等价。
+
+## 修订（2026-11-01）：判空与取反嵌套在与 / 或条件里
+
+### 背景
+
+消息分区给发件箱加到期判定时发现：规约 `m => m.DispatchedAt == null && m.DeadLetteredAt == null && (m.NextAttemptAt == null || m.NextAttemptAt <= now)` 经 `Persistence.SqlSugar` 译成丢了 `OR` 的 SQL，SQLite 报 `near "(": syntax error`。发件箱改成先写或条件的等价形式绕了过去（ADR-0064）。
+
+在 SQLite 上逐个形态打印 SqlSugar 生成的 SQL，最小复现是 `o => o.Amount == 1 && (!o.ModifiedAt.HasValue || o.Amount == 3)`，译成 `(( Amount = 1 ) AND (NOT(ModifiedAt IS NOT NULL )( Amount = 3 )))`。规律：
+
+- 漏写的是一元取反作 `&&` / `||` 左操作数时它后面的运算符。`!x.HasValue`、`!(a == b)`、`!(p && q)` 都会漏。
+- 条件是这个与 / 或条件处在另一个与 / 或条件的右侧，且外层的左操作数是比较或布尔字段，如 `A && (!… || B)`、`A || (!… && B)`。
+- `!o.ModifiedAt.HasValue && (!o.DeletedAt.HasValue || B)` 外层左操作数也是取反，反而译对。
+- 布尔字段取反（`!o.IsDeleted`）与方法调用取反（`!ids.Contains(o.Id)`）不受影响。
+- 本 ADR 的改写把 `x == null` 变成 `!x.HasValue`，正好落进这个形态，所以发件箱的判定出错。手写 `!x.HasValue` 同样出错，属于 SqlSugar 自身的翻译缺陷。
+
+根因在 SqlSugar 的 `BinaryExpressionResolve.Left`（5.1.4.220 源码）。外层左操作数是二元表达式时，`Right` 先在结果里写一个运算符占位符，外层的右侧翻译完才替换。内层左操作数是一元表达式时，`Left` 只在「整段结果里没有任何占位符」时才补写本层运算符。外层占位符尚未替换，于是被当成本层已经写过，运算符就丢了。布尔字段与方法调用的取反由成员 / 方法解析自己写占位符，所以不受影响。
+
+### 备选
+
+1. 等上游修：不受控，期间是语法错误。
+2. 要求调用方先写或条件：契约靠约定，发件箱已经踩到。
+3. 改写器交换与 / 或的左右操作数，把取反挪到右侧：两侧都是取反时（`!p || !q`）仍然出错，还要叠加德摩根变换。
+4. 改写器把判空改写成方法调用 `SqlFunc.EqualsNull(x, null)`，并把逻辑非下推到叶子。
+
+### 决策
+
+采用 4。
+
+- `x == null`（可空值类型，null 一侧的认定同前）改写成 `SqlFunc.EqualsNull((object)x, null)`，译成 `(x is null)`。`x != null` 仍改写成 `x.HasValue`，它是成员访问，在任何位置都译对。
+- `VisitUnary` 对布尔逻辑非做否定下推：
+  - `!!p` → `p`。
+  - `!(p && q)` → `!p || !q`，`!(p || q)` → `!p && !q`。
+  - `!(a == b)` → `a != b`，`!(a < b)` → `a >= b`，其余比较同理。运算符方法按操作数类型重新解析，构造不出来（自定义类型只定义了一半运算符）时保留取反。
+  - `!x.HasValue` → `SqlFunc.EqualsNull(x, null)`。
+  - 其余叶子（布尔字段、方法调用）保留取反。
+- `SqlFunc.EqualsNull` 的方法信息从一个 lambda 的表达式体里取，不用反射查找。
+- 一致性套件新增 `List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten`，三个 Provider 继承：发件箱的原形态、先写或条件的形态、判空 / 取反作或条件左操作数、取反整个与 / 或条件。SqlSugar 测试另加带 `DateTimeOffset` 时间比较的同类形态，覆盖取反的时间比较与双重否定。
+
+### 理由
+
+- `SqlFunc.EqualsNull` 是 SqlSugar 自己的方法，各数据库都译成 `(x is null)`，没有数据库专属覆写。它是方法调用而不是一元表达式，SQLite 上逐个验证了作与 / 或条件左右操作数、嵌在右侧、两侧都是判空等位置都译对。
+- 否定下推在 SQL 的三值逻辑下等价：`NOT (a < b)` 与 `a >= b` 在含 NULL 时同为未知，德摩根律在三值逻辑下成立，双重否定消去也成立。改写只用于翻译，内存实现仍按原规约判定，三值逻辑与 C# 的差异与改写前相同（`!(x <= t)` 在 x 为 null 时 SQL 过滤掉、C# 保留，这是 SQL Provider 一向的语义）。
+- 下推后剩下的取反只在布尔字段与方法调用上，SqlSugar 对它们自己写占位符，不再落进缺陷形态。
+
+### 影响
+
+- 发件箱为绕开缺陷而先写或条件的写法不再需要，直观写法照常翻译。
+- 生成的 SQL 形态变化：判空从 `NOT(x IS NOT NULL )` 变成 `(x is null)`，取反的比较变成反运算。查询结果不变。
+- 公开 API 不变；`NullableComparisonRewriter` 是内部类型。

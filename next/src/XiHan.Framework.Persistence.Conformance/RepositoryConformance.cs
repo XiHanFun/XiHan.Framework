@@ -404,6 +404,48 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 11c：可空值类型判空、取反与 <c>&amp;&amp;</c> / <c>||</c> 嵌套组合照常过滤。
+    /// </summary>
+    /// <remarks>
+    /// 或条件、取反出现在与条件的右侧，判空或取反是或条件的左操作数（发件箱的到期判定就是 <c>A &amp;&amp; B &amp;&amp; (可空值 == null || …)</c>）。SqlSugar 在这些位置会漏写 <c>AND</c> / <c>OR</c>，生成语法错误的 SQL，Provider 必须照常翻译。规约只用存在性判定与整数比较，不对可空值做取反后的大小比较（C# 与 SQL 对 null 的三值逻辑不同）。
+    /// </remarks>
+    [Fact]
+    public async Task List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var touched = Guid.CreateVersion7();
+        var late = Guid.CreateVersion7();
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [
+                new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "fresh", Amount = 1 },
+                new ConformanceOrder { Id = touched, Name = "touched", Amount = 2 },
+                new ConformanceOrder { Id = late, Name = "late", Amount = 3 },
+            ],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+        Clock.Advance(TimeSpan.FromMinutes(1));
+        // touched 与 late 写入 ModifiedAt；fresh 的 ModifiedAt 仍是 null，三条的 DeletedAt 都是 null
+        (await RunAsync(host, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            return Fold(await repository.UpdateRangeAsync(await repository.FindManyAsync([touched, late], context.CancellationToken).ConfigureAwait(false), context.CancellationToken).ConfigureAwait(false));
+        }).ConfigureAwait(false)).ThrowIfFailure();
+
+        Assert.Equal(["fresh", "touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.DeletedAt == null && o.Amount >= 1 && (o.ModifiedAt == null || o.Amount <= 2))).ConfigureAwait(false));
+        Assert.Equal(["fresh", "touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => (o.ModifiedAt == null || o.Amount <= 2) && o.DeletedAt == null && o.Amount >= 1)).ConfigureAwait(false));
+        Assert.Equal(["fresh", "late"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Amount >= 1 && (!o.ModifiedAt.HasValue || o.Amount == 3))).ConfigureAwait(false));
+        Assert.Equal(["fresh", "late"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Amount >= 1 && (!(o.Amount == 2) || o.ModifiedAt == null))).ConfigureAwait(false));
+        Assert.Equal(["fresh", "late"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Amount >= 1 && !(o.ModifiedAt != null && o.Amount == 2))).ConfigureAwait(false));
+        Assert.Equal(["fresh", "touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.DeletedAt == null && (o.Amount == 2 || (o.ModifiedAt == null && o.Amount == 1)))).ConfigureAwait(false));
+        Assert.Equal(["touched"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.DeletedAt == null && !(o.ModifiedAt == null || o.Amount == 3))).ConfigureAwait(false));
+        Assert.Equal(["touched", "late"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Amount >= 1 && (o.ModifiedAt != null || o.DeletedAt != null))).ConfigureAwait(false));
+        Assert.Equal(["fresh"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Amount >= 1 && (o.ModifiedAt == null || o.DeletedAt != null))).ConfigureAwait(false));
+
+        // 按规约过滤后的订单名，按金额升序
+        async Task<List<string>> NamesAsync(Specification<ConformanceOrder> filter)
+            => (await ListAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>().Where(filter).OrderBy(static o => o.Amount)).ConfigureAwait(false)).Select(static o => o.Name).ToList();
+    }
+
+    /// <summary>
     /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
     /// </summary>
     [Fact]

@@ -1,9 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Linq.Expressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Queries;
@@ -218,6 +220,61 @@ public sealed class SqlSugarPersistenceTests : IDisposable
             return Result.Success();
         })).ThrowIfFailure();
         Assert.Equal("first", Assert.Single(rows).Name);
+    }
+
+    [Fact]
+    public async Task List_NullChecksAndNegatedTimeComparisonsInAndOr_TranslateToValidSql()
+    {
+        var epoch = new DateTimeOffset(2026, 10, 27, 8, 0, 0, TimeSpan.Zero);
+        var clock = new ConformanceClock(epoch);
+        await using var host = await _database.StartHostAsync(clock);
+        var touched = Guid.CreateVersion7();
+        var late = Guid.CreateVersion7();
+        (await RunAsync(host, async ctx =>
+        {
+            var results = await Repository(ctx).AddRangeAsync(
+            [
+                new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "fresh", Amount = 1 },
+                new ConformanceOrder { Id = touched, Name = "touched", Amount = 2 },
+                new ConformanceOrder { Id = late, Name = "late", Amount = 3 },
+            ], ctx.CancellationToken);
+            return results.FirstOrDefault(static r => r.IsFailure, Result.Success());
+        })).ThrowIfFailure();
+        // touched 在 1 分钟时、late 在 2 分钟时写入修改时间，fresh 的修改时间仍是 null
+        await TouchAsync(touched);
+        await TouchAsync(late);
+        var cutoff = epoch.AddMinutes(1.5);
+
+        // 发件箱原本的到期判定：A && B && (可空值 == null || 可空值 <= 时刻)，修正前 SQLite 报 near "(": syntax error
+        Assert.Equal(["fresh", "touched"], await NamesAsync(o => o.DeletedAt == null && o.Amount >= 1 && (o.ModifiedAt == null || o.ModifiedAt <= cutoff)));
+        // 取反的时间比较换成反运算；SQL 三值逻辑下 ModifiedAt 为 NULL 的行比较结果未知，取反仍未知，被过滤
+        Assert.Equal(["touched"], await NamesAsync(o => o.DeletedAt == null && o.Amount >= 1 && !(o.ModifiedAt > cutoff)));
+        Assert.Equal(["fresh", "late"], await NamesAsync(o => o.Amount >= 1 && (!(o.ModifiedAt <= cutoff) || o.ModifiedAt == null)));
+        Assert.Equal(["late"], await NamesAsync(o => o.DeletedAt == null && !(o.ModifiedAt == null || o.ModifiedAt <= cutoff)));
+        Assert.Equal(["fresh"], await NamesAsync(o => o.Amount >= 1 && !!(o.ModifiedAt == null)));
+
+        // 时钟前进 1 分钟后读出再更新，写入修改时间
+        async Task TouchAsync(Guid id)
+        {
+            clock.Advance(TimeSpan.FromMinutes(1));
+            (await RunAsync(host, async ctx =>
+            {
+                var order = (await Repository(ctx).FindAsync(id, ctx.CancellationToken)).ValueOrThrow();
+                return await Repository(ctx).UpdateAsync(order, ctx.CancellationToken);
+            })).ThrowIfFailure();
+        }
+
+        // 按规约过滤后的订单名，按金额升序
+        async Task<List<string>> NamesAsync(Expression<Func<ConformanceOrder, bool>> criteria)
+        {
+            IReadOnlyList<ConformanceOrder> rows = [];
+            (await RunAsync(host, async ctx =>
+            {
+                rows = await Repository(ctx).ListAsync(EntityQuery.All<ConformanceOrder>().Where(new Specification<ConformanceOrder>(criteria)).OrderBy(static o => o.Amount), ctx.CancellationToken);
+                return Result.Success();
+            })).ThrowIfFailure();
+            return rows.Select(static o => o.Name).ToList();
+        }
     }
 
     [Fact]

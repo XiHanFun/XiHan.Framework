@@ -145,7 +145,7 @@ var matched = vip.IsSatisfiedBy(order);   // true
 var others = EntityQuery.All<Order>().Where(vip.Not());
 ```
 
-`Criteria` 最终由 Provider 执行：InMemory 编译后在内存里判定，EF Core 与 SqlSugar 翻译成 SQL，所以表达式里只用 Provider 能翻译的成员与运算。可空值类型与 `null` 的比较（`o.DeletedAt == null`）在三个 Provider 上都按是否有值判定，SqlSugar Provider 在翻译前会把它改写成 `HasValue`（ADR-0035）。
+`Criteria` 最终由 Provider 执行：InMemory 编译后在内存里判定，EF Core 与 SqlSugar 翻译成 SQL，所以表达式里只用 Provider 能翻译的成员与运算。可空值类型与 `null` 的比较（`o.DeletedAt == null`）在三个 Provider 上都按是否有值判定，SqlSugar Provider 在翻译前会把它改写成 SqlSugar 译得对的判空，并把逻辑非下推到叶子；判空与取反嵌套在 `&&` / `||` 里（如 `A && B && (x == null || x <= now)`）也照常翻译（ADR-0035）。
 
 仓储查询已经自动施加软删除与租户过滤，规约里只写业务条件。`Persistence.Generators` 会为实现 `ISoftDeletable` 或 `IMultiTenant` 的实体生成 `<实体>Filters` 规约（`NotDeleted`、`ForTenant(tenantId)`、`ActiveFor(tenantId)`），用于内存判定或在 Provider 原生查询里复用同一条件，见 [Persistence.Generators 包](../packages/persistence-generators)。
 
