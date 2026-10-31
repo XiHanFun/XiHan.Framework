@@ -23,9 +23,12 @@ public sealed partial class HealthContributionTests
     private static readonly string[] _dynamicContributors = ["XiHan.Framework.Plugins.OutOfProcess", "XiHan.Framework.Plugins.Wasm", "XiHan.Framework.ObjectStorage.Abstractions"];
 
     /// <summary>
-    /// 每个正式包的扫描结果。
+    /// 每个正式包与示例项目的扫描结果。
     /// </summary>
-    private static IReadOnlyList<PackageHealth> Packages { get; } = Workspace.SourceProjects.Select(Scan).ToList();
+    /// <remarks>
+    /// 示例同样是清单的写法范本：它们声明的健康项也必须有实现。
+    /// </remarks>
+    private static IReadOnlyList<PackageHealth> Packages { get; } = Workspace.SourceProjects.Concat(Workspace.SampleProjects).Select(Scan).ToList();
 
     [Fact]
     public void DeclaredHealthItems_AreImplementedInTheSamePackage()

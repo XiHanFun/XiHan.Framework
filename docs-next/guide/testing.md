@@ -313,7 +313,7 @@ xihan-conformance vectors
 | `PrimitivesAndKernel_DoNotUseReflection` | Ring 0/1 源码不使用反射 |
 | `EverySourceProject_HasReadmeAndPublicApiFiles` | 每个正式包都有 `README.md` 与两个 PublicAPI 文件 |
 | `EveryLocalizedPackage_HasOneFilePerLocale_WithConsistentKeys` 等四项 | 10 种区域的语言文件齐全、占位符一致、按约定嵌入、消息键常量与 `en-US.json` 一一对应、错误调用点只用常量（RFC-0010） |
-| `DeclaredHealthItems_AreImplementedInTheSamePackage`、`PackagesRegisteringContributors_DeclareHealthItems` | 清单 `contributes.health` 的条目由同一个包实现，登记了 `IHealthContributor` 的包必须声明条目（插件宿主例外） |
+| `DeclaredHealthItems_AreImplementedInTheSamePackage`、`PackagesRegisteringContributors_DeclareHealthItems` | 清单 `contributes.health` 的条目由同一个包实现，登记了 `IHealthContributor` 的包必须声明条目（插件宿主例外）；`samples/` 下的示例项目同样受检 |
 | `SourceProjects_DoNotCallSingleItemMethodsInsideLoops` | 不在循环里调用仓储、缓存存储、消息发布的单条方法，改用批量方法 |
 | `DatabaseRecords_DeclareEveryStringColumnLength` | 数据库记录的字符串列都声明 `[StringLength(n)]` 或 `[LongText]` |
 
