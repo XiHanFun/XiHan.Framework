@@ -110,10 +110,9 @@ curl -H "baggage: xihan.tenant=acme" http://localhost:5000/whoami
 | `RequireTenant` | `bool` | `false` | 为真时没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 为真时租户必须在存储中存在且启用；为假时只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
+| `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
 
-布尔值只接受 `true` / `false`，其他写法在启动时抛出 `ArgumentException`。
-
-分片缓存容量 `MultiTenancyOptions.ShardCacheSize`（缺省 10000，最小 1）没有对应的配置键，`FromConfiguration` 不读取它。
+布尔值只接受 `true` / `false`，`ShardCacheSize` 只接受正整数，其他写法在启动时抛出 `ArgumentException`。
 
 ```json
 {

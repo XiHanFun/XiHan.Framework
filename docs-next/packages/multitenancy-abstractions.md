@@ -35,7 +35,7 @@
 
 ## 配置
 
-`MultiTenancyOptions.FromConfiguration` 读取 `XiHan:MultiTenancy` 下的四个键：
+`MultiTenancyOptions.FromConfiguration` 读取 `XiHan:MultiTenancy` 下的五个键：
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
@@ -43,8 +43,7 @@
 | `RequireTenant` | `bool` | `false` | 没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
-
-`ShardCacheSize`（`TenantStoreShardResolver` 的缓存容量，缺省 10000，最小 1）只能在代码里构造选项时设置，没有配置键。
+| `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
 
 ```json
 {

@@ -96,12 +96,19 @@ public sealed class TenantContractTests
             ("XiHan:MultiTenancy:DefaultTenant", "acme"),
             ("XiHan:MultiTenancy:RequireTenant", "true"),
             ("XiHan:MultiTenancy:ValidateAgainstStore", "false"),
-            ("XiHan:MultiTenancy:TenantClaim", "tid")));
+            ("XiHan:MultiTenancy:TenantClaim", "tid"),
+            ("XiHan:MultiTenancy:ShardCacheSize", "256")));
 
         Assert.Equal("acme", options.DefaultTenant);
         Assert.True(options.RequireTenant);
         Assert.False(options.ValidateAgainstStore);
         Assert.Equal("tid", options.TenantClaim);
+        Assert.Equal(256, options.ShardCacheSize);
+        Assert.Equal(10_000, MultiTenancyOptions.FromConfiguration(Build()).ShardCacheSize);
+        foreach (var invalid in new[] { "0", "-1", "many", "1.5" })
+        {
+            Assert.Throws<ArgumentException>(() => MultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:ShardCacheSize", invalid))));
+        }
 
         var defaults = MultiTenancyOptions.FromConfiguration(Build());
         Assert.Null(defaults.DefaultTenant);

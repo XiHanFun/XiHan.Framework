@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
@@ -74,8 +75,11 @@ public sealed record MultiTenancyOptions
     } = "tenant";
 
     /// <summary>
-    /// 从配置读取：<c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>。
+    /// 从配置读取。
     /// </summary>
+    /// <remarks>
+    /// <c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>、<c>ShardCacheSize</c>（正整数）；取值不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
     public static MultiTenancyOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -99,6 +103,13 @@ public sealed record MultiTenancyOptions
         if (configuration[$"{ConfigurationSection}:TenantClaim"] is { } claim)
         {
             options = options with { TenantClaim = claim };
+        }
+
+        if (configuration[$"{ConfigurationSection}:ShardCacheSize"] is { } shardCacheSize)
+        {
+            options = int.TryParse(shardCacheSize, NumberStyles.None, CultureInfo.InvariantCulture, out var size) && size >= 1
+                ? options with { ShardCacheSize = size }
+                : throw new ArgumentException($"{ConfigurationSection}:ShardCacheSize must be a positive integer, but was '{shardCacheSize}'.");
         }
 
         return options;

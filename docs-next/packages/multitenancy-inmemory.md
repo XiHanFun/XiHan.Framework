@@ -138,7 +138,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 - 健康项 `multitenancy.inmemory.capacity`：租户数达到上限即 Degraded（原因 `MULTITENANCY_UNAVAILABLE_001`），否则 Ready。
 - ID 区分大小写；`ListAsync` 按 ID 序数排序返回全部租户。
 - 数据只在进程内存里：多实例部署时各实例各有一份，运行时的增删不会同步到其他实例，重启后恢复为配置内容。
-- 分片缓存容量 `ShardCacheSize` 缺省 10000，配置里没有对应的键。
+- 分片缓存容量由 `XiHan:MultiTenancy:ShardCacheSize` 决定，缺省 10000，必须是正整数。
 
 ## 相关
 
