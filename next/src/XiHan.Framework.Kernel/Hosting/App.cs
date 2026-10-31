@@ -222,10 +222,11 @@ public sealed partial class App : IDisposable
         var accessor = context.Services.GetService<InvocationAccessor>();
         using var current = accessor is null ? default : accessor.Enter(context);
 
-        // 整个调用链里 key.L() 按调用方区域解析：解析器取自本次调用的服务作用域（没有装配本地化时沿用进程默认），区域取自 Baggage
-        using var messages = MessageScope.Use(
-            context.Services.GetService<IMessageResolver>(),
-            context.TryGetBaggage(BaggageKeys.Locale, out var locale) ? locale : null);
+        // 整个调用链里 key.L() 按调用方区域解析：解析器取自本次调用的服务作用域（没有装配本地化时沿用进程默认），
+        // 区域是 Baggage 里的区域经解析器协商后的启用区域，与 context.Localize、Problem Details 用的是同一个（RFC-0010）
+        var resolver = context.Services.GetService<IMessageResolver>();
+        var requested = context.TryGetBaggage(BaggageKeys.Locale, out var locale) ? locale : null;
+        using var messages = MessageScope.Use(resolver, resolver is null ? requested : resolver.Negotiate(requested));
         await Pipeline(context).ConfigureAwait(false);
         return context.GetOutcome().ValueOr(Result.Success());
     }

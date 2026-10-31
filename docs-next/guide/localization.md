@@ -8,7 +8,7 @@
 
 面向人的文案不写在代码里。代码只引用消息键（如 `security.token.subject_missing`），文案按语言放在 `Localization/<区域>.json`，任何地方用 `key.L()` 取当前语言的文本。`Error` 只携带消息键与参数，由宿主在 Egress 按调用方语言翻译。默认语言是英文 `en-US`，它也是所有语言文件的基准。
 
-调用的语言不靠线程文化传递：5.0 不设置 `CultureInfo.CurrentUICulture`，也不替换 `IStringLocalizerFactory`。区域是调用上下文 Baggage 里的 `xihan.locale`，HTTP 宿主从 `Accept-Language` 协商写入，内核在每次调用入口据此安装一个消息作用域 `MessageScope`，于是同一调用链里任何位置的 `key.L()` 都得到调用方语言，下游服务经 Baggage 拿到同一个区域。
+调用的语言不靠线程文化传递：5.0 不设置 `CultureInfo.CurrentUICulture`，也不替换 `IStringLocalizerFactory`。区域是调用上下文 Baggage 里的 `xihan.locale`，HTTP 宿主从 `Accept-Language` 协商写入，内核在每次调用入口把它经本地化器协商成启用的区域（与 `context.Localize`、Problem Details 用的规则相同），再据此安装一个消息作用域 `MessageScope`，于是同一调用链里任何位置的 `key.L()` 都得到调用方语言，且与失败文案是同一种语言，下游服务经 Baggage 拿到同一个区域。Baggage 里的区域不在启用列表时（上游 `baggage` 头、命令行 `--locale` 原样带进来的），即使有它的语言文件也不用，按同语言的启用区域或默认区域出文案。
 
 装配本地化的是能力 `localization.resources@1`。`Profiles.Minimal` 与 `Profiles.Standard` 都装配默认实现 `InMemoryLocalizationFeature`；需要运营人员在线改译文时换成 `DatabaseLocalizationFeature`。没有装配本地化时，文案退回键与参数的描述，代码照常运行。
 

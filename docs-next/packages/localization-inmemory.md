@@ -17,7 +17,7 @@
 
 `InMemoryLocalizationFeature` 在装配时做三件事：从 `XiHan:Localization` 读 `LocalizationOptions`；注册原语层（`primitives`）与内核（`kernel`）的语言文件目录，这两层不能读嵌入资源，由本特性代为装载；登记 `MessageLocalizer`，同一个实例既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）。
 
-启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核按 Baggage `xihan.locale` 另装调用方区域的作用域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
+启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核把 Baggage `xihan.locale` 经 `MessageLocalizer.Negotiate`（即 `LocalizationOptions.Negotiate`）协商成启用的区域，另装调用方区域的作用域，`key.L()` 与 `context.Localize`、Problem Details 因此是同一个区域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
 
 `MessageLocalizer` 在构造时取得容器里全部 `MessageCatalog` 的快照，之后不再变化；所有查找都在内存里完成，没有 IO。
 

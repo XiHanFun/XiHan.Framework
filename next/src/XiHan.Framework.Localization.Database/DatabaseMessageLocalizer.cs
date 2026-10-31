@@ -62,6 +62,9 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     }
 
     /// <inheritdoc />
+    public string? Negotiate(string? locale) => locale is null ? null : Options.Negotiate([locale]);
+
+    /// <inheritdoc />
     public bool TryResolve(string key, string? locale, IReadOnlyDictionary<string, object?>? arguments, [NotNullWhen(true)] out string? text)
     {
         ArgumentNullException.ThrowIfNull(key);

@@ -12,6 +12,7 @@ XiHan.Framework.Localization.InMemory.MessageLocalizer.Localize(XiHan.Framework.
 XiHan.Framework.Localization.InMemory.MessageLocalizer.Localize(string! key, XiHan.Framework.Primitives.InvocationContext! context, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
 XiHan.Framework.Localization.InMemory.MessageLocalizer.Localize(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
 XiHan.Framework.Localization.InMemory.MessageLocalizer.MessageLocalizer(System.Collections.Generic.IEnumerable<XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!>! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
+XiHan.Framework.Localization.InMemory.MessageLocalizer.Negotiate(string? locale) -> string?
 XiHan.Framework.Localization.InMemory.MessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
 XiHan.Framework.Localization.InMemory.MessageLocalizer.Resolve(XiHan.Framework.Primitives.Error! failure, string! locale) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.InMemory.MessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>

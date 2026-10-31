@@ -43,6 +43,16 @@ public sealed class MessageScopeTests
     }
 
     [Fact]
+    public void Negotiate_DefaultsToTheRequestedLocale()
+    {
+        // 不协商的解析器原样返回，null 仍是 null（本地化 Provider 才按启用列表协商）
+        IMessageResolver resolver = new DictionaryResolver();
+
+        Assert.Equal("ja-JP", resolver.Negotiate("ja-JP"));
+        Assert.Null(resolver.Negotiate(null));
+    }
+
+    [Fact]
     public void L_UsesCurrentScope_AndFallsBackToDescribe()
     {
         MessageScope.SetDefault(null, null);

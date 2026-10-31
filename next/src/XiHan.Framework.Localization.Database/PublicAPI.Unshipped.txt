@@ -20,6 +20,7 @@ XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(XiHan.Fr
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(XiHan.Framework.Primitives.Error! failure, string! locale) -> string!
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(string! key, XiHan.Framework.Primitives.InvocationContext! context, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
+XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Negotiate(string? locale) -> string?
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Resolve(XiHan.Framework.Primitives.Error! failure, string! locale) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>

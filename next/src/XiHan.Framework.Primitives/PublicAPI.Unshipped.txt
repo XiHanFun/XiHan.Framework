@@ -26,6 +26,7 @@ XiHan.Framework.Primitives.FrameworkException.FrameworkException(string! code, s
 XiHan.Framework.Primitives.FrameworkException.ToError() -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Primitives.FrameworkInfo
 XiHan.Framework.Primitives.IMessageResolver
+XiHan.Framework.Primitives.IMessageResolver.Negotiate(string? locale) -> string?
 XiHan.Framework.Primitives.IMessageResolver.TryResolve(string! key, string? locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, out string? text) -> bool
 XiHan.Framework.Primitives.ITypedId<TValue>
 XiHan.Framework.Primitives.ITypedId<TValue>.Value.get -> TValue

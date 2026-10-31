@@ -157,6 +157,31 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
+    /// 用例 7：解析器把调用方区域协商成启用的区域，与按调用上下文翻译是同一个区域。
+    /// </summary>
+    /// <remarks>
+    /// 内核按它安装调用链的消息作用域；区域不在启用列表时即使有语言文件也不用。
+    /// </remarks>
+    [Fact]
+    public void Resolver_NegotiatesTheRequestedLocale_LikeContextLocalization()
+    {
+        var localizer = Localizer(new LocalizationOptions { Locales = ["en-US", "zh-CN"], DefaultLocale = "en-US" }, _orders);
+        var resolver = Assert.IsAssignableFrom<IMessageResolver>(localizer);
+
+        Assert.Equal("zh-CN", resolver.Negotiate("zh-CN"));
+        Assert.Equal("zh-CN", resolver.Negotiate("zh-HK"));
+        Assert.Equal("en-US", resolver.Negotiate("pt-BR"));
+        Assert.Equal("en-US", resolver.Negotiate("not a locale"));
+        Assert.Null(resolver.Negotiate(null));
+
+        // pt-BR 有模板但没启用：协商后的区域与 context.Localize 一致，都是默认区域
+        var portuguese = TestInvocationContext.Create(baggage: new Dictionary<string, string> { [BaggageKeys.Locale] = "pt-BR" });
+        Assert.True(resolver.TryResolve("orders.order.not_found", resolver.Negotiate("pt-BR"), MessageArguments.Of(("id", 7)), out var text));
+        Assert.Equal(localizer.Localize("orders.order.not_found", portuguese, MessageArguments.Of(("id", 7))), text);
+        Assert.Equal("Order '7' was not found.", text);
+    }
+
+    /// <summary>
     /// 用给定目录与选项创建本地化器。
     /// </summary>
     private IMessageLocalizer Localizer(LocalizationOptions? options, params MessageCatalog[] catalogs) => CreateLocalizer(catalogs, options ?? new LocalizationOptions());

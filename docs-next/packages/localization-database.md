@@ -80,7 +80,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 | --- | --- |
 | `DatabaseLocalizationFeature` | 特性入口（`IHostedFeature`）；常量 `HealthName` = `localization.database.translations` |
 | `DatabaseLocalizationOptions` | `RefreshInterval`（缺省 5 分钟，`null` 不周期刷新）、`MaxTranslations`；`FromConfiguration` |
-| `DatabaseMessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；`TranslationCount` 是当前快照的条数 |
+| `DatabaseMessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`（`Negotiate` 按启用列表协商调用方区域，内核据此安装调用链的消息作用域）；`TranslationCount` 是当前快照的条数 |
 | `Translations.MessageTranslation` | 实体：`Id`（`Guid`）、`Key`（最长 256）、`Locale`（最长 35，即 `LocaleName.MaxLength`）、`Template`（长文本）、`ModifiedAt` |
 | `Translations.MessageTranslationEntry` | 要写入的一条：键、区域、模板；构造时校验 |
 | `Translations.MessageTranslationKey` | 自然键：键与区域 |

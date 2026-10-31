@@ -88,7 +88,7 @@ public sealed class InMemoryCacheStoreConformanceTests : CacheStoreConformance
 
 ## Localization
 
-包 ID `XiHan.Framework.Localization.Conformance`（RFC-0010，Preview）。基类 `MessageLocalizerConformance`，实现 `CreateLocalizer(catalogs, options)` 返回被测 `IMessageLocalizer`，实现同时必须是 `IMessageResolver`。用例覆盖回退链（精确区域 → 同语言的启用区域 → 默认区域 → 源语言）、按命中区域的文化格式化、缺模板或缺参数时退回描述、错误按键与细节翻译、按调用上下文的 Baggage 区域、先注册的目录优先。`Localization.InMemory` 与 `Localization.Database` 通过本套件。
+包 ID `XiHan.Framework.Localization.Conformance`（RFC-0010，Preview）。基类 `MessageLocalizerConformance`，实现 `CreateLocalizer(catalogs, options)` 返回被测 `IMessageLocalizer`，实现同时必须是 `IMessageResolver`。用例覆盖回退链（精确区域 → 同语言的启用区域 → 默认区域 → 源语言）、按命中区域的文化格式化、缺模板或缺参数时退回描述、错误按键与细节翻译、按调用上下文的 Baggage 区域、先注册的目录优先、解析器按启用列表协商调用方区域（与按上下文翻译同一区域）。`Localization.InMemory` 与 `Localization.Database` 通过本套件。
 
 ## Messaging
 

@@ -61,4 +61,55 @@ public sealed class InMemoryLocalizationFeatureTests
         Assert.Equal("Pedido '5' não encontrado.", viaContext);
         Assert.Equal("清单为空。", KernelMessages.ManifestEmpty.L());
     }
+
+    [Fact]
+    public async Task InvocationScope_UsesTheNegotiatedLocale_SameAsContextLocalizeAndProblemDetails()
+    {
+        // 启用列表只有 en-US 与 zh-CN；ja-JP 有语言文件但没启用
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryLocalizationFeature>(),
+            [new("XiHan:Localization:Locales", "en-US,zh-CN"), new("XiHan:Localization:DefaultLocale", "zh-CN")]);
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        var resolver = host.Services.GetRequiredService<IMessageResolver>();
+        var failure = Error.Unavailable(KernelErrors.NotServing, KernelMessages.NotServing, MessageArguments.Of(("state", "Stopped")));
+
+        Assert.Equal("zh-CN", resolver.Negotiate("ja-JP"));
+        Assert.Equal("zh-CN", resolver.Negotiate("zh-HK"));
+        Assert.Equal("en-US", resolver.Negotiate("en-GB"));
+        Assert.Null(resolver.Negotiate(null));
+
+        async Task<(string? Locale, string? Inside, string? ViaContext, string? Problem)> InvokeAsync(string locale)
+        {
+            (string? Locale, string? Inside, string? ViaContext, string? Problem) seen = default;
+            var outcome = await host.InvokeAsync(
+                context =>
+                {
+                    // key.L() 走调用链作用域；context.Localize 与 Problem Details 走本地化选项对上下文的协商
+                    seen = (
+                        MessageScope.Current?.Locale,
+                        KernelMessages.NotServing.L(("state", "Stopped")),
+                        context.Localize(failure),
+                        localizer.Resolve(failure, localizer.Options.Resolve(context)).ValueOrThrow().Text);
+                    return ValueTask.CompletedTask;
+                },
+                baggage: new Dictionary<string, string> { [BaggageKeys.Locale] = locale });
+            Assert.True(outcome.IsSuccess);
+            return seen;
+        }
+
+        var japanese = await InvokeAsync("ja-JP");
+        Assert.Equal("zh-CN", japanese.Locale);
+        Assert.Equal("应用处于 Stopped 状态，暂不接收请求。", japanese.Inside);
+        Assert.Equal(japanese.Inside, japanese.ViaContext);
+        Assert.Equal(japanese.Inside, japanese.Problem);
+
+        var british = await InvokeAsync("en-GB");
+        Assert.Equal("en-US", british.Locale);
+        Assert.Equal("The application is in state Stopped and is not accepting requests.", british.Inside);
+        Assert.Equal(british.Inside, british.ViaContext);
+        Assert.Equal(british.Inside, british.Problem);
+
+        // 显式区域的入口不经协商：ja-JP 有语言文件就用它
+        Assert.NotEqual(japanese.Inside, localizer.Localize(KernelMessages.NotServing, "ja-JP", MessageArguments.Of(("state", "Stopped"))));
+    }
 }
