@@ -12,8 +12,11 @@ namespace XiHan.Framework.Persistence.Abstractions.Queries;
 public static class EntityQuery
 {
     /// <summary>
-    /// 默认页大小上限。
+    /// 页大小上限，也是缺省页大小。
     /// </summary>
+    /// <remarks>
+    /// <see cref="EntityQuery{T}.Take"/> 超过它在构造查询时抛出 <see cref="ArgumentOutOfRangeException"/>，不静默截断。
+    /// </remarks>
     public const int DefaultMaxTake = 1_000;
 
     /// <summary>

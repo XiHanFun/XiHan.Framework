@@ -271,6 +271,9 @@ public sealed class MessageContractTests
         Assert.Equal(7, outbox.BatchSize);
         Assert.Equal(TimeSpan.FromSeconds(1), OutboxOptions.FromConfiguration(Build()).PollInterval);
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:BatchSize", "lots"))));
+        // 每轮按批大小分页查发件箱表，超过查询的取出上限在解析配置时就拒绝
+        Assert.Equal(1000, OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:BatchSize", "1000"))).BatchSize);
+        Assert.Throws<ArgumentOutOfRangeException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:BatchSize", "1001"))));
 
         var retry = OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:MaxAttempts", "4"), ("XiHan:Messaging:Outbox:RetryDelaySeconds", "2.5"), ("XiHan:Messaging:Outbox:MaxRetryDelaySeconds", "60"), ("XiHan:Messaging:Outbox:DispatchedRetentionSeconds", "0")));
         Assert.Equal(4, retry.MaxAttempts);

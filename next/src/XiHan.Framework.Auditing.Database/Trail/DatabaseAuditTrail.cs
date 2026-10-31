@@ -176,12 +176,24 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
             return Error.Validation(AuditingErrors.QueryInvalid, AuditingMessages.QueryInvalid, MessageArguments.Of(("reason", "continuation token is not recognized")));
         }
 
-        // 多取一条判断是否有下一页；续页令牌是本页最后一条的序号
-        var entityQuery = Filter(query, after).OrderBy(static r => r.Sequence).Page(0, query.PageSize + 1);
+        // 多取一条判断是否有下一页；续页令牌是本页最后一条的序号。页大小已到查询的取出上限时多不出这一条，
+        // 改为满页之后再从最后一条之后取一条看还有没有
+        var probe = query.PageSize < EntityQuery.DefaultMaxTake;
+        var entityQuery = Filter(query, after).OrderBy(static r => r.Sequence).Page(0, probe ? query.PageSize + 1 : query.PageSize);
         IReadOnlyList<AuditRecord> rows;
         try
         {
-            rows = await _store.RunAsync(readOnly: true, (repository, ct) => repository.ListAsync(entityQuery, ct), cancellationToken).ConfigureAwait(false);
+            rows = await _store.RunAsync(readOnly: true, async (repository, ct) =>
+            {
+                var page = await repository.ListAsync(entityQuery, ct).ConfigureAwait(false);
+                if (probe || page.Count < query.PageSize)
+                {
+                    return page;
+                }
+
+                var next = await repository.ListAsync(Filter(query, page[^1].Sequence).OrderBy(static r => r.Sequence).Page(0, 1), ct).ConfigureAwait(false);
+                return next.Count == 0 ? page : [.. page, next[0]];
+            }, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

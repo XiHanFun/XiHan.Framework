@@ -79,13 +79,14 @@ public void Configure(FeatureContext context)
 | `EntityQuery.All<T>()` | — | 无条件、缺省分页，按类型缓存同一实例 |
 | `Where(spec)` | 不过滤 | 过滤规约；多次调用按 And 组合 |
 | `OrderBy(key, descending)` | 不排序 | 追加一级排序，多次调用按声明顺序叠加 |
-| `Page(skip, take)` | `Skip` 0、`Take` 1000 | `skip` 小于 0 或 `take` 小于 1 抛出 `ArgumentOutOfRangeException`；缺省 `Take` 是常量 `EntityQuery.DefaultMaxTake` |
+| `Page(skip, take)` | `Skip` 0、`Take` 1000 | `skip` 小于 0、`take` 不在 1 到 `EntityQuery.DefaultMaxTake`（1000）之间抛出 `ArgumentOutOfRangeException`，不截断；缺省 `Take` 就是这个上限，要更多行就分页 |
 | `IncludeDeleted` | `false` | 为 `true` 时包含已软删除的实体 |
 | `Within(from, to)` | 不限定 | 时间范围提示，两端都含；只影响按时间分表的 Provider 扫描哪些表，不过滤行 |
 
-下面的操作按金额过滤、按创建时间倒序分页，并返回总数。`OrderResponse` 来自 SimpleApp；新的请求与响应类型要登记进应用的 `JsonSerializerContext`（SimpleApp 的 `SampleJsonContext`），否则 `Kernel.Generators` 报 `XHG002`。
+下面的操作按金额过滤、按创建时间倒序分页，并返回总数。分页参数来自请求时用 `[Range]` 约束，超出范围由 Validate 阶段返回字段级错误，不会走到构造查询时的 `ArgumentOutOfRangeException`（那会成为 `KERNEL_UNEXPECTED_001`）。`OrderResponse` 来自 SimpleApp；新的请求与响应类型要登记进应用的 `JsonSerializerContext`（SimpleApp 的 `SampleJsonContext`），否则 `Kernel.Generators` 报 `XHG002`。
 
 ```csharp
+using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Persistence.Abstractions.Queries;
@@ -94,7 +95,7 @@ using XiHan.Framework.Primitives;
 
 namespace SimpleApp.Orders;
 
-public sealed record SearchOrdersRequest(int MinAmount, int Skip, int Take);
+public sealed record SearchOrdersRequest(int MinAmount, [Range(0, int.MaxValue)] int Skip, [Range(1, EntityQuery.DefaultMaxTake)] int Take);
 
 public sealed record OrderPage(IReadOnlyList<OrderResponse> Items, long Total);
 

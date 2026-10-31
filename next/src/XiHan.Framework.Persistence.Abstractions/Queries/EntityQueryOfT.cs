@@ -43,12 +43,12 @@ public sealed record EntityQuery<T>
     /// 取出条数上限。
     /// </summary>
     /// <remarks>
-    /// Provider 不得返回超过此数的结果。
+    /// 1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限。超出范围在构造查询时抛出 <see cref="ArgumentOutOfRangeException"/>，不静默截断：要更多行就分页。Provider 不得返回超过此数的结果。
     /// </remarks>
     public int Take
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "'Take' must be positive.");
+        init => field = value is >= 1 and <= EntityQuery.DefaultMaxTake ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"'Take' must be between 1 and {EntityQuery.DefaultMaxTake}; page through larger results.");
     } = EntityQuery.DefaultMaxTake;
 
     /// <summary>
@@ -86,6 +86,9 @@ public sealed record EntityQuery<T>
     /// <summary>
     /// 派生分页的查询。
     /// </summary>
+    /// <remarks>
+    /// <paramref name="skip"/> 为负、<paramref name="take"/> 不在 1 到 <see cref="EntityQuery.DefaultMaxTake"/> 之间抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// </remarks>
     public EntityQuery<T> Page(int skip, int take) => this with { Skip = skip, Take = take };
 
     /// <summary>

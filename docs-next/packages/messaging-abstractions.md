@@ -57,7 +57,7 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次），超过进死信 |
 | `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀 |
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
-| `XiHan:Messaging:Outbox:BatchSize` | 正整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数 |
+| `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
 | `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
 | `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
 | `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |

@@ -446,6 +446,28 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 11d：一次查询最多取 <see cref="EntityQuery.DefaultMaxTake"/> 条。
+    /// </summary>
+    /// <remarks>
+    /// 比上限多一条数据：缺省查询与取满上限的查询都只返回上限条，计数仍是全部，第二页取到剩下的一条；超过上限的取出条数在构造查询时就被拒绝，不交给 Provider 截断。
+    /// </remarks>
+    [Fact]
+    public async Task List_ReturnsAtMostTheMaximumTake_AndLargerTakesAreRejected()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceItem, int>(context).AddRangeAsync(
+            [.. Enumerable.Range(1, EntityQuery.DefaultMaxTake + 1).Select(static id => new ConformanceItem { Id = id, Label = "item" })],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+
+        var ordered = EntityQuery.All<ConformanceItem>().OrderBy(static i => i.Id);
+        Assert.Equal(EntityQuery.DefaultMaxTake, (await ListAsync<ConformanceItem, int>(host, ordered).ConfigureAwait(false)).Count);
+        Assert.Equal(EntityQuery.DefaultMaxTake, (await ListAsync<ConformanceItem, int>(host, ordered.Page(0, EntityQuery.DefaultMaxTake)).ConfigureAwait(false)).Count);
+        Assert.Equal([EntityQuery.DefaultMaxTake + 1], (await ListAsync<ConformanceItem, int>(host, ordered.Page(EntityQuery.DefaultMaxTake, EntityQuery.DefaultMaxTake)).ConfigureAwait(false)).Select(static i => i.Id));
+        Assert.Equal(EntityQuery.DefaultMaxTake + 1, await CountAsync<ConformanceItem, int>(host, ordered).ConfigureAwait(false));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ordered.Page(0, EntityQuery.DefaultMaxTake + 1));
+    }
+
+    /// <summary>
     /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
     /// </summary>
     [Fact]

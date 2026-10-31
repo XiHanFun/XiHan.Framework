@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
@@ -37,12 +38,12 @@ public sealed record OutboxOptions
     /// 每轮最多投递条数。
     /// </summary>
     /// <remarks>
-    /// 默认 100。也是每轮最多清理的已投递行数。
+    /// 默认 100，1 到 <see cref="EntityQuery.DefaultMaxTake"/>：每轮按它分页查发件箱表，查询的取出条数不能超过这个上限。也是每轮最多清理的已投递行数。
     /// </remarks>
     public int BatchSize
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The batch size must be positive.");
+        init => field = value is >= 1 and <= EntityQuery.DefaultMaxTake ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"The batch size must be between 1 and {EntityQuery.DefaultMaxTake}.");
     } = 100;
 
     /// <summary>

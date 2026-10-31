@@ -203,6 +203,32 @@ public sealed class DatabaseAuditingTests
     }
 
     [Fact]
+    public async Task Query_AtTheMaximumPageSize_StillDetectsTheNextPage()
+    {
+        // 页大小等于查询的取出上限时多取不出一条，改为满页后再取一条：恰好满页没有续页令牌，多一条才有
+        await using var host = await StartAsync(new FakeTimeProvider(_start));
+        var trail = host.Services.GetRequiredService<DatabaseAuditTrail>();
+        for (var index = 0; index < AuditQuery.MaxPageSize; index++)
+        {
+            await trail.WriteAsync(Event("a" + index), CancellationToken.None);
+        }
+
+        await trail.FlushAsync(CancellationToken.None);
+        var full = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(AuditQuery.MaxPageSize, full.Events.Count);
+        Assert.Null(full.ContinuationToken);
+
+        await trail.WriteAsync(Event("extra"), CancellationToken.None);
+        await trail.FlushAsync(CancellationToken.None);
+        var first = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(AuditQuery.MaxPageSize, first.Events.Count);
+        Assert.NotNull(first.ContinuationToken);
+        var second = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize, ContinuationToken = first.ContinuationToken }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal("extra", Assert.Single(second.Events).Action);
+        Assert.Null(second.ContinuationToken);
+    }
+
+    [Fact]
     public async Task Query_RejectsUnrecognizedTokens_AndInvalidPages()
     {
         await using var host = await StartAsync(new FakeTimeProvider(_start));
