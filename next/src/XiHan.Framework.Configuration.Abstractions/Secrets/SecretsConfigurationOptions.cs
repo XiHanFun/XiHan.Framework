@@ -81,12 +81,15 @@ public sealed record SecretsConfigurationOptions
     /// 首次读取缺失或失败的项是否跳过。
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="false"/>：抛出让启动失败。
+    /// 默认 <see langword="false"/>：抛出让启动失败。为 <see langword="true"/> 时跳过失败的项，整体失败（超时、密钥库抛出、条数与请求不一致）时该源为空，<see cref="RefreshInterval"/> 非空时照常重读。
     /// </remarks>
     public bool Optional { get; init; }
 
     /// <summary>
     /// 读取失败时的回调（每个失败的项一次）。
     /// </summary>
+    /// <remarks>
+    /// 整体失败（超时、密钥库抛出、条数与请求不一致）回调一次 <c>CONFIGURATION_UNAVAILABLE_002</c>。回调自己抛出的异常被丢弃：不改变首次读取按 <see cref="Optional"/> 得出的结果，也不终止重读。
+    /// </remarks>
     public Action<Error>? OnError { get; init; }
 }

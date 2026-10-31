@@ -11,7 +11,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Tests;
 /// 进程内的密钥库。
 /// </summary>
 /// <remarks>
-/// 每次写入换版本；可让某个名字返回拒绝，或整体抛出。
+/// 每次写入换版本；可让某个名字返回拒绝、整体抛出、挂起到取消，或少返回一项。
 /// </remarks>
 internal sealed class InMemorySecretStore : ISecretStore
 {
@@ -46,6 +46,16 @@ internal sealed class InMemorySecretStore : ISecretStore
     public bool Throw { get; set; }
 
     /// <summary>
+    /// 为真时每次读取都挂起，直到被取消。
+    /// </summary>
+    public bool Hang { get; set; }
+
+    /// <summary>
+    /// 为真时每次读取都少返回最后一项（条数与请求不一致）。
+    /// </summary>
+    public bool Short { get; set; }
+
+    /// <summary>
     /// 写入。
     /// </summary>
     public void Put(SecretName name, string value)
@@ -68,6 +78,11 @@ internal sealed class InMemorySecretStore : ISecretStore
                 throw new InvalidOperationException("The secret store is broken.");
             }
 
+            if (Hang)
+            {
+                return new ValueTask<IReadOnlyList<SecretLookup>>(HangAsync(cancellationToken));
+            }
+
             var lookups = new List<SecretLookup>(names.Count);
             foreach (var name in names)
             {
@@ -79,7 +94,21 @@ internal sealed class InMemorySecretStore : ISecretStore
                 lookups.Add(new SecretLookup(name, result));
             }
 
+            if (Short && lookups.Count > 0)
+            {
+                lookups.RemoveAt(lookups.Count - 1);
+            }
+
             return ValueTask.FromResult<IReadOnlyList<SecretLookup>>(lookups);
         }
+    }
+
+    /// <summary>
+    /// 挂起到取消。
+    /// </summary>
+    private static async Task<IReadOnlyList<SecretLookup>> HangAsync(CancellationToken cancellationToken)
+    {
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+        return [];
     }
 }

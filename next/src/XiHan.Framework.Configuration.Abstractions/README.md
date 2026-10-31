@@ -16,7 +16,7 @@ builder.Configuration
     }));
 ```
 
-命名空间不存在 → `CONFIGURATION_NOTFOUND_001`；密钥不存在 → `CONFIGURATION_NOTFOUND_002`；不可达 → `CONFIGURATION_UNAVAILABLE_001` / `_002`；无权限 → `CONFIGURATION_DENIED_001`。首次加载失败且 `Optional` 为假时抛出 `FrameworkException` 让启动失败。
+命名空间不存在 → `CONFIGURATION_NOTFOUND_001`；密钥不存在 → `CONFIGURATION_NOTFOUND_002`；不可达 → `CONFIGURATION_UNAVAILABLE_001` / `_002`；无权限 → `CONFIGURATION_DENIED_001`。首次加载的失败（返回失败、超时、客户端或密钥库抛出异常、密钥库返回的条数与请求不一致）都先回调 `OnError`，`Optional` 为假时随后抛出 `FrameworkException` 让启动失败（抛出的异常作为内部异常），为真时为空并照常轮询或重读；重读时条数不一致同样回调并保留旧值。`OnError` 自己抛出的异常被丢弃，不改变加载结果、不终止轮询或重读（ADR-0068）。
 
 ## 依赖方向
 

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Time.Testing;
@@ -10,7 +11,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 密钥配置源：映射、缺失语义、重读、名字校验。
+/// 密钥配置源：映射、缺失语义、整体失败、重读、回调异常、名字校验。
 /// </summary>
 public sealed class SecretsConfigurationSourceTests
 {
@@ -91,8 +92,96 @@ public sealed class SecretsConfigurationSourceTests
         Assert.Equal("v", optional["A"]);
         Assert.Null(optional["B"]);
 
+        // 密钥库整体抛出与返回失败一样处理：先回调，再以不可达抛出，原异常作为内部异常
         store.Throw = true;
-        Assert.Throws<InvalidOperationException>(() => new ConfigurationBuilder().AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings)).Build());
+        errors.Clear();
+        var broken = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings) { OnError = errors.Add }).Build());
+        Assert.Equal(ConfigurationErrors.SecretsUnavailable, broken.Code);
+        Assert.IsType<InvalidOperationException>(broken.InnerException);
+        Assert.Equal("The secret store is broken.", Assert.Single(errors).Details?["reason"]);
+    }
+
+    [Fact]
+    public async Task Load_OptionalTimeout_StillStartsRefreshing()
+    {
+        var store = new InMemorySecretStore { Hang = true };
+        store.Put("orders/db", "pw1");
+        var errors = new ConcurrentQueue<Error>();
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
+        // 首次读取挂起到超时：可选时该源为空并回调一次
+        var root = new ConfigurationBuilder()
+            .AddXiHanSecrets(store, new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["ConnectionStrings:Orders"] = "orders/db" })
+            {
+                LoadTimeout = TimeSpan.FromMilliseconds(50),
+                RefreshInterval = interval,
+                Clock = clock,
+                Optional = true,
+                OnError = errors.Enqueue,
+            })
+            .Build();
+        using var disposable = root as IDisposable;
+        Assert.Null(root["ConnectionStrings:Orders"]);
+        var timedOut = Assert.Single(errors);
+        Assert.Equal(ConfigurationErrors.SecretsUnavailable, timedOut.Code);
+        Assert.Equal("load timeout", timedOut.Details?["reason"]);
+
+        // 仍按 RefreshInterval 重读：密钥库恢复后第一次重读装入并触发重载
+        var reloaded = new TaskCompletionSource();
+        ChangeToken.OnChange(root.GetReloadToken, () => reloaded.TrySetResult());
+        store.Hang = false;
+        await RefreshAsync(clock, interval, store);
+        await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("pw1", root["ConnectionStrings:Orders"]);
+    }
+
+    [Fact]
+    public async Task Miscount_IsAFailure_OnLoadAndRefresh_AndOnErrorThrowingDoesNotStopRefreshing()
+    {
+        var store = new InMemorySecretStore { Short = true };
+        store.Put("a", "1");
+        store.Put("b", "2");
+        var mappings = new Dictionary<string, SecretName> { ["A"] = "a", ["B"] = "b" };
+
+        // 首次读取条数不符：回调一次不可达，再按 Optional 抛出或为空
+        var errors = new ConcurrentQueue<Error>();
+        var thrown = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings) { OnError = errors.Enqueue }).Build());
+        Assert.Equal(ConfigurationErrors.SecretsUnavailable, thrown.Code);
+        Assert.Equal("the secret store returned 1 results for 2 names", Assert.Single(errors).Details?["reason"]);
+        errors.Clear();
+        var optional = new ConfigurationBuilder().AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings) { Optional = true, OnError = errors.Enqueue }).Build();
+        Assert.Null(optional["A"]);
+        Assert.Equal(ConfigurationErrors.SecretsUnavailable, Assert.Single(errors).Code);
+
+        // 重读时条数不符：回调并保留全部旧值；回调自己抛出也不终止重读
+        store.Short = false;
+        var reports = new ConcurrentQueue<Error>();
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
+        var root = new ConfigurationBuilder()
+            .AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings)
+            {
+                RefreshInterval = interval,
+                Clock = clock,
+                OnError = error =>
+                {
+                    reports.Enqueue(error);
+                    throw new InvalidOperationException("The error sink is broken.");
+                },
+            })
+            .Build();
+        using var disposable = root as IDisposable;
+        store.Short = true;
+        store.Put("a", "changed");
+        await RefreshAsync(clock, interval, store);
+        await WaitUntilAsync(() => !reports.IsEmpty);
+        Assert.Equal(ConfigurationErrors.SecretsUnavailable, Assert.Single(reports).Code);
+        Assert.Equal(("1", "2"), (root["A"], root["B"]));
+
+        store.Short = false;
+        await RefreshAsync(clock, interval, store);
+        await WaitUntilAsync(() => root["A"] == "changed");
+        Assert.Single(reports);
     }
 
     [Fact]

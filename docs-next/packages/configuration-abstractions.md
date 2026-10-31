@@ -53,9 +53,10 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Namespace` | `string` | 构造参数，不能为空白 | 远程命名空间 |
 | `Prefix` | `string?` | `null` | 把文档挂到的配置节，为空时挂在根 |
 | `PollInterval` | `TimeSpan?` | 30 秒 | 轮询周期，`null` 关闭，必须为正 |
+| `Clock` | `TimeProvider` | 系统时钟 | 轮询计时用的时钟，不能为空；测试换成可推进的时钟 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次加载的超时，必须为正 |
-| `Optional` | `bool` | `false` | 首次加载失败时继续（该源为空）还是抛出 |
-| `OnError` | `Action<Error>?` | `null` | 加载或轮询失败的回调，配置在日志之前构建，这是唯一的报告渠道 |
+| `Optional` | `bool` | `false` | 首次加载失败时继续（该源为空，照常轮询）还是抛出 |
+| `OnError` | `Action<Error>?` | `null` | 加载或轮询失败的回调，配置在日志之前构建，这是唯一的报告渠道；回调抛出的异常被丢弃 |
 
 `SecretsConfigurationOptions`：
 
@@ -64,8 +65,9 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数，至少一项 | 配置键 → 密钥名 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
 | `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
-| `Optional` | `bool` | `false` | 首次读取缺失或失败的项跳过还是抛出 |
-| `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次 |
+| `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟，不能为空；测试换成可推进的时钟 |
+| `Optional` | `bool` | `false` | 首次读取缺失或失败的项跳过还是抛出；整体失败时该源为空，照常重读 |
+| `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次，整体失败回调一次；回调抛出的异常被丢弃 |
 
 ## 主要类型
 
@@ -149,9 +151,10 @@ if (secret.TryGetValue(out var value))
 
 ## 行为与限制
 
-- 首次加载走同步的 `IConfigurationProvider.Load`：取值在线程池上执行并等待 `LoadTimeout`。超时归为 `CONFIGURATION_UNAVAILABLE_001`（远程配置）或 `CONFIGURATION_UNAVAILABLE_002`（密钥）。
-- 远程配置首次加载失败且 `Optional = false` 时抛出 `FrameworkException`，错误码是失败结果的码。轮询中客户端返回失败或抛出异常，都只回调 `OnError`，保留最后一份成功的数据；拿到的文档版本与当前相同时不触发重载。
-- 密钥首次读取中任一项失败且 `Optional = false` 时抛出 `FrameworkException`，消息里列出失败的配置键；重读时失败的项保留旧值。密钥库返回的结果条数与请求不一致时首次加载抛出 `CONFIGURATION_UNAVAILABLE_002`。
+- 首次加载走同步的 `IConfigurationProvider.Load`：取值在线程池上执行并等待 `LoadTimeout`。超时与客户端 / 密钥库抛出的异常都归为 `CONFIGURATION_UNAVAILABLE_001`（远程配置）或 `CONFIGURATION_UNAVAILABLE_002`（密钥），原因分别是 `load timeout` 与异常消息。
+- 远程配置首次加载失败时先回调 `OnError`；`Optional = false` 时随后抛出 `FrameworkException`，错误码是失败结果的码，客户端抛出的异常是它的内部异常；`Optional = true` 时该源为空，照常按 `PollInterval` 轮询，第一次成功即装入。轮询中客户端返回失败或抛出异常，都只回调 `OnError`，保留最后一份成功的数据；拿到的文档版本与当前相同时不触发重载。
+- 密钥首次读取中任一项失败且 `Optional = false` 时抛出 `FrameworkException`，消息里列出失败的配置键。整体失败（超时、密钥库抛出、返回的条数与请求不一致）回调一次 `CONFIGURATION_UNAVAILABLE_002`，`Optional = false` 时随后抛出，为 `true` 时该源为空。不论首次成败，`RefreshInterval` 非空时都重读：失败的项保留旧值，整体失败保留全部旧值并回调。
+- `OnError` 自己抛出的异常被丢弃：不改变首次加载按 `Optional` 得出的结果，也不终止轮询或重读。
 - 遮蔽只作用于 `SecretValue`：映射进 `IConfiguration` 的值是原始字符串。
 - 配置源随配置根释放：释放时停止轮询与重读。
 

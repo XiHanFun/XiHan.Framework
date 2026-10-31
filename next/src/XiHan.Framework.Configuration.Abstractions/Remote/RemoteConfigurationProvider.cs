@@ -10,7 +10,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// 远程配置的 Provider。
 /// </summary>
 /// <remarks>
-/// 首次同步加载，之后按周期带已知版本轮询；拿到新版本就整体替换并触发重载，失败保留最后一份成功的数据。
+/// 首次同步加载，之后按周期带已知版本轮询；拿到新版本就整体替换并触发重载，失败保留最后一份成功的数据。首次加载与轮询的失败（返回失败、超时、客户端抛出）一样回调 <see cref="RemoteConfigurationOptions.OnError"/>，首次失败再按 <see cref="RemoteConfigurationOptions.Optional"/> 抛出或为空，不论成败都开始轮询。
 /// </remarks>
 internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvider
 {
@@ -59,21 +59,29 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
         // IConfigurationProvider.Load 是同步契约：在线程池上执行异步取值并等待，受 LoadTimeout 约束
         using var timeout = new CancellationTokenSource(_options.LoadTimeout);
         Result<Maybe<ConfigurationDocument>> fetched;
+        Exception? thrown = null;
         try
         {
             fetched = Task.Run(() => _client.FetchAsync(_options.Namespace, null, timeout.Token).AsTask(), CancellationToken.None).GetAwaiter().GetResult();
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested)
         {
-            fetched = Error.Unavailable(ConfigurationErrors.RemoteUnavailable, ConfigurationMessages.RemoteUnavailable, MessageArguments.Of(("namespace", _options.Namespace), ("reason", "load timeout")));
+            fetched = Unavailable("load timeout");
+        }
+        catch (Exception exception)
+        {
+            // 客户端按契约应返回失败结果；抛出的异常与返回失败一样走 OnError 与 Optional，而不是绕过它们直接让构建失败
+            thrown = exception;
+            fetched = Unavailable(exception.Message);
         }
 
         if (!fetched.TryGetValue(out var maybe))
         {
-            _options.OnError?.Invoke(fetched.Error!);
+            var error = fetched.Error!;
+            Report(error);
             if (!_options.Optional)
             {
-                throw new FrameworkException(fetched.Error!.Code, $"Remote configuration namespace '{_options.Namespace}' could not be loaded ({fetched.Error.Code}).");
+                throw new FrameworkException(error.Code, $"Remote configuration namespace '{_options.Namespace}' could not be loaded ({error.Code}).", thrown);
             }
         }
         else if (maybe.TryGetValue(out var document))
@@ -81,6 +89,7 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
             Apply(document, notify: false);
         }
 
+        // 可选的首次失败之后照常轮询：已知版本为空，第一次成功的轮询装入整份文档
         if (_options.PollInterval is { } interval && _loop is null)
         {
             _timer = new PeriodicTimer(interval, _options.Clock);
@@ -124,10 +133,34 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
     }
 
     /// <summary>
+    /// 不可达的失败，原因写进参数。
+    /// </summary>
+    private Error Unavailable(string reason)
+        => Error.Unavailable(ConfigurationErrors.RemoteUnavailable, ConfigurationMessages.RemoteUnavailable, MessageArguments.Of(("namespace", _options.Namespace), ("reason", reason)));
+
+    /// <summary>
+    /// 回调 <see cref="RemoteConfigurationOptions.OnError"/>。
+    /// </summary>
+    /// <remarks>
+    /// 回调是唯一的报告渠道，它自己抛出的异常没有更上一层可报告，丢弃：不改变首次加载的结果，也不终止轮询。
+    /// </remarks>
+    private void Report(Error error)
+    {
+        try
+        {
+            _options.OnError?.Invoke(error);
+        }
+        catch (Exception)
+        {
+            // 丢弃：见 remarks
+        }
+    }
+
+    /// <summary>
     /// 轮询。
     /// </summary>
     /// <remarks>
-    /// 带已知版本取值，拿到新文档就替换并触发重载；失败只回调，不丢弃已有数据。
+    /// 带已知版本取值，拿到新文档就替换并触发重载；失败只回调，不丢弃已有数据。停止之后的任何异常都不再报告。
     /// </remarks>
     private async Task PollAsync(PeriodicTimer timer, CancellationToken cancellationToken)
     {
@@ -140,19 +173,24 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
                 {
                     fetched = await _client.FetchAsync(_options.Namespace, _version, cancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch (Exception) when (cancellationToken.IsCancellationRequested)
                 {
                     return;
                 }
                 catch (Exception exception)
                 {
                     // 客户端按契约应返回失败结果；抛出的异常同样只报告，保留最后一份成功的数据
-                    fetched = Error.Unavailable(ConfigurationErrors.RemoteUnavailable, ConfigurationMessages.RemoteUnavailable, MessageArguments.Of(("namespace", _options.Namespace), ("reason", exception.Message)));
+                    fetched = Unavailable(exception.Message);
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
                 }
 
                 if (!fetched.TryGetValue(out var maybe))
                 {
-                    _options.OnError?.Invoke(fetched.Error!);
+                    Report(fetched.Error!);
                 }
                 else if (maybe.TryGetValue(out var document) && document.Version != _version)
                 {
@@ -160,9 +198,9 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
                 }
             }
         }
-        catch (OperationCanceledException)
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
         {
-            // 停止
+            // 停止：等待被取消，或释放与最后一次写回交错
         }
     }
 }

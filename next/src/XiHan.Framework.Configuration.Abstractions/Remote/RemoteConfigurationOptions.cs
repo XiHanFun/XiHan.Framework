@@ -70,12 +70,15 @@ public sealed record RemoteConfigurationOptions
     /// 首次加载失败时是否继续（为空）。
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="false"/>：抛出让启动失败。
+    /// 默认 <see langword="false"/>：抛出让启动失败。失败包括客户端返回失败、超时与客户端抛出异常。为 <see langword="true"/> 时该源为空，<see cref="PollInterval"/> 非空时照常轮询，第一次成功即装入。
     /// </remarks>
     public bool Optional { get; init; }
 
     /// <summary>
     /// 加载或轮询失败时的回调（配置在日志之前构建，这里是唯一的报告渠道）。
     /// </summary>
+    /// <remarks>
+    /// 回调自己抛出的异常被丢弃：不改变首次加载按 <see cref="Optional"/> 得出的结果，也不终止轮询。
+    /// </remarks>
     public Action<Error>? OnError { get; init; }
 }

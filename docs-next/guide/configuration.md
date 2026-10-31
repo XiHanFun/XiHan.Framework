@@ -172,11 +172,11 @@ public sealed record LedgerConnection(string ConnectionString);
 `configuration.remote@1` 的契约是 `IRemoteConfigurationClient.FetchAsync(namespace, knownVersion)`：按命名空间取整份带版本的文档 `ConfigurationDocument`，键已经展平成 `A:B:C` 形式；`knownVersion` 非空且远端没有变化时返回无值，实现可以长轮询。`AddXiHanRemoteConfiguration(client, options)` 把客户端接进配置：
 
 1. 构建配置时同步加载一次。`IConfigurationProvider.Load` 是同步契约，取值在线程池上执行并等待，受 `LoadTimeout`（缺省 10 秒）约束。
-2. 首次加载失败时先回调 `OnError`；`Optional` 为 `false`（缺省）时随后抛出带错误码的 `FrameworkException`，启动失败，为 `true` 时该源为空。
-3. 之后按 `PollInterval`（缺省 30 秒，`null` 关闭轮询）带已知版本轮询。拿到新版本就整体替换这个源的数据并触发重载令牌，`IOptionsMonitor<T>` 随之更新。
+2. 首次加载失败——客户端返回失败结果、超过 `LoadTimeout`（`CONFIGURATION_UNAVAILABLE_001`，原因 `load timeout`）或客户端抛出异常（同一个码，原因是异常消息）——时先回调 `OnError`；`Optional` 为 `false`（缺省）时随后抛出带错误码的 `FrameworkException`（客户端抛出的异常是它的内部异常），启动失败，为 `true` 时该源为空。
+3. 不论首次加载成败，之后都按 `PollInterval`（缺省 30 秒，`null` 关闭轮询）带已知版本轮询；首次失败时已知版本为空，第一次成功的轮询装入整份文档。拿到新版本就整体替换这个源的数据并触发重载令牌，`IOptionsMonitor<T>` 随之更新。
 4. 轮询失败（返回失败结果或抛出异常）只回调 `OnError`，保留最后一份成功的数据。
 
-`Prefix` 把文档挂到某个配置节下，为空时挂在根。`OnError` 是唯一的报告渠道，因为配置在日志之前构建。
+`Prefix` 把文档挂到某个配置节下，为空时挂在根。`OnError` 是唯一的报告渠道，因为配置在日志之前构建；回调自己抛出的异常被丢弃，不改变首次加载的结果，也不终止轮询。
 
 | 选项 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
@@ -185,8 +185,8 @@ public sealed record LedgerConnection(string ConnectionString);
 | `PollInterval` | `TimeSpan?` | 30 秒 | 轮询周期，`null` 关闭，必须为正 |
 | `Clock` | `TimeProvider` | 系统时钟 | 轮询计时用的时钟；测试换成可推进的时钟（如 `FakeTimeProvider`），轮询由用例触发 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次加载的超时，必须为正 |
-| `Optional` | `bool` | `false` | 首次加载失败时是否继续启动 |
-| `OnError` | `Action<Error>?` | `null` | 加载或轮询失败时的回调 |
+| `Optional` | `bool` | `false` | 首次加载失败时是否继续启动（该源为空，照常轮询） |
+| `OnError` | `Action<Error>?` | `null` | 加载或轮询失败时的回调，它抛出的异常被丢弃 |
 
 ### Nacos
 
@@ -247,7 +247,7 @@ public sealed class OrderLimits
 - `SecretValue.ToString()` 固定返回 `***`（`SecretValue.Redacted`），值不会经字符串插值进入日志或异常消息。读值用 `Value`。
 - 单条读取用扩展方法 `store.GetAsync(name, cancellationToken)`，它转调批量方法。
 
-`AddXiHanSecrets(store, options)` 把密钥映射到配置键：`Mappings` 是配置键到密钥名的字典，构建配置时一次批量读取。首次读取中有缺失或失败的项时，每个失败的项回调一次 `OnError`；`Optional` 为 `false`（缺省）时随后抛出 `FrameworkException` 并列出失败的配置键，为 `true` 时跳过这些项。`RefreshInterval` 非空时周期性重读，重读失败的项保留旧值。
+`AddXiHanSecrets(store, options)` 把密钥映射到配置键：`Mappings` 是配置键到密钥名的字典，构建配置时一次批量读取。失败分两类：逐项失败（不存在、无权限等）每项回调一次 `OnError`；整体失败——超过 `LoadTimeout`、密钥库抛出异常、返回的条数与请求不一致——回调一次 `CONFIGURATION_UNAVAILABLE_002`。首次读取有失败时，`Optional` 为 `false`（缺省）随后抛出 `FrameworkException`（逐项失败列出失败的配置键，密钥库抛出的异常是它的内部异常），为 `true` 时跳过失败的项，整体失败时该源为空。不论首次读取成败，`RefreshInterval` 非空时都周期性重读：逐项失败的项保留旧值，整体失败保留全部旧值并回调。`OnError` 自己抛出的异常同样被丢弃，不终止重读。
 
 | 选项 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
@@ -255,8 +255,8 @@ public sealed class OrderLimits
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
 | `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
 | `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟；测试换成可推进的时钟，重读由用例触发 |
-| `Optional` | `bool` | `false` | 首次读取缺失或失败的项是否跳过 |
-| `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次 |
+| `Optional` | `bool` | `false` | 首次读取缺失或失败的项是否跳过（整体失败时该源为空，照常重读） |
+| `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次，整体失败回调一次，它抛出的异常被丢弃 |
 
 5.0 没有提供密钥库 Provider（Vault、Key Vault 等），应用按自己的密钥来源实现 `ISecretStore`，并让测试项目继承 `Configuration.Conformance` 的 `SecretStoreConformance` 验证语义。下面的实现从一个目录读文件，每个密钥一个文件：
 
@@ -321,12 +321,12 @@ builder.Configuration.AddXiHanSecrets(
 | `KERNEL_HOSTING_001` | 必需绑定缺失或类型不匹配 | `AddXiHan` 构建时、`FeatureContext.GetBinding` |
 | `CONFIGURATION_NOTFOUND_001` | 远程配置的命名空间不存在 | `IRemoteConfigurationClient.FetchAsync` |
 | `CONFIGURATION_NOTFOUND_002` | 密钥不存在 | `ISecretStore.GetAsync` 的逐项结果 |
-| `CONFIGURATION_UNAVAILABLE_001` | 远程配置不可达或超时（首次加载超时也归此类） | `IRemoteConfigurationClient.FetchAsync`、首次加载 |
-| `CONFIGURATION_UNAVAILABLE_002` | 密钥库不可达或超时 | `ISecretStore.GetAsync`、首次读取 |
+| `CONFIGURATION_UNAVAILABLE_001` | 远程配置不可达或超时（首次加载超时、客户端抛出异常也归此类） | `IRemoteConfigurationClient.FetchAsync`、首次加载 |
+| `CONFIGURATION_UNAVAILABLE_002` | 密钥库不可达或超时（密钥库抛出异常、返回条数与请求不一致也归此类） | `ISecretStore.GetAsync`、首次读取 |
 | `CONFIGURATION_DENIED_001` | 没有读取该密钥的权限 | `ISecretStore.GetAsync` 的逐项结果 |
 | `CONFIGURATION_VALIDATION_001` | 远程文档不是声明的格式 | `IRemoteConfigurationClient.FetchAsync` |
 
-远程配置与密钥的首次加载失败且不可选时，`FrameworkException` 的错误码就是上表里对应的码；轮询与重读的失败只经 `OnError` 报告。选项值不合法、密钥名或命名空间为空属于编程错误，构造时抛出 `ArgumentException`。
+远程配置与密钥的首次加载失败且不可选时，`FrameworkException` 的错误码就是上表里对应的码，客户端或密钥库抛出的异常是它的内部异常；轮询与重读的失败只经 `OnError` 报告。选项值不合法、密钥名或命名空间为空属于编程错误，构造时抛出 `ArgumentException`。
 
 ## 配置节一览
 

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Time.Testing;
@@ -10,7 +11,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 远程配置源：首次加载、前缀、轮询重载、失败语义、子键枚举。
+/// 远程配置源：首次加载、前缀、轮询重载、失败语义、回调异常、子键枚举。
 /// </summary>
 public sealed class RemoteConfigurationSourceTests
 {
@@ -85,6 +86,74 @@ public sealed class RemoteConfigurationSourceTests
         var timedOut = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanRemoteConfiguration(slow, new RemoteConfigurationOptions("slow") { LoadTimeout = TimeSpan.FromMilliseconds(50), PollInterval = null, OnError = timeoutErrors.Add }).Build());
         Assert.Equal(ConfigurationErrors.RemoteUnavailable, timedOut.Code);
         Assert.Equal("load timeout", Assert.Single(timeoutErrors).Details?["reason"]);
+    }
+
+    [Fact]
+    public async Task Load_ClientThrows_IsAFailure_ThatHonoursOptional_AndPollingStillStarts()
+    {
+        var remote = new InMemoryRemoteConfiguration { Throw = true };
+        remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "hello" });
+
+        // 必需：抛出与返回失败一样处理——先回调，再以不可达抛出，原异常作为内部异常
+        var errors = new ConcurrentQueue<Error>();
+        var thrown = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = null, OnError = errors.Enqueue }).Build());
+        Assert.Equal(ConfigurationErrors.RemoteUnavailable, thrown.Code);
+        Assert.IsType<InvalidOperationException>(thrown.InnerException);
+        Assert.Equal(ConfigurationErrors.RemoteUnavailable, Assert.Single(errors).Code);
+
+        // 可选：为空并回调，照常开始轮询；客户端恢复后第一次轮询装入整份文档并触发重载
+        errors.Clear();
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
+        var root = new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = interval, Clock = clock, Optional = true, OnError = errors.Enqueue }).Build();
+        using var disposable = root as IDisposable;
+        Assert.Empty(root.AsEnumerable());
+        Assert.Equal("The remote configuration is broken.", Assert.Single(errors).Details?["reason"]);
+
+        var reloaded = new TaskCompletionSource();
+        ChangeToken.OnChange(root.GetReloadToken, () => reloaded.TrySetResult());
+        remote.Throw = false;
+        await PollAsync(clock, interval, remote);
+        await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("hello", root["Greeting"]);
+    }
+
+    [Fact]
+    public async Task OnErrorThrowing_NeitherChangesTheLoadResult_NorStopsPolling()
+    {
+        var remote = new InMemoryRemoteConfiguration();
+        var reports = 0;
+        void Broken(Error _)
+        {
+            Interlocked.Increment(ref reports);
+            throw new InvalidOperationException("The error sink is broken.");
+        }
+
+        // 首次加载：回调抛出不改变 Optional 的结果
+        var optional = new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = null, Optional = true, OnError = Broken }).Build();
+        Assert.Empty(optional.AsEnumerable());
+        var required = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = null, OnError = Broken }).Build());
+        Assert.Equal(ConfigurationErrors.NamespaceNotFound, required.Code);
+        Assert.Equal(2, Volatile.Read(ref reports));
+
+        // 轮询：回调抛出之后下一个周期照常取值、照常回调
+        remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "hello" });
+        var clock = new FakeTimeProvider();
+        var interval = TimeSpan.FromMinutes(1);
+        var root = new ConfigurationBuilder().AddXiHanRemoteConfiguration(remote, new RemoteConfigurationOptions("orders") { PollInterval = interval, Clock = clock, OnError = Broken }).Build();
+        using var disposable = root as IDisposable;
+        remote.Fail = Error.Unavailable(ConfigurationErrors.RemoteUnavailable, ConfigurationMessages.RemoteUnavailable, MessageArguments.Of(("namespace", "orders"), ("reason", "down")));
+        await PollAsync(clock, interval, remote);
+        await WaitUntilAsync(() => Volatile.Read(ref reports) == 3);
+        await PollAsync(clock, interval, remote);
+        await WaitUntilAsync(() => Volatile.Read(ref reports) == 4);
+
+        // 远端恢复后照常装入新版本
+        remote.Fail = null;
+        remote.Publish("orders", new Dictionary<string, string?> { ["Greeting"] = "bye" });
+        await PollAsync(clock, interval, remote);
+        await WaitUntilAsync(() => root["Greeting"] == "bye");
+        Assert.Equal(4, Volatile.Read(ref reports));
     }
 
     [Fact]
