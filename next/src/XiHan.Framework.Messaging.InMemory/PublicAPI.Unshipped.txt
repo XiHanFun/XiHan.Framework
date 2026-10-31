@@ -10,6 +10,7 @@ XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.PublishManyAsync(string
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.QueuedCount(string! topic) -> int
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<string!>! topics, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker.TopicCount.get -> int
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature.InMemoryMessagingFeature() -> void
@@ -22,6 +23,8 @@ XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(XiHan.Framewo
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.InMemoryMessagingOptions() -> void
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.get -> int
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.init -> void
+XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxTopics.get -> int
+XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxTopics.init -> void
 const XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature.HealthName = "messaging.inmemory.capacity" -> string!
 const XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.ConfigurationSection = "XiHan:Messaging:InMemory" -> string!
 override XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(object? obj) -> bool

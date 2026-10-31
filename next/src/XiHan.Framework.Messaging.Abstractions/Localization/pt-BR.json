@@ -10,5 +10,6 @@
   "messaging.envelope.spec_version": "O atributo 'specversion' deve ser '{specVersion}'.",
   "messaging.handler.failed": "O manipulador de mensagens lançou uma exceção não tratada: {reason}",
   "messaging.queue.full": "A fila em memória do tópico '{topic}' está cheia (capacidade {capacity}).",
-  "messaging.topic.invalid": "O tópico '{topic}' não é válido."
+  "messaging.topic.invalid": "O tópico '{topic}' não é válido.",
+  "messaging.topic.limit": "O agente em memória já tem o máximo de {limit} tópicos; não é possível criar o tópico '{topic}'."
 }

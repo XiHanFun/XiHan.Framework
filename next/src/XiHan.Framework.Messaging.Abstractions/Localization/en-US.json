@@ -10,5 +10,6 @@
   "messaging.envelope.spec_version": "The 'specversion' attribute must be '{specVersion}'.",
   "messaging.handler.failed": "The message handler threw an unhandled exception: {reason}",
   "messaging.queue.full": "The in-memory queue for topic '{topic}' is full (capacity {capacity}).",
-  "messaging.topic.invalid": "Topic '{topic}' is invalid."
+  "messaging.topic.invalid": "Topic '{topic}' is invalid.",
+  "messaging.topic.limit": "The in-memory broker already has the maximum of {limit} topics; topic '{topic}' cannot be created."
 }

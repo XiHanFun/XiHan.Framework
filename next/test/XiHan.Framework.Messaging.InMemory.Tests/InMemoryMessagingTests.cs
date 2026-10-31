@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -42,6 +43,62 @@ public sealed class InMemoryMessagingTests
         Assert.Equal(10_000, InMemoryMessagingOptions.FromConfiguration(Build()).MaxQueuedMessages);
         Assert.Equal(3, InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxQueuedMessages", "3"))).MaxQueuedMessages);
         Assert.Throws<ArgumentException>(() => InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxQueuedMessages", "0"))));
+        Assert.Equal(1_000, InMemoryMessagingOptions.FromConfiguration(Build()).MaxTopics);
+        Assert.Equal(5, InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxTopics", "5"))).MaxTopics);
+        Assert.Throws<ArgumentException>(() => InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxTopics", "0"))));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new InMemoryMessagingOptions { MaxTopics = 0 });
+    }
+
+    [Fact]
+    public async Task Topics_AreCapped_AndANewTopicBeyondTheLimitFailsExplicitly()
+    {
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryMessagingFeature>(),
+            [new("XiHan:Messaging:InMemory:MaxTopics", "2")],
+            services =>
+            {
+                services.AddSingleton(new DeliveryLog());
+                services.AddMessageHandler<RecordingHandler>(Topic);
+            });
+        var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
+
+        // 订阅的主题占一个名额，第二个主题首次发布时创建
+        Assert.Equal(1, broker.TopicCount);
+        Assert.True((await broker.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
+        Assert.Equal(2, broker.TopicCount);
+
+        var rejected = await broker.PublishAsync("overflow", Envelope("2"), CancellationToken.None);
+        Assert.Equal(MessagingErrors.TopicLimit, rejected.Error?.Code);
+        Assert.Equal(MessagingMessages.TopicLimit, rejected.Error?.MessageKey);
+        Assert.Equal("overflow", rejected.Error?.Details?["topic"]);
+        Assert.Equal(2, rejected.Error?.Details?["limit"]);
+        var batch = await broker.PublishManyAsync("overflow", [Envelope("3"), Envelope("4")], CancellationToken.None);
+        Assert.Equal(2, batch.Count);
+        Assert.All(batch, static r => Assert.Equal(MessagingErrors.TopicLimit, r.Error?.Code));
+
+        // 已有主题照常发布；只读的计数访问不创建主题
+        Assert.True((await broker.PublishAsync("idle", Envelope("5"), CancellationToken.None)).IsSuccess);
+        Assert.Equal(0, broker.QueuedCount("overflow"));
+        Assert.Equal(0, broker.DeliveredCount("overflow"));
+        Assert.Empty(broker.DeadLetters("overflow"));
+        Assert.Equal(2, broker.TopicCount);
+        Assert.Equal(2, broker.QueuedCount("idle"));
+    }
+
+    [Fact]
+    public async Task Start_FailsBeforeConsuming_WhenSubscribedTopicsExceedTheLimit()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
+        using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxTopics = 1 }, host.Services.GetRequiredService<MessagingOptions>(), host.App, NullLoggerFactory.Instance);
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => broker.StartAsync(["a", "b"], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None));
+
+        Assert.Equal(MessagingErrors.TopicLimit, exception.Code);
+        Assert.Contains("MaxTopics", exception.Message, StringComparison.Ordinal);
+        // 没有起任何消费循环：可以按正常方式停止，再按上限内的主题启动
+        await broker.StopAsync(CancellationToken.None);
+        await broker.StartAsync(["a"], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+        await broker.StopAsync(CancellationToken.None);
     }
 
     [Fact]

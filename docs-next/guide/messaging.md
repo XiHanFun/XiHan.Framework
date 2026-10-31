@@ -355,6 +355,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
 | `XiHan:Messaging:Outbox:BatchSize` | 正整数 | 100 | 发件箱每轮最多投递条数 |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
+| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 内存代理的主题数上限，超出时发布到新主题返回 `MESSAGING_UNAVAILABLE_003` |
 | `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |
 | `XiHan:Messaging:Kafka:*` | — | — | 引导地址、消费组、主题前缀、透传配置，见 [Messaging.Kafka](../packages/messaging-kafka#配置) |
 
@@ -376,6 +377,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时抛出） |
 | `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
 | `MESSAGING_UNAVAILABLE_002` | 内存代理的主题队列已满 |
+| `MESSAGING_UNAVAILABLE_003` | 内存代理的主题数已达上限（`MaxTopics`），不能再创建新主题 |
 | `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
 
 ## 相关

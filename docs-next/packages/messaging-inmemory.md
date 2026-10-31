@@ -17,7 +17,8 @@
 
 `InMemoryMessageBroker` 实现 `IMessageBroker`，并且自己就是健康项的贡献者：
 
-- 每个主题在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`）。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
+- 每个主题在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`），创建后不回收。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
+- 主题数有上限 `MaxTopics`：已有这么多主题时，发布到新主题返回 `MESSAGING_UNAVAILABLE_003`（批量发布每一项都是它，不创建主题），订阅的主题超出上限时启动失败（`FrameworkException`，一个消费循环也不起）；已有主题不受影响。
 - 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布的消息留在通道里，启动后投递。
 - 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾；达到上限、或重新入队时通道已满，进入该主题的死信列表。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。
 - 停止时取消消费循环，把正在处理的那条放回通道，并等待循环结束。
@@ -51,6 +52,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMessagingFeature>());
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 每个主题的通道容量，也是该主题死信列表的容量 |
+| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 主题数上限（订阅的与发布到的合计） |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
 
 ```json
@@ -64,8 +66,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMessagingFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `InMemoryMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `HealthName` 为 `messaging.inmemory.capacity` |
-| `InMemoryMessagingOptions` | `MaxQueuedMessages`；`FromConfiguration` |
-| `InMemoryMessageBroker` | 内存代理；诊断方法 `QueuedCount(topic)`、`DeliveredCount(topic)`、`DeadLetters(topic)`，健康检查 `Check()` |
+| `InMemoryMessagingOptions` | `MaxQueuedMessages`、`MaxTopics`；`FromConfiguration` |
+| `InMemoryMessageBroker` | 内存代理；诊断方法 `QueuedCount(topic)`、`DeliveredCount(topic)`、`DeadLetters(topic)`（主题不存在时为 0 或空，不创建主题）与 `TopicCount`，健康检查 `Check()` |
 
 ## 使用示例
 
@@ -89,7 +91,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 ## 行为与限制
 
 - 只在单进程内有效：进程退出丢失通道与死信里的全部消息，多实例之间不共享。
-- 只消费订阅了的主题；发布到没有订阅的主题时消息一直留在通道里，排满后发布返回 `MESSAGING_UNAVAILABLE_002`。
+- 只消费订阅了的主题；发布到没有订阅的主题时消息一直留在通道里，排满后发布返回 `MESSAGING_UNAVAILABLE_002`。这样的主题同样占用 `MaxTopics` 的名额。
 - 每个主题一个消费者，处理器串行执行；重试排到队尾，同一主题后面的消息先于重试被处理。
 - 重试之间不等待；处理器抛出的异常记为 `MESSAGING_UNEXPECTED_001`，与返回失败同样计一次尝试。
 

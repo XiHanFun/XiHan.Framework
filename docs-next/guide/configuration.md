@@ -361,7 +361,7 @@ builder.Configuration.AddXiHanSecrets(
 | `XiHan:Caching:Idempotency` | [Caching.Abstractions](../packages/caching-abstractions) | 幂等记录的 `TimeToLiveSeconds`、`InProgressTimeToLiveSeconds` |
 | `XiHan:Messaging` | [Messaging.Abstractions](../packages/messaging-abstractions) | `MaxAttempts`、`DeadLetterSuffix` |
 | `XiHan:Messaging:Outbox` | [Messaging.Abstractions](../packages/messaging-abstractions) | 发件箱的 `PollIntervalSeconds`、`BatchSize` |
-| `XiHan:Messaging:InMemory` | [Messaging.InMemory](../packages/messaging-inmemory) | `MaxQueuedMessages` |
+| `XiHan:Messaging:InMemory` | [Messaging.InMemory](../packages/messaging-inmemory) | `MaxQueuedMessages`、`MaxTopics` |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](../packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |
 | `XiHan:Messaging:Kafka` | [Messaging.Kafka](../packages/messaging-kafka) | `BootstrapServers`、`GroupId`、`TopicPrefix`、`Properties:<key>` |
 | `XiHan:Scheduling` | [Scheduling.Abstractions](../packages/scheduling-abstractions) | 调度引擎与领导选举：轮询、租约、并发、错过阈值、历史保留 |

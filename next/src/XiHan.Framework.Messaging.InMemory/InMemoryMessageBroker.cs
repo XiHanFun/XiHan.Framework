@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
@@ -17,13 +18,13 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// 每主题一条有界通道、单消费者顺序投递的内存代理。
 /// </summary>
 /// <remarks>
-/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。
+/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。主题数有上限（<see cref="InMemoryMessagingOptions.MaxTopics"/>），超出时发布到新主题返回 <see cref="MessagingErrors.TopicLimit"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
     /// <summary>
-    /// 内存代理选项：每主题容量。
+    /// 内存代理选项：每主题容量与主题数上限。
     /// </summary>
     private readonly InMemoryMessagingOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -49,9 +50,17 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 主题到队列的映射。
     /// </summary>
     /// <remarks>
-    /// 首次发布或消费时创建。
+    /// 首次发布或消费时创建，不回收；条目数不超过 <see cref="InMemoryMessagingOptions.MaxTopics"/>。
     /// </remarks>
     private readonly ConcurrentDictionary<string, TopicQueue> _topics = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 创建主题队列的锁。
+    /// </summary>
+    /// <remarks>
+    /// 主题数判定与创建在锁内完成，并发创建不会越过上限；已有主题的读取不加锁。
+    /// </remarks>
+    private readonly Lock _topicsGate = new();
 
     /// <summary>
     /// 每个被消费主题的消费循环任务。
@@ -71,7 +80,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     {
         ArgumentNullException.ThrowIfNull(envelope);
         TopicName.Validate(topic);
-        var queue = Queue(topic);
+        if (!TryQueue(topic, out var queue))
+        {
+            return ValueTask.FromResult<Result>(TopicLimit(topic));
+        }
+
         // TryWrite 不等待：队列满立即返回 QueueFull，由发布方决定如何处理，不让发布者被消费速度拖住；
         // 与批量发布共用队列的发布锁，批量的容量判定与写入之间不会被单条插队
         lock (queue.PublishGate)
@@ -99,8 +112,14 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             deliveries[index] = new MessageDelivery(topic, envelopes[index], 1);
         }
 
-        var queue = Queue(topic);
         var results = new Result[envelopes.Count];
+        if (!TryQueue(topic, out var queue))
+        {
+            // 主题数已达上限：整批同一错误，不创建新主题
+            Array.Fill(results, TopicLimit(topic));
+            return ValueTask.FromResult<IReadOnlyList<Result>>(results);
+        }
+
         lock (queue.PublishGate)
         {
             // 先按剩余容量整批判定：装不下就一条都不写，调用方看到的是整批 QueueFull 而不是半批
@@ -130,10 +149,18 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             throw new InvalidOperationException("The in-memory broker is already consuming.");
         }
 
-        _stopping = new CancellationTokenSource();
+        // 先取到全部订阅主题的队列再起消费循环：主题数超限时启动失败，不留下只消费了一部分主题的代理
+        var queues = new List<TopicQueue>(topics.Count);
         foreach (var topic in topics)
         {
-            var queue = Queue(topic);
+            queues.Add(TryQueue(topic, out var queue)
+                ? queue
+                : throw new FrameworkException(MessagingErrors.TopicLimit, $"The in-memory broker already has the maximum of {_options.MaxTopics} topics; cannot subscribe to topic '{topic}'. Raise {InMemoryMessagingOptions.ConfigurationSection}:MaxTopics."));
+        }
+
+        _stopping = new CancellationTokenSource();
+        foreach (var queue in queues)
+        {
             _loops.Add(Task.Run(() => ConsumeAsync(queue, dispatch, _stopping.Token), CancellationToken.None));
         }
 
@@ -173,17 +200,31 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// <summary>
     /// 主题当前排队条数。
     /// </summary>
-    public int QueuedCount(string topic) => Queue(topic).Channel.Reader.Count;
+    /// <remarks>
+    /// 主题不存在为 0，不创建主题。
+    /// </remarks>
+    public int QueuedCount(string topic) => _topics.TryGetValue(topic, out var queue) ? queue.Channel.Reader.Count : 0;
 
     /// <summary>
     /// 主题累计成功投递条数。
     /// </summary>
-    public long DeliveredCount(string topic) => Interlocked.Read(ref Queue(topic).Delivered);
+    /// <remarks>
+    /// 主题不存在为 0，不创建主题。
+    /// </remarks>
+    public long DeliveredCount(string topic) => _topics.TryGetValue(topic, out var queue) ? Interlocked.Read(ref queue.Delivered) : 0;
 
     /// <summary>
     /// 主题的死信（投递失败超过上限的消息），按进入顺序。
     /// </summary>
-    public IReadOnlyList<MessageDelivery> DeadLetters(string topic) => [.. Queue(topic).DeadLetters];
+    /// <remarks>
+    /// 主题不存在为空，不创建主题。
+    /// </remarks>
+    public IReadOnlyList<MessageDelivery> DeadLetters(string topic) => _topics.TryGetValue(topic, out var queue) ? [.. queue.DeadLetters] : [];
+
+    /// <summary>
+    /// 当前主题数。
+    /// </summary>
+    public int TopicCount => _topics.Count;
 
     /// <inheritdoc />
     public IReadOnlyList<ContributorStatus> Check()
@@ -201,7 +242,39 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// <summary>
     /// 取（必要时创建）主题的队列。
     /// </summary>
-    private TopicQueue Queue(string topic) => _topics.GetOrAdd(topic, _ => new TopicQueue(_options.MaxQueuedMessages));
+    /// <remarks>
+    /// 主题不存在且主题数已达上限时返回 <see langword="false"/>。
+    /// </remarks>
+    private bool TryQueue(string topic, [NotNullWhen(true)] out TopicQueue? queue)
+    {
+        if (_topics.TryGetValue(topic, out queue))
+        {
+            return true;
+        }
+
+        // 新主题：数量判定与创建在同一把锁内，并发发布到不同新主题时不会越过上限
+        lock (_topicsGate)
+        {
+            if (_topics.TryGetValue(topic, out queue))
+            {
+                return true;
+            }
+
+            if (_topics.Count >= _options.MaxTopics)
+            {
+                return false;
+            }
+
+            queue = new TopicQueue(_options.MaxQueuedMessages);
+            _topics[topic] = queue;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 构造主题数已达上限的错误。
+    /// </summary>
+    private Error TopicLimit(string topic) => Error.Unavailable(MessagingErrors.TopicLimit, MessagingMessages.TopicLimit, MessageArguments.Of(("topic", topic), ("limit", _options.MaxTopics)));
 
     /// <summary>
     /// 构造队列已满的错误。

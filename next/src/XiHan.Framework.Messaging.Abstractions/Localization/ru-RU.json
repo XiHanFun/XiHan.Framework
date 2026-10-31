@@ -10,5 +10,6 @@
   "messaging.envelope.spec_version": "Атрибут 'specversion' должен быть равен '{specVersion}'.",
   "messaging.handler.failed": "Обработчик сообщений выбросил необработанное исключение: {reason}",
   "messaging.queue.full": "Очередь в памяти для темы '{topic}' заполнена (ёмкость {capacity}).",
-  "messaging.topic.invalid": "Недопустимая тема '{topic}'."
+  "messaging.topic.invalid": "Недопустимая тема '{topic}'.",
+  "messaging.topic.limit": "Брокер в памяти уже содержит максимум тем ({limit}); создать тему '{topic}' нельзя."
 }
