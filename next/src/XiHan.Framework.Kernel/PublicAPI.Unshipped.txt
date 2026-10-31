@@ -217,6 +217,8 @@ XiHan.Framework.Kernel.Operations.IOperationInvoker.ExecuteAsync(XiHan.Framework
 XiHan.Framework.Kernel.Operations.IOperationInvoker.ExecuteAsync<TRequest, TResponse>(XiHan.Framework.Primitives.InvocationContext! context, string! operationId, TRequest request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
 XiHan.Framework.Kernel.Operations.IOperationInvoker.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationRequest! request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Operations.OperationResponse!>
 XiHan.Framework.Kernel.Operations.IOperationInvoker.InvokeAsync<TRequest, TResponse>(XiHan.Framework.Primitives.InvocationContext! context, string! operationId, TRequest request) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<TResponse>>
+XiHan.Framework.Kernel.Operations.IOperationResponseFilter
+XiHan.Framework.Kernel.Operations.IOperationResponseFilter.FilterAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationDescriptor! operation, object! response) -> System.Threading.Tasks.ValueTask<object!>
 XiHan.Framework.Kernel.Operations.OperationAttribute
 XiHan.Framework.Kernel.Operations.OperationAttribute.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
 XiHan.Framework.Kernel.Operations.OperationAttribute.Expose.init -> void
