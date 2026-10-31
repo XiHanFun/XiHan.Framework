@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
@@ -11,7 +12,7 @@ namespace XiHan.Framework.Kernel.Operations;
 /// <see cref="IOperationInvoker"/> 的内核实现。
 /// </summary>
 /// <remarks>
-/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行。
+/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）。
 /// </remarks>
 internal sealed class OperationInvoker : IOperationInvoker
 {
@@ -29,12 +30,22 @@ internal sealed class OperationInvoker : IOperationInvoker
     private readonly OperationRegistry _registry;
 
     /// <summary>
+    /// 是否登记了响应过滤器。
+    /// </summary>
+    /// <remarks>
+    /// 没有时不解析、不分配。
+    /// </remarks>
+    private readonly bool _filtered;
+
+    /// <summary>
     /// 创建调用器。
     /// </summary>
-    public OperationInvoker(App app, OperationRegistry registry)
+    public OperationInvoker(App app, OperationRegistry registry, IServiceProvider services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         _app = app ?? throw new ArgumentNullException(nameof(app));
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        _filtered = services.GetService<IServiceProviderIsService>()?.IsService(typeof(IOperationResponseFilter)) ?? true;
     }
 
     /// <inheritdoc />
@@ -110,7 +121,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     /// <remarks>
     /// Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文。
     /// </remarks>
-    private static async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
+    private async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
         if (!context.GetOperationRequest().TryGetValue(out var request))
         {
@@ -128,13 +139,21 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 执行已解码的请求并记录结果：成功时响应对象进上下文，失败时错误成为调用结果。
+    /// 执行已解码的请求并记录结果。
     /// </summary>
-    private static async ValueTask ExecuteTypedAsync(InvocationContext context, OperationDescriptor descriptor, object request)
+    /// <remarks>
+    /// 成功时响应对象经过滤器后进上下文，失败时错误成为调用结果。
+    /// </remarks>
+    private async ValueTask ExecuteTypedAsync(InvocationContext context, OperationDescriptor descriptor, object request)
     {
         var result = await descriptor.ExecuteAsync(context, request).ConfigureAwait(false);
         if (result.TryGetValue(out var response))
         {
+            if (_filtered)
+            {
+                response = await FilterAsync(context, descriptor, response).ConfigureAwait(false);
+            }
+
             context.SetOperationResponse(response);
             context.SetOutcome(Result.Success());
         }
@@ -142,6 +161,25 @@ internal sealed class OperationInvoker : IOperationInvoker
         {
             context.SetOutcome(result.Error!);
         }
+    }
+
+    /// <summary>
+    /// 按登记顺序经过调用作用域里的全部响应过滤器。
+    /// </summary>
+    /// <remarks>
+    /// 过滤器返回的不是响应类型的实例时抛出 <see cref="InvalidOperationException"/>，由 Observe 阶段翻译为意外错误。
+    /// </remarks>
+    private static async ValueTask<object> FilterAsync(InvocationContext context, OperationDescriptor descriptor, object response)
+    {
+        foreach (var filter in context.Services.GetServices<IOperationResponseFilter>())
+        {
+            var filtered = await filter.FilterAsync(context, descriptor, response).ConfigureAwait(false);
+            response = descriptor.ResponseType.IsInstanceOfType(filtered)
+                ? filtered
+                : throw new InvalidOperationException($"Response filter '{filter.GetType().FullName}' returned '{filtered?.GetType().FullName ?? "null"}' for operation '{descriptor.Contract.Id}', but the response type is '{descriptor.ResponseType.FullName}'.");
+        }
+
+        return response;
     }
 
     /// <summary>
