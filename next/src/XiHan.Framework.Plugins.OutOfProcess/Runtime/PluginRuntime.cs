@@ -166,6 +166,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     public ILogger Logger { get; set; }
 
     /// <summary>
+    /// 是否在发现时被拒。
+    /// </summary>
+    /// <remarks>
+    /// 清单、权限或入口不合格，没有进程可启动：停在 Failed，不启动也不重启（<c>lifecycle.md</c> §1）。
+    /// </remarks>
+    public bool IsRejected { get; private set; }
+
+    /// <summary>
     /// 是否懒激活：清单 <c>activation</c> 不含 <c>onStartup</c>。
     /// </summary>
     public bool IsLazy => !Manifest.Activation.Contains("onStartup", StringComparer.Ordinal);
@@ -236,6 +244,17 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     public bool IsSubscribedTo(string topic, string messageType)
         => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType)) == true;
+
+    /// <summary>
+    /// 以发现时被拒登记：进入 Failed，之后不启动也不重启。
+    /// </summary>
+    public void Reject(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        IsRejected = true;
+        _stopping = true;
+        Fail(error);
+    }
 
     /// <summary>
     /// 探测启动。

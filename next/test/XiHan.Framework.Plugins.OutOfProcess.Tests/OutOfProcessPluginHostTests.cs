@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -91,12 +92,67 @@ public sealed class OutOfProcessPluginHostTests
         var unknown = await EchoPluginHost.InvokeAsync(granted, "echoes.relay", """{"operation":"pings.missing","payload":{}}""");
         Assert.Equal(KernelErrors.UnknownOperation, unknown.Outcome.Error?.Code);
 
-        // 清单声明了 capability:kernel.pipeline 却没有授予：发现阶段就被拒绝，插件以 Failed 上报
+        // 清单声明了 capability:kernel.pipeline 却没有授予：发现阶段就被拒绝、不启动进程，插件以 Failed 上报（lifecycle.md §1）
         await using var denied = await EchoPluginHost.StartAsync(grantPipeline: false);
         var status = EchoPluginHost.PluginHost(denied).Describe(EchoPluginHost.PluginId);
-        Assert.Null(status);
-        Assert.Equal(LifecycleState.Ready, denied.App.State);
+        Assert.NotNull(status);
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+        Assert.Null(status.ProcessId);
+        Assert.Equal(LifecycleState.Degraded, denied.App.State);
+        Assert.Equal(LifecycleState.Failed, Assert.Single(denied.App.Health().Contributions, static c => c.Name == "plugins." + EchoPluginHost.PluginId).State);
         Assert.False(denied.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
+    }
+
+    [Fact]
+    public async Task Discovery_KeepsRejectedPluginsAsFailed_ReportsHealth_AndLogsThem()
+    {
+        var unreadable = Directory.CreateTempSubdirectory("xihan-plugin-tests-");
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(unreadable.FullName, "xihan.manifest.json"), "{ not a manifest");
+            using var missingEntry = new PluginCopy(EchoPluginHost.Directory);
+            missingEntry.EditManifest(static manifest => manifest.Replace("\"entry\": \"EchoPlugin\"", "\"entry\": \"Missing\"", StringComparison.Ordinal));
+            using var logs = new LogCapture();
+            await using var host = await TestHost.StartAsync(
+                static b => b.UseFeature<OutOfProcessPluginsFeature>(),
+                [
+                    new("XiHan:Plugins:OutOfProcess:Directories:0", unreadable.FullName),
+                    new("XiHan:Plugins:OutOfProcess:Directories:1", missingEntry.Directory),
+                    new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:0", "capability:kernel.pipeline"),
+                ],
+                services => services.AddSingleton<ILoggerFactory>(new LoggerFactory([logs])));
+            var plugins = EchoPluginHost.PluginHost(host);
+
+            // 入口文件不存在：以清单 ID 登记为 Failed，可描述，没有进程
+            var rejected = plugins.Describe(EchoPluginHost.PluginId);
+            Assert.NotNull(rejected);
+            Assert.Equal(LifecycleState.Failed, rejected.Status.State);
+            Assert.Equal(PluginErrors.NotFound, rejected.Status.Error?.Code);
+            Assert.Null(rejected.ProcessId);
+            Assert.Equal(EchoPluginHost.PluginId, Assert.Single(plugins.Plugins).Manifest.Id);
+
+            // 两者都是健康条目，宿主因此 Degraded；清单读不出来的没有清单 ID，条目名取目录名
+            Assert.Equal(LifecycleState.Degraded, host.App.State);
+            var contributions = host.App.Health().Contributions;
+            Assert.Equal(LifecycleState.Failed, Assert.Single(contributions, static c => c.Name == "plugins." + EchoPluginHost.PluginId).State);
+            var unreadableEntry = Assert.Single(contributions, c => c.Name == "plugins." + unreadable.Name);
+            Assert.Equal(LifecycleState.Failed, unreadableEntry.State);
+            Assert.Equal(PluginErrors.InvalidSource, unreadableEntry.Error?.Code);
+
+            // 配置阶段还没有宿主日志，附着时补记为错误
+            var errors = logs.Entries.Where(static e => e.Level == LogLevel.Error).Select(static e => e.Message).ToList();
+            Assert.Contains(errors, static m => m.Contains(EchoPluginHost.PluginId, StringComparison.Ordinal) && m.Contains(PluginErrors.NotFound, StringComparison.Ordinal));
+            Assert.Contains(errors, m => m.Contains(unreadable.FullName, StringComparison.Ordinal) && m.Contains(PluginErrors.InvalidSource, StringComparison.Ordinal));
+
+            // 被拒的插件可以卸载
+            Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+            Assert.Empty(plugins.Plugins);
+        }
+        finally
+        {
+            unreadable.Delete(recursive: true);
+        }
     }
 
     [Fact]

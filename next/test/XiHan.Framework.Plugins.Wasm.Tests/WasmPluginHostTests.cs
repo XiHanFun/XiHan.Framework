@@ -164,6 +164,24 @@ public sealed class WasmPluginHostTests
     }
 
     [Fact]
+    public async Task Discovery_KeepsARejectedPluginAsFailed_AndReportsItsHealth()
+    {
+        // 清单声明了 capability:kernel.pipeline 却没有授予：发现时被拒、不实例化，以 Failed 登记（lifecycle.md §1）
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", EchoWasmPluginHost.Directory)]);
+        var plugins = EchoWasmPluginHost.PluginHost(host);
+
+        var status = plugins.Describe(EchoWasmPluginHost.PluginId);
+        Assert.NotNull(status);
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+        Assert.Null(status.AbiVersion);
+        Assert.Equal(LifecycleState.Degraded, host.App.State);
+        Assert.Equal(LifecycleState.Failed, Assert.Single(host.App.Health().Contributions, static c => c.Name == "plugins." + EchoWasmPluginHost.PluginId).State);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
+        Assert.DoesNotContain("WasmMiddleware", host.App.DescribePipeline(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task LoadAsync_AtRuntime_RejectsMiddlewareContributions()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());

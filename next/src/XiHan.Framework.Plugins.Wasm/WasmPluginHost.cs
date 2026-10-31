@@ -52,6 +52,14 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private readonly List<WasmPluginRuntime> _order = [];
 
     /// <summary>
+    /// 清单读不出来的插件目录与原因。
+    /// </summary>
+    /// <remarks>
+    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入。
+    /// </remarks>
+    private readonly List<(string Directory, Error Error)> _unreadable = [];
+
+    /// <summary>
     /// 串行化加载与卸载。
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -161,7 +169,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 同步发现一个插件目录（配置阶段使用）。
     /// </summary>
     /// <remarks>
-    /// 读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报。
+    /// 读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报：发现时被拒的（清单、权限、模块文件不合格）可描述、是健康条目，清单读不出来的只作为健康条目 <c>plugins.&lt;目录名&gt;</c>（<c>lifecycle.md</c> §1）；附着到容器时逐个记日志。
     /// </remarks>
     internal Result<WasmPluginRuntime> Discover(string directory)
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
@@ -182,7 +190,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             return new Error(PluginErrors.InvalidModule, PluginMessages.ModuleInvalid, MessageArguments.Of(("id", read.Id), ("reason", "plugins contributing middleware cannot be loaded at run time")));
         }
 
-        var discovered = await DiscoverAsync(source, read, _options.MountsFor(read.Id), cancellationToken).ConfigureAwait(false);
+        var discovered = await DiscoverAsync(source, read, _options.MountsFor(read.Id), keepRejected: false, cancellationToken).ConfigureAwait(false);
         if (!discovered.TryGetValue(out var runtime))
         {
             return discovered.Error!;
@@ -229,7 +237,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 附着到已构建的宿主容器。
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志、开放回调、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 换用宿主日志、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）。
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -242,8 +250,25 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         }
 
         _context.Services = services;
-        foreach (var runtime in _order.Where(static r => r.Handshake is not null && !r.IsLazy))
+        // 配置阶段还没有宿主日志：清单读不出来、发现时被拒与握手失败的插件在这里补记
+        foreach (var (directory, error) in _unreadable)
         {
+            LogDiscoveryFailed(_logger, directory, error.Code, error.Message);
+        }
+
+        foreach (var runtime in _order.ToList())
+        {
+            if (runtime.Handshake is null)
+            {
+                LogDiscoveryFailed(_logger, runtime.Manifest.Id, runtime.Error?.Code ?? string.Empty, runtime.Error?.Message ?? string.Empty);
+                continue;
+            }
+
+            if (runtime.IsLazy)
+            {
+                continue;
+            }
+
             var started = await runtime.StartAsync(cancellationToken).ConfigureAwait(false);
             if (started.IsFailure)
             {
@@ -285,7 +310,9 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
     /// <inheritdoc />
     public IReadOnlyList<ContributorStatus> Check()
-        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State, r.Error)).ToList();
+        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State, r.Error))
+            .Concat(_unreadable.Select(static u => new ContributorStatus(HealthPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed, u.Error)))
+            .ToList();
 
     /// <summary>
     /// 停止全部插件、停止 epoch 计时并释放引擎。
@@ -340,39 +367,38 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// </summary>
     private async Task<Result<WasmPluginRuntime>> DiscoverAsync(string directory, CancellationToken cancellationToken)
     {
-        var full = Path.GetFullPath(directory);
-        var manifest = ReadManifest(full);
-        if (!manifest.TryGetValue(out var read))
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+        var file = ReadManifestFile(full);
+        if (!file.TryGetValue(out var read))
         {
-            return manifest.Error!;
+            // 没有清单 ID：只能按目录名上报
+            _unreadable.Add((full, file.Error!));
+            return file.Error!;
         }
 
-        return await DiscoverAsync(new PluginSource(full, _options.GrantsFor(read.Id)), read, _options.MountsFor(read.Id), cancellationToken).ConfigureAwait(false);
+        var source = new PluginSource(full, _options.GrantsFor(read.Id));
+        var mounts = _options.MountsFor(read.Id);
+        var kind = CheckKind(read);
+        if (kind.IsFailure)
+        {
+            return await RejectAsync(source, read, mounts, kind.Error!, cancellationToken).ConfigureAwait(false);
+        }
+
+        return await DiscoverAsync(source, read, mounts, keepRejected: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// 校验权限（<c>capability:</c> 须授予、<c>fs.*</c> 须映射、<c>net.outbound:</c> 永不授予）与模块文件。
     /// </summary>
     /// <remarks>
-    /// 登记运行时并探测启动。
+    /// 登记运行时并探测启动。<paramref name="keepRejected"/> 为真（按目录发现）时被拒的插件以 Failed 登记，否则（运行期加载）只把错误返回给调用方。
     /// </remarks>
-    private async Task<Result<WasmPluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, CancellationToken cancellationToken)
+    private async Task<Result<WasmPluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, bool keepRejected, CancellationToken cancellationToken)
     {
-        var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).ToList();
-        if (missing.Count > 0)
+        var rejected = Preflight(source, manifest, mounts, out var modulePath);
+        if (rejected is not null)
         {
-            return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));
-        }
-
-        if (string.IsNullOrWhiteSpace(manifest.Entry))
-        {
-            return new Error(PluginErrors.InvalidSource, PluginMessages.EntryRequired, MessageArguments.Of(("id", manifest.Id)));
-        }
-
-        var modulePath = Path.GetFullPath(Path.Combine(source.Directory, manifest.Entry));
-        if (!File.Exists(modulePath))
-        {
-            return Error.NotFound(PluginErrors.NotFound, PluginMessages.ExecutableMissing, MessageArguments.Of(("path", modulePath)));
+            return keepRejected ? await RejectAsync(source, manifest, mounts, rejected, cancellationToken).ConfigureAwait(false) : rejected;
         }
 
         WasmPluginRuntime runtime;
@@ -384,7 +410,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
                 return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
             }
 
-            runtime = new WasmPluginRuntime(manifest, source.Directory, modulePath, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
+            runtime = new WasmPluginRuntime(manifest, source.Directory, modulePath!, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
             _plugins[manifest.Id] = runtime;
             _order.Add(runtime);
         }
@@ -395,6 +421,59 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
         var discovered = await runtime.DiscoverAsync(cancellationToken).ConfigureAwait(false);
         return discovered.IsSuccess ? runtime : discovered.Error!;
+    }
+
+    /// <summary>
+    /// 实例化任何模块之前的检查：权限、入口与模块文件。
+    /// </summary>
+    /// <remarks>
+    /// 通过时返回空并给出模块文件的绝对路径。
+    /// </remarks>
+    private static Error? Preflight(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, out string? modulePath)
+    {
+        modulePath = null;
+        var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).ToList();
+        if (missing.Count > 0)
+        {
+            return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));
+        }
+
+        if (string.IsNullOrWhiteSpace(manifest.Entry))
+        {
+            return new Error(PluginErrors.InvalidSource, PluginMessages.EntryRequired, MessageArguments.Of(("id", manifest.Id)));
+        }
+
+        modulePath = Path.GetFullPath(Path.Combine(source.Directory, manifest.Entry));
+        return File.Exists(modulePath) ? null : Error.NotFound(PluginErrors.NotFound, PluginMessages.ExecutableMissing, MessageArguments.Of(("path", modulePath)));
+    }
+
+    /// <summary>
+    /// 以发现时被拒登记：不建实例，插件停在 Failed（<c>lifecycle.md</c> §1）。
+    /// </summary>
+    /// <remarks>
+    /// 返回拒绝的原因；同一清单 ID 已登记时返回冲突。
+    /// </remarks>
+    private async Task<Result<WasmPluginRuntime>> RejectAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, Error error, CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_plugins.ContainsKey(manifest.Id))
+            {
+                return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
+            }
+
+            var runtime = new WasmPluginRuntime(manifest, source.Directory, string.Empty, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
+            runtime.Reject(error);
+            _plugins[manifest.Id] = runtime;
+            _order.Add(runtime);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+
+        return error;
     }
 
     /// <summary>
@@ -457,19 +536,40 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// </summary>
     private static Result<Manifest> ReadManifest(string directory)
     {
-        var read = ManifestReader.ReadFile(Path.Combine(directory, ManifestReader.FileName));
+        var read = ReadManifestFile(directory);
         if (!read.TryGetValue(out var manifest))
         {
-            return new Error(PluginErrors.InvalidSource, PluginMessages.ManifestInvalid, MessageArguments.Of(("directory", directory), ("reason", read.Error!.Message)), read.Error);
+            return read.Error!;
         }
 
-        if (manifest.Kind != ManifestKind.Plugin || manifest.Isolation != PluginIsolation.Wasm)
-        {
-            return new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
-        }
-
-        return manifest;
+        var kind = CheckKind(manifest);
+        return kind.IsSuccess ? manifest : kind.Error!;
     }
+
+    /// <summary>
+    /// 读目录里的清单文件。
+    /// </summary>
+    private static Result<Manifest> ReadManifestFile(string directory)
+    {
+        var read = ManifestReader.ReadFile(Path.Combine(directory, ManifestReader.FileName));
+        return read.TryGetValue(out var manifest)
+            ? manifest
+            : new Error(PluginErrors.InvalidSource, PluginMessages.ManifestInvalid, MessageArguments.Of(("directory", directory), ("reason", read.Error!.Message)), read.Error);
+    }
+
+    /// <summary>
+    /// 清单是否描述一个 Wasm 插件。
+    /// </summary>
+    private static Result CheckKind(Manifest manifest)
+        => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.Wasm
+            ? Result.Success()
+            : new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
+
+    /// <summary>
+    /// 记录发现阶段失败的插件（宿主继续运行）。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {Plugin} failed during discovery: {Code} {Message}")]
+    private static partial void LogDiscoveryFailed(ILogger logger, string plugin, string code, string message);
 
     /// <summary>
     /// 记录插件启动失败（宿主继续运行）。

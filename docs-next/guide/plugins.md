@@ -135,7 +135,7 @@ app.Run();
 
 | 失败 | 结果 |
 | --- | --- |
-| 清单不合法、权限未授予、入口文件不存在 | 该插件被跳过，不进入 `IPluginHost.Plugins`，没有健康条目 |
+| 清单不合法、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded` |
 | 插件声明的操作与应用已有操作重名 | 配置错误，应用启动失败 |
 

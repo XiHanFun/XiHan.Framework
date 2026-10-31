@@ -89,7 +89,11 @@ public sealed class EchoGoPluginHostTests
         Assert.Equal(KernelErrors.UnknownOperation, unknown.Outcome.Error?.Code);
 
         await using var denied = await EchoGoPluginHost.StartAsync(grantPipeline: false);
-        Assert.Null(EchoPluginHost.PluginHost(denied).Describe(EchoGoPluginHost.PluginId));
+        // 权限未授予：发现时被拒，以 Failed 登记、不启动进程（lifecycle.md §1）
+        var status = EchoPluginHost.PluginHost(denied).Describe(EchoGoPluginHost.PluginId);
+        Assert.Equal(LifecycleState.Failed, status?.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status?.Status.Error?.Code);
+        Assert.Null(status?.ProcessId);
         Assert.False(denied.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
     }
 

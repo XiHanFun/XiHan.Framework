@@ -170,6 +170,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |
 | 中间件 before 短路却没给失败结果 | 按 `KERNEL_VALIDATION_001` 处理 |
 | 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | `PLUGINS_VALIDATION_005` |
+| 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。
