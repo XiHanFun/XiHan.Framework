@@ -14,13 +14,13 @@ namespace XiHan.Framework.AI.VectorData;
 /// <see cref="IKnowledgeStore"/> 到 <see cref="VectorStore"/> 的映射。
 /// </summary>
 /// <remarks>
-/// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成。
+/// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeStore : IKnowledgeStore
 {
     /// <summary>
-    /// 按文档取键时的分页大小。
+    /// 按过滤条件取键删除时的分页大小。
     /// </summary>
     private const int DeletePageSize = 500;
 
@@ -92,30 +92,32 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
 
             foreach (var documentId in documentIds.Distinct(StringComparer.Ordinal))
             {
-                // 连接器不一定支持按过滤删除：先分页取键再按键删，直到取不满一页
-                var filter = DocumentFilter([documentId]);
-                var retrieval = new FilteredRecordRetrievalOptions<KnowledgeVectorRecord> { IncludeVectors = false };
-                while (true)
-                {
-                    var keys = new List<string>();
-                    await foreach (var record in target.GetAsync(filter, DeletePageSize, retrieval, cancellationToken).ConfigureAwait(false))
-                    {
-                        keys.Add(record.Id);
-                    }
-
-                    if (keys.Count == 0)
-                    {
-                        break;
-                    }
-
-                    await target.DeleteAsync(keys, cancellationToken).ConfigureAwait(false);
-                    if (keys.Count < DeletePageSize)
-                    {
-                        break;
-                    }
-                }
+                await DeleteMatchingAsync(target, DocumentFilter([documentId]), cancellationToken).ConfigureAwait(false);
             }
 
+            return Result.Success();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return Unavailable(exception);
+        }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+        ArgumentNullException.ThrowIfNull(documentId);
+        ArgumentOutOfRangeException.ThrowIfNegative(chunkCount);
+        try
+        {
+            var target = Collection(collection);
+            if (!await target.CollectionExistsAsync(cancellationToken).ConfigureAwait(false))
+            {
+                return Result.Success();
+            }
+
+            await DeleteMatchingAsync(target, TrimFilter(documentId, chunkCount), cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -167,6 +169,47 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// 取集合。
     /// </summary>
     private VectorStoreCollection<string, KnowledgeVectorRecord> Collection(string name) => _store.GetCollection<string, KnowledgeVectorRecord>(name, _definition);
+
+    /// <summary>
+    /// 删除满足过滤条件的全部记录。
+    /// </summary>
+    /// <remarks>
+    /// 连接器不一定支持按过滤删除：先分页取键再按键删，直到取不满一页。删掉的记录不再出现在下一页里，所以不需要跳过。
+    /// </remarks>
+    private static async ValueTask DeleteMatchingAsync(VectorStoreCollection<string, KnowledgeVectorRecord> target, Expression<Func<KnowledgeVectorRecord, bool>> filter, CancellationToken cancellationToken)
+    {
+        var retrieval = new FilteredRecordRetrievalOptions<KnowledgeVectorRecord> { IncludeVectors = false };
+        while (true)
+        {
+            var keys = new List<string>();
+            await foreach (var record in target.GetAsync(filter, DeletePageSize, retrieval, cancellationToken).ConfigureAwait(false))
+            {
+                keys.Add(record.Id);
+            }
+
+            if (keys.Count == 0)
+            {
+                return;
+            }
+
+            await target.DeleteAsync(keys, cancellationToken).ConfigureAwait(false);
+            if (keys.Count < DeletePageSize)
+            {
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>r.DocumentId == id &amp;&amp; r.ChunkIndex &gt;= count</c>（常量比较，连接器都能翻译）。
+    /// </summary>
+    private static Expression<Func<KnowledgeVectorRecord, bool>> TrimFilter(string documentId, int chunkCount)
+    {
+        var record = Expression.Parameter(typeof(KnowledgeVectorRecord), "record");
+        var document = Expression.Equal(Expression.Property(record, nameof(KnowledgeVectorRecord.DocumentId)), Expression.Constant(documentId, typeof(string)));
+        var beyond = Expression.GreaterThanOrEqual(Expression.Property(record, nameof(KnowledgeVectorRecord.ChunkIndex)), Expression.Constant(chunkCount, typeof(int)));
+        return Expression.Lambda<Func<KnowledgeVectorRecord, bool>>(Expression.AndAlso(document, beyond), record);
+    }
 
     /// <summary>
     /// <c>r.DocumentId == id1 || r.DocumentId == id2 …</c>（常量比较，连接器都能翻译）。

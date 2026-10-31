@@ -9,7 +9,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// 知识库存储（<c>ai.knowledge@1</c> 的 Provider 契约）。
 /// </summary>
 /// <remarks>
-/// 按集合写入记录、按文档删除、按向量搜索。集合不存在：写入时创建，搜索返回空。
+/// 按集合写入记录、按文档删除、按块序号裁剪、按向量搜索。集合不存在：写入时创建，搜索返回空，删除与裁剪视为成功。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IKnowledgeStore
@@ -29,6 +29,14 @@ public interface IKnowledgeStore
     /// 不存在的文档忽略。
     /// </remarks>
     ValueTask<Result> DeleteAsync(string collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 删除一篇文档里块序号不小于 <paramref name="chunkCount"/> 的记录。
+    /// </summary>
+    /// <remarks>
+    /// 块序号更小的记录不动。重新摄入在新块写入成功之后调用它，删掉旧版本多出来的块；文档不存在或没有多余的块时成功。不可达 → <see cref="AIErrors.KnowledgeUnavailable"/>。
+    /// </remarks>
+    ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按向量搜索，最多 <paramref name="top"/> 条，按得分降序。

@@ -10,7 +10,7 @@ AI 契约（Ring 2，RFC-0022，ADR-0017）：以 `Microsoft.Extensions.AI` 的 
 | `IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail` | 输入护栏；内置关键词与提示注入护栏由 `XiHan:AI:Guardrails:Enabled` 开启 |
 | `IAIPromptCatalog`、`AIPromptTemplate` | 提示词模板（`{name}` 占位符，`{{` / `}}` 转义），显式登记优先于配置 |
 | `IAIToolCatalog`、`OperationAIFunction`、`AIToolNameConvention` | `AddAITool` 的工具 + `Expose.Ai` 的操作桥接成 `AIFunction`（名 `<resource>_<verb>`，描述取消息目录 `<操作 ID>.description`），`Bind(caller)` 后在新作用域经完整管道执行，以调用方身份（复制主体与租户，不复制凭据）按契约授权 |
-| `IKnowledgeStore` | `ai.knowledge@1` 的 Provider 契约：按集合写入 / 按文档删除 / 向量搜索 |
+| `IKnowledgeStore` | `ai.knowledge@1` 的 Provider 契约：按集合写入 / 按文档删除 / 按块序号裁剪 / 向量搜索；重新摄入先写新块、写入成功后再裁掉多余的旧块 |
 | `IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 切块 → 嵌入 → 写入；问题嵌入 → 搜索 → 最低得分；检索结果拼进提示 |
 | `AIErrors`、`AIMessages` | `AI_*` 错误码与 `ai.*` 消息键（10 种区域） |
 

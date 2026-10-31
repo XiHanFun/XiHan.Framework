@@ -57,7 +57,7 @@ public sealed class KnowledgeVectorRecord
             [
                 new VectorStoreKeyProperty(nameof(Id), typeof(string)),
                 new VectorStoreDataProperty(nameof(DocumentId), typeof(string)) { IsIndexed = true },
-                new VectorStoreDataProperty(nameof(ChunkIndex), typeof(int)),
+                new VectorStoreDataProperty(nameof(ChunkIndex), typeof(int)) { IsIndexed = true },
                 new VectorStoreDataProperty(nameof(Text), typeof(string)),
                 new VectorStoreDataProperty(nameof(Metadata), typeof(string)),
                 new VectorStoreVectorProperty(nameof(Vector), typeof(ReadOnlyMemory<float>), dimensions) { DistanceFunction = DistanceFunction.CosineSimilarity },

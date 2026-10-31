@@ -12,7 +12,7 @@ namespace XiHan.Framework.AI.Conformance.Knowledge;
 /// 知识库存储的一致性套件（RFC-0022 §知识库）。
 /// </summary>
 /// <remarks>
-/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>。
+/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class KnowledgeStoreConformance
@@ -109,6 +109,45 @@ public abstract class KnowledgeStoreConformance
         Assert.Single((await host.Store.SearchAsync(second, generator.Embed("other collection"), 10, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.True((await host.Store.DeleteAsync(Collection("never"), ["doc"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
     }
+
+    /// <summary>
+    /// 用例 4：裁剪只删一篇文档里块序号不小于给定值的记录。
+    /// </summary>
+    /// <remarks>
+    /// 更小序号的块与别的文档不动；没有多余的块、文档或集合不存在都成功；给 0 删掉整篇。
+    /// </remarks>
+    [Fact]
+    public async Task Trim_RemovesOnlyChunksAtOrBeyondTheCount()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var generator = new HashingEmbeddingGenerator(host.Dimensions);
+        var collection = Collection("trim");
+        var records = new[]
+        {
+            Record(generator, "doc", 0, "first part"),
+            Record(generator, "doc", 1, "second part"),
+            Record(generator, "doc", 2, "third part"),
+            Record(generator, "other", 3, "other part"),
+        };
+        Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        Assert.True((await host.Store.TrimAsync(collection, "doc", 1, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(["doc#0", "other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
+
+        Assert.True((await host.Store.TrimAsync(collection, "doc", 5, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, "missing", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(Collection("never"), "doc", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(["doc#0", "other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
+
+        Assert.True((await host.Store.TrimAsync(collection, "doc", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(["other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 集合里全部记录的 ID（按序数排序）。
+    /// </summary>
+    private static async Task<List<string>> IdsAsync(KnowledgeStoreHost host, string collection, HashingEmbeddingGenerator generator)
+        => (await host.Store.SearchAsync(collection, generator.Embed("part"), 100, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static chunk => chunk.Id).Order(StringComparer.Ordinal).ToList();
 
     /// <summary>
     /// 每次用例一个不重名的集合。

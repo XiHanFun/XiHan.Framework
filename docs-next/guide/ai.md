@@ -295,7 +295,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 {
     public async ValueTask<IReadOnlyList<Result<int>>> ImportAsync(IReadOnlyDictionary<string, string> documents, CancellationToken cancellationToken)
     {
-        // 批量摄入：每篇文档一个结果（写入的块数），同一文档重新摄入先删后写
+        // 批量摄入：每篇文档一个结果（写入的块数），同一文档重新摄入先写新块、再删多余的旧块
         var requests = documents
             .Select(static document => new KnowledgeIngestRequest
             {
@@ -324,7 +324,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 
 `FaqKnowledge` 以 `builder.Services.AddScoped<FaqKnowledge>()` 登记（`IAIChat` 是作用域服务）。流水线的规则：
 
-- 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入时先删掉旧块，再嵌入与写入；嵌入或写入失败时这篇文档在知识库里暂时没有内容，按返回的错误重试摄入即可。
+- 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
 - `Augment` 用 `XiHan:AI:Knowledge:PromptName` 指向的模板（占位符 `{context}`、`{question}`），没配置、找不到或渲染失败时用内置英文模板；检索结果为空时原样返回问题。

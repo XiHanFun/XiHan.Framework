@@ -95,7 +95,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | `Guardrails.IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏 |
 | `Tools.IAIToolCatalog`、`Tools.OperationAIFunction`、`Tools.AIToolNameConvention` | 工具目录、操作工具（`OperationId`）、命名约定（`Derive`、`DescriptionKeyOf`，上限 64） |
 | `Knowledge.IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 流水线；`KnowledgeIngestorExtensions` 提供单篇的 `IngestAsync` 与 `RemoveAsync` |
-| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`SearchAsync`（按 `Score` 降序） |
+| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（删一篇文档里块序号不小于给定值的记录）、`SearchAsync`（按 `Score` 降序） |
 | `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>` |
 | `AIIdentifiers` | 名字文法 `^[a-z0-9][a-z0-9._-]{0,63}$`，工具名 `^[A-Za-z0-9_-]{1,64}$` |
 | `AIErrors`、`AIMessages` | 错误码与消息键 |
@@ -173,7 +173,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。
 - 工具目录在 `AIToolsFeature` 启动时构建；稳定性为 `Internal` 的操作不进目录。
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
-- 同一文档重新摄入先删旧块再写新块，不是原子替换；嵌入维度必须等于 `Knowledge:Dimensions`。
+- 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
 
 | 错误码 | 何时出现 |

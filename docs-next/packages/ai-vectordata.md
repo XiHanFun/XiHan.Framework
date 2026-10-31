@@ -23,7 +23,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 | --- | --- | --- |
 | `Id` | `string` | 键，`<documentId>#<chunkIndex>` |
 | `DocumentId` | `string` | 带索引，按文档过滤与删除 |
-| `ChunkIndex` | `int` | 块序号 |
+| `ChunkIndex` | `int` | 带索引，块序号；重新摄入按它删掉多余的旧块 |
 | `Text` | `string` | 块文本 |
 | `Metadata` | `string` | 元数据序列化成的 JSON（源生成，不经反射） |
 | `Vector` | `ReadOnlyMemory<float>` | 维度为 `Dimensions`，余弦相似度 |
@@ -82,7 +82,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `VectorDataKnowledgeFeature` | 能力包入口；启动时检查容器里有 `VectorStore` |
-| `VectorDataKnowledgeStore` | `IKnowledgeStore` 的实现：`UpsertAsync`、`DeleteAsync`、`SearchAsync` |
+| `VectorDataKnowledgeStore` | `IKnowledgeStore` 的实现：`UpsertAsync`、`DeleteAsync`、`TrimAsync`、`SearchAsync` |
 | `KnowledgeVectorRecord` | 向量记录；`Definition(dimensions)` 构造集合定义 |
 
 ## 使用示例
@@ -117,12 +117,13 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 ## 行为与限制
 
 - 写入：先确保集合存在再批量 upsert；空列表直接成功。同一 ID 再次写入即替换。
-- 删除：集合不存在时直接成功；连接器不一定支持按条件删除，所以按文档分页取键（每页 500 个）再按键删除，直到取不满一页。
+- 删除与裁剪：集合不存在时直接成功；连接器不一定支持按条件删除，所以按条件分页取键（每页 500 个）再按键删除，直到取不满一页。删除的条件是 `DocumentId`，裁剪的条件是 `DocumentId` 加 `ChunkIndex >= 新块数`。
+- `DocumentId` 与 `ChunkIndex` 在集合定义里都是可过滤字段。要求过滤字段在建集合时声明的向量库（如 Azure AI Search）上，早于此定义建出的集合缺 `ChunkIndex` 的过滤能力，裁剪会以 `AI_UNAVAILABLE_002` 失败，换集合或删掉旧集合重新摄入。
 - 搜索：集合不存在返回空列表；`DocumentIds` 过滤以常量比较的表达式下推；有元数据过滤时向量库取 `top × 4` 条，在进程内按键值相等过滤后按 `Score` 降序取前 `top` 条，命中稀疏时可能少于 `top` 条。连接器不给分数时按 0 处理。
 - 向量集合的维度在创建后不能改：换嵌入模型时换 `Collection`，或删掉旧集合重新摄入。
 - 不区分租户：要隔离时按集合或元数据区分。
 - 连接器抛出的异常转成 `AI_UNAVAILABLE_002`，`reason` 是异常消息；取消照常抛出。
-- 通过 `AI.Conformance` 的 `KnowledgeStoreConformance`（写入与排序、`top`、文档与元数据过滤、重写入替换、按文档删除、集合隔离、空集合搜索）。
+- 通过 `AI.Conformance` 的 `KnowledgeStoreConformance`（写入与排序、`top`、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索）。
 
 ## 相关
 

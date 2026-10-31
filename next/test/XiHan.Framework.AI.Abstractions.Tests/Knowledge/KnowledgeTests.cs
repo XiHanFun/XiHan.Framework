@@ -13,7 +13,7 @@ namespace XiHan.Framework.AI.Abstractions.Tests.Knowledge;
 /// 知识库流水线。
 /// </summary>
 /// <remarks>
-/// 切块、摄入与重摄入、检索与过滤、删除、维度不一致、没有 Provider、提示增强。
+/// 切块、摄入与重摄入（先写后删，失败不丢旧文档）、检索与过滤、删除、维度不一致、没有 Provider、提示增强。
 /// </remarks>
 public sealed class KnowledgeTests
 {
@@ -85,6 +85,47 @@ public sealed class KnowledgeTests
     }
 
     [Fact]
+    public async Task Reingest_KeepsTheOldVersion_WhenEmbeddingOrWritingFails()
+    {
+        var store = new FakeKnowledgeStore();
+        await using var host = await StartAsync(
+            store,
+            ("XiHan:AI:Providers:broken:Kind", FailingEmbeddingGeneratorFactory.KindName),
+            ("XiHan:AI:Providers:narrow:Kind", "hashing"),
+            ("XiHan:AI:Providers:narrow:EmbeddingDimensions", "32"),
+            ("XiHan:AI:DefaultProvider", "hash"));
+        var ingestor = host.Services.GetRequiredService<IKnowledgeIngestor>();
+        var retriever = host.Services.GetRequiredService<IKnowledgeRetriever>();
+        const string original = "Cats purr when they are happy. Kittens chase string all day long.";
+        Assert.Equal(2, (await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = original }, CancellationToken.None)).ValueOrThrow());
+        var before = Snapshot(store);
+
+        // 嵌入失败（端点不可达）与维度不一致：一条旧块都不删，旧文档照常可检索
+        var unreachable = await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = "Dogs bark.", Provider = "broken" }, CancellationToken.None);
+        Assert.Equal(AIErrors.ModelUnavailable, unreachable.Error?.Code);
+        Assert.Equal(before, Snapshot(store));
+        var mismatched = await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = "Dogs bark.", Provider = "narrow" }, CancellationToken.None);
+        Assert.Equal(AIErrors.DimensionsMismatch, mismatched.Error?.Code);
+        Assert.Equal(before, Snapshot(store));
+        Assert.Equal("cats", (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "cats purr happy" }, CancellationToken.None)).ValueOrThrow()[0].DocumentId);
+
+        // 写入失败：同样不丢旧块
+        store.FailUpserts = true;
+        Assert.Equal(AIErrors.KnowledgeUnavailable, (await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = "short" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(before, Snapshot(store));
+        Assert.Equal("cats", (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "cats purr happy" }, CancellationToken.None)).ValueOrThrow()[0].DocumentId);
+
+        // 裁剪失败：新块已写入，多余的旧块留着并如实报错；重试摄入后只剩新块
+        store.FailUpserts = false;
+        store.FailTrims = true;
+        Assert.Equal(AIErrors.KnowledgeUnavailable, (await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = "short" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal([("cats#0", "short"), ("cats#1", before[1].Text)], Snapshot(store));
+        store.FailTrims = false;
+        Assert.Equal(1, (await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = "short" }, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal([("cats#0", "short")], Snapshot(store));
+    }
+
+    [Fact]
     public async Task DimensionMismatch_AndMissingStore_AreReported()
     {
         await using var mismatched = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:Dimensions", "32"));
@@ -114,7 +155,13 @@ public sealed class KnowledgeTests
     }
 
     /// <summary>
-    /// 启动：哈希嵌入 Provider，可选的知识库存储与额外配置。
+    /// 默认集合里的记录（ID 与文本，按 ID 排序）。
+    /// </summary>
+    private static List<(string Id, string Text)> Snapshot(FakeKnowledgeStore store)
+        => store.Records(KnowledgeOptions.DefaultCollection).OrderBy(static record => record.Id, StringComparer.Ordinal).Select(static record => (record.Id, record.Text)).ToList();
+
+    /// <summary>
+    /// 启动：哈希嵌入 Provider 与总是失败的嵌入工厂，可选的知识库存储与额外配置。
     /// </summary>
     private static Task<TestHost> StartAsync(FakeKnowledgeStore? store, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
@@ -122,6 +169,7 @@ public sealed class KnowledgeTests
             _configuration.Concat(extra).GroupBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(static group => new KeyValuePair<string, string?>(group.Key, group.Last().Value)),
             services =>
             {
+                services.AddAIEmbeddingGeneratorFactory<FailingEmbeddingGeneratorFactory>();
                 if (store is not null)
                 {
                     services.AddSingleton<IKnowledgeStore>(store);

@@ -19,6 +19,7 @@ XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.KnowledgeStoreConformance() -> void
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Search_FiltersByDocumentsAndMetadata() -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Search_OrdersBySimilarity_AndHonoursTop() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Trim_RemovesOnlyChunksAtOrBeyondTheCount() -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Upsert_Replaces_AndDeleteRemovesWholeDocuments_PerCollection() -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost
 XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost.Dimensions.get -> int

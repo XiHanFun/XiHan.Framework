@@ -9,6 +9,9 @@ namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 /// <summary>
 /// 进程内的知识库存储：按集合保存记录，余弦相似度搜索。
 /// </summary>
+/// <remarks>
+/// 可以让写入或裁剪失败，用来验证摄入在失败时不丢旧文档。
+/// </remarks>
 internal sealed class FakeKnowledgeStore : IKnowledgeStore
 {
     /// <summary>
@@ -21,9 +24,24 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
     /// </summary>
     public IReadOnlyCollection<KnowledgeRecord> Records(string collection) => _collections.TryGetValue(collection, out var records) ? records.Values : [];
 
+    /// <summary>
+    /// 为真时写入一条不写、返回失败。
+    /// </summary>
+    public bool FailUpserts { get; set; }
+
+    /// <summary>
+    /// 为真时裁剪一条不删、返回失败。
+    /// </summary>
+    public bool FailTrims { get; set; }
+
     /// <inheritdoc />
     public ValueTask<Result> UpsertAsync(string collection, IReadOnlyList<KnowledgeRecord> records, CancellationToken cancellationToken)
     {
+        if (FailUpserts)
+        {
+            return ValueTask.FromResult(Result.Failure(Unreachable()));
+        }
+
         if (!_collections.TryGetValue(collection, out var table))
         {
             table = new Dictionary<string, KnowledgeRecord>(StringComparer.Ordinal);
@@ -53,6 +71,25 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken)
+    {
+        if (FailTrims)
+        {
+            return ValueTask.FromResult(Result.Failure(Unreachable()));
+        }
+
+        if (_collections.TryGetValue(collection, out var table))
+        {
+            foreach (var id in table.Values.Where(record => record.DocumentId == documentId && record.ChunkIndex >= chunkCount).Select(static record => record.Id).ToList())
+            {
+                table.Remove(id);
+            }
+        }
+
+        return ValueTask.FromResult(Result.Success());
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, ReadOnlyMemory<float> vector, int top, RetrievalFilter? filter, CancellationToken cancellationToken)
     {
         IReadOnlyList<RetrievedChunk> hits = _collections.TryGetValue(collection, out var table)
@@ -65,6 +102,11 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
             : [];
         return ValueTask.FromResult(Result.Success(hits));
     }
+
+    /// <summary>
+    /// 存储不可达的错误。
+    /// </summary>
+    private static Error Unreachable() => Error.Unavailable(AIErrors.KnowledgeUnavailable, "fake.store.unreachable");
 
     /// <summary>
     /// 余弦相似度。

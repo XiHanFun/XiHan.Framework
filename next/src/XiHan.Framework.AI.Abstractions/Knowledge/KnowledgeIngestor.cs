@@ -10,7 +10,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <see cref="IKnowledgeIngestor"/> 的实现（单例）。
 /// </summary>
 /// <remarks>
-/// 每篇文档一次嵌入批调用；重新摄入先删旧块。
+/// 每篇文档一次嵌入批调用。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeIngestor : IKnowledgeIngestor
@@ -87,15 +87,11 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
 
         var collection = request.Collection ?? _options.Collection;
         var chunks = _chunking.Chunk(request.Text, request.Chunking ?? _options.Chunking);
-        var deleted = await _store.DeleteAsync(collection, [request.DocumentId], cancellationToken).ConfigureAwait(false);
-        if (!deleted.IsSuccess)
-        {
-            return deleted.Error!;
-        }
-
         if (chunks.Count == 0)
         {
-            return 0;
+            // 新文本切不出块：这篇文档不再有内容，整篇删除
+            var removed = await _store.DeleteAsync(collection, [request.DocumentId], cancellationToken).ConfigureAwait(false);
+            return removed.IsSuccess ? 0 : removed.Error!;
         }
 
         var generator = _providers.ResolveEmbeddingGenerator(request.Provider ?? _options.EmbeddingProvider);
@@ -131,7 +127,14 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
             });
         }
 
+        // 先写后删：同 ID 的块由写入覆盖，写入成功之后才裁掉旧版本多出来的块。之前任何一步失败都不碰旧块，旧文档照常可检索
         var written = await _store.UpsertAsync(collection, records, cancellationToken).ConfigureAwait(false);
-        return written.IsSuccess ? records.Count : written.Error!;
+        if (!written.IsSuccess)
+        {
+            return written.Error!;
+        }
+
+        var trimmed = await _store.TrimAsync(collection, request.DocumentId, records.Count, cancellationToken).ConfigureAwait(false);
+        return trimmed.IsSuccess ? records.Count : trimmed.Error!;
     }
 }

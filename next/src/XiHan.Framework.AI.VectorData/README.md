@@ -5,7 +5,7 @@ AI 知识库的 `Microsoft.Extensions.VectorData` Provider（Ring 3，RFC-0022�
 | 类型 | 用途 |
 | --- | --- |
 | `VectorDataKnowledgeFeature` | 要求 `ai.embedding@1`；启动时容器里没有 `VectorStore` → `AI_UNAVAILABLE_002` 启动失败 |
-| `VectorDataKnowledgeStore` | 每个知识库集合一个向量集合（定义按 `XiHan:AI:Knowledge:Dimensions` 构造，余弦相似度）；`DocumentIds` 过滤下推，元数据过滤取回 `top × 4` 条后在进程内完成；按文档删除先分页取键再按键删 |
+| `VectorDataKnowledgeStore` | 每个知识库集合一个向量集合（定义按 `XiHan:AI:Knowledge:Dimensions` 构造，余弦相似度）；`DocumentIds` 过滤下推，元数据过滤取回 `top × 4` 条后在进程内完成；按文档删除与按块序号裁剪（`DocumentId`、`ChunkIndex` 是可过滤字段）都先分页取键再按键删 |
 | `KnowledgeVectorRecord` | 向量记录：`Id`、`DocumentId`、`ChunkIndex`、`Text`、`Metadata`（JSON）、`Vector` |
 
 ```csharp
