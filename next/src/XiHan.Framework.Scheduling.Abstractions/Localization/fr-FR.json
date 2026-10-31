@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "Le magasin de baux de leader pour '{resource}' est indisponible : {reason}",
   "scheduling.run.canceled": "L'exécution '{id}' a été annulée.",
   "scheduling.run.not_found": "L'exécution '{id}' n'existe pas ou est déjà terminée.",
+  "scheduling.run.timed_out": "L'exécution '{id}' a dépassé sa limite de temps de {timeout}.",
   "scheduling.scheduler.unavailable": "Le planificateur de travaux n'est pas en cours d'exécution.",
   "scheduling.store.capacity": "Le magasin de tâches '{store}' est plein (limite {limit}).",
   "scheduling.store.unavailable": "Le magasin de tâches est indisponible : {reason}",

@@ -80,10 +80,28 @@ public sealed class JobRecord
     public string? CodeFingerprint { get; set; }
 
     /// <summary>
+    /// 失败运行的重试策略。
+    /// </summary>
+    /// <remarks>
+    /// 空为不重试。
+    /// </remarks>
+    public JobRetryPolicy? Retry { get; set; }
+
+    /// <summary>
+    /// 单次执行时限。
+    /// </summary>
+    /// <remarks>
+    /// 空为不限。
+    /// </remarks>
+    public TimeSpan? Timeout { get; set; }
+
+    /// <summary>
     /// 深拷贝。
     /// </summary>
     public JobRecord Clone() => new()
     {
+        Retry = Retry,
+        Timeout = Timeout,
         Name = Name,
         JobTypeName = JobTypeName,
         Data = (JsonObject)Data.DeepClone(),

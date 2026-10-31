@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "Der Leader-Lease-Speicher für '{resource}' ist nicht verfügbar: {reason}",
   "scheduling.run.canceled": "Der Lauf '{id}' wurde abgebrochen.",
   "scheduling.run.not_found": "Der Lauf '{id}' existiert nicht oder ist bereits beendet.",
+  "scheduling.run.timed_out": "Der Lauf '{id}' hat sein Zeitlimit von {timeout} überschritten.",
   "scheduling.scheduler.unavailable": "Der Job-Scheduler läuft nicht.",
   "scheduling.store.capacity": "Der Jobspeicher '{store}' ist voll (Limit {limit}).",
   "scheduling.store.unavailable": "Der Jobspeicher ist nicht verfügbar: {reason}",

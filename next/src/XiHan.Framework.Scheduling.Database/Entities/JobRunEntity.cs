@@ -97,6 +97,20 @@ public sealed class JobRunEntity : IEntity<string>
     public string Data { get; set; } = "{}";
 
     /// <summary>
+    /// 第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 空按 1（ADR-0060 之前写入的行）。
+    /// </remarks>
+    public int? Attempt { get; set; }
+
+    /// <summary>
+    /// 重试时为首次运行的 ID。
+    /// </summary>
+    [StringLength(128)]
+    public string? RetryOf { get; set; }
+
+    /// <summary>
     /// 写入序号。
     /// </summary>
     /// <remarks>

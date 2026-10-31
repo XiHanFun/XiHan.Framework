@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "'{resource}'의 리더 임대 저장소를 사용할 수 없습니다: {reason}",
   "scheduling.run.canceled": "실행 '{id}'이(가) 취소되었습니다.",
   "scheduling.run.not_found": "실행 '{id}'이(가) 존재하지 않거나 이미 종료되었습니다.",
+  "scheduling.run.timed_out": "실행 '{id}'이(가) 제한 시간 {timeout}을(를) 초과했습니다.",
   "scheduling.scheduler.unavailable": "작업 스케줄러가 실행 중이 아닙니다.",
   "scheduling.store.capacity": "작업 저장소 '{store}'이(가) 가득 찼습니다(상한 {limit}).",
   "scheduling.store.unavailable": "작업 저장소를 사용할 수 없습니다: {reason}",

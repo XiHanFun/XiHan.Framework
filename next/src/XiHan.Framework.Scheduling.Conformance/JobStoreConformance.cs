@@ -53,9 +53,13 @@ public abstract class JobStoreConformance
             a.Paused = true;
             a.Source = JobSource.Overridden;
             a.CodeFingerprint = "F00D";
+            a.Retry = JobRetryPolicy.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(30));
+            a.Timeout = TimeSpan.FromSeconds(45);
             Assert.True((await store.SaveJobsAsync([a], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
             var overridden = (await store.FindJobAsync(a.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
             Assert.Equal((true, JobSource.Overridden, "F00D"), (overridden.Paused, overridden.Source, overridden.CodeFingerprint));
+            // 重试策略与执行时限随作业保存（ADR-0060）
+            Assert.Equal((a.Retry, TimeSpan.FromSeconds(45)), (overridden.Retry, overridden.Timeout));
             var occupying = Run(b.Name, "node-a", DateTimeOffset.UtcNow);
             Assert.True((await store.TryBeginRunAsync(occupying, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             b.Description = "replaced";
@@ -105,13 +109,16 @@ public abstract class JobStoreConformance
                 Error = "why",
                 Local = true,
                 Transient = true,
-                RunAs = JobTrigger.Recovery,
+                RunAs = JobTrigger.Retry,
+                Attempt = 3,
+                RetryOf = "0123456789abcdef0123456789abcdef",
             };
             Assert.True((await store.SaveTriggersAsync([trigger], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
             var stored = Assert.Single((await store.TriggersAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(trigger.Schedule.ToString(), stored.Schedule.ToString());
             Assert.Equal(trigger.Data.ToJsonString(), stored.Data.ToJsonString());
-            Assert.Equal((7, MisfirePolicy.RunAll, "描述", TriggerState.Blocked, "node-x", 42L, "why", true, true, JobTrigger.Recovery), (stored.Priority, stored.MisfirePolicy, stored.Description, stored.State, stored.AcquiredBy, stored.FireCount, stored.Error, stored.Local, stored.Transient, stored.RunAs));
+            Assert.Equal((7, MisfirePolicy.RunAll, "描述", TriggerState.Blocked, "node-x", 42L, "why", true, true, JobTrigger.Retry), (stored.Priority, stored.MisfirePolicy, stored.Description, stored.State, stored.AcquiredBy, stored.FireCount, stored.Error, stored.Local, stored.Transient, stored.RunAs));
+            Assert.Equal((3, trigger.RetryOf), (stored.Attempt, stored.RetryOf));
             Assert.Equal((trigger.NextFireAt, trigger.PreviousFireAt, trigger.AcquiredAt), (stored.NextFireAt, stored.PreviousFireAt, stored.AcquiredAt));
         }
     }
@@ -179,11 +186,16 @@ public abstract class JobStoreConformance
             var first = Run(job.Name, "node-a", now);
             var second = Run(job.Name, "node-b", now.AddSeconds(1));
             var third = Run(job.Name, "node-b", now.AddSeconds(2));
+            third.Attempt = 2;
+            third.RetryOf = first.Id;
             Assert.True((await store.TryBeginRunAsync(first, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.False((await store.TryBeginRunAsync(second, true, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.True((await store.TryBeginRunAsync(third, false, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(first.Id, (await store.FindJobAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().ActiveRunId);
             Assert.Equal([first.Id, third.Id], (await store.RunningAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
+            // 尝试次数与首次运行 ID 随运行保存
+            var retried = (await store.RunningAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Single(run => run.Id == third.Id);
+            Assert.Equal((2, first.Id, 1), (retried.Attempt, retried.RetryOf, (await store.RunningAsync(job.Name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Single(run => run.Id == first.Id).Attempt));
             Assert.Equal(2, (await store.RunningAsync(null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
             // 取消请求只对运行中的有效，按节点取回
             var cancel = await store.RequestCancelAsync([third.Id, "nope"], CancellationToken.None).ConfigureAwait(false);

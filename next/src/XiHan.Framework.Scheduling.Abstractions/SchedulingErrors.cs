@@ -83,6 +83,11 @@ public static class SchedulingErrors
     public const string StoreCapacity = "SCHEDULING_UNAVAILABLE_004";
 
     /// <summary>
+    /// 运行超过作业的执行时限。
+    /// </summary>
+    public const string RunTimedOut = "SCHEDULING_TIMEOUT_001";
+
+    /// <summary>
     /// 作业抛出未处理异常。
     /// </summary>
     public const string JobFailed = "SCHEDULING_UNEXPECTED_001";

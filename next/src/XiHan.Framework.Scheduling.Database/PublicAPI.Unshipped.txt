@@ -33,13 +33,25 @@ XiHan.Framework.Scheduling.Database.Entities.JobEntity.Paused.get -> bool
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.Paused.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.RequestsRecovery.get -> bool
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.RequestsRecovery.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryBackoff.get -> int?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryBackoff.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryDelayMilliseconds.get -> long?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryDelayMilliseconds.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryMaxDelayMilliseconds.get -> long?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryMaxDelayMilliseconds.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryMaxRetries.get -> int?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.RetryMaxRetries.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.RunOnEveryInstance.get -> bool
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.RunOnEveryInstance.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.Source.get -> int
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.Source.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.TimeoutMilliseconds.get -> long?
+XiHan.Framework.Scheduling.Database.Entities.JobEntity.TimeoutMilliseconds.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.UpdatedAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Database.Entities.JobEntity.UpdatedAt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Attempt.get -> int?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Attempt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CancelRequested.get -> bool
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CancelRequested.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.CompletedAt.get -> System.DateTimeOffset?
@@ -57,6 +69,8 @@ XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Job.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.JobRunEntity() -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.NodeId.get -> string!
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.NodeId.set -> void
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.RetryOf.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ScheduledAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.ScheduledAt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.JobRunEntity.Sequence.get -> long
@@ -94,6 +108,8 @@ XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredAt.get -> Sys
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredAt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredBy.get -> string?
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.AcquiredBy.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Attempt.get -> int?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Attempt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.ConcurrencyStamp.get -> string!
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.ConcurrencyStamp.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Data.get -> string!
@@ -120,6 +136,8 @@ XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.PreviousFireAt.get ->
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.PreviousFireAt.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Priority.get -> int
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Priority.set -> void
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RetryOf.get -> string?
+XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RetryOf.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RunAs.get -> int
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.RunAs.set -> void
 XiHan.Framework.Scheduling.Database.Entities.TriggerEntity.Schedule.get -> string!

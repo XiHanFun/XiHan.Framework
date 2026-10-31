@@ -119,6 +119,20 @@ public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
     /// </summary>
     public int RunAs { get; set; }
 
+    /// <summary>
+    /// 第几次尝试。
+    /// </summary>
+    /// <remarks>
+    /// 空按 1（ADR-0060 之前写入的行）。
+    /// </remarks>
+    public int? Attempt { get; set; }
+
+    /// <summary>
+    /// 重试时为首次运行的 ID。
+    /// </summary>
+    [StringLength(128)]
+    public string? RetryOf { get; set; }
+
     /// <inheritdoc />
     [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;

@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "'{resource}' 的領導租約儲存無法使用：{reason}",
   "scheduling.run.canceled": "執行 '{id}' 已被取消。",
   "scheduling.run.not_found": "執行 '{id}' 不存在或已結束。",
+  "scheduling.run.timed_out": "執行 '{id}' 超過了執行時限 {timeout}。",
   "scheduling.scheduler.unavailable": "作業排程器未執行。",
   "scheduling.store.capacity": "作業儲存 '{store}' 已滿（上限 {limit}）。",
   "scheduling.store.unavailable": "作業儲存不可用：{reason}",

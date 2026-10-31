@@ -25,4 +25,9 @@ public enum JobTrigger
     /// 节点失联后的恢复运行。
     /// </summary>
     Recovery = 2,
+
+    /// <summary>
+    /// 失败运行的重试（<see cref="Jobs.JobDefinition.Retry"/>）。
+    /// </summary>
+    Retry = 3,
 }
