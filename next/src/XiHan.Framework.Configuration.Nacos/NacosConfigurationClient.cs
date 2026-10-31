@@ -17,7 +17,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// Nacos 远程配置客户端。
 /// </summary>
 /// <remarks>
-/// 命名空间即 <c>dataId</c>，版本是内容的 MD5（取响应头 <c>Content-MD5</c>，没有时按 UTF-8 自己算）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。
+/// 命名空间即 <c>dataId</c>，版本是内容的 MD5（取响应头 <c>Content-MD5</c>，没有时按 UTF-8 自己算）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。地址的路径是 Nacos 的上下文路径，接口路径接在它后面，没有路径时用缺省的 <c>/nacos</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisposable
@@ -28,19 +28,27 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     public const string HttpClientName = "xihan.configuration.nacos";
 
     /// <summary>
-    /// 取配置的接口。
+    /// Nacos 的缺省上下文路径。
     /// </summary>
-    private const string ConfigsPath = "/nacos/v1/cs/configs";
+    /// <remarks>
+    /// 服务地址没有路径时用它。
+    /// </remarks>
+    private const string DefaultContextPath = "/nacos";
 
     /// <summary>
-    /// 长轮询监听的接口。
+    /// 取配置的接口（相对上下文路径）。
     /// </summary>
-    private const string ListenerPath = "/nacos/v1/cs/configs/listener";
+    private const string ConfigsPath = "/v1/cs/configs";
 
     /// <summary>
-    /// 登录接口。
+    /// 长轮询监听的接口（相对上下文路径）。
     /// </summary>
-    private const string LoginPath = "/nacos/v1/auth/login";
+    private const string ListenerPath = "/v1/cs/configs/listener";
+
+    /// <summary>
+    /// 登录接口（相对上下文路径）。
+    /// </summary>
+    private const string LoginPath = "/v1/auth/login";
 
     /// <summary>
     /// 令牌提前续期的余量。
@@ -205,7 +213,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
         var timeout = _options.LongPollTimeout + _options.RequestTimeout;
         using var response = await SendAsync(address =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, WithToken(new UriBuilder(address) { Path = ListenerPath }).Uri)
+            var request = new HttpRequestMessage(HttpMethod.Post, WithToken(Endpoint(address, ListenerPath)).Uri)
             {
                 Content = new FormUrlEncodedContent([new KeyValuePair<string, string>("Listening-Configs", listening)]),
             };
@@ -277,7 +285,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
             HttpRequestException? last = null;
             foreach (var address in _options.ServerAddresses)
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, new UriBuilder(address) { Path = LoginPath }.Uri)
+                using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint(new Uri(address), LoginPath).Uri)
                 {
                     Content = new FormUrlEncodedContent([new("username", _options.Username), new("password", _options.Password)]),
                 };
@@ -340,8 +348,21 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     /// </summary>
     private Uri ConfigsUri(Uri address, string dataId)
     {
-        var builder = new UriBuilder(address) { Path = ConfigsPath, Query = $"dataId={Uri.EscapeDataString(dataId)}&group={Uri.EscapeDataString(_options.Group)}" + (_options.Tenant.Length == 0 ? string.Empty : $"&tenant={Uri.EscapeDataString(_options.Tenant)}") };
+        var builder = Endpoint(address, ConfigsPath);
+        builder.Query = $"dataId={Uri.EscapeDataString(dataId)}&group={Uri.EscapeDataString(_options.Group)}" + (_options.Tenant.Length == 0 ? string.Empty : $"&tenant={Uri.EscapeDataString(_options.Tenant)}");
         return WithToken(builder).Uri;
+    }
+
+    /// <summary>
+    /// 接口地址：服务地址的路径（Nacos 的上下文路径）后面接上接口路径。
+    /// </summary>
+    /// <remarks>
+    /// 地址没有路径（或只有 <c>/</c>）时用缺省的 <c>/nacos</c>。Nacos 改了 <c>server.servlet.contextPath</c>，或经网关挂在别的前缀下时，把完整的上下文路径写进地址。
+    /// </remarks>
+    private static UriBuilder Endpoint(Uri address, string apiPath)
+    {
+        var contextPath = address.AbsolutePath.TrimEnd('/');
+        return new UriBuilder(address) { Path = (contextPath.Length == 0 ? DefaultContextPath : contextPath) + apiPath };
     }
 
     /// <summary>

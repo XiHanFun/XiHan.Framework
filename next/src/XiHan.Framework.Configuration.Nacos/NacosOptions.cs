@@ -26,7 +26,7 @@ public sealed record NacosOptions
     /// 服务地址（绝对的 http / https URL），按序尝试。
     /// </summary>
     /// <remarks>
-    /// 至少一个。
+    /// 至少一个。地址的路径是 Nacos 的上下文路径（<c>server.servlet.contextPath</c>，经网关转发时连同网关的前缀），接口路径接在它后面；没有路径时用缺省的 <c>/nacos</c>，<c>http://host:8848</c> 与 <c>http://host:8848/nacos</c> 等价。
     /// </remarks>
     public required IReadOnlyList<string> ServerAddresses
     {

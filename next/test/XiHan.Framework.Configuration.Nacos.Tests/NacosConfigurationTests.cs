@@ -15,7 +15,7 @@ namespace XiHan.Framework.Configuration.Nacos.Tests;
 /// Nacos Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5（HTTP 桩）、接进配置构建器与自建客户端的释放、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5 与地址的上下文路径（HTTP 桩）、接进配置构建器与自建客户端的释放、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class NacosConfigurationTests
 {
@@ -130,6 +130,28 @@ public sealed class NacosConfigurationTests
         var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
 
         Assert.Equal("0123456789abcdef0123456789abcdef", document.Version);
+    }
+
+    [Theory]
+    [InlineData("http://nacos.test:8848", "/nacos")]
+    [InlineData("http://nacos.test:8848/", "/nacos")]
+    [InlineData("http://nacos.test:8848/nacos", "/nacos")]
+    [InlineData("http://nacos.test:8848/config", "/config")]
+    [InlineData("http://gateway.test/config-center/nacos/", "/config-center/nacos")]
+    public async Task Requests_GoUnderTheContextPathOfTheAddress(string address, string contextPath)
+    {
+        // 地址的路径是上下文路径（Nacos 改过 contextPath，或经网关挂在前缀下），没有路径时用缺省的 /nacos；登录、取配置、监听都接在它后面
+        using var handler = new NacosStubHandler { ContextPath = contextPath, Content = """{"Greeting":"hello"}""", ContentMd5 = "c2d231ffe3913f930fc713f76c0bfbf1", SendContentMd5Header = true };
+        using var http = new HttpClient(handler, disposeHandler: false);
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = [address], Username = "nacos", Password = "secret" }, http, TimeProvider.System);
+
+        var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+        Assert.Equal("hello", document.Values["Greeting"]);
+        Assert.False((await client.FetchAsync("orders", document.Version, CancellationToken.None)).ValueOrThrow().HasValue);
+
+        Assert.Equal(
+            new (HttpMethod Method, string Path)[] { (HttpMethod.Post, contextPath + "/v1/auth/login"), (HttpMethod.Get, contextPath + "/v1/cs/configs"), (HttpMethod.Post, contextPath + "/v1/cs/configs/listener") },
+            handler.Requests.ToArray());
     }
 
     [Fact]

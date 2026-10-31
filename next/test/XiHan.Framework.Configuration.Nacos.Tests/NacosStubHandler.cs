@@ -11,10 +11,18 @@ namespace XiHan.Framework.Configuration.Nacos.Tests;
 /// 按 Nacos v1 配置接口作答的 HTTP 桩。
 /// </summary>
 /// <remarks>
-/// 只认一份配置：取配置返回 <see cref="Content"/>，监听按 Nacos 的约定把报来的 MD5 与 <see cref="ContentMd5"/> 逐字比较，相同为未变化（空响应），不同报告这一项变化。记录收到的每个请求。
+/// 只认一份配置、只在 <see cref="ContextPath"/> 下作答：取配置返回 <see cref="Content"/>，监听按 Nacos 的约定把报来的 MD5 与 <see cref="ContentMd5"/> 逐字比较，相同为未变化（空响应），不同报告这一项变化，登录发一个令牌。别的路径一律 404。记录收到的每个请求。
 /// </remarks>
 internal sealed class NacosStubHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 服务端的上下文路径。
+    /// </summary>
+    /// <remarks>
+    /// 缺省是 Nacos 的 <c>/nacos</c>。
+    /// </remarks>
+    public string ContextPath { get; set; } = "/nacos";
+
     /// <summary>
     /// 配置内容。
     /// </summary>
@@ -55,7 +63,12 @@ internal sealed class NacosStubHandler : HttpMessageHandler
     {
         var path = request.RequestUri!.AbsolutePath;
         Requests.Enqueue((request.Method, path));
-        if (request.Method == HttpMethod.Get && path == "/nacos/v1/cs/configs")
+        if (request.Method == HttpMethod.Post && path == ContextPath + "/v1/auth/login")
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"accessToken":"stub-token","tokenTtl":18000}""", Encoding.UTF8, "application/json") };
+        }
+
+        if (request.Method == HttpMethod.Get && path == ContextPath + "/v1/cs/configs")
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Content, Encoding.UTF8, "text/plain") };
             if (SendContentMd5Header)
@@ -67,7 +80,7 @@ internal sealed class NacosStubHandler : HttpMessageHandler
             return response;
         }
 
-        if (request.Method == HttpMethod.Post && path == "/nacos/v1/cs/configs/listener")
+        if (request.Method == HttpMethod.Post && path == ContextPath + "/v1/cs/configs/listener")
         {
             // Listening-Configs：dataId ^2 group ^2 md5 [^2 tenant] ^1
             var form = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

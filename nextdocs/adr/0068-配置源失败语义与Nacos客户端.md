@@ -31,6 +31,10 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 
 `AddXiHanNacos` 用 `NacosConfigurationClient.Create` 自建客户端（自带 `HttpClient`），交给 `AddXiHanRemoteConfiguration(client, options)`。这个重载不持有客户端，配置根释放时只停轮询，客户端与它的连接池从来不释放，也没有别人拿得到它的引用。
 
+### 4. 地址里的路径被丢掉
+
+客户端用 `new UriBuilder(address) { Path = "/nacos/v1/cs/configs" }` 拼接口地址，整体替换了地址的路径。Nacos 改了上下文路径（`server.servlet.contextPath`），或经网关挂在某个前缀下时，地址里写的路径被悄悄丢掉，请求打到 `/nacos/...`，得到 404，被当作 `dataId` 不存在（`CONFIGURATION_NOTFOUND_001`）。包 README 没有写这条限制，docs-next 写了「不适用」。
+
 ## 备选
 
 ### 1. 失败语义
@@ -54,6 +58,12 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 
 1. `RemoteConfigurationOptions` 加一个「释放时一并释放客户端」的开关，客户端仍在添加源时建好、由配置源共用。
 2. 新增工厂重载 `AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，归这个 Provider 所有。
+
+### 4. 地址路径的含义
+
+1. 地址的路径是前缀，固定的 `/nacos/v1/...` 接在它后面。`http://host:8848/nacos`（Nacos 控制台的地址，常被直接抄来）从能用变成 `/nacos/nacos/v1/...` 的 404；Nacos 改了上下文路径时仍然表达不了。
+2. 地址的路径就是 Nacos 的上下文路径，接口路径（`/v1/...`）接在它后面；没有路径时用 Nacos 的缺省值 `/nacos`。
+3. 新增 `ContextPath` 选项（缺省 `nacos`），与 Nacos SDK 的同名参数对应，地址的路径作为网关前缀。
 
 ## 决策
 
@@ -84,6 +94,10 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 - 原重载 `AddXiHanRemoteConfiguration(client, options)` 语义不变，写明客户端由调用方持有、配置根释放时不释放。
 - `AddXiHanNacos` 改走工厂重载。运行期由 `NacosConfigurationFeature` 登记进容器的客户端仍归容器。
 
+### 4. 地址的路径是上下文路径
+
+取 2。登录、取配置、监听三个接口一样处理：去掉地址路径末尾的 `/`，为空时用 `/nacos`，再接上 `/v1/auth/login`、`/v1/cs/configs`、`/v1/cs/configs/listener`。上下文路径设成根（`/`）的 Nacos 因此无法表达，写明不受支持。
+
 ## 理由
 
 ### 1. 失败语义统一
@@ -103,6 +117,12 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 - 配置源不可释放，可释放的只有 Provider；而同一个源会构建出多个 Provider：同一构建器构建多次，或 `ConfigurationManager` 在属性、源列表变化时重建全部 Provider 并释放旧的。共用一个客户端时，第一个 Provider 释放就把它关掉，其余 Provider 拿着已释放的客户端每个周期报一次错。按 Provider 各建一个，归属与生命周期才一致。
 - 先停轮询再释放客户端，配合第 1 节「停止之后不再报告」，释放不会经 `OnError` 报出一条假失败。
 
+### 4. 地址的路径是上下文路径
+
+- 向后兼容：此前能用的两种写法 `http://host:8848` 与 `http://host:8848/nacos` 结果不变；此前被丢掉的路径现在都生效。备选 1 会让第二种写法失效，而且失效的表现是「`dataId` 不存在」，不容易想到是地址的问题。
+- 一个地址就能表达改过的上下文路径与网关前缀，不新增选项；多个地址各自带路径，按序尝试时互不影响。备选 3 要同时理解两个概念，地址的路径与 `ContextPath` 还可能重复。
+- 代价是根上下文无法表达。Nacos 的部署文档与镜像都用 `/nacos`，根上下文罕见；真有需要时再加选项，不为它让常见写法多一个概念。
+
 ## 影响
 
 ### 1. 失败语义统一
@@ -118,7 +138,7 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 
 ### 2. Nacos 的版本取内容 MD5
 
-- 行为：对真实的 Nacos，监听恢复为长轮询，内容没变时窗口内不再取整份文档；版本串由 64 位 SHA-256 变为 32 位 MD5，进程内的已知版本随首次加载重建，不涉及持久化。
+- 行为：对真实的 Nacos，监听恢复为长轮询，内容没变时窗口内不再取整份文档；版本串由 64 个十六进制字符的 SHA-256 变为 32 个字符的 MD5，进程内的已知版本随首次加载重建，不涉及持久化。
 - 公开 API 不变。
 - 测试（`Configuration.Nacos.Tests`，HTTP 桩 `NacosStubHandler` 按 Nacos 的约定逐字比较监听报来的 MD5，`Content-MD5` 与真实响应一样放在内容头）：有头与没有头两种情况下，版本都等于独立算出的内容 MD5（内容含非 ASCII 字符），以它监听时服务端认出未变化、不再取整份文档；头里的值原样作版本。修正前三例都失败，有头的一例同样失败，印证了头从来没被读到。
 
@@ -130,3 +150,9 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
   - `Configuration.Abstractions.Tests`：同一构建器构建两次各建一个客户端、各随自己的配置根释放；`ConfigurationManager` 改动属性重建全部源时，被替换的 Provider 连同客户端释放、新 Provider 用新客户端；传入现成客户端时配置根释放不释放它。
   - `Configuration.Nacos.Tests`：经 `AddXiHanNacos` 的内部重载换入 HTTP 桩，构建两次各自装入文档，配置根释放时各自的 HTTP 处理器随客户端释放。
   - 反向验证：Provider 不释放客户端时 Abstractions 用例失败；`AddXiHanNacos` 改回传入现成客户端时 Nacos 用例失败（只建了一个客户端）。
+
+### 4. 地址的路径是上下文路径
+
+- 行为：地址带路径时请求打到这个路径下；此前这样的地址请求的是 `/nacos/...`。不带路径或路径就是 `/nacos` 的地址不变。
+- 公开 API 不变，`NacosOptions.ServerAddresses` 的注释写明路径的含义。
+- 测试（`Configuration.Nacos.Tests`，HTTP 桩只在给定的上下文路径下作答，带用户名密码以覆盖登录）：`http://nacos.test:8848`、末尾带 `/`、`/nacos`、改过的 `/config`、网关前缀 `/config-center/nacos/` 五种地址，登录、取配置、监听依次打到上下文路径下。换回修正前的客户端，前三种照常通过（向后兼容），后两种失败。
