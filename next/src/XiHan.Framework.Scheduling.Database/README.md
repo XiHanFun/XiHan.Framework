@@ -39,7 +39,7 @@ modelBuilder.Entity<TriggerEntity>(static t =>
 }
 ```
 
-本包没有自己的配置节：引擎选项在 `XiHan:Scheduling`（`SchedulerOptions`），`NodeId` 同时是心跳、抢占与租约里的节点身份，默认 `机器名:进程 ID:8 位随机`，多节点部署时每个节点唯一即可。
+引擎选项在 `XiHan:Scheduling`（`SchedulerOptions`）；本包自己的配置节是 `XiHan:Scheduling:Database`，只有健康项的重探间隔 `HealthProbeIntervalSeconds`（`DatabaseSchedulingOptions`，默认 15）。清单的 `contributes.config` 按 RFC-0002 声明领域节 `XiHan:Scheduling`，子节包含在内。`NodeId` 同时是心跳、抢占与租约里的节点身份，默认 `机器名:进程 ID:8 位随机`，多节点部署时每个节点唯一即可。
 
 | 类型 | 用途 |
 | --- | --- |

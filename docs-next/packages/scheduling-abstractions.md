@@ -69,7 +69,7 @@ public sealed class ArchiveJob : IJob
 | `XiHan:Scheduling:PollIntervalSeconds` | 正数 | 1 | 轮询周期 |
 | `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份，进程内固定 |
 | `XiHan:Scheduling:MaxConcurrentRuns` | ≥ 1 | 32 | 本节点同时运行的上限 |
-| `XiHan:Scheduling:AcquireBatchSize` | ≥ 1 | 16 | 一个周期最多抢占的触发器数 |
+| `XiHan:Scheduling:AcquireBatchSize` | ≥ 1 | 16 | 一个周期最多抢占的触发器数；每周期名额 = `min(AcquireBatchSize, MaxConcurrentRuns − 本节点运行中数量)` |
 | `XiHan:Scheduling:MisfireThresholdSeconds` | ≥ 0 | 60 | misfire 阈值 |
 | `XiHan:Scheduling:LeaseResource` | 作业名文法 | `scheduling.jobs` | 领导租约资源名 |
 | `XiHan:Scheduling:LeaseTimeToLiveSeconds` | 正数 | 30 | 领导租约存活时间 |

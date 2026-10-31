@@ -8,6 +8,9 @@ namespace XiHan.Framework.Primitives.Manifests;
 /// <summary>
 /// 清单 <c>contributes.config</c>：配置节与可选的 JSON Schema 路径。
 /// </summary>
+/// <remarks>
+/// 配置节是领域节 <c>XiHan:&lt;领域&gt;</c>（RFC-0002）：同一领域的各 Provider 都声明领域节，自己的子节（如 <c>XiHan:Caching:Redis</c>、<c>XiHan:Scheduling:Kubernetes</c>）包含在内、不单独声明。插件宿主在 <c>Configure</c> 时把这一整节下发给插件。
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record ConfigContribution
 {

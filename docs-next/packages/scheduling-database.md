@@ -10,7 +10,7 @@
 | 环层 | Ring 3（实现） |
 | 能力 | 提供 `scheduling.jobs@1`、`scheduling.leader@1`（`role: provider`）；依赖 `kernel.hosting@1`、`persistence.relational@1` |
 | 特性入口 | `DatabaseSchedulingFeature`（清单 ID `xihan.scheduling.database`） |
-| 配置节 | `XiHan:Scheduling`（引擎选项）、`XiHan:Scheduling:Database`（`HealthProbeIntervalSeconds`） |
+| 配置节 | `XiHan:Scheduling`（引擎选项）、`XiHan:Scheduling:Database`（`HealthProbeIntervalSeconds`）；清单 `contributes.config` 声明领域节 `XiHan:Scheduling` |
 | 依赖 | `XiHan.Framework.Scheduling.Abstractions`、`XiHan.Framework.Persistence.Abstractions`；不引用数据库驱动 |
 | AOT | 兼容 |
 | 稳定性 | Preview |

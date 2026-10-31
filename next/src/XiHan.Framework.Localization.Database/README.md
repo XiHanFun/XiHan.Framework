@@ -10,9 +10,11 @@ builder.AddXiHan(x => x
 // AppDbContext.OnModelCreating
 modelBuilder.Entity<MessageTranslation>(static t => t.HasIndex(static x => new { x.Key, x.Locale }).IsUnique());
 
-// 管理操作里（Transaction 阶段内）批量写入，然后让快照立即生效
-var results = await store.UpsertAsync([new MessageTranslationEntry("orders.order.not_found", "zh-CN", "订单 '{id}' 找不到。")], ct);
-await loader.ReloadAsync(ct);
+// 管理操作的 HandleAsync 里（Transaction 阶段内）批量写入；事务在这次调用返回时才提交
+var results = await store.UpsertAsync([new MessageTranslationEntry("orders.order.not_found", "zh-CN", "订单 '{id}' 找不到。")], context.CancellationToken);
+
+// 写入的调用成功返回之后（事务已提交）再重载，快照立即生效；在同一个操作里紧接着重载读不到未提交的行
+var reloaded = await loader.ReloadAsync(cancellationToken);
 ```
 
 ```json

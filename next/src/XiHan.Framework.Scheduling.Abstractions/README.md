@@ -6,7 +6,7 @@
 | --- | --- |
 | `JobName`、`TriggerKey`、`JobDefinition`、`JobTriggerDefinition` | 作业名（主题文法）；作业（类型、触发器、数据、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`）与触发器（计划、数据、优先级、misfire 策略） |
 | `JobRetryPolicy`、`JobRetryBackoff` | 失败运行的重试（ADR-0060）：`MaxRetries` 1–100、`Delay`、固定或指数退避与 `MaxDelay` 上限（等待最长 30 天）；被取消与失联的运行不重试；重试是新运行，`Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行；集群唯一的作业写成存储里的一次性触发器，每个实例各自运行的作业在本实例进程内等待 |
-| `JobSchedule`、`CronExpression`、`MisfirePolicy` | 计划：`Manual` / `Every(interval, repeatCount)` / `FromCron(expr, timeZoneId)` / `Once(at)`，可带 `StartAt` / `EndAt` / `Calendar`，文本往返；cron 为 Quartz 文法超集（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日） |
+| `JobSchedule`、`CronExpression`、`MisfirePolicy` | 计划：`Manual` / `Every(interval, repeatCount)` / `FromCron(expr, timeZoneId)` / `Once(at)`，可带 `StartAt` / `EndAt` / `Calendar`，文本往返；cron 是 Quartz 风格的文法（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时），不是 Quartz 的超集：星期数字按 Unix 约定（0 / 7 = 周日、1 = 周一，Quartz 是 1 = 周日、7 = 周六），周段单独的 `L`（Quartz 里是周六）与反向范围（如 `FRI-MON`、`22-2`，Quartz 跨界回绕）不支持、解析报错；另一方面多了 5 段写法，日与周同时限定时取并集 |
 | `IJobCalendar`、`JobCalendars`、`HolidayCalendar` / `WeeklyCalendar` / `DailyCalendar` / `CronCalendar` / `CompositeCalendar`、`JobPlanner` | 排除日历按名登记（`AddJobCalendar`），推算下一次时跳过被排除的时刻 |
 | `IJob`、`AddJob<TJob>(...)`、`AddJobType<TJob>()`、`JobRegistry`、`JobTypeRegistry` | 作业是作用域服务；代码登记的作业启动时写入存储；运行时登记的作业引用类型键；`JobTypeRegistry.Keys` 列出可选类型（ADR-0053） |
 | `JobDispatcher`、`JobRun` | 每次运行在新作用域、新上下文（关联 ID = 运行 ID）里经完整内核管道执行；`Data` = 作业数据 ← 触发器数据 ← 手动数据；`Attempt` / `RetryOf` 标出第几次尝试；异常翻译为 `SCHEDULING_UNEXPECTED_001`；超过 `Timeout` 取消令牌、作业返回之前时限已过记为 `SCHEDULING_TIMEOUT_001` |
