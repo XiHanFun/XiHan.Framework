@@ -96,6 +96,49 @@ public sealed class InMemorySecurityTests
     }
 
     [Fact]
+    public async Task GrantStore_StaysBounded_InSubjectsAsWellAsGrants()
+    {
+        var grants = new InMemoryPermissionGrantStore(new InMemorySecurityOptions { MaxGrants = 1 });
+        Assert.True(grants.Grant(new PermissionGrant(GrantSubject.ForUser("u0"), "a")).IsSuccess);
+
+        // 满了以后新主体的授予被拒绝，授予表里也不多出这个主体的键
+        for (var i = 1; i <= 50; i++)
+        {
+            Assert.Equal(SecurityErrors.CapacityExceeded, grants.Grant(new PermissionGrant(GrantSubject.ForUser($"u{i}"), "a", "acme")).Error?.Code);
+        }
+
+        Assert.Equal(1, grants.Count);
+        Assert.Equal(1, grants.SubjectCount);
+        Assert.Empty(await grants.GetGrantsAsync(GrantSubject.ForUser("u1"), "acme", CancellationToken.None));
+
+        // 撤销主体的最后一条授予连同它的键一起移除，重复撤销返回假
+        Assert.True(grants.Revoke(new PermissionGrant(GrantSubject.ForUser("u0"), "a")));
+        Assert.Equal(0, grants.Count);
+        Assert.Equal(0, grants.SubjectCount);
+        Assert.False(grants.Revoke(new PermissionGrant(GrantSubject.ForUser("u0"), "a")));
+        Assert.Empty(await grants.GetGrantsAsync(GrantSubject.ForUser("u0"), null, CancellationToken.None));
+
+        // 不同主体反复授予再撤销，授予表不随次数增长
+        for (var i = 0; i < 50; i++)
+        {
+            var grant = new PermissionGrant(GrantSubject.ForUser($"s{i}"), "a", "acme");
+            Assert.True(grants.Grant(grant).IsSuccess);
+            Assert.Equal(1, grants.SubjectCount);
+            Assert.True(grants.Revoke(grant));
+        }
+
+        Assert.Equal(0, grants.SubjectCount);
+
+        // 同一主体还有别的授予时只撤掉那一条，键保留
+        var wide = new InMemoryPermissionGrantStore(new InMemorySecurityOptions { MaxGrants = 3 });
+        Assert.True(wide.Grant(new PermissionGrant(GrantSubject.ForRole("r"), "a")).IsSuccess);
+        Assert.True(wide.Grant(new PermissionGrant(GrantSubject.ForRole("r"), "b")).IsSuccess);
+        Assert.True(wide.Revoke(new PermissionGrant(GrantSubject.ForRole("r"), "a")));
+        Assert.Equal(1, wide.SubjectCount);
+        Assert.Equal(["b"], await wide.GetGrantsAsync(GrantSubject.ForRole("r"), null, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Feature_EndToEnd_ApiKeyAuthentication_AndPermissionAuthorization()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>(), _configuration);

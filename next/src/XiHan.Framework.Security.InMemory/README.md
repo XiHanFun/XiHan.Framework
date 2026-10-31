@@ -23,7 +23,7 @@
 ## 语义
 
 - `ApiKeyAuthenticationHandler`：凭据 `ApiKey <key>` 对应一个主体；键比较常量时间，不匹配返回 `SECURITY_DENIED_003`。
-- `InMemoryPermissionGrantStore`：配置里的授予是全局的；运行时可用 `Grant` / `Revoke` 增加租户专属授予。上限 `XiHan:Security:InMemory:MaxPrincipals`（1000）与 `MaxGrants`（10000）。
+- `InMemoryPermissionGrantStore`：配置里的授予是全局的；运行时可用 `Grant` / `Revoke` 增加租户专属授予。上限 `XiHan:Security:InMemory:MaxPrincipals`（1000）与 `MaxGrants`（10000）。被容量拒绝的授予不留下条目，撤销主体在某租户下的最后一条授予时连同这一组移除。
 - 当另一个显式 Provider（如 `Security.Jwt`）被选中提供 `security.authentication` 时，本包只提供授权部分。
 - 健康项 `security.inmemory.capacity`（`InMemorySecurityHealthContributor`，同步计算）：主体存储或授予存储任一达到上限即 Degraded（`SECURITY_UNAVAILABLE_002`，先报主体存储），否则 Ready；被顶替的能力对应的存储不参与判定。
 

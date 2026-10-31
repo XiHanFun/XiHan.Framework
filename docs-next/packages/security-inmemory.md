@@ -127,6 +127,7 @@ public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
 - 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条 `tenant` 声明（有 `Tenant` 时）、附加声明。租户声明的类型固定为 `tenant`，不跟随 `XiHan:MultiTenancy:TenantClaim`。
 - API Key 逐条做常量时间比较；找不到返回 `SECURITY_DENIED_003`。
 - 容量：新增主体超过 `MaxPrincipals`、新增授予超过 `MaxGrants` 时返回 `SECURITY_UNAVAILABLE_002`；替换已有主体、重复授予不占容量。配置里的条目超过上限时，构造存储即抛出 `FrameworkException`。
+- 授予存储按（主体，租户）分组保存：被容量拒绝的授予不留下任何条目，撤销某个主体在某个租户下的最后一条授予时连同这一组一起移除，授予与撤销反复进行也不会让存储增长。
 - 健康项 `security.inmemory.capacity`：主体存储或授予存储任一达到上限即 Degraded（`SECURITY_UNAVAILABLE_002`，两者都满时报主体存储），否则 Ready。
 - 数据只在进程内存里：运行时的增删不跨实例同步，重启后恢复为配置内容。
 - 通过 `Security.Conformance` 的 `PermissionGrantStoreConformance`。

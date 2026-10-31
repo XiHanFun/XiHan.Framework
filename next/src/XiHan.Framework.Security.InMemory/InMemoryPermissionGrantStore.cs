@@ -66,6 +66,23 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
         }
     }
 
+    /// <summary>
+    /// 当前持有授予的主体键数。
+    /// </summary>
+    /// <remarks>
+    /// 键是主体种类、主体 ID 与租户的组合，只计至少还有一条授予的键，不会超过 <see cref="Count"/>。
+    /// </remarks>
+    internal int SubjectCount
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _grants.Count;
+            }
+        }
+    }
+
     /// <inheritdoc />
     public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
     {
@@ -91,7 +108,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     /// 授予。
     /// </summary>
     /// <remarks>
-    /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>，被拒绝的授予不留下任何条目。
     /// </remarks>
     public Result Grant(PermissionGrant grant)
     {
@@ -99,24 +116,27 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
         lock (_gate)
         {
             var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
-            if (!_grants.TryGetValue(key, out var set))
-            {
-                set = new HashSet<string>(StringComparer.Ordinal);
-                _grants[key] = set;
-            }
+            var exists = _grants.TryGetValue(key, out var set);
 
             // 重复授予幂等成功且不占容量；容量只在真正新增时检查
-            if (set.Contains(grant.Permission))
+            if (exists && set!.Contains(grant.Permission))
             {
                 return Result.Success();
             }
 
+            // 先查容量再建主体的集合：满了以后新主体的授予被拒绝时，授予表里也不能多出一个空集合
             if (_count >= Capacity)
             {
                 return Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
             }
 
-            set.Add(grant.Permission);
+            if (!exists)
+            {
+                set = new HashSet<string>(StringComparer.Ordinal);
+                _grants[key] = set;
+            }
+
+            set!.Add(grant.Permission);
             _count++;
             return Result.Success();
         }
@@ -126,20 +146,27 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     /// 撤销。
     /// </summary>
     /// <remarks>
-    /// 存在返回 <see langword="true"/>。
+    /// 存在返回 <see langword="true"/>；主体在该租户下的最后一条授予被撤销时连同它的键一起移除。
     /// </remarks>
     public bool Revoke(PermissionGrant grant)
     {
         ArgumentNullException.ThrowIfNull(grant);
         lock (_gate)
         {
-            if (_grants.TryGetValue((grant.Subject.Kind, grant.Subject.Id, grant.TenantId), out var set) && set.Remove(grant.Permission))
+            var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
+            if (!_grants.TryGetValue(key, out var set) || !set.Remove(grant.Permission))
             {
-                _count--;
-                return true;
+                return false;
             }
 
-            return false;
+            _count--;
+            // 空集合不留在表里：授予与撤销反复进行的主体（会话、临时委托）不让授予表只增不减
+            if (set.Count == 0)
+            {
+                _grants.Remove(key);
+            }
+
+            return true;
         }
     }
 }
