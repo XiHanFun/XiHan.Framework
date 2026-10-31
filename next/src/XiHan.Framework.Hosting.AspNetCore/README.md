@@ -25,7 +25,7 @@ Problem Details 的扩展成员（ADR-0024 补充）：VALIDATION 种类的错�
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions` 与 `Microsoft.AspNetCore.App`。
+依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.ObjectStorage.Abstractions`（Blob 端点与 `HostedBlobUrlFeature`）与 `Microsoft.AspNetCore.App`。
 
 ## 状态
 

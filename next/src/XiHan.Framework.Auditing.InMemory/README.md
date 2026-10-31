@@ -16,7 +16,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryAuditingFeature>());
 - 按写入顺序升序查询；过滤项见 `AuditQuery`；不合法的查询 → `AUDITING_VALIDATION_001`。
 - `LogEvents` 为真时每条事件以 Information 级写日志（内核日志薄桥），字段：动作、结果、主体、租户、资源、trace-id。
 - 被选中时挂 `AuditMiddleware`（Observe 末尾）；另有显式 Provider 提供 `auditing.trail` 时本包不绑定也不挂中间件。
-- 单进程、重启即失；生产持久化换 `Auditing.Database` 或 `Auditing.Messaging`。
+- 单进程、重启即失；生产持久化换 `Auditing.Database`，或自写实现 `IAuditSink` 与 `IAuditTrail` 的 Provider。
 
 ## 依赖方向
 

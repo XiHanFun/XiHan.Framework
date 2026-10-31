@@ -47,7 +47,7 @@ public static class McpEndpointRouteBuilderExtensions
     {
         if (!httpContext.GetXiHanContext().TryGetValue(out var context))
         {
-            throw new FrameworkException(KernelErrors.InvalidAppState, "The MCP endpoint requires UseXiHan() to run before routing; the invocation context is missing.");
+            throw new FrameworkException(KernelErrors.InvalidAppState, "The MCP endpoint requires UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
         }
 
         // 协议版本头缺失按当前版本处理（规范允许）；给了不支持的版本按规范回 400

@@ -32,8 +32,8 @@ app mcp --tenant acme                      # Protocols.Mcp 注册的 stdio 传�
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions` 与 `Microsoft.Extensions.Logging.Console`。被 `Protocols.Mcp`（`mcp` 命令）引用。
+依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`，以及 `Microsoft.Extensions.Hosting`、`Microsoft.Extensions.Configuration.Json` 与 `Microsoft.Extensions.Logging.Console`。被 `Protocols.Mcp`（`mcp` 命令）引用。
 
 ## 状态
 
-P3：可用。`xihan graph` / `xihan pipeline dump`（P1-19）由本宿主的 `graph` / `pipeline` 命令提供。
+P3：可用。`xihan graph` / `xihan pipeline`（P1-19）由本宿主的 `graph` / `pipeline` 命令提供，`xihan` 工具转发到应用。

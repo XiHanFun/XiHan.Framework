@@ -68,7 +68,7 @@ public sealed class OrdersFeature : IFeature
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 
-        // 权限码必须先在这里登记，操作契约与端点上的 RequireXiHanPermission 才能引用；未登记的权限码在装配时报错
+        // 权限码在这里登记，操作契约与端点上的 RequireXiHanPermission 引用它；没登记的权限码不会在装配时报错，调用时按策略不存在拒绝（SECURITY_NOTFOUND_001）
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
 

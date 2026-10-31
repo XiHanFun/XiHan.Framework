@@ -10,7 +10,7 @@ namespace XiHan.Framework.Kernel.Security;
 /// 权限定义。
 /// </summary>
 /// <remarks>
-/// 权限码与说明。权限码格式 <c>&lt;领域&gt;.&lt;资源&gt;.&lt;动作&gt;</c>，小写点分。
+/// 权限码与说明。权限码小写、点分、至少两段，每段以小写字母开头，可含数字与连字符，如 <c>orders.read</c>；要带领域前缀时写成 <c>sales.orders.read</c>（RFC-0008「授权」第 2 条）。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record PermissionDefinition

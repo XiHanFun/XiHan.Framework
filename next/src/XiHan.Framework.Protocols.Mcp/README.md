@@ -21,7 +21,7 @@ app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/cal
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore` 与 `XiHan.Framework.Localization.Abstractions`，以及 `Microsoft.AspNetCore.App`。协议适配器在宿主之上（Ring 5）。
+依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Hosting.CommandLine`（`mcp` 命令）与 `XiHan.Framework.Localization.Abstractions`，以及 `Microsoft.AspNetCore.App`。协议适配器在宿主之上（Ring 5）。
 
 ## 状态
 

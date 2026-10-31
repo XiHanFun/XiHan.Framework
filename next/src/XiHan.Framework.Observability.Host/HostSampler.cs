@@ -262,7 +262,7 @@ internal sealed partial class HostSampler : IAsyncDisposable
     /// <summary>
     /// 一次采样失败。
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Host sampling failed; the previous usage values are kept")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Host sampling failed; the previous usage values are kept.")]
     private static partial void LogSampleFailed(ILogger logger, Exception exception);
 
     /// <summary>

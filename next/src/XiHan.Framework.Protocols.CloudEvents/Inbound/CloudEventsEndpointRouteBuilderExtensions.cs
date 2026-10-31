@@ -50,7 +50,7 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     {
         if (!httpContext.GetXiHanContext().TryGetValue(out var context))
         {
-            throw new FrameworkException(KernelErrors.InvalidAppState, "The CloudEvents endpoint requires UseXiHan() to run before routing; the invocation context is missing.");
+            throw new FrameworkException(KernelErrors.InvalidAppState, "The CloudEvents endpoint requires UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
         }
 
         var read = await CloudEventsHttpBinding.ReadAsync(httpContext.Request, context.CancellationToken).ConfigureAwait(false);
