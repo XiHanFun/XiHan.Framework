@@ -166,6 +166,30 @@ public sealed class CloudEventsProtocolTests
     }
 
     [Fact]
+    public async Task Outbound_WebhookPublisher_SendsTheEnvelopeAsIs_WithoutTheInvocationsInternalExtensions()
+    {
+        var (app, _, _, outbound) = await StartAsync(("XiHan:Protocols:CloudEvents:Webhooks:orders", "https://hooks.test/orders"));
+        await using var host = app;
+        await using var scope = app.Services.CreateAsyncScope();
+        // 在带租户、主体、关联与区域的调用里推给外部接收方：Webhook 不像内部发布者那样从调用补齐扩展，内部标识不外推
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BaggageKeys.Tenant] = "acme",
+            [BaggageKeys.Principal] = "user-7",
+            [BaggageKeys.Correlation] = "corr-1",
+            [BaggageKeys.Locale] = "zh-CN",
+        });
+
+        var invoked = await app.Services.GetRequiredService<App>().InvokeAsync(context, static async ctx =>
+            (await ctx.Services.GetRequiredService<CloudEventsWebhookPublisher>().PublishAsync("orders", new MessageEnvelope { Id = "evt-2", Source = "/orders", Type = "orders.placed" }, ctx.CancellationToken)).ThrowIfFailure());
+
+        invoked.ThrowIfFailure();
+        var captured = Assert.Single(outbound.Requests);
+        Assert.Equal("evt-2", captured.Headers["ce-id"]);
+        Assert.DoesNotContain(captured.Headers.Keys, static name => name.StartsWith("ce-xihan", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Outbound_WebhookPublisher_PostsCloudEvents_AndMapsResponses()
     {
         var (app, _, _, outbound) = await StartAsync(("XiHan:Protocols:CloudEvents:Webhooks:orders", "https://hooks.test/orders"));

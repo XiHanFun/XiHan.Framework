@@ -13,7 +13,7 @@
 | `ICacheChangeFeed`、`CacheChange` | 可选的变更通知（ADR-0055）：本实例与其他实例对共享存储的写入与删除（键列表，或按前缀删除时的前缀），用来失效本地副本；本实例同步通知、其他实例经后端转发且不回送，尽力而为 |
 | `IDistributedLock`、`StoreDistributedLock`、`LockHandle`、`DistributedLockExtensions` | 建立在"不存在才写 + 比较删"之上的租约锁；`TryAcquireAsync` 被占用时无值，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001` |
 | `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，处理中返回冲突，完成后回放结果；操作调用还记下操作 ID 与成功的响应，回放时还原响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064） |
-| `CacheStoreDistributedCache`、`AddXiHanDistributedCache` | .NET `IDistributedCache` 架在 `ICacheStore` 上：键须满足 `CacheKey` 文法，绝对过期换算成 TTL（与滑动同时给时绝对优先），`Refresh` 是一次读取，同步成员在边界阻塞；提供 `caching.distributed` 的 Provider 被选中时登记，应用自己的登记优先 |
+| `CacheStoreDistributedCache`、`AddXiHanDistributedCache` | .NET `IDistributedCache` 架在 `ICacheStore` 上：键须满足 `CacheKey` 文法，绝对过期换算成 TTL（与滑动同时给时绝对优先），都不给时用存储的默认存活时间（内存与 Redis 缺省 5 分钟），`Refresh` 是一次读取，同步成员在边界阻塞；提供 `caching.distributed` 的 Provider 被选中时登记，应用自己的登记优先 |
 
 ```csharp
 var cache = context.Services.GetRequiredService<ISharedCache>();
@@ -24,7 +24,7 @@ var profile = await cache.GetOrCreateAsync(new CacheKey($"profile:{id}"), ct => 
 
 ## 依赖方向
 
-依赖 `XiHan.Framework.Kernel` 与 `Microsoft.Extensions.Caching.Abstractions`。被 `Caching.InMemory`、`Caching.Redis`、`Caching.Remote` 引用。
+依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`（消息目录）与 `Microsoft.Extensions.Caching.Abstractions`。被 `Caching.InMemory`、`Caching.Redis`、`Caching.Remote`、`Caching.Hybrid` 引用。
 
 ## 状态
 

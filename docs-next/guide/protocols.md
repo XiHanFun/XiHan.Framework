@@ -316,7 +316,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events \
 
 ### 出站 Webhook
 
-`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>` 配置的地址。它只按具体类型登记，不替换消息代理的发布者，要推送的地方显式注入它。下例把 `orders` 主题上的每条消息转发给外部服务，Webhook 失败时处理器返回失败，消息按消息子系统的规则重试，用尽后进死信：
+`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>` 配置的地址。它只按具体类型登记，不替换消息代理的发布者，要推送的地方显式注入它。信封按原样发出，不从当前调用补齐扩展（内部发布者才补齐），租户、主体等内部标识不会外推；要带给接收方的扩展显式写进信封。下例把 `orders` 主题上的每条消息转发给外部服务，Webhook 失败时处理器返回失败，消息按消息子系统的规则重试，用尽后进死信：
 
 ```csharp
 using XiHan.Framework.Messaging.Abstractions.Handlers;

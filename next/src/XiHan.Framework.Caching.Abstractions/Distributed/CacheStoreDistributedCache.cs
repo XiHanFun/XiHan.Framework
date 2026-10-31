@@ -77,7 +77,7 @@ public sealed class CacheStoreDistributedCache : IDistributedCache
     /// 把 .NET 的过期选项换算成存储的条目选项。
     /// </summary>
     /// <remarks>
-    /// 绝对过期（时刻或相对现在，两者都给取较早者）换算成存活时间，已过去的时刻拒绝；没有绝对过期时用滑动过期；都没有则不过期。
+    /// 绝对过期（时刻或相对现在，两者都给取较早者）换算成存活时间，已过去的时刻拒绝；没有绝对过期时用滑动过期；都没有时是 <see cref="CacheEntryOptions.Default"/>，即存储的默认存活时间（内存与 Redis 实现缺省 5 分钟，远程插件用自己的默认），不是不过期。
     /// </remarks>
     public static CacheEntryOptions Translate(DistributedCacheEntryOptions options, DateTimeOffset now)
     {

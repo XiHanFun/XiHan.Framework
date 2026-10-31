@@ -336,7 +336,7 @@ curl -X POST http://localhost:5000/orders \
 | --- | --- |
 | `AbsoluteExpiration` / `AbsoluteExpirationRelativeToNow` | 取较早者换算成 `TimeToLive`；已经过去的时刻抛 `ArgumentOutOfRangeException` |
 | `SlidingExpiration` | 没有绝对过期时对应 `SlidingExpiration`；与绝对过期同时给时绝对优先 |
-| 都不给 | `CacheEntryOptions.Default`，即 Provider 的默认存活时间（300 秒） |
+| 都不给 | `CacheEntryOptions.Default`，即存储的默认存活时间：内存与 Redis 实现缺省 300 秒（`DefaultTimeToLiveSeconds`），远程插件用自己的默认；不是不过期 |
 
 键必须满足 `CacheKey` 文法，否则抛 `ArgumentException`。`Refresh` 是一次读取（读取即续期滑动过期）；同步成员在适配器边界阻塞等待异步存储，调用方应优先用异步成员。
 

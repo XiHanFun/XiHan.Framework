@@ -51,7 +51,7 @@
   - 没有上游的调用按 `SamplingRatio` 采样。
   - 没有 `traceparent` 的 HTTP 请求与 ASP.NET Core 的请求 Span 同一 trace-id，`xihan.invoke` 是它的子 Span。
   - 有当前 Activity 时，`App.CreateContext`（不传 trace-id）不再生成新的 trace-id。
-- 未改：消息信封、插件元数据与插件出站的 `traceparent` 仍只传 trace-id 与 parent-id，按已采样处理。
+- 未改：插件元数据与插件出站的 `traceparent` 仍只传 trace-id 与 parent-id，按已采样处理。消息信封已在随后的修订里带上采样标志（发布侧按调用的标志写，派发时还原，RFC-0009）。
 - 测试：
   - 内核：上游采样与不采样、并入当前 Activity 与嵌套调用、链路的根按根规则采样且 trace-id 一致、没有采样决定的旧式根 Activity。
   - HTTP：`-00` / `-01` 的标志，没有 `traceparent` 时并入 ASP.NET Core 的请求 Activity。
