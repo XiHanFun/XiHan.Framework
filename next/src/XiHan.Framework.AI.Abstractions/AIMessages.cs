@@ -146,14 +146,6 @@ public static class AIMessages
     public const string KnowledgeUnavailable = "ai.knowledge.unavailable";
 
     /// <summary>
-    /// 知识库存储容量已满。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>collection</c>、<c>limit</c>。
-    /// </remarks>
-    public const string KnowledgeCapacity = "ai.knowledge.capacity";
-
-    /// <summary>
     /// 请求不合法。
     /// </summary>
     /// <remarks>

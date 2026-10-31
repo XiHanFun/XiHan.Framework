@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "ガードレール '{guardrail}' の検査に失敗しました: {reason}",
   "ai.guardrail.injection": "メッセージはプロンプト インジェクションの疑いがあります。",
   "ai.guardrail.keyword": "メッセージに禁止キーワード '{keyword}' が含まれています。",
-  "ai.knowledge.capacity": "ナレッジ コレクション '{collection}' は満杯です (上限 {limit})。",
   "ai.knowledge.dimensions": "埋め込みは {actual} 次元ですが、ナレッジ ストアは {expected} 次元で構成されています。",
   "ai.knowledge.unavailable": "ナレッジ ストアは利用できません: {reason}",
   "ai.model.timeout": "AI プロバイダー '{provider}' の呼び出しがタイムアウトしました。",

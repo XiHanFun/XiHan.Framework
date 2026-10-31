@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "护栏 '{guardrail}' 检查失败：{reason}",
   "ai.guardrail.injection": "消息疑似提示注入。",
   "ai.guardrail.keyword": "消息包含被禁止的关键词 '{keyword}'。",
-  "ai.knowledge.capacity": "知识库集合 '{collection}' 已满（上限 {limit}）。",
   "ai.knowledge.dimensions": "嵌入是 {actual} 维，而知识库配置为 {expected} 维。",
   "ai.knowledge.unavailable": "知识库存储不可用：{reason}",
   "ai.model.timeout": "调用 AI Provider '{provider}' 超时。",

@@ -106,7 +106,8 @@ public sealed class AIToolCatalog : IAIToolCatalog
         if (_entries.TryGetValue(name, out var existing))
         {
             var first = existing.Descriptor?.Id ?? existing.Tool?.GetType().FullName ?? name;
-            throw new FrameworkException(AIErrors.RequestInvalid, string.Format(CultureInfo.InvariantCulture, "AI tool name '{0}' is used by both '{1}' and '{2}'.", name, first, owner));
+            // 启动失败：文案取消息目录（十种区域），参数带出撞名的两方
+            Result.Failure(Error.Validation(AIErrors.RequestInvalid, AIMessages.ToolDuplicate, MessageArguments.Of(("name", name), ("first", first), ("second", owner)))).ThrowIfFailure();
         }
 
         _entries.Add(name, entry);

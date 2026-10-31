@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "Le garde-fou '{guardrail}' a échoué : {reason}",
   "ai.guardrail.injection": "Le message ressemble à une injection de prompt.",
   "ai.guardrail.keyword": "Le message contient le mot-clé interdit '{keyword}'.",
-  "ai.knowledge.capacity": "La collection de connaissances '{collection}' est pleine (limite {limit}).",
   "ai.knowledge.dimensions": "L'incorporation a {actual} dimensions, mais le magasin de connaissances est configuré pour {expected}.",
   "ai.knowledge.unavailable": "Le magasin de connaissances est indisponible : {reason}",
   "ai.model.timeout": "L'appel au fournisseur d'IA '{provider}' a expiré.",

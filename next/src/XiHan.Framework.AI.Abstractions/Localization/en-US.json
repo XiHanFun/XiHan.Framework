@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "Guardrail '{guardrail}' failed: {reason}",
   "ai.guardrail.injection": "The message looks like a prompt injection.",
   "ai.guardrail.keyword": "The message contains the blocked keyword '{keyword}'.",
-  "ai.knowledge.capacity": "The knowledge collection '{collection}' is full (limit {limit}).",
   "ai.knowledge.dimensions": "The embedding has {actual} dimensions but the knowledge store is configured for {expected}.",
   "ai.knowledge.unavailable": "The knowledge store is unavailable: {reason}",
   "ai.model.timeout": "The call to AI provider '{provider}' timed out.",

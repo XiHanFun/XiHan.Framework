@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Buffers;
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
@@ -19,7 +18,7 @@ namespace XiHan.Framework.AI.Abstractions.Tools;
 /// 把一个操作契约桥接成模型工具。
 /// </summary>
 /// <remarks>
-/// 参数序列化成请求 JSON，在新作用域的新上下文里经完整管道执行。新上下文复制调用方的追踪 ID、Baggage、截止时间与安全上下文（主体与租户），工具以调用方身份执行、Authorize 阶段照常按契约判定；凭据不复制，不重新认证。成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
+/// 参数序列化成请求 JSON（无法序列化的参数以 <c>AI_VALIDATION_001</c> 交给模型），在新作用域的新上下文里经完整管道执行。新上下文复制调用方的追踪 ID、Baggage、截止时间与安全上下文（主体与租户），工具以调用方身份执行、Authorize 阶段照常按契约判定；凭据不复制，不重新认证。成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OperationAIFunction : AIFunction
@@ -86,7 +85,6 @@ public sealed class OperationAIFunction : AIFunction
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(arguments);
-        var payload = SerializeArguments(arguments);
         // 每次工具调用都是一次独立调用：新作用域、新上下文，Authorize 阶段按契约判定；Baggage 与截止时间沿用调用方，追踪 ID 不变
         await using var scope = _scopes.CreateAsyncScope();
         var context = App.CreateContext(
@@ -98,7 +96,14 @@ public sealed class OperationAIFunction : AIFunction
         // 以调用方身份执行：主体与租户取调用方此刻的安全上下文（调用方已在自己的管道里认证过）。不复制凭据，Authenticate 阶段没有凭据可认证即保留这个主体，
         // Authorize 阶段以它按契约判定——工具既不能绕过授权，也不会因为丢了身份被当成匿名一律拒绝
         context.SetSecurity(_caller.GetSecurity());
-        var response = await _invoker.InvokeAsync(context, new OperationRequest(_descriptor.Id, payload)).ConfigureAwait(false);
+        // 模型给的参数序列化不了，与操作失败一样以 JSON 错误交给模型，不抛异常
+        var payload = SerializeArguments(arguments);
+        if (!payload.TryGetValue(out var body))
+        {
+            return Failure(payload.Error!, context);
+        }
+
+        var response = await _invoker.InvokeAsync(context, new OperationRequest(_descriptor.Id, body)).ConfigureAwait(false);
         if (response.IsSuccess)
         {
             if (response.Payload.Length == 0)
@@ -110,7 +115,17 @@ public sealed class OperationAIFunction : AIFunction
             return document.RootElement.Clone();
         }
 
-        var error = response.Error!;
+        return Failure(response.Error!, context);
+    }
+
+    /// <summary>
+    /// 交给模型的错误对象 <c>{"error","message"}</c>。
+    /// </summary>
+    /// <remarks>
+    /// 文案按调用方区域翻译，没有本地化器时取错误的描述。
+    /// </remarks>
+    private JsonElement Failure(Error error, InvocationContext context)
+    {
         var text = _localizer is not null ? _localizer.Localize(error, context) : error.Message;
         using var failure = JsonDocument.Parse(new JsonObject { ["error"] = error.Code, ["message"] = text }.ToJsonString());
         return failure.RootElement.Clone();
@@ -120,9 +135,9 @@ public sealed class OperationAIFunction : AIFunction
     /// 参数 → 请求 JSON。
     /// </summary>
     /// <remarks>
-    /// JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入。
+    /// JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入；序列化不了的参数返回 <c>AI_VALIDATION_001</c>。
     /// </remarks>
-    private ReadOnlyMemory<byte> SerializeArguments(AIFunctionArguments arguments)
+    private Result<ReadOnlyMemory<byte>> SerializeArguments(AIFunctionArguments arguments)
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -131,7 +146,10 @@ public sealed class OperationAIFunction : AIFunction
             foreach (var (name, value) in arguments)
             {
                 writer.WritePropertyName(name);
-                WriteValue(writer, name, value);
+                if (!WriteValue(writer, value))
+                {
+                    return Error.Validation(AIErrors.RequestInvalid, AIMessages.ToolArgumentInvalid, MessageArguments.Of(("name", Name), ("argument", name)));
+                }
             }
 
             writer.WriteEndObject();
@@ -143,7 +161,10 @@ public sealed class OperationAIFunction : AIFunction
     /// <summary>
     /// 写一个参数值。
     /// </summary>
-    private void WriteValue(Utf8JsonWriter writer, string name, object? value)
+    /// <remarks>
+    /// 序列化选项里没有该类型的信息、或序列化本身失败时返回 <see langword="false"/>。
+    /// </remarks>
+    private bool WriteValue(Utf8JsonWriter writer, object? value)
     {
         switch (value)
         {
@@ -190,17 +211,18 @@ public sealed class OperationAIFunction : AIFunction
                 writer.WriteStringValue(enumeration.ToString());
                 break;
             default:
-                var type = value.GetType();
                 try
                 {
-                    JsonSerializer.Serialize(writer, value, JsonSerializerOptions.GetTypeInfo(type));
+                    JsonSerializer.Serialize(writer, value, JsonSerializerOptions.GetTypeInfo(value.GetType()));
                 }
                 catch (Exception exception) when (exception is NotSupportedException or InvalidOperationException)
                 {
-                    throw new FrameworkException(AIErrors.RequestInvalid, string.Format(CultureInfo.InvariantCulture, "Argument '{0}' of AI tool '{1}' has type '{2}', which cannot be serialized.", name, Name, type), exception);
+                    return false;
                 }
 
                 break;
         }
+
+        return true;
     }
 }

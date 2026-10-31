@@ -299,7 +299,6 @@ const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailBlocked = "ai.guardrai
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailFailed = "ai.guardrail.failed" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailInjection = "ai.guardrail.injection" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailKeyword = "ai.guardrail.keyword" -> string!
-const XiHan.Framework.AI.Abstractions.AIMessages.KnowledgeCapacity = "ai.knowledge.capacity" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.KnowledgeDimensions = "ai.knowledge.dimensions" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.KnowledgeUnavailable = "ai.knowledge.unavailable" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.ModelTimeout = "ai.model.timeout" -> string!

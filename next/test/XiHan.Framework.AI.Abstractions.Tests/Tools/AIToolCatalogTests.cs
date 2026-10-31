@@ -81,6 +81,11 @@ public sealed class AIToolCatalogTests
         var crashed = Assert.IsType<JsonElement>(await tool.InvokeAsync(new AIFunctionArguments { ["text"] = "throw" }, CancellationToken.None));
         Assert.EndsWith("UNEXPECTED_001", crashed.GetProperty("error").GetString(), StringComparison.Ordinal);
 
+        // 序列化不了的参数与操作失败一样以 JSON 错误交给模型，不抛异常
+        var unserializable = Assert.IsType<JsonElement>(await tool.InvokeAsync(new AIFunctionArguments { ["text"] = "hi", ["repeat"] = typeof(string) }, CancellationToken.None));
+        Assert.Equal(AIErrors.RequestInvalid, unserializable.GetProperty("error").GetString());
+        Assert.Contains("repeat", unserializable.GetProperty("message").GetString(), StringComparison.Ordinal);
+
         var manual = Assert.IsType<AIFunction>(catalog.Bind(caller).Single(static tool => tool.Name == "manual_add"), exactMatch: false);
         Assert.Equal(5, Assert.IsType<JsonElement>(await manual.InvokeAsync(new AIFunctionArguments { ["a"] = 2, ["b"] = 3 }, CancellationToken.None)).GetInt32());
     }
@@ -90,7 +95,10 @@ public sealed class AIToolCatalogTests
     {
         var duplicate = AIFailure(await Assert.ThrowsAsync<FrameworkException>(() => StartAsync([("XiHan:AI:Tools:echoes.rename", "echoes_create")])));
         Assert.Equal(AIErrors.RequestInvalid, duplicate.Code);
+        // 文案来自消息目录的 ai.tool.duplicate，带出撞名的两方
         Assert.Contains("echoes_create", duplicate.Message, StringComparison.Ordinal);
+        Assert.Contains("echoes.create", duplicate.Message, StringComparison.Ordinal);
+        Assert.Contains("echoes.rename", duplicate.Message, StringComparison.Ordinal);
 
         var invalid = AIFailure(await Assert.ThrowsAsync<FrameworkException>(() => StartAsync([("XiHan:AI:Tools:echoes.rename", "bad name!")])));
         Assert.Equal(AIErrors.RequestInvalid, invalid.Code);

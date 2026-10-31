@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "Die Schutzregel '{guardrail}' ist fehlgeschlagen: {reason}",
   "ai.guardrail.injection": "Die Nachricht sieht wie eine Prompt-Injektion aus.",
   "ai.guardrail.keyword": "Die Nachricht enthält das gesperrte Schlüsselwort '{keyword}'.",
-  "ai.knowledge.capacity": "Die Wissenssammlung '{collection}' ist voll (Limit {limit}).",
   "ai.knowledge.dimensions": "Die Einbettung hat {actual} Dimensionen, der Wissensspeicher ist aber für {expected} konfiguriert.",
   "ai.knowledge.unavailable": "Der Wissensspeicher ist nicht verfügbar: {reason}",
   "ai.model.timeout": "Der Aufruf des KI-Providers '{provider}' hat das Zeitlimit überschritten.",

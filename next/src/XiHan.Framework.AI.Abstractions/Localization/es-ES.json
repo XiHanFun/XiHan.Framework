@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "La barrera '{guardrail}' falló: {reason}",
   "ai.guardrail.injection": "El mensaje parece una inyección de prompt.",
   "ai.guardrail.keyword": "El mensaje contiene la palabra bloqueada '{keyword}'.",
-  "ai.knowledge.capacity": "La colección de conocimiento '{collection}' está llena (límite {limit}).",
   "ai.knowledge.dimensions": "La incrustación tiene {actual} dimensiones, pero el almacén de conocimiento está configurado para {expected}.",
   "ai.knowledge.unavailable": "El almacén de conocimiento no está disponible: {reason}",
   "ai.model.timeout": "La llamada al proveedor de IA '{provider}' agotó el tiempo de espera.",

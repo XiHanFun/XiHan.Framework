@@ -371,7 +371,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 
 | 错误码 | 何时出现 |
 | --- | --- |
-| `AI_VALIDATION_001` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、工具名不合法或重名（启动失败） |
+| `AI_VALIDATION_001` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、工具参数序列化不了（交给模型的 JSON 错误）、工具名不合法或重名（启动失败） |
 | `AI_VALIDATION_002` | 嵌入维度与 `XiHan:AI:Knowledge:Dimensions` 不一致 |
 | `AI_NOTFOUND_001` | Provider 未配置，或它的种类没有登记工厂 |
 | `AI_NOTFOUND_002` | 提示词模板不存在 |

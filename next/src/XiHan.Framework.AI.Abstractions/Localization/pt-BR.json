@@ -3,7 +3,6 @@
   "ai.guardrail.failed": "A proteção '{guardrail}' falhou: {reason}",
   "ai.guardrail.injection": "A mensagem parece uma injeção de prompt.",
   "ai.guardrail.keyword": "A mensagem contém a palavra bloqueada '{keyword}'.",
-  "ai.knowledge.capacity": "A coleção de conhecimento '{collection}' está cheia (limite {limit}).",
   "ai.knowledge.dimensions": "O embedding tem {actual} dimensões, mas o repositório de conhecimento está configurado para {expected}.",
   "ai.knowledge.unavailable": "O repositório de conhecimento está indisponível: {reason}",
   "ai.model.timeout": "A chamada ao provedor de IA '{provider}' expirou.",

@@ -178,7 +178,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 | 错误码 | 何时出现 |
 | --- | --- |
-| `AI_VALIDATION_001` | Provider 缺必填项、提示词缺参数、文档 ID 或问题为空、工具名不合法或重名 |
+| `AI_VALIDATION_001` | Provider 缺必填项、提示词缺参数、文档 ID 或问题为空、工具名不合法或重名、工具参数序列化不了（以 JSON 错误交给模型） |
 | `AI_VALIDATION_002` | 嵌入维度与知识库配置不一致 |
 | `AI_NOTFOUND_001` | Provider 未配置，或种类没有登记工厂 |
 | `AI_NOTFOUND_002` | 提示词模板不存在 |
