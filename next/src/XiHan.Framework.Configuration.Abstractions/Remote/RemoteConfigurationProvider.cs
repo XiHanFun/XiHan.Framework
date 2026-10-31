@@ -83,7 +83,7 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
 
         if (_options.PollInterval is { } interval && _loop is null)
         {
-            _timer = new PeriodicTimer(interval);
+            _timer = new PeriodicTimer(interval, _options.Clock);
             var (timer, stopping) = (_timer, _stopping.Token);
             _loop = Task.Run(() => PollAsync(timer, stopping), CancellationToken.None);
         }

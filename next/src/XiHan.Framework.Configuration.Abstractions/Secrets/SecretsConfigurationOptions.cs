@@ -66,6 +66,18 @@ public sealed record SecretsConfigurationOptions
     }
 
     /// <summary>
+    /// 重读计时用的时钟。
+    /// </summary>
+    /// <remarks>
+    /// 默认系统时钟；测试换成可推进的时钟，重读由用例触发而不是等真实时间。
+    /// </remarks>
+    public TimeProvider Clock
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = TimeProvider.System;
+
+    /// <summary>
     /// 首次读取缺失或失败的项是否跳过。
     /// </summary>
     /// <remarks>

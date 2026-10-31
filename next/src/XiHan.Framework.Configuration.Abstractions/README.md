@@ -4,8 +4,8 @@
 
 | 能力 | 契约 | 配置源 |
 | --- | --- | --- |
-| `configuration.remote@1` | `IRemoteConfigurationClient.FetchAsync(namespace, knownVersion)` → `Result<Maybe<ConfigurationDocument>>`（未变化为无值，可长轮询） | `AddXiHanRemoteConfiguration(client, options)`：首次同步加载（`LoadTimeout`），之后按 `PollInterval` 轮询，变化时整体替换并触发重载；失败保留最后一份成功的数据并回调 `OnError` |
-| `configuration.secrets@1` | `ISecretStore.GetAsync(names[])` 批量逐项 `SecretLookup`；`SecretValue.ToString()` 固定遮蔽 | `AddXiHanSecrets(store, options)`：`Mappings` 把配置键映射到密钥名，构建时一次批量读取，可按 `RefreshInterval` 重读 |
+| `configuration.remote@1` | `IRemoteConfigurationClient.FetchAsync(namespace, knownVersion)` → `Result<Maybe<ConfigurationDocument>>`（未变化为无值，可长轮询） | `AddXiHanRemoteConfiguration(client, options)`：首次同步加载（`LoadTimeout`），之后按 `PollInterval` 轮询（计时用 `Clock`），变化时整体替换并触发重载；失败保留最后一份成功的数据并回调 `OnError` |
+| `configuration.secrets@1` | `ISecretStore.GetAsync(names[])` 批量逐项 `SecretLookup`；`SecretValue.ToString()` 固定遮蔽 | `AddXiHanSecrets(store, options)`：`Mappings` 把配置键映射到密钥名，构建时一次批量读取，可按 `RefreshInterval` 重读（计时用 `Clock`） |
 
 ```csharp
 builder.Configuration

@@ -183,6 +183,7 @@ public sealed record LedgerConnection(string ConnectionString);
 | `Namespace` | `string` | 构造参数 | 远程命名空间，Nacos 里是 `dataId` |
 | `Prefix` | `string?` | `null` | 挂载的配置节 |
 | `PollInterval` | `TimeSpan?` | 30 秒 | 轮询周期，`null` 关闭，必须为正 |
+| `Clock` | `TimeProvider` | 系统时钟 | 轮询计时用的时钟；测试换成可推进的时钟（如 `FakeTimeProvider`），轮询由用例触发 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次加载的超时，必须为正 |
 | `Optional` | `bool` | `false` | 首次加载失败时是否继续启动 |
 | `OnError` | `Action<Error>?` | `null` | 加载或轮询失败时的回调 |
@@ -253,6 +254,7 @@ public sealed class OrderLimits
 | `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
 | `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
+| `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟；测试换成可推进的时钟，重读由用例触发 |
 | `Optional` | `bool` | `false` | 首次读取缺失或失败的项是否跳过 |
 | `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次 |
 
