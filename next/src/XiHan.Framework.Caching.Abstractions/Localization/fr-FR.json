@@ -1,6 +1,8 @@
 {
   "caching.idempotency.in_progress": "Un appel avec la même clé d'idempotence est toujours en cours.",
   "caching.idempotency.invalid_key": "La clé d'idempotence n'est pas valide : elle ne doit être ni vide ni contenir d'espaces ou de caractères de contrôle.",
+  "caching.idempotency.key_reused": "La clé d'idempotence a déjà été utilisée par un autre appel ('{recorded}') ; son résultat ne peut pas être rejoué pour '{operation}'.",
   "caching.idempotency.recently_completed": "Un appel avec la même clé d'idempotence vient de se terminer ou est toujours en cours ; réessayez plus tard.",
+  "caching.idempotency.response_unavailable": "La réponse enregistrée de l'opération '{operation}' ne peut pas être rejouée : {reason}",
   "caching.store.capacity_reached": "Le cache en mémoire a atteint sa capacité de {capacity} entrées."
 }

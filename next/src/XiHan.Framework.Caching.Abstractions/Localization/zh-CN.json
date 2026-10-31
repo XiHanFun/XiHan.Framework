@@ -1,6 +1,8 @@
 {
   "caching.idempotency.in_progress": "同一幂等键的调用仍在处理中。",
   "caching.idempotency.invalid_key": "幂等键不合法：必须非空，且不含空白或控制字符。",
+  "caching.idempotency.key_reused": "幂等键已被另一个调用（'{recorded}'）使用，其结果不能回放给 '{operation}'。",
   "caching.idempotency.recently_completed": "同一幂等键的调用刚刚完成或仍在处理中，请稍后重试。",
+  "caching.idempotency.response_unavailable": "操作 '{operation}' 记录的响应无法回放：{reason}",
   "caching.store.capacity_reached": "内存缓存已达到容量上限 {capacity} 条。"
 }

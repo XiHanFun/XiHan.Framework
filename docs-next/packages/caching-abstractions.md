@@ -66,7 +66,7 @@
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |
 | `IDistributedLock`、`LockHandle`、`StoreDistributedLock` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
-| `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重；`WasReplayed(context)` 判断结果是否来自回放 |
+| `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（记录带 `Operation`、`Response`）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的字节条目键管理：按前缀分页列键、读字节数与剩余存活、按前缀删除 |
 | `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理：进程内对象缓存的条目不在字节存储里，由它列出 |
@@ -101,7 +101,7 @@ public sealed class OneShotGate(ICacheStore store)
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 不合并并发：多个未命中的调用方各自执行工厂，后写覆盖先写。
 - `LockHandle` 只释放一次；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。锁不可重入、不续约。
-- 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，回放不还原响应体。
+- 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间；同步成员阻塞等待异步存储。
 - `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 拒绝空前缀；`CacheKeyQuery.Limit` 为 1 到 `MaxLimit`（1000），默认 100。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；跨实例通知可能丢失。
@@ -114,6 +114,7 @@ public sealed class OneShotGate(ICacheStore store)
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（已登记，框架不产出） |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
+| `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
 
 ## 相关
 

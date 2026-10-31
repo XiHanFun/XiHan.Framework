@@ -40,6 +40,14 @@ public static class CachingErrors
     public const string IdempotentInProgress = "CACHING_CONFLICT_002";
 
     /// <summary>
+    /// 幂等记录不能回放给本次调用。
+    /// </summary>
+    /// <remarks>
+    /// 同一幂等键已被另一个调用（另一个操作，或操作与非操作调用之间）使用，或记录里的响应无法还原。
+    /// </remarks>
+    public const string IdempotentMismatch = "CACHING_CONFLICT_003";
+
+    /// <summary>
     /// 内存缓存已达容量上限。
     /// </summary>
     /// <remarks>

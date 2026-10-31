@@ -71,6 +71,19 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public void DecodeResponse_RoundTripsEncodeResponse_AndRejectsNullOrInvalidJson()
+    {
+        var descriptor = new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(EchoOperation.Contract, "owner", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        var response = new EchoResponse("hihi", "0af7651916cd43dd8448eb211c80319c");
+
+        // 幂等回放靠它把记录的 XGI 载荷还原成响应对象（RFC-0006）
+        Assert.Equal(response, descriptor.DecodeResponse(descriptor.EncodeResponse(response)).ValueOrThrow());
+        Assert.Equal(KernelErrors.InvalidOperationPayload, descriptor.DecodeResponse("null"u8.ToArray()).Error?.Code);
+        Assert.Equal(KernelErrors.InvalidOperationPayload, descriptor.DecodeResponse("{oops"u8.ToArray()).Error?.Code);
+        Assert.Equal(KernelErrors.InvalidOperationPayload, descriptor.DecodeResponse(ReadOnlyMemory<byte>.Empty).Error?.Code);
+    }
+
+    [Fact]
     public void Contract_ValidatesIdAndAuthorization()
     {
         var contract = new OperationContract("order-lines.list", Stability.Preview, Expose.Http, policy: "owners");

@@ -1,10 +1,12 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -15,7 +17,7 @@ namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 /// Idempotency 阶段的中间件。
 /// </summary>
 /// <remarks>
-/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果，不执行处理器。处理器抛出异常时清除标记，允许重试。
+/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
@@ -81,7 +83,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
 
             // 处理完成后用结果替换"处理中"标记；没有显式结果视为成功
             var outcome = context.GetOutcome().ValueOr(Result.Success());
-            await store.SetAsync(key, Serialize(IdempotencyRecord.From(outcome)), CacheEntryOptions.Expires(_options.TimeToLive), context.CancellationToken).ConfigureAwait(false);
+            await store.SetAsync(key, Serialize(Complete(context, outcome)), CacheEntryOptions.Expires(_options.TimeToLive), context.CancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -103,9 +105,74 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
         }
 
         // 已完成：直接回放记录的结果，不再执行处理器
-        context.Set(_replayedKey, true);
-        context.SetOutcome(record.ToResult());
+        context.SetOutcome(Replay(context, record));
     }
+
+    /// <summary>
+    /// 由首次调用的结果生成已完成记录。
+    /// </summary>
+    /// <remarks>
+    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）。
+    /// </remarks>
+    private static IdempotencyRecord Complete(InvocationContext context, Result outcome)
+    {
+        var record = IdempotencyRecord.From(outcome);
+        if (!context.GetOperation().TryGetValue(out var operation))
+        {
+            return record;
+        }
+
+        if (!outcome.IsSuccess || !context.GetOperationResponse().TryGetValue(out var response))
+        {
+            return record with { Operation = operation.Id };
+        }
+
+        using var document = JsonDocument.Parse(operation.EncodeResponse(response));
+        return record with { Operation = operation.Id, Response = document.RootElement.Clone() };
+    }
+
+    /// <summary>
+    /// 回放已完成的记录。
+    /// </summary>
+    /// <remarks>
+    /// 记录必须属于同一个操作（都不是操作调用时都为空），否则返回 <see cref="CachingErrors.IdempotentMismatch"/>；成功的操作调用把记录的响应解码放回上下文，调用器与宿主端点据此返回首次调用的响应。
+    /// </remarks>
+    private static Result Replay(InvocationContext context, IdempotencyRecord record)
+    {
+        var current = context.GetOperation();
+        var operationId = current.TryGetValue(out var descriptor) ? descriptor.Id : null;
+        if (!string.Equals(record.Operation, operationId, StringComparison.Ordinal))
+        {
+            // 同一个键被另一个操作或非操作调用用过：把别人的结果当成本次的结果回放会让调用方拿到错误的响应
+            return Error.Conflict(CachingErrors.IdempotentMismatch, CachingMessages.IdempotentKeyReused, MessageArguments.Of(("operation", operationId ?? "-"), ("recorded", record.Operation ?? "-")));
+        }
+
+        var outcome = record.ToResult();
+        if (outcome.IsSuccess && descriptor is not null)
+        {
+            if (record.Response is not { } json)
+            {
+                return Unavailable(descriptor.Id, "the record has no response");
+            }
+
+            var decoded = descriptor.DecodeResponse(Encoding.UTF8.GetBytes(json.GetRawText()));
+            if (!decoded.TryGetValue(out var response))
+            {
+                return Unavailable(descriptor.Id, decoded.Error!.Message);
+            }
+
+            context.SetOperationResponse(response);
+        }
+
+        context.Set(_replayedKey, true);
+        return outcome;
+    }
+
+    /// <summary>
+    /// 构造记录的响应无法回放的错误。
+    /// </summary>
+    private static Error Unavailable(string operation, string reason)
+        => Error.Conflict(CachingErrors.IdempotentMismatch, CachingMessages.IdempotentResponseUnavailable, MessageArguments.Of(("operation", operation), ("reason", reason)));
 
     /// <summary>
     /// 用源生成上下文把记录序列化为 UTF-8 JSON 字节。

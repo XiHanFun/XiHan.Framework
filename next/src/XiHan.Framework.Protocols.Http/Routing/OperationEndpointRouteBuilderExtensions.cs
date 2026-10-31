@@ -49,10 +49,13 @@ public static class OperationEndpointRouteBuilderExtensions
 
             // 绑定委托与描述一起挂在元数据上：UseXiHan() 在进入管道前调用它，Validate 阶段才能看到载荷
             OperationPayloadBinder binder = (httpContext, cancellationToken) => OperationRequestBinder.BindAsync(httpContext, descriptor, cancellationToken);
+            // 写出方式也挂在元数据上：端点执行成功时用它，Idempotency 阶段回放（端点没有执行）时 UseXiHan() 用它写出同样的状态码与正文
+            OperationResponseWriter writer = WriteResponseAsync;
             endpoints
                 .MapMethods(route.Template, [route.Method], httpContext => HandleAsync(httpContext, descriptor))
                 .WithMetadata(descriptor)
                 .WithMetadata(binder)
+                .WithMetadata(writer)
                 .WithName(descriptor.Id);
             count++;
         }
@@ -86,8 +89,19 @@ public static class OperationEndpointRouteBuilderExtensions
             return;
         }
 
+        await WriteResponseAsync(httpContext, descriptor, response.Payload, context.CancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 写出成功响应。
+    /// </summary>
+    /// <remarks>
+    /// 状态码按约定（<c>create</c> 为 201，其余 200），正文是响应的 JSON。
+    /// </remarks>
+    private static async Task WriteResponseAsync(HttpContext httpContext, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
+    {
         httpContext.Response.StatusCode = HttpRouteConvention.SuccessStatusCode(descriptor.Contract);
         httpContext.Response.ContentType = "application/json; charset=utf-8";
-        await httpContext.Response.Body.WriteAsync(response.Payload, context.CancellationToken).ConfigureAwait(false);
+        await httpContext.Response.Body.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
     }
 }

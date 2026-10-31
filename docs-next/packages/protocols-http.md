@@ -17,7 +17,7 @@ HTTP 协议适配器，提供 `protocols.http@1`：按操作 ID 推导路由（�
 
 `HttpProtocolFeature` 只登记选项与本包的消息目录；端点由应用在 `UseXiHan()` 之后调用 `MapXiHanOperations()` 映射。每个 `Expose` 含 `Http`、稳定性不是 `Stability.Internal` 的操作对应一个端点，路由按 `spec/conventions/operation-ids.md` 推导：`create` → `POST /{resource}`，`list` → `GET /{resource}`，请求含 `id` 时 `get` / `update` / `delete` 带 `/{id}` 段，其他动词是 `POST …:{verb}` 自定义动词，带嵌套对象的 `get` / `list` / `delete` 改用 POST（ADR-0015），声明只读的自定义动词走 GET（ADR-0041）。是否含 `id`、是否有嵌套对象读源生成的序列化元数据，不用反射。
 
-端点元数据带着操作描述与载荷绑定委托，`UseXiHan()` 在进管道前绑定载荷，Authorize 阶段按契约判定，Validate 阶段按 Schema 校验。成功时 `create` 返回 201、其余 200；失败由宿主写成 Problem Details。
+端点元数据带着操作描述、载荷绑定委托与响应写出委托（`OperationResponseWriter`），`UseXiHan()` 在进管道前绑定载荷，Authorize 阶段按契约判定，Validate 阶段按 Schema 校验。成功时 `create` 返回 201、其余 200；失败由宿主写成 Problem Details。带幂等键的请求重放时端点不执行，`UseXiHan()` 用同一个写出委托写出首次的状态码与正文（[缓存](../guide/caching#幂等键)）。
 
 `MapXiHanOpenApi()` 在第一次请求时从登记表、`Kernel.Generators` 生成的 Schema、权限码注册表、已装配的认证处理器与宿主的普通端点生成 OpenAPI 3.1 并缓存，带 `x-xihan-permission` / `x-xihan-policy` 扩展与权限定义组件（ADR-0031），按区域给出操作文案、标签与字段说明，支持分组文档（ADR-0052）。
 

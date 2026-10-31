@@ -800,6 +800,7 @@ static XiHan.Framework.Kernel.Security.TenantContext.operator ==(XiHan.Framework
 static XiHan.Framework.Kernel.Validation.JsonSchemaValidator.Validate(System.Text.Json.JsonElement schema, System.Text.Json.JsonElement instance) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Validation.SchemaViolation!>!
 static XiHan.Framework.Kernel.Validation.SchemaViolation.operator !=(XiHan.Framework.Kernel.Validation.SchemaViolation? left, XiHan.Framework.Kernel.Validation.SchemaViolation? right) -> bool
 static XiHan.Framework.Kernel.Validation.SchemaViolation.operator ==(XiHan.Framework.Kernel.Validation.SchemaViolation? left, XiHan.Framework.Kernel.Validation.SchemaViolation? right) -> bool
+virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.DecodeResponse(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask

@@ -11,11 +11,11 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 | 配置节 | 环境变量 `XIHAN_CONFIG_PATH`；`XiHan:ObjectStorage:SignedUrls`（预签名地址特性）；方案 `XiHan` 读 `XiHan:Security:RoleClaim` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.ObjectStorage.Abstractions`；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
-| 稳定性 | `UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；`WebApplicationBuilder.AddXiHan`、认证方案 `XiHan`、`OperationPayloadBinder`、预签名地址为 Preview |
+| 稳定性 | `UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；`WebApplicationBuilder.AddXiHan`、认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
 
 ## 概述
 
-宿主不认证、不解析租户、不判定授权，只做协议到内核的翻译。`UseXiHan()` 是一个 ASP.NET Core 中间件：对每个请求，它从 `traceparent`、`baggage`、`xihan-deadline`（或 `grpc-timeout`）、`Accept-Language`、`Authorization` 建调用上下文，记下调用来源，把端点元数据上的授权要求与操作描述放进上下文，然后让其余的 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；调用失败且响应尚未开始时写 Problem Details。应用未就绪时直接回 503，带 `PipelineBypassMetadata` 的端点（探针、文档、gRPC 方法、SignalR Hub）不经内核管道。
+宿主不认证、不解析租户、不判定授权，只做协议到内核的翻译。`UseXiHan()` 是一个 ASP.NET Core 中间件：对每个请求，它从 `traceparent`、`baggage`、`xihan-deadline`（或 `grpc-timeout`）、`Accept-Language`、`Authorization` 建调用上下文，记下调用来源，把端点元数据上的授权要求与操作描述放进上下文，然后让其余的 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；调用失败且响应尚未开始时写 Problem Details；调用成功而端点没有执行（幂等回放）时，用端点元数据上的 `OperationResponseWriter` 写出上下文里的响应。应用未就绪时直接回 503，带 `PipelineBypassMetadata` 的端点（探针、文档、gRPC 方法、SignalR Hub）不经内核管道。
 
 包里还有三块面向特定场景的能力：`AddAuthentication().AddXiHan(...)` 登记的 ASP.NET Core 认证方案 `XiHan`，让绕过管道的端点也用内核的认证处理器（ADR-0051）；`MapXiHanHealth()` 的三个探针；`HostedBlobUrlFeature` 与 `MapXiHanBlobs()`，给没有原生签名的对象存储（文件系统）签预签名地址并代为收发（ADR-0049）。
 
@@ -78,6 +78,7 @@ app.Run();
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
+| `Endpoints.OperationResponseWriter` | 协议适配器挂在端点上的成功响应写出委托（状态码、内容类型与正文）；幂等回放时端点不执行，`UseXiHan()` 在管道成功结束、响应未开始而上下文里有响应对象时用它写出 |
 | `ProblemResponse` | Problem Details 响应体；`FromError`、`StatusCodeFor`、`IsAuthenticationFailure`、`FieldErrorsOf`、`ScalarDetailsOf`、`WriteTo` |
 | `Health.HealthResponse`、`Health.FeatureHealth` | 探针响应体 |
 | `Authentication.InvocationAuthenticationBuilderExtensions` | `AddXiHan(configure)`：登记 ASP.NET Core 认证方案 `XiHan` |

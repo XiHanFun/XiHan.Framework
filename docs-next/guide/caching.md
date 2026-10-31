@@ -277,9 +277,9 @@ public sealed class DailyReport(IDistributedLock locks)
 装配了 `caching.distributed` 的 Provider 时，管道的 Idempotency 阶段有 `IdempotencyMiddleware`。调用的 Baggage 带 `xihan.idempotency-key`（`BaggageKeys.IdempotencyKey`）时它按（租户、主体、键）去重，不带时直接放行：
 
 1. 首次调用用 `TryAddAsync` 写入「处理中」标记，存活 `InProgressTimeToLive`（默认 60 秒），然后执行后续阶段。
-2. 执行完用调用结果替换标记，保留 `TimeToLive`（默认 24 小时）。成功与失败的结果都会记录。
+2. 执行完用调用结果替换标记，保留 `TimeToLive`（默认 24 小时）。成功与失败的结果都会记录；操作调用另记操作 ID，成功时连同响应（XGI 的 JSON）一起记。
 3. 处理器抛出异常时按值比较删除自己的标记，允许重试。
-4. 重复调用遇到「处理中」返回 `CACHING_CONFLICT_002`；遇到已完成的记录直接回放结果，不再执行处理器，`IdempotencyMiddleware.WasReplayed(context)` 为 `true`。
+4. 重复调用遇到「处理中」返回 `CACHING_CONFLICT_002`；遇到已完成的记录直接回放，不再执行处理器，`IdempotencyMiddleware.WasReplayed(context)` 为 `true`。
 
 HTTP 上幂等键走 W3C `baggage` 头（gRPC 是同名的 `baggage` 元数据，`conventions/baggage-keys.md`）：
 
@@ -297,7 +297,21 @@ curl -X POST http://localhost:5000/orders \
 处理器返回的失败（如业务冲突）与成功一样被记录 24 小时，同一幂等键重试只会拿回同一个错误。客户端修正请求后要换一个新键；只有处理器抛出异常时标记会被清除。
 :::
 
-回放只还原调用结果，不还原响应体：重复的成功请求不会再执行操作，得到的是没有正文的成功结果。Idempotency 阶段在 Authenticate、Tenant、Authorize、Validate 之后，被这些阶段拒绝的调用不会写入记录；在 Transaction 之前，所以记录的是提交之后的最终结果。阶段顺序见[执行管道](./pipeline)。
+回放还原首次调用的结果，操作调用还还原响应（ADR-0064）：
+
+| 入口 | 回放得到 |
+| --- | --- |
+| HTTP 端点 | 与首次一样的状态码（`create` 为 201）与正文；端点不执行，由 `UseXiHan()` 写出 |
+| XGI（`IOperationInvoker.InvokeAsync(context, request)`，gRPC、MCP 走它） | 与首次逐字节一致的载荷 |
+| 类型化（`InvokeAsync<TRequest, TResponse>`） | 按同一份序列化元数据解码出的等值响应对象 |
+| 非操作调用（消息以外的 `App.InvokeAsync`） | 只有调用结果 |
+
+回放不比对请求内容，同一个键配不同的请求体照样拿回首次的响应；键要按「一次业务意图一个键」生成。记录不能回放给本次调用时返回 `CACHING_CONFLICT_003`（HTTP 409）：
+
+- 同一个键被另一个操作用过，或在操作与非操作调用之间复用（消息键 `caching.idempotency.key_reused`，参数 `operation`、`recorded`）。
+- 记录里没有响应，或响应按当前的响应类型解码不了（`caching.idempotency.response_unavailable`）。升级前写下的成功记录不带操作与响应，升级后 24 小时内用同一个键重放会得到这个冲突，换一个键即可。
+
+响应随记录保存 `TimeToLive`，响应很大的操作带幂等键时要考虑共享缓存的容量。Idempotency 阶段在 Authenticate、Tenant、Authorize、Validate 之后，被这些阶段拒绝的调用不会写入记录；在 Transaction 之前，所以记录的是提交之后的最终结果。阶段顺序见[执行管道](./pipeline)。
 
 ## IDistributedCache 适配
 
@@ -460,6 +474,7 @@ builder.AddXiHan(xihan => xihan
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限，只作为健康项的原因，不拒绝写入 |
 | `CACHING_CONFLICT_001` | 分布式锁被占用；已登记，框架不产出 |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
+| `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
 
 非法的 `CacheKey`、同时设置两种过期、非正的存活时间都是编程错误，抛 `ArgumentException`，不转成 `Result`。
 

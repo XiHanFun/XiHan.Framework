@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Text.Json;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
@@ -10,20 +11,24 @@ namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 /// 幂等记录。
 /// </summary>
 /// <remarks>
-/// 处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。
+/// 处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。操作调用还记下操作 ID，成功时连同响应（XGI 的 JSON 编码）一起记，回放时还原响应（RFC-0006）。
 /// </remarks>
 /// <param name="State">记录状态：<see cref="InProgressState"/> 或 <see cref="CompletedState"/>。</param>
 /// <param name="ErrorCode">失败时的错误码；成功为 <see langword="null"/>。</param>
 /// <param name="ErrorMessage">失败时已解析的文案；键错误未解析时为 <see langword="null"/>。</param>
 /// <param name="ErrorMessageKey">失败时的消息键；自由文本错误为 <see langword="null"/>。</param>
 /// <param name="ErrorDetails">失败时的模板参数，值已按不变文化转成字符串。</param>
+/// <param name="Operation">首次调用的操作 ID；不是操作调用为 <see langword="null"/>。</param>
+/// <param name="Response">操作调用成功时的响应 JSON；失败或不是操作调用为 <see langword="null"/>。</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record IdempotencyRecord(
     string State,
     string? ErrorCode = null,
     string? ErrorMessage = null,
     string? ErrorMessageKey = null,
-    IReadOnlyDictionary<string, string>? ErrorDetails = null)
+    IReadOnlyDictionary<string, string>? ErrorDetails = null,
+    string? Operation = null,
+    JsonElement? Response = null)
 {
     /// <summary>
     /// 处理中状态。

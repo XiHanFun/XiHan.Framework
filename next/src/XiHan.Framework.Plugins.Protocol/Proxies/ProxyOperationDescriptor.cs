@@ -25,6 +25,12 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 载荷原样包成插件载荷，与 <see cref="EncodeResponse"/> 互逆。
+    /// </remarks>
+    public override Result<object> DecodeResponse(ReadOnlyMemory<byte> payload) => Result.Success<object>(new PluginPayload(payload));
+
+    /// <inheritdoc />
     public override ValueTask<Result<object>> ExecuteAsync(InvocationContext context, object request)
     {
         ArgumentNullException.ThrowIfNull(context);

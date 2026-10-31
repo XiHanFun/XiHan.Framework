@@ -35,7 +35,7 @@ public static class ApplicationBuilderExtensions
     /// 让其余 ASP.NET Core 管道在内核管道内执行。
     /// </summary>
     /// <remarks>
-    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
+    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；成功而端点没有执行（幂等回放）时用端点元数据上的 <see cref="OperationResponseWriter"/> 写出上下文里的响应；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
     /// </remarks>
     public static IApplicationBuilder UseXiHan(this IApplicationBuilder app)
     {
@@ -85,6 +85,17 @@ public static class ApplicationBuilderExtensions
 
             // 其余 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；端点通过上下文设置结果，异常由内核翻译为失败结果
             var outcome = await xihan.InvokeAsync(context, async _ => await next(httpContext).ConfigureAwait(false)).ConfigureAwait(false);
+
+            // 管道成功结束而端点没有写出（Idempotency 阶段回放了首次调用的结果与响应，Handle 没有执行）：按端点的约定写出上下文里的响应
+            if (outcome.IsSuccess
+                && !httpContext.Response.HasStarted
+                && endpoint?.Metadata.GetMetadata<OperationResponseWriter>() is { } writer
+                && context.GetOperation().TryGetValue(out var replayed)
+                && context.GetOperationResponse().TryGetValue(out var response))
+            {
+                await writer(httpContext, replayed, replayed.EncodeResponse(response), context.CancellationToken).ConfigureAwait(false);
+                return;
+            }
 
             // 响应已开始写出时无法再改状态码与正文，只能保留端点已写的内容
             if (outcome.IsFailure && !httpContext.Response.HasStarted)

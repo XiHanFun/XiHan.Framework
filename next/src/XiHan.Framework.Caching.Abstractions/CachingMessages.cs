@@ -36,6 +36,22 @@ public static class CachingMessages
     public const string IdempotentInProgress = "caching.idempotency.in_progress";
 
     /// <summary>
+    /// 同一幂等键已被另一个调用使用。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>operation</c>（本次调用的操作 ID，非操作调用为 <c>-</c>）、<c>recorded</c>（记录里的操作 ID，同样以 <c>-</c> 表示非操作调用）。
+    /// </remarks>
+    public const string IdempotentKeyReused = "caching.idempotency.key_reused";
+
+    /// <summary>
+    /// 记录里的响应无法回放。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>operation</c>、<c>reason</c>。
+    /// </remarks>
+    public const string IdempotentResponseUnavailable = "caching.idempotency.response_unavailable";
+
+    /// <summary>
     /// 内存缓存已达容量上限。
     /// </summary>
     /// <remarks>

@@ -12,6 +12,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
     <!-- 操作摘要按区域的用例要装配本地化默认实现 -->
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <!-- 幂等回放写出响应的用例要装配带幂等中间件的缓存默认实现 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>
