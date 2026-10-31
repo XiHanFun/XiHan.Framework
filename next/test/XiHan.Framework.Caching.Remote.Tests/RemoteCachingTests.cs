@@ -8,6 +8,8 @@ using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Caching.InMemory;
+using XiHan.Framework.Localization.Abstractions.Locales;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
@@ -17,7 +19,7 @@ namespace XiHan.Framework.Caching.Remote.Tests;
 /// 远程缓存 Provider 的装配。
 /// </summary>
 /// <remarks>
-/// 胜过内存默认实现、共享缓存与分布式锁经 Go 插件工作、插件缺席时按不可用失败。
+/// 胜过内存默认实现、共享缓存与分布式锁经 Go 插件工作、插件与本包的同名消息目录合并、插件缺席时按不可用失败。
 /// </remarks>
 public sealed class RemoteCachingTests
 {
@@ -42,6 +44,11 @@ public sealed class RemoteCachingTests
 
         var local = host.Services.GetRequiredService<ICache>();
         Assert.IsType<InMemoryObjectCache>(local);
+
+        // 插件握手带来的 caching.remote 目录（两种语言）与本包的同名目录（十种语言）合并为一份；此前先注册的插件目录胜出，本包其余八种语言的译文被静默丢弃
+        var catalog = Assert.Single(host.Services.GetServices<MessageCatalog>(), static c => c.Name == RemoteCachingMessages.CatalogName);
+        Assert.Equal(SupportedLocales.All.Count, catalog.Locales.Count);
+        Assert.Equal("キャッシュストアがいっぱいです（{capacity} 件）。", catalog.Find(RemoteCachingMessages.CapacityReached, "ja-JP").ValueOrThrow());
     }
 
     [Fact]

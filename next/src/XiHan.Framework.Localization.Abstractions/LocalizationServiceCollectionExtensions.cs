@@ -17,19 +17,26 @@ public static class LocalizationServiceCollectionExtensions
     /// 注册消息目录。
     /// </summary>
     /// <remarks>
-    /// 同名目录只保留第一次注册（多个 Provider 可能都带同一份抽象包目录）。
+    /// 同名目录合并为一份，留在先注册的位置：内容相同（多个 Provider 都带同一个抽象包的目录）时什么都不变；互为补充（如插件带两种语言、宿主包带全部十种）时区域与键取并集。同一键同一区域的模板不同抛出携带 <see cref="LocalizationErrors.DuplicateCatalog"/> 的 <see cref="FrameworkException"/>，不丢弃任何一份。
     /// </remarks>
     public static IServiceCollection AddMessageCatalog(this IServiceCollection services, MessageCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(catalog);
-        foreach (var descriptor in services)
+        for (var index = 0; index < services.Count; index++)
         {
-            // 同名目录视为同一份，跳过重复注册
-            if (descriptor.ServiceType == typeof(MessageCatalog) && descriptor.ImplementationInstance is MessageCatalog existing && string.Equals(existing.Name, catalog.Name, StringComparison.Ordinal))
+            if (services[index].ServiceType != typeof(MessageCatalog) || services[index].ImplementationInstance is not MessageCatalog existing || !string.Equals(existing.Name, catalog.Name, StringComparison.Ordinal))
             {
-                return services;
+                continue;
             }
+
+            var merged = existing.MergeWith(catalog);
+            if (!ReferenceEquals(merged, existing))
+            {
+                services[index] = ServiceDescriptor.Singleton(merged);
+            }
+
+            return services;
         }
 
         services.AddSingleton(catalog);

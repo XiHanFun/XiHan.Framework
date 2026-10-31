@@ -126,7 +126,7 @@ using XiHan.Framework.Localization.Abstractions.Messages;
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples", typeof(SampleMessages)));
 ```
 
-第一个参数是目录名，同名目录只注册一次（多个 Provider 可能都带同一份抽象包的目录）；第二个参数是目录所在程序集里的任意类型。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
+第一个参数是目录名。同名目录合并为一份：内容相同时什么都不变（多个 Provider 可能都带同一个抽象包的目录），互为补充时区域与键取并集（插件握手带来的目录与宿主包里同名目录的其他语言），同一键同一区域的模板不同时 `AddMessageCatalog` 抛出 `LOCALIZATION_CONFLICT_001`，应用启动失败。应用与插件的目录名不要与框架的重名。第二个参数是目录所在程序集里的任意类型。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
 
 各目录由谁注册：
 
@@ -366,6 +366,7 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 | 错误码 | 含义 |
 | --- | --- |
 | `LOCALIZATION_VALIDATION_002` | 消息目录不合法（JSON、键或区域名错误、程序集里没有语言文件），装载目录时抛出 |
+| `LOCALIZATION_CONFLICT_001` | 同名消息目录里同一键同一区域的模板不一致，`AddMessageCatalog` 抛出 |
 | `LOCALIZATION_NOTFOUND_001` | 数据库里没有这条翻译（`MessageTranslationStore.RemoveAsync` 的逐项结果） |
 
 区域名、消息键不合法属于编程错误，在构造处抛出 `ArgumentException`。

@@ -20,7 +20,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 - `RemoteCacheStore` 每个操作按 ID 从宿主操作登记表取代理操作并直接执行（`IOperationInvoker.ExecuteAsync`），不经过管道：存储会被幂等中间件在管道里使用，走管道会递归；也不需要授权与幂等。每次调用带 `Timeout` 的截止时间。
 - 键与过期选项在 .NET 侧先按 `CacheKey` / `CacheEntryOptions` 校验，再编码成操作集的 JSON（值为 base64、过期为毫秒）。
 - 插件返回的缓存域错误（`CACHING_VALIDATION_00x`）原样成为 `FrameworkException`；插件未加载、操作未登记、进程不可达、超时都映射为 `CACHING_UNAVAILABLE_001`，细节带原错误码，不伪装成未命中。
-- 本包只提供能力，不启动插件进程；插件由 `Plugins.OutOfProcess` 按 `XiHan:Plugins:OutOfProcess:Directories` 发现。插件侧错误的消息键 `caching.remote.*` 的译文随本包嵌入，宿主不依赖插件自带的目录。
+- 本包只提供能力，不启动插件进程；插件由 `Plugins.OutOfProcess` 按 `XiHan:Plugins:OutOfProcess:Directories` 发现。插件侧错误的消息键 `caching.remote.*` 的十种语言译文随本包嵌入；插件握手若也带同名目录 `caching.remote`（如 SDK 示例带两种语言），注册时两份合并为一份，同一键同一区域的模板不同则启动失败（`LOCALIZATION_CONFLICT_001`，RFC-0010）。
 - 适配器 + 插件的组合必须通过 `Caching.Conformance` 全部用例；`samples/CacheGoPlugin` 在 `Caching.Remote.Tests` 里跑完整套件。
 
 ## 依赖方向

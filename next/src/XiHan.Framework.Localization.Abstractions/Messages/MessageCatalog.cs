@@ -37,7 +37,7 @@ public sealed class MessageCatalog
     /// <remarks>
     /// 键与区域名会被校验，区域名规范化。
     /// </remarks>
-    /// <param name="name">目录名，同名目录只注册一次。</param>
+    /// <param name="name">目录名，同名目录注册时合并为一份。</param>
     /// <param name="templatesByLocale">区域 → 消息键 → 模板。</param>
     public MessageCatalog(string name, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> templatesByLocale)
     {
@@ -212,6 +212,59 @@ public sealed class MessageCatalog
     {
         ArgumentNullException.ThrowIfNull(key);
         return _byKey.TryGetValue(key, out var templates) ? templates.Keys : [];
+    }
+
+    /// <summary>
+    /// 与同名目录合并。
+    /// </summary>
+    /// <remarks>
+    /// 同名目录可以互为补充（如插件带两种语言、宿主包带全部十种）：区域与键取并集，先有的在前。同一键同一区域的模板必须逐字相同，否则抛出携带 <see cref="LocalizationErrors.DuplicateCatalog"/> 的 <see cref="FrameworkException"/>。<paramref name="other"/> 没有带来新的区域或模板时返回本目录自身。
+    /// </remarks>
+    internal MessageCatalog MergeWith(MessageCatalog other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        var templatesByLocale = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var locale in _locales)
+        {
+            templatesByLocale[locale] = new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+
+        foreach (var (key, templates) in _byKey)
+        {
+            foreach (var (locale, template) in templates)
+            {
+                templatesByLocale[locale][key] = template;
+            }
+        }
+
+        var added = false;
+        foreach (var locale in other._locales)
+        {
+            if (templatesByLocale.TryAdd(locale, new Dictionary<string, string>(StringComparer.Ordinal)))
+            {
+                added = true;
+            }
+        }
+
+        foreach (var (key, templates) in other._byKey)
+        {
+            foreach (var (locale, template) in templates)
+            {
+                if (!templatesByLocale[locale].TryGetValue(key, out var existing))
+                {
+                    templatesByLocale[locale][key] = template;
+                    added = true;
+                }
+                else if (!string.Equals(existing, template, StringComparison.Ordinal))
+                {
+                    throw new FrameworkException(LocalizationErrors.DuplicateCatalog, $"Message catalog '{Name}' is registered more than once with different templates for key '{key}' in locale '{locale}'.");
+                }
+            }
+        }
+
+        return added
+            ? new MessageCatalog(Name, templatesByLocale.ToDictionary(static p => p.Key, static p => (IReadOnlyDictionary<string, string>)p.Value, StringComparer.OrdinalIgnoreCase))
+            : this;
     }
 
     /// <summary>

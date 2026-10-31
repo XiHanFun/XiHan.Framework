@@ -73,7 +73,7 @@
 | `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Localize(...)`、`Resolve(error, locale)`、`Localize(error, ...)`、`Options` |
 | `Messages.LocalizedText` | 一次解析的 `Text` 与实际命中的 `Locale` |
 | `Messages.InvocationContextLocalizationExtensions` | `context.Localize(key, arguments)`、`context.Localize(error)`；没有装配本地化时退回描述与 `Error.Message` |
-| `LocalizationServiceCollectionExtensions` | `AddMessageCatalog(catalog)`，同名目录只保留第一次注册 |
+| `LocalizationServiceCollectionExtensions` | `AddMessageCatalog(catalog)`：同名目录合并为一份，同一键同一区域的模板不同时抛出 `LOCALIZATION_CONFLICT_001` |
 | `LocalizationCapabilities` | 能力 ID `Resources` 与接口版本 `Version` |
 | `LocalizationErrors` | 错误码常量 |
 
@@ -134,7 +134,8 @@ var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-
 
 - 目录装载：`FromEmbeddedResources` 只认逻辑名为 `<前缀><区域>.json` 的资源，文件名必须是合法区域名；每个文件是键 → 模板的平面 JSON 对象。JSON 不合法、键不符合消息键文法、模板为 `null`、程序集里一个语言文件都没有时，抛出 `FrameworkException`（`LOCALIZATION_VALIDATION_002`）。
 - 区域名在装载时规范化，查找不区分大小写；同一目录里一个区域只能出现一次。
-- `AddMessageCatalog` 按目录名去重，重复注册静默跳过。
+- `AddMessageCatalog` 把同名目录合并为一份，留在先注册的位置：内容相同（例如多个 Provider 都带同一个抽象包的目录）时什么都不变；互为补充（例如插件握手带来两种语言、宿主包带全部十种）时区域与键取并集；同一键同一区域的模板不同则抛出 `FrameworkException`（`LOCALIZATION_CONFLICT_001`），应用启动失败。任何一份都不会被静默丢弃。
+- 区域名不合法没有单独的错误码：传给 `LocaleName.Validate`、构造函数或写在 `XiHan:Localization` 里的不合法区域名是编程或配置错误，抛出 `ArgumentException`；语言文件名不是合法区域名归 `LOCALIZATION_VALIDATION_002`；Baggage 与 `Accept-Language` 里的不合法区域名在协商中忽略。
 - `Negotiate` 先找任一候选的精确命中，再按语言子标签命中启用列表里第一个同语言区域（`zh` 或 `zh-HK` 命中 `zh-CN`），都没有时返回默认区域；不合法的候选忽略。
 - `FallbackChain` 的顺序是请求区域 → 启用列表里同语言的区域 → 默认区域 → `en-US`，去重。
 
@@ -142,8 +143,7 @@ var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-
 | --- | --- | --- |
 | `LOCALIZATION_VALIDATION_002` | `InvalidCatalog` | 消息目录不合法（JSON、键或区域名错误） |
 | `LOCALIZATION_NOTFOUND_001` | `TranslationNotFound` | 数据库里没有这条翻译（`Localization.Database` 使用） |
-| `LOCALIZATION_VALIDATION_001` | `InvalidLocale` | 区域名不合法（已登记；代码里区域名不合法时抛出 `ArgumentException`） |
-| `LOCALIZATION_CONFLICT_001` | `DuplicateCatalog` | 同名消息目录重复注册（已登记；`AddMessageCatalog` 对重复注册静默跳过） |
+| `LOCALIZATION_CONFLICT_001` | `DuplicateCatalog` | 同名消息目录里同一键同一区域的模板不一致，`AddMessageCatalog` 抛出，启动失败 |
 
 ## 相关
 

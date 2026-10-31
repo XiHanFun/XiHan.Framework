@@ -11,7 +11,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 
 /// <summary>
-/// 消息目录：按区域分组装载、语言文件解析、嵌入资源装载与注册去重。
+/// 消息目录：按区域分组装载、语言文件解析、嵌入资源装载，以及同名注册的合并与冲突。
 /// </summary>
 public sealed class MessageCatalogTests
 {
@@ -89,18 +89,45 @@ public sealed class MessageCatalogTests
     }
 
     [Fact]
-    public void AddMessageCatalog_IgnoresDuplicateNames()
+    public void AddMessageCatalog_MergesSameNamedCatalogs_AndRejectsDisagreeingTemplates()
     {
         var services = new ServiceCollection();
         var first = Orders();
-        var duplicate = Orders();
         var other = new MessageCatalog("shipments", new Dictionary<string, IReadOnlyDictionary<string, string>>());
 
-        services.AddMessageCatalog(first).AddMessageCatalog(duplicate).AddMessageCatalog(other);
-
+        // 同样的内容（多个 Provider 都带同一个抽象包的目录）与它的子集：什么都不变，仍是先注册的那份
+        var subset = new MessageCatalog("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["en-US"] = new Dictionary<string, string> { ["orders.order.not_found"] = "Order '{id}' was not found." },
+        });
+        services.AddMessageCatalog(first).AddMessageCatalog(other).AddMessageCatalog(Orders()).AddMessageCatalog(subset);
         var registered = services.BuildServiceProvider().GetServices<MessageCatalog>().ToList();
         Assert.Equal(2, registered.Count);
         Assert.Same(first, registered[0]);
         Assert.Same(other, registered[1]);
+
+        // 互为补充（插件带两种语言、宿主包带更多）：区域与键取并集，留在先注册的位置，不丢弃后来者
+        services.AddMessageCatalog(new MessageCatalog("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["zh-CN"] = new Dictionary<string, string> { ["orders.order.not_found"] = "订单 '{id}' 不存在。", ["orders.order.denied"] = "不是所有者。" },
+            ["ja-JP"] = new Dictionary<string, string> { ["orders.order.not_found"] = "注文 '{id}' が見つかりません。" },
+        }));
+        registered = services.BuildServiceProvider().GetServices<MessageCatalog>().ToList();
+        Assert.Equal(["orders", "shipments"], registered.Select(static c => c.Name));
+        var merged = registered[0];
+        Assert.Equal(["en-US", "zh-CN", "ja-JP"], merged.Locales);
+        Assert.Equal("Not the owner.", merged.Find("orders.order.denied", "en-US").ValueOrThrow());
+        Assert.Equal("不是所有者。", merged.Find("orders.order.denied", "zh-CN").ValueOrThrow());
+        Assert.Equal("注文 '{id}' が見つかりません。", merged.Find("orders.order.not_found", "ja-JP").ValueOrThrow());
+
+        // 同一键同一区域的模板不同：注册时冲突，已注册的目录不变
+        var thrown = Assert.Throws<FrameworkException>(() => services.AddMessageCatalog(new MessageCatalog("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["en-US"] = new Dictionary<string, string> { ["orders.order.not_found"] = "Order '{id}' is missing." },
+        })));
+        Assert.Equal(LocalizationErrors.DuplicateCatalog, thrown.Code);
+        Assert.Contains("'orders.order.not_found'", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("'en-US'", thrown.Message, StringComparison.Ordinal);
+        Assert.Same(merged, services.BuildServiceProvider().GetServices<MessageCatalog>().First());
     }
 }

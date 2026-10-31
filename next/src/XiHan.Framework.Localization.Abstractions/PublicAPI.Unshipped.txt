@@ -59,7 +59,6 @@ const XiHan.Framework.Localization.Abstractions.LocalizationCapabilities.Resourc
 const XiHan.Framework.Localization.Abstractions.LocalizationCapabilities.Version = 1 -> int
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.DuplicateCatalog = "LOCALIZATION_CONFLICT_001" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.InvalidCatalog = "LOCALIZATION_VALIDATION_002" -> string!
-const XiHan.Framework.Localization.Abstractions.LocalizationErrors.InvalidLocale = "LOCALIZATION_VALIDATION_001" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationErrors.TranslationNotFound = "LOCALIZATION_NOTFOUND_001" -> string!
 const XiHan.Framework.Localization.Abstractions.LocalizationOptions.ConfigurationSection = "XiHan:Localization" -> string!
 const XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.DefaultResourcePrefix = "Localization/" -> string!

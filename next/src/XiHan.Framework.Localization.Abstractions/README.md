@@ -11,7 +11,7 @@
 | `IMessageLocalizer` | 显式区域的解析入口：`Resolve` 给出文案与实际命中的区域，`Localize` 退回键与参数的描述；回退链：精确区域 → 同语言 → 默认区域 → `en-US` |
 | `LocalizedText` | 一次解析的文案与命中区域，宿主据此设置 `Content-Language` |
 | `context.Localize(key, arguments)` | 在调用上下文上按其区域解析（没有装配本地化时返回描述） |
-| `AddMessageCatalog` | 注册目录，同名只注册一次 |
+| `AddMessageCatalog` | 注册目录：同名目录合并为一份（内容相同不变，互为补充取并集），同一键同一区域的模板不同抛出 `LOCALIZATION_CONFLICT_001`（启动失败） |
 
 消息键、模板语法、`key.L()` 与 `MessageScope` 在原语层：
 
@@ -29,6 +29,8 @@ services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof
 var text = OrdersMessages.NotFound.L(("id", id));      // 调用链里是调用方语言，其他地方是默认语言
 return Error.NotFound("ORDERS_NOTFOUND_001", OrdersMessages.NotFound, MessageArguments.Of(("id", id)));  // 宿主在 Egress 翻译
 ```
+
+区域名不合法没有单独的错误码：API 参数与选项里的是编程或配置错误，抛出 `ArgumentException`；语言文件名不合法归 `LOCALIZATION_VALIDATION_002`；Baggage 与 `Accept-Language` 里的在协商中忽略（RFC-0010，ADR-0070）。
 
 ## 依赖方向
 
