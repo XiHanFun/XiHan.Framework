@@ -10,7 +10,7 @@ Roslyn 分析器（工具链），把命名与稳定性规则交给编译器执�
 | `XH0004` | 框架包 | 公开类型名不得使用禁用词：`Manager`、`Helper`、`Util`、`Utils`、`Common`、`Shared`、`Impl`、`Base` 后缀与 `Default` 前缀 |
 | `XH0005` | Ring 0/1 | 不得使用反射 API（`System.Reflection`、`Activator`、`Type` 的成员查找） |
 
-范围由 MSBuild 属性控制：`XiHanFrameworkPackage=true` 启用框架包规则，`XiHanRing=0|1` 启用零反射规则。`next/src/Directory.Build.props` 已为全部正式包设置。
+范围由 MSBuild 属性控制：`XiHanFrameworkPackage=true` 启用框架包规则，`XiHanRing=0|1` 启用零反射规则。分析器经 `build_property.*` 读取，属性须声明为 `CompilerVisibleProperty`：包里带 `buildTransitive/XiHan.Framework.Kernel.Analyzers.props` 声明这两项，以包引用的项目只需设置属性；仓库内以项目引用分析器的正式包由 `next/src/Directory.Build.props` 声明并设置。
 
 ## 依赖方向
 

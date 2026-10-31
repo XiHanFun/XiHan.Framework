@@ -23,5 +23,7 @@
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
     <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <!-- 包的使用者设置 XiHanFrameworkPackage / XiHanRing 时，分析器要能经 build_property.* 读到：随包带上 CompilerVisibleProperty 声明 -->
+    <None Include="buildTransitive/$(PackageId).props" Pack="true" PackagePath="buildTransitive/" />
   </ItemGroup>
 </Project>

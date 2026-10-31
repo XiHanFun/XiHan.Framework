@@ -45,17 +45,13 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 
 5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。
 
-框架包规则与零反射规则只在对应的 MSBuild 属性存在时生效。分析器经 `build_property.*` 读取它们，所以属性还要声明为编译器可见（框架仓库在 `next/src/Directory.Build.props` 里这样做；分析器包本身不带声明这两个属性的 `.props`）：
+框架包规则与零反射规则只在对应的 MSBuild 属性存在时生效。分析器经 `build_property.*` 读取它们，属性必须声明为编译器可见：包里带的 `buildTransitive/XiHan.Framework.Kernel.Analyzers.props` 已把 `XiHanFrameworkPackage` 与 `XiHanRing` 声明为 `CompilerVisibleProperty`，以包引用分析器的项目只需设置属性（框架仓库内以项目引用分析器，由 `next/src/Directory.Build.props` 声明同样的两项）：
 
 ```xml
 <PropertyGroup>
   <!-- 启用 XH0001 / XH0002 / XH0004 -->
   <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
 </PropertyGroup>
-<ItemGroup>
-  <CompilerVisibleProperty Include="XiHanFrameworkPackage" />
-  <CompilerVisibleProperty Include="XiHanRing" />
-</ItemGroup>
 ```
 
 `XiHanRing` 只有原语层（`0`）与内核（`1`）设置，用来启用 XH0005；更高环层允许反射，例如 `Plugins.InProcess` 在标注 `RequiresDynamicCode` 后使用。
@@ -104,7 +100,7 @@ public sealed class DefaultReportStore;
 
 - 全部规则是 Error 级。框架仓库把警告也当错误（`TreatWarningsAsErrors`），也不允许以 `NoWarn` 关掉这些诊断。
 - 分析器只检查源码里的声明与调用，不检查经反射或动态代码间接触达的 API。
-- 规则的单元测试在 `next/test/XiHan.Framework.Kernel.Analyzers.Tests`，覆盖每条规则的报出与不报出两侧。
+- 规则的单元测试在 `next/test/XiHan.Framework.Kernel.Analyzers.Tests`，覆盖每条规则的报出与不报出两侧。同一测试项目核对包里带的 props：声明的属性与分析器实际读取的一致、打进 `buildTransitive/`。
 
 ## 相关
 

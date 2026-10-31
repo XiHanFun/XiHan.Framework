@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    随 NuGet 包分发：把两个控制规则范围的 MSBuild 属性声明为编译器可见，分析器经 build_property.* 读取。
+    XiHanFrameworkPackage=true 启用框架包规则（XH0001 / XH0002 / XH0004），XiHanRing=0|1 启用零反射规则（XH0005）。
+    仓库内以项目引用使用分析器的正式包由 next/src/Directory.Build.props 声明同样的两项。
+  -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="XiHanFrameworkPackage" />
+    <CompilerVisibleProperty Include="XiHanRing" />
+  </ItemGroup>
+</Project>
