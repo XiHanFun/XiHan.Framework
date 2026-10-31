@@ -13,16 +13,11 @@ namespace XiHan.Framework.Scheduling.Conformance;
 /// <see cref="ILeaderElection"/> 的一致性套件。
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateElection"/>，全部用例随之执行。过期用例用真实时间等待。
+/// 继承并实现 <see cref="CreateElection"/>，全部用例随之执行。到期按套件传入的时钟判定，用例推进时钟而不是等待真实时间，结果与机器快慢无关。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class LeaderElectionConformance
 {
-    /// <summary>
-    /// 过期用例在存活时间之外额外等待的时间，给 Provider 的过期粒度留余量。
-    /// </summary>
-    protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
-
     /// <summary>
     /// 过期用例使用的存活时间。
     /// </summary>
@@ -35,9 +30,9 @@ public abstract class LeaderElectionConformance
     /// 创建被测选举。
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次；选举与它产生的租约都按 <paramref name="clock"/> 判定到期。
     /// </remarks>
-    protected abstract ILeaderElection CreateElection();
+    protected abstract ILeaderElection CreateElection(TimeProvider clock);
 
     /// <summary>
     /// 用例 1：空闲资源可获取。
@@ -48,13 +43,14 @@ public abstract class LeaderElectionConformance
     [Fact]
     public async Task Acquire_RefusesWhileHeld_AndSucceedsAfterRelease()
     {
-        var election = CreateElection();
+        var clock = new ManualClock(Start);
+        var election = CreateElection(clock);
         var resource = Resource();
 
         var lease = (await election.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(resource, lease.Resource);
         Assert.True(lease.IsHeld);
-        Assert.True(lease.ExpiresAt > DateTimeOffset.UtcNow);
+        Assert.True(lease.ExpiresAt > clock.GetUtcNow());
 
         var refused = await election.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(SchedulingErrors.LeaseHeld, refused.Error?.Code);
@@ -78,24 +74,34 @@ public abstract class LeaderElectionConformance
     [Fact]
     public async Task Lease_ExpiresUnlessRenewed()
     {
-        var election = CreateElection();
+        var clock = new ManualClock(Start);
+        var election = CreateElection(clock);
         var resource = Resource();
         var ttl = LeaseTimeToLive;
 
         var lease = (await election.TryAcquireAsync(resource, ttl, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        await Task.Delay(ttl / 2).ConfigureAwait(false);
+        clock.Advance(ttl / 2);
         var before = lease.ExpiresAt;
         Assert.True((await lease.RenewAsync(CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.True(lease.ExpiresAt > before);
         Assert.True(lease.IsHeld);
 
-        await Task.Delay(ttl + ExpirationGrace).ConfigureAwait(false);
+        // 越过续约后的到期时刻：本地不再持有，他人可获取，原持有者续约失败
+        clock.Advance(ttl + TimeSpan.FromMilliseconds(1));
         Assert.False(lease.IsHeld);
         var successor = (await election.TryAcquireAsync(resource, ttl, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.True(successor.IsHeld);
         Assert.Equal(SchedulingErrors.LeaseHeld, (await lease.RenewAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         await successor.DisposeAsync().ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 用例时钟的起点。
+    /// </summary>
+    /// <remarks>
+    /// 整秒，避开只有微秒精度的存储（如 Kubernetes MicroTime）的截断。
+    /// </remarks>
+    private static DateTimeOffset Start { get; } = new(2026, 10, 31, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
     /// 套件内唯一的资源名。

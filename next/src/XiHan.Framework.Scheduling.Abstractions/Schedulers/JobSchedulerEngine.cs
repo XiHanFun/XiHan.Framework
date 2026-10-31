@@ -137,6 +137,14 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private readonly SemaphoreSlim _polling = new(1, 1);
 
     /// <summary>
+    /// 触发器读改写的互斥。
+    /// </summary>
+    /// <remarks>
+    /// 存储整体替换、不比对版本：抢占后运行、运行结束推算下一次、暂停与恢复、登记与删除各自读出触发器改完写回，本节点上交错就会互相覆盖（如结束时把刚暂停的写回等待）。
+    /// </remarks>
+    private readonly SemaphoreSlim _triggerWrites = new(1, 1);
+
+    /// <summary>
     /// 启动时刻。
     /// </summary>
     private DateTimeOffset _startedAt;
@@ -396,7 +404,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
                 continue;
             }
 
-            var deleted = await _store.DeleteJobsAsync([name], cancellationToken).ConfigureAwait(false);
+            var deleted = await UnderTriggerLockAsync(() => _store.DeleteJobsAsync([name], cancellationToken), cancellationToken).ConfigureAwait(false);
             results.Add(deleted);
             if (deleted.IsSuccess)
             {
@@ -595,6 +603,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         _stopping?.Dispose();
         _stopping = null;
         _polling.Dispose();
+        _triggerWrites.Dispose();
     }
 
     /// <summary>
@@ -981,34 +990,52 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
-        var jobs = new Dictionary<JobName, JobRecord>();
         foreach (var trigger in triggers)
         {
-            if (!jobs.TryGetValue(trigger.Job, out var job))
-            {
-                var found = await _store.FindJobAsync(trigger.Job, cancellationToken).ConfigureAwait(false);
-                if (!found.TryGetValue(out var maybe) || !maybe.TryGetValue(out job))
-                {
-                    // 作业没了：触发器是孤儿，删掉
-                    await _store.DeleteTriggersAsync([trigger.Key], cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                jobs[trigger.Job] = job;
-            }
-
-            if (!scheduledAllowed && !trigger.Transient)
-            {
-                // 没有领导权：按计划的触发器放回等待，等领导权（或换成共享存储）再运行
-                trigger.State = TriggerState.Waiting;
-                trigger.AcquiredBy = null;
-                trigger.AcquiredAt = null;
-                await SaveTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
-                continue;
-            }
-
-            await FireAcquiredAsync(trigger, job, now, cancellationToken).ConfigureAwait(false);
+            await UnderTriggerLockAsync(() => FireAcquiredAsync(trigger.Key, scheduledAllowed, now, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// 在锁内以存储里的当前状态运行一条刚抢占的触发器。
+    /// </summary>
+    /// <remarks>
+    /// 抢占之后、拿到锁之前，暂停、改计划或删除可能已经改了它：不再由本节点持有就不动，作业没了就删掉孤儿。
+    /// </remarks>
+    private async ValueTask FireAcquiredAsync(TriggerKey key, bool scheduledAllowed, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var found = await _store.FindJobAsync(key.Job, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var maybe) || !maybe.TryGetValue(out var job))
+        {
+            // 作业没了：触发器是孤儿，删掉
+            await _store.DeleteTriggersAsync([key], cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var current = await _store.TriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
+        if (!current.TryGetValue(out var triggers))
+        {
+            LogStoreFailed(_logger, "fire-trigger", current.Error!.Code);
+            return;
+        }
+
+        var trigger = triggers.FirstOrDefault(candidate => string.Equals(candidate.Name, key.Trigger, StringComparison.Ordinal));
+        if (trigger is null || trigger.State != TriggerState.Acquired || !string.Equals(trigger.AcquiredBy, NodeId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!scheduledAllowed && !trigger.Transient)
+        {
+            // 没有领导权：按计划的触发器放回等待，等领导权（或换成共享存储）再运行
+            trigger.State = TriggerState.Waiting;
+            trigger.AcquiredBy = null;
+            trigger.AcquiredAt = null;
+            await SaveTriggerAsync(trigger, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await FireAcquiredAsync(trigger, job, now, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1102,7 +1129,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// <remarks>
     /// 重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
     /// </remarks>
-    private async ValueTask FinishIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
+    private ValueTask FinishIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
+        => UnderTriggerLockAsync(() => FinishIntervalTriggerLockedAsync(trigger, completedAt), CancellationToken.None);
+
+    /// <summary>
+    /// 在锁内推算间隔触发器的下一次。
+    /// </summary>
+    private async ValueTask FinishIntervalTriggerLockedAsync(TriggerRecord trigger, DateTimeOffset completedAt)
     {
         var found = await _store.TriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
         if (!found.TryGetValue(out var triggers))
@@ -1152,6 +1185,28 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     {
         var cancellation = new CancellationTokenSource();
         var running = new RunningRun(record, cancellation);
+        if (completed is not null)
+        {
+            // 收尾只执行一次：正常在运行标为完成之前（ExecuteAsync 里），执行中途抛出时在这里补上
+            var finished = 0;
+            running.Finish = async completedAt =>
+            {
+                if (Interlocked.Exchange(ref finished, 1) != 0)
+                {
+                    return;
+                }
+
+                try
+                {
+                    await completed(completedAt).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    LogRunThrew(_logger, exception, run.Name.Value, run.Id);
+                }
+            };
+        }
+
         lock (_lock)
         {
             _running[record.Id] = running;
@@ -1173,16 +1228,9 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             }
             finally
             {
-                if (completed is not null)
+                if (running.Finish is { } finish)
                 {
-                    try
-                    {
-                        await completed(_clock.GetUtcNow()).ConfigureAwait(false);
-                    }
-                    catch (Exception exception)
-                    {
-                        LogRunThrew(_logger, exception, run.Name.Value, run.Id);
-                    }
+                    await finish(_clock.GetUtcNow()).ConfigureAwait(false);
                 }
 
                 Forget(record.Id);
@@ -1296,6 +1344,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         record.State = canceled ? JobRunState.Canceled : result.IsSuccess ? JobRunState.Succeeded : JobRunState.Failed;
         record.ErrorCode = result.Error?.Code;
         record.ErrorMessage = result.Error?.Message;
+        // 收尾在标为完成之前：间隔触发器先有下一次运行时刻，状态里不会出现「已不在运行、也没有下一次」的空档
+        if (running.Finish is { } finish)
+        {
+            await finish(record.CompletedAt.Value).ConfigureAwait(false);
+        }
+
         var completed = await _store.CompleteRunAsync(record, CancellationToken.None).ConfigureAwait(false);
         if (completed.IsFailure)
         {
@@ -1428,7 +1482,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// 按代码写入（<paramref name="source"/> 为 <see cref="JobSource.Code"/>）时记下代码定义的指纹；存储里是运行时改过、指纹没变的作业时保留运行时的修改，<paramref name="force"/> 为真时（恢复）照样按代码写入。
     /// 运行时替换代码作业时来源记为 <see cref="JobSource.Overridden"/> 并带上原来的指纹。
     /// </remarks>
-    private async ValueTask<Result> ScheduleOneAsync(JobDefinition definition, JobSource source, CancellationToken cancellationToken, bool force = false)
+    private ValueTask<Result> ScheduleOneAsync(JobDefinition definition, JobSource source, CancellationToken cancellationToken, bool force = false)
+        => UnderTriggerLockAsync(() => ScheduleOneLockedAsync(definition, source, force, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// 在锁内新增或替换一个作业及其触发器。
+    /// </summary>
+    private async ValueTask<Result> ScheduleOneLockedAsync(JobDefinition definition, JobSource source, bool force, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
         if (!_types.KeyFor(definition.JobType).TryGetValue(out var typeKey))
@@ -1595,7 +1655,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// <summary>
     /// 暂停或恢复一个作业。
     /// </summary>
-    private async ValueTask<Result> SetPausedOneAsync(JobName name, bool paused, CancellationToken cancellationToken)
+    private ValueTask<Result> SetPausedOneAsync(JobName name, bool paused, CancellationToken cancellationToken)
+        => UnderTriggerLockAsync(() => SetPausedOneLockedAsync(name, paused, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// 在锁内暂停或恢复一个作业。
+    /// </summary>
+    private async ValueTask<Result> SetPausedOneLockedAsync(JobName name, bool paused, CancellationToken cancellationToken)
     {
         var found = await _store.FindJobAsync(name, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var maybe))
@@ -1661,36 +1727,73 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         foreach (var key in keys)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var triggers = await _store.TriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
-            if (!triggers.TryGetValue(out var triggerList))
-            {
-                results.Add(triggers.Error!);
-                continue;
-            }
-
-            var trigger = triggerList.FirstOrDefault(candidate => string.Equals(candidate.Name, key.Trigger, StringComparison.Ordinal));
-            if (trigger is null)
-            {
-                results.Add(Error.NotFound(SchedulingErrors.TriggerNotFound, SchedulingMessages.TriggerNotFound, MessageArguments.Of(("job", key.Job.Value), ("trigger", key.Trigger))));
-                continue;
-            }
-
-            if (ApplyPause(trigger, paused, _clock.GetUtcNow()))
-            {
-                var saved = await _store.SaveTriggersAsync([trigger], cancellationToken).ConfigureAwait(false);
-                results.Add(saved);
-                lock (_lock)
-                {
-                    _localDirty = true;
-                }
-            }
-            else
-            {
-                results.Add(Result.Success());
-            }
+            results.Add(await UnderTriggerLockAsync(() => SetTriggerPausedLockedAsync(key, paused, cancellationToken), cancellationToken).ConfigureAwait(false));
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// 在锁内暂停或恢复一个触发器。
+    /// </summary>
+    private async ValueTask<Result> SetTriggerPausedLockedAsync(TriggerKey key, bool paused, CancellationToken cancellationToken)
+    {
+        var triggers = await _store.TriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
+        if (!triggers.TryGetValue(out var triggerList))
+        {
+            return triggers.Error!;
+        }
+
+        var trigger = triggerList.FirstOrDefault(candidate => string.Equals(candidate.Name, key.Trigger, StringComparison.Ordinal));
+        if (trigger is null)
+        {
+            return Error.NotFound(SchedulingErrors.TriggerNotFound, SchedulingMessages.TriggerNotFound, MessageArguments.Of(("job", key.Job.Value), ("trigger", key.Trigger)));
+        }
+
+        if (!ApplyPause(trigger, paused, _clock.GetUtcNow()))
+        {
+            return Result.Success();
+        }
+
+        var saved = await _store.SaveTriggersAsync([trigger], cancellationToken).ConfigureAwait(false);
+        lock (_lock)
+        {
+            _localDirty = true;
+        }
+
+        return saved;
+    }
+
+    /// <summary>
+    /// 在触发器写锁内执行。
+    /// </summary>
+    private async ValueTask<T> UnderTriggerLockAsync<T>(Func<ValueTask<T>> action, CancellationToken cancellationToken)
+    {
+        await _triggerWrites.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await action().ConfigureAwait(false);
+        }
+        finally
+        {
+            _triggerWrites.Release();
+        }
+    }
+
+    /// <summary>
+    /// 在触发器写锁内执行，没有返回值。
+    /// </summary>
+    private async ValueTask UnderTriggerLockAsync(Func<ValueTask> action, CancellationToken cancellationToken)
+    {
+        await _triggerWrites.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await action().ConfigureAwait(false);
+        }
+        finally
+        {
+            _triggerWrites.Release();
+        }
     }
 
     /// <summary>

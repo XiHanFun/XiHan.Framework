@@ -48,7 +48,7 @@ XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Throw.set -> void
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.WaitAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name, int count, System.TimeSpan timeout) -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null) -> System.Threading.Tasks.Task<XiHan.Framework.Scheduling.Conformance.JobSchedulerHost!>!
 abstract XiHan.Framework.Scheduling.Conformance.JobStoreConformance.CreateAsync() -> System.Threading.Tasks.Task<(XiHan.Framework.Scheduling.Abstractions.Storage.IJobStore! Store, System.IAsyncDisposable! Host)>!
-abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.CreateElection() -> XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection!
+abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.CreateElection(System.TimeProvider! clock) -> XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection!
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.AttemptsAsync(XiHan.Framework.Scheduling.Conformance.JobSchedulerHost! host, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>!
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
@@ -58,5 +58,4 @@ static XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Job(string! na
 static XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Run(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName job, string! nodeId, System.DateTimeOffset scheduledAt) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!
 static XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Trigger(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName job, string! name, System.DateTimeOffset nextFireAt, int priority = 5, XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState state = XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState.Waiting, bool local = false) -> XiHan.Framework.Scheduling.Abstractions.Storage.TriggerRecord!
 virtual XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.WaitTimeout.get -> System.TimeSpan
-virtual XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.ExpirationGrace.get -> System.TimeSpan
 virtual XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.LeaseTimeToLive.get -> System.TimeSpan

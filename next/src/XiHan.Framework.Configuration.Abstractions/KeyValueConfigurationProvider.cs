@@ -124,15 +124,16 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     /// 整体替换键值表。
     /// </summary>
     /// <remarks>
-    /// <paramref name="notify"/> 为真时触发重载令牌（首次加载不触发）。
+    /// <paramref name="notify"/> 为真且键值有变化时触发重载令牌（首次加载不触发）；重读到同样的内容不触发，订阅者不会因为轮询而反复重绑。
     /// </remarks>
     protected void Replace(IReadOnlyDictionary<string, string?> values, bool notify)
     {
         CancellationTokenSource previous;
         lock (_lock)
         {
+            var changed = !SameValues(_data, values);
             _data = new Dictionary<string, string?>(values, StringComparer.OrdinalIgnoreCase);
-            if (!notify)
+            if (!notify || !changed)
             {
                 return;
             }
@@ -144,6 +145,30 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
 
         previous.Cancel();
         previous.Dispose();
+    }
+
+    /// <summary>
+    /// 两份键值表是否相同。
+    /// </summary>
+    /// <remarks>
+    /// 键不分大小写，值按序数比较。
+    /// </remarks>
+    private static bool SameValues(Dictionary<string, string?> current, IReadOnlyDictionary<string, string?> next)
+    {
+        if (current.Count != next.Count)
+        {
+            return false;
+        }
+
+        foreach (var (key, value) in next)
+        {
+            if (!current.TryGetValue(key, out var existing) || !string.Equals(existing, value, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

@@ -12,5 +12,5 @@ namespace XiHan.Framework.Scheduling.InMemory.Tests;
 public sealed class InMemoryLeaderElectionConformanceTests : LeaderElectionConformance
 {
     /// <inheritdoc />
-    protected override ILeaderElection CreateElection() => new InMemoryLeaderElection(TimeProvider.System);
+    protected override ILeaderElection CreateElection(TimeProvider clock) => new InMemoryLeaderElection(clock);
 }
