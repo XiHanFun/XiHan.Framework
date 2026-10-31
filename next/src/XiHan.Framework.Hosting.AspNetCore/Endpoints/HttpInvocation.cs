@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
@@ -68,14 +69,17 @@ public static partial class HttpInvocation
         ArgumentNullException.ThrowIfNull(services);
         var headers = httpContext.Request.Headers;
 
-        // traceparent 不合法时视为缺失，由内核生成新的 trace-id，不把坏值带进链路
+        // traceparent 不合法时视为缺失，不把坏值带进链路：内核并入 ASP.NET Core 当前的请求 Activity，也没有时生成新的 trace-id；
+        // 合法时连同 trace-flags 一起取，上游「不采样」原样保留（RFC-0003 规则 7）
         string? traceId = null;
         string? spanId = null;
+        ActivityTraceFlags? traceFlags = null;
         var traceparent = TraceParent().Match(headers["traceparent"].ToString());
         if (traceparent.Success)
         {
             traceId = traceparent.Groups["trace"].Value;
             spanId = traceparent.Groups["span"].Value;
+            traceFlags = (ActivityTraceFlags)byte.Parse(traceparent.Groups["flags"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         }
 
         // 截止时间按不变文化解析并统一为 UTC；解析失败视为没有截止时间
@@ -114,7 +118,7 @@ public static partial class HttpInvocation
             }
         }
 
-        var context = App.CreateContext(services, httpContext.RequestAborted, traceId, spanId, deadline, baggage);
+        var context = App.CreateContext(services, httpContext.RequestAborted, traceId, spanId, deadline, baggage, traceFlags);
 
         // 凭据只做格式拆分（scheme 与值），不在这里验证；解释交给安全子系统的 Authenticate 阶段
         if (CredentialOf(httpContext).TryGetValue(out var credential))
@@ -275,9 +279,12 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// W3C <c>traceparent</c> 头（版本 00）的匹配：捕获 32 位 trace-id 与 16 位 span-id。
+    /// W3C <c>traceparent</c> 头（版本 00）的匹配。
     /// </summary>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
+    /// <remarks>
+    /// 捕获 32 位 trace-id、16 位 span-id 与 2 位 trace-flags。
+    /// </remarks>
+    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
     private static partial Regex TraceParent();
 
     /// <summary>

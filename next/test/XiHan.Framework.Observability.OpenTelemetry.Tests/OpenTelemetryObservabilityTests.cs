@@ -9,6 +9,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using XiHan.Framework.Kernel.Diagnostics;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -57,6 +58,35 @@ public sealed class OpenTelemetryObservabilityTests
         meter.ForceFlush();
         Assert.Contains(metrics, static m => m.Name == "xihan.invocations" && m.MeterName == FrameworkDiagnostics.SourceName);
         Assert.Contains(metrics, static m => m.Name == "xihan.invocation.duration");
+    }
+
+    [Fact]
+    public async Task SamplingRatio_AppliesToKernelRoots_WhileUpstreamDecisionsAreFollowed()
+    {
+        var activities = new List<Activity>();
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<OpenTelemetryObservabilityFeature>(),
+            [new("XiHan:Observability:OpenTelemetry:SamplingRatio", "0")],
+            services => services.ConfigureOpenTelemetryTracerProvider((_, tracing) => tracing.AddInMemoryExporter(activities)));
+        var tracer = host.Services.GetRequiredService<TracerProvider>();
+
+        // 没有上游的调用是链路的根：比例 0 不采样（以前固定的采样位让它总被导出）
+        (await host.InvokeAsync(static _ => ValueTask.CompletedTask)).ThrowIfFailure();
+
+        // 有上游的调用沿用上游决定：采样的导出、不采样的不导出，与比例无关
+        var sampledTrace = ActivityTraceId.CreateRandom().ToHexString();
+        var unsampledTrace = ActivityTraceId.CreateRandom().ToHexString();
+        foreach (var (traceId, flags) in new[] { (sampledTrace, ActivityTraceFlags.Recorded), (unsampledTrace, ActivityTraceFlags.None) })
+        {
+            await using var scope = host.Services.CreateAsyncScope();
+            var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, traceId, "00f067aa0ba902b7", traceFlags: flags);
+            (await host.App.InvokeAsync(context, static _ => ValueTask.CompletedTask)).ThrowIfFailure();
+        }
+
+        tracer.ForceFlush();
+        var span = Assert.Single(activities, static a => a.OperationName == "xihan.invoke");
+        Assert.Equal(sampledTrace, span.TraceId.ToHexString());
+        Assert.Equal("00f067aa0ba902b7", span.ParentSpanId.ToHexString());
     }
 
     [Fact]

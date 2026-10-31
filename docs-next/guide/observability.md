@@ -8,7 +8,7 @@
 
 | 信号 | 名字 | 内容 |
 | --- | --- | --- |
-| Span | `xihan.invoke` | `ActivityKind.Internal`；父级取自调用上下文的 trace-id 与 span-id；标签 `xihan.outcome`；失败时状态为 Error，描述是错误码 |
+| Span | `xihan.invoke` | `ActivityKind.Internal`；父级见下文「采样」；标签 `xihan.outcome`；失败时状态为 Error，描述是错误码 |
 | 计数器 | `xihan.invocations` | 单位 `{invocation}`，每次调用加一，标签 `xihan.outcome` |
 | 直方图 | `xihan.invocation.duration` | 单位 `ms`，调用耗时，标签 `xihan.outcome` |
 
@@ -98,7 +98,7 @@ ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发�
 
 ### 采样
 
-采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 以调用上下文的 trace-id 与 span-id 作父级，父级的采样标志恒为已采样，所以 5.0 预览版里内核 Span 总被采样，`SamplingRatio` 只影响 ASP.NET Core、`HttpClient` 这类自身作为根的 Span。
+采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样。没有 `traceparent` 的 HTTP 请求并入 ASP.NET Core 的请求 Span，两者同一 trace-id。
 
 ## 业务打点
 

@@ -40,4 +40,13 @@ public static class FrameworkDiagnostics
     /// 调用耗时直方图。
     /// </summary>
     public static Histogram<double> InvocationDuration { get; } = Meter.CreateHistogram<double>("xihan.invocation.duration", "ms", "Duration of pipeline invocations.");
+
+    /// <summary>
+    /// Activity 的采样标志是否是一次采样决定。
+    /// </summary>
+    /// <remarks>
+    /// 经具名 ActivitySource 创建（监听器做过采样）或有父级（标志随父级）时是；不经 ActivitySource 直接构造的根 Activity（如没有监听器时 ASP.NET Core 为日志创建的请求 Activity）的标志只是缺省值，不代表「不采样」。
+    /// </remarks>
+    internal static bool HasSamplingDecision(Activity activity)
+        => activity.Source.Name.Length > 0 || activity.ParentSpanId != default;
 }

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -49,6 +50,7 @@ public sealed partial class InvocationContext
         Deadline = source.Deadline;
         TraceId = source.TraceId;
         SpanId = source.SpanId;
+        TraceFlags = source.TraceFlags;
         Baggage = baggage;
         Services = source.Services;
     }
@@ -98,6 +100,14 @@ public sealed partial class InvocationContext
                 : throw new ArgumentException("SpanId must be 16 lowercase hexadecimal characters.", nameof(value));
         }
     }
+
+    /// <summary>
+    /// W3C Trace Context 的 trace-flags。
+    /// </summary>
+    /// <remarks>
+    /// 上游（载体的 <c>traceparent</c>、宿主当前的 Activity）给出的标志，采样位为 <see cref="ActivityTraceFlags.Recorded"/>；上游「不采样」原样保留。为 <see langword="null"/> 时没有上游，trace-id 由内核生成，这次调用是链路的根，Observe 阶段按根 Span 交给采样器（RFC-0003 规则 7）。
+    /// </remarks>
+    public ActivityTraceFlags? TraceFlags { get; init; }
 
     /// <summary>
     /// 随调用传播的键值。

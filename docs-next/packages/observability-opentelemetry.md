@@ -149,7 +149,7 @@ public sealed class TracingTests
 
 - 能力没被选中时（另有显式 Provider 提供 `observability.export@1`）只登记选项，不注册任何提供者。
 - `Tracing`、`Metrics`、`Logging` 为假时对应的提供者不注册，`TracerProvider` 等服务不存在。
-- `xihan.invoke` 以调用上下文的 trace-id 与 span-id 作父级，父级的采样标志恒为已采样，5.0 预览版里内核 Span 总被采样，`SamplingRatio` 只影响自身作为根的 Span。
+- `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样（ADR-0065）。
 - 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量与默认端口决定，`Otlp:Protocol` 不参与。
 - 本包没有健康条目；导出失败由 OpenTelemetry SDK 自身处理，不影响调用。
 

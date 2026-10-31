@@ -55,7 +55,7 @@ app.Run();
 
 | 请求 | 调用上下文 | 规则 |
 | --- | --- | --- |
-| `traceparent` | `TraceId`、`SpanId` | W3C 版本 `00`；缺失或格式不对时生成新的 trace-id |
+| `traceparent` | `TraceId`、`SpanId`、`TraceFlags` | W3C 版本 `00`，采样标志原样保留（上游 `-00` 时内核 Span 不采样）；缺失或格式不对时并入 ASP.NET Core 当前的请求 Activity，也没有时生成新的 trace-id |
 | `baggage` | `Baggage` | W3C 格式；只保留格式合法的 `xihan.` 键（如 `xihan.tenant`），值按 URL 解码，其他键丢弃 |
 | `xihan-deadline` | `Deadline` | RFC 3339，按 UTC 解析；解析失败视为没有截止时间 |
 | `grpc-timeout` | `Deadline` | 只在没有 `xihan-deadline` 时生效；数值最多 8 位，单位 `H`、`M`、`S`、`m`、`u`、`n`，按宿主时钟换算成绝对时间 |

@@ -45,6 +45,8 @@ XiHan.Framework.Primitives.InvocationContext.Services.get -> System.IServiceProv
 XiHan.Framework.Primitives.InvocationContext.Services.init -> void
 XiHan.Framework.Primitives.InvocationContext.SpanId.get -> string!
 XiHan.Framework.Primitives.InvocationContext.SpanId.init -> void
+XiHan.Framework.Primitives.InvocationContext.TraceFlags.get -> System.Diagnostics.ActivityTraceFlags?
+XiHan.Framework.Primitives.InvocationContext.TraceFlags.init -> void
 XiHan.Framework.Primitives.InvocationContext.TraceId.get -> string!
 XiHan.Framework.Primitives.InvocationContext.TraceId.init -> void
 XiHan.Framework.Primitives.InvocationContext.TryGetBaggage(string! key, out string! value) -> bool

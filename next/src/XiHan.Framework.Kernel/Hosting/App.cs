@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Capabilities;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
@@ -181,23 +182,50 @@ public sealed partial class App : IDisposable
     /// 创建一次调用的上下文。
     /// </summary>
     /// <remarks>
-    /// 未提供 Trace 时生成新的 W3C trace-id 与 parent-id。
+    /// 给了 <paramref name="traceId"/> 时用载体的 trace-id、parent-id（缺省生成）与标志（缺省按上游已采样处理）。没有给时并入宿主当前的 W3C Activity（ASP.NET Core 的请求 Span、外层调用的 Span）：取它的 trace-id 与 span-id，它有采样决定时连同标志；也没有当前 Activity 时生成新的 trace-id 与 parent-id，标志为空，这次调用是链路的根（RFC-0003 规则 7）。
     /// </remarks>
+    /// <param name="scopedServices">调用作用域的服务提供器。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <param name="traceId">载体给出的 trace-id。</param>
+    /// <param name="spanId">载体给出的 parent-id。</param>
+    /// <param name="deadline">绝对截止时间。</param>
+    /// <param name="baggage">Baggage。</param>
+    /// <param name="traceFlags">载体给出的 trace-flags；只在给了 <paramref name="traceId"/> 时使用。</param>
     public static InvocationContext CreateContext(
         IServiceProvider scopedServices,
         CancellationToken cancellationToken,
         string? traceId = null,
         string? spanId = null,
         DateTimeOffset? deadline = null,
-        IReadOnlyDictionary<string, string>? baggage = null)
+        IReadOnlyDictionary<string, string>? baggage = null,
+        ActivityTraceFlags? traceFlags = null)
     {
         ArgumentNullException.ThrowIfNull(scopedServices);
+        ActivityTraceFlags? flags;
+        if (traceId is not null)
+        {
+            // 载体给了 trace：标志随它；只给 trace-id 不给标志的创建方按上游已采样处理，与引入标志之前的行为一致
+            flags = traceFlags ?? ActivityTraceFlags.Recorded;
+        }
+        else if (Activity.Current is { IdFormat: ActivityIdFormat.W3C } current)
+        {
+            // 没有载体的 trace 时并入宿主当前的 Activity，不另起一条链路；它没有采样决定（旧式 Activity 的根）时标志留空，按链路的根处理
+            traceId = current.TraceId.ToHexString();
+            spanId = current.SpanId.ToHexString();
+            flags = FrameworkDiagnostics.HasSamplingDecision(current) ? current.ActivityTraceFlags : null;
+        }
+        else
+        {
+            flags = null;
+        }
+
         return new InvocationContext
         {
             CancellationToken = cancellationToken,
             Deadline = deadline,
             TraceId = traceId ?? ActivityTraceId.CreateRandom().ToHexString(),
             SpanId = spanId ?? ActivitySpanId.CreateRandom().ToHexString(),
+            TraceFlags = flags,
             Baggage = baggage ?? new Dictionary<string, string>(StringComparer.Ordinal),
             Services = scopedServices,
         };
