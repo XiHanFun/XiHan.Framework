@@ -226,10 +226,10 @@ app.Run();
 ```bash
 # Linux 上先装原生工具链
 sudo apt-get install -y clang zlib1g-dev
-dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -p:PublishAot=true -o ./artifacts/aot
+dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -o ./artifacts/aot
 ```
 
-SimpleApp 做到可 AOT 发布的写法：项目设 `<EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>`，把最小 API 的端点委托改为编译期生成；源生成的 `JsonSerializerContext` 插在 `ConfigureHttpJsonOptions` 解析链最前面；操作契约经 `Kernel.Generators` 在编译期生成登记代码与 JSON Schema（[Kernel.Generators](../packages/kernel-generators)）。容器里以 AOT 运行时，在应用清单里设 `"image": { "aot": true }`，生成的 Dockerfile 自动换成原生构建与 `runtime-deps` 镜像。
+SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</PublishAot>`，不在命令行传，以免这个全局属性传给 netstandard2.0 的分析器与生成器项目（NETSDK1207）；项目设 `<EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>`，把最小 API 的端点委托改为编译期生成；源生成的 `JsonSerializerContext` 插在 `ConfigureHttpJsonOptions` 解析链最前面；操作契约经 `Kernel.Generators` 在编译期生成登记代码与 JSON Schema（[Kernel.Generators](../packages/kernel-generators)）。容器里以 AOT 运行时，在应用清单里设 `"image": { "aot": true }`，生成的 Dockerfile 自动换成原生构建与 `runtime-deps` 镜像。
 
 ## 在 kind 上验证
 

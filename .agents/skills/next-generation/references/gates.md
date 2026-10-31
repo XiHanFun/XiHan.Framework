@@ -7,7 +7,7 @@ dotnet restore next/XiHan.Framework.Next.slnx
 dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore
 dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build
 dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
-dotnet publish next/samples/SimpleApp/SimpleApp.csproj -c Release -p:PublishAot=true   # 需要本机 C++ 工具链
+dotnet publish next/samples/SimpleApp/SimpleApp.csproj -c Release   # PublishAot 在项目里声明，别在命令行传（NETSDK1207）；需要本机 C++ 工具链
 dotnet run -c Release --project next/benchmarks/XiHan.Framework.Benchmarks -- --filter '*'
 ```
 

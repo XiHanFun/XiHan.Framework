@@ -3,6 +3,8 @@
     <RootNamespace>SimpleApp</RootNamespace>
     <!-- 最小 API 的端点委托在编译期生成，去掉反射绑定，保证 Native AOT 可发布 -->
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <!-- 以 Native AOT 发布（CI 冒烟）。写在项目里而不是命令行：命令行的全局属性会传给引用的 netstandard2.0 分析器与生成器，报 NETSDK1207 -->
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
