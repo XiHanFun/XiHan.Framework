@@ -97,9 +97,22 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             _host = null;
         }
 
-        // SQLite 连接会被池化并持有文件句柄，先清空连接池，Windows 上才能删除文件
-        SqliteConnection.ClearAllPools();
-        File.Delete(Path);
+        // SQLite 连接会被池化并持有文件句柄，先清空连接池，Windows 上才能删除文件；
+        // 宿主停止时还在收尾的连接（释放锁、后台续约的最后一次写）可能仍占着文件，等它们结束再删
+        for (var attempt = 0; ; attempt++)
+        {
+            SqliteConnection.ClearAllPools();
+            try
+            {
+                File.Delete(Path);
+                break;
+            }
+            catch (IOException) when (attempt < 50)
+            {
+                await Task.Delay(100);
+            }
+        }
+
         File.Delete(Path + "-journal");
         File.Delete(Path + "-wal");
         File.Delete(Path + "-shm");
