@@ -5,12 +5,15 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -26,6 +29,15 @@ public sealed class MessageContractTests
     {
         /// <inheritdoc />
         public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+    }
+
+    /// <summary>
+    /// 固定返回给定上下文的调用访问器。
+    /// </summary>
+    private sealed class FixedInvocation(InvocationContext? context) : IInvocationAccessor
+    {
+        /// <inheritdoc />
+        public Maybe<InvocationContext> Current => context is null ? Maybe.None<InvocationContext>() : Maybe.Some(context);
     }
 
     /// <summary>
@@ -170,6 +182,75 @@ public sealed class MessageContractTests
         Assert.True((await publisher.PublishAsync("orders", envelope, CancellationToken.None)).IsSuccess);
         Assert.Equal(MessagingErrors.InvalidTopic, (await publisher.PublishAsync("Bad", envelope, CancellationToken.None)).Error?.Code);
         Assert.Single(broker.Published);
+    }
+
+    [Fact]
+    public async Task DirectPublisher_FillsMissingExtensions_FromTheCurrentInvocation()
+    {
+        var context = TestInvocationContext.Create(baggage: new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BaggageKeys.Tenant] = "from-baggage",
+            [BaggageKeys.Principal] = "baggage-user",
+            [BaggageKeys.Correlation] = "corr-1",
+            [BaggageKeys.Locale] = "zh-CN",
+            [BaggageKeys.IdempotencyKey] = "idem-1",
+        });
+        // 安全上下文优先于 Baggage：认证后的主体与解析出的租户
+        context.SetSecurity(new SecurityContext(new Principal("user-7", "Bearer"), new TenantContext("acme")));
+        var broker = new RecordingBroker();
+        var publisher = new DirectPublisher(broker, new FixedInvocation(context));
+
+        (await publisher.PublishAsync("orders", new MessageEnvelope { Id = "1", Source = "/o", Type = "t" }, CancellationToken.None)).ThrowIfFailure();
+        var explicitCorrelation = new MessageEnvelope { Id = "2", Source = "/o", Type = "t" }.WithExtension(EnvelopeExtensions.Correlation, "explicit").WithExtension("region", "cn");
+        Assert.All(await publisher.PublishManyAsync("orders", [explicitCorrelation], CancellationToken.None), static r => Assert.True(r.IsSuccess));
+
+        var first = broker.Published[0].Envelope;
+        Assert.Equal($"00-{context.TraceId}-{context.SpanId}-01", first.Extensions[EnvelopeExtensions.TraceParent]);
+        Assert.Equal("acme", first.Extensions[EnvelopeExtensions.Tenant]);
+        Assert.Equal("user-7", first.Extensions[EnvelopeExtensions.Principal]);
+        Assert.Equal("corr-1", first.Extensions[EnvelopeExtensions.Correlation]);
+        Assert.Equal("zh-CN", first.Extensions[EnvelopeExtensions.Locale]);
+        // 幂等键不进入消息：派发不写幂等键
+        Assert.Equal(5, first.Extensions.Count);
+
+        // 信封上已有的扩展保持不变，其余照补
+        var second = broker.Published[1].Envelope;
+        Assert.Equal("explicit", second.Extensions[EnvelopeExtensions.Correlation]);
+        Assert.Equal("cn", second.Extensions["region"]);
+        Assert.Equal("acme", second.Extensions[EnvelopeExtensions.Tenant]);
+        Assert.Equal($"00-{context.TraceId}-{context.SpanId}-01", second.Extensions[EnvelopeExtensions.TraceParent]);
+    }
+
+    [Fact]
+    public async Task DirectPublisher_FallsBackToBaggage_ForAnonymousCalls_AndLeavesEnvelopesAloneOutsideAnInvocation()
+    {
+        var context = TestInvocationContext.Create(baggage: new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = "t-1", [BaggageKeys.Principal] = "svc" });
+        var broker = new RecordingBroker();
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+
+        (await new DirectPublisher(broker, new FixedInvocation(context)).PublishAsync("orders", envelope, CancellationToken.None)).ThrowIfFailure();
+        (await new DirectPublisher(broker, new FixedInvocation(null)).PublishAsync("orders", envelope, CancellationToken.None)).ThrowIfFailure();
+        (await new DirectPublisher(broker).PublishAsync("orders", envelope, CancellationToken.None)).ThrowIfFailure();
+
+        var anonymous = broker.Published[0].Envelope;
+        Assert.Equal("t-1", anonymous.Extensions[EnvelopeExtensions.Tenant]);
+        Assert.Equal("svc", anonymous.Extensions[EnvelopeExtensions.Principal]);
+        Assert.False(anonymous.Extensions.ContainsKey(EnvelopeExtensions.Correlation));
+        Assert.False(anonymous.Extensions.ContainsKey(EnvelopeExtensions.Locale));
+        Assert.True(anonymous.Extensions.ContainsKey(EnvelopeExtensions.TraceParent));
+        // 不在调用内或没有访问器：原样发布
+        Assert.Same(envelope, broker.Published[1].Envelope);
+        Assert.Same(envelope, broker.Published[2].Envelope);
+    }
+
+    [Fact]
+    public void BaggageMappings_CoverTheRegisteredKeys_ExceptTheIdempotencyKey()
+    {
+        Assert.Equal(
+            [("xihantenant", BaggageKeys.Tenant), ("xihanprincipal", BaggageKeys.Principal), ("xihancorrelation", BaggageKeys.Correlation), ("xihanlocale", BaggageKeys.Locale)],
+            EnvelopeExtensions.BaggageMappings);
+        Assert.All(EnvelopeExtensions.BaggageMappings, static m => Assert.True(EnvelopeExtensions.IsValidName(m.Extension)));
+        Assert.Equal(BaggageKeys.Registered.Where(static k => k != BaggageKeys.IdempotencyKey).Order(StringComparer.Ordinal), EnvelopeExtensions.BaggageMappings.Select(static m => m.BaggageKey).Order(StringComparer.Ordinal));
     }
 
     [Fact]

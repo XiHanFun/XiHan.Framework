@@ -70,10 +70,10 @@ builder.AddXiHan(xihan => xihan
 | 类型 | 说明 |
 | --- | --- |
 | `MessageEnvelope` | CloudEvents 信封：`Id`、`Source`、`Type`（必填）、`Time`、`Subject`、`DataContentType`（缺省 `application/json`）、`Data`、`Extensions`；`WithExtension`、`Extension`、`IsJsonData` |
-| `EnvelopeExtensions` | 扩展属性名常量 `Tenant`（`xihantenant`）、`Correlation`（`xihancorrelation`）、`TraceParent`、`PartitionKey`（`xihankey`）；`IsValidName` |
+| `EnvelopeExtensions` | 扩展属性名常量 `Tenant`（`xihantenant`）、`Principal`（`xihanprincipal`）、`Correlation`（`xihancorrelation`）、`Locale`（`xihanlocale`）、`TraceParent`、`PartitionKey`（`xihankey`）；扩展与 Baggage 键的对应 `BaggageMappings`；`IsValidName` |
 | `TopicName` | 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；`IsValid`、`Validate`、`MaxLength`（128） |
 | `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType` |
-| `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001` |
+| `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
 | `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(topics, dispatch, ct)`、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
 | `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封与尝试号；代理调用的派发委托 |
@@ -114,7 +114,8 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 
 - 处理器返回失败或抛出异常都算投递失败；同一主题的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型重复订阅同一主题只记一次。没有处理器的主题直接成功。
 - 派发不写幂等键，重试必须重新执行处理器；去重由处理器按 `Id` + `Source` 自理。
-- 派发器只把 `xihantenant`、`xihancorrelation` 放进 Baggage，`traceparent` 成为追踪 ID 与父跨度；发布者不自动从当前调用补这些扩展属性。
+- 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID 与父跨度；幂等键不进入消息。
+- `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪，租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。
 - `PublishManyAsync`：结果与入参等长同序，空集合不触代理，主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；代理不可达整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 领域事件：未登记的事件类型让调用以 `MESSAGING_VALIDATION_003` 结束；重复登记或超过 10000 种时 `AddDomainEvent` 抛 `FrameworkException`（`MESSAGING_VALIDATION_004`）；同一主题的事件一次批量发布，任一失败即回滚。
 - 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条未投递的消息；没有尝试上限，失败的消息每轮重试；投递成功的行不删除。`OutboxMessage` 需要在关系型 Provider 的模型里有表。

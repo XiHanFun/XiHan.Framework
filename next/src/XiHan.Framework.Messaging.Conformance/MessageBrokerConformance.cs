@@ -192,6 +192,9 @@ public abstract class MessageBrokerConformance
     /// <summary>
     /// 用例 7：租户、关联与追踪扩展进入调用上下文。
     /// </summary>
+    /// <remarks>
+    /// 主体与区域同样按对应表进入 Baggage，见用例 10。
+    /// </remarks>
     [Fact]
     public async Task TenantCorrelationAndTrace_FlowIntoInvocationContext()
     {
@@ -247,6 +250,56 @@ public abstract class MessageBrokerConformance
         var rejected = await PublishManyAsync(host, "Not A Topic", [Envelope("x-1", "orders.x"), Envelope("x-2", "orders.x")]).ConfigureAwait(false);
         Assert.Equal(2, rejected.Count);
         Assert.All(rejected, static r => Assert.Equal(MessagingErrors.InvalidTopic, r.Error?.Code));
+    }
+
+    /// <summary>
+    /// 用例 10：调用内发布的追踪与 Baggage 随消息到达处理器。
+    /// </summary>
+    /// <remarks>
+    /// 发布者从当前调用补齐扩展，处理器在同一条追踪链上，带同样的租户、主体、关联与区域；幂等键不随消息传下去；信封上显式设置的扩展优先（RFC-0009「信封」）。
+    /// </remarks>
+    [Fact]
+    public async Task PublishWithinInvocation_CarriesTraceAndBaggage_ToTheHandler()
+    {
+        var log = new DeliveryLog();
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+        var baggage = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [BaggageKeys.Tenant] = "acme",
+            [BaggageKeys.Principal] = "user-7",
+            [BaggageKeys.Correlation] = "corr-10",
+            [BaggageKeys.Locale] = "zh-CN",
+            [BaggageKeys.IdempotencyKey] = "idem-10",
+        };
+        string? traceId = null;
+
+        var published = await host.InvokeAsync(
+            async context =>
+            {
+                traceId = context.TraceId;
+                var publisher = context.Services.GetRequiredService<IMessagePublisher>();
+                (await publisher.PublishAsync(OrdersTopic, Envelope("trace-1", "orders.traced"), context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+                var explicitCorrelation = Envelope("trace-2", "orders.traced").WithExtension(EnvelopeExtensions.Correlation, "explicit");
+                foreach (var result in await publisher.PublishManyAsync(OrdersTopic, [explicitCorrelation], context.CancellationToken).ConfigureAwait(false))
+                {
+                    result.ThrowIfFailure();
+                }
+            },
+            baggage: baggage).ConfigureAwait(false);
+        published.ThrowIfFailure();
+
+        var received = await log.WaitAsync(static r => r.Delivery.Envelope.Id.StartsWith("trace-", StringComparison.Ordinal), 2, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal(2, received.Count);
+        Assert.All(received, message =>
+        {
+            Assert.Equal(traceId, message.TraceId);
+            Assert.Equal("acme", message.Baggage[BaggageKeys.Tenant]);
+            Assert.Equal("user-7", message.Baggage[BaggageKeys.Principal]);
+            Assert.Equal("zh-CN", message.Baggage[BaggageKeys.Locale]);
+            Assert.False(message.Baggage.ContainsKey(BaggageKeys.IdempotencyKey));
+        });
+        Assert.Equal("corr-10", Assert.Single(received, static r => r.Delivery.Envelope.Id == "trace-1").Baggage[BaggageKeys.Correlation]);
+        Assert.Equal("explicit", Assert.Single(received, static r => r.Delivery.Envelope.Id == "trace-2").Baggage[BaggageKeys.Correlation]);
     }
 
     /// <summary>

@@ -52,9 +52,13 @@ builder.AddXiHan(xihan => xihan
 | 扩展 | 常量 | 投递时的作用 |
 | --- | --- | --- |
 | `xihantenant` | `Tenant` | 进入 Baggage `xihan.tenant`；装配了多租户 Provider 时 Tenant 阶段据此解析租户 |
+| `xihanprincipal` | `Principal` | 进入 Baggage `xihan.principal`（只是发起者的 ID，不是凭据：处理器的调用仍是匿名主体，审计把它记为主体） |
 | `xihancorrelation` | `Correlation` | 进入 Baggage `xihan.correlation` |
+| `xihanlocale` | `Locale` | 进入 Baggage `xihan.locale`，处理器里 `key.L()` 按这个区域取文案 |
 | `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID 与父跨度 |
 | `xihankey` | `PartitionKey` | 流能力的分区键，见[队列与流](#队列与流) |
+
+前四个扩展与 Baggage 键的对应是 `EnvelopeExtensions.BaggageMappings`（`spec/conventions/baggage-keys.md` 的 CloudEvents 载体）。幂等键 `xihan.idempotency-key` 不进入消息：派发不写幂等键，带上它会让同一请求发出的几条消息与同一条消息的重试被幂等中间件当成同一次调用。
 
 主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；RabbitMQ 与 Kafka 的死信目标是映射后的名字加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）：JSON 数据内联在 `data`，其他数据放 `data_base64`，扩展属性是顶层成员。
 
@@ -69,12 +73,20 @@ builder.AddXiHan(xihan => xihan
 
 批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在开启了发布确认的通道上连续发布、一次等待全部确认（代理拒绝或无法路由的项返回 `MESSAGING_UNAVAILABLE_001`），Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
 
-发布者不会从当前调用自动补扩展属性，处理器那一端要看到租户、关联 ID 与追踪，发布方自己写进信封：
+在调用内发布时（操作、消息处理器、作业里），`DirectPublisher` 与 `OutboxPublisher` 先从当前调用（`IInvocationAccessor`）给每个信封补上缺失的扩展，处理器就在发布方的追踪链上，带着同样的租户、主体、关联 ID 与区域：
+
+| 扩展 | 取值 |
+| --- | --- |
+| `traceparent` | `00-<TraceId>-<SpanId>-01`，当前调用的追踪 ID 与跨度 ID |
+| `xihantenant` | 安全上下文的租户，没有再取 Baggage `xihan.tenant` |
+| `xihanprincipal` | 已认证主体的 ID，匿名时取 Baggage `xihan.principal` |
+| `xihancorrelation`、`xihanlocale` | Baggage `xihan.correlation`、`xihan.locale` |
+
+信封上已有的扩展保持不变，要换成别的值就自己 `WithExtension`；不在调用内（单例的后台循环、自己建的作用域）发布时不补。经发件箱时写进表里的就是补齐后的信封，投递循环原样发出，链路不断。下面的发布方只管业务字段：
 
 ```csharp
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
@@ -90,7 +102,7 @@ public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider c
 
     public async ValueTask<Result> NotifyAsync(IReadOnlyList<OrderShipped> shipments, InvocationContext context)
     {
-        var envelopes = shipments.Select(shipped => WithContext(new MessageEnvelope
+        var envelopes = shipments.Select(shipped => new MessageEnvelope
         {
             Id = Guid.CreateVersion7().ToString("N"),
             Source = "/shipping",
@@ -98,9 +110,9 @@ public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider c
             Time = clock.GetUtcNow(),
             Subject = $"order/{shipped.OrderId:N}",
             Data = JsonSerializer.SerializeToUtf8Bytes(shipped, ShippingJsonContext.Default.OrderShipped),
-        }, context)).ToList();
+        }).ToList();
 
-        // 一次批量发布；逐项结果与入参一一对应，返回第一个失败
+        // 一次批量发布；租户、关联 ID 与追踪由发布者从当前调用补齐；逐项结果与入参一一对应，返回第一个失败
         foreach (var result in await publisher.PublishManyAsync(Topic, envelopes, context.CancellationToken))
         {
             if (result.IsFailure)
@@ -110,22 +122,6 @@ public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider c
         }
 
         return Result.Success();
-    }
-
-    // 租户、关联 ID 与追踪随信封走，处理器的调用上下文从这里还原
-    private static MessageEnvelope WithContext(MessageEnvelope envelope, InvocationContext context)
-    {
-        if (context.GetSecurity().Tenant is { } tenant)
-        {
-            envelope = envelope.WithExtension(EnvelopeExtensions.Tenant, tenant.Id);
-        }
-
-        if (context.TryGetBaggage(BaggageKeys.Correlation, out var correlation))
-        {
-            envelope = envelope.WithExtension(EnvelopeExtensions.Correlation, correlation);
-        }
-
-        return envelope.WithExtension(EnvelopeExtensions.TraceParent, $"00-{context.TraceId}-{context.SpanId}-01");
     }
 }
 ```
@@ -174,7 +170,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
 
 `MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）与第几次尝试（`Attempt`，从 1 起）。派发器 `MessageDispatcher` 为每条消息：
 
-1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihancorrelation` 进 Baggage，`traceparent` 给出追踪 ID 与父跨度，调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
+1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 进 Baggage，`traceparent` 给出追踪 ID 与父跨度（不合法视为缺失），调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
 2. 经完整管道执行（`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`），按订阅顺序依次执行该主题的处理器，第一个失败即为调用结果。
 
 所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入随它提交或回滚；装配了发件箱时处理器发布的消息也先写进发件箱，随它一起提交。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。
@@ -218,6 +214,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 | `Time` | `IDomainEvent.OccurredAt` |
 | `Data` | 用登记的 `JsonTypeInfo` 序列化的事件 |
 | `xihantenant` | 工作单元有租户时带上 |
+| 其余扩展 | `traceparent`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 由发布者从当前调用补齐，见[发布消息](#发布消息) |
 
 同一主题的事件一次 `PublishManyAsync`，主题按首次出现的顺序；任一项失败即派发失败，工作单元回滚，聚合的缓冲保留；全部成功后清空每个聚合的缓冲再提交。
 

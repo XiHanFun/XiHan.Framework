@@ -73,7 +73,7 @@ public sealed class DomainEventRegistration
     /// 把一个事件映射成信封。
     /// </summary>
     /// <remarks>
-    /// <c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。
+    /// <c>id</c> 为给定标识的 <c>N</c> 格式、<c>source</c> 为 <c>/{主题}</c>、<c>time</c> 为事件发生时间、<c>data</c> 为事件的 JSON；有租户时带 <c>xihantenant</c> 扩展。追踪、主体、关联与区域由发布者从当前调用补齐。
     /// </remarks>
     public MessageEnvelope ToEnvelope(IDomainEvent domainEvent, Guid id, string? tenantId)
     {

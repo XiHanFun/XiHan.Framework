@@ -21,7 +21,7 @@ namespace XiHan.Framework.Messaging.InMemory.Tests;
 /// 聚合的领域事件经工作单元 → 发件箱 → 代理 → 处理器的全链路。
 /// </summary>
 /// <remarks>
-/// 提交的调用其事件随订单写入落进发件箱并投递到处理器，回滚的调用什么都不留下；没有发件箱时直接发布到代理。
+/// 提交的调用其事件随订单写入落进发件箱并投递到处理器，回滚的调用什么都不留下；没有发件箱时直接发布到代理。两条路上处理器都在发布调用的追踪链上，带着它的关联 ID 与区域。
 /// </remarks>
 public sealed class DomainEventOutboxTests
 {
@@ -70,12 +70,14 @@ public sealed class DomainEventOutboxTests
             (await ctx.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>().AddAsync(order, ctx.CancellationToken)).ThrowIfFailure();
             ctx.SetOutcome(Error.Literal("ORDERS_VALIDATION_001", "Rejected by a business rule."));
         });
+        string? traceId = null;
         var committed = await host.InvokeAsync(async ctx =>
         {
+            traceId = ctx.TraceId;
             var order = new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "committed" };
             order.Raise(new ConformanceEvent("committed", when));
             (await ctx.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>().AddAsync(order, ctx.CancellationToken)).ThrowIfFailure();
-        }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme" });
+        }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme", [BaggageKeys.Correlation] = "order-flow", [BaggageKeys.Locale] = "zh-CN" });
 
         Assert.True(rolledBack.IsFailure);
         Assert.True(committed.IsSuccess, committed.ToString());
@@ -85,6 +87,11 @@ public sealed class DomainEventOutboxTests
         Assert.Equal("event/committed", received.Delivery.Envelope.Subject);
         Assert.Equal(when, received.Delivery.Envelope.Time);
         Assert.Equal("acme", received.Delivery.Envelope.Extension(EnvelopeExtensions.Tenant).ValueOrThrow());
+        // 追踪链与关联 ID 不断开：事件从发布它的调用补齐 traceparent 与 Baggage 扩展（经发件箱时写入行里的就是补齐后的信封）
+        Assert.Equal(traceId, received.TraceId);
+        Assert.Equal("order-flow", received.Baggage[BaggageKeys.Correlation]);
+        Assert.Equal("zh-CN", received.Baggage[BaggageKeys.Locale]);
+        Assert.Equal("acme", received.Baggage[BaggageKeys.Tenant]);
         using var data = JsonDocument.Parse(received.Delivery.Envelope.Data);
         Assert.Equal("committed", data.RootElement.GetProperty("name").GetString());
         await Task.Delay(200);

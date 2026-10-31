@@ -289,7 +289,7 @@ app.MapXiHanCloudEvents();   // POST /events
 | batch | `Content-Type: application/cloudevents-batch+json` | 请求体是结构化事件的数组，按顺序处理 |
 | binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（RFC 3339）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性，头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
 
-事件类型先查 `Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihancorrelation`、`traceparent` 在派发时进入调用上下文，成为租户、关联 ID 与追踪。
+事件类型先查 `Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
 `Inbound` 决定事件的去向：
 

@@ -10,6 +10,7 @@ XiHan.Framework.Messaging.Conformance.MessageBrokerConformance
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.FailingHandler_IsRetriedUpToMaxAttempts_ThenStops() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.MessageBrokerConformance() -> void
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.PublishWithinInvocation_CarriesTraceAndBaggage_ToTheHandler() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publish_DeliversEnvelope_WithAttributesExtensionsAndData() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publish_PreservesBinaryData() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publish_PreservesOrder_WithinTopic() -> System.Threading.Tasks.Task!

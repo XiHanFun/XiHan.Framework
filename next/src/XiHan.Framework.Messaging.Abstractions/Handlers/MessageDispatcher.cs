@@ -14,7 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 /// 把投递变成一次内核调用。
 /// </summary>
 /// <remarks>
-/// 新作用域、从扩展属性构造 Baggage（租户、关联）与追踪（<c>traceparent</c>），经完整管道执行该主题的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
+/// 新作用域、从扩展属性构造 Baggage（租户、主体、关联、区域，见 <see cref="EnvelopeExtensions.BaggageMappings"/>）与追踪（<c>traceparent</c>），经完整管道执行该主题的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class MessageDispatcher(IServiceProvider services, App app, MessageSubscriptions subscriptions)
@@ -72,7 +72,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
             return Result.Success();
         }
 
-        // 每次投递一个新作用域与新调用上下文：租户与关联 ID 来自扩展属性，追踪 ID 与父跨度来自 traceparent
+        // 每次投递一个新作用域与新调用上下文：租户、主体、关联 ID 与区域来自扩展属性，追踪 ID 与父跨度来自 traceparent
         await using var scope = _services.CreateAsyncScope();
         var context = App.CreateContext(scope.ServiceProvider, cancellationToken, TraceIdOf(delivery.Envelope), SpanIdOf(delivery.Envelope), null, BaggageOf(delivery.Envelope));
         context.Set(_deliveryKey, delivery);
@@ -95,19 +95,20 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 从信封扩展属性构造 Baggage：租户进 <see cref="BaggageKeys.Tenant"/>，关联 ID 进 <see cref="BaggageKeys.Correlation"/>。
+    /// 从信封扩展属性构造 Baggage。
     /// </summary>
+    /// <remarks>
+    /// 按 <see cref="EnvelopeExtensions.BaggageMappings"/>：租户、主体、关联与区域；幂等键不在其中，派发不写幂等键。空值视为缺失。
+    /// </remarks>
     private static Dictionary<string, string> BaggageOf(MessageEnvelope envelope)
     {
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (envelope.Extension(EnvelopeExtensions.Tenant).TryGetValue(out var tenant))
+        foreach (var (extension, baggageKey) in EnvelopeExtensions.BaggageMappings)
         {
-            baggage[BaggageKeys.Tenant] = tenant;
-        }
-
-        if (envelope.Extension(EnvelopeExtensions.Correlation).TryGetValue(out var correlation))
-        {
-            baggage[BaggageKeys.Correlation] = correlation;
+            if (envelope.Extension(extension).TryGetValue(out var value) && value.Length > 0)
+            {
+                baggage[baggageKey] = value;
+            }
         }
 
         return baggage;

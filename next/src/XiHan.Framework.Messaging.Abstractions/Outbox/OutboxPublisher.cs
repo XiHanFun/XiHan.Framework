@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
@@ -15,10 +16,16 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// 事务性发布者。
 /// </summary>
 /// <remarks>
-/// 有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。
+/// 有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。在调用内发布时先从当前调用补齐信封缺失的扩展（<c>traceparent</c>、租户、主体、关联、区域，RFC-0009「信封」），写进发件箱的就是补齐后的信封。
 /// </remarks>
+/// <param name="unitOfWork">当前作用域的工作单元。</param>
+/// <param name="outbox">发件箱仓储。</param>
+/// <param name="ids">发件箱消息的 ID 生成器。</param>
+/// <param name="broker">没有活动工作单元时直接发布的目标代理。</param>
+/// <param name="timeProvider">时间源。</param>
+/// <param name="invocation">当前调用的访问器；为 <see langword="null"/> 时不补扩展。</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMessage, Guid> outbox, IIdGenerator<Guid> ids, IMessageBroker broker, TimeProvider timeProvider) : IMessagePublisher
+public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMessage, Guid> outbox, IIdGenerator<Guid> ids, IMessageBroker broker, TimeProvider timeProvider, IInvocationAccessor? invocation = null) : IMessagePublisher
 {
     /// <summary>
     /// 当前作用域的工作单元。
@@ -51,6 +58,14 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
     /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
+    /// <summary>
+    /// 当前调用的访问器。
+    /// </summary>
+    /// <remarks>
+    /// 发布时从它取调用上下文补齐扩展。
+    /// </remarks>
+    private readonly IInvocationAccessor? _invocation = invocation;
+
     /// <inheritdoc />
     public async ValueTask<Result> PublishAsync(string topic, MessageEnvelope envelope, CancellationToken cancellationToken)
     {
@@ -60,6 +75,7 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
             return DirectPublisher.InvalidTopic(topic);
         }
 
+        envelope = InvocationEnvelopes.Enrich(envelope, _invocation);
         // 没有活动工作单元就没有可依附的事务，直接发布；有则写入发件箱，随业务事务提交或回滚，由投递循环发出
         if (_unitOfWork.State != UnitOfWorkState.Active)
         {
@@ -83,6 +99,7 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
             return [];
         }
 
+        envelopes = InvocationEnvelopes.Enrich(envelopes, _invocation);
         if (_unitOfWork.State != UnitOfWorkState.Active)
         {
             return await _broker.PublishManyAsync(topic, envelopes, cancellationToken).ConfigureAwait(false);
