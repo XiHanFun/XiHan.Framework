@@ -32,6 +32,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.EventGatew
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_SendsRequests_AndMapsResponses() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceTimeout_FaultsOrTerminates() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Instances_AreIsolatedPerTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.OutputMappings_WriteVariables_AndFailLoudly() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!

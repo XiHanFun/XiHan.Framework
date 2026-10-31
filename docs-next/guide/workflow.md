@@ -448,38 +448,38 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
 
 ## 查询实例
 
-实例与节点实例的查询直接用存储契约 `IWorkflowInstanceStore`（单例）。
-
-::: warning 存储查询不按租户过滤
-`WorkflowInstanceQuery.TenantId` 为空时不限定租户，返回所有租户的实例。多租户应用必须在查询里写明当前租户。
-:::
+实例与节点实例的查询用引擎（作用域服务）的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`。它们是存储查询加上调用方租户：有租户的调用只查得到本租户的实例，查询里点名别的租户得空结果，按 ID 找别的租户的实例为无值或 `WORKFLOW_NOTFOUND_002`；无租户的调用原样查询全部租户。
 
 ```csharp
+using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Instances;
-using XiHan.Framework.Workflow.Abstractions.Storage;
 
-public sealed class LeaveReports(IWorkflowInstanceStore instances)
+public sealed class LeaveReports(IWorkflowEngine engine)
 {
-    public async ValueTask<(IReadOnlyList<WorkflowInstance> Items, long Total)> PendingAsync(string? tenantId, int page, CancellationToken cancellationToken)
+    public async ValueTask<(IReadOnlyList<WorkflowInstance> Items, long Total)> PendingAsync(int page, CancellationToken cancellationToken)
     {
+        // 租户取自当前调用，不用自己写进查询
         var query = new WorkflowInstanceQuery
         {
             DefinitionName = "hr.leave",
             Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended],
-            TenantId = tenantId,
             Skip = page * 20,
             Limit = 20,
         };
-        var items = (await instances.ListAsync(query, cancellationToken)).ValueOrThrow();
-        var total = (await instances.CountAsync(query, cancellationToken)).ValueOrThrow();
+        var items = (await engine.ListInstancesAsync(query, cancellationToken)).ValueOrThrow();
+        var total = (await engine.CountInstancesAsync(query, cancellationToken)).ValueOrThrow();
         return (items, total);
     }
 
     // 节点实例按开始时间升序，就是流程走过的轨迹
     public async ValueTask<IReadOnlyList<WorkflowNodeInstance>> TrailAsync(string instanceId, CancellationToken cancellationToken)
-        => (await instances.NodeInstancesAsync(instanceId, cancellationToken)).ValueOrThrow();
+        => (await engine.NodeInstancesAsync(instanceId, cancellationToken)).ValueOrThrow();
 }
 ```
+
+::: warning 存储契约不按租户过滤
+`IWorkflowInstanceStore` 是给 Provider 实现的存储契约，`WorkflowInstanceQuery.TenantId` 为空时返回所有租户的实例。业务代码查实例走引擎的查询方法，不要直接用存储。
+:::
 
 `WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID、父实例、发起人、租户、创建时间范围、结束时间上界过滤，按创建时间降序；`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
 
@@ -497,7 +497,7 @@ public sealed class LeaveReports(IWorkflowInstanceStore instances)
 | `MigrateAsync(migrations)` | `Running`、`Suspended` | 迁到同名的另一个已发布版本；未结束节点在目标版本里必须存在且活动类型相同 |
 | `PurgeAsync(request)` | 已结束 | 删除早于给定时刻结束的实例及其节点实例与书签，可按状态与定义名过滤，一次最多 1000 条 |
 
-状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 自动清理一次。
+有租户的调用只操作得了本租户的实例：别的租户（含无租户）的实例按不存在处理，返回 `WORKFLOW_NOTFOUND_002`，`PurgeAsync` 只清本租户；按书签 ID 的 `ResumeAsync` 遇到别的租户的书签返回 `WORKFLOW_NOTFOUND_003`；启动请求的 `TenantId` 与调用方租户不同返回 `WORKFLOW_NOTFOUND_001`。无租户的调用（平台、轮询器）照旧操作全部；用户任务、外部任务与信号按书签租户与调用方租户相等匹配。状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 自动清理一次。
 
 ## 内置活动
 

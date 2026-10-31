@@ -92,7 +92,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号与实例控制；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与按租户的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`）；单条写法是扩展方法 |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
@@ -150,7 +150,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - 校验失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题；创建草稿不校验，发布与启动时校验。
 - 按名字启动取最新的已发布版本；发布新版本不改变旧版本状态，已在跑的实例留在原版本，用 `MigrateAsync` 迁移（只迁到同一名字空间里的同名版本）。
 - 定义按租户隔离：名字与版本号在租户（全局定义为空）的名字空间里编号；有租户的调用看得到本租户与全局定义、只改得动本租户的，别的租户的定义按不存在处理；按名字先找本租户再找全局定义。
-- 存储契约不按租户过滤，按租户的过滤由调用方负责；定义存储按名字的查询以租户为名字空间（相等比较）。任务服务与信号按当前调用的租户过滤。
+- 存储契约不按租户过滤，按租户的过滤由调用方负责；定义存储按名字的查询以租户为名字空间（相等比较）。引擎、任务服务、外部任务服务与信号都按当前调用的租户过滤：有租户的调用看不到、操作不了别的租户的实例与书签（按不存在处理），无租户的调用（平台、轮询器）引擎操作全部。
 - 一个波次最多执行 `MaxNodeExecutionsPerBurst` 个节点；子流程最深 `MaxSubWorkflowDepth` 层；表达式缓存满了整体清空。
 - 活动的取消令牌是宿主停止令牌，调用方的令牌只约束等锁与首次写入。
 - 未知的根变量是表达式错误（`WORKFLOW_VALIDATION_003`），null 结果是成功的无值（ADR-0059）。

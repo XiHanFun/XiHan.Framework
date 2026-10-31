@@ -99,4 +99,36 @@ public interface IWorkflowEngine
     /// 返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。
     /// </remarks>
     ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按 ID 找实例。
+    /// </summary>
+    /// <remarks>
+    /// 有租户的调用看不到别的租户的实例，为无值。
+    /// </remarks>
+    ValueTask<Result<Maybe<WorkflowInstance>>> FindInstanceAsync(string instanceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按条件列实例。
+    /// </summary>
+    /// <remarks>
+    /// 有租户的调用只列本租户的实例：查询的租户限定为本租户，给了别的租户得空列表。排序与上限同存储查询。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按条件数实例。
+    /// </summary>
+    /// <remarks>
+    /// 租户规则同 <see cref="ListInstancesAsync"/>，给了别的租户为 0。
+    /// </remarks>
+    ValueTask<Result<long>> CountInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 实例的节点实例，开始时间升序。
+    /// </summary>
+    /// <remarks>
+    /// 实例不存在或看不到 → <see cref="WorkflowErrors.InstanceNotFound"/>。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken);
 }

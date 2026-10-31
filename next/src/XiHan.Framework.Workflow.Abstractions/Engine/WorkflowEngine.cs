@@ -228,7 +228,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return peek.Error!;
         }
 
-        if (!maybe.TryGetValue(out var found))
+        // 有租户的调用看不到别的租户的书签（含定义级定时书签）：按不存在处理
+        if (!maybe.TryGetValue(out var found) || !IsVisibleToCaller(found.TenantId))
         {
             return BookmarkNotFound(bookmarkId);
         }
@@ -571,11 +572,13 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     public async ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // 有租户的调用只清本租户的实例；无租户的调用（平台、轮询器的保留期清理）清全部
         var query = new WorkflowInstanceQuery
         {
             EndedBefore = request.EndedBefore,
             Statuses = request.Statuses is { Count: > 0 } ? request.Statuses : [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Canceled, WorkflowInstanceStatus.Faulted, WorkflowInstanceStatus.Terminated],
             DefinitionName = request.DefinitionName,
+            TenantId = CurrentTenantId(),
             Limit = request.Limit,
         };
         var listed = await _instances.ListAsync(query, cancellationToken).ConfigureAwait(false);
@@ -831,7 +834,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return found.Error!;
         }
 
-        if (!maybe.TryGetValue(out var instance))
+        // 按实例 ID 的控制都经这里：有租户的调用看不到别的租户的实例，按不存在处理
+        if (!maybe.TryGetValue(out var instance) || !IsVisibleToCaller(instance.TenantId))
         {
             return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
         }
@@ -1636,8 +1640,15 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private async ValueTask<Result<WorkflowDefinition>> FindPublishedDefinitionAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
+        // 有租户的调用不能为别的租户启动实例：按不存在处理，不暴露那个租户有什么定义
+        var callerTenantId = CurrentTenantId();
+        if (callerTenantId is not null && request.TenantId is not null && !string.Equals(request.TenantId, callerTenantId, StringComparison.Ordinal))
+        {
+            return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", request.DefinitionId ?? request.Name?.Value ?? string.Empty)));
+        }
+
         // 名字解析与可见性都按实例将属于的租户：请求给的，缺省当前调用的；都没有时是全局名字空间
-        var tenantId = request.TenantId ?? CurrentTenantId();
+        var tenantId = request.TenantId ?? callerTenantId;
         Result<Maybe<WorkflowDefinition>> found;
         string name;
         if (!string.IsNullOrWhiteSpace(request.DefinitionId))
@@ -1668,6 +1679,85 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         return definition;
     }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<Maybe<WorkflowInstance>>> FindInstanceAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
+        var found = await _instances.FindAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var maybe))
+        {
+            return found.Error!;
+        }
+
+        return maybe.TryGetValue(out var instance) && IsVisibleToCaller(instance.TenantId) ? Maybe.Some(instance) : Maybe.None<WorkflowInstance>();
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (!ScopeToCaller(query).TryGetValue(out var scoped))
+        {
+            return Result.Success<IReadOnlyList<WorkflowInstance>>([]);
+        }
+
+        return await _instances.ListAsync(scoped, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<long>> CountInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (!ScopeToCaller(query).TryGetValue(out var scoped))
+        {
+            return 0L;
+        }
+
+        return await _instances.CountAsync(scoped, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        var found = await FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        if (!found.TryGetValue(out var maybe))
+        {
+            return found.Error!;
+        }
+
+        if (!maybe.HasValue)
+        {
+            return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
+        }
+
+        return await _instances.NodeInstancesAsync(instanceId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 把实例查询限定到调用方租户。
+    /// </summary>
+    /// <remarks>
+    /// 无租户的调用原样返回；有租户的调用把租户限定为本租户，查询给了别的租户时无值（结果为空）。
+    /// </remarks>
+    private Maybe<WorkflowInstanceQuery> ScopeToCaller(WorkflowInstanceQuery query)
+    {
+        if (CurrentTenantId() is not { } tenant)
+        {
+            return Maybe.Some(query);
+        }
+
+        return query.TenantId is null || string.Equals(query.TenantId, tenant, StringComparison.Ordinal) ? Maybe.Some(query with { TenantId = tenant }) : Maybe.None<WorkflowInstanceQuery>();
+    }
+
+    /// <summary>
+    /// 调用方看得到属于这个租户的实例或书签。
+    /// </summary>
+    /// <remarks>
+    /// 无租户的调用看得到全部；有租户的调用只看得到同一租户的，无租户的实例与书签也看不到。
+    /// </remarks>
+    private bool IsVisibleToCaller(string? ownerTenantId)
+        => CurrentTenantId() is not { } tenant || string.Equals(ownerTenantId, tenant, StringComparison.Ordinal);
 
     /// <summary>
     /// 当前调用的租户。
