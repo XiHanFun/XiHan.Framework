@@ -125,7 +125,7 @@ builder.AddXiHan(xihan => xihan
 | `PublishAsync(topic, envelope, ct)` | `Result` |
 | `PublishManyAsync(topic, envelopes, ct)` | 与入参等长、顺序一致的 `IReadOnlyList<Result>`；单条是它的特例 |
 
-批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在同一通道上连续发布，Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
+批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在开启了发布确认的通道上连续发布、一次等待全部确认（代理拒绝或无法路由的项返回 `MESSAGING_UNAVAILABLE_001`），Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
 
 发布者不会从当前调用自动补扩展属性，处理器那一端要看到租户、关联 ID 与追踪，发布方自己写进信封：
 
@@ -246,7 +246,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
 | Provider | 重试 | 死信 |
 | --- | --- | --- |
 | `Messaging.InMemory` | 以下一次尝试号重新入队到队尾；入队时队列已满则直接死信 | 该主题的有界死信列表 `DeadLetters(topic)`，满时丢弃最旧 |
-| `Messaging.RabbitMQ` | 尝试次数放在消息头 `x-xihan-attempt`，重新发布到队尾后确认原消息 | 队列 `<QueuePrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
+| `Messaging.RabbitMQ` | 尝试次数放在消息头 `x-xihan-attempt`，重新发布到队尾、得到代理确认后才确认原消息（未确认时原消息退回队列） | 队列 `<QueuePrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
 | `Messaging.Kafka` | 在原位重试，不重新入队，分区内顺序不变 | 主题 `<TopicPrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
 
 ::: warning 处理器必须能承受重复投递

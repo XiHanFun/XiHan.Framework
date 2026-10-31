@@ -19,9 +19,9 @@
 
 - 主题映射为持久队列 `<QueuePrefix><topic>`（前缀缺省 `xihan.`），经默认交换机直接路由；队列在第一次发布或消费时声明。
 - 消息持久化投递，`content_type` 为 `application/cloudevents+json`，`message_id` 为事件 ID，消息体是 CloudEvents 结构化 JSON。
-- 发布共用一条发布通道，用信号量串行化；批量发布在这条通道上连续发布，一次持锁、一次声明队列。
+- 发布共用一条发布通道，用信号量串行化；通道开启发布确认并由客户端跟踪，消息以 `mandatory` 发出，代理确认后发布才返回成功，代理拒绝（nack）或无法路由（退回）返回 `MESSAGING_UNAVAILABLE_001`。批量发布在这条通道上连续写出整批（一次持锁、一次声明队列），再一次等待全部确认，结果逐项对应。
 - 每个订阅主题一个通道与一个消费者，预取 `PrefetchCount`（缺省 16），手动确认，单线程派发。
-- 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时重新发布到队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`，之后都确认原消息；无法解码的消息不重试，原样进死信队列。
+- 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时重新发布到队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`；重新发布同样等确认，确认了才确认原消息，未被确认或发布失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息不重试，原样进死信队列（同样等确认）。
 - 停止时取消消费者；正在处理的消息不确认，连接关闭后由 RabbitMQ 重新投递。
 
 启动时先建立连接与发布通道、再开始消费，连不上时启动失败；停止时先停健康探针与消费，再释放连接。
@@ -127,11 +127,11 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 
 ## 行为与限制
 
-- 连接、通道与发布异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`；单条发布遇到不合法主题抛 `ArgumentException`（发布者已先校验，代理收到不合法主题是装配错误）。
+- 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`，代理拒绝或无法路由的发布返回同一错误码的失败结果（批量逐项）；单条发布遇到不合法主题抛 `ArgumentException`（发布者已先校验，代理收到不合法主题是装配错误）。
 - 投递是至少一次：失败时先重新发布再确认原消息，极端情况下会重复投递；处理器按 `Id` + `Source` 去重。
 - 重试排到队尾，同一队列后面的消息先于重试被处理；重试之间不等待。
-- 发布通道没有开启发布确认，发布成功表示消息已写出到连接。
-- 测试：一致性套件需要真实 RabbitMQ，设置环境变量 `XIHAN_TEST_RABBITMQ`（如 `amqp://guest:guest@localhost:5672`）后运行，未设置时跳过。
+- 发布成功表示代理已确认收下（持久队列上的持久消息已落盘）；退回的消息不会进任何队列。
+- 测试：发布确认与重新发布的确认用打桩的连接与通道覆盖，不需要 RabbitMQ；一致性套件需要真实 RabbitMQ，设置环境变量 `XIHAN_TEST_RABBITMQ`（如 `amqp://guest:guest@localhost:5672`）后运行，未设置时跳过。
 
 | 健康项 | 状态 |
 | --- | --- |
