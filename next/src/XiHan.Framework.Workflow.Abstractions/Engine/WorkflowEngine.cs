@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -174,69 +176,19 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return found.Error!;
         }
 
-        // 重用策略：同名定义在同一关联 ID 下已有未结束的实例
-        if (request.CorrelationId is { Length: > 0 } correlation && request.ReusePolicy != WorkflowReusePolicy.AllowDuplicate)
+        var created = await CreateInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
+        if (!created.TryGetValue(out var outcome))
         {
-            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
-            if (!active.TryGetValue(out var activeList))
-            {
-                return active.Error!;
-            }
-
-            if (activeList.Count > 0)
-            {
-                return request.ReusePolicy == WorkflowReusePolicy.ReturnActive
-                    ? activeList[0]
-                    : Error.Conflict(WorkflowErrors.ActiveInstanceExists, WorkflowMessages.ActiveInstanceExists, MessageArguments.Of(("name", definition.Name.Value), ("correlation", correlation)));
-            }
+            return created.Error!;
         }
 
-        // 变量：声明的缺省补默认值，必填缺失即失败
-        var variables = WorkflowJson.CloneObject(request.Variables);
-        foreach (var declared in definition.Variables)
+        // 重用策略返回了已有的未结束实例：不再执行
+        if (!outcome.Created)
         {
-            if (variables.ContainsKey(declared.Name))
-            {
-                continue;
-            }
-
-            if (declared.DefaultValue is not null)
-            {
-                variables[declared.Name] = declared.DefaultValue.DeepClone();
-            }
-            else if (declared.Required)
-            {
-                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.VariableRequired, MessageArguments.Of(("name", declared.Name)));
-            }
+            return outcome.Instance;
         }
 
-        var now = _clock.GetUtcNow();
-        var instance = new WorkflowInstance
-        {
-            Id = string.IsNullOrWhiteSpace(request.InstanceId) ? WorkflowIdentifiers.NewId() : request.InstanceId,
-            DefinitionId = definition.Id,
-            DefinitionName = definition.Name,
-            DefinitionVersion = definition.Version,
-            DisplayName = request.DisplayName ?? definition.DisplayName,
-            Status = WorkflowInstanceStatus.Running,
-            Variables = variables,
-            CorrelationId = request.CorrelationId,
-            StarterId = request.StarterId,
-            ParentInstanceId = request.ParentInstanceId,
-            ParentNodeInstanceId = request.ParentNodeInstanceId,
-            Depth = request.Depth,
-            TenantId = request.TenantId ?? CurrentTenantId() ?? definition.TenantId,
-            CreatedAt = now,
-            StartedAt = now,
-        };
-        // 先写入再加锁执行：实例从此可被查到、可被锁住
-        var saved = await _instances.SaveAsync([instance], cancellationToken).ConfigureAwait(false);
-        if (saved.IsFailure)
-        {
-            return saved.Error!;
-        }
-
-        return await RunLockedAsync(instance.Id, async session =>
+        return await RunLockedAsync(outcome.Instance.Id, async session =>
         {
             session.Publish(WorkflowTopics.InstanceStarted, session.EventData());
             if (session.Graph.StartNode is null)
@@ -1559,6 +1511,114 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         return compensated;
     }
+
+    /// <summary>
+    /// 按重用策略查重并写入新实例。
+    /// </summary>
+    /// <remarks>
+    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由定义名与关联 ID 推出：并发的同键启动串行化，后到者一定看得到先到者写入的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
+    /// </remarks>
+    private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> CreateInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
+    {
+        if (request.CorrelationId is not { Length: > 0 } correlation || request.ReusePolicy == WorkflowReusePolicy.AllowDuplicate)
+        {
+            return await SaveNewInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
+        }
+
+        var acquired = await _lock.AcquireAsync(ReuseLockKey(definition.Name, correlation), cancellationToken).ConfigureAwait(false);
+        if (!acquired.TryGetValue(out var handle))
+        {
+            return acquired.Error!;
+        }
+
+        await using (handle.ConfigureAwait(false))
+        {
+            // 重用策略：同名定义在同一关联 ID 下已有未结束的实例
+            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
+            if (!active.TryGetValue(out var activeList))
+            {
+                return active.Error!;
+            }
+
+            if (activeList.Count > 0)
+            {
+                if (request.ReusePolicy == WorkflowReusePolicy.ReturnActive)
+                {
+                    return (activeList[0], false);
+                }
+
+                return Error.Conflict(WorkflowErrors.ActiveInstanceExists, WorkflowMessages.ActiveInstanceExists, MessageArguments.Of(("name", definition.Name.Value), ("correlation", correlation)));
+            }
+
+            // 写入完成才释放锁：下一个同键启动查重时这个实例已在存储里
+            return await SaveNewInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// 补全变量、构造并写入新实例。
+    /// </summary>
+    /// <remarks>
+    /// 声明的变量缺省补默认值，必填缺失返回 <c>WORKFLOW_VALIDATION_002</c>。
+    /// </remarks>
+    private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> SaveNewInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
+    {
+        // 变量：声明的缺省补默认值，必填缺失即失败
+        var variables = WorkflowJson.CloneObject(request.Variables);
+        foreach (var declared in definition.Variables)
+        {
+            if (variables.ContainsKey(declared.Name))
+            {
+                continue;
+            }
+
+            if (declared.DefaultValue is not null)
+            {
+                variables[declared.Name] = declared.DefaultValue.DeepClone();
+            }
+            else if (declared.Required)
+            {
+                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.VariableRequired, MessageArguments.Of(("name", declared.Name)));
+            }
+        }
+
+        var now = _clock.GetUtcNow();
+        var instance = new WorkflowInstance
+        {
+            Id = string.IsNullOrWhiteSpace(request.InstanceId) ? WorkflowIdentifiers.NewId() : request.InstanceId,
+            DefinitionId = definition.Id,
+            DefinitionName = definition.Name,
+            DefinitionVersion = definition.Version,
+            DisplayName = request.DisplayName ?? definition.DisplayName,
+            Status = WorkflowInstanceStatus.Running,
+            Variables = variables,
+            CorrelationId = request.CorrelationId,
+            StarterId = request.StarterId,
+            ParentInstanceId = request.ParentInstanceId,
+            ParentNodeInstanceId = request.ParentNodeInstanceId,
+            Depth = request.Depth,
+            TenantId = request.TenantId ?? CurrentTenantId() ?? definition.TenantId,
+            CreatedAt = now,
+            StartedAt = now,
+        };
+        // 先写入再加锁执行：实例从此可被查到、可被锁住
+        var saved = await _instances.SaveAsync([instance], cancellationToken).ConfigureAwait(false);
+        if (saved.IsFailure)
+        {
+            return saved.Error!;
+        }
+
+        return (instance, true);
+    }
+
+    /// <summary>
+    /// 重用策略查重时的锁键。
+    /// </summary>
+    /// <remarks>
+    /// <c>start.</c> 加上定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。定义名不含换行，以换行拼接不会有歧义。
+    /// </remarks>
+    private static string ReuseLockKey(WorkflowName name, string correlation)
+        => "start." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(name.Value, "\n", correlation))));
 
     /// <summary>
     /// 找请求指向的已发布定义。

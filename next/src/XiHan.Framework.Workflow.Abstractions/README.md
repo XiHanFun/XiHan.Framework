@@ -11,7 +11,7 @@
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityOutcome` | 活动是作用域服务，每个节点在新作用域、新上下文里经完整内核管道执行；返回完成 / 挂起 / 结束 / 终止，失败的 `Result` 即故障 |
 | `ActivityTypes` 与内置活动 | `Start`（信号 / 定时启动、延迟启动）、`End`、`Terminate`、`SetVariable`、`Decision`、`Parallel`、`Join`、`Delay`（时长 / 时刻 / cron）、`UserTask`、`PublishEvent`、`WaitSignal`、`EventGateway`、`SubWorkflow`、`ForEach`、`Log`、`Fault`、`Compensate`、`Http`（`WorkflowHttpClient`，应用可替换）、`ExternalTask` |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds` | 实例与节点实例（状态、变量、输入输出、私有状态），书签（用户任务 / 定时 / 信号 / 子流程 / 重试 / 节点超时 / 外部任务 / 提醒 / 实例级超时 / 定义级定时） |
-| `IWorkflowEngine`、`WorkflowEngine` | 启动（`StartAt` 延迟、`ReusePolicy` 幂等）、消费书签、信号（恢复 + 信号启动），批量挂起 / 恢复 / 取消 / 终止 / 重试 / 改变量 / 跳转 / 迁移 / 清理；波次执行、一次批量写回、事件波次后发布 |
+| `IWorkflowEngine`、`WorkflowEngine` | 启动（`StartAt` 延迟、`ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动也只建一个）、消费书签、信号（恢复 + 信号启动），批量挂起 / 恢复 / 取消 / 终止 / 重试 / 改变量 / 跳转 / 迁移 / 清理；波次执行、一次批量写回、事件波次后发布 |
 | `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskCompletion` … | 待办与查询、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
 | `IWorkflowExternalTaskService`、`ExternalTask` … | 外部工作者按主题领取（加锁）、完成、失败（重试或故障）、延长锁 |
 | `IAssigneeProvider`、`AssigneeResolver`、`AssigneeRuleTypes` | 指派规则：内置 `User` / `Starter` / `Expression`，应用登记自己的类型 |

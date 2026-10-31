@@ -245,7 +245,7 @@ public sealed class LeaveApplications(IWorkflowEngine engine)
 | `Variables` | 初始变量；声明了的变量缺省时补默认值，缺必填 → `WORKFLOW_VALIDATION_002` |
 | `StarterId` | 发起人，`Starter` 指派规则与 `ExcludeStarter` 用它 |
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重 |
-| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略 |
+| `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
 | `StartAt` | 延迟启动：开始节点以定时书签挂起到该时刻 |
 | `TenantId` | 实例租户，缺省取当前调用的租户 |
 | `DisplayName`、`InstanceId` | 实例显示名与指定的实例 ID |

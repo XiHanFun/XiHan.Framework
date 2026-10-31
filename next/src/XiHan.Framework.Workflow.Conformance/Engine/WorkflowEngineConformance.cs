@@ -977,6 +977,41 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 24：两个并发的拒绝重复启动只建出一个实例。
+    /// </summary>
+    /// <remarks>
+    /// 探针把第一个启动卡在查重之后、写入之前，等第二个启动也走到查重处或在实例锁上等待时再放行。查重与写入原子时第二个启动看到第一个建出的实例，以 <c>WORKFLOW_CONFLICT_005</c> 失败，同一关联 ID 下只有一个未结束的实例。
+    /// </remarks>
+    [Fact]
+    public async Task ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance()
+    {
+        var log = new ConformanceLog();
+        var probe = new StartRaceProbe();
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            probe.Install(services);
+        }).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-start-race")
+            .AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+            .AddTransition("start", "wait").AddTransition("wait", "end")
+            .Build()).ConfigureAwait(false);
+        var request = new WorkflowStartRequest { Name = "conf-start-race", CorrelationId = "race-1", ReusePolicy = WorkflowReusePolicy.RejectActive };
+
+        var first = StartRaceProbe.Run(StartRaceProbe.Racer.First, () => host.EngineAsync(engine => engine.StartAsync(request, CancellationToken.None)).AsTask());
+        await probe.FirstQueried.WaitAsync(WaitTimeout).ConfigureAwait(false);
+        var second = StartRaceProbe.Run(StartRaceProbe.Racer.Second, () => host.EngineAsync(engine => engine.StartAsync(request, CancellationToken.None)).AsTask());
+        await probe.SecondArrived.WaitAsync(WaitTimeout).ConfigureAwait(false);
+        probe.Release();
+        var results = await Task.WhenAll(first, second).ConfigureAwait(false);
+
+        Assert.Single(results, static result => result.IsSuccess);
+        Assert.Single(results, static result => result.Error?.Code == WorkflowErrors.ActiveInstanceExists);
+        var instances = (await host.Services.GetRequiredService<IWorkflowInstanceStore>().ListAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationId = "race-1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(results.Single(static result => result.IsSuccess).ValueOrThrow().Id, Assert.Single(instances).Id);
+    }
+
+    /// <summary>
     /// 带实例级超时的定义：开始 → 记录 → 等一小时。
     /// </summary>
     private static WorkflowDefinition TimingOut(string name, WorkflowTimeoutAction action) => WorkflowDefinitionBuilder.Create(name)
