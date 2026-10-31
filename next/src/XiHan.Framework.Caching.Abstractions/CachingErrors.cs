@@ -22,6 +22,9 @@ public static class CachingErrors
     /// <summary>
     /// 条目选项不合法。
     /// </summary>
+    /// <remarks>
+    /// 远程缓存插件按操作集校验过期选项时返回，适配器原样成为异常；.NET 侧构造 <see cref="Stores.CacheEntryOptions"/> 时直接抛 <see cref="ArgumentException"/>。
+    /// </remarks>
     public const string InvalidOptions = "CACHING_VALIDATION_002";
 
     /// <summary>
@@ -32,6 +35,9 @@ public static class CachingErrors
     /// <summary>
     /// 锁被其他持有者占用。
     /// </summary>
+    /// <remarks>
+    /// <see cref="Locking.DistributedLockExtensions.AcquireAsync"/> 返回；<see cref="Locking.IDistributedLock.TryAcquireAsync"/> 被占用时只是无值。
+    /// </remarks>
     public const string LockHeld = "CACHING_CONFLICT_001";
 
     /// <summary>

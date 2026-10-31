@@ -136,6 +136,27 @@ public sealed class CacheContractTests
     }
 
     [Fact]
+    public async Task AcquireAsync_ReturnsLockHeld_WhenAnotherOwnerHoldsTheLock()
+    {
+        var locks = new StoreDistributedLock(new FakeCacheStore());
+        var resource = new CacheKey("order:2");
+
+        var first = await locks.AcquireAsync(resource, TimeSpan.FromSeconds(10), CancellationToken.None);
+        var second = await locks.AcquireAsync(resource, TimeSpan.FromSeconds(10), CancellationToken.None);
+
+        Assert.True(first.IsSuccess);
+        Assert.Equal(CachingErrors.LockHeld, second.Error?.Code);
+        Assert.Equal("CONFLICT", XiHan.Framework.Primitives.ErrorCode.KindOf(second.Error!.Code));
+        Assert.Equal(CachingMessages.LockHeld, second.Error.MessageKey);
+        Assert.Equal("order:2", second.Error.Details?["resource"]);
+        Assert.Contains("order:2", second.Error.Message, StringComparison.Ordinal);
+
+        // 释放后再取成功
+        await first.ValueOrThrow().DisposeAsync();
+        Assert.True((await locks.AcquireAsync(resource, TimeSpan.FromSeconds(10), CancellationToken.None)).IsSuccess);
+    }
+
+    [Fact]
     public void CacheSerializerRegistration_PrefersExplicitSerializer_ThenJsonOptions()
     {
         var explicitServices = new ServiceCollection().AddSingleton<ICacheSerializer>(JsonCacheSerializer.CreateReflectionBased());

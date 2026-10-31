@@ -65,7 +65,7 @@
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |
-| `IDistributedLock`、`LockHandle`、`StoreDistributedLock` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
+| `IDistributedLock`、`LockHandle`、`StoreDistributedLock`、`DistributedLockExtensions` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001`；句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
 | `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（记录带 `Operation`、`Response`）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的字节条目键管理：按前缀分页列键、读字节数与剩余存活、按前缀删除 |
@@ -109,10 +109,10 @@ public sealed class OneShotGate(ICacheStore store)
 | 错误码 | 含义 |
 | --- | --- |
 | `CACHING_VALIDATION_001` | 缓存键或幂等键不合法 |
-| `CACHING_VALIDATION_002` | 条目选项不合法（远程插件返回；.NET 侧抛 `ArgumentException`） |
+| `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
-| `CACHING_CONFLICT_001` | 分布式锁被占用（已登记，框架不产出） |
+| `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
 | `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
 

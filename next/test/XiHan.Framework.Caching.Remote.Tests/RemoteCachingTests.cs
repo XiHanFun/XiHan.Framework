@@ -78,6 +78,21 @@ public sealed class RemoteCachingTests
     }
 
     [Fact]
+    public async Task Store_PassesThePluginsValidationError_ThroughWithItsCode()
+    {
+        // .NET 侧的 CacheEntryOptions 已经校验过；插件仍按操作集拒绝时，CACHING_VALIDATION_002 原样成为异常的错误码，不被改写成不可用
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<RemoteCachingFeature>().UseFeature<RejectingPluginFeature>());
+        var store = host.Services.GetRequiredService<RemoteCacheStore>();
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await store.SetAsync("orders:1", new byte[] { 1 }, CacheEntryOptions.Expires(TimeSpan.FromMinutes(1)), CancellationToken.None));
+
+        Assert.Equal(CachingErrors.InvalidOptions, exception.Code);
+        Assert.Contains(RemoteCacheOperations.Set, exception.Message, StringComparison.Ordinal);
+        // 选项本身不合法时 .NET 侧在调用插件之前就抛 ArgumentException
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.SetAsync("orders:1", new byte[] { 1 }, new CacheEntryOptions { TimeToLive = TimeSpan.FromMinutes(1), SlidingExpiration = TimeSpan.FromMinutes(1) }, CancellationToken.None));
+    }
+
+    [Fact]
     public void Options_ReadTheTimeoutFromConfiguration()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Caching:Remote:TimeoutMilliseconds", "1500")]).Build();

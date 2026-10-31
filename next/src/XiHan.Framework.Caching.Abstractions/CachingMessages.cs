@@ -36,6 +36,14 @@ public static class CachingMessages
     public const string IdempotentInProgress = "caching.idempotency.in_progress";
 
     /// <summary>
+    /// 分布式锁被其他持有者占用。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>resource</c>。
+    /// </remarks>
+    public const string LockHeld = "caching.lock.held";
+
+    /// <summary>
     /// 同一幂等键已被另一个调用使用。
     /// </summary>
     /// <remarks>

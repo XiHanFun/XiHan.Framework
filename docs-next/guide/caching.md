@@ -268,7 +268,22 @@ public sealed class DailyReport(IDistributedLock locks)
 }
 ```
 
-被占用时返回无值，不产生错误码；`CACHING_CONFLICT_001` 已登记，但框架不产出它，应用要把占用报告成失败时可以用。`LockHandle` 只释放一次，重复释放返回 `false`。存活时间要大于工作的最长耗时，需要续约的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现，`ICacheStore` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，与 `ISharedCache.Store` 是同一个实例。
+`TryAcquireAsync` 被占用时返回无值，不产生错误码。要把占用当作调用失败返回给调用方时用结果式的 `AcquireAsync`（`DistributedLockExtensions`，同样的参数），被占用返回 `CACHING_CONFLICT_001`（HTTP 409，消息键 `caching.lock.held`，参数 `resource`，按调用方区域翻译）：
+
+```csharp
+var acquired = await locks.AcquireAsync($"orders:{orderId:N}", TimeSpan.FromSeconds(30), cancellationToken);
+if (!acquired.TryGetValue(out var handle))
+{
+    return acquired.Error!;
+}
+
+await using (handle)
+{
+    await work(cancellationToken);
+}
+```
+
+`LockHandle` 只释放一次，重复释放返回 `false`。存活时间要大于工作的最长耗时，需要续约的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现，`ICacheStore` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，与 `ISharedCache.Store` 是同一个实例。
 
 雪花 ID 的机器位租约就用这把锁，见[标识生成](./distributed-ids)。
 
@@ -469,10 +484,10 @@ builder.AddXiHan(xihan => xihan
 | 错误码 | 含义与出现位置 |
 | --- | --- |
 | `CACHING_VALIDATION_001` | 幂等键拼出的存储键不合法，Idempotency 阶段以校验错误结束调用；远程插件报告键不合法 |
-| `CACHING_VALIDATION_002` | 远程插件报告过期选项不合法；.NET 侧的非法选项直接抛 `ArgumentException` |
+| `CACHING_VALIDATION_002` | 远程插件按操作集校验过期选项时返回，适配器原样成为异常的错误码；.NET 侧的非法选项在调用插件之前直接抛 `ArgumentException` |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败，以 `FrameworkException` 抛出 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限，只作为健康项的原因，不拒绝写入 |
-| `CACHING_CONFLICT_001` | 分布式锁被占用；已登记，框架不产出 |
+| `CACHING_CONFLICT_001` | 分布式锁被占用，`AcquireAsync` 返回（`TryAcquireAsync` 只返回无值） |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
 | `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
 

@@ -82,6 +82,7 @@ XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.Response.init
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.State.get -> string!
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.State.init -> void
 XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.ToResult() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Caching.Abstractions.Locking.DistributedLockExtensions
 XiHan.Framework.Caching.Abstractions.Locking.IDistributedLock
 XiHan.Framework.Caching.Abstractions.Locking.IDistributedLock.TryAcquireAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Caching.Abstractions.Locking.LockHandle!>>
 XiHan.Framework.Caching.Abstractions.Locking.LockHandle
@@ -190,6 +191,7 @@ const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentKeyReused =
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentRecentlyCompleted = "caching.idempotency.recently_completed" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentResponseUnavailable = "caching.idempotency.response_unavailable" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.InvalidIdempotencyKey = "caching.idempotency.invalid_key" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.LockHeld = "caching.lock.held" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.ConfigurationSection = "XiHan:Caching:Idempotency" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.CompletedState = "completed" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.InProgressState = "in-progress" -> string!
@@ -237,6 +239,7 @@ static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.From(X
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.InProgress.get -> XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord!
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.operator !=(XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord? left, XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord? right) -> bool
 static XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord.operator ==(XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord? left, XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyRecord? right) -> bool
+static XiHan.Framework.Caching.Abstractions.Locking.DistributedLockExtensions.AcquireAsync(this XiHan.Framework.Caching.Abstractions.Locking.IDistributedLock! locks, XiHan.Framework.Caching.Abstractions.Stores.CacheKey resource, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Caching.Abstractions.Locking.LockHandle!>>
 static XiHan.Framework.Caching.Abstractions.Serialization.CacheSerializerRegistration.TryAddJsonSerializer(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> bool
 static XiHan.Framework.Caching.Abstractions.Serialization.JsonCacheSerializer.CreateReflectionBased() -> XiHan.Framework.Caching.Abstractions.Serialization.JsonCacheSerializer!
 static XiHan.Framework.Caching.Abstractions.Stores.CacheChange.ForKeys(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys) -> XiHan.Framework.Caching.Abstractions.Stores.CacheChange!

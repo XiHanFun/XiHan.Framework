@@ -11,7 +11,7 @@
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的键管理（ADR-0055）：按前缀分页列键（`Limit` 1–1000，`Continuation` 续页）、读条目的载荷字节数 / 剩余存活 / 滑动窗口、按前缀删除（前缀不能为空）；管理界面把 `ICacheStore` 转成它使用，内存与 Redis 存储实现，远程插件不实现 |
 | `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理（ADR-0058）：进程内对象缓存的条目不在字节存储里，按前缀分页列键、看类型全名与剩余存活、按前缀删除；管理界面把缓存转成它、再把 `Store` 转成 `ICacheStoreInspector`，两份合起来是全部条目 |
 | `ICacheChangeFeed`、`CacheChange` | 可选的变更通知（ADR-0055）：本实例与其他实例对共享存储的写入与删除（键列表，或按前缀删除时的前缀），用来失效本地副本；本实例同步通知、其他实例经后端转发且不回送，尽力而为 |
-| `IDistributedLock`、`StoreDistributedLock`、`LockHandle` | 建立在"不存在才写 + 比较删"之上的租约锁 |
+| `IDistributedLock`、`StoreDistributedLock`、`LockHandle`、`DistributedLockExtensions` | 建立在"不存在才写 + 比较删"之上的租约锁；`TryAcquireAsync` 被占用时无值，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001` |
 | `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，处理中返回冲突，完成后回放结果；操作调用还记下操作 ID 与成功的响应，回放时还原响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064） |
 | `CacheStoreDistributedCache`、`AddXiHanDistributedCache` | .NET `IDistributedCache` 架在 `ICacheStore` 上：键须满足 `CacheKey` 文法，绝对过期换算成 TTL（与滑动同时给时绝对优先），`Refresh` 是一次读取，同步成员在边界阻塞；提供 `caching.distributed` 的 Provider 被选中时登记，应用自己的登记优先 |
 
