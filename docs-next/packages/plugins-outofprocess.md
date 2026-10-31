@@ -140,7 +140,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
 - 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时终止进程树并记为 `Failed`（`PLUGINS_TIMEOUT_001`）。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由；卸载后调用返回 `PLUGINS_UNAVAILABLE_001`。
-- 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
+- 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
 
 ## 相关

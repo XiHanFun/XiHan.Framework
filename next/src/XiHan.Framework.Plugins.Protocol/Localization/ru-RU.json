@@ -1,5 +1,5 @@
 {
-  "plugins.callback.denied": "Плагину '{id}' не предоставлено разрешение '{permission}'.",
+  "plugins.callback.denied": "Плагин '{id}' не может использовать разрешение '{permission}': оно должно быть объявлено в манифесте и предоставлено хостом.",
   "plugins.callback.messaging_unavailable": "У хоста нет издателя сообщений; плагин '{id}' не может публиковать.",
   "plugins.callback.session_invalid": "Токен сеанса плагина отсутствует или недопустим.",
   "plugins.handshake.invalid": "Плагин '{id}' не прошёл рукопожатие: {reason}",

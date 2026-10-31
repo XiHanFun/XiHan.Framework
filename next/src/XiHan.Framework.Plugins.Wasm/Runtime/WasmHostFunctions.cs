@@ -25,7 +25,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// 宿主导入 <c>xihan.log</c> / <c>invoke</c> / <c>publish</c>（<c>spec/plugin/wasm.md</c> §4）。
 /// </summary>
 /// <remarks>
-/// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限按清单授予判定，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成。
+/// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限要在清单里声明并且已被宿主授予，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成。
 /// </remarks>
 internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, ILogger logger)
 {
@@ -37,12 +37,12 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// <summary>
     /// 回调 <c>Host.Invoke</c> 需要的权限。
     /// </summary>
-    public const string PipelinePermission = "capability:kernel.pipeline";
+    public const string PipelinePermission = PluginCallbackPermissions.Pipeline;
 
     /// <summary>
     /// 回调 <c>Host.Publish</c> 需要的权限。
     /// </summary>
-    public const string MessagingPermission = "capability:messaging.queue";
+    public const string MessagingPermission = PluginCallbackPermissions.Messaging;
 
     /// <summary>
     /// 回调时宿主所用主体的认证方案。
@@ -133,7 +133,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// </remarks>
     private InvokeResponse InvokeCore(InvokeRequest request)
     {
-        if (!permissions.IsGranted(PipelinePermission))
+        if (!PluginCallbackPermissions.IsAllowed(manifest, permissions, PipelinePermission))
         {
             return new InvokeResponse { Status = PluginErrorMapper.ToStatus(Error.Denied(PluginErrors.CallbackDenied, PluginMessages.CallbackDenied, MessageArguments.Of(("id", manifest.Id), ("permission", PipelinePermission)))) };
         }
@@ -175,7 +175,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// </summary>
     private void PublishCore(PublishRequest request, PublishResponse response)
     {
-        if (!permissions.IsGranted(MessagingPermission))
+        if (!PluginCallbackPermissions.IsAllowed(manifest, permissions, MessagingPermission))
         {
             var denied = PluginErrorMapper.ToStatus(Error.Denied(PluginErrors.CallbackDenied, PluginMessages.CallbackDenied, MessageArguments.Of(("id", manifest.Id), ("permission", MessagingPermission))));
             foreach (var _ in request.Envelopes)

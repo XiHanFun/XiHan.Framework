@@ -82,11 +82,11 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 }
 ```
 
-加载之后各宿主对权限的强制方式：
+加载之后各宿主对权限的强制方式。回调权限按「清单声明且已被授予」判定：清单是插件权限的唯一事实源，宿主授予了而清单没有声明的权限不生效，不能靠多授予让插件获得清单里没写的回调能力。
 
 | 权限 | 进程外 | Wasm |
 | --- | --- | --- |
-| `capability:kernel.pipeline` | 回调 `Host.Invoke` 时判定，未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002` | 导入 `xihan.invoke` 时判定，未授予返回 `PLUGINS_DENIED_002` 的失败状态，不陷阱 |
+| `capability:kernel.pipeline` | 回调 `Host.Invoke` 时判定，未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002` | 导入 `xihan.invoke` 时判定，未声明或未授予返回 `PLUGINS_DENIED_002` 的失败状态，不陷阱 |
 | `capability:messaging.queue` | 回调 `Host.Publish` 时判定，同上 | 导入 `xihan.publish` 时判定，同上 |
 | `fs.read:<路径>` / `fs.write:<路径>` | 只在加载时核对授予 | 只有 `Mounts:<清单 ID>:<客体路径>` 映射了才算授予，映射的宿主目录以只读 / 可写预开放给模块 |
 | `net.outbound:<目标>` | 只在加载时核对授予 | 永不授予，声明了即加载失败 |
@@ -259,7 +259,7 @@ await app.RunAsync();
 
 | 回调 | 进程外 RPC | Wasm 导入 | 权限 | 语义 |
 | --- | --- | --- | --- | --- |
-| 调用操作 | `Host.Invoke` | `xihan.invoke` | `capability:kernel.pipeline` | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
+| 调用操作 | `Host.Invoke` | `xihan.invoke` | `capability:kernel.pipeline`（须在清单声明且已授予，下同） | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
 | 发布消息 | `Host.Publish` | `xihan.publish` | `capability:messaging.queue` | 按主题分组批量经宿主消息发布器发布，逐项返回结果；宿主没有发布器时每项为 `PLUGINS_UNAVAILABLE_001` |
 
 进程外插件回调时必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated` + `PLUGINS_DENIED_002`；令牌只对本次进程有效，宿主端点只接受本机连接。Wasm 回调的嵌套深度上限 8，超过返回 `PLUGINS_UNAVAILABLE_002`；回调期间管道可能再次进入同一插件（它自己的中间件、操作或订阅），再入在同一线程上、导入函数返回前同步完成，受外层调用的截止时间约束，模块跨导入调用不得持有不可重入的锁。

@@ -1,5 +1,5 @@
 {
-  "plugins.callback.denied": "プラグイン '{id}' には権限 '{permission}' が付与されていません。",
+  "plugins.callback.denied": "プラグイン '{id}' は権限 '{permission}' を使用できません。権限はマニフェストで宣言され、ホストから付与されている必要があります。",
   "plugins.callback.messaging_unavailable": "ホストにメッセージ発行者がないため、プラグイン '{id}' は発行できません。",
   "plugins.callback.session_invalid": "プラグインのセッショントークンがないか無効です。",
   "plugins.handshake.invalid": "プラグイン '{id}' のハンドシェイクに失敗しました: {reason}",

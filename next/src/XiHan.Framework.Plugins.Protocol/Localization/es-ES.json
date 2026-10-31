@@ -1,5 +1,5 @@
 {
-  "plugins.callback.denied": "Al plugin '{id}' no se le ha concedido el permiso '{permission}'.",
+  "plugins.callback.denied": "El plugin '{id}' no puede usar el permiso '{permission}': debe declararse en el manifiesto y concederlo el host.",
   "plugins.callback.messaging_unavailable": "El host no tiene un publicador de mensajes; el plugin '{id}' no puede publicar.",
   "plugins.callback.session_invalid": "El token de sesión del plugin falta o no es válido.",
   "plugins.handshake.invalid": "El plugin '{id}' falló en el handshake: {reason}",

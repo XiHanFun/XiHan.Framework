@@ -19,7 +19,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走导入 `xihan.log`。
 
-回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，按权限判定，嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
 
@@ -122,7 +122,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | `xihan_handle_event` | 同上 | 声明了订阅时 |
 | `xihan_middleware` | 同上 | 清单 `contributes.pipeline` 非空时 |
 
-宿主提供模块名 `xihan` 下的三个导入：`log(level, ptr, len)`（无需权限）、`invoke(ptr, len) -> i64`（`capability:kernel.pipeline`）、`publish(ptr, len) -> i64`（`capability:messaging.queue`）。权限未授予不陷阱，返回 `PLUGINS_DENIED_002` 的失败状态。
+宿主提供模块名 `xihan` 下的三个导入：`log(level, ptr, len)`（无需权限）、`invoke(ptr, len) -> i64`（`capability:kernel.pipeline`）、`publish(ptr, len) -> i64`（`capability:messaging.queue`）。权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予不陷阱，返回 `PLUGINS_DENIED_002` 的失败状态。
 
 `samples/EchoWasmPlugin` 是 Rust 写的完整示例（`wasm32-wasip1`、`cdylib`，只依赖 `serde_json` 与 `base64`），清单如下；构建产物 `plugin/echo.wasm` 随仓库提交，测试与一致性套件直接加载它：
 

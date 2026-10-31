@@ -125,7 +125,7 @@ public static class PluginMessages
     public const string ProcessFailed = "plugins.process.failed";
 
     /// <summary>
-    /// 插件回调需要的权限未授予。
+    /// 插件回调需要的权限未在清单声明或未被授予。
     /// </summary>
     /// <remarks>
     /// 参数：<c>id</c>、<c>permission</c>。

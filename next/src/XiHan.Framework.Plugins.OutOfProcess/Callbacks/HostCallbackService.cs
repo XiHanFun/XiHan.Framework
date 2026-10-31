@@ -22,7 +22,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 /// 宿主回调服务 <c>xihan.plugin.v1.Host</c>。
 /// </summary>
 /// <remarks>
-/// 以插件身份经完整管道调用操作、经消息发布器发布消息；权限按清单授予判定（<c>spec/plugin/invocation.md</c> §5）。
+/// 以插件身份经完整管道调用操作、经消息发布器发布消息；所需权限要在清单里声明并且已被宿主授予（<c>spec/plugin/invocation.md</c> §5）。
 /// </remarks>
 internal sealed class HostCallbackService(HostServices host) : Host.HostBase
 {
@@ -79,13 +79,16 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
             : throw new RpcException(new Grpc.Core.Status(StatusCode.Unauthenticated, "The plugin session token is missing or invalid."), new Metadata { { PluginProtocol.ErrorCodeTrailer, PluginErrors.CallbackDenied } });
 
     /// <summary>
-    /// 权限未授予即以 PermissionDenied 结束调用，尾部元数据带错误码。
+    /// 权限未在清单声明或未授予即以 PermissionDenied 结束调用，尾部元数据带错误码。
     /// </summary>
+    /// <remarks>
+    /// 授予多于声明的部分不放行（RFC-0017）。
+    /// </remarks>
     private static void Require(PluginRuntime runtime, string permission)
     {
-        if (!runtime.Permissions.IsGranted(permission))
+        if (!PluginCallbackPermissions.IsAllowed(runtime.Manifest, runtime.Permissions, permission))
         {
-            throw new RpcException(new Grpc.Core.Status(StatusCode.PermissionDenied, $"Permission '{permission}' has not been granted to plugin '{runtime.Manifest.Id}'."), new Metadata { { PluginProtocol.ErrorCodeTrailer, PluginErrors.CallbackDenied } });
+            throw new RpcException(new Grpc.Core.Status(StatusCode.PermissionDenied, $"Permission '{permission}' is not both declared in the manifest of plugin '{runtime.Manifest.Id}' and granted to it."), new Metadata { { PluginProtocol.ErrorCodeTrailer, PluginErrors.CallbackDenied } });
         }
     }
 }

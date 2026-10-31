@@ -96,7 +96,7 @@ static bool IsTransient(Error error)
 | `InvalidModule` | `PLUGINS_VALIDATION_005` | Wasm 模块不合法，或运行期加载含中间件贡献的插件 |
 | `NotFound` | `PLUGINS_NOTFOUND_001` | 插件目录、清单或可执行文件不存在，或插件未加载 |
 | `PermissionDenied` | `PLUGINS_DENIED_001` | 插件声明的权限未被宿主授予 |
-| `CallbackDenied` | `PLUGINS_DENIED_002` | 插件回调的会话令牌无效，或所需权限未授予 |
+| `CallbackDenied` | `PLUGINS_DENIED_002` | 插件回调的会话令牌无效，或所需权限未在清单声明、未被授予 |
 | `AlreadyLoaded` | `PLUGINS_CONFLICT_001` | 同一清单 ID 的插件已加载 |
 | `Unavailable` | `PLUGINS_UNAVAILABLE_001` | 插件未就绪、正在停止、已退出或不可达；Wasm 中间件失败即关闭 |
 | `ResourceExhausted` | `PLUGINS_UNAVAILABLE_002` | Wasm 沙箱资源不足：回调嵌套超限、客体内存分配失败 |

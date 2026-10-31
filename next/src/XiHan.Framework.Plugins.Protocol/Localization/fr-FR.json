@@ -1,5 +1,5 @@
 {
-  "plugins.callback.denied": "La permission '{permission}' n'a pas été accordée au plugin '{id}'.",
+  "plugins.callback.denied": "Le plugin '{id}' ne peut pas utiliser la permission '{permission}' : elle doit être déclarée dans le manifeste et accordée par l'hôte.",
   "plugins.callback.messaging_unavailable": "L'hôte n'a pas d'éditeur de messages ; le plugin '{id}' ne peut pas publier.",
   "plugins.callback.session_invalid": "Le jeton de session du plugin est absent ou invalide.",
   "plugins.handshake.invalid": "Le plugin '{id}' a échoué à la poignée de main : {reason}",

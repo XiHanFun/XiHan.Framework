@@ -33,12 +33,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <summary>
     /// 回调 <c>Host.Invoke</c> 需要的权限。
     /// </summary>
-    public const string PipelinePermission = "capability:kernel.pipeline";
+    public const string PipelinePermission = PluginCallbackPermissions.Pipeline;
 
     /// <summary>
     /// 回调 <c>Host.Publish</c> 需要的权限。
     /// </summary>
-    public const string MessagingPermission = "capability:messaging.queue";
+    public const string MessagingPermission = PluginCallbackPermissions.Messaging;
 
     /// <summary>
     /// 回调时宿主所用主体的认证方案。

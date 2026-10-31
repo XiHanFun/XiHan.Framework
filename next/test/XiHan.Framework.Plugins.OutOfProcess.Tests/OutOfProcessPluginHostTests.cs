@@ -100,6 +100,21 @@ public sealed class OutOfProcessPluginHostTests
     }
 
     [Fact]
+    public async Task Callback_IsDenied_WhenThePermissionIsGrantedButNotDeclared()
+    {
+        // 副本清单不声明任何权限，宿主却授予了 capability:kernel.pipeline：授予多于声明的部分不生效（invocation.md §5）
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        copy.EditManifest(static manifest => manifest.Replace("\"permissions\": [ \"capability:kernel.pipeline\" ]", "\"permissions\": [ ]", StringComparison.Ordinal));
+        await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature(PingFeature()), directory: copy.Directory);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+
+        var relayed = await EchoPluginHost.InvokeAsync(host, "echoes.relay", """{"operation":"pings.create","payload":{"name":"from-plugin"}}""");
+
+        // EchoPlugin 把回调被拒时尾部元数据里的错误码原样作为失败返回
+        Assert.Equal(PluginErrors.CallbackDenied, relayed.Outcome.Error?.Code);
+    }
+
+    [Fact]
     public async Task HandlerException_IsReportedAsUnexpected_NotAsUnavailable()
     {
         await using var host = await EchoPluginHost.StartAsync();

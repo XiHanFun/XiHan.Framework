@@ -36,11 +36,14 @@ internal static class EchoPluginHost
     /// <summary>
     /// 宿主配置：插件目录、授予的权限与较短的健康轮询。
     /// </summary>
-    public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline = true, params (string Key, string Value)[] extra)
+    /// <remarks>
+    /// <paramref name="directory"/> 为空时用示例的输出目录。
+    /// </remarks>
+    public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline = true, string? directory = null, params (string Key, string Value)[] extra)
     {
         var values = new List<KeyValuePair<string, string?>>
         {
-            new("XiHan:Plugins:OutOfProcess:Directories:0", Directory),
+            new("XiHan:Plugins:OutOfProcess:Directories:0", directory ?? Directory),
             new("XiHan:Plugins:OutOfProcess:HealthIntervalSeconds", "1"),
             new("XiHan:Plugins:OutOfProcess:StopGraceSeconds", "5"),
             new("XiHan:Echo:Greeting", "hello"),
@@ -57,14 +60,18 @@ internal static class EchoPluginHost
     /// <summary>
     /// 启动只装配进程外插件特性的宿主。
     /// </summary>
-    public static Task<TestHost> StartAsync(Action<AppBuilder>? configure = null, bool grantPipeline = true, params (string Key, string Value)[] extra)
+    /// <remarks>
+    /// <paramref name="directory"/> 为空时用示例的输出目录；<paramref name="services"/> 在装配前注册（如可推进的时钟）。
+    /// </remarks>
+    public static Task<TestHost> StartAsync(Action<AppBuilder>? configure = null, bool grantPipeline = true, string? directory = null, Action<IServiceCollection>? services = null, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
             b =>
             {
                 b.UseFeature<OutOfProcessPluginsFeature>();
                 configure?.Invoke(b);
             },
-            Configuration(grantPipeline, extra));
+            Configuration(grantPipeline, directory, extra),
+            services);
 
     /// <summary>
     /// 经内核调用器调用一个操作，载荷为 JSON 文本。

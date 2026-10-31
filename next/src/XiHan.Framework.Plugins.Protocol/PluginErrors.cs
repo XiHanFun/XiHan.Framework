@@ -40,7 +40,7 @@ public static class PluginErrors
     public const string PermissionDenied = "PLUGINS_DENIED_001";
 
     /// <summary>
-    /// 插件回调的会话令牌无效，或所需权限未授予。
+    /// 插件回调的会话令牌无效，或所需权限未在清单声明、未被授予。
     /// </summary>
     public const string CallbackDenied = "PLUGINS_DENIED_002";
 
