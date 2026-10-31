@@ -26,6 +26,7 @@ await loader.ReloadAsync(ct);
 - 健康项 `localization.database.translations`（加载器自己实现，以最近一次加载的结果上报，不另起探测循环）：还没加载过为 Started，加载成功为 Ready，最近一次加载失败为 Degraded（错误是那次加载的失败），应用仍在服务。
 - `MessageTranslationStore`（作用域）：`UpsertAsync` / `RemoveAsync` 批量逐项结果（不存在 → `LOCALIZATION_NOTFOUND_001`），`ListAsync` 分页；只能在调用的 Transaction 阶段内使用。
 - 键须符合消息键文法，区域规范化大小写；重复的键与区域在数据库里应由唯一索引约束。
+- `Locale` 列长取 `LocaleName.MaxLength`（35），合法的区域名都能写入。早先的版本声明为 16：SqlSugar 的 `InitTables` 与 EF Core 的 `EnsureCreated` 都不改已有列的长度，按旧版本建过表的库要手工放宽（如 PostgreSQL `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`）或走一次迁移；SQLite 不校验长度。
 
 ## 依赖方向
 

@@ -1,9 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Localization.InMemory;
@@ -123,6 +125,29 @@ public sealed class DatabaseLocalizationTests
         var loaded = new[] { ("zh-CN", "一"), ("zh-TW", "二"), ("ja-JP", "三") }
             .Count(pair => localizer.Find("orders.order.not_found", pair.Item1).TryGetValue(out var template) && template == pair.Item2);
         Assert.Equal(2, loaded);
+    }
+
+    [Fact]
+    public async Task LocaleColumn_HoldsTheLongestValidLocale()
+    {
+        // 列长取区域名文法的上限：之前是 16，17 到 35 个字符的合法区域名在校验长度的数据库上写入失败
+        var length = Assert.IsType<StringLengthAttribute>(Assert.Single(typeof(MessageTranslation).GetProperty(nameof(MessageTranslation.Locale))!.GetCustomAttributes(typeof(StringLengthAttribute), inherit: false)));
+        Assert.Equal(LocaleName.MaxLength, length.MaximumLength);
+
+        const string Longest = "sgn-Latn-US-variant1-variant2-ab123";
+        Assert.Equal(LocaleName.MaxLength, Longest.Length);
+        Assert.True(LocaleName.IsValid(Longest));
+
+        await using var host = await StartAsync(new KeyValuePair<string, string?>("XiHan:Localization:Database:RefreshIntervalSeconds", "0"));
+        var written = await host.InvokeAsync(async context =>
+        {
+            var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync([new MessageTranslationEntry("orders.order.not_found", Longest, "long")], context.CancellationToken);
+            Assert.True(Assert.Single(results).Outcome.IsSuccess);
+        });
+        Assert.True(written.IsSuccess);
+        Assert.True((await host.Services.GetRequiredService<MessageTranslationLoader>().ReloadAsync(CancellationToken.None)).IsSuccess);
+        Assert.True(host.Services.GetRequiredService<DatabaseMessageLocalizer>().Find("orders.order.not_found", Longest).TryGetValue(out var template));
+        Assert.Equal("long", template);
     }
 
     [Fact]

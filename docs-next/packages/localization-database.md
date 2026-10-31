@@ -81,7 +81,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 | `DatabaseLocalizationFeature` | 特性入口（`IHostedFeature`）；常量 `HealthName` = `localization.database.translations` |
 | `DatabaseLocalizationOptions` | `RefreshInterval`（缺省 5 分钟，`null` 不周期刷新）、`MaxTranslations`；`FromConfiguration` |
 | `DatabaseMessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；`TranslationCount` 是当前快照的条数 |
-| `Translations.MessageTranslation` | 实体：`Id`（`Guid`）、`Key`（最长 256）、`Locale`（最长 16）、`Template`（长文本）、`ModifiedAt` |
+| `Translations.MessageTranslation` | 实体：`Id`（`Guid`）、`Key`（最长 256）、`Locale`（最长 35，即 `LocaleName.MaxLength`）、`Template`（长文本）、`ModifiedAt` |
 | `Translations.MessageTranslationEntry` | 要写入的一条：键、区域、模板；构造时校验 |
 | `Translations.MessageTranslationKey` | 自然键：键与区域 |
 | `Translations.MessageTranslationResult` | 批量写入或删除的一项结果：`Key` 与 `Outcome` |
@@ -124,7 +124,8 @@ if (reloaded.IsFailure)
 - 健康项 `localization.database.translations` 由加载器按最近一次加载的结果报告，不另起探测：还没加载过为 Started，成功为 Ready，最近一次失败为 Degraded（携带那次的错误），应用仍在服务。
 - 写入：`UpsertAsync` 一次查询取回已有的行，再用仓储的批量方法写入；同一批里重复的键与区域后者覆盖前者，各项结果指向同一行。`RemoveAsync` 按顺序逐项删除，同一批里同一个键第二次出现时报告不存在。`ListAsync(locale, skip, take)` 按键排序分页，`locale` 为 `null` 时列全部，一页最多 1000 条。
 - 写入在调用的事务提交后才落库，要等下一次刷新或在调用返回之后 `ReloadAsync` 才生效；在同一个操作里紧接着 `ReloadAsync` 读不到未提交的行。
-- 校验：`MessageTranslationEntry` 要求键符合消息键文法、模板非空白，区域规范化大小写，不合法抛出 `ArgumentException`。`Locale` 列最长 16 个字符。
+- 校验：`MessageTranslationEntry` 要求键符合消息键文法、模板非空白，区域规范化大小写，不合法抛出 `ArgumentException`。`Locale` 列最长 35 个字符，与区域名文法的上限 `LocaleName.MaxLength` 一致，合法的区域名都能写入。
+- 已有库的 `Locale` 列：早先的版本把这一列声明为 16 个字符，17 到 35 个字符的合法区域名（如 `sr-Latn-RS-ekavsk`）在校验长度的数据库上写入失败。SqlSugar 的 `InitTables` 只建缺表、加缺列，不改已有列的长度，EF Core 的 `EnsureCreated` 也不改已有表，所以按旧版本建过表的库要手工放宽这一列，例如 PostgreSQL 上 `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`（表名与列名以实际建表结果为准）；用 EF Core 迁移的应用生成一次迁移即可。SQLite 不校验长度，不用处理。
 - 通过 `Localization.Conformance` 的 `MessageLocalizerConformance`。
 
 | 错误码 | 含义 |

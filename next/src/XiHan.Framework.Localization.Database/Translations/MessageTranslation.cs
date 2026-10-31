@@ -3,6 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
@@ -29,7 +30,10 @@ public sealed class MessageTranslation : IEntity<Guid>, IHasModificationTime
     /// <summary>
     /// 区域（规范化大小写，如 <c>zh-CN</c>）。
     /// </summary>
-    [StringLength(16)]
+    /// <remarks>
+    /// 列长取区域名文法的上限 <see cref="LocaleName.MaxLength"/>，合法的区域名都能写入。
+    /// </remarks>
+    [StringLength(LocaleName.MaxLength)]
     public string Locale { get; set; } = string.Empty;
 
     /// <summary>

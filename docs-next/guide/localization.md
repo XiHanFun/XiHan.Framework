@@ -319,6 +319,8 @@ modelBuilder.Entity<MessageTranslation>(static t => t.HasIndex(static x => new {
 2. 之后按 `RefreshIntervalSeconds` 周期刷新，`0` 关闭周期刷新。
 3. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
 
+`MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。早先的版本把它声明为 16，按旧版本建过表的库要手工放宽这一列（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](../packages/localization-database#行为与限制)。
+
 写入用作用域服务 `MessageTranslationStore`，它经仓储读写，只能在调用的 Transaction 阶段内使用，所以放在操作里：
 
 ```csharp
