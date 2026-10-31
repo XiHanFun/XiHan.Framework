@@ -123,7 +123,7 @@ public sealed class KubernetesLeaderElectionTests
         await using var host = await TestHost.StartAsync(
             static b => b.UseFeature<InMemorySchedulingFeature>().UseFeature<KubernetesSchedulingFeature>(),
             [
-                new("XiHan:Scheduling:InMemory:PollIntervalSeconds", "0.05"),
+                new("XiHan:Scheduling:PollIntervalSeconds", "0.05"),
                 new("XiHan:Scheduling:Kubernetes:Lease", "orders-scheduler"),
                 new("XiHan:Scheduling:Kubernetes:Namespace", "shop"),
                 new("XiHan:Scheduling:Kubernetes:Holder", "pod-a"),

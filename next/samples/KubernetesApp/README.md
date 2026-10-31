@@ -30,7 +30,7 @@ kubectl port-forward service/kubernetes-app 8080:8080
 | 探针 | `kubectl describe pod` | startup 探针 `/health/startup`（60 秒内 6 次），readiness `/health/ready`，liveness `/health/live`；内核未进入服务状态时 `/health/ready` 返回 503 |
 | 优雅停机 | `kubectl delete pod <leader>` 后看日志 | 内核在 `XiHan__Kernel__StopTimeoutSeconds=25` 内按逆序停止特性；`terminationGracePeriodSeconds: 30` 比它多 5 秒，kubelet 不会提前 SIGKILL |
 | 热更新 | `kubectl edit configmap kubernetes-app-config`，改 `Sample.Banner` | 约 1 分钟内（kubelet 同步周期）`curl localhost:8080/config` 返回新横幅；靠 `XIHAN_CONFIG_PATH=/etc/xihan` + `DOTNET_USE_POLLING_FILE_WATCHER=1` |
-| 领导选举 | `kubectl get lease kubernetes-app-scheduler -o yaml`；对两个 Pod 各 `curl /leader` | 只有持有者 `isLeader: true` 且 `ticks` 增长；删除持有者 Pod 后 15 秒内另一个 Pod 接管，`leaseTransitions` 加一 |
+| 领导选举 | `kubectl get lease kubernetes-app-scheduler -o yaml`；对两个 Pod 各 `curl /leader` | 只有持有者 `isLeader: true` 且 `ticks` 增长；删除持有者 Pod 时它在优雅停机里释放 Lease，另一个 Pod 在下一次轮询（`XiHan:Scheduling:PollIntervalSeconds`，1 秒）接管；持有者被强杀时等租约（`XiHan:Scheduling:LeaseTimeToLiveSeconds`，15 秒）过期后接管，`leaseTransitions` 加一 |
 
 ## 清单到产物的对应
 

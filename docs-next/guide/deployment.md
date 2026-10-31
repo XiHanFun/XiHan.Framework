@@ -272,7 +272,7 @@ SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</
    | 探针 | `kubectl describe pod <pod>` | startup `/health/startup`（`failureThreshold: 6`），readiness `/health/ready`，liveness `/health/live` |
    | 有序停机 | `kubectl delete pod <pod>` 后看日志 | 内核在 25 秒内按逆序停止特性；`terminationGracePeriodSeconds: 30`，kubelet 不提前 SIGKILL |
    | 热更新 | `kubectl edit configmap kubernetes-app-config`，改 `Sample.Banner` | 约一分钟内 `curl localhost:8080/config` 返回新横幅，Pod 不重启 |
-   | 领导选举 | `kubectl get lease kubernetes-app-scheduler -o yaml`，对两个 Pod 各请求 `/leader` | 只有持有者 `isLeader: true` 且 `ticks` 增长；删除持有者 Pod 后约 15 秒内另一个 Pod 接管，`leaseTransitions` 加一 |
+   | 领导选举 | `kubectl get lease kubernetes-app-scheduler -o yaml`，对两个 Pod 各请求 `/leader` | 只有持有者 `isLeader: true` 且 `ticks` 增长；删除持有者 Pod 时它在有序停机里释放 Lease，另一个 Pod 在下一次轮询（示例 `appsettings.json` 的 `XiHan:Scheduling:PollIntervalSeconds`，1 秒）接管；持有者被强杀时等租约（`XiHan:Scheduling:LeaseTimeToLiveSeconds`，15 秒）过期后接管，`leaseTransitions` 加一 |
 
 ## 相关
 
