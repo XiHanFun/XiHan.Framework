@@ -56,65 +56,7 @@ builder.AddXiHan(xihan => xihan
 | `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID 与父跨度 |
 | `xihankey` | `PartitionKey` | 流能力的分区键，见[队列与流](#队列与流) |
 
-主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}# 消息与事件
-
-本章讲消息子系统：CloudEvents 信封、发布与订阅、重试与死信、领域事件、事务性发件箱，以及队列与流两个能力，适用于在特性之间或服务之间传递事件的开发者。完整 API 见 [Messaging.Abstractions 包](../packages/messaging-abstractions)。
-
-## 能力与 Provider
-
-消息是跨进程的调用：信封用 CloudEvents 1.0，投递经过与请求相同的内核管道，传输只负责至少一次投递、重试与死信（RFC-0009《消息、CloudEvents 信封与发件箱》）。
-
-| 能力 | 含义 | 默认实现 | 显式 Provider |
-| --- | --- | --- | --- |
-| `messaging.queue@1` | 工作队列：发布、按主题消费、至少一次、重试、死信 | `Messaging.InMemory`（单进程） | `Messaging.RabbitMQ`、`Messaging.Kafka` |
-| `messaging.stream@1` | 有序分区流：在队列之上按分区键有序、按消费组保存位点、按时刻重放 | — | `Messaging.Kafka` |
-
-`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失。再 `UseFeature` 一个显式 Provider 就顶替它：`RabbitMQMessagingFeature` 只提供队列，`KafkaMessagingFeature` 同时提供队列与流。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`）指定一个，规则见[能力包与清单](./modularity)。
-
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Messaging.RabbitMQ;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// RabbitMQ 顶替内存代理；订阅与发布的代码不变
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature<RabbitMQMessagingFeature>());
-```
-
-```json
-{ "XiHan": { "Messaging": { "RabbitMQ": { "Configuration": "amqp://guest:guest@localhost:5672" } } } }
-```
-
-连接配置缺失时装配失败，启动时连不上代理时启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理。Kafka 的配置见 [Messaging.Kafka](../packages/messaging-kafka)。
-
-## 信封
-
-`MessageEnvelope` 是 CloudEvents 1.0 信封，数据是字节：
-
-| 属性 | 说明 |
-| --- | --- |
-| `Id` | 必填，事件 ID，与 `Source` 一起唯一 |
-| `Source` | 必填，来源 URI 引用（如 `/orders`） |
-| `Type` | 必填，事件类型（如 `orders.placed`） |
-| `Time` | 可选，发生时间 |
-| `Subject` | 可选，事件所涉的对象（如 `order/42`） |
-| `DataContentType` | 数据内容类型，缺省 `application/json` |
-| `Data` | 数据字节 |
-| `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符；用 `WithExtension(name, value)` 派生、`Extension(name)` 读取 |
-
-框架约定的扩展属性（`EnvelopeExtensions`）：
-
-| 扩展 | 常量 | 投递时的作用 |
-| --- | --- | --- |
-| `xihantenant` | `Tenant` | 进入 Baggage `xihan.tenant`；装配了多租户 Provider 时 Tenant 阶段据此解析租户 |
-| `xihancorrelation` | `Correlation` | 进入 Baggage `xihan.correlation` |
-| `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID 与父跨度 |
-| `xihankey` | `PartitionKey` | 流能力的分区键，见[队列与流](#队列与流) |
-
-（`TopicName.IsValid` / `Validate`）；RabbitMQ 与 Kafka 的死信目标是映射后的名字加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）：JSON 数据内联在 `data`，其他数据放 `data_base64`，扩展属性是顶层成员。
+主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；RabbitMQ 与 Kafka 的死信目标是映射后的名字加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）：JSON 数据内联在 `data`，其他数据放 `data_base64`，扩展属性是顶层成员。
 
 ## 发布消息
 
