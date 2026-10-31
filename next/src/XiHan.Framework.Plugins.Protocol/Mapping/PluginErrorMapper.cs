@@ -85,16 +85,18 @@ internal static class PluginErrorMapper
     /// 调用插件时的 gRPC 异常 → 宿主错误。
     /// </summary>
     /// <remarks>
-    /// 传输层失败归为插件不可用，截止与取消沿用内核错误码；截止时间已过的取消按超时报告。
+    /// 按 <c>invocation.md</c> §3：<c>Unavailable</c>、连接失败与进程已退出归为插件不可用，截止与取消沿用内核错误码（截止时间已过的取消按超时报告），<c>Unimplemented</c> / <c>InvalidArgument</c> 映射为内核的未知操作 / 载荷不合法，其余状态（含 <c>Internal</c>、<c>Unknown</c>）都是 <c>PLUGINS_UNEXPECTED_001</c>，细节带状态码与消息。
     /// </remarks>
-    public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool deadlineExpired = false) => exception.StatusCode switch
+    public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool deadlineExpired = false, bool processExited = false) => exception.StatusCode switch
     {
         StatusCode.DeadlineExceeded => new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded),
         StatusCode.Cancelled when deadlineExpired => new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded),
         StatusCode.Cancelled => new Error(KernelErrors.Cancelled, KernelMessages.Cancelled),
+        // 进程已经退出时连接上报出的任何状态都只是退出的后果
+        _ when processExited => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", pluginId), ("state", state.ToString()))),
         StatusCode.Unimplemented => Error.NotFound(KernelErrors.UnknownOperation, KernelMessages.UnknownOperation, MessageArguments.Of(("id", phase))),
         StatusCode.InvalidArgument => Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", phase), ("reason", exception.Status.Detail))),
-        StatusCode.Unavailable or StatusCode.Internal or StatusCode.Unknown => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", pluginId), ("state", state.ToString()))),
+        StatusCode.Unavailable => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", pluginId), ("state", state.ToString()))),
         _ => Error.Unexpected(PluginErrors.Unexpected, PluginMessages.ProcessFailed, details: MessageArguments.Of(("id", pluginId), ("phase", phase), ("reason", $"{exception.StatusCode}: {exception.Status.Detail}"))),
     };
 }

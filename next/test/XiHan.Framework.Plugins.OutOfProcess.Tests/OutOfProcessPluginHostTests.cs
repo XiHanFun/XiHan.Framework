@@ -100,6 +100,19 @@ public sealed class OutOfProcessPluginHostTests
     }
 
     [Fact]
+    public async Task HandlerException_IsReportedAsUnexpected_NotAsUnavailable()
+    {
+        await using var host = await EchoPluginHost.StartAsync();
+
+        // operation 不是字符串：插件的处理器抛出，gRPC 以 Unknown 结束调用，进程仍在运行（invocation.md §3：除 Unavailable 外都是 PLUGINS_UNEXPECTED_001）
+        var response = await EchoPluginHost.InvokeAsync(host, "echoes.relay", """{"operation":5}""");
+
+        Assert.Equal(PluginErrors.Unexpected, response.Outcome.Error?.Code);
+        Assert.StartsWith("Unknown:", response.Outcome.Error!.Details!["reason"] as string, StringComparison.Ordinal);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+    }
+
+    [Fact]
     public async Task Deadline_IsPropagatedToThePlugin()
     {
         await using var host = await EchoPluginHost.StartAsync();

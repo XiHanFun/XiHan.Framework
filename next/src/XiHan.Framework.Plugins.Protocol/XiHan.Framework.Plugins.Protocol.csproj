@@ -13,6 +13,8 @@
     <InternalsVisibleTo Include="XiHan.Framework.Plugins.OutOfProcess" />
     <InternalsVisibleTo Include="XiHan.Framework.Plugins.Wasm" />
     <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
+    <!-- 进程外宿主的测试直接核对 gRPC 状态到宿主错误的映射表（invocation.md §3） -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.OutOfProcess.Tests" />
   </ItemGroup>
 
   <ItemGroup>

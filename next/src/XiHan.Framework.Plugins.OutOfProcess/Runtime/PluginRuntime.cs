@@ -329,7 +329,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, context.IsExpired(_host.Clock.GetUtcNow()));
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, context.IsExpired(_host.Clock.GetUtcNow()), process.HasExited);
         }
     }
 
@@ -357,7 +357,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, context.IsExpired(_host.Clock.GetUtcNow()));
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, context.IsExpired(_host.Clock.GetUtcNow()), process.HasExited);
         }
     }
 
@@ -554,7 +554,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            error = exception.StatusCode == StatusCode.DeadlineExceeded ? Timeout(phase) : PluginErrorMapper.FromRpc(exception, Manifest.Id, phase, State);
+            error = exception.StatusCode == StatusCode.DeadlineExceeded ? Timeout(phase) : PluginErrorMapper.FromRpc(exception, Manifest.Id, phase, State, processExited: process.HasExited);
         }
 
         await DiscardAsync(process).ConfigureAwait(false);
