@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
@@ -72,9 +74,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
             return Result.Success();
         }
 
-        // 每次投递一个新作用域与新调用上下文：租户、主体、关联 ID 与区域来自扩展属性，追踪 ID 与父跨度来自 traceparent
+        // 每次投递一个新作用域与新调用上下文：租户、主体、关联 ID 与区域来自扩展属性，追踪 ID、父跨度与采样标志来自 traceparent（与 HTTP 入站一致）
         await using var scope = _services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, TraceIdOf(delivery.Envelope), SpanIdOf(delivery.Envelope), null, BaggageOf(delivery.Envelope));
+        var (traceId, spanId, traceFlags) = TraceOf(delivery.Envelope);
+        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, traceId, spanId, null, BaggageOf(delivery.Envelope), traceFlags);
         context.Set(_deliveryKey, delivery);
         context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Messaging, Target = delivery.Topic });
 
@@ -115,30 +118,22 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 从 <c>traceparent</c> 扩展取追踪 ID。
+    /// 从 <c>traceparent</c> 扩展取追踪 ID、父跨度 ID 与采样标志。
     /// </summary>
     /// <remarks>
-    /// 缺失或格式不符返回 <see langword="null"/>。
+    /// 缺失或格式不符时三者都为 <see langword="null"/>，内核另起追踪；标志原样保留，上游「不采样」不被改成采样（RFC-0003 规则 7）。
     /// </remarks>
-    private static string? TraceIdOf(MessageEnvelope envelope)
+    private static (string? TraceId, string? SpanId, ActivityTraceFlags? TraceFlags) TraceOf(MessageEnvelope envelope)
         => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
-            ? match.Groups["trace"].Value
-            : null;
+            ? (match.Groups["trace"].Value, match.Groups["span"].Value, (ActivityTraceFlags)byte.Parse(match.Groups["flags"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
+            : (null, null, null);
 
     /// <summary>
-    /// 从 <c>traceparent</c> 扩展取父跨度 ID。
+    /// W3C <c>traceparent</c> 版本 00 的文法。
     /// </summary>
     /// <remarks>
-    /// 缺失或格式不符返回 <see langword="null"/>。
+    /// 追踪 ID 32 位、跨度 ID 16 位、标志 2 位十六进制。
     /// </remarks>
-    private static string? SpanIdOf(MessageEnvelope envelope)
-        => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
-            ? match.Groups["span"].Value
-            : null;
-
-    /// <summary>
-    /// W3C <c>traceparent</c> 版本 00 的文法：追踪 ID 32 位、跨度 ID 16 位十六进制。
-    /// </summary>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
+    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
     private static partial Regex TraceParent();
 }

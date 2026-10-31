@@ -118,8 +118,8 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 
 - 处理器返回失败或抛出异常都算投递失败；同一主题的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型重复订阅同一主题只记一次。没有处理器的主题直接成功。
 - 派发不写幂等键，重试必须重新执行处理器；去重由处理器按 `Id` + `Source` 自理。
-- 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID 与父跨度；幂等键不进入消息。
-- `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪，租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。
+- 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID、父跨度与采样标志（上游「不采样」原样保留）；幂等键不进入消息。
+- `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪与采样标志（与调用同一 trace 的当前 Activity 优先），租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。
 - `PublishManyAsync`：结果与入参等长同序，空集合不触代理，主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；代理不可达整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 领域事件：未登记的事件类型让调用以 `MESSAGING_VALIDATION_003` 结束；重复登记或超过 10000 种时 `AddDomainEvent` 抛 `FrameworkException`（`MESSAGING_VALIDATION_004`）；同一主题的事件一次批量发布，任一失败即回滚。
 - 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；失败按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；代理整批抛出时本轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064）。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）。

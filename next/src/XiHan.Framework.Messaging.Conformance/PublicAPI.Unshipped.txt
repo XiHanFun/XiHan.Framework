@@ -34,6 +34,8 @@ XiHan.Framework.Messaging.Conformance.ReceivedMessage.Equals(XiHan.Framework.Mes
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Origin.get -> XiHan.Framework.Kernel.Pipeline.InvocationOrigin?
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Origin.init -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.ReceivedMessage(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! Delivery, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Baggage, string! TraceId) -> void
+XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceFlags.get -> System.Diagnostics.ActivityTraceFlags?
+XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceFlags.init -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.get -> string!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.init -> void
 XiHan.Framework.Messaging.Conformance.RecordingHandler

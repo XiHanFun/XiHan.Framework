@@ -98,7 +98,7 @@ ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发�
 
 ### 采样
 
-采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样。没有 `traceparent` 的 HTTP 请求并入 ASP.NET Core 的请求 Span，两者同一 trace-id。
+采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样。没有 `traceparent` 的 HTTP 请求并入 ASP.NET Core 的请求 Span，两者同一 trace-id。消息沿用同一套规则：发布时信封的 `traceparent` 带发布方的采样标志（父级是发布时的 `xihan.invoke`），处理器的调用从它还原，上游「不采样」的链路在消费端也不采样。
 
 ## 业务打点
 

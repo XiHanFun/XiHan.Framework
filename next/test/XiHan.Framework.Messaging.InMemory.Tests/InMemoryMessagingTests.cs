@@ -1,9 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -138,6 +140,29 @@ public sealed class InMemoryMessagingTests
         Assert.Equal(2, dead.Attempt);
         Assert.Equal(1, broker.DeliveredCount(Topic));
         Assert.Equal(0, broker.QueuedCount(Topic));
+    }
+
+    [Fact]
+    public async Task UnsampledInvocation_PublishesAnUnsampledTraceparent_AndTheHandlerKeepsIt()
+    {
+        var log = new DeliveryLog();
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryMessagingFeature>(),
+            services: services =>
+            {
+                services.AddSingleton(log);
+                services.AddMessageHandler<RecordingHandler>(Topic);
+            });
+        await using var scope = host.Services.CreateAsyncScope();
+        // 上游不采样（HTTP 的 -00 等）的调用里发布：处理器的调用同一 trace、仍不采样（RFC-0003 规则 7）
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", traceFlags: ActivityTraceFlags.None);
+
+        (await host.App.InvokeAsync(context, async ctx => (await ctx.Services.GetRequiredService<IMessagePublisher>().PublishAsync(Topic, Envelope("unsampled"), ctx.CancellationToken)).ThrowIfFailure())).ThrowIfFailure();
+
+        var received = Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "unsampled", 1, TimeSpan.FromSeconds(10)));
+        Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", received.TraceId);
+        Assert.Equal(ActivityTraceFlags.None, received.TraceFlags);
+        Assert.EndsWith("-00", received.Delivery.Envelope.Extension(EnvelopeExtensions.TraceParent).ValueOrThrow(), StringComparison.Ordinal);
     }
 
     [Fact]

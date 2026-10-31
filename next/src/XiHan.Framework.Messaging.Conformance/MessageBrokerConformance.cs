@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
@@ -193,7 +194,7 @@ public abstract class MessageBrokerConformance
     /// 用例 7：租户、关联与追踪扩展进入调用上下文。
     /// </summary>
     /// <remarks>
-    /// 主体与区域同样按对应表进入 Baggage，见用例 10。
+    /// 主体与区域同样按对应表进入 Baggage，见用例 10。<c>traceparent</c> 的采样标志原样还原：<c>-01</c> 为已采样，<c>-00</c>（上游不采样）仍是不采样。
     /// </remarks>
     [Fact]
     public async Task TenantCorrelationAndTrace_FlowIntoInvocationContext()
@@ -211,7 +212,14 @@ public abstract class MessageBrokerConformance
         Assert.Equal("acme", received.Baggage[BaggageKeys.Tenant]);
         Assert.Equal("corr-9", received.Baggage[BaggageKeys.Correlation]);
         Assert.Equal("0af7651916cd43dd8448eb211c80319c", received.TraceId);
+        Assert.Equal(ActivityTraceFlags.Recorded, received.TraceFlags);
         Assert.Equal(new InvocationOrigin { Protocol = InvocationProtocols.Messaging, Target = OrdersTopic }, received.Origin);
+
+        // 上游不采样（-00）：标志原样还原，不被改成采样
+        (await PublishAsync(host, OrdersTopic, Envelope("ctx-2", "orders.ctx").WithExtension(EnvelopeExtensions.TraceParent, "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00")).ConfigureAwait(false)).ThrowIfFailure();
+        var unsampled = Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "ctx-2", 1, DeliveryTimeout).ConfigureAwait(false));
+        Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", unsampled.TraceId);
+        Assert.Equal(ActivityTraceFlags.None, unsampled.TraceFlags);
     }
 
     /// <summary>

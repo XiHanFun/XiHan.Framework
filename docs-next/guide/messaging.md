@@ -55,7 +55,7 @@ builder.AddXiHan(xihan => xihan
 | `xihanprincipal` | `Principal` | 进入 Baggage `xihan.principal`（只是发起者的 ID，不是凭据：处理器的调用仍是匿名主体，审计把它记为主体） |
 | `xihancorrelation` | `Correlation` | 进入 Baggage `xihan.correlation` |
 | `xihanlocale` | `Locale` | 进入 Baggage `xihan.locale`，处理器里 `key.L()` 按这个区域取文案 |
-| `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID 与父跨度 |
+| `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID、父跨度与采样标志（上游「不采样」原样保留） |
 | `xihankey` | `PartitionKey` | 流能力的分区键，见[队列与流](#队列与流) |
 
 前四个扩展与 Baggage 键的对应是 `EnvelopeExtensions.BaggageMappings`（`spec/conventions/baggage-keys.md` 的 CloudEvents 载体）。幂等键 `xihan.idempotency-key` 不进入消息：派发不写幂等键，带上它会让同一请求发出的几条消息与同一条消息的重试被幂等中间件当成同一次调用。
@@ -77,7 +77,7 @@ builder.AddXiHan(xihan => xihan
 
 | 扩展 | 取值 |
 | --- | --- |
-| `traceparent` | `00-<TraceId>-<SpanId>-01`，当前调用的追踪 ID 与跨度 ID |
+| `traceparent` | `00-<TraceId>-<父跨度>-<标志>`：当前 Activity（Observe 阶段的 `xihan.invoke` 或它的子 Span）与调用同一 trace 时父跨度与标志取它的，消费端是它的子 Span；否则取调用的 `SpanId` 与 `TraceFlags`，上游「不采样」写 `00`，链路的根写 `01` |
 | `xihantenant` | 安全上下文的租户，没有再取 Baggage `xihan.tenant` |
 | `xihanprincipal` | 已认证主体的 ID，匿名时取 Baggage `xihan.principal` |
 | `xihancorrelation`、`xihanlocale` | Baggage `xihan.correlation`、`xihan.locale` |
@@ -170,7 +170,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
 
 `MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）与第几次尝试（`Attempt`，从 1 起）。派发器 `MessageDispatcher` 为每条消息：
 
-1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 进 Baggage，`traceparent` 给出追踪 ID 与父跨度（不合法视为缺失），调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
+1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志（不合法视为缺失，与 HTTP 入站一致），调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
 2. 经完整管道执行（`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`），按订阅顺序依次执行该主题的处理器，第一个失败即为调用结果。
 
 所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入随它提交或回滚；装配了发件箱时处理器发布的消息也先写进发件箱，随它一起提交。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。
