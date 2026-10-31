@@ -10,7 +10,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// 把 <see cref="IRemoteConfigurationClient"/> 接进 <see cref="IConfigurationBuilder"/> 的配置源。
 /// </summary>
 /// <remarks>
-/// 通常经 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration"/> 使用。
+/// 通常经 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration(IConfigurationBuilder, IRemoteConfigurationClient, RemoteConfigurationOptions)"/> 使用。客户端由调用方持有，Provider 释放时不释放它。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RemoteConfigurationSource : IConfigurationSource

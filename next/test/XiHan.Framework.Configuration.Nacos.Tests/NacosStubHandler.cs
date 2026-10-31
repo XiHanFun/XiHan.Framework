@@ -41,6 +41,11 @@ internal sealed class NacosStubHandler : HttpMessageHandler
     public ConcurrentQueue<string> ListenedMd5 { get; } = new();
 
     /// <summary>
+    /// 是否已释放。
+    /// </summary>
+    public bool Disposed { get; private set; }
+
+    /// <summary>
     /// 取配置的次数。
     /// </summary>
     public int Fetches => Requests.Count(static r => r.Method == HttpMethod.Get && r.Path.EndsWith("/v1/cs/configs", StringComparison.Ordinal));
@@ -74,5 +79,12 @@ internal sealed class NacosStubHandler : HttpMessageHandler
         }
 
         return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("config data not exist") };
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        Disposed = true;
+        base.Dispose(disposing);
     }
 }

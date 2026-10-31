@@ -15,7 +15,7 @@ namespace XiHan.Framework.Configuration.Nacos.Tests;
 /// Nacos Provider 独有的行为。
 /// </summary>
 /// <remarks>
-/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5（HTTP 桩）、接进配置构建器、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5（HTTP 桩）、接进配置构建器与自建客户端的释放、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
 /// </remarks>
 public sealed class NacosConfigurationTests
 {
@@ -130,6 +130,36 @@ public sealed class NacosConfigurationTests
         var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
 
         Assert.Equal("0123456789abcdef0123456789abcdef", document.Version);
+    }
+
+    [Fact]
+    public void AddXiHanNacos_DisposesTheClientItCreated_WithTheConfigurationRoot()
+    {
+        var handlers = new List<NacosStubHandler>();
+        var builder = new ConfigurationBuilder().AddXiHanNacosCore(
+            new NacosOptions { ServerAddresses = ["http://nacos.test:8848"] },
+            new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = null },
+            () =>
+            {
+                var handler = new NacosStubHandler { Content = """{"Greeting":"hello"}""", ContentMd5 = "c2d231ffe3913f930fc713f76c0bfbf1", SendContentMd5Header = true };
+                handlers.Add(handler);
+                return handler;
+            });
+
+        // 每次构建各建一个客户端，归各自的配置根所有
+        var first = builder.Build();
+        var second = builder.Build();
+        Assert.Equal("hello", first["Orders:Greeting"]);
+        Assert.Equal("hello", second["Orders:Greeting"]);
+        Assert.Equal(2, handlers.Count);
+        Assert.False(handlers[0].Disposed);
+
+        // 配置根释放时自建的客户端（连同它的 HTTP 客户端）一并释放，另一个配置根的不受影响
+        ((IDisposable)first).Dispose();
+        Assert.True(handlers[0].Disposed);
+        Assert.False(handlers[1].Disposed);
+        ((IDisposable)second).Dispose();
+        Assert.True(handlers[1].Disposed);
     }
 
     [Fact]

@@ -101,10 +101,20 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     /// <summary>
     /// 自建 HTTP 客户端创建（配置构建期没有容器时用），释放时一并关闭。
     /// </summary>
-    public static NacosConfigurationClient Create(NacosOptions options, TimeProvider? clock = null)
+    public static NacosConfigurationClient Create(NacosOptions options, TimeProvider? clock = null) => Create(options, clock, handler: null);
+
+    /// <summary>
+    /// 自建 HTTP 客户端创建，HTTP 处理器由测试替换。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="handler"/> 为空时用缺省处理器；给出时归自建的 HTTP 客户端所有，随它释放。
+    /// </remarks>
+    internal static NacosConfigurationClient Create(NacosOptions options, TimeProvider? clock, HttpMessageHandler? handler)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new NacosConfigurationClient(options, new HttpClient { Timeout = Timeout.InfiniteTimeSpan }, clock ?? TimeProvider.System, ownsHttpClient: true);
+        var http = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: true);
+        http.Timeout = Timeout.InfiniteTimeSpan;
+        return new NacosConfigurationClient(options, http, clock ?? TimeProvider.System, ownsHttpClient: true);
     }
 
     /// <inheritdoc />

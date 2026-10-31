@@ -23,6 +23,7 @@ builder.AddXiHan(x => x.UseFeature<NacosConfigurationFeature>());
 - 命名空间参数即 Nacos 的 `dataId`；`Group`（默认 `DEFAULT_GROUP`）与 `Tenant`（Nacos 命名空间 ID，默认公共）来自选项。
 - 版本是内容的 MD5（小写十六进制），与 Nacos 监听接口的约定一致：取配置响应的 `Content-MD5` 头原文（它是内容头），没有这个头时按服务端的算法自己算（内容按 UTF-8 编码的 MD5），不换成别的摘要，监听才认得。`knownVersion` 非空时先以该 MD5 长轮询（`LongPollTimeout`，默认 30 秒）：服务端报告变化才取整份文档，窗口到期或取消返回无值。
 - 格式 `Format`：`Json`（默认，根须是对象，嵌套对象按 `A:B`、数组按下标展平，`null` 保留为空值）或 `Properties`（`a.b=c` → `a:b`，`#` / `!` 行是注释）；不合法返回 `CONFIGURATION_VALIDATION_001`。
+- `AddXiHanNacos` 经 `AddXiHanRemoteConfiguration` 的工厂重载自建客户端（自带 `HttpClient`），每个 Provider 一个，配置根释放时一并释放；特性登记进容器的客户端归容器。
 - 配置了 `Username` / `Password` 时先登录取 `accessToken`，到期前一分钟自动续；多个地址按序尝试，连接失败或超时换下一个。
 - `dataId` 不存在 → `CONFIGURATION_NOTFOUND_001`；不可达、超时、非 2xx → `CONFIGURATION_UNAVAILABLE_001`。
 

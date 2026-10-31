@@ -17,7 +17,7 @@
 
 本包有两个入口，用在两个时机：
 
-- 配置构建期：`builder.Configuration.AddXiHanNacos(nacosOptions, remoteOptions)` 按选项自建客户端（`NacosConfigurationClient.Create`），交给 `AddXiHanRemoteConfiguration`，于是 Nacos 里的文档成为一个配置源，首次同步加载、之后轮询重载。这一步发生在容器建立之前，绝大多数应用只需要它。
+- 配置构建期：`builder.Configuration.AddXiHanNacos(nacosOptions, remoteOptions)` 按选项自建客户端（`NacosConfigurationClient.Create`），经工厂重载交给 `AddXiHanRemoteConfiguration`，于是 Nacos 里的文档成为一个配置源，首次同步加载、之后轮询重载；自建的客户端连同它的 HTTP 客户端归这个配置源，配置根释放时一并释放。这一步发生在容器建立之前，绝大多数应用只需要它。
 - 运行期：`UseFeature<NacosConfigurationFeature>()` 从 `XiHan:Configuration:Nacos` 读选项，经 `IHttpClientFactory` 建客户端，并在本包被选为 `configuration.remote@1` 的提供者时登记为 `IRemoteConfigurationClient`，供其他组件按需取文档。
 
 客户端用 Nacos 的 v1 HTTP 配置接口（与 Nacos 2.x 兼容）。命名空间参数是 Nacos 的 `dataId`，`Group` 与 `Tenant` 来自选项。版本是内容的 MD5，取服务端在响应头 `Content-MD5` 里给出的值，与 Nacos 监听接口的约定一致；`knownVersion` 非空时先以该 MD5 调监听接口长轮询，服务端报告变化才取整份文档，窗口到期或调用方取消都返回无值。
@@ -94,7 +94,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | 类型 | 说明 |
 | --- | --- |
 | `NacosConfigurationFeature` | 特性入口；常量 `ConnectionBinding` = `nacos` |
-| `NacosConfigurationBuilderExtensions` | `AddXiHanNacos(options, remote)`：配置构建期的入口 |
+| `NacosConfigurationBuilderExtensions` | `AddXiHanNacos(options, remote)`：配置构建期的入口，自建的客户端随配置根释放 |
 | `NacosConfigurationClient` | `IRemoteConfigurationClient` 实现；`Create(options, clock)` 自建 HTTP 客户端并在释放时关闭，公开构造函数接收外部的 `HttpClient`（超时应为无限，由本类按请求控制）；常量 `HttpClientName` |
 | `NacosOptions` | 选项；`FromConfiguration(configuration, binding)` 从配置与绑定读取；常量 `ConfigurationSection` |
 | `NacosConfigFormat` | `Json`、`Properties` |

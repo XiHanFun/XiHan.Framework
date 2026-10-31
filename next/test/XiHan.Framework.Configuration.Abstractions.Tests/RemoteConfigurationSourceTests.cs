@@ -157,6 +157,51 @@ public sealed class RemoteConfigurationSourceTests
     }
 
     [Fact]
+    public void ClientFactory_EachProviderOwnsItsClient_PassedClientsAreNotDisposed()
+    {
+        var created = new List<DisposableRemoteConfiguration>();
+        IRemoteConfigurationClient Create()
+        {
+            var client = new DisposableRemoteConfiguration();
+            created.Add(client);
+            return client;
+        }
+
+        var options = new RemoteConfigurationOptions("orders") { PollInterval = null };
+
+        // 同一构建器构建两次：各建一个客户端，各随自己的配置根释放
+        var builder = new ConfigurationBuilder().AddXiHanRemoteConfiguration(Create, options);
+        var first = builder.Build();
+        var second = builder.Build();
+        Assert.Equal(2, created.Count);
+        ((IDisposable)first).Dispose();
+        Assert.True(created[0].Disposed);
+        Assert.False(created[1].Disposed);
+        Assert.Equal("hello", second["Greeting"]);
+        ((IDisposable)second).Dispose();
+        Assert.True(created[1].Disposed);
+
+        // ConfigurationManager 改动构建器属性时重建全部源：被替换的 Provider 连同它的客户端释放，新 Provider 用新客户端
+        created.Clear();
+        var manager = new ConfigurationManager();
+        manager.AddXiHanRemoteConfiguration(Create, options);
+        Assert.Equal("hello", manager["Greeting"]);
+        ((IConfigurationBuilder)manager).Properties["rebuild"] = true;
+        Assert.Equal(2, created.Count);
+        Assert.True(created[0].Disposed);
+        Assert.False(created[1].Disposed);
+        Assert.Equal("hello", manager["Greeting"]);
+        manager.Dispose();
+        Assert.True(created[1].Disposed);
+
+        // 传入现成的客户端：调用方持有，配置根释放时不释放它
+        using var passed = new DisposableRemoteConfiguration();
+        var root = new ConfigurationBuilder().AddXiHanRemoteConfiguration(passed, options).Build();
+        ((IDisposable)root).Dispose();
+        Assert.False(passed.Disposed);
+    }
+
+    [Fact]
     public void Options_AndDocument_Validate()
     {
         Assert.Throws<ArgumentException>(static () => new RemoteConfigurationOptions(" "));

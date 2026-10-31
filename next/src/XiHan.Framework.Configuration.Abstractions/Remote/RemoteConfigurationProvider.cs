@@ -25,6 +25,11 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
     private readonly RemoteConfigurationOptions _options;
 
     /// <summary>
+    /// 客户端是否归本 Provider 所有（释放时一并释放）。
+    /// </summary>
+    private readonly bool _ownsClient;
+
+    /// <summary>
     /// 停止轮询的信号。
     /// </summary>
     private readonly CancellationTokenSource _stopping = new();
@@ -47,10 +52,14 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
     /// <summary>
     /// 创建。
     /// </summary>
-    public RemoteConfigurationProvider(IRemoteConfigurationClient client, RemoteConfigurationOptions options)
+    /// <remarks>
+    /// <paramref name="ownsClient"/> 为真时客户端归本 Provider 所有，释放时一并释放（实现 <see cref="IDisposable"/> 时）。
+    /// </remarks>
+    public RemoteConfigurationProvider(IRemoteConfigurationClient client, RemoteConfigurationOptions options, bool ownsClient = false)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _ownsClient = ownsClient;
     }
 
     /// <inheritdoc />
@@ -103,8 +112,14 @@ internal sealed class RemoteConfigurationProvider : KeyValueConfigurationProvide
     {
         if (disposing)
         {
+            // 先停轮询再释放客户端：停止之后循环里因客户端已释放而出的异常不会被报告
             _stopping.Cancel();
             _timer?.Dispose();
+            if (_ownsClient && _client is IDisposable client)
+            {
+                client.Dispose();
+            }
+
             _stopping.Dispose();
         }
 

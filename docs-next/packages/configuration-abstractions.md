@@ -17,7 +17,7 @@
 
 5.0 不另造配置模型，默认的配置来源就是 .NET 原生的文件、环境变量与命令行，所以配置子系统没有默认实现包。本包只补两类 .NET 没有统一契约的来源：
 
-- 远程配置（`configuration.remote@1`）：按命名空间取整份带版本的文档，键已展平成 `A:B:C`。`AddXiHanRemoteConfiguration(client, options)` 构建配置时同步加载一次，之后按周期带已知版本轮询，版本变化时整体替换并触发重载令牌，失败保留最后一份成功的数据。
+- 远程配置（`configuration.remote@1`）：按命名空间取整份带版本的文档，键已展平成 `A:B:C`。`AddXiHanRemoteConfiguration` 构建配置时同步加载一次，之后按周期带已知版本轮询，版本变化时整体替换并触发重载令牌，失败保留最后一份成功的数据。它有两个重载：传入现成的客户端（由调用方持有），或传入工厂（客户端归配置源，随配置根释放）。
 - 密钥（`configuration.secrets@1`）：按名字批量读取，只读，逐项返回结果；`SecretValue.ToString()` 固定返回遮蔽文本。`AddXiHanSecrets(store, options)` 把密钥映射到配置键，构建时一次批量读取，可周期重读。
 
 两个配置源都派生自内部的键值表 Provider：数据整体替换，替换时先换上新令牌再取消旧令牌；子键的枚举顺序与 `Microsoft.Extensions.Configuration` 一致（数字段按数值、其余按忽略大小写的序数）。键不区分大小写。
@@ -76,8 +76,8 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Remote.IRemoteConfigurationClient` | `FetchAsync(namespaceName, knownVersion, cancellationToken)` → `Result<Maybe<ConfigurationDocument>>`；`knownVersion` 为空总是返回文档，非空且未变化返回无值，可长轮询，收到取消返回无值 |
 | `Remote.ConfigurationDocument` | 版本（ETag、修订号或内容哈希，非空）与展平的键值；`Empty(version)` 建空文档 |
 | `Remote.RemoteConfigurationOptions` | 远程配置源的选项 |
-| `Remote.RemoteConfigurationBuilderExtensions` | `AddXiHanRemoteConfiguration(client, options)` |
-| `Remote.RemoteConfigurationSource` | 对应的 `IConfigurationSource` |
+| `Remote.RemoteConfigurationBuilderExtensions` | `AddXiHanRemoteConfiguration(client, options)`：客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，随 Provider 释放 |
+| `Remote.RemoteConfigurationSource` | 传入现成客户端时对应的 `IConfigurationSource` |
 | `Secrets.ISecretStore` | `GetAsync(names, cancellationToken)` 批量逐项返回 `SecretLookup`，顺序与入参一致 |
 | `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；可从 `string` 隐式转换 |
 | `Secrets.SecretValue` | 值与可选版本；`ToString()` 返回 `Redacted`（`***`） |
@@ -90,7 +90,7 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 
 ## 使用示例
 
-把远程配置挂到 `Orders` 节下，并把一个密钥映射成绑定的连接串。`nacos` 可以换成任何 `IRemoteConfigurationClient` 实现，`vault` 是应用自己的 `ISecretStore`：
+把远程配置挂到 `Orders` 节下，并把一个密钥映射成绑定的连接串。Nacos 客户端可以换成任何 `IRemoteConfigurationClient` 实现，`vault` 是应用自己的 `ISecretStore`：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Remote;
@@ -98,11 +98,12 @@ using XiHan.Framework.Configuration.Abstractions.Secrets;
 using XiHan.Framework.Configuration.Nacos;
 
 var builder = WebApplication.CreateBuilder(args);
-var nacos = NacosConfigurationClient.Create(NacosOptions.FromConfiguration(builder.Configuration));
+var nacosOptions = NacosOptions.FromConfiguration(builder.Configuration);
 var vault = new DirectorySecretStore("/run/secrets");
 
 builder.Configuration
-    .AddXiHanRemoteConfiguration(nacos, new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = TimeSpan.FromSeconds(15) })
+    // 工厂重载：客户端归配置源，随配置根释放；传入现成客户端时由调用方持有并负责释放
+    .AddXiHanRemoteConfiguration(() => NacosConfigurationClient.Create(nacosOptions), new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = TimeSpan.FromSeconds(15) })
     .AddXiHanSecrets(vault, new SecretsConfigurationOptions(new Dictionary<string, SecretName>
     {
         ["XiHan:Bindings:db:value"] = "orders/db-connection",
@@ -156,7 +157,7 @@ if (secret.TryGetValue(out var value))
 - 密钥首次读取中任一项失败且 `Optional = false` 时抛出 `FrameworkException`，消息里列出失败的配置键。整体失败（超时、密钥库抛出、返回的条数与请求不一致）回调一次 `CONFIGURATION_UNAVAILABLE_002`，`Optional = false` 时随后抛出，为 `true` 时该源为空。不论首次成败，`RefreshInterval` 非空时都重读：失败的项保留旧值，整体失败保留全部旧值并回调。
 - `OnError` 自己抛出的异常被丢弃：不改变首次加载按 `Optional` 得出的结果，也不终止轮询或重读。
 - 遮蔽只作用于 `SecretValue`：映射进 `IConfiguration` 的值是原始字符串。
-- 配置源随配置根释放：释放时停止轮询与重读。
+- 配置源随配置根释放：释放时停止轮询与重读。工厂重载创建的客户端在轮询停止之后一并释放（实现 `IDisposable` 时）；每次构建 Provider 各建一个，同一构建器构建多次、`ConfigurationManager` 改动属性或源而重建全部 Provider 时，不会有 Provider 拿到别人已释放的客户端。传入现成客户端的重载不释放它。
 
 | 错误码 | 常量 | 含义 |
 | --- | --- | --- |

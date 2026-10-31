@@ -27,6 +27,10 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 - Nacos 2.5.1 的监听接口拿客户端报来的值与服务端存的内容 MD5（`MD5Utils.md5Hex(content, PERSIST_ENCODE)`，`PERSIST_ENCODE` 缺省 UTF-8）逐字比较。SHA-256 永远对不上，每个监听窗口都立刻报告变化，客户端再取一次整份文档、比出版本没变，长轮询退化成每个轮询周期一次「监听 + 取文档」的普通轮询。结果仍然正确，一致性套件发现不了。
 - 包 README 写的是「取响应头 `Content-MD5`，没有就自己算」，读起来是自己算 MD5，与代码不符。
 
+### 3. 自建的客户端没人释放
+
+`AddXiHanNacos` 用 `NacosConfigurationClient.Create` 自建客户端（自带 `HttpClient`），交给 `AddXiHanRemoteConfiguration(client, options)`。这个重载不持有客户端，配置根释放时只停轮询，客户端与它的连接池从来不释放，也没有别人拿得到它的引用。
+
 ## 备选
 
 ### 1. 失败语义
@@ -45,6 +49,11 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 1. 保留 SHA-256 退路，只把读头的位置改对：常态正确，去掉头的代理后面仍退化。
 2. 读头的位置改对，退路改为按服务端的算法算内容 MD5。
 3. 去掉退路，没有头就不长轮询。
+
+### 3. 自建客户端的归属
+
+1. `RemoteConfigurationOptions` 加一个「释放时一并释放客户端」的开关，客户端仍在添加源时建好、由配置源共用。
+2. 新增工厂重载 `AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，归这个 Provider 所有。
 
 ## 决策
 
@@ -67,6 +76,14 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 - 没有这个头时，按服务端的算法自己算：内容按 UTF-8 编码的 MD5，小写十六进制。
 - MD5 触发安全分析器 CA5351。按仓库现有做法，在这一个私有方法上用 `[SuppressMessage]` 并写明理由：这是协议规定的版本标识，只用于与服务端比对是否变化，不用于任何安全目的。不在项目级压掉这条规则。
 
+### 3. 自建客户端归 Provider 所有
+
+取 2。
+
+- `Configuration.Abstractions` 新增 `AddXiHanRemoteConfiguration(Func<IRemoteConfigurationClient> clientFactory, RemoteConfigurationOptions options)`，配置源是内部类型。每次构建 Provider 调用一次工厂，Provider 释放时先停轮询，再释放客户端（实现 `IDisposable` 时）。
+- 原重载 `AddXiHanRemoteConfiguration(client, options)` 语义不变，写明客户端由调用方持有、配置根释放时不释放。
+- `AddXiHanNacos` 改走工厂重载。运行期由 `NacosConfigurationFeature` 登记进容器的客户端仍归容器。
+
 ## 理由
 
 ### 1. 失败语义统一
@@ -80,6 +97,11 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 
 - 监听协议只认内容 MD5，版本取别的摘要等于放弃长轮询。退路照服务端的算法算，结果与服务端给的头一致，去掉头的代理后面也能长轮询。
 - 读原文而不是解析后的值：Nacos 给的是十六进制，不是 RFC 1864 规定的 Base64。32 位十六进制恰好也是合法的 Base64，解析再格式化会还原成同一个串，但这是巧合，不应依赖。
+
+### 3. 自建客户端归 Provider 所有
+
+- 配置源不可释放，可释放的只有 Provider；而同一个源会构建出多个 Provider：同一构建器构建多次，或 `ConfigurationManager` 在属性、源列表变化时重建全部 Provider 并释放旧的。共用一个客户端时，第一个 Provider 释放就把它关掉，其余 Provider 拿着已释放的客户端每个周期报一次错。按 Provider 各建一个，归属与生命周期才一致。
+- 先停轮询再释放客户端，配合第 1 节「停止之后不再报告」，释放不会经 `OnError` 报出一条假失败。
 
 ## 影响
 
@@ -99,3 +121,12 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 - 行为：对真实的 Nacos，监听恢复为长轮询，内容没变时窗口内不再取整份文档；版本串由 64 位 SHA-256 变为 32 位 MD5，进程内的已知版本随首次加载重建，不涉及持久化。
 - 公开 API 不变。
 - 测试（`Configuration.Nacos.Tests`，HTTP 桩 `NacosStubHandler` 按 Nacos 的约定逐字比较监听报来的 MD5，`Content-MD5` 与真实响应一样放在内容头）：有头与没有头两种情况下，版本都等于独立算出的内容 MD5（内容含非 ASCII 字符），以它监听时服务端认出未变化、不再取整份文档；头里的值原样作版本。修正前三例都失败，有头的一例同样失败，印证了头从来没被读到。
+
+### 3. 自建客户端归 Provider 所有
+
+- 行为：`AddXiHanNacos` 自建的客户端随配置根释放；同一构建器构建多次时各有各的客户端。
+- 公开 API：`Configuration.Abstractions` 新增 `AddXiHanRemoteConfiguration(clientFactory, options)` 一个重载（PublicAPI +1）。`Configuration.Nacos` 的公开 API 不变，`Create` 与 `AddXiHanNacos` 各多一个供测试替换 HTTP 处理器的内部重载。
+- 测试：
+  - `Configuration.Abstractions.Tests`：同一构建器构建两次各建一个客户端、各随自己的配置根释放；`ConfigurationManager` 改动属性重建全部源时，被替换的 Provider 连同客户端释放、新 Provider 用新客户端；传入现成客户端时配置根释放不释放它。
+  - `Configuration.Nacos.Tests`：经 `AddXiHanNacos` 的内部重载换入 HTTP 桩，构建两次各自装入文档，配置根释放时各自的 HTTP 处理器随客户端释放。
+  - 反向验证：Provider 不释放客户端时 Abstractions 用例失败；`AddXiHanNacos` 改回传入现成客户端时 Nacos 用例失败（只建了一个客户端）。

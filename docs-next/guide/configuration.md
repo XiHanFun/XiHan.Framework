@@ -176,6 +176,8 @@ public sealed record LedgerConnection(string ConnectionString);
 3. 不论首次加载成败，之后都按 `PollInterval`（缺省 30 秒，`null` 关闭轮询）带已知版本轮询；首次失败时已知版本为空，第一次成功的轮询装入整份文档。拿到新版本就整体替换这个源的数据并触发重载令牌，`IOptionsMonitor<T>` 随之更新。
 4. 轮询失败（返回失败结果或抛出异常）只回调 `OnError`，保留最后一份成功的数据。
 
+客户端的归属看用哪个重载：`AddXiHanRemoteConfiguration(client, options)` 传入的客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)` 每次构建 Provider 按工厂新建一个客户端，配置根释放时随之释放（实现 `IDisposable` 时）。配置构建期自建、没有别人持有的客户端用工厂重载。
+
 `Prefix` 把文档挂到某个配置节下，为空时挂在根。`OnError` 是唯一的报告渠道，因为配置在日志之前构建；回调自己抛出的异常被丢弃，不改变首次加载的结果，也不终止轮询。
 
 | 选项 | 类型 | 缺省 | 说明 |
@@ -237,7 +239,7 @@ public sealed class OrderLimits
 }
 ```
 
-`AddXiHanNacos` 自建 HTTP 客户端，用在配置构建期。另装 `NacosConfigurationFeature` 时，运行期容器里会登记 `IRemoteConfigurationClient`，供其他组件按需取文档。连接选项、长轮询与登录的细节见包页。
+`AddXiHanNacos` 经工厂重载自建客户端（自带 HTTP 客户端），用在配置构建期，随配置根释放。另装 `NacosConfigurationFeature` 时，运行期容器里会登记 `IRemoteConfigurationClient`，供其他组件按需取文档。连接选项、长轮询与登录的细节见包页。
 
 ## 密钥
 
