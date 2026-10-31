@@ -8,7 +8,7 @@
 - 框架类型（`XiHan.Framework.*`、`Microsoft.Extensions.*`、`System.*`）与宿主共享，插件的私有依赖隔离在自己的加载上下文中。
 - 插件失败以 `Result` 返回，不抛出到宿主；崩溃的插件记为 `Failed`。失败结果的消息键在 `PluginMessages`，文案在本包的 `Localization/<区域>.json`；本包没有特性入口，宿主应用用 `services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)))` 注册目录（RFC-0010）。
 
-不负责：运行期向已构建的管道贡献中间件（在应用启动前加载的插件由 P3 的生成器路径支持）、热重载、插件市场。
+不负责：插件中间件——宿主传给插件的 `PluginContext.Pipeline` 恒为 `null`，进程内插件不能向宿主管道贡献中间件，也不能登记操作（需要中间件时写成能力包，或用 `Plugins.Wasm` 的插件中间件）；热重载、插件市场。
 
 ## 依赖方向
 

@@ -1,6 +1,6 @@
 # CacheGoPlugin
 
-用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 写的 `caching.distributed@1` 远程 Provider 插件（RFC-0019，P4-07）：实现操作集 `cache-entries.get / set / try-add / remove / try-remove`，由 `Plugins.OutOfProcess` 加载后，`Caching.Remote` 适配器把它接成 .NET 侧的共享缓存、分布式锁与幂等去重。实现来自 SDK 的 `examples/cache`（有界内存存储，清单 ID `xihan.samples.cache-go`），本目录只有可执行入口 `main.go`、同一份 `xihan.manifest.json` 与 Go 模块文件。
+用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 写的 `caching.distributed@1` 远程 Provider 插件（RFC-0019，P4-07）：实现操作集 `cache-entries.get / set / try-add / remove / try-remove / get-many / set-many / remove-many`（与清单 `contributes.operations`、`spec/provider/caching-distributed.md` 一致），由 `Plugins.OutOfProcess` 加载后，`Caching.Remote` 适配器把它接成 .NET 侧的共享缓存、分布式锁与幂等去重。实现来自 SDK 的 `examples/cache`（有界内存存储，清单 ID `xihan.samples.cache-go`），本目录只有可执行入口 `main.go`、同一份 `xihan.manifest.json` 与 Go 模块文件。
 
 | 配置节 `XiHan:Cache` | 含义 |
 | --- | --- |
