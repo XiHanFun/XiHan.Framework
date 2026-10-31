@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tests;
@@ -39,6 +40,33 @@ public sealed class TenantContractTests
         {
             Assert.Throws<ArgumentException>(() => new TenantInfo { Id = value });
         }
+    }
+
+    [Theory]
+    [InlineData("acme")]
+    [InlineData("Acme")]
+    [InlineData("acme.cn")]
+    [InlineData("t_42")]
+    [InlineData("Acme-01")]
+    [InlineData("-lead")]
+    [InlineData(".lead")]
+    [InlineData("has space")]
+    [InlineData("中文")]
+    [InlineData("a:b")]
+    public void TenantIdentifier_MatchesResourceNameTenantSegment(string value)
+    {
+        // RFC-0007：租户 ID 与 xrn 资源名的租户段同一文法，合法的租户 ID 拼进资源名都能原样解析回来，不合法的都被拒绝
+        var parsed = ResourceName.TryParse($"xrn:cn:shop:{value}:order/1", out var name);
+
+        Assert.Equal(TenantIdentifier.IsValid(value), parsed);
+        if (parsed)
+        {
+            Assert.Equal(value, name.Tenant);
+        }
+
+        var longest = new string('A', TenantIdentifier.MaxLength);
+        Assert.True(ResourceName.TryParse($"xrn:cn:shop:{longest}:order/1", out _));
+        Assert.False(ResourceName.TryParse($"xrn:cn:shop:{longest}A:order/1", out _));
     }
 
     [Fact]

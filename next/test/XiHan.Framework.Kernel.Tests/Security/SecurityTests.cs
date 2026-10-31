@@ -41,6 +41,39 @@ public sealed class SecurityTests
         Assert.Throws<ArgumentException>(() => ResourceName.Parse("xrn:cn:orders"));
     }
 
+    [Theory]
+    [InlineData("Acme")]
+    [InlineData("acme.cn")]
+    [InlineData("t_42")]
+    [InlineData("A-01.x_y")]
+    [InlineData("0")]
+    public void ResourceName_TenantSegment_AcceptsEveryTenantIdShape(string tenant)
+    {
+        // 租户段与 RFC-0007 的租户 ID 同一文法：大写、点、下划线都能原样往返
+        var text = new ResourceName("cn", "shop", tenant, "order", "42").ToString();
+
+        Assert.True(ResourceName.TryParse(text, out var parsed));
+        Assert.Equal(tenant, parsed.Tenant);
+        Assert.Equal("order", parsed.Type);
+        Assert.Equal(text, parsed.ToString());
+        Assert.Equal(new string('T', 64), ResourceName.Parse($"xrn:cn:shop:{new string('T', 64)}:order/1").Tenant);
+    }
+
+    [Theory]
+    [InlineData("xrn:cn:shop:-acme:order/1")]
+    [InlineData("xrn:cn:shop:.acme:order/1")]
+    [InlineData("xrn:cn:shop:_acme:order/1")]
+    [InlineData("xrn:cn:shop:ac me:order/1")]
+    [InlineData("xrn:cn:shop:ac/me:order/1")]
+    [InlineData("xrn:CN:shop:acme:order/1")]
+    [InlineData("xrn:cn:shop:acme:Order/1")]
+    public void ResourceName_RejectsSegmentsOutsideTheGrammar(string text)
+    {
+        Assert.False(ResourceName.TryParse(text, out _));
+        Assert.Throws<ArgumentException>(() => ResourceName.Parse(text));
+        Assert.False(ResourceName.TryParse($"xrn:cn:shop:{new string('T', 65)}:order/1", out _));
+    }
+
     [Fact]
     public void Principal_ClaimsHelpers()
     {

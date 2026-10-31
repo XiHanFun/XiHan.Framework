@@ -12,7 +12,7 @@ namespace XiHan.Framework.Kernel.Security;
 /// </summary>
 /// <param name="Partition">分区，例如 <c>cn</c>。</param>
 /// <param name="Service">服务。</param>
-/// <param name="Tenant">租户；全局资源为空字符串。</param>
+/// <param name="Tenant">租户 ID，文法与 RFC-0007 的租户 ID 相同（区分大小写，可含 <c>.</c>、<c>_</c>）；全局资源为空字符串。</param>
 /// <param name="Type">资源类型。</param>
 /// <param name="Id">资源 ID。</param>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -52,8 +52,11 @@ public readonly partial record struct ResourceName(string Partition, string Serv
     public override string ToString() => $"xrn:{Partition}:{Service}:{Tenant}:{Type}/{Id}";
 
     /// <summary>
-    /// 资源名格式的正则：租户段允许为空（全局资源），ID 段不含斜杠与空白。
+    /// 资源名格式的正则。
     /// </summary>
-    [GeneratedRegex("^xrn:(?<p>[a-z0-9-]+):(?<s>[a-z0-9-]+):(?<t>[a-z0-9-]*):(?<type>[a-z0-9-]+)/(?<id>[^/\\s]+)$")]
+    /// <remarks>
+    /// 分区、服务、类型段为 <c>[a-z0-9-]+</c>；租户段为空（全局资源）或租户 ID，文法与 RFC-0007 的租户 ID 相同（字母或数字开头，之后是字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，不超过 64 个字符，区分大小写），任何合法的租户 ID 拼进来都能原样解析回去；ID 段不含斜杠与空白。
+    /// </remarks>
+    [GeneratedRegex("^xrn:(?<p>[a-z0-9-]+):(?<s>[a-z0-9-]+):(?<t>(?:[A-Za-z0-9][A-Za-z0-9._-]{0,63})?):(?<type>[a-z0-9-]+)/(?<id>[^/\\s]+)$")]
     private static partial Regex Pattern();
 }
