@@ -67,7 +67,7 @@ public interface IJobScheduler
     /// 在本实例立即运行并等待结果，按顺序逐项。
     /// </summary>
     /// <remarks>
-    /// 不受暂停与领导限制。未登记 → <see cref="SchedulingErrors.JobNotFound"/>，正在运行且不允许并发 → <see cref="SchedulingErrors.JobRunning"/>。
+    /// 不受暂停与领导限制。未登记 → <see cref="SchedulingErrors.JobNotFound"/>，正在运行且不允许并发 → <see cref="SchedulingErrors.JobRunning"/>，调度器已开始停止 → <see cref="SchedulingErrors.SchedulerUnavailable"/>。
     /// </remarks>
     ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken);
 

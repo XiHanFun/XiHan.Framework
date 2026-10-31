@@ -155,6 +155,14 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private CancellationTokenSource? _stopping;
 
     /// <summary>
+    /// 已开始停止（直到下次启动）。
+    /// </summary>
+    /// <remarks>
+    /// 停止只等待已经开始的运行，之后到达的手动触发不再起新的运行。
+    /// </remarks>
+    private volatile bool _draining;
+
+    /// <summary>
     /// 轮询循环。
     /// </summary>
     private Task? _loop;
@@ -251,6 +259,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         }
 
         _startedAt = _clock.GetUtcNow();
+        _draining = false;
         _stopping = new CancellationTokenSource();
         // 定时器在这里而不是在循环任务里创建：否则时钟在循环任务开始前推进时，首个刻度会落在推进之后而丢失
         _timer = new PeriodicTimer(_options.PollInterval, _clock);
@@ -272,6 +281,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
+        _draining = true;
         await _stopping.CancelAsync().ConfigureAwait(false);
         try
         {
@@ -1306,6 +1316,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private async ValueTask<Result> TriggerOneAsync(JobTriggerRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // 停止开始之后不再起新的手动运行：停止只等待已开始的运行，之后起的运行无人等待，记录会停在运行中直到被判失联
+        if (_draining)
+        {
+            return Error.Unavailable(SchedulingErrors.SchedulerUnavailable, SchedulingMessages.SchedulerUnavailable);
+        }
+
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
         var resolved = await ResolveJobAsync(request.Name, cancellationToken).ConfigureAwait(false);
         if (!resolved.TryGetValue(out var job))

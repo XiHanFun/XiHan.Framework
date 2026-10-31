@@ -102,6 +102,33 @@ public sealed class InMemorySchedulingTests
     }
 
     [Fact]
+    public async Task ManualTrigger_AfterTheSchedulerStops_IsUnavailable()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemorySchedulingFeature>(),
+            [new("XiHan:Scheduling:PollIntervalSeconds", "3600")],
+            services =>
+            {
+                services.AddSingleton(log);
+                services.AddJob<RecordingJob>("manual", JobSchedule.Every(TimeSpan.FromHours(1)));
+            });
+        var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
+        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+
+        // 停止之后到达的手动触发不起新的运行：停止只等已经开始的运行
+        await engine.StopAsync(CancellationToken.None);
+        var refused = await engine.TriggerAsync("manual", CancellationToken.None);
+        Assert.Equal(SchedulingErrors.SchedulerUnavailable, refused.Error?.Code);
+        Assert.Single(log.Runs);
+
+        // 再次启动后照常
+        await engine.StartAsync(CancellationToken.None);
+        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+        Assert.Equal(2, log.Runs.Count);
+    }
+
+    [Fact]
     public async Task RunHistory_IsBounded_EvictingOldestFinished()
     {
         var store = new InMemoryJobStore(new InMemorySchedulingOptions { MaxRuns = 2 });
