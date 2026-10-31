@@ -30,4 +30,13 @@ internal sealed record PluginHostContext(
     IConfiguration Configuration,
     TimeProvider Clock,
     PluginSessions Sessions,
-    TimeSpan StopGrace);
+    TimeSpan StopGrace)
+{
+    /// <summary>
+    /// 时钟。
+    /// </summary>
+    /// <remarks>
+    /// 配置阶段还没有容器，先用构造时给的；宿主附着到容器后换成容器里的 <see cref="TimeProvider"/>，重启退避、健康轮询与停止等待都按它计时。
+    /// </remarks>
+    public TimeProvider Clock { get; set; } = Clock;
+}

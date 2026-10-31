@@ -4,6 +4,7 @@
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -210,6 +211,66 @@ public sealed class OutOfProcessPluginHostTests
             var listed = EchoPluginHost.InvokeAsync(host, "events.list", "{}").GetAwaiter().GetResult();
             return listed.Outcome.IsSuccess && EchoPluginHost.Payload(listed).GetProperty("ids").EnumerateArray().Any(static id => id.GetString() == "evt-1");
         }, TimeSpan.FromSeconds(10)));
+    }
+
+    [Fact]
+    public async Task HandshakeFailureAtStartup_IsRetriedByTheRestartPolicy_AndTheOperationsAreRegisteredLate()
+    {
+        // 副本拿掉一个依赖：进程启动即崩溃、写不出握手行（发现阶段的握手失败）
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        var dependency = Path.Combine(copy.Directory, "Grpc.AspNetCore.Server.dll");
+        File.Move(dependency, dependency + ".off");
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var host = await EchoPluginHost.StartAsync(directory: copy.Directory, services: s => s.AddSingleton<TimeProvider>(clock));
+        var plugins = EchoPluginHost.PluginHost(host);
+        var registry = host.Services.GetRequiredService<OperationRegistry>();
+
+        var failed = plugins.Describe(EchoPluginHost.PluginId)!;
+        Assert.Equal(LifecycleState.Failed, failed.Status.State);
+        Assert.Equal(PluginErrors.Crashed, failed.Status.Error?.Code);
+        Assert.Equal(0, failed.Restarts);
+        Assert.Equal(LifecycleState.Degraded, host.App.State);
+        Assert.False(registry.Find("echoes.create").HasValue);
+
+        // 依赖放回后，按宿主时钟推进退避（1 秒起）直到重试成功：不是一次失败就永远放弃（handshake.md §5）
+        File.Move(dependency + ".off", dependency);
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() =>
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            return plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Ready;
+        }, TimeSpan.FromSeconds(60)));
+        Assert.Equal(1, plugins.Describe(EchoPluginHost.PluginId)!.Restarts);
+        Assert.Equal(LifecycleState.Ready, host.App.State);
+
+        // 声明到这时才有：代理操作按运行期加载补登记，经内核调用器可用
+        Assert.True(registry.Find("echoes.create").HasValue);
+        var response = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"late"}""");
+        Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
+    }
+
+    [Fact]
+    public async Task HandshakeFailureOfARuntimeLoad_IsReturned_AndThenRetried()
+    {
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        var dependency = Path.Combine(copy.Directory, "Grpc.AspNetCore.Server.dll");
+        File.Move(dependency, dependency + ".off");
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), services: s => s.AddSingleton<TimeProvider>(clock));
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+
+        // 失败返回给调用方，插件保持 Failed 并按重启策略重试（lifecycle.md §6）
+        Assert.Equal(PluginErrors.Crashed, loaded.Error?.Code);
+        Assert.Equal(LifecycleState.Failed, Assert.Single(plugins.Plugins).State);
+        File.Move(dependency + ".off", dependency);
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() =>
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            return Assert.Single(plugins.Plugins).State == LifecycleState.Ready;
+        }, TimeSpan.FromSeconds(60)));
+        var response = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"late"}""");
+        Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
     }
 
     [Fact]

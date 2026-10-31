@@ -200,7 +200,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return manifest.Error!;
         }
 
-        var discovered = await DiscoverAsync(source, read, keepRejected: false, cancellationToken).ConfigureAwait(false);
+        var discovered = await DiscoverAsync(source, read, atStartup: false, cancellationToken).ConfigureAwait(false);
         if (!discovered.TryGetValue(out var runtime))
         {
             return discovered.Error!;
@@ -216,7 +216,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         }
 
         var started = await runtime.StartAsync(cancellationToken).ConfigureAwait(false);
-        return started.IsSuccess ? runtime.Status : started.Error!;
+        if (started.IsFailure)
+        {
+            // 失败返回给调用方，插件保持 Failed 并按重启策略重试，直到卸载（lifecycle.md §6）
+            runtime.ScheduleRestart();
+            return started.Error!;
+        }
+
+        return runtime.Status;
     }
 
     /// <inheritdoc />
@@ -248,11 +255,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 附着到已构建的宿主容器。
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 换用宿主日志与时钟、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。握手失败与启动失败的插件按重启策略在后台重试（<c>lifecycle.md</c> §6），发现时被拒的不重试。
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
+        _context.Clock = services.GetService<TimeProvider>() ?? _context.Clock;
         _loggerFactory = services.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<OutOfProcessPluginHost>();
         foreach (var runtime in _order)
@@ -275,6 +283,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             if (runtime.Handshake is null)
             {
                 LogDiscoveryFailed(_logger, runtime.Manifest.Id, runtime.Error?.Code ?? string.Empty, runtime.Error?.Message ?? string.Empty);
+                if (!runtime.IsRejected)
+                {
+                    RetryDiscovery(runtime);
+                }
+
                 continue;
             }
 
@@ -287,6 +300,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             if (started.IsFailure)
             {
                 LogStartFailed(_logger, runtime.Manifest.Id, started.Error!.Code, started.Error.Message);
+                runtime.ScheduleRestart();
             }
         }
     }
@@ -380,22 +394,22 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return await RejectAsync(source, read, kind.Error!, cancellationToken).ConfigureAwait(false);
         }
 
-        return await DiscoverAsync(source, read, keepRejected: true, cancellationToken).ConfigureAwait(false);
+        return await DiscoverAsync(source, read, atStartup: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// 校验权限与可执行文件，登记运行时并探测启动。
     /// </summary>
     /// <remarks>
-    /// <paramref name="keepRejected"/> 为真（按目录发现）时被拒的插件以 Failed 登记，否则（运行期加载）只把错误返回给调用方。
+    /// <paramref name="atStartup"/> 为真（配置阶段按目录发现）时被拒的插件以 Failed 登记、握手失败的重试留到附着到容器之后；为假（运行期加载）时被拒只把错误返回给调用方，握手失败的插件保持 Failed 并立即按重启策略重试（<c>lifecycle.md</c> §6）。
     /// </remarks>
-    private async Task<Result<PluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, bool keepRejected, CancellationToken cancellationToken)
+    private async Task<Result<PluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, bool atStartup, CancellationToken cancellationToken)
     {
         // 权限在启动任何代码之前判定：清单声明了而宿主未授予的权限，一项也不能少
         var rejected = Preflight(source, manifest, out var executable);
         if (rejected is not null)
         {
-            return keepRejected ? await RejectAsync(source, manifest, rejected, cancellationToken).ConfigureAwait(false) : rejected;
+            return atStartup ? await RejectAsync(source, manifest, rejected, cancellationToken).ConfigureAwait(false) : rejected;
         }
 
         PluginRuntime runtime;
@@ -417,7 +431,38 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         }
 
         var discovered = await runtime.DiscoverAsync(cancellationToken).ConfigureAwait(false);
+        if (discovered.IsFailure && !atStartup)
+        {
+            RetryDiscovery(runtime);
+        }
+
         return discovered.IsSuccess ? runtime : discovered.Error!;
+    }
+
+    /// <summary>
+    /// 首次握手失败的插件按重启策略重试，成功后补登记声明。
+    /// </summary>
+    private void RetryDiscovery(PluginRuntime runtime)
+    {
+        runtime.Discovered = RegisterLate;
+        runtime.ScheduleRestart();
+    }
+
+    /// <summary>
+    /// 重试中才握手成功的插件：把代理操作登记进操作登记表。
+    /// </summary>
+    /// <remarks>
+    /// 与运行期加载一致，代理操作只对内核调用器可见（协议适配器的路由在启动时已经发布）；订阅与消息目录要在配置阶段接进容器，宿主重启后才生效，这里记警告。
+    /// </remarks>
+    private Result RegisterLate(PluginRuntime runtime)
+    {
+        var registered = Register(runtime);
+        if (registered.IsSuccess && runtime.Handshake is { } handshake && (handshake.Subscriptions.Count > 0 || handshake.Catalogs.Count > 0))
+        {
+            LogLateDeclarations(_logger, runtime.Manifest.Id, handshake.Subscriptions.Count, handshake.Catalogs.Count);
+        }
+
+        return registered;
     }
 
     /// <summary>
@@ -576,6 +621,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {Plugin} failed during discovery: {Code} {Message}")]
     private static partial void LogDiscoveryFailed(ILogger logger, string plugin, string code, string message);
+
+    /// <summary>
+    /// 记录重试中才握手成功的插件声明了无法补登记的订阅或消息目录。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} completed its first handshake only after startup; its {Subscriptions} subscriptions and {Catalogs} message catalogs take effect after the host restarts.")]
+    private static partial void LogLateDeclarations(ILogger logger, string pluginId, int subscriptions, int catalogs);
 
     /// <summary>
     /// 记录插件启动失败（宿主继续运行）。

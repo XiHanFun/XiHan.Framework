@@ -174,6 +174,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     public bool IsRejected { get; private set; }
 
     /// <summary>
+    /// 首次握手在重试中才成功时交给宿主登记声明。
+    /// </summary>
+    /// <remarks>
+    /// 发现时握手失败的插件那时还没有声明可登记；返回失败（如与已有操作重名）时插件按发现时被拒处理、不再重试。
+    /// </remarks>
+    public Func<PluginRuntime, Result>? Discovered { get; set; }
+
+    /// <summary>
     /// 是否懒激活：清单 <c>activation</c> 不含 <c>onStartup</c>。
     /// </summary>
     public bool IsLazy => !Manifest.Activation.Contains("onStartup", StringComparer.Ordinal);
@@ -254,6 +262,23 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         IsRejected = true;
         _stopping = true;
         Fail(error);
+    }
+
+    /// <summary>
+    /// 启动阶段失败后按重启策略在后台重试。
+    /// </summary>
+    /// <remarks>
+    /// 握手、<c>Configure</c>、<c>Start</c> 失败与崩溃一样按退避重试并计入次数上限（<c>lifecycle.md</c> §6、<c>handshake.md</c> §5）；首次握手还没成功过的重新探测启动。发现时被拒或已显式停止的什么都不做。
+    /// </remarks>
+    public void ScheduleRestart()
+    {
+        if (_stopping || IsRejected || _restartPending)
+        {
+            return;
+        }
+
+        _restartPending = true;
+        _ = RestartAsync();
     }
 
     /// <summary>
@@ -741,7 +766,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             Result restarted;
             try
             {
-                restarted = await EnsureRunningAsync(token).ConfigureAwait(false);
+                restarted = await RecoverAsync(token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -754,8 +779,57 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
                 return;
             }
 
+            if (_stopping)
+            {
+                // 期间被显式停止，或声明登记不进去而按发现时被拒处理：不再重试
+                return;
+            }
+
             _restartPending = true;
         }
+    }
+
+    /// <summary>
+    /// 一次重试。
+    /// </summary>
+    /// <remarks>
+    /// 首次握手还没成功过的先重新探测启动、交宿主登记声明；之后（非懒激活）配置并启动。
+    /// </remarks>
+    private async Task<Result> RecoverAsync(CancellationToken cancellationToken)
+    {
+        if (_handshake is null)
+        {
+            var discovered = await DiscoverAsync(cancellationToken).ConfigureAwait(false);
+            if (discovered.IsFailure)
+            {
+                return discovered.Error!;
+            }
+
+            if (Discovered?.Invoke(this) is { IsFailure: true } registered)
+            {
+                // 声明登记不进去（如与已有操作重名）是配置错误，重试也不会好
+                await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await ShutdownProcessAsync("unload", LifecycleState.Failed, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _gate.Release();
+                }
+
+                Reject(registered.Error!);
+                return registered;
+            }
+
+            if (IsLazy)
+            {
+                // 懒激活只为取得声明：探测启动后已停止，首次调用时再启动
+                return Result.Success();
+            }
+        }
+
+        return await EnsureRunningAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

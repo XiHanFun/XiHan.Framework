@@ -136,7 +136,7 @@ app.Run();
 | 失败 | 结果 |
 | --- | --- |
 | 清单不合法、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
-| 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded` |
+| 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`。进程外插件在应用启动后按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），启动阶段的 `Configure` / `Start` 失败同样重试；首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见），订阅与消息目录要等宿主重启才生效。Wasm 插件的这类失败不重试 |
 | 插件声明的操作与应用已有操作重名 | 配置错误，应用启动失败 |
 
 ### 运行期加载与卸载
@@ -156,7 +156,7 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载后代理操作仍在登记表里，调用返回 `PLUGINS_UNAVAILABLE_001`。Wasm 宿主拒绝在运行期加载贡献中间件的插件（`PLUGINS_VALIDATION_005`），因为中间件必须在管道构建前登记。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。
+运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载后代理操作仍在登记表里，调用返回 `PLUGINS_UNAVAILABLE_001`。Wasm 宿主拒绝在运行期加载贡献中间件的插件（`PLUGINS_VALIDATION_005`），因为中间件必须在管道构建前登记。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手、`Configure` 或 `Start` 失败时，错误返回给调用方，插件保持 `Failed` 并按重启策略在后台重试，不想再试就 `UnloadAsync`；清单、权限、入口不合格的直接返回、不登记。
 
 ### 进程内宿主
 
