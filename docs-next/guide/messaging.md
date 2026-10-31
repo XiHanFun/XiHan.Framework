@@ -185,7 +185,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
 | --- | --- | --- |
 | `Messaging.InMemory` | 以下一次尝试号重新入队到队尾；入队时队列已满则直接死信 | 该主题的有界死信列表 `DeadLetters(topic)`，满时丢弃最旧 |
 | `Messaging.RabbitMQ` | 尝试次数放在消息头 `x-xihan-attempt`，重新发布到队尾、得到代理确认后才确认原消息（未确认时原消息退回队列） | 队列 `<QueuePrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
-| `Messaging.Kafka` | 在原位重试，不重新入队，分区内顺序不变 | 主题 `<TopicPrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
+| `Messaging.Kafka` | 在原位重试，不重新入队，分区内顺序不变 | 主题 `<TopicPrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信；死信发布失败时不提交，回退到这条消息，`RedeliveryDelaySeconds`（缺省 5）后重新投递 |
 
 ::: warning 处理器必须能承受重复投递
 投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器按信封的 `Id` + `Source` 自理。
@@ -272,7 +272,7 @@ builder.AddXiHan(xihan => xihan
 `messaging.queue@1` 只承诺至少一次与按主题消费；`messaging.stream@1`（Kafka）在此之上多三条保证：
 
 1. 分区键：信封扩展 `xihankey`（`EnvelopeExtensions.PartitionKey`）决定分区，同一主题内同键的消息按发布顺序投递；没有键的消息由 Kafka 分配分区，只在主题只有一个分区时全局有序。
-2. 消费位点：按消费组（`GroupId`，缺省 `xihan`）保存，投递完成（成功、重试耗尽进死信、无法解码进死信）后才提交；重启续接，仍是至少一次。
+2. 消费位点：按消费组（`GroupId`，缺省 `xihan`）保存，投递完成（成功、重试耗尽进死信、无法解码进死信）后才提交；重启续接，仍是至少一次。死信发布没有得到确认时投递未完成：不提交，回退到这条消息，`RedeliveryDelaySeconds`（缺省 5）后重新投递，期间这个分区不往后读，消费循环只在停止时退出。
 3. 重放：`IMessageReplayer.ReplayAsync(topic, since, ct)` 用独立的消费位点把该时刻起的消息重新投递给当前订阅的处理器，经完整管道、按同样的重试与死信规则，不影响正常消费的位点。
 
 ```csharp

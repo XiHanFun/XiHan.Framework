@@ -43,5 +43,12 @@ public sealed class KafkaMessagingOptionsTests
         Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(), default));
         Assert.Throws<ArgumentException>(static () => new KafkaMessagingOptions { BootstrapServers = " " });
         Assert.Throws<ArgumentException>(static () => new KafkaMessagingOptions { BootstrapServers = "x:1", GroupId = "" });
+
+        // 投递没有完成时重新投递前的等待：缺省 5 秒，配置为正数
+        Assert.Equal(TimeSpan.FromSeconds(5), bound.RedeliveryDelay);
+        Assert.Equal(TimeSpan.FromSeconds(0.5), KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:RedeliveryDelaySeconds", "0.5")), binding).RedeliveryDelay);
+        Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:RedeliveryDelaySeconds", "0")), binding));
+        Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:RedeliveryDelaySeconds", "soon")), binding));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new KafkaMessagingOptions { BootstrapServers = "x:1", RedeliveryDelay = TimeSpan.Zero });
     }
 }

@@ -72,10 +72,22 @@ public sealed record KafkaMessagingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// 投递没有完成时重新投递前的等待。
+    /// </summary>
+    /// <remarks>
+    /// 默认 5 秒。死信发布没有得到确认（或投递因代理不可达等异常没有完成）时，消费者不提交位点、回退到这条消息，等这么久再重新投递，期间该分区不往后读。
+    /// </remarks>
+    public TimeSpan RedeliveryDelay
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The redelivery delay must be positive.");
+    } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:*</c>。
+    /// <c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>。
     /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -100,6 +112,14 @@ public sealed record KafkaMessagingOptions
             options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+        }
+
+        var redelivery = configuration[$"{ConfigurationSection}:RedeliveryDelaySeconds"];
+        if (redelivery is not null)
+        {
+            options = double.TryParse(redelivery, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { RedeliveryDelay = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:RedeliveryDelaySeconds must be a positive number, but was '{redelivery}'.");
         }
 
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);

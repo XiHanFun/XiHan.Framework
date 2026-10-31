@@ -363,7 +363,7 @@ builder.Configuration.AddXiHanSecrets(
 | `XiHan:Messaging:Outbox` | [Messaging.Abstractions](../packages/messaging-abstractions) | 发件箱的 `PollIntervalSeconds`、`BatchSize`、`MaxAttempts`、`RetryDelaySeconds`、`MaxRetryDelaySeconds`、`DispatchedRetentionSeconds` |
 | `XiHan:Messaging:InMemory` | [Messaging.InMemory](../packages/messaging-inmemory) | `MaxQueuedMessages`、`MaxTopics` |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](../packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |
-| `XiHan:Messaging:Kafka` | [Messaging.Kafka](../packages/messaging-kafka) | `BootstrapServers`、`GroupId`、`TopicPrefix`、`Properties:<key>` |
+| `XiHan:Messaging:Kafka` | [Messaging.Kafka](../packages/messaging-kafka) | `BootstrapServers`、`GroupId`、`TopicPrefix`、`HealthProbeIntervalSeconds`、`RedeliveryDelaySeconds`、`Properties:<key>` |
 | `XiHan:Scheduling` | [Scheduling.Abstractions](../packages/scheduling-abstractions) | 调度引擎与领导选举：轮询、租约、并发、错过阈值、历史保留 |
 | `XiHan:Scheduling:InMemory` | [Scheduling.InMemory](../packages/scheduling-inmemory) | `MaxRuns` |
 | `XiHan:Scheduling:Database` | [Scheduling.Database](../packages/scheduling-database) | `HealthProbeIntervalSeconds` |
