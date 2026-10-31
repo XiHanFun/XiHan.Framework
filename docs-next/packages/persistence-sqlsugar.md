@@ -124,7 +124,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 客户端可以带多个连接，每种实体落在哪个连接由 `IEntityConnectionSelector` 决定。默认实现 `SqlSugarConnectionSelector` 的规则按顺序：
 
-1. 实体带 SqlSugar 的 `[Tenant(configId)]`：落到该 `ConfigId` 的连接；客户端里没有这个连接是配置错误，抛出携带 `PERSISTENCE_UNAVAILABLE_003` 的 `FrameworkException`，不回退到默认连接。
+1. 实体带 SqlSugar 的 `[Tenant(configId)]`：落到该 `ConfigId` 的连接；客户端里没有这个连接是装配错误，抛出携带 `PERSISTENCE_VALIDATION_004` 的 `FrameworkException`，不回退到默认连接。用缺省落点规则时，带 `[Tenant]` 的已登记实体在启动时就校验，连接不存在即中断启动；`shard` 只在带分片的调用里存在，不在启动时校验。
 2. 实体实现 `IMultiTenant`，且客户端里有 `shard` 连接：落到分片连接。
 3. 其余：根（默认）连接。
 

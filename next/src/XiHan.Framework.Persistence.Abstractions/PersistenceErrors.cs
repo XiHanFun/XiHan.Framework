@@ -45,6 +45,14 @@ public static class PersistenceErrors
     public const string EventsUndispatched = "PERSISTENCE_VALIDATION_003";
 
     /// <summary>
+    /// 实体落点指向的连接不存在。
+    /// </summary>
+    /// <remarks>
+    /// SqlSugar 实体的 <c>[Tenant(configId)]</c> 指向客户端里没有的连接，是装配错误。以异常抛出，缺省落点规则下在启动时校验。
+    /// </remarks>
+    public const string UnknownConnection = "PERSISTENCE_VALIDATION_004";
+
+    /// <summary>
     /// 没有活动的工作单元。
     /// </summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";

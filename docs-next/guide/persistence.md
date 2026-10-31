@@ -328,12 +328,13 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有当前租户的调用里新增 | `Result` |
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）、只读工作单元写入 | 状态错误抛异常；只读写入返回 `Result` |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
+| `PERSISTENCE_VALIDATION_004` | SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接（装配错误） | 启动失败；运行时抛 `FrameworkException` |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
-| `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达；SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接 | 健康项；后者抛 `FrameworkException` |
+| `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |
 
 `PERSISTENCE_UNAVAILABLE_004` 与 `005` 属于雪花标识生成器，见[标识生成](./distributed-ids#失败与错误码)。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误](./errors)。
 

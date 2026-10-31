@@ -176,6 +176,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
+        await ValidatePlacementsAsync(services).ConfigureAwait(false);
         if (_options.InitTables && _entityTypes.Count > 0)
         {
             await InitTablesAsync(services).ConfigureAwait(false);
@@ -192,6 +193,40 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         {
             await _health.StopAsync(cancellationToken).ConfigureAwait(false);
             _health = null;
+        }
+    }
+
+    /// <summary>
+    /// 启动时校验实体落点。
+    /// </summary>
+    /// <remarks>
+    /// 用缺省落点规则时，带 <c>[Tenant(configId)]</c> 的已登记实体指向客户端里没有的连接即以 <see cref="PersistenceErrors.UnknownConnection"/> 中断启动，不等第一次使用才报。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时校验；应用替换了落点规则的不校验。没有这样的实体时不取客户端。
+    /// </remarks>
+    private async Task ValidatePlacementsAsync(IServiceProvider services)
+    {
+        var pinned = _entityTypes
+            .Select(static type => (Type: type, ConfigId: SqlSugarConnectionSelector.PinnedConnection(type)))
+            .Where(static entry => entry.ConfigId is not null && entry.ConfigId != SqlSugarConnections.Shard)
+            .ToList();
+        if (pinned.Count == 0)
+        {
+            return;
+        }
+
+        // 客户端是作用域服务，在独立作用域里取；与建表、健康探针一样不经管道
+        await using var scope = services.CreateAsyncScope();
+        if (scope.ServiceProvider.GetRequiredService<IEntityConnectionSelector>() is not SqlSugarConnectionSelector)
+        {
+            return;
+        }
+
+        var tenant = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().AsTenant();
+        foreach (var (type, configId) in pinned)
+        {
+            if (!tenant.IsAnyConnection(configId))
+            {
+                throw SqlSugarConnectionSelector.UnknownConnection(type, configId!);
+            }
         }
     }
 

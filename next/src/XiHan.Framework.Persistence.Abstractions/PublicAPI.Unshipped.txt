@@ -175,6 +175,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfW
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TenantRequired = "PERSISTENCE_VALIDATION_001" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.UnknownConnection = "PERSISTENCE_VALIDATION_004" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CapacityExceeded = "persistence.store.capacity_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CatalogName = "persistence" -> string!

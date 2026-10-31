@@ -187,7 +187,24 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
         Assert.Same(client, selector.ConnectionFor(typeof(ConformanceOrder), client));
         Assert.Same(client, selector.ConnectionFor(typeof(ConformanceNote), client));
         var error = Assert.Throws<FrameworkException>(() => selector.ConnectionFor(typeof(PinnedAuditRecord), client));
-        Assert.Equal(PersistenceErrors.StoreUnavailable, error.Code);
+        Assert.Equal(PersistenceErrors.UnknownConnection, error.Code);
+    }
+
+    [Fact]
+    public async Task Startup_RejectsAnEntityPinnedToAMissingConnection()
+    {
+        // 特性按回调创建的客户端只有 default 连接：[Tenant("audit")] 的实体在启动时就报装配错误，不等第一次使用，也不当成存储不可达
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
+            static builder => builder.UseFeature(SqliteDatabase.CreateFeature()),
+            [new("XiHan:Bindings:db", _default.ConnectionString)],
+            static services =>
+            {
+                services.AddSingleton(TimeProvider.System);
+                services.AddRepository<PinnedAuditRecord, Guid>();
+            }));
+
+        Assert.Contains(PersistenceErrors.UnknownConnection, Codes(exception));
+        Assert.Contains("audit", exception.ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -233,4 +250,21 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     /// </summary>
     private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)), baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });
+
+    /// <summary>
+    /// 异常链上的全部框架错误码。
+    /// </summary>
+    private static List<string> Codes(Exception? exception)
+    {
+        var codes = new List<string>();
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is FrameworkException framework)
+            {
+                codes.Add(framework.Code);
+            }
+        }
+
+        return codes;
+    }
 }

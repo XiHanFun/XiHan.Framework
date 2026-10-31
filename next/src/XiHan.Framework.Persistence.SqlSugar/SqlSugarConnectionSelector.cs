@@ -35,11 +35,9 @@ public sealed class SqlSugarConnectionSelector : IEntityConnectionSelector
         var tenant = client.AsTenant();
 
         // 显式标注优先：这是应用对落点的明确声明，指向的连接不存在就是装配错误，不回退到默认连接
-        if (_pinned.GetOrAdd(entityType, static type => type.GetCustomAttribute<TenantAttribute>()?.configId?.ToString()) is { } pinned)
+        if (PinnedConnection(entityType) is { } pinned)
         {
-            return tenant.IsAnyConnection(pinned)
-                ? tenant.GetConnection(pinned)
-                : throw new FrameworkException(PersistenceErrors.StoreUnavailable, $"Entity '{entityType.FullName}' is pinned to connection '{pinned}' by [Tenant], but the SqlSugar client has no connection with that ConfigId.");
+            return tenant.IsAnyConnection(pinned) ? tenant.GetConnection(pinned) : throw UnknownConnection(entityType, pinned);
         }
 
         // 租户数据在带分片的调用里才有 shard 连接；没有分片的调用（共库租户、无租户）与平台数据一样走根连接
@@ -50,4 +48,19 @@ public sealed class SqlSugarConnectionSelector : IEntityConnectionSelector
 
         return client;
     }
+
+    /// <summary>
+    /// 实体的 <c>[Tenant(configId)]</c> 指定的连接。
+    /// </summary>
+    /// <remarks>
+    /// 没有特性为 <see langword="null"/>。特性查找只做一次。
+    /// </remarks>
+    internal static string? PinnedConnection(Type entityType)
+        => _pinned.GetOrAdd(entityType, static type => type.GetCustomAttribute<TenantAttribute>()?.configId?.ToString());
+
+    /// <summary>
+    /// 落点指向的连接不存在：装配错误。
+    /// </summary>
+    internal static FrameworkException UnknownConnection(Type entityType, string configId)
+        => new(PersistenceErrors.UnknownConnection, $"Entity '{entityType.FullName}' is pinned to connection '{configId}' by [Tenant], but the SqlSugar client has no connection with that ConfigId; add the connection or fix the attribute.");
 }
