@@ -17,7 +17,7 @@ namespace XiHan.Framework.Scheduling.Conformance;
 public sealed class RecordingJobLog
 {
     /// <summary>
-    /// 保护记录的锁。
+    /// 保护记录与等待者的锁。
     /// </summary>
     private readonly Lock _lock = new();
 
@@ -25,6 +25,11 @@ public sealed class RecordingJobLog
     /// 记录。
     /// </summary>
     private readonly List<(JobRun Run, string? Correlation, InvocationOrigin? Origin)> _runs = [];
+
+    /// <summary>
+    /// 等待某作业记录数达到目标的等待者。
+    /// </summary>
+    private readonly List<(JobName Name, int Count, TaskCompletionSource Reached)> _waiters = [];
 
     /// <summary>
     /// 下一次运行返回的失败。
@@ -42,6 +47,9 @@ public sealed class RecordingJobLog
     /// <summary>
     /// 每次运行停留的时间。
     /// </summary>
+    /// <remarks>
+    /// 按作业注入的 <see cref="TimeProvider"/> 计时，响应取消。
+    /// </remarks>
     public TimeSpan Delay { get; set; }
 
     /// <summary>
@@ -59,14 +67,29 @@ public sealed class RecordingJobLog
     }
 
     /// <summary>
-    /// 记录一次运行。
+    /// 记录一次运行，唤醒数量已达到的等待者。
     /// </summary>
     public void Record(JobRun run, string? correlation, InvocationOrigin? origin)
     {
         ArgumentNullException.ThrowIfNull(run);
+        List<TaskCompletionSource> reached = [];
         lock (_lock)
         {
             _runs.Add((run, correlation, origin));
+            for (var index = _waiters.Count - 1; index >= 0; index--)
+            {
+                if (CountOf(_waiters[index].Name) >= _waiters[index].Count)
+                {
+                    reached.Add(_waiters[index].Reached);
+                    _waiters.RemoveAt(index);
+                }
+            }
+        }
+
+        // 锁外完成：等待者的续体异步执行，不在作业的线程上、也不在锁内运行
+        foreach (var waiter in reached)
+        {
+            waiter.TrySetResult();
         }
     }
 
@@ -74,19 +97,39 @@ public sealed class RecordingJobLog
     /// 等到某作业的记录数达到 <paramref name="count"/>。
     /// </summary>
     /// <remarks>
-    /// 超时抛出。
+    /// 由记录唤醒，不轮询；<paramref name="timeout"/> 只是防止用例挂死的上限，超过抛出 <see cref="TimeoutException"/>。
     /// </remarks>
     public async Task WaitAsync(JobName name, int count, TimeSpan timeout)
     {
-        var deadline = DateTimeOffset.UtcNow + timeout;
-        while (Runs.Count(r => r.Run.Name == name) < count)
+        TaskCompletionSource reached;
+        lock (_lock)
         {
-            if (DateTimeOffset.UtcNow > deadline)
+            if (CountOf(name) >= count)
             {
-                throw new TimeoutException($"Expected {count} runs of '{name}' but got {Runs.Count(r => r.Run.Name == name)}.");
+                return;
             }
 
-            await Task.Delay(20).ConfigureAwait(false);
+            reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _waiters.Add((name, count, reached));
+        }
+
+        try
+        {
+            await reached.Task.WaitAsync(timeout).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            lock (_lock)
+            {
+                _waiters.RemoveAll(waiter => waiter.Reached == reached);
+            }
+
+            throw new TimeoutException($"Expected {count} runs of '{name}' but got {Runs.Count(r => r.Run.Name == name)}.");
         }
     }
+
+    /// <summary>
+    /// 某作业已记录的次数（调用方持有锁）。
+    /// </summary>
+    private int CountOf(JobName name) => _runs.Count(r => r.Run.Name == name);
 }

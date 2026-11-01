@@ -10,16 +10,15 @@ namespace XiHan.Framework.Scheduling.Database.Tests;
 /// <summary>
 /// 数据库调度特性对 SQLite 通过调度器套件。
 /// </summary>
+/// <remarks>
+/// 轮询周期沿用 <see cref="SqliteDatabase.Configuration"/> 的 1 小时，后台循环不动作；用例推进套件的时钟、主动轮询。维护间隔按套件时钟 0.2 秒，推进时钟的用例里会穿插执行。
+/// </remarks>
 public sealed class DatabaseJobSchedulerConformanceTests : JobSchedulerConformance
 {
     /// <inheritdoc />
     protected override async Task<JobSchedulerHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null)
     {
-        var settings = new List<KeyValuePair<string, string?>>
-        {
-            new($"{SchedulerOptions.ConfigurationSection}:PollIntervalSeconds", "0.05"),
-            new($"{SchedulerOptions.ConfigurationSection}:HousekeepingIntervalSeconds", "0.2"),
-        };
+        var settings = new List<KeyValuePair<string, string?>> { new($"{SchedulerOptions.ConfigurationSection}:HousekeepingIntervalSeconds", "0.2") };
         if (configuration is not null)
         {
             settings.AddRange(configuration);
@@ -27,6 +26,7 @@ public sealed class DatabaseJobSchedulerConformanceTests : JobSchedulerConforman
 
         var database = new SqliteDatabase();
         var host = await database.StartHostAsync(settings, configure);
-        return new JobSchedulerHost(host.Services.GetRequiredService<IJobScheduler>(), database);
+        var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
+        return new JobSchedulerHost(engine, engine.PollOnceAsync, database);
     }
 }

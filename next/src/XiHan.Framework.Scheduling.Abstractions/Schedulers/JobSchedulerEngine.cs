@@ -137,6 +137,14 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private readonly SemaphoreSlim _polling = new(1, 1);
 
     /// <summary>
+    /// 手动轮询周期里起的后台运行。
+    /// </summary>
+    /// <remarks>
+    /// 只在 <see cref="PollOnceAsync"/> 持有轮询互斥期间非空，循环的周期不收集；起运行的代码都在周期内，读写因而不会交错。
+    /// </remarks>
+    private List<Task>? _pollRuns;
+
+    /// <summary>
     /// 触发器读改写的互斥。
     /// </summary>
     /// <remarks>
@@ -339,22 +347,30 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 执行一个轮询周期（心跳、领导、维护、取消、本地触发器、抢占）。
+    /// 执行一个轮询周期，并等本周期起的运行连同收尾结束。
     /// </summary>
     /// <remarks>
-    /// 测试与套件用，与循环互斥。
+    /// 周期即心跳、领导、维护、取消、本地触发器、本地重试与抢占，等的是本节点起的运行。
+    /// 测试与一致性套件用，与循环互斥：推进注入的时钟、调用一次即可断言，不必按墙钟等待。返回时本周期起的运行已标为完成，间隔触发器已推算下一次，失败的已排好重试。
+    /// 作业要等时钟推进才能结束（停留、执行时限）时，先发起调用、推进时钟，再等它完成。
     /// </remarks>
     public async ValueTask PollOnceAsync(CancellationToken cancellationToken)
     {
+        List<Task> started = [];
         await _polling.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            _pollRuns = started;
             await TickAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            _pollRuns = null;
             _polling.Release();
         }
+
+        // 在互斥之外等待：运行收尾的触发器写回不需要轮询互斥，循环的下一个周期也不必等这些运行结束
+        await Task.WhenAll(started).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -1276,6 +1292,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
                 Forget(record.Id);
             }
         }, CancellationToken.None);
+        _pollRuns?.Add(running.Task);
     }
 
     /// <summary>

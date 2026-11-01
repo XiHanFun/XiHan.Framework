@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
@@ -43,7 +44,7 @@ public abstract class LeaderElectionConformance
     [Fact]
     public async Task Acquire_RefusesWhileHeld_AndSucceedsAfterRelease()
     {
-        var clock = new ManualClock(Start);
+        var clock = new FakeTimeProvider(Start);
         var election = CreateElection(clock);
         var resource = Resource();
 
@@ -74,7 +75,7 @@ public abstract class LeaderElectionConformance
     [Fact]
     public async Task Lease_ExpiresUnlessRenewed()
     {
-        var clock = new ManualClock(Start);
+        var clock = new FakeTimeProvider(Start);
         var election = CreateElection(clock);
         var resource = Resource();
         var ttl = LeaseTimeToLive;

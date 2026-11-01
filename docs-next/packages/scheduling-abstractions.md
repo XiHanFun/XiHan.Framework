@@ -113,7 +113,7 @@ public sealed class ArchiveJob : IJob
 | `JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史记录、查询（`Limit` 缺省 100、最大 1000）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
 | `JobSource` | 作业来源：`Code`、`Runtime`、`Overridden` |
 | `JobRegistry`、`JobTypeRegistry` | 代码作业登记表；作业类型登记表（`Keys` 列出可选类型） |
-| `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync` |
+| `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
 | `IJobStore`、`JobRecord`、`TriggerRecord`、`TriggerState`、`SchedulerNodeRecord` | Provider 契约与存储形态 |
 | `ILeaderElection`、`LeaderLease` | 租约式领导选举 |
 | `SchedulingTopics`、`SchedulingEventData` | `scheduling.job.*` / `scheduling.run.*` 事件 |
