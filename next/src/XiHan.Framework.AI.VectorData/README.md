@@ -15,7 +15,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OpenAIFeature>().UseFeat
 
 await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "faq", Text = faqText }, ct);
 var chunks = (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "How do I reset my password?" }, ct)).ValueOrThrow();
-var prompt = augmenter.Augment("How do I reset my password?", chunks).ValueOrThrow();
+var prompt = augmenter.Augment("How do I reset my password?", chunks);
 ```
 
 向量集合的维度在创建后不能改：换嵌入模型要换 `Collection` 或删掉旧集合。通过 `AI.Conformance` 的 `KnowledgeStoreConformance`。

@@ -281,7 +281,7 @@ public sealed class AssistantsFeature : IFeature
 | `IKnowledgeIngestor` | `IngestAsync(requests)` 批量摄入，每篇文档一个 `Result<int>`（写入的块数）；`RemoveAsync(collection, documentIds)` 按文档删除 |
 | `IChunkingStrategy` | 内置 `FixedWindowChunkingStrategy`：按字符的固定窗口，重叠裁到 `[0, MaxChunkSize − 1]`，换行统一为 `\n`，空白块丢弃 |
 | `IKnowledgeRetriever` | `RetrieveAsync(query)`：问题嵌入 → 向量搜索 → 按 `MinScore` 过滤 |
-| `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词，返回 `Result<string>` |
+| `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词，返回 `string`（模板在启动时校验过，增强本身不会失败） |
 
 ```csharp
 using Microsoft.Extensions.AI;
@@ -316,12 +316,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
         }
 
         var prompt = augmenter.Augment(question, chunks);
-        if (!prompt.TryGetValue(out var text))
-        {
-            return prompt.Error!;
-        }
-
-        var reply = await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, text)] }, cancellationToken);
+        var reply = await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, prompt)] }, cancellationToken);
         return reply.Map(static response => response.Text);
     }
 }
@@ -332,7 +327,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
-- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`）：模板不存在返回 `AI_NOTFOUND_002`，模板引用了别的占位符、渲染失败返回 `AI_VALIDATION_001`，不会悄悄换成内置模板。没配置时用内置英文模板。
+- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：AI 的宿主特性（`AIToolsFeature`、`VectorDataKnowledgeFeature`）启动时解析增强器，模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。校验之后增强只用这份模板、只给这两个参数，不会再失败，所以返回 `string`。只装了不带启动钩子的 AI 特性（如单独的 `OpenAIFeature`）时，校验发生在第一次解析增强器时，同样抛出。
 - 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
 
 `AI.VectorData` 把 `IKnowledgeStore` 映射到应用登记的 `Microsoft.Extensions.VectorData` 的 `VectorStore`，任何连接器都行；容器里没有 `VectorStore` 时启动失败。集合定义、距离函数与过滤的下推方式见 [AI.VectorData 包](../packages/ai-vectordata)。
@@ -361,7 +356,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 | `XiHan:AI:Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
 | `XiHan:AI:Knowledge:Top` | int，至少 1 | 5 | 默认检索条数 |
 | `XiHan:AI:Knowledge:EmbeddingProvider` | string | 默认嵌入 Provider | 知识库用的嵌入 Provider |
-| `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名 |
+| `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}` |
 
 ::: warning 配置值写错时启动失败
 读取 `XiHan:AI` 时值不合法即抛出 `ArgumentException`，应用启动失败，异常消息带出完整的配置键与原值：Provider 缺 `Kind`；`Endpoint` 不是绝对的 http(s) 地址（例如漏了 `http://`，写错的端点不会退回官方端点、把 `ApiKey` 发出去）；`EmbeddingDimensions` 与知识库的数值不是要求的整数；`TimeoutSeconds` 不是正数；护栏的两个开关不是 `true` / `false`；提示词缺 `Template`。`Endpoint` 不写或写空串表示官方端点。

@@ -3,8 +3,10 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions.Knowledge;
+using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 using XiHan.Framework.AI.Conformance.Embeddings;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.Abstractions.Tests.Knowledge;
@@ -152,29 +154,32 @@ public sealed class KnowledgeTests
     {
         await using var host = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "CTX:{context}|Q:{question}"));
         var augmenter = host.Services.GetRequiredService<IRagPromptAugmenter>();
-        var configured = augmenter.Augment("why?", _chunks).ValueOrThrow();
+        var configured = augmenter.Augment("why?", _chunks);
         Assert.StartsWith("CTX:[1] (document: a, chunk: 0)\nfirst\n\n[2] (document: b, chunk: 1)\nsecond\n\n|Q:why?", configured, StringComparison.Ordinal);
-        Assert.Equal("why?", augmenter.Augment("why?", []).ValueOrThrow());
+        Assert.Equal("why?", augmenter.Augment("why?", []));
 
         await using var plain = await StartAsync(new FakeKnowledgeStore());
-        var builtIn = plain.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks).ValueOrThrow();
+        var builtIn = plain.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
         Assert.Contains("# Knowledge snippets\n[1] (document: a, chunk: 0)\nfirst", builtIn, StringComparison.Ordinal);
         Assert.EndsWith("# Question\nwhy?", builtIn, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Augmenter_ReportsAMissingOrUnrenderableConfiguredPrompt_InsteadOfFallingBack()
+    public async Task ConfiguredPrompt_MissingOrUnrenderable_FailsAtStartup_InsteadOfFallingBack()
     {
-        await using var missing = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"));
-        var notFound = missing.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
-        Assert.Equal(AIErrors.PromptNotFound, notFound.Error?.Code);
+        // 配置引用的模板不存在：装配了 AI 宿主特性时启动即失败，不退回内置模板
+        var missing = AIFailure(await Assert.ThrowsAsync<FrameworkException>(() => StartWithToolsAsync(null, ("XiHan:AI:Knowledge:PromptName", "rag"))));
+        Assert.Equal(AIErrors.PromptNotFound, missing.Code);
+        Assert.Contains("'rag'", missing.Message, StringComparison.Ordinal);
 
-        await using var broken = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "Answer in {language}: {question}\n{context}"));
-        var unrenderable = broken.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
-        Assert.Equal(AIErrors.RequestInvalid, unrenderable.Error?.Code);
+        // 引用了 context 与 question 以外的占位符：代表性参数试渲染失败，启动即失败
+        var broken = AIFailure(await Assert.ThrowsAsync<FrameworkException>(() => StartWithToolsAsync(null, ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "Answer in {language}: {question}\n{context}"))));
+        Assert.Equal(AIErrors.RequestInvalid, broken.Code);
+        Assert.Contains("'language'", broken.Message, StringComparison.Ordinal);
 
-        // 没有块时原样返回问题，不碰模板
-        Assert.Equal("why?", missing.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", []).ValueOrThrow());
+        // 显式登记的模板同样可以被引用；校验通过后增强只用这份模板
+        await using var registered = await StartWithToolsAsync(static services => services.AddAIPrompt(new AIPromptTemplate("rag", "Q:{question} C:{context}")), ("XiHan:AI:Knowledge:PromptName", "rag"));
+        Assert.StartsWith("Q:why? C:[1] (document: a, chunk: 0)", registered.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -198,4 +203,33 @@ public sealed class KnowledgeTests
                     services.AddSingleton<IKnowledgeStore>(store);
                 }
             });
+
+    /// <summary>
+    /// 另装 AI 工具特性启动：它的启动会解析提示增强器、校验配置引用的提示词。
+    /// </summary>
+    private static Task<TestHost> StartWithToolsAsync(Action<IServiceCollection>? services, params (string Key, string Value)[] extra)
+        => TestHost.StartAsync(
+            static b => b.UseFeature<HashingEmbeddingFeature>().UseFeature<AIToolsFeature>(),
+            _configuration.Concat(extra).GroupBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(static group => new KeyValuePair<string, string?>(group.Key, group.Last().Value)),
+            collection =>
+            {
+                collection.AddSingleton<IKnowledgeStore>(new FakeKnowledgeStore());
+                services?.Invoke(collection);
+            });
+
+    /// <summary>
+    /// 启动失败链里第一个 AI 错误（宿主把特性启动失败包成内核错误）。
+    /// </summary>
+    private static FrameworkException AIFailure(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is FrameworkException framework && framework.Code.StartsWith("AI_", StringComparison.Ordinal))
+            {
+                return framework;
+            }
+        }
+
+        throw new InvalidOperationException("No AI failure was found in the exception chain.", exception);
+    }
 }

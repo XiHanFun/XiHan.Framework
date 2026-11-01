@@ -91,7 +91,7 @@ public sealed record KnowledgeOptions
     /// 提示增强用的提示词模板名（占位符 <c>{context}</c>、<c>{question}</c>）。
     /// </summary>
     /// <remarks>
-    /// 空表示内置模板。
+    /// 空表示内置模板。启动时校验：模板不存在（<c>AI_NOTFOUND_002</c>）或引用了这两个以外的占位符（<c>AI_VALIDATION_001</c>）即启动失败。
     /// </remarks>
     public string? PromptName { get; init; }
 

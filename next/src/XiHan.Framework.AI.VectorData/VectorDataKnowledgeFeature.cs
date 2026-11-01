@@ -17,7 +17,7 @@ namespace XiHan.Framework.AI.VectorData;
 /// 知识库 Provider。
 /// </summary>
 /// <remarks>
-/// 提供 <c>ai.knowledge@1</c>，把 <see cref="IKnowledgeStore"/> 映射到应用注册的 <see cref="VectorStore"/>；启动时容器里没有 <see cref="VectorStore"/> → <see cref="AIErrors.KnowledgeUnavailable"/> 启动失败。
+/// 提供 <c>ai.knowledge@1</c>，把 <see cref="IKnowledgeStore"/> 映射到应用注册的 <see cref="VectorStore"/>；启动时容器里没有 <see cref="VectorStore"/> → <see cref="AIErrors.KnowledgeUnavailable"/> 启动失败；同时解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeFeature : IHostedFeature
@@ -62,6 +62,9 @@ public sealed class VectorDataKnowledgeFeature : IHostedFeature
         {
             throw new FrameworkException(AIErrors.KnowledgeUnavailable, "No 'Microsoft.Extensions.VectorData.VectorStore' is registered; register a vector store connector before using 'xihan.ai.vectordata'.");
         }
+
+        // 提示增强器创建时校验知识库配置引用的提示词：找不到或渲染不了在启动时失败，而不是第一次检索增强时
+        services.GetRequiredService<IRagPromptAugmenter>();
 
         return Task.CompletedTask;
     }

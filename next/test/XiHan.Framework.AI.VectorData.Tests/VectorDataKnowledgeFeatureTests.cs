@@ -39,6 +39,23 @@ public sealed class VectorDataKnowledgeFeatureTests
     }
 
     [Fact]
+    public async Task Start_FailsWhenTheConfiguredKnowledgePromptIsMissing()
+    {
+        // 知识库 Provider 启动时解析提示增强器：配置引用的提示词不存在即启动失败，而不是第一次增强时
+        var failure = await Assert.ThrowsAsync<FrameworkException>(() => VectorDataTestHost.StartAsync(new TestVectorStore(), ("XiHan:AI:Knowledge:PromptName", "rag")));
+        var codes = new List<string>();
+        for (Exception? current = failure; current is not null; current = current.InnerException)
+        {
+            if (current is FrameworkException framework)
+            {
+                codes.Add(framework.Code);
+            }
+        }
+
+        Assert.Contains(AIErrors.PromptNotFound, codes);
+    }
+
+    [Fact]
     public async Task Ingest_Retrieve_Augment_EndToEnd()
     {
         var store = new TestVectorStore();
@@ -62,7 +79,7 @@ public sealed class VectorDataKnowledgeFeatureTests
         var billingOnly = (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "reset password", Top = 5, Filter = new RetrievalFilter { Metadata = new Dictionary<string, string> { ["area"] = "billing" } } }, CancellationToken.None)).ValueOrThrow();
         Assert.All(billingOnly, chunk => Assert.Equal("billing", chunk.DocumentId));
 
-        var prompt = host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("how do I reset my password", chunks).ValueOrThrow();
+        var prompt = host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("how do I reset my password", chunks);
         Assert.Contains("[1] (document: password", prompt, StringComparison.Ordinal);
         Assert.EndsWith("how do I reset my password", prompt, StringComparison.Ordinal);
 

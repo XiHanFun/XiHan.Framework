@@ -105,7 +105,7 @@ XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.SearchAsync(string! co
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.TrimAsync(string! collection, string! documentId, int chunkCount, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.UpsertAsync(string! collection, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.IRagPromptAugmenter
-XiHan.Framework.AI.Abstractions.Knowledge.IRagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> XiHan.Framework.Primitives.Result<string!>
+XiHan.Framework.AI.Abstractions.Knowledge.IRagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.Chunking.get -> XiHan.Framework.AI.Abstractions.Knowledge.ChunkingOptions?
@@ -182,7 +182,7 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever.KnowledgeRetriever(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore? store = null) -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever.RetrieveAsync(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
 XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter
-XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> XiHan.Framework.Primitives.Result<string!>
+XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.RagPromptAugmenter(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog! prompts) -> void
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter!

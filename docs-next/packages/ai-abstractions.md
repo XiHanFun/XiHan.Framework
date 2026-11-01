@@ -62,7 +62,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | `Knowledge:Dimensions` | 1536 | 嵌入维度 |
 | `Knowledge:ChunkSize`、`ChunkOverlap` | 1000、100 | 切块（字符） |
 | `Knowledge:Top` | 5 | 默认检索条数 |
-| `Knowledge:EmbeddingProvider`、`PromptName` | 空 | 知识库的嵌入 Provider 与增强模板 |
+| `Knowledge:EmbeddingProvider`、`PromptName` | 空 | 知识库的嵌入 Provider 与增强模板（模板启动时校验，找不到或渲染不了即启动失败） |
 
 ```json
 {
