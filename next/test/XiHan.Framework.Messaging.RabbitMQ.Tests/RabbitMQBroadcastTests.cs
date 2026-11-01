@@ -33,7 +33,7 @@ public sealed class RabbitMQBroadcastTests
     /// <summary>
     /// 本实例的标识。
     /// </summary>
-    private readonly MessagingInstance _instance = new();
+    private readonly MessagingInstance _instance = new(new MessagingOptions());
 
     /// <summary>
     /// 本实例的广播队列。
@@ -55,6 +55,20 @@ public sealed class RabbitMQBroadcastTests
         Assert.Equal([new QueueDeclaration(BroadcastQueue, Durable: false, Exclusive: true, AutoDelete: true)], fake.Channels[2].Declared);
         Assert.Equal([(BroadcastQueue, "xihan", RoutingKey)], fake.Channels[2].Bindings);
         Assert.Matches(@"^xihan\.sessions\.revoked@[a-z0-9-]+-[0-9]+-[0-9a-f]{8}$", BroadcastQueue);
+    }
+
+    [Fact]
+    public async Task AConfiguredInstanceId_NamesTheBroadcastQueue()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (connection, fake) = FakeRabbitConnection.Create();
+        await using var broker = Broker(host, connection, new MessagingInstance(new MessagingOptions { InstanceId = "orders-api-0" }));
+
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Broadcast)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+
+        // 配置了标识：广播队列是 <QueuePrefix><topic>@<配置值>，仍是本实例独占、非持久、随连接删除的队列
+        Assert.Equal([new QueueDeclaration(RoutingKey + "@orders-api-0", Durable: false, Exclusive: true, AutoDelete: true)], fake.Channels[1].Declared);
+        Assert.Equal([(RoutingKey + "@orders-api-0", "xihan", RoutingKey)], fake.Channels[1].Bindings);
     }
 
     [Fact]
@@ -107,8 +121,11 @@ public sealed class RabbitMQBroadcastTests
     /// <summary>
     /// 用打桩连接创建代理。
     /// </summary>
-    private RabbitMQMessageBroker Broker(TestHost host, IConnection connection)
-        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = 2 }, _instance, host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
+    /// <remarks>
+    /// <paramref name="instance"/> 为空时用本测试类的实例标识。
+    /// </remarks>
+    private RabbitMQMessageBroker Broker(TestHost host, IConnection connection, MessagingInstance? instance = null)
+        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = 2 }, instance ?? _instance, host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
 
     /// <summary>
     /// 让打桩通道上的消费者收到一条投递，等处理完成。

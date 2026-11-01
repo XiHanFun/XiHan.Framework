@@ -21,7 +21,7 @@
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
-- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启的实例标识不同、是新的消费组，不回放历史。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](../guide/messaging#订阅方式)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
@@ -67,6 +67,7 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Kafka:Properties:<key>` | 字符串 | — | 原样透传给 librdkafka（生产者与消费者共用），如 `security.protocol`、`sasl.mechanism`、`sasl.username`、`ssl.ca.location` |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
 | `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀 |
+| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 广播消费组名里的实例标识；必须每个同时在线的实例唯一，重复时广播退化成竞争 |
 
 ```json
 {

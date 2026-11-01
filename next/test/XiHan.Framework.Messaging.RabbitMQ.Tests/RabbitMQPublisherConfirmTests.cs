@@ -50,7 +50,7 @@ public sealed class RabbitMQPublisherConfirmTests
     /// 用打桩连接创建代理。
     /// </summary>
     private static RabbitMQMessageBroker Broker(TestHost host, IConnection connection, int maxAttempts = 3)
-        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = maxAttempts }, new MessagingInstance(), host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
+        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = maxAttempts }, new MessagingInstance(new MessagingOptions()), host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
 
     [Fact]
     public async Task Connect_OpensThePublishChannelWithTrackedPublisherConfirmations()

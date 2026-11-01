@@ -393,7 +393,7 @@ builder.Configuration.AddXiHanSecrets(
 | `XiHan:Caching:Hybrid` | [Caching.Hybrid](../packages/caching-hybrid) | `LocalCapacity`、`LocalTimeToLiveSeconds` |
 | `XiHan:Caching:Remote` | [Caching.Remote](../packages/caching-remote) | `TimeoutMilliseconds` |
 | `XiHan:Caching:Idempotency` | [Caching.Abstractions](../packages/caching-abstractions) | 幂等记录的 `TimeToLiveSeconds`、`InProgressTimeToLiveSeconds` |
-| `XiHan:Messaging` | [Messaging.Abstractions](../packages/messaging-abstractions) | `MaxAttempts`、`DeadLetterSuffix` |
+| `XiHan:Messaging` | [Messaging.Abstractions](../packages/messaging-abstractions) | `MaxAttempts`、`DeadLetterSuffix`、`InstanceId` |
 | `XiHan:Messaging:Outbox` | [Messaging.Abstractions](../packages/messaging-abstractions) | 发件箱的 `PollIntervalSeconds`、`BatchSize`、`MaxAttempts`、`RetryDelaySeconds`、`MaxRetryDelaySeconds`、`DispatchedRetentionSeconds` |
 | `XiHan:Messaging:InMemory` | [Messaging.InMemory](../packages/messaging-inmemory) | `MaxQueuedMessages` |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](../packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |

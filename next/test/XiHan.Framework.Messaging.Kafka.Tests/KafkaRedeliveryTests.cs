@@ -126,7 +126,7 @@ public sealed class KafkaRedeliveryTests
         => new(
             new KafkaMessagingOptions { BootstrapServers = "unused:9092", RedeliveryDelay = _delay },
             new MessagingOptions { MaxAttempts = 2 },
-            new MessagingInstance(),
+            new MessagingInstance(new MessagingOptions()),
             host.App,
             clock,
             NullLoggerFactory.Instance,

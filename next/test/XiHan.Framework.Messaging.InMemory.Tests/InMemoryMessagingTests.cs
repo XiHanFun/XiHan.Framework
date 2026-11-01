@@ -50,6 +50,20 @@ public sealed class InMemoryMessagingTests
     }
 
     [Fact]
+    public async Task Instance_ComesFromTheConfiguredId_AndAnInvalidIdFailsAssembly()
+    {
+        await using var configured = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>(), [new("XiHan:Messaging:InstanceId", "orders-api-0")]);
+
+        // 装配登记的单例取配置值，选项里也只有配置值
+        Assert.Equal("orders-api-0", configured.Services.GetRequiredService<MessagingInstance>().Id);
+        Assert.Equal("orders-api-0", configured.Services.GetRequiredService<MessagingOptions>().InstanceId);
+
+        // 写了但不合文法：装配时失败，不退回随机标识
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>(), [new("XiHan:Messaging:InstanceId", "orders@0")]));
+        Assert.Contains("XiHan:Messaging:InstanceId", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Publish_ToATopicNobodySubscribes_IsDroppedAndLogged_WithoutCreatingATopic()
     {
         var log = new DeliveryLog();

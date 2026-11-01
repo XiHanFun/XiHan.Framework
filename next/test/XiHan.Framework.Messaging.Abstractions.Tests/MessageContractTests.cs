@@ -208,13 +208,75 @@ public sealed class MessageContractTests
     [Fact]
     public void Instance_IsGeneratedPerHost_AndSafeForQueueAndGroupNames()
     {
-        var first = new MessagingInstance();
-        var second = new MessagingInstance();
+        var first = new MessagingInstance(new MessagingOptions());
+        var second = new MessagingInstance(new MessagingOptions());
 
         // 每个宿主一个：同一进程里的两个宿主（测试）也不同
         Assert.NotEqual(first.Id, second.Id);
-        Assert.Matches("^[a-z0-9-]{1,32}-[0-9]+-[0-9a-f]{8}$", first.Id);
+        Assert.Matches("^[a-z0-9][a-z0-9-]{0,31}-[0-9]+-[0-9a-f]{8}$", first.Id);
         Assert.EndsWith(FormattableString.Invariant($"-{Environment.ProcessId}-{first.Id[^8..]}"), first.Id, StringComparison.Ordinal);
+        // 生成的标识与配置值同一文法：可以原样写回配置
+        Assert.Equal(first.Id, new MessagingOptions { InstanceId = first.Id }.InstanceId);
+    }
+
+    [Fact]
+    public void Instance_UsesTheConfiguredId_AndTheOptionsStayAFunctionOfTheConfiguration()
+    {
+        // 用内存键值对构造配置
+        static IConfiguration Build(params (string Key, string Value)[] values)
+            => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
+
+        var configured = Build(("XiHan:Messaging:InstanceId", "orders-api-0"));
+        var options = MessagingOptions.FromConfiguration(configured);
+
+        // 配置了：两个单例都用配置值，同样的配置读出同样的选项
+        Assert.Equal("orders-api-0", options.InstanceId);
+        Assert.Equal("orders-api-0", new MessagingInstance(options).Id);
+        Assert.Equal("orders-api-0", new MessagingInstance(options).Id);
+        Assert.Equal(options, MessagingOptions.FromConfiguration(configured));
+
+        // 没有配置：选项里为空，生成的随机值不进选项，两次读取仍然相同
+        var unconfigured = MessagingOptions.FromConfiguration(Build());
+        Assert.Null(unconfigured.InstanceId);
+        Assert.Equal(unconfigured, MessagingOptions.FromConfiguration(Build()));
+        Assert.NotEqual(new MessagingInstance(unconfigured).Id, new MessagingInstance(unconfigured).Id);
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("9")]
+    [InlineData("orders-api-5d4f8b7c9-x2k4l")]
+    [InlineData("Orders.API_1")]
+    [InlineData("a123456789012345678901234567890123456789012345678901234567890123")]
+    public void InstanceId_AcceptsNamesSafeForQueuesAndConsumerGroups(string id)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Messaging:InstanceId", id)]).Build();
+
+        Assert.Equal(id, MessagingOptions.FromConfiguration(configuration).InstanceId);
+        Assert.Equal(id, new MessagingOptions { InstanceId = id }.InstanceId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("-orders")]
+    [InlineData(".orders")]
+    [InlineData("_orders")]
+    [InlineData("orders@0")]
+    [InlineData("orders api")]
+    [InlineData("orders/0")]
+    [InlineData("orders:0")]
+    [InlineData("orders-0\n")]
+    [InlineData("订单")]
+    [InlineData("a1234567890123456789012345678901234567890123456789012345678901234")]
+    public void InstanceId_RejectsValuesThatCannotNameAQueueOrConsumerGroup(string id)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Messaging:InstanceId", id)]).Build();
+
+        // 写了这个键就必须合文法：装配时失败，不退回随机标识
+        var exception = Assert.Throws<ArgumentException>(() => MessagingOptions.FromConfiguration(configuration));
+        Assert.Contains("XiHan:Messaging:InstanceId", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(() => new MessagingOptions { InstanceId = id });
     }
 
     [Fact]

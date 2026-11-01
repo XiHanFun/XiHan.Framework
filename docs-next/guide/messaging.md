@@ -216,7 +216,16 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 | `Messaging.RabbitMQ` | 每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机 |
 | `Messaging.Kafka` | 本实例独占的消费组 `<GroupId>@<InstanceId>`，从最新位点开始、不提交位点；启动后要等消费组分到分区（通常几秒）才开始收 |
 
-实例标识是 `MessagingInstance.Id`（消息装配登记的单例，每个宿主一个）：构造时生成（机器名、进程 ID 与 8 位随机十六进制），不从配置读取——两个实例用同一个标识会让 Kafka 的广播退化成竞争，每次启动重新生成保证唯一。
+实例标识是 `MessagingInstance.Id`（消息装配登记的单例，每个宿主一个）。缺省每次启动生成（机器名、进程 ID 与 8 位随机十六进制）；要在 RabbitMQ 管理界面与 Kafka 消费组列表里认出实例，可以用 `XiHan:Messaging:InstanceId` 配一个固定值：
+
+```json
+{ "XiHan": { "Messaging": { "InstanceId": "orders-api-0" } } }
+```
+
+- 文法：1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头（不含 `@`）。写了但不合文法（含空字符串）在装配时抛 `ArgumentException`；不想固定就不写这个键。
+- 必须每个同时在线的实例都不同。Kafka 上两个实例同一标识就是同一个广播消费组，组内分摊分区，广播静默退化成竞争（每条只有一个实例收到）；RabbitMQ 上后启动的实例声明同名独占队列被代理拒绝，启动失败（`MESSAGING_UNAVAILABLE_001`）。
+- 多副本部署配成部署平台保证唯一的值，例如 Kubernetes 用下行 API 把 Pod 名设进环境变量（见 [部署](./deployment#消息代理)）；多个副本共用的配置文件里不要写死。
+- 固定标识不改变广播语义：重启后仍不回放历史。代价是旧连接没有及时断开时（节点失联、进程被冻结），用同一标识重启的实例要等代理发现：RabbitMQ 在旧连接心跳超时前启动失败，Kafka 在旧成员会话超时（`session.timeout.ms`）前收不到广播。缺省的生成值每次都不同，没有这个问题。
 
 ## 重试与死信
 
@@ -345,6 +354,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | --- | --- | --- | --- |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次） |
 | `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题 / 队列后缀 |
+| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识（广播订阅的队列名与消费组名用它）；1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头；必须每个同时在线的实例唯一，见[订阅方式](#订阅方式) |
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
 | `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
 | `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |

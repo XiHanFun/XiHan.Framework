@@ -9,7 +9,7 @@
 | `IMessagePublisher`、`DirectPublisher` | 应用发布消息的入口；批量发布 `PublishManyAsync(topic, envelopes)` 逐项结果与入参一一对应，单条是它的特例；在调用内发布时从当前调用补齐信封缺失的 `traceparent`、租户、主体、关联与区域扩展（RFC-0009「信封」） |
 | `IMessageReplayer` | 流能力 `messaging.stream@1`：`ReplayAsync(topic, since)` 按时刻重放，只在提供流的 Provider（Kafka）被选中时登记 |
 | `IMessageHandler`、`AddMessageHandler<THandler>(topic, mode)`、`MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按主题订阅处理器；订阅方式缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信、不回放历史，RFC-0009「订阅方式」，ADR-0079）；订阅表按（主题，方式）分组，同一主题可以两种方式都订阅 |
-| `MessagingInstance` | 本实例标识 `Id`：`MessagingRegistration` 登记的单例，每个宿主构造时生成（机器名、进程 ID、8 位随机），不从配置读取；Provider 用它给广播订阅起本实例独占的队列名或消费组 |
+| `MessagingInstance` | 本实例标识 `Id`：`MessagingRegistration` 登记的单例，每个宿主一个。配置了 `XiHan:Messaging:InstanceId`（`MessagingOptions.InstanceId`，1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头，不合文法装配失败）时取配置值，否则构造时生成（机器名、进程 ID、8 位随机）；生成的值不进选项（ADR-0085）。Provider 用它给广播订阅起本实例独占的队列名或消费组，所以必须每个同时在线的实例唯一：重复时 Kafka 的广播退化成竞争，RabbitMQ 后启动的实例启动失败 |
 | `MessageDispatcher` | 每条消息在新作用域内只执行与投递同一订阅方式的处理器，构造调用上下文（租户、主体、关联、区域按 `EnvelopeExtensions.BaggageMappings` 进入 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志）并经完整内核管道执行处理器 |
 | `MessagingRuntime`、`MessagingRegistration` | Provider 共用的装配与启停 |
 | `AddDomainEvent<TEvent>(topic, type, jsonTypeInfo, subject?)`、`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件派发（RFC-0009，ADR-0025）：应用显式登记每种事件到主题与 CloudEvents `type`（序列化元数据源生成，不经反射）；Transaction 阶段提交前把工作单元里聚合的事件映射成信封（`id` UUID v7、`source` `/{topic}`、`time` 为发生时间、`xihantenant`），同一主题一次 `PublishManyAsync`（追踪、主体、关联与区域由发布者补齐），全部成功后清空缓冲；未登记的事件类型 → `MESSAGING_VALIDATION_003`；装配了发件箱时与业务写入同事务 |

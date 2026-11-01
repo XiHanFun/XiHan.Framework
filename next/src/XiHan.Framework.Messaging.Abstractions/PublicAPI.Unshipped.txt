@@ -76,13 +76,15 @@ XiHan.Framework.Messaging.Abstractions.MessagingCapabilities
 XiHan.Framework.Messaging.Abstractions.MessagingErrors
 XiHan.Framework.Messaging.Abstractions.MessagingInstance
 XiHan.Framework.Messaging.Abstractions.MessagingInstance.Id.get -> string!
-XiHan.Framework.Messaging.Abstractions.MessagingInstance.MessagingInstance() -> void
+XiHan.Framework.Messaging.Abstractions.MessagingInstance.MessagingInstance(XiHan.Framework.Messaging.Abstractions.MessagingOptions! options) -> void
 XiHan.Framework.Messaging.Abstractions.MessagingMessages
 XiHan.Framework.Messaging.Abstractions.MessagingOptions
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.DeadLetterSuffix.get -> string!
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.DeadLetterSuffix.init -> void
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.Equals(XiHan.Framework.Messaging.Abstractions.MessagingOptions? other) -> bool
+XiHan.Framework.Messaging.Abstractions.MessagingOptions.InstanceId.get -> string?
+XiHan.Framework.Messaging.Abstractions.MessagingOptions.InstanceId.init -> void
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.MaxAttempts.get -> int
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.MaxAttempts.init -> void
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.MessagingOptions() -> void

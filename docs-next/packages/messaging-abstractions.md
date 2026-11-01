@@ -8,7 +8,7 @@
 | 环层 | Ring 2（抽象） |
 | 能力 | 定义 `messaging.queue@1`、`messaging.stream@1`（`MessagingCapabilities`），本包不提供；`OutboxFeature` 依赖 `kernel.hosting@1`、`messaging.queue@1`、`persistence.relational@1` |
 | 特性入口 | `OutboxFeature`（清单 ID `xihan.messaging.outbox`，可选） |
-| 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
+| 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
 | AOT | 兼容 |
 | 稳定性 | Stable；`IMessageReplayer` 与领域事件类型（`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher`）为 Preview |
@@ -56,6 +56,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次），超过进死信 |
 | `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀 |
+| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识（广播订阅的队列名与消费组名用它）；1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头，不合文法装配失败；必须每个同时在线的实例唯一 |
 | `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
 | `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
 | `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
@@ -84,7 +85,7 @@ builder.AddXiHan(xihan => xihan
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
 | `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
-| `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项；本实例标识（`Id`，单例，每个宿主构造时生成、不从配置读取，广播订阅的队列名与消费组名里带它）；Provider 共用的装配；启停消费 |
+| `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](../guide/messaging#订阅方式)）；Provider 共用的装配；启停消费 |
 | `DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件登记表（容量 `DefaultCapacity` 10000）、一种事件的映射（`ToEnvelope`）、派发器 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |

@@ -156,6 +156,22 @@ Compose 里的账号口令是本地联调用的固定开发值。应用服务的
 
 `bindings` 在 Kubernetes 里按 Service Binding 规范落地：每个绑定一个 Secret（键 `type` 与 `uri`）挂到 `/bindings/<绑定名>`，并设 `SERVICE_BINDING_ROOT=/bindings`。内核的 `BindingResolver` 先读 `SERVICE_BINDING_ROOT` 下的目录，再读配置节 `XiHan:Bindings:<绑定名>`（子键 `value` / `type`，或节本身的标量值），同名时配置整体覆盖目录来源。所以同一个应用在 k8s 里读 Secret、在 Compose 里读环境变量，代码不变。`bindings.example.yaml` 只是 Secret 的样板，真实连接串由部署方另行创建，不进仓库；样板以注释列出各类型可单独给出的凭据键（`cache`、`queue`、`nacos` 的 `username` / `password`，`blob` 的 `accessKey` / `secretKey`，`stream` 的 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password`），写进 Secret 就覆盖应用配置节里的同类键，凭据可以不放进连接串。
 
+## 消息代理
+
+多副本部署接 RabbitMQ 或 Kafka 时，下面这些要在部署时定下来（[消息与事件](./messaging)）。
+
+**实例标识**。广播订阅给每个实例一个独占的队列（RabbitMQ）或消费组（Kafka），名字里带实例标识 `MessagingInstance.Id`。缺省每次启动生成（机器名、进程 ID 与随机后缀），不用配置；要在代理的管理界面里认出实例，可以配 `XiHan:Messaging:InstanceId`，但必须每个同时在线的副本都不同——重复时 Kafka 的广播静默退化成竞争，RabbitMQ 后启动的副本启动失败。Kubernetes 里用下行 API 把 Pod 名设进去，不要写在副本共用的配置文件里：
+
+```yaml
+        env:
+          - name: XiHan__Messaging__InstanceId
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+```
+
+固定标识在节点失联、旧连接没有及时断开时，同名重启的副本要等代理发现旧连接已断（RabbitMQ 心跳超时前启动失败，Kafka 会话超时前收不到广播）；不需要认出实例就别配。
+
 ## 探针与停机宽限
 
 宿主的 `app.MapXiHanHealth()` 映射 `/health/startup`、`/health/ready`、`/health/live`（[生命周期与健康](./lifecycle)），生成的 Deployment 以它们做三个探针：

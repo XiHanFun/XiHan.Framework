@@ -36,7 +36,7 @@ public sealed class KafkaBroadcastTests
     /// <summary>
     /// 本实例的标识。
     /// </summary>
-    private readonly MessagingInstance _instance = new();
+    private readonly MessagingInstance _instance = new(new MessagingOptions());
 
     [Fact]
     public async Task Subscriptions_GetTheirOwnConsumerGroups_AndStartingPositions()
@@ -57,6 +57,29 @@ public sealed class KafkaBroadcastTests
             [("xihan", AutoOffsetReset.Earliest), ($"xihan@{_instance.Id}", AutoOffsetReset.Latest)],
             configs.Select(static c => (c.GroupId, c.AutoOffsetReset ?? AutoOffsetReset.Error)));
         Assert.All(configs, static c => Assert.False(c.EnableAutoCommit));
+        await broker.StopAsync(CancellationToken.None).WaitAsync(_patience);
+    }
+
+    [Fact]
+    public async Task AConfiguredInstanceId_NamesTheBroadcastConsumerGroup()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (producer, _) = FakeKafkaProducer.Create();
+        var configs = new ConcurrentQueue<ConsumerConfig>();
+        var instance = new MessagingInstance(new MessagingOptions { InstanceId = "orders-api-0" });
+        await using var broker = Broker(host, producer, config =>
+        {
+            configs.Enqueue(config);
+            return FakeKafkaConsumer.Create().Consumer;
+        }, instance);
+
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Broadcast)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+
+        // 配置了标识：广播消费组是 <GroupId>@<配置值>，每次启动同名；仍从最新位点开始、手动提交（广播不提交），重启不回放
+        var config = Assert.Single(configs);
+        Assert.Equal("xihan@orders-api-0", config.GroupId);
+        Assert.Equal(AutoOffsetReset.Latest, config.AutoOffsetReset);
+        Assert.False(config.EnableAutoCommit);
         await broker.StopAsync(CancellationToken.None).WaitAsync(_patience);
     }
 
@@ -88,11 +111,14 @@ public sealed class KafkaBroadcastTests
     /// <summary>
     /// 用打桩的生产者与给定的消费者工厂创建代理。
     /// </summary>
-    private KafkaMessageBroker Broker(TestHost host, IProducer<string?, byte[]> producer, Func<ConsumerConfig, IConsumer<string?, byte[]>> createConsumer)
+    /// <remarks>
+    /// <paramref name="instance"/> 为空时用本测试类的实例标识。
+    /// </remarks>
+    private KafkaMessageBroker Broker(TestHost host, IProducer<string?, byte[]> producer, Func<ConsumerConfig, IConsumer<string?, byte[]>> createConsumer, MessagingInstance? instance = null)
         => new(
             new KafkaMessagingOptions { BootstrapServers = "unused:9092" },
             new MessagingOptions { MaxAttempts = 2 },
-            _instance,
+            instance ?? _instance,
             host.App,
             new FakeTimeProvider(),
             NullLoggerFactory.Instance,

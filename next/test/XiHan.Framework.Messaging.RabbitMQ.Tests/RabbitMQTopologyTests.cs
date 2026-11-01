@@ -4,11 +4,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Messaging.Conformance;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
@@ -142,6 +144,24 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
         Assert.Equal(404, await QueueStateAsync(queue));
     }
 
+    [Fact]
+    public async Task TwoInstancesWithTheSameConfiguredId_TheSecondCannotDeclareTheExclusiveQueue_AndFailsToStart()
+    {
+        SkipWithoutBroker();
+        var instance = $"orders-api-{Guid.NewGuid():N}";
+        await using var first = await StartAsync(new DeliveryLog(), SubscriptionMode.Broadcast, instance);
+        Assert.Equal(instance, first.Services.GetRequiredService<MessagingInstance>().Id);
+        Assert.Equal(405, await QueueStateAsync(_prefix + SubscribedTopic + "@" + instance));
+
+        // 第二个实例配了同一个标识：同名独占队列被第一个实例的连接占着，代理拒绝声明（RESOURCE_LOCKED），订阅失败、启动失败
+        var failed = await Assert.ThrowsAsync<FrameworkException>(() => StartAsync(new DeliveryLog(), SubscriptionMode.Broadcast, instance));
+        Assert.Equal(KernelErrors.FeatureStartFailed, failed.Code);
+        Assert.Equal(MessagingErrors.BrokerUnavailable, Assert.IsType<FrameworkException>(failed.InnerException).Code);
+
+        // 第一个实例不受影响：它的广播队列仍在
+        Assert.Equal(405, await QueueStateAsync(_prefix + SubscribedTopic + "@" + instance));
+    }
+
     /// <summary>
     /// 没有测试代理时跳过。
     /// </summary>
@@ -151,13 +171,17 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
     /// <summary>
     /// 启动一个宿主，<paramref name="log"/> 不为空时以 <paramref name="mode"/> 订阅 <see cref="SubscribedTopic"/>。
     /// </summary>
-    private Task<TestHost> StartAsync(DeliveryLog? log, SubscriptionMode mode = SubscriptionMode.Competing)
+    /// <remarks>
+    /// <paramref name="instanceId"/> 不为空时配置为 <c>XiHan:Messaging:InstanceId</c>。
+    /// </remarks>
+    private Task<TestHost> StartAsync(DeliveryLog? log, SubscriptionMode mode = SubscriptionMode.Competing, string? instanceId = null)
         => TestHost.StartAsync(
             static builder => builder.UseFeature(new RabbitMQMessagingFeature()),
             [
                 new("XiHan:Messaging:RabbitMQ:Configuration", Uri),
                 new("XiHan:Messaging:RabbitMQ:QueuePrefix", _prefix),
                 new("XiHan:Messaging:RabbitMQ:Exchange", _exchange),
+                .. instanceId is null ? Array.Empty<KeyValuePair<string, string?>>() : [new("XiHan:Messaging:InstanceId", instanceId)],
             ],
             services =>
             {

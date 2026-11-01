@@ -628,6 +628,12 @@
           "type": "string",
           "default": ".dlq",
           "summary": "死信主题后缀；不能为空白"
+        },
+        {
+          "key": "InstanceId",
+          "type": "string",
+          "sample": "orders-api-0",
+          "summary": "本实例在消息代理上的标识（广播订阅的 RabbitMQ 独占队列与 Kafka 消费组用它）；不写时每次启动随机生成。1 到 64 个字母、数字、.、_、-，字母或数字开头，不合文法启动失败；必须每个同时在线的实例唯一（如 Pod 名），重复时 Kafka 广播退化成竞争、RabbitMQ 后启动的实例启动失败"
         }
       ]
     },
