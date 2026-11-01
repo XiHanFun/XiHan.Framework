@@ -69,6 +69,14 @@ public static class ObjectStorageMessages
     public const string ConditionalWriteProbeBucketMissing = "objectstorage.conditional_write.probe_bucket_missing";
 
     /// <summary>
+    /// 存储是否认条件写入尚未确认，暂不能不覆盖地写入。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>container</c>、<c>key</c>、<c>reason</c>（最近一次探测失败的错误码）。
+    /// </remarks>
+    public const string ConditionalWriteUnconfirmed = "objectstorage.conditional_write.unconfirmed";
+
+    /// <summary>
     /// 存储不可达。
     /// </summary>
     /// <remarks>

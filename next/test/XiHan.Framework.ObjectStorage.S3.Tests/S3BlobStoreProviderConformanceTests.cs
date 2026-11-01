@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.ObjectStorage.Conformance;
 
@@ -16,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 public sealed class S3BlobStoreProviderConformanceTests : BlobStoreProviderConformance
 {
     /// <inheritdoc />
-    protected override IBlobStoreProvider CreateProvider() => new S3BlobStoreProvider(TimeProvider.System);
+    protected override IBlobStoreProvider CreateProvider() => new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance);
 
     /// <inheritdoc />
     /// <remarks>

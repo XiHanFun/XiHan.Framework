@@ -20,10 +20,10 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储。
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入由特性启动或命名实例建出时探测（ADR-0089），选项关闭条件写入时不覆盖的写入与分片上传一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不探测条件写入（由调用方负责服务认它），也不拥有客户端，释放什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable
+public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// 自定义元数据在 S3 头里的前缀。
@@ -54,51 +54,86 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 是否拥有客户端（释放实例时一并释放）。
+    /// 条件写入的状态：不覆盖写入之前经它放行或拒绝。
     /// </summary>
-    private readonly bool _ownsClient;
+    private readonly S3ConditionalWriteGate _conditionalWrites;
+
+    /// <summary>
+    /// 是否拥有客户端与条件写入的状态（释放实例时一并停止重试、释放客户端）。
+    /// </summary>
+    private readonly bool _owned;
 
     /// <summary>
     /// 创建。
     /// </summary>
     /// <remarks>
-    /// 客户端归调用方（或容器）所有。
+    /// 客户端归调用方（或容器）所有。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。
     /// </remarks>
     public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
-        : this(client, options, clock, ownsClient: false)
-    {
-    }
-
-    /// <summary>
-    /// 创建。
-    /// </summary>
-    /// <remarks>
-    /// <paramref name="ownsClient"/> 为真时释放实例即释放客户端。
-    /// </remarks>
-    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, bool ownsClient)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _ownsClient = ownsClient;
+        _conditionalWrites = S3ConditionalWriteGate.Unprobed(_client, _options, _clock);
+        _owned = false;
     }
 
     /// <summary>
-    /// 释放：只在拥有客户端时释放客户端。
+    /// 创建。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="owned"/> 为真时客户端与条件写入的状态归本实例所有，释放实例即停止重试、释放客户端（命名实例）；为假时归容器（缺省实例）。
+    /// </remarks>
+    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, S3ConditionalWriteGate conditionalWrites, bool owned)
+    {
+        _client = client ?? throw new ArgumentNullException(nameof(client));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _conditionalWrites = conditionalWrites ?? throw new ArgumentNullException(nameof(conditionalWrites));
+        _owned = owned;
+    }
+
+    /// <summary>
+    /// 条件写入的状态（测试核对用）。
+    /// </summary>
+    internal S3ConditionalWriteGate ConditionalWrites => _conditionalWrites;
+
+    /// <summary>
+    /// 释放：只在拥有时发出停止重试的信号并释放客户端，不等待正在进行的探测。
     /// </summary>
     public void Dispose()
     {
-        if (_ownsClient)
+        if (_owned)
         {
+            _conditionalWrites.Cancel();
             _client.Dispose();
         }
     }
 
     /// <summary>
-    /// 连通性探测：按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项）。
+    /// 释放：只在拥有时停止重试、等正在进行的探测结束，再释放客户端。
     /// </summary>
-    internal ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
-        => S3ObjectStorageFeature.ProbeAsync(_client, _options.HealthBucket, cancellationToken);
+    public async ValueTask DisposeAsync()
+    {
+        if (_owned)
+        {
+            // 先等后台探测放下客户端，再释放它：避免探测在已释放的客户端上报出意外错误
+            await _conditionalWrites.DisposeAsync().ConfigureAwait(false);
+            _client.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 健康探测：连通性加条件写入的状态。
+    /// </summary>
+    /// <remarks>
+    /// 按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项），连通之后再看条件写入是否已确认：尚未确认时返回最近一次探测失败的错误，探明不认时返回不认的错误（注册表都记为 Degraded）。
+    /// </remarks>
+    internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+    {
+        var reachable = await S3ObjectStorageFeature.ProbeAsync(_client, _options.HealthBucket, cancellationToken).ConfigureAwait(false);
+        return reachable.IsFailure ? reachable : _conditionalWrites.Health();
+    }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)
@@ -327,9 +362,10 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     public async ValueTask<Result<BlobMultipartUpload>> StartAsync(ContainerName container, BlobKey key, BlobPutOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (!options.Overwrite && !_options.ConditionalWrites)
+        // 不覆盖的发起要求条件写入已确认：探明之前、不认或关闭时拒绝，不发起没有保证的上传
+        if (!options.Overwrite && await _conditionalWrites.RefuseAsync(container, key, cancellationToken).ConfigureAwait(false) is { } refused)
         {
-            return ConditionalWritesDisabled(container, key);
+            return refused;
         }
 
         if (!options.Overwrite)
@@ -483,12 +519,12 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
             }
         }
 
-        if (!upload.Overwrite && !_options.ConditionalWrites)
+        if (!upload.Overwrite && await _conditionalWrites.RefuseAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false) is { } refused)
         {
-            return ConditionalWritesDisabled(upload.Container, upload.Key);
+            return refused;
         }
 
-        // 不覆盖：先 HEAD（已存在时不必拼接），再带 If-None-Match 完成，由服务端保证原子（服务认条件完成已在启动或建实例时探明）
+        // 不覆盖：先 HEAD（已存在时不必拼接），再带 If-None-Match 完成，由服务端保证原子（服务认条件完成已由上面的放行确认）
         if (!upload.Overwrite)
         {
             var existing = await HeadAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false);
@@ -653,14 +689,14 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// 写一个对象。
     /// </summary>
     /// <remarks>
-    /// 不覆盖时先 HEAD（已存在时不必上传内容）再带条件写入，由服务端保证原子；关闭了条件写入时直接失败，不访问存储。桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
+    /// 不覆盖时先经条件写入的状态放行（探明之前、不认或关闭时直接失败，不访问写入目标），再 HEAD（已存在时不必上传内容）、带条件写入，由服务端保证原子。桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
-        // 关闭条件写入表示应用声明不需要不覆盖写入：照样先查再写会在并发时静默覆盖，所以明确拒绝，不做没有保证的尝试
-        if (!upload.Options.Overwrite && !_options.ConditionalWrites)
+        // 条件写入没确认（尚未探明、不认或关闭）时照样先查再写会在并发时静默覆盖，所以明确拒绝，不做没有保证的尝试
+        if (!upload.Options.Overwrite && await _conditionalWrites.RefuseAsync(container, upload.Key, cancellationToken).ConfigureAwait(false) is { } refused)
         {
-            return ConditionalWritesDisabled(container, upload.Key);
+            return refused;
         }
 
         if (!upload.Options.Overwrite)
@@ -800,12 +836,6 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// </summary>
     private static Error Exists(ContainerName container, BlobKey key)
         => Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
-
-    /// <summary>
-    /// 关闭了条件写入，不能不覆盖地写入。
-    /// </summary>
-    private static Error ConditionalWritesDisabled(ContainerName container, BlobKey key)
-        => Error.Unavailable(ObjectStorageErrors.ConditionalWriteUnavailable, ObjectStorageMessages.ConditionalWriteDisabled, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
     /// 存储不可用。

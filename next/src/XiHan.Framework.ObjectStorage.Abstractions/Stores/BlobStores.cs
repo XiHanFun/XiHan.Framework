@@ -172,7 +172,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     /// 按定义取实例。
     /// </summary>
     /// <remarks>
-    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例前的探测不通过返回 Provider 给出的错误码（如 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>）；这些情况已有实例都不受影响。
+    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例时的探测发现实例不能用返回 Provider 给出的错误码（如 S3 探明服务不认条件写入时 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>）；这些情况已有实例都不受影响。
     /// </remarks>
     public async ValueTask<Result<IBlobStore>> GetOrAddAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
     {
@@ -211,7 +211,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
             }
             catch (FrameworkException exception)
             {
-                // Provider 建实例前的探测不通过（如 S3 服务不认条件写入）：错误码由 Provider 定，原样交给调用方；不登记，下次取用重新探测
+                // Provider 建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入）：错误码由 Provider 定，原样交给调用方；不登记，下次取用重新探测
                 return Result.Failure<IBlobStore>(exception.ToError());
             }
 

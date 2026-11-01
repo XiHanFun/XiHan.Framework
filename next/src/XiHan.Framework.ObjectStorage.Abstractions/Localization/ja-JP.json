@@ -4,6 +4,7 @@
   "objectstorage.conditional_write.disabled": "コンテナー '{container}' のオブジェクト '{key}' を上書きなしで書き込めません：このストアでは条件付き書き込みが無効です（ConditionalWrites = false）。",
   "objectstorage.conditional_write.probe_bucket_missing": "条件付き書き込みの検査に使うバケット '{bucket}' が存在しません。バケットを作成するか、EnsureBuckets を有効にするか、HealthBucket を既存のバケットに設定してください。",
   "objectstorage.conditional_write.probe_denied": "オブジェクトストレージが条件付き書き込みの検査（バケット '{bucket}' の '{key}' に対する {operation}）を拒否しました：{reason}。資格情報にそのキーへの書き込みを許可するか、アプリケーションが Overwrite = false で書き込まない場合は ConditionalWrites を false に設定してください。",
+  "objectstorage.conditional_write.unconfirmed": "コンテナー '{container}' のオブジェクト '{key}' はまだ上書きなしで書き込めません：ストアが条件付き書き込みに対応しているか確認できていません（直近の検査：{reason}）。検査はバックグラウンドで再試行されます。しばらくしてから再試行してください。",
   "objectstorage.conditional_write.unsupported": "オブジェクトストレージが条件付き書き込み（バケット '{bucket}' の {operation} に対する 'If-None-Match: *'）を無視するため、Overwrite = false の書き込みが既存のオブジェクトを黙って上書きする可能性があります。条件付き書き込みに対応したサービスを使うか、アプリケーションが Overwrite = false で書き込まない場合は ConditionalWrites を false に設定してください。",
   "objectstorage.list.page_size_invalid": "一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",
   "objectstorage.multipart.part_too_small": "パート {part} は {length} バイトです。最後のパート以外は {minimum} バイト以上である必要があります。",

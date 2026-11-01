@@ -139,7 +139,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
 - 分片上传：编号 1–10000，可乱序、可重传；完成时清单编号严格升序、ETag 相符、非末片至少 5 MiB；完成前对象不可见；放弃是幂等的。
 - 预签名：有效期 1 秒到 7 天，签名在本地计算，不检查对象是否存在。
-- 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来、建实例前的探测不通过（Provider 抛出携带错误码的 `FrameworkException`，注册表原样返回该错误码）时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
+- 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来、建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入；Provider 抛出携带错误码的 `FrameworkException`，注册表原样返回该错误码）时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
 
 | 错误码 | 常量 | 含义 |
 | --- | --- | --- |
@@ -152,11 +152,12 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小越界（HTTP 400，不在构造时抛出） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
-| `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403），启动失败或不建命名实例 |
+| `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403）：尚未确认，照常启动或建出，健康项降级，后台重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败 |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
-| `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：服务不认条件写入（启动失败或不建命名实例），或关闭了条件写入 |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或关闭了条件写入 |
+| `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（HTTP 503，探测通过后自动恢复） |
 
 ## 相关
 

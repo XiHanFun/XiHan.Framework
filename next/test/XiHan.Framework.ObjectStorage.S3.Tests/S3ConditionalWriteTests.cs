@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
@@ -18,10 +19,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 条件写入探测与关闭条件写入（ADR-0089）。
+/// 条件写入探测、启动时探明不认即失败与关闭条件写入（ADR-0089、ADR-0090）。
 /// </summary>
 /// <remarks>
-/// 探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行。
+/// 探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务（尚未确认时的后台重试见 <see cref="S3ConditionalWriteRetryTests"/>）；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行。
 /// </remarks>
 public sealed class S3ConditionalWriteTests
 {
@@ -199,7 +200,9 @@ public sealed class S3ConditionalWriteTests
 
         await using var host = await StartAsync(fake);
         Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload", "UploadPart", "CompleteMultipartUpload", "AbortMultipartUpload", "HeadBucket"], fake.Requests);
-        Assert.Equal(LifecycleState.Ready, Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName).State);
+        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
+        Assert.Equal(LifecycleState.Ready, status.State);
+        Assert.Equal("confirmed", status.Data["conditionalWrites"]);
     }
 
     [Fact]
@@ -221,6 +224,9 @@ public sealed class S3ConditionalWriteTests
 
         await using var host = await StartAsync(fake, ("XiHan:ObjectStorage:S3:ConditionalWrites", "false"));
         Assert.Equal(["HeadBucket"], fake.Requests);
+        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
+        Assert.Equal(LifecycleState.Ready, status.State);
+        Assert.Equal("disabled", status.Data["conditionalWrites"]);
 
         // 不覆盖的写入与分片上传一律拒绝，不访问存储；覆盖写入照常
         var store = host.Services.GetRequiredService<IBlobStore>();
@@ -237,15 +243,17 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
-    public async Task NamedStore_ProbesOnCreation_AndReportsTheReasonWithoutRegistering()
+    public async Task NamedStore_ProbesOnCreation_CreatesAnUnconfirmedStore_AndRejectsOnlyInvalidDefinitions()
     {
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
         await using (registry)
         {
-            // 连不上：建实例前的探测失败，按原因的错误码返回，不登记实例
-            var refused = await registry.GetOrAddAsync(new BlobStoreDefinition("down", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["AccessKey"] = "ak", ["SecretKey"] = "sk", ["HealthBucket"] = Bucket }), CancellationToken.None);
-            Assert.Equal(ObjectStorageErrors.StoreUnavailable, refused.Error?.Code);
-            Assert.Empty(registry.Names);
+            // 连不上：建实例时的探测失败只是尚未确认，照常建出并登记；不覆盖写入不可用，原因是连不上
+            var down = (await registry.GetOrAddAsync(new BlobStoreDefinition("down", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["AccessKey"] = "ak", ["SecretKey"] = "sk", ["HealthBucket"] = Bucket }), CancellationToken.None)).ValueOrThrow();
+            Assert.Equal(["down"], registry.Names);
+            var refused = await down.PutAsync("media", "a.txt", Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+            Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, refused.Error?.Code);
+            Assert.Equal(ObjectStorageErrors.StoreUnavailable, (string?)refused.Error!.Details!["reason"]);
 
             // 没配健康桶：定义不合法
             var invalid = await registry.GetOrAddAsync(new BlobStoreDefinition("nobucket", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1" }), CancellationToken.None);
@@ -280,7 +288,7 @@ public sealed class S3ConditionalWriteTests
         await client.DeleteBucketAsync(fresh);
 
         // 命名实例建出时各探一次
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -289,13 +297,18 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
-    public async Task RealService_RejectedCredentials_FailTheStartupAsDenied()
+    public async Task RealService_RejectedCredentials_StartDegraded_AndRefuseWritesWithoutOverwrite()
     {
         var configuration = S3TestServer.Configuration().Where(static p => !p.Key.EndsWith(":SecretKey", StringComparison.Ordinal)).Append(new(S3ObjectStorageOptions.ConfigurationSection + ":SecretKey", "wrong-secret-key")).ToList();
 
-        var failed = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration));
-        var probe = Assert.IsType<FrameworkException>(failed.InnerException);
-        Assert.Equal(ObjectStorageErrors.ProbeDenied, probe.Code);
+        // 被拒绝只是尚未确认：照常启动，健康项降级并带出被拒的原因，不覆盖写入不可用
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration);
+        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
+        Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.ProbeDenied), (status.State, status.Error?.Code));
+        Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
+        var refused = await host.Services.GetRequiredService<IBlobStore>().PutAsync(S3TestServer.ProbeBucket, Guid.NewGuid().ToString("N"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, refused.Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ProbeDenied, (string?)refused.Error!.Details!["reason"]);
     }
 
     [Fact]
@@ -318,7 +331,7 @@ public sealed class S3ConditionalWriteTests
         var probe = Assert.IsType<FrameworkException>(failed.InnerException);
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, probe.Code);
 
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = url, ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };

@@ -953,13 +953,13 @@
           "key": "HealthBucket",
           "type": "string",
           "sample": "uploads",
-          "summary": "框架探测用的桶：健康项对它 HEAD；ConditionalWrites 开启时启动前在其中写探测键 .xihan/probe/conditional-write，此时必填"
+          "summary": "框架探测用的桶：健康项对它 HEAD；ConditionalWrites 开启时启动、建实例与后台重试时在其中写探测键 .xihan/probe/conditional-write，此时必填"
         },
         {
           "key": "ConditionalWrites",
           "type": "boolean",
           "default": "true",
-          "summary": "不覆盖写入由条件写入（If-None-Match）保证：开启时启动探测，服务不认、连不上、被拒绝或桶不存在即启动失败；关闭时 Overwrite = false 的写入一律 OBJECTSTORAGE_UNAVAILABLE_003"
+          "summary": "不覆盖写入由条件写入（If-None-Match）保证：开启时启动探测，探明不认即启动失败；连不上、被拒绝或桶不存在照常启动、后台重试，探明之前 Overwrite = false 的写入返回 OBJECTSTORAGE_UNAVAILABLE_004；关闭时一律 OBJECTSTORAGE_UNAVAILABLE_003"
         },
         {
           "key": "Region",

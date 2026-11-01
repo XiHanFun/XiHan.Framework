@@ -24,7 +24,7 @@ public interface IBlobStoreProvider
     /// 按定义建实例。
     /// </summary>
     /// <remarks>
-    /// 设置不合法（含未知的设置键）时抛出 <see cref="ArgumentException"/>，后端此刻建不出来时抛出 <see cref="IOException"/> 或 <see cref="UnauthorizedAccessException"/>（注册表分别翻译为 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/> 与 <see cref="ObjectStorageErrors.StoreUnavailable"/>）；建实例前的探测不通过（如 S3 服务不认条件写入）时抛出携带错误码的 <see cref="FrameworkException"/>，注册表转成同码的失败结果。
+    /// 设置不合法（含未知的设置键）时抛出 <see cref="ArgumentException"/>，后端此刻建不出来时抛出 <see cref="IOException"/> 或 <see cref="UnauthorizedAccessException"/>（注册表分别翻译为 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/> 与 <see cref="ObjectStorageErrors.StoreUnavailable"/>）；建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入；只是暂时连不上的照常建出）时抛出携带错误码的 <see cref="FrameworkException"/>，注册表转成同码的失败结果。
     /// </remarks>
     ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken);
 

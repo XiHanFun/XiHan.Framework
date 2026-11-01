@@ -4,6 +4,7 @@
   "objectstorage.conditional_write.disabled": "컨테이너 '{container}'의 개체 '{key}'를 덮어쓰지 않고 쓸 수 없습니다: 이 저장소는 조건부 쓰기가 꺼져 있습니다(ConditionalWrites = false).",
   "objectstorage.conditional_write.probe_bucket_missing": "조건부 쓰기 검사용 버킷 '{bucket}'이(가) 없습니다. 버킷을 만들거나 EnsureBuckets를 켜거나 HealthBucket을 기존 버킷으로 설정하십시오.",
   "objectstorage.conditional_write.probe_denied": "개체 스토리지가 조건부 쓰기 검사(버킷 '{bucket}'의 '{key}'에 대한 {operation})를 거부했습니다: {reason}. 자격 증명에 해당 키 쓰기를 허용하거나, 애플리케이션이 Overwrite = false로 쓰지 않는다면 ConditionalWrites를 false로 설정하십시오.",
+  "objectstorage.conditional_write.unconfirmed": "컨테이너 '{container}'의 개체 '{key}'를 아직 덮어쓰지 않고 쓸 수 없습니다: 저장소가 조건부 쓰기를 지원하는지 아직 확인되지 않았습니다(마지막 검사: {reason}). 검사는 백그라운드에서 다시 시도됩니다. 잠시 후 다시 시도하십시오.",
   "objectstorage.conditional_write.unsupported": "개체 스토리지가 조건부 쓰기(버킷 '{bucket}'의 {operation}에 대한 'If-None-Match: *')를 무시하므로 Overwrite = false 쓰기가 기존 개체를 조용히 덮어쓸 수 있습니다. 조건부 쓰기를 지원하는 서비스를 사용하거나, 애플리케이션이 Overwrite = false로 쓰지 않는다면 ConditionalWrites를 false로 설정하십시오.",
   "objectstorage.list.page_size_invalid": "목록 페이지 크기 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
   "objectstorage.multipart.part_too_small": "파트 {part}은(는) {length}바이트입니다. 마지막 파트를 제외한 각 파트는 최소 {minimum}바이트여야 합니다.",

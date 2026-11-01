@@ -82,7 +82,7 @@ public sealed record S3ObjectStorageOptions
     /// 框架探测用的桶。
     /// </summary>
     /// <remarks>
-    /// 健康项 <c>objectstorage.s3.connection</c> 与命名实例的探测对它 HEAD（同时验证凭据对该桶的权限），为 <see langword="null"/> 时列桶；<see cref="ConditionalWrites"/> 开启时启动或建实例前在其中写探测键 <c>.xihan/probe/conditional-write</c>，这时必须配置（ADR-0089）。
+    /// 健康项 <c>objectstorage.s3.connection</c> 与命名实例的探测对它 HEAD（同时验证凭据对该桶的权限），为 <see langword="null"/> 时列桶；<see cref="ConditionalWrites"/> 开启时启动、建实例与后台重试时在其中写探测键 <c>.xihan/probe/conditional-write</c>，这时必须配置（ADR-0089、ADR-0090）。
     /// </remarks>
     public string? HealthBucket { get; init; }
 
@@ -90,7 +90,7 @@ public sealed record S3ObjectStorageOptions
     /// 不覆盖写入是否由条件写入保证。
     /// </summary>
     /// <remarks>
-    /// 默认开启：缺省实例启动时、命名实例建出时在 <see cref="HealthBucket"/> 里探测服务是否认 <c>If-None-Match: *</c>，不认、连不上、被拒绝或桶不存在都失败，不带着可能静默覆盖的不覆盖写入运行。关闭表示应用明确不需要不覆盖写入：不探测、<see cref="HealthBucket"/> 可以不配，<c>Overwrite = false</c> 的写入与分片上传一律返回 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>，不访问存储（ADR-0089）。
+    /// 默认开启：缺省实例启动时、命名实例建出时在 <see cref="HealthBucket"/> 里探测服务是否认 <c>If-None-Match: *</c>。探明不认即启动失败或不建实例；连不上、被拒绝或桶不存在只是尚未确认，照常启动、在后台重试，探明之前 <c>Overwrite = false</c> 的写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>——任何时候都不带着可能静默覆盖的不覆盖写入运行（ADR-0089、ADR-0090）。关闭表示应用明确不需要不覆盖写入：不探测、<see cref="HealthBucket"/> 可以不配，<c>Overwrite = false</c> 的写入与分片上传一律返回 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>，不访问存储。
     /// </remarks>
     public bool ConditionalWrites { get; init; } = true;
 
@@ -98,7 +98,7 @@ public sealed record S3ObjectStorageOptions
     /// 健康项 <c>objectstorage.s3.connection</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
     /// <remarks>
-    /// 默认 15 秒。
+    /// 默认 15 秒。条件写入尚未确认时后台重试的间隔从 1 秒起倍增，最长也是它（ADR-0090）。
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {

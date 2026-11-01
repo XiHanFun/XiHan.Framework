@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// S3 命名实例。
 /// </summary>
 /// <remarks>
-/// 配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// 配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded（条件写入开启时也照常建出，尚未确认）。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过。
 /// </remarks>
 public sealed class S3NamedStoreTests
 {
@@ -73,17 +73,19 @@ public sealed class S3NamedStoreTests
             Assert.Equal((HttpStatusCode.OK, "named"), (download.StatusCode, await download.Content.ReadAsStringAsync()));
         }
 
-        // 建实例先探条件写入：探测桶不存在即不建（NOTFOUND，下次取用重新探测），条件写入开启却没配健康桶是定义不合法
-        var unprobed = await registry.GetAsync("unprobed", CancellationToken.None);
-        Assert.Equal(ObjectStorageErrors.BlobNotFound, unprobed.Error?.Code);
+        // 建实例时探条件写入：探测桶不存在只是尚未确认，照常建出、后台重试，不覆盖写入不可用（原因是缺桶）；
+        // 条件写入开启却没配健康桶是定义不合法
+        var unprobed = (await registry.GetAsync("unprobed", CancellationToken.None)).ValueOrThrow();
+        var refused = await unprobed.PutAsync(Bucket, key + ".copy", Encoding.UTF8.GetBytes("named"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, refused.Error?.Code);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (string?)refused.Error!.Details!["reason"]);
         Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, (await registry.GetAsync("nobucket", CancellationToken.None)).Error?.Code);
-        Assert.DoesNotContain("unprobed", registry.Check().Select(static s => s.Name[BlobStores.HealthPrefix.Length..]));
 
         // 健康项：健康桶在即就绪，不在即降级（实例仍可取用；关闭了条件写入的实例建出时不探测）
         _ = (await registry.GetAsync("gone", CancellationToken.None)).ValueOrThrow();
         await registry.ProbeAsync(CancellationToken.None);
         var statuses = registry.Check().ToDictionary(static s => s.Name, static s => s.State);
-        Assert.Equal((LifecycleState.Ready, LifecycleState.Degraded), (statuses["objectstorage.store.media"], statuses["objectstorage.store.gone"]));
+        Assert.Equal((LifecycleState.Ready, LifecycleState.Degraded, LifecycleState.Degraded), (statuses["objectstorage.store.media"], statuses["objectstorage.store.gone"], statuses["objectstorage.store.unprobed"]));
 
         // 拼错的设置键：不建实例
         var typo = await registry.GetAsync("typo", CancellationToken.None);

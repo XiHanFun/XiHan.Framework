@@ -84,7 +84,7 @@ public static class ObjectStorageErrors
     /// 不覆盖写入在本存储上无法保证。
     /// </summary>
     /// <remarks>
-    /// S3 兼容服务不认条件写入（<c>If-None-Match: *</c>），启动或建实例时的探测发现后失败；或存储以 <c>ConditionalWrites = false</c> 关闭了条件写入，<c>Overwrite = false</c> 的写入与分片上传一律以它失败，不访问存储（ADR-0089）。
+    /// S3 兼容服务不认条件写入（<c>If-None-Match: *</c>）：启动或建实例时探明的，缺省实例启动失败、命名实例不建；之后在后台或写入时才探明的，<c>Overwrite = false</c> 的写入与分片上传一律以它失败。或存储以 <c>ConditionalWrites = false</c> 关闭了条件写入，<c>Overwrite = false</c> 的写入与分片上传一律以它失败，不访问存储（ADR-0089、ADR-0090）。
     /// </remarks>
     public const string ConditionalWriteUnavailable = "OBJECTSTORAGE_UNAVAILABLE_003";
 
@@ -92,7 +92,15 @@ public static class ObjectStorageErrors
     /// 存储拒绝了探测请求。
     /// </summary>
     /// <remarks>
-    /// 条件写入探测写探测键、建桶或中止探测用的分片上传时，凭据无效或权限不足（HTTP 403）；启动或建实例因此失败（ADR-0089）。
+    /// 条件写入探测写探测键、建桶或中止探测用的分片上传时，凭据无效或权限不足（HTTP 403）。探测因此记为尚未确认：照常启动或建出实例，后台重试，健康项以它报告（ADR-0089、ADR-0090）。
     /// </remarks>
     public const string ProbeDenied = "OBJECTSTORAGE_DENIED_002";
+
+    /// <summary>
+    /// 不覆盖写入暂不可用：存储是否认条件写入尚未确认。
+    /// </summary>
+    /// <remarks>
+    /// S3 的条件写入探测连不上、被拒绝或探测桶不存在，后台在重试；这期间 <c>Overwrite = false</c> 的写入与分片上传的发起、完成以它失败（HTTP 503），不访问写入目标，探测通过后自动恢复（ADR-0090）。
+    /// </remarks>
+    public const string ConditionalWriteUnconfirmed = "OBJECTSTORAGE_UNAVAILABLE_004";
 }

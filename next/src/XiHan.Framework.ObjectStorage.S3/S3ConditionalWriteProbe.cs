@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 探测 S3 兼容服务是否认条件写入。
 /// </summary>
 /// <remarks>
-/// 不覆盖写入靠 <c>If-None-Match: *</c> 保证原子（ADR-0089）：不认它的服务上，先 HEAD 再写的两个写入方会让后写的静默覆盖先写的。探测在 <see cref="S3ObjectStorageOptions.HealthBucket"/> 里对固定的探测键 <see cref="ProbeKey"/> 带条件写入两次，第二次必须被拒（412）；需要时再以同一个键带条件完成一次分片上传，同样必须被拒，被拒的上传随即放弃。探测键写入后不删除：任何一次 412 都证明服务认得条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动都得到同一结论，凭据只需要对这一个键的写入权限，桶里只多一个空对象。
+/// 不覆盖写入靠 <c>If-None-Match: *</c> 保证原子（ADR-0089）：不认它的服务上，先 HEAD 再写的两个写入方会让后写的静默覆盖先写的。何时探、结论如何生效由 <see cref="S3ConditionalWriteGate"/> 决定（ADR-0090），这里只做一次探测。探测在 <see cref="S3ObjectStorageOptions.HealthBucket"/> 里对固定的探测键 <see cref="ProbeKey"/> 带条件写入两次，第二次必须被拒（412）；需要时再以同一个键带条件完成一次分片上传，同样必须被拒，被拒的上传随即放弃。探测键写入后不删除：任何一次 412 都证明服务认得条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动都得到同一结论，凭据只需要对这一个键的写入权限，桶里只多一个空对象。
 /// </remarks>
 internal static class S3ConditionalWriteProbe
 {

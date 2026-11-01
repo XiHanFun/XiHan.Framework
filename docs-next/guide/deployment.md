@@ -136,7 +136,7 @@ Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.g
 
 Kafka 依赖服务是单节点 KRaft（同一进程兼任 broker 与 controller），对外监听地址写成依赖服务名 `PLAINTEXT://<绑定名>:9092`，应用在 Compose 网络里拿到的集群元数据才可达；主题按需自动创建，内部主题副本数为 1。Nacos 依赖服务以 `MODE=standalone` 运行，配置存在内嵌存储里，数据目录挂命名卷 `<绑定名>-data`，删卷才会清空；应用要读的 `dataId` 先在 Nacos 里建好。两者都是 JVM 服务，healthcheck 另设 `start_period`（Kafka 30 秒、Nacos 60 秒），启动期内的失败不计入重试。
 
-`blob` 的依赖服务是 RustFS（Apache-2.0）而不是 MinIO：MinIO 社区版已停发镜像，Docker Hub 上的 `minio/minio` 拉取不到。RustFS 以 `/data` 为数据目录（挂命名卷 `<绑定名>-data`），healthcheck 请求不需认证的 `/health`；桶不会自动创建，应用开 `XiHan:ObjectStorage:S3:EnsureBuckets` 或先自行建桶。S3 Provider 启动时在 `XiHan:ObjectStorage:S3:HealthBucket` 里探测条件写入（ADR-0089），应用要配这个键（RustFS 认条件写入，探测通过）。选型时实测过的其余 S3 兼容服务与差异见 ADR-0086；生产环境照常连 Amazon S3 或其他兼容服务，S3 Provider 不绑定某一家。
+`blob` 的依赖服务是 RustFS（Apache-2.0）而不是 MinIO：MinIO 社区版已停发镜像，Docker Hub 上的 `minio/minio` 拉取不到。RustFS 以 `/data` 为数据目录（挂命名卷 `<绑定名>-data`），healthcheck 请求不需认证的 `/health`；桶不会自动创建，应用开 `XiHan:ObjectStorage:S3:EnsureBuckets` 或先自行建桶。S3 Provider 启动时在 `XiHan:ObjectStorage:S3:HealthBucket` 里探测条件写入（ADR-0089），应用要配这个键（RustFS 认条件写入，探测通过）；RustFS 晚于应用就绪或桶稍后才建时应用照常启动，探测在后台重试，通过之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`（ADR-0090）。选型时实测过的其余 S3 兼容服务与差异见 ADR-0086；生产环境照常连 Amazon S3 或其他兼容服务，S3 Provider 不绑定某一家。
 
 依赖服务都不映射宿主机端口，要从宿主机访问（如打开 Nacos 控制台）时在 `compose.yaml` 外另加一份 override 文件声明 `ports`。
 
