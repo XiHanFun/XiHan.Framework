@@ -29,7 +29,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 
 | 类型 | 用途 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 登记九个实体的仓储，装配存储、事务、实例锁与引擎；启动时起 `DueBookmarkPollingLoop`（应用不在服务状态的周期只续领导权、不轮询、不记告警），停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
+| `DatabaseWorkflowFeature` | 登记九个实体的仓储，装配存储、事务、实例锁与引擎；启动时起 `DueBookmarkPollingLoop`（应用不在服务状态的周期不轮询、不记告警，也不拿不续领导权、持有就释放），停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
 | `Entities.WorkflowDefinitionRow` / `WorkflowInstanceRow` / `WorkflowNodeInstanceRow` / `WorkflowBookmarkRow` | 两个分区共用的列：主键都是模型的 ID；查询列加 `Document`（JSON）；书签行另有 `NodeId` 与所属实例的 `DefinitionName`、`InstanceStatus`（待办查询下推用，存储维护）；实例、节点实例与书签另有写入序号 `Sequence`（首次写入分配、替换保留）作同刻排序的次关键字——UUID v7 只到毫秒单调，不能当写入顺序用 |
 | `Entities.WorkflowDefinitionRecord` / `WorkflowInstanceRecord` / `WorkflowNodeInstanceRecord` / `WorkflowBookmarkRecord` | 租户分区，实现 `IMultiTenant`：持久化按工作单元的租户写入 `TenantId` 并过滤，租户有独立库时落它的分片连接 |
 | `Entities.PlatformWorkflowDefinitionRecord` / `PlatformWorkflowInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` / `PlatformWorkflowBookmarkRecord` | 平台分区，没有租户列，落平台库 |
@@ -37,7 +37,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 作用域服务；在所在作用域的工作单元里经仓储读写，不经管道、不自己提交；分区参数为空读写平台表，否则读写租户表，且必须等于工作单元的租户（不等抛 `InvalidOperationException`） |
 | `DatabaseWorkflowTransaction` | `IWorkflowTransaction`：在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_UNEXPECTED_001` |
 | `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到，过期的行按并发戳接管，持有期间每三分之一租约续约，释放删自己的行；每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道、不随业务回滚 |
-| `Polling.PollerLeadership` / `DueBookmarkPollingLoop` | 资源 `workflow.poller` 的租约（全局一份）；每个周期先拿或续领导权，持有才 `RunCycleAsync`：逐个分区轮询到期书签，到了维护周期按保留期清理 |
+| `Polling.PollerLeadership` / `DueBookmarkPollingLoop` | 资源 `workflow.poller` 的租约（全局一份）；每个周期（`DueBookmarkPollingLoop.RunCycleAsync`）先看应用状态：不在服务状态（启动中、排空中）就释放领导权、什么也不做，否则拿或续领导权，持有才 `DueBookmarkPoller.RunCycleAsync`：逐个分区轮询到期书签，到了维护周期按保留期清理（ADR-0087） |
 | `DatabaseWorkflowOptions` | `XiHan:Workflow:Database`：`PollIntervalSeconds`（1）、`BatchSize`（100）、`LockLeaseSeconds`（60）、`HolderId`（`机器名:进程 ID:8 位随机十六进制`）、`LockConnection`（租约表的命名连接，缺省在平台库；空白视为未配置）、`HealthProbeIntervalSeconds`（15） |
 
 引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`）。

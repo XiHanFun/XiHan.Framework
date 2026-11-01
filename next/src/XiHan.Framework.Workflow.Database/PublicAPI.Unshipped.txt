@@ -146,9 +146,10 @@ XiHan.Framework.Workflow.Database.Locking.DatabaseWorkflowInstanceLock.AcquireAs
 XiHan.Framework.Workflow.Database.Locking.DatabaseWorkflowInstanceLock.DatabaseWorkflowInstanceLock(System.IServiceProvider! services, XiHan.Framework.Workflow.Abstractions.WorkflowOptions! options, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! databaseOptions, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.Dispose() -> void
-XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.DueBookmarkPollingLoop(XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller! poller, XiHan.Framework.Workflow.Database.Polling.PollerLeadership! leadership, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.DueBookmarkPollingLoop(XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller! poller, XiHan.Framework.Workflow.Database.Polling.PollerLeadership! leadership, XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions! options, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.IsLeader.get -> bool
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.IsRunning.get -> bool
+XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.RunCycleAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Database.Polling.DueBookmarkPollingLoop.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Database.Polling.PollerLeadership

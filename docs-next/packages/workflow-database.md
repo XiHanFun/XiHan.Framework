@@ -24,7 +24,7 @@
 | 三个存储（`Storage.DatabaseWorkflowDefinitionStore` 等） | 作用域服务；在所在作用域的工作单元里经仓储读写，不经管道、不自己提交。分区为空读写平台表，否则读写租户表；分区必须等于工作单元的租户 |
 | 事务 `DatabaseWorkflowTransaction` | 在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_UNEXPECTED_001` |
 | 实例锁 `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行。每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道 |
-| 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理 |
+| 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理；应用不在服务状态（启动中、排空中）的周期不拿也不续，持有就立即释放，另一个在服务的实例下个周期接手 |
 
 存储加入调用方的工作单元，租约行不加入（ADR-0077）：引擎把取得的实例锁持有到调用的服务作用域结束（事务提交或回滚之后）才释放，别的节点拿到锁时读到的一定是提交后的状态；租约行自己提交，别的节点立刻看得见、不随业务回滚。轮询的领导权只为节省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由实例锁串行化。
 
@@ -112,7 +112,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 | 类型 | 说明 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期什么也不做、不记告警），停止时等进行中的轮询结束并释放领导权 |
+| `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期不轮询、不记告警、不持有领导权），停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
 | `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
 | `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`） |
@@ -123,7 +123,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 三个存储实现 |
 | `DatabaseWorkflowTransaction` | 与调用方事务的关系 |
 | `Locking.DatabaseWorkflowInstanceLock` | 实例锁实现 |
-| `Polling.PollerLeadership`、`Polling.DueBookmarkPollingLoop` | 轮询领导权（资源 `PollerLeadership.Resource` = `workflow.poller`）与轮询循环 |
+| `Polling.PollerLeadership`、`Polling.DueBookmarkPollingLoop` | 轮询领导权（资源 `PollerLeadership.Resource` = `workflow.poller`）与轮询循环；`RunCycleAsync` 执行一个周期（测试推进注入的时钟后直接调用） |
 
 ## 使用示例
 
