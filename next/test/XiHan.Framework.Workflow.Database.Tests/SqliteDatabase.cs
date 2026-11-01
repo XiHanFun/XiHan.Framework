@@ -142,6 +142,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
         // SQLite 连接会被池化并持有文件句柄，先清空这个库的连接池，Windows 上才能删除文件；
         // 宿主停止时还在收尾的连接（释放锁、后台续约的最后一次写）可能仍占着文件，等它们结束再删。
         // 只清本库连接串的连接池（连接池按连接串分组）。不用 SqliteConnection.ClearAllPools()：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 ObjectDisposedException（SQLitePCL.sqlite3）失败
+        // SqlSugar 在 SQLite 上读数据后不释放命令（AdoProvider.GetDataReader 只对别的数据库 Dispose），事务里用过的命令被回收后，
+        // 连接关闭时已够不着它，它的预编译语句要等终结器才 finalize；在此之前 sqlite3_close_v2 把库留成僵尸、文件一直占着。
+        // 先回收并等终结器跑完，库才真正关掉
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
         using var connection = new SqliteConnection(Connection(path));
         for (var attempt = 0; ; attempt++)
         {
