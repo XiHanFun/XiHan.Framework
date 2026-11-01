@@ -87,6 +87,18 @@ public sealed class S3ObjectStorageTests
     }
 
     [Fact]
+    public void Options_ToString_MasksTheAccessKeyIdAndTheSecretKey()
+    {
+        // 访问密钥 ID 与访问密钥都是凭据（ADR-0089）：打印出 ***，看得出配了；没配时为空
+        var text = new S3ObjectStorageOptions { ServiceUrl = "http://localhost:9000", AccessKey = "AKIAIOSFODNN7EXAMPLE", SecretKey = "wJalrXUtnFEMI" }.ToString();
+        Assert.Contains("AccessKey = ***, SecretKey = ***", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("AKIAIOSFODNN7EXAMPLE", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("wJalrXUtnFEMI", text, StringComparison.Ordinal);
+        Assert.Contains("ServiceUrl = http://localhost:9000", text, StringComparison.Ordinal);
+        Assert.Contains("AccessKey = , SecretKey = ,", new S3ObjectStorageOptions().ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CreateClient_TargetsEndpointOrRegion()
     {
         using var compatible = S3ObjectStorageFeature.CreateClient(new S3ObjectStorageOptions { ServiceUrl = "http://localhost:9000", AccessKey = "ak", SecretKey = "sk" });

@@ -69,7 +69,7 @@ ADR-0082 第二节「`xihan pack` 给 MinIO 注入 `accessKey` / `secretKey`」�
 
 - 原语层新增 `Redaction`：`Mask = "***"`（与 `ConnectionStrings.Mask`、`SecretValue.Redacted` 同一文本），`Redact(string?)` 对 `null` 原样返回、其余（含空串）一律 `Mask`。
 - 带凭据的记录手写 `private bool PrintMembers(StringBuilder)`：凭据成员经 `Redaction` 打印，其余成员的名字、顺序与格式同编译器生成的写法，字典与列表照缺省只打印类型名。适用的 11 个记录与遮蔽的成员：`RedisCachingOptions`（`Configuration`、`Password`）、`RabbitMQMessagingOptions`（`Configuration`、`Password`）、`NacosOptions`（`Password`）、`S3ObjectStorageOptions`（`SecretKey`）、`AIProviderOptions`（`ApiKey`）、`KubernetesSchedulingOptions`（`Token`）、`JwtOptions`（`Secret`）、`HostedBlobUrlOptions`（`Secret`）、`Security.InMemory` 的 `PrincipalRecord`（`ApiKey`）、`TenantShard`（`ConnectionString`）、内核的 `BindingValue`（主值 `Value`）。
-- 遮蔽范围与 ADR-0078 的连接串脱敏一致：只遮整串连接串与口令类的值。用户名（`User`、`UserName`、`Username`）、S3 的访问密钥 ID `AccessKey`、端点、令牌文件路径 `TokenPath`、分页游标 `ContinuationToken` 照常打印。
+- 遮蔽范围与 ADR-0078 的连接串脱敏一致：只遮整串连接串与口令类的值。用户名（`User`、`UserName`、`Username`）、端点、令牌文件路径 `TokenPath`、分页游标 `ContinuationToken` 照常打印。S3 的访问密钥 ID `AccessKey` 本节原定照常打印，已由 ADR-0089 修订为也遮蔽。
 - 防回归：架构测试 `CredentialRedactionTests` 反射全部正式包的公开记录（有 `PrintMembers` 的类型），凡属性名是凭据词（以 `Password`、`Passphrase`、`Secret`、`SecretKey`、`ApiKey`、`PrivateKey`、`ConnectionString`、`Credential(s)` 结尾，或就是 `Token` / `AccessToken` / `RefreshToken` / `BearerToken` / `SessionToken`）或登记为连接串字段（Redis 与 RabbitMQ 的 `Configuration`、`BindingValue.Value`），就跳过构造与校验把哨兵值写进后备字段，断言 `ToString()` 不含哨兵、凭据打印为 `***`、每个公开属性都仍出现。
 
 ### 理由
@@ -77,7 +77,7 @@ ADR-0082 第二节「`xihan pack` 给 MinIO 注入 `accessKey` / `secretKey`」�
 - 手写 `PrintMembers` 而不是改属性类型（如包成 `SecretValue`）：属性是公开契约，换类型会让每个读选项的地方跟着改，而泄漏只发生在打印这一处；`PrintMembers` 是 C# 记录留给定制打印的正式扩展点，`ToString()`、`with`、相等比较都不受影响。
 - 共用 `Redaction` 而不是各包写 `"***"`：遮蔽文本全框架一处定义，与持久化、配置已有的两处同值；放原语层是因为带凭据的记录分布在内核、抽象包与实现包，只有原语层是它们共同的依赖，且它零行为、零反射。
 - `null` 打印为空而不是 `***`：看得出有没有配置是排查时最常要的信息，`null` 本身不泄露任何东西；空串也遮，避免透露“配了一个空口令”。
-- 访问密钥 ID 不遮：它与用户名同类，AWS 签名里随每个请求明文发送、出现在服务端访问日志里；遮掉反而让排查“用了哪把密钥”变难。连接串整串遮而不是只遮其中的口令：Redis 配置串与 AMQP URI 没有统一的转义规则，局部替换容易漏，与 ADR-0078 的范围一致。
+- 访问密钥 ID：本节原把它当作与用户名同类、照常打印，理由已由 ADR-0089 修订（访问密钥 ID 是访问密钥的一半，也遮蔽），见该 ADR。连接串整串遮而不是只遮其中的口令：Redis 配置串与 AMQP URI 没有统一的转义规则，局部替换容易漏，与 ADR-0078 的范围一致。
 - 架构测试按名字找凭据，再加登记的连接串字段：名字是最稳定的信号；手写的 `PrintMembers` 最大的风险是以后加属性时漏打，测试同时核对每个公开属性都在。字典与列表不在检查之列，因为记录缺省只打印类型名，不会展开内容（Kafka `Properties` 里的 `sasl.password` 由此不会出现）。
 
 ### 影响
@@ -108,3 +108,5 @@ ADR-0083 把 `OpenAIFeature` 改为宿主特性，只装它时知识库提示词
 - 公开 API、错误码、消息键、配置键都不变。
 
 > 修订（2026-11-01）：第一节记下的"不认 `If-None-Match` 的兼容服务（Garage、Zenko CloudServer）上不覆盖写入只剩先 HEAD 的检查"由 ADR-0089 第一节处理：S3 Provider 在用之前探测服务是否认条件写入，不认的服务启动失败、命名实例不建出。
+
+> 修订（2026-11-01）：第二节"S3 的访问密钥 ID `AccessKey` 照常打印"由 ADR-0089 修订为也遮蔽，`S3ObjectStorageOptions` 遮蔽 `AccessKey` 与 `SecretKey`，架构测试 `CredentialRedactionTests` 的凭据判定加入 `AccessKey` / `AccessKeyId`。

@@ -53,7 +53,7 @@ public sealed record S3ObjectStorageOptions
     /// 访问密钥 ID。
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）。
+    /// 与 <see cref="SecretKey"/> 都为空时用 AWS SDK 的默认凭据链（环境变量、配置文件、实例角色）。是访问密钥的一半，打印选项时与 <see cref="SecretKey"/> 一样遮蔽（ADR-0089）。
     /// </remarks>
     public string? AccessKey { get; init; }
 
@@ -247,14 +247,14 @@ public sealed record S3ObjectStorageOptions
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，访问密钥（访问密钥 ID 随请求明文发送，照常打印）不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，访问密钥 ID 与访问密钥都不能明文出现（RFC-0014「选项里的凭据」，ADR-0089）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {
         // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
         builder.Append("ServiceUrl = ").Append(ServiceUrl)
             .Append(", Region = ").Append(Region)
-            .Append(", AccessKey = ").Append(AccessKey)
+            .Append(", AccessKey = ").Append(Redaction.Redact(AccessKey))
             .Append(", SecretKey = ").Append(Redaction.Redact(SecretKey))
             .Append(", ForcePathStyle = ").Append(ForcePathStyle)
             .Append(", EnsureBuckets = ").Append(EnsureBuckets)
