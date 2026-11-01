@@ -434,6 +434,8 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 
 订阅方式见[消息与事件](./messaging)。
 
+消息代理是 Kafka 且集群关了自动建主题（`auto.create.topics.enable=false`）时，这 9 个主题（带 `TopicPrefix`）要预先建好，没人订阅的也要建，否则发布失败、只记日志，见 [Messaging.Kafka](../packages/messaging-kafka#主题)。
+
 ## 配置
 
 引擎选项在 `XiHan:Scheduling`（`SchedulerOptions`），内存与数据库两个 Provider 读同一节。值不合法（非数字、超出范围）时启动抛 `ArgumentException`。

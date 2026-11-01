@@ -344,6 +344,16 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 
 `IMessageReplayer` 只在 Kafka 被选中提供 `messaging.stream` 时登记；依赖它的特性在清单里声明 `messaging.stream@1`。主题不存在或该时刻之后没有消息时重放成功返回；代理不可达返回 `MESSAGING_UNAVAILABLE_001`。
 
+::: warning Kafka 关了自动建主题时要预建主题
+Kafka 缺省开启 `auto.create.topics.enable`，发布或订阅到不存在的主题时由 broker 建出来。生产集群常把它关掉，这时主题不存在是部署错误，框架不替你建，也不把它当作「没有订阅者」丢弃（那样主题名或 `TopicPrefix` 写错也会被吞掉）：
+
+- 发布约 30 秒后失败（`MESSAGING_UNAVAILABLE_001`）；经发件箱的按发件箱规则退避重试，到上限进死信。
+- 订阅记 Warning 日志并一直等，主题建好之后才开始收。
+- 死信主题不存在时死信发布失败，消息回退重投，这个分区停在原地。
+
+所以要预先建好（名字都带 `TopicPrefix`，缺省 `xihan.`）：应用发布与订阅的主题、被订阅主题的死信主题 `<topic>.dlq`，以及框架自己发布的事件主题——装配了调度时的 9 个（[调度事件](./scheduling#事件)：`scheduling.job.scheduled|unscheduled|paused|resumed`、`scheduling.run.started|succeeded|failed|canceled|lost`），装配了工作流时的 `workflow.*`（[工作流事件](./workflow#事件)），没人订阅的也要建。清单与建主题的命令见 [Messaging.Kafka](../packages/messaging-kafka#主题)。
+:::
+
 ## 与 CloudEvents 协议的关系
 
 `Protocols.CloudEvents` 是信封在 HTTP 上的 CloudEvents 协议绑定：入站端点 `MapXiHanCloudEvents()` 接收 binary / structured / batch 三种内容模式，按 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 映射到主题，缺省在请求内经同一个 `MessageDispatcher` 派发给处理器（也可以只发布到代理）；出站的 `CloudEventsWebhookPublisher` 把信封推送到配置的 Webhook。`next/samples/SimpleApp` 的 `POST /events` 就是把外部的 `orders.placed` 事件交给 `OrderPlacedHandler`。细节见 [gRPC、MCP 与 CloudEvents](./protocols) 与 [Protocols.CloudEvents](../packages/protocols-cloudevents)。

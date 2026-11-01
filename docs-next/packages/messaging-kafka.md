@@ -90,6 +90,35 @@ builder.AddXiHan(xihan => xihan
 
 凭据只作开发示例，生产环境从密钥来源注入，见[配置与选项](../guide/configuration)。
 
+## 主题
+
+框架不建主题，也不管理分区数与副本数。主题由谁建出来取决于集群的 `auto.create.topics.enable`：
+
+- 开启（Kafka 缺省）：发布或订阅到不存在的主题时由 broker 按集群缺省的分区数与副本数建出来。没人订阅的主题里的消息只留到保留期（`retention.ms`，缺省 7 天），没有消费组就没有积压（ADR-0079）。
+- 关闭（生产集群常见）：主题不存在是部署错误，框架不替你建，也不当作「没有订阅者」丢弃——那样主题名或 `TopicPrefix` 写错也会被吞成一条 Debug 日志，消息无声丢失（ADR-0085）。表现是：
+  - 发布在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒）；直接发布的返回失败，经发件箱的按发件箱规则退避重试、到上限进死信。
+  - 订阅的消费者每次取消息都报主题不存在，记 Warning 日志后继续等，主题建好之后才开始收。
+  - 死信主题不存在时死信发布失败，消息回退重投（`RedeliveryDelaySeconds`），这个分区停在原地。
+
+关闭自动建主题的集群要在部署时预先建好下面这些主题，名字都带 `TopicPrefix`（缺省 `xihan.`）：
+
+| 主题 | 什么时候需要 |
+| --- | --- |
+| 应用发布与订阅的主题 | 总是 |
+| 被竞争订阅的主题加 `DeadLetterSuffix`（缺省 `.dlq`） | 有竞争订阅时；广播订阅不发布死信 |
+| `scheduling.job.scheduled`、`scheduling.job.unscheduled`、`scheduling.job.paused`、`scheduling.job.resumed`、`scheduling.run.started`、`scheduling.run.succeeded`、`scheduling.run.failed`、`scheduling.run.canceled`、`scheduling.run.lost` | 装配了调度（`SchedulingTopics`，[调度事件](../guide/scheduling#事件)），没人订阅也要建 |
+| `workflow.instance.started`、`.completed`、`.faulted`、`.canceled`、`.terminated`、`.suspended`、`.resumed`、`.jumped`、`.migrated`、`.timedout`；`workflow.node.executing`、`.executed`、`.faulted`；`workflow.task.created`、`.completed`、`.transferred`、`.claimed`、`.released`、`.returned`、`.urged`、`.reminder`；`workflow.external.created`、`.completed`、`.failed`；`workflow.custom` | 装配了工作流（`WorkflowTopics`，[工作流事件](../guide/workflow#事件)），没人订阅也要建 |
+
+重放用临时消费组读已有的主题，不建主题；广播订阅只多出消费组，不多出主题。用 Kafka 自带的脚本建主题（分区数与副本数按集群定）：
+
+```bash
+for topic in scheduling.job.scheduled scheduling.job.unscheduled scheduling.job.paused scheduling.job.resumed \
+             scheduling.run.started scheduling.run.succeeded scheduling.run.failed scheduling.run.canceled scheduling.run.lost; do
+  kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+    --topic "xihan.$topic" --partitions 3 --replication-factor 3
+done
+```
+
 ## 主要类型
 
 | 类型 | 说明 |
@@ -125,7 +154,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 - 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
-- 没人订阅的主题（ADR-0079）：发布到不存在的主题时由 broker 按 `auto.create.topics.enable`（Kafka 缺省开启）自动建出主题，消息只留到保留期（`retention.ms`，缺省 7 天）为止；没有消费组就没有积压，不会像队列那样越堆越多。broker 关闭了自动建主题时，发布到不存在的主题在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒），这类部署要预先建好应用与框架事件（如 `<TopicPrefix>scheduling.job.started`）用到的主题。
+- 主题不存在（ADR-0079、ADR-0085）：集群开着自动建主题时由 broker 建出，没人订阅的主题里的消息只留到保留期；关了自动建主题时发布约 30 秒后失败、订阅一直等、死信发布回退重投，要预建主题，清单见[主题](#主题)。
 - 测试：一致性套件（含 `MessageStreamConformance` 的同键有序与按时刻重放）需要真实 Kafka，设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，未设置时跳过；本地可以用单节点 KRaft 容器：
 
 ```bash

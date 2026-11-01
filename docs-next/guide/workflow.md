@@ -638,6 +638,8 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 
 待办通知、催办短信、审批结果同步都订阅这些主题来做，见[消息与事件](./messaging)。
 
+消息代理是 Kafka 且集群关了自动建主题（`auto.create.topics.enable=false`）时，这 25 个主题（带 `TopicPrefix`）要预先建好，没人订阅的也要建，否则发布失败、只记日志，见 [Messaging.Kafka](../packages/messaging-kafka#主题)。
+
 ## 存储与实例锁
 
 Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock`。三个存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台），只读写这个分区，写入的记录的 `TenantId` 必须等于它（不等抛 `ArgumentException`）；都按批量写入、不做乐观并发：写入由实例锁串行化。`IWorkflowTransaction` 回答所在作用域能不能加入调用方事务（`IsActive`）、加入的事务能不能写（`EnsureWritable`）。`IWorkflowInstanceLock.AcquireAsync(instanceId)` 等待超过 `LockTimeout`（缺省 10 秒）返回 `WORKFLOW_TIMEOUT_001`，锁不可重入。存储不可达 → `WORKFLOW_UNAVAILABLE_001`，内存实现容量已满 → `WORKFLOW_UNAVAILABLE_002`。

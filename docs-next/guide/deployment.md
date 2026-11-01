@@ -172,6 +172,8 @@ Compose 里的账号口令是本地联调用的固定开发值。应用服务的
 
 固定标识在节点失联、旧连接没有及时断开时，同名重启的副本要等代理发现旧连接已断（RabbitMQ 心跳超时前启动失败，Kafka 会话超时前收不到广播）；不需要认出实例就别配。
 
+**Kafka 主题**。框架不建主题。集群开着 `auto.create.topics.enable`（Kafka 缺省，Compose 里的单节点依赖服务就是）时主题按需自动建出；生产集群关掉它时，主题不存在会让发布约 30 秒后失败（`MESSAGING_UNAVAILABLE_001`）、订阅一直等、死信回退重投，框架不会把它当作「没有订阅者」吞掉。这类集群在部署时预先建好应用的主题、被订阅主题的死信主题，以及框架自己发布的调度与工作流事件主题（没人订阅也要建），清单与命令见 [Messaging.Kafka](../packages/messaging-kafka#主题)。
+
 ## 探针与停机宽限
 
 宿主的 `app.MapXiHanHealth()` 映射 `/health/startup`、`/health/ready`、`/health/live`（[生命周期与健康](./lifecycle)），生成的 Deployment 以它们做三个探针：
