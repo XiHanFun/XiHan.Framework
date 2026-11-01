@@ -87,9 +87,9 @@ await builder.Build().RunAsync();
 | `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
 | `InvocationContextExtensions` | `GetOutcome` / `SetOutcome`、`GetOrigin` / `SetOrigin`、`Get` / `Set`（`ContextItemKey<T>`） |
-| `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(operations, permissions)` 一组操作连同归属定义的权限码全进或全不进；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080） |
+| `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080） |
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
-| `PermissionDefinition` / `PermissionRegistry` | 权限码登记；`AddRange` 一批全进或全不进，写入在锁内（插件运行期加载也会登记） |
+| `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
 | `KernelCapabilities` | 能力 ID 常量与内核清单 |
 
 ## 使用示例

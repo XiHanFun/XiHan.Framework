@@ -106,10 +106,10 @@ public sealed class SecurityTests
     {
         var registry = new PermissionRegistry(capacity: 2);
 
-        Assert.True(registry.Add(new PermissionDefinition("orders.order.read", "读取订单")).IsSuccess);
-        Assert.Equal(KernelErrors.DuplicatePermission, registry.Add(new PermissionDefinition("orders.order.read", "重复")).Error!.Code);
-        Assert.True(registry.Add(new PermissionDefinition("orders.order.write", "写入订单")).IsSuccess);
-        Assert.Equal(KernelErrors.PermissionRegistryFull, registry.Add(new PermissionDefinition("orders.order.delete", "删除")).Error!.Code);
+        Assert.True(registry.Add("xihan.test.orders", new PermissionDefinition("orders.order.read", "读取订单")).IsSuccess);
+        Assert.Equal(KernelErrors.DuplicatePermission, registry.Add("xihan.test.orders", new PermissionDefinition("orders.order.read", "重复")).Error!.Code);
+        Assert.True(registry.Add("xihan.test.orders", new PermissionDefinition("orders.order.write", "写入订单")).IsSuccess);
+        Assert.Equal(KernelErrors.PermissionRegistryFull, registry.Add("xihan.test.orders", new PermissionDefinition("orders.order.delete", "删除")).Error!.Code);
         Assert.Equal(2, registry.Count);
         Assert.Equal("读取订单", registry.Find("orders.order.read").ValueOrThrow().DisplayName);
         Assert.False(registry.Find("nope.nope").HasValue);
@@ -125,19 +125,37 @@ public sealed class SecurityTests
         static PermissionDefinition Define(string code) => new(code, code);
 
         // 同批重复、与已登记的重复、整批超出容量：返回第一项的失败，注册表不变
-        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange([Define("orders.read"), Define("orders.read")]).Error?.Code);
+        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange("xihan.test.orders", [Define("orders.read"), Define("orders.read")]).Error?.Code);
         Assert.Equal(0, registry.Count);
-        Assert.True(registry.AddRange([Define("orders.read"), Define("orders.write")]).IsSuccess);
-        var duplicated = registry.AddRange([Define("orders.delete"), Define("orders.write")]);
+        Assert.True(registry.AddRange("xihan.test.orders", [Define("orders.read"), Define("orders.write")]).IsSuccess);
+        var duplicated = registry.AddRange("xihan.test.orders", [Define("orders.delete"), Define("orders.write")]);
         Assert.Equal(KernelErrors.DuplicatePermission, duplicated.Error?.Code);
         Assert.Equal("orders.write", duplicated.Error?.Details?["code"]);
         Assert.False(registry.Find("orders.delete").HasValue);
-        Assert.Equal(KernelErrors.PermissionRegistryFull, registry.AddRange([Define("orders.delete"), Define("orders.export")]).Error?.Code);
+        Assert.Equal(KernelErrors.PermissionRegistryFull, registry.AddRange("xihan.test.orders", [Define("orders.delete"), Define("orders.export")]).Error?.Code);
         Assert.Equal(2, registry.Count);
 
-        Assert.True(registry.AddRange([]).IsSuccess);
-        Assert.Throws<ArgumentException>(() => registry.AddRange([Define("orders.delete"), null!]));
+        Assert.True(registry.AddRange("xihan.test.orders", []).IsSuccess);
+        Assert.Throws<ArgumentException>(() => registry.AddRange("xihan.test.orders", [Define("orders.delete"), null!]));
         Assert.Equal(2, registry.Count);
+    }
+
+    [Fact]
+    public void PermissionRegistry_RemoveOwnedBy_WithdrawsOnlyThatOwnersCodes()
+    {
+        var registry = new PermissionRegistry();
+        static PermissionDefinition Define(string code) => new(code, code);
+        Assert.True(registry.AddRange("xihan.test.plugin", [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
+        Assert.True(registry.Add("xihan.test.host", Define("hosts.manage")).IsSuccess);
+
+        Assert.Equal(2, registry.RemoveOwnedBy("xihan.test.plugin"));
+
+        Assert.Equal(["hosts.manage"], registry.All().Select(static p => p.Code));
+        Assert.Equal(0, registry.RemoveOwnedBy("xihan.test.plugin"));
+        // 撤回之后同一个码可以再登记，换了归属也可以
+        Assert.True(registry.Add("xihan.test.other", Define("echoes.read")).IsSuccess);
+        Assert.Throws<ArgumentException>(() => registry.RemoveOwnedBy(""));
+        Assert.Throws<ArgumentException>(() => registry.Add(" ", Define("echoes.copy")));
     }
 
     [Fact]

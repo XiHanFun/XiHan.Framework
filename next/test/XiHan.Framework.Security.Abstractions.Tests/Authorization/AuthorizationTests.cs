@@ -276,7 +276,7 @@ public sealed class AuthorizationTests
         catalog.EnforceOn(registry);
 
         // 之后登记（插件握手之后）：引用了不存在的策略，整组不进，同组声明的权限码撤回
-        var rejected = registry.AddRange([Describe(new OperationContract("invoices.list", policy: "auditors"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]);
+        var rejected = registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.list", policy: "auditors"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]);
         Assert.Equal(SecurityErrors.UnregisteredPolicy, rejected.Error?.Code);
         Assert.Equal("VALIDATION", rejected.Error?.Kind);
         Assert.Equal(SecurityMessages.OperationPolicyUnregistered, rejected.Error?.MessageKey);
@@ -285,7 +285,7 @@ public sealed class AuthorizationTests
         Assert.False(permissions.Find("invoices.read").HasValue);
 
         // 同组声明的权限码让同组的权限策略可用
-        Assert.True(registry.AddRange([Describe(new OperationContract("invoices.get", policy: "permission:invoices.read"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]).IsSuccess);
+        Assert.True(registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.get", policy: "permission:invoices.read"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]).IsSuccess);
         Assert.True(registry.Add(Describe(new OperationContract("invoices.export", policy: AuthenticatedPolicy.PolicyName))).IsSuccess);
         Assert.Throws<ArgumentNullException>(() => catalog.EnforceOn(null!));
     }

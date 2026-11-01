@@ -158,7 +158,7 @@ context.AddOperation<CreateOrder, PlaceOrderRequest, OrderResponse>(
     OrdersJsonContext.Default.OrderResponse);
 ```
 
-操作登记表 `OperationRegistry` 的 ID 必须唯一（重复报 `KERNEL_OPERATION_001`），容量 10000（满了报 `KERNEL_OPERATION_002`），都是配置期异常。`Permission` 引用的权限码要用 `AddPermission` 登记：装配完成时一次核对，未登记即抛出 `KERNEL_VALIDATION_005`、启动失败（一次列出全部操作）；登记可以在别的特性里，只要装配完成时已有。装配完成之后登记的操作（插件握手之后）在登记时核对。登记表在构造时绑定它核对的 `PermissionRegistry`（`new OperationRegistry(permissions)`）；`OperationRegistry.AddRange(operations, permissions)` 一次登记一组操作连同它们的归属定义的权限码，全进或全不进（权限码先登记，同组操作可以引用；任一项不过已写进的权限码撤回），插件的代理操作与清单声明的权限码经它登记（ADR-0080）。契约的 `Policy` 在授权能力启动时核对（`SECURITY_VALIDATION_004`，启动失败），之后登记的操作在登记时核对，见[授权](./authorization#启动时核对策略引用)。
+操作登记表 `OperationRegistry` 的 ID 必须唯一（重复报 `KERNEL_OPERATION_001`），容量 10000（满了报 `KERNEL_OPERATION_002`），都是配置期异常。`Permission` 引用的权限码要用 `AddPermission` 登记：装配完成时一次核对，未登记即抛出 `KERNEL_VALIDATION_005`、启动失败（一次列出全部操作）；登记可以在别的特性里，只要装配完成时已有。装配完成之后登记的操作（插件握手之后）在登记时核对。登记表在构造时绑定它核对的 `PermissionRegistry`（`new OperationRegistry(permissions)`）；`OperationRegistry.AddRange(owner, operations, permissions)` 一次登记一个归属（特性或插件的清单 ID）的一组操作连同它定义的权限码，全进或全不进（权限码先登记，同组操作可以引用；任一项不过已写进的权限码撤回），插件的代理操作与清单声明的权限码经它登记（ADR-0080）；`OperationRegistry.RemoveOwnedBy(owner)` 一次撤回一个归属的全部操作与权限码，插件卸载时经它撤回、之后可以再加载（ADR-0085）。契约的 `Policy` 在授权能力启动时核对（`SECURITY_VALIDATION_004`，启动失败），之后登记的操作在登记时核对，见[授权](./authorization#启动时核对策略引用)。
 
 ## 标题与描述
 

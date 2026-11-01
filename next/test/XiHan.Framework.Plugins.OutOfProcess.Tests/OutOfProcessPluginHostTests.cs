@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -360,7 +361,79 @@ public sealed class OutOfProcessPluginHostTests
         Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
         Assert.Empty(plugins.Plugins);
         Assert.Equal(PluginErrors.NotFound, (await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).Error?.Code);
-        Assert.Equal(PluginErrors.Unavailable, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
+        // 卸载撤回了代理操作：按 ID 调用即操作未登记，不进管道（ADR-0085）
+        Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
+
+        // 直接再加载，不用重启宿主
+        Assert.Equal(LifecycleState.Ready, (await plugins.LoadAsync(source, CancellationToken.None)).ValueOrThrow().State);
+        var again = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"again"}""");
+        Assert.True(again.Outcome.IsSuccess, again.Outcome.ToString());
+        Assert.Equal("again", EchoPluginHost.Payload(again).GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public async Task Unload_WithdrawsTheProxyOperationsAndDeclaredCodes_AndADiscoveredPluginLoadsAgain()
+    {
+        // 配置阶段发现的插件：副本清单声明一个权限码，宿主连同代理操作一起登记（ADR-0080）
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        copy.EditManifest(static manifest => manifest.Replace("\"operations\": [ \"echoes.create\"", "\"permissions\": [ \"echoes.audit\" ], \"operations\": [ \"echoes.create\"", StringComparison.Ordinal));
+        await using var host = await EchoPluginHost.StartAsync(directory: copy.Directory);
+        var plugins = EchoPluginHost.PluginHost(host);
+        var operations = host.Services.GetRequiredService<OperationRegistry>();
+        var permissions = host.Services.GetRequiredService<PermissionRegistry>();
+        Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
+
+        Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+
+        // 按归属一次撤回：插件的代理操作与它声明的码都不在了，调用即操作未登记
+        Assert.DoesNotContain(operations.All(), static d => d.OwnerId == EchoPluginHost.PluginId);
+        Assert.False(permissions.Find("echoes.audit").HasValue);
+        Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
+
+        // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（以前是 KERNEL_OPERATION_001 / KERNEL_SECURITY_001，只能重启宿主）
+        var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        Assert.Equal(LifecycleState.Ready, reloaded.ValueOrThrow().State);
+        Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
+        Assert.True(permissions.Find("echoes.audit").HasValue);
+        var after = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"reloaded"}""");
+        Assert.True(after.Outcome.IsSuccess, after.Outcome.ToString());
+        Assert.Equal("reloaded", EchoPluginHost.Payload(after).GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public async Task Unload_WhileCallsAreInFlight_EveryCallEndsWithAKnownOutcome_AndLaterCallsFindNoOperation()
+    {
+        await using var host = await EchoPluginHost.StartAsync();
+        var plugins = EchoPluginHost.PluginHost(host);
+        var outcomes = new ConcurrentQueue<string>();
+        using var stop = new CancellationTokenSource();
+
+        // 八个调用方不停调用；插件里每次停 20 毫秒，卸载时总有调用正在插件里执行或排在进程前
+        var callers = Enumerable.Range(0, 8).Select(_ => Task.Run(async () =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                var response = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"busy","delayMs":20}""");
+                outcomes.Enqueue(response.Outcome.IsSuccess ? "ok" : response.Outcome.Error!.Code);
+            }
+        })).ToList();
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => outcomes.Contains("ok"), TimeSpan.FromSeconds(10)));
+
+        Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+        var completedBeforeUnload = outcomes.Count;
+        // 卸载完成之后发起的调用都找不到操作；等到确实有这样的结果再停下调用方
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => outcomes.Skip(completedBeforeUnload).Count(static o => o == KernelErrors.UnknownOperation) >= 8, TimeSpan.FromSeconds(10)));
+        await stop.CancelAsync();
+        await Task.WhenAll(callers);
+
+        // 每个调用都正常结束（没有异常）：卸载前完成、撤回前已查到操作而在进程停止后以不可用结束、或撤回后找不到操作
+        Assert.All(outcomes, static o => Assert.Contains(o, new[] { "ok", PluginErrors.Unavailable, KernelErrors.UnknownOperation }));
+        Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"after"}""")).Outcome.Error?.Code);
+        Assert.DoesNotContain(host.Services.GetRequiredService<OperationRegistry>().All(), static d => d.OwnerId == EchoPluginHost.PluginId);
+
+        // 卸载干净：同一插件直接再加载并服务
+        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None)).IsSuccess);
+        Assert.True((await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"back"}""")).Outcome.IsSuccess);
     }
 
     /// <summary>

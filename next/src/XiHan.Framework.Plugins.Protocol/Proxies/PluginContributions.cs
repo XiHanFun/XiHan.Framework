@@ -13,7 +13,7 @@ namespace XiHan.Framework.Plugins.Protocol.Proxies;
 /// 把一个插件的权限码与代理操作登记进宿主。
 /// </summary>
 /// <remarks>
-/// 权限码是清单 <c>contributes.permissions</c> 声明的，代理操作是握手声明的。进程外与 Wasm 宿主共用（<c>plugin/invocation.md</c> §1，ADR-0080）：一次 <see cref="OperationRegistry.AddRange"/>，权限码与操作全进或全不进。
+/// 权限码是清单 <c>contributes.permissions</c> 声明的，代理操作是握手声明的。进程外与 Wasm 宿主共用（<c>plugin/invocation.md</c> §1，ADR-0080）：一次 <see cref="OperationRegistry.AddRange"/>，归属是插件的清单 ID，权限码与操作全进或全不进；卸载时按同一归属一次撤回（<see cref="Withdraw"/>，ADR-0085）。
 /// </remarks>
 internal static class PluginContributions
 {
@@ -29,6 +29,18 @@ internal static class PluginContributions
     /// <param name="invoker">代理操作执行时转交的插件运行时。</param>
     public static Result Register(OperationRegistry registry, Manifest manifest, HandshakeInfo handshake, IPluginInvoker invoker)
         => registry.AddRange(
+            manifest.Id,
             handshake.Operations.Select(operation => (OperationDescriptor)new ProxyOperationDescriptor(operation.Contract, manifest.Id, invoker, operation.Schema)).ToList(),
             manifest.Contributes.Permissions.Select(static code => new PermissionDefinition(code, code)).ToList());
+
+    /// <summary>
+    /// 撤回插件登记的权限码与代理操作。
+    /// </summary>
+    /// <remarks>
+    /// 卸载插件时调用（ADR-0085）：按清单 ID 一次撤回（<see cref="OperationRegistry.RemoveOwnedBy"/>，先操作后权限码），之后同一插件可以直接再登记。没有登记过（发现时被拒、握手还没成功）时什么都不做。
+    /// </remarks>
+    /// <param name="registry">宿主的操作登记表。</param>
+    /// <param name="manifestId">插件的清单 ID。</param>
+    /// <returns>撤回的代理操作数。</returns>
+    public static int Withdraw(OperationRegistry registry, string manifestId) => registry.RemoveOwnedBy(manifestId);
 }

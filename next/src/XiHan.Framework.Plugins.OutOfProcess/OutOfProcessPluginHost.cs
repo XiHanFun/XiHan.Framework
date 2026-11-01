@@ -84,6 +84,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
+    /// 串行化代理操作的登记与撤回。
+    /// </summary>
+    /// <remarks>
+    /// 登记发生在运行期加载与后台重试里（不持有 <see cref="_gate"/>），撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，卸载之后才完成的握手不会留下指向已卸载插件的登记（ADR-0085）。
+    /// </remarks>
+    private readonly Lock _registration = new();
+
+    /// <summary>
     /// 插件共享的宿主环境。
     /// </summary>
     private readonly PluginHostContext _context;
@@ -227,6 +235,9 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 先按归属（清单 ID）撤回插件登记的代理操作与权限码，再停止进程（<c>plugin/invocation.md</c> §1，ADR-0085）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，已经在执行的调用照常完成或在进程停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束；卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅与消息目录在配置阶段接进容器，不随卸载撤回。
+    /// </remarks>
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
@@ -240,6 +251,9 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             }
 
             _order.Remove(runtime);
+            // 撤回与移出在同一段 _gate 里：同一插件的再加载（DiscoverAsync 同样先取 _gate）一定看到撤回已经完成，
+            // 不会撞上自己上一版留下的登记。先撤回再停止进程：新的调用立刻得到未登记，不再排进正在停止的进程
+            Withdraw(runtime);
         }
         finally
         {
@@ -525,7 +539,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 把运行时清单声明的权限码与握手声明的操作登记进宿主。
     /// </summary>
     /// <remarks>
-    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。
+    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载。
     /// </remarks>
     private Result Register(PluginRuntime runtime)
     {
@@ -534,7 +548,35 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return Result.Success();
         }
 
-        return PluginContributions.Register(_registry, runtime.Manifest, runtime.Handshake, runtime);
+        // 核对与登记在同一把锁里，与卸载的撤回互斥：先被撤回再登记进来的旧运行时会让同一插件的再加载撞上重名
+        lock (_registration)
+        {
+            if (!_plugins.TryGetValue(runtime.Manifest.Id, out var current) || !ReferenceEquals(current, runtime))
+            {
+                return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", runtime.Manifest.Id)));
+            }
+
+            return PluginContributions.Register(_registry, runtime.Manifest, runtime.Handshake, runtime);
+        }
+    }
+
+    /// <summary>
+    /// 撤回运行时登记的权限码与代理操作。
+    /// </summary>
+    /// <remarks>
+    /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做。
+    /// </remarks>
+    private void Withdraw(PluginRuntime runtime)
+    {
+        if (_registry is null)
+        {
+            return;
+        }
+
+        lock (_registration)
+        {
+            PluginContributions.Withdraw(_registry, runtime.Manifest.Id);
+        }
     }
 
     /// <summary>

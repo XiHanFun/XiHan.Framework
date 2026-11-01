@@ -156,11 +156,11 @@ public sealed class FeatureContext
     /// 登记本特性定义的权限。
     /// </summary>
     /// <remarks>
-    /// 重复或超限抛出对应错误。
+    /// 归属为本特性的清单 ID；重复或超限抛出对应错误。
     /// </remarks>
     public FeatureContext AddPermission(PermissionDefinition permission)
     {
-        Permissions.Add(permission).ThrowIfFailure();
+        Permissions.Add(Manifest.Id, permission).ThrowIfFailure();
         return this;
     }
 }

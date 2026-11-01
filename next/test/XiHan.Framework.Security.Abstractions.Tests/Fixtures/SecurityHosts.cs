@@ -35,11 +35,7 @@ internal static class SecurityHosts
     public static PermissionRegistry Registry(params PermissionDefinition[] definitions)
     {
         var registry = new PermissionRegistry();
-        foreach (var definition in definitions)
-        {
-            registry.Add(definition).ThrowIfFailure();
-        }
-
+        registry.AddRange("xihan.test.security", definitions).ThrowIfFailure();
         return registry;
     }
 

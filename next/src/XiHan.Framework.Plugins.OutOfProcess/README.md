@@ -30,7 +30,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 - 运行期：`Invoke` 带 traceparent、截止时间与已登记 Baggage；业务失败来自 `Status.error` 并用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001` / `KERNEL_TIMEOUT_001` 等（`spec/plugin/invocation.md`）。插件回调 `Host.Invoke` / `Host.Publish` 需要清单权限 `capability:kernel.pipeline` / `capability:messaging.queue`（须在清单声明且已授予，授予多于声明的部分不生效），以插件身份（主体 ID = 清单 ID，方案 `Plugin`）执行。
 - 崩溃与启动阶段的握手、`Configure`、`Start` 失败都进入 `Failed`，1 秒起翻倍、上限 60 秒退避重启（启动阶段的失败在附着到容器后开始重试；首次握手就失败的插件重试成功后按运行期加载补登记代理操作，订阅与消息目录要宿主重启才生效；运行期 `LoadAsync` 的这类失败返回给调用方并同样重试），`RestartWindow` 内超过 `RestartLimit` 次后保持 `Failed`；每个插件是应用的一个健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded` 但不退出。
 - 停止：`Stop`（宽限取 `StopGraceSeconds`，默认内核停止超时）→ 等待退出 → 超时先发终止信号（关闭 stdin，Unix 上同时发 SIGTERM；Windows 没有 SIGTERM，关闭 stdin 即等价信号）→ 5 秒内仍未退出再终止进程树；超时都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。
-- `IPluginHost.LoadAsync` / `UnloadAsync` 可在运行期加载与卸载；运行期加载的代理操作只对 `IOperationInvoker` 可见，协议适配器的路由在启动时已经发布。卸载不撤回插件的权限码与代理操作：登记过的插件卸载后再加载会与自己留下的登记冲突（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001`），换版本要重启宿主。
+- `IPluginHost.LoadAsync` / `UnloadAsync` 可在运行期加载与卸载；运行期加载的代理操作只对 `IOperationInvoker` 可见，协议适配器的路由在启动时已经发布。卸载先按归属（清单 ID）撤回插件的代理操作与声明的权限码、再停止进程（`plugin/invocation.md` §1，ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束，同一插件可以直接再加载、不用重启宿主；卸载之后才完成的重试握手不再登记。订阅与消息目录不随卸载撤回。
 
 不负责：流式操作在 .NET 侧的契约（协议已定义 `InvokeStream` 帧，宿主暂不发布流式操作）、操作系统沙箱（`net.outbound:` / `fs.*:` 权限）、Wasm。
 

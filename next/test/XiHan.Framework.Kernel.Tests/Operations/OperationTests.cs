@@ -79,22 +79,22 @@ public sealed class OperationTests
         OperationDescriptor Describe(string id, string owner = "owner-a") => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
 
         // 同一批里重复：返回重复，登记表不变
-        var duplicated = registry.AddRange([Describe("echoes.get"), Describe("echoes.list"), Describe("echoes.get", "owner-b")], []);
+        var duplicated = registry.AddRange("owner-a", [Describe("echoes.get"), Describe("echoes.list"), Describe("echoes.get")], []);
         Assert.Equal(KernelErrors.DuplicateOperation, duplicated.Error?.Code);
         Assert.Equal(0, registry.Count);
 
         // 整批进；与已登记的重复同样整批不进
-        Assert.True(registry.AddRange([Describe("echoes.get"), Describe("echoes.list")], []).IsSuccess);
-        Assert.Equal(KernelErrors.DuplicateOperation, registry.AddRange([Describe("echoes.create"), Describe("echoes.get")], []).Error?.Code);
+        Assert.True(registry.AddRange("owner-a", [Describe("echoes.get"), Describe("echoes.list")], []).IsSuccess);
+        Assert.Equal(KernelErrors.DuplicateOperation, registry.AddRange("owner-a", [Describe("echoes.create"), Describe("echoes.get")], []).Error?.Code);
         Assert.False(registry.Find("echoes.create").HasValue);
 
         // 整批超出容量：一个都不进
-        Assert.Equal(KernelErrors.OperationRegistryFull, registry.AddRange([Describe("echoes.create"), Describe("echoes.delete")], []).Error?.Code);
+        Assert.Equal(KernelErrors.OperationRegistryFull, registry.AddRange("owner-a", [Describe("echoes.create"), Describe("echoes.delete")], []).Error?.Code);
         Assert.Equal(2, registry.Count);
 
-        Assert.True(registry.AddRange([], []).IsSuccess);
-        Assert.Throws<ArgumentException>(() => registry.AddRange([Describe("echoes.create"), null!], []));
-        Assert.Throws<ArgumentException>(() => registry.AddRange([Describe("echoes.create")], [null!]));
+        Assert.True(registry.AddRange("owner-a", [], []).IsSuccess);
+        Assert.Throws<ArgumentException>(() => registry.AddRange("owner-a", [Describe("echoes.create"), null!], []));
+        Assert.Throws<ArgumentException>(() => registry.AddRange("owner-a", [Describe("echoes.create")], [null!]));
         Assert.Equal(2, registry.Count);
     }
 
@@ -102,31 +102,117 @@ public sealed class OperationTests
     public void Registry_AddRange_WithPermissions_RegistersTheGroupAllOrNothing()
     {
         var permissions = new PermissionRegistry();
-        Assert.True(permissions.Add(new PermissionDefinition("hosts.manage", "Manage hosts")).IsSuccess);
+        Assert.True(permissions.Add("xihan.test.host", new PermissionDefinition("hosts.manage", "Manage hosts")).IsSuccess);
         var registry = new OperationRegistry(permissions);
         OperationDescriptor Describe(string id, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
         static PermissionDefinition Define(string code) => new(code, code);
 
         // 一组：归属定义的权限码与引用它们的操作一起进
-        Assert.True(registry.AddRange([Describe("echoes.get", "echoes.read")], [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
+        Assert.True(registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "echoes.read")], [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
         Assert.Equal("echoes.read", permissions.Find("echoes.read").ValueOrThrow().DisplayName);
         Assert.True(permissions.Find("echoes.write").HasValue);
 
         // 声明的码与已登记的重复（宿主的、或上一组声明的）：整组不进，操作也不进
-        var withHost = registry.AddRange([Describe("echoes.list")], [Define("echoes.purge"), Define("hosts.manage")]);
+        var withHost = registry.AddRange("xihan.test.plugin", [Describe("echoes.list")], [Define("echoes.purge"), Define("hosts.manage")]);
         Assert.Equal(KernelErrors.DuplicatePermission, withHost.Error?.Code);
         Assert.Equal("hosts.manage", withHost.Error?.Details?["code"]);
         Assert.False(permissions.Find("echoes.purge").HasValue);
         Assert.False(registry.Find("echoes.list").HasValue);
-        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange([Describe("echoes.list")], [Define("echoes.write")]).Error?.Code);
-        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange([Describe("echoes.list")], [Define("echoes.copy"), Define("echoes.copy")]).Error?.Code);
+        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange("xihan.test.plugin", [Describe("echoes.list")], [Define("echoes.write")]).Error?.Code);
+        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange("xihan.test.plugin", [Describe("echoes.list")], [Define("echoes.copy"), Define("echoes.copy")]).Error?.Code);
         Assert.False(permissions.Find("echoes.copy").HasValue);
 
         // 操作重名：权限码也不进
-        Assert.Equal(KernelErrors.DuplicateOperation, registry.AddRange([Describe("echoes.get")], [Define("echoes.purge")]).Error?.Code);
+        Assert.Equal(KernelErrors.DuplicateOperation, registry.AddRange("xihan.test.plugin", [Describe("echoes.get")], [Define("echoes.purge")]).Error?.Code);
         Assert.False(permissions.Find("echoes.purge").HasValue);
         Assert.Equal(3, permissions.Count);
         Assert.Equal(1, registry.Count);
+    }
+
+    [Fact]
+    public void Registry_RemoveOwnedBy_WithdrawsTheOwnersOperationsAndCodes_AndTheOwnerCanRegisterAgain()
+    {
+        var permissions = new PermissionRegistry();
+        Assert.True(permissions.Add("xihan.test.host", new PermissionDefinition("hosts.manage", "Manage hosts")).IsSuccess);
+        var registry = new OperationRegistry(permissions);
+        static OperationDescriptor Describe(string id, string owner, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        static PermissionDefinition Define(string code) => new(code, code);
+        static IReadOnlyList<OperationDescriptor> Group() => [Describe("echoes.get", "xihan.test.plugin", "echoes.read"), Describe("echoes.list", "xihan.test.plugin")];
+        Assert.True(registry.AddRange("xihan.test.plugin", Group(), [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
+        // 别的归属的操作引用了这个插件定义的码
+        Assert.True(registry.AddRange("xihan.test.other", [Describe("others.get", "xihan.test.other", "echoes.read")], []).IsSuccess);
+
+        Assert.Equal(2, registry.RemoveOwnedBy("xihan.test.plugin"));
+
+        // 本归属的操作与码都撤回；宿主的码与别的归属的操作不动（引用被撤回的码的操作照旧登记，授权时按策略不存在拒绝）
+        Assert.False(registry.Find("echoes.get").HasValue);
+        Assert.False(registry.Find("echoes.list").HasValue);
+        Assert.False(permissions.Find("echoes.read").HasValue);
+        Assert.False(permissions.Find("echoes.write").HasValue);
+        Assert.True(permissions.Find("hosts.manage").HasValue);
+        Assert.True(registry.Find("others.get").HasValue);
+        Assert.Equal(0, registry.RemoveOwnedBy("xihan.test.plugin"));
+        Assert.Equal(0, registry.RemoveOwnedBy("xihan.test.nobody"));
+
+        // 同一归属可以直接再登记（插件卸载后再加载），不撞上自己上一次的登记
+        Assert.True(registry.AddRange("xihan.test.plugin", Group(), [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
+        Assert.Equal(3, registry.Count);
+        Assert.Equal(3, permissions.Count);
+        Assert.Throws<ArgumentException>(() => registry.RemoveOwnedBy(" "));
+    }
+
+    [Fact]
+    public void Registry_AddRange_RejectsOperationsOfAnotherOwner()
+    {
+        var permissions = new PermissionRegistry();
+        var registry = new OperationRegistry(permissions);
+        static OperationDescriptor Describe(string id, string owner) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+
+        // 一组只有一个归属：混进别的归属的操作是编程错误，什么都不登记（否则按归属撤回会错撤或漏撤）
+        var exception = Assert.Throws<ArgumentException>(() => registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "xihan.test.plugin"), Describe("echoes.list", "xihan.test.other")], [new PermissionDefinition("echoes.read", "echoes.read")]));
+
+        Assert.Contains("'echoes.list' is owned by 'xihan.test.other'", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, registry.Count);
+        Assert.Equal(0, permissions.Count);
+        Assert.Throws<ArgumentException>(() => registry.AddRange(" ", [], []));
+    }
+
+    [Fact]
+    public async Task Registry_RegisterAndWithdraw_RacingForTheSameNames_NeverLeavesHalfAGroup()
+    {
+        var permissions = new PermissionRegistry();
+        var registry = new OperationRegistry(permissions);
+        static OperationDescriptor Describe(string id, string owner) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: id == "echoes.get" ? "echoes.read" : null), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        static PermissionDefinition Define(string code) => new(code, code);
+        var successes = 0;
+
+        // 四个归属争同一组名字（同一个插件的新旧版本那样）：各自反复登记、撤回自己的一组
+        await Task.WhenAll(Enumerable.Range(0, 4).Select(index => Task.Run(() =>
+        {
+            var owner = $"xihan.test.plugin{index}";
+            for (var round = 0; round < 300; round++)
+            {
+                var added = registry.AddRange(owner, [Describe("echoes.get", owner), Describe("echoes.list", owner)], [Define("echoes.read"), Define("echoes.write")]);
+                if (added.IsFailure)
+                {
+                    // 撤回与登记都在锁里整组完成：别的归属的操作还在，它的码就一定还在，先撞上的总是操作重名，
+                    // 不会出现操作已撤回、码还留着的半组状态（那样会是权限码重复）
+                    Assert.Equal(KernelErrors.DuplicateOperation, added.Error?.Code);
+                    continue;
+                }
+
+                Interlocked.Increment(ref successes);
+                // 登记成功的一组整组归自己：两个操作都是自己的，撤回时整组撤回
+                Assert.Equal(owner, registry.Find("echoes.get").ValueOrThrow().OwnerId);
+                Assert.Equal(owner, registry.Find("echoes.list").ValueOrThrow().OwnerId);
+                Assert.True(permissions.Find("echoes.read").HasValue);
+                Assert.Equal(2, registry.RemoveOwnedBy(owner));
+            }
+        })));
+
+        Assert.True(successes > 0);
+        Assert.Equal(0, registry.Count);
+        Assert.Equal(0, permissions.Count);
     }
 
     [Fact]
@@ -135,14 +221,14 @@ public sealed class OperationTests
         var permissions = new PermissionRegistry();
         var registry = new OperationRegistry(permissions);
         OperationDescriptor Describe(string id, string? policy) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, policy: policy), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
-        Assert.True(registry.AddRange([Describe("echoes.get", "known"), Describe("echoes.list", "unknown"), Describe("echoes.copy", "unknown")], []).IsSuccess);
+        Assert.True(registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "known"), Describe("echoes.list", "unknown"), Describe("echoes.copy", "unknown")], []).IsSuccess);
 
         // 挂上核对时返回已登记的不通过项（按 ID 排序），由调用方决定怎样失败
         var failing = registry.Enforce(static d => d.Contract.Policy == "unknown" ? Error.Validation("TESTS_VALIDATION_001", "tests.policy.unknown") : null);
         Assert.Equal(["echoes.copy", "echoes.list"], failing.Select(static d => d.Id));
 
         // 此后每次登记都经过它：不通过整组不进，同组的权限码撤回
-        var rejected = registry.AddRange([Describe("echoes.create", "known"), Describe("echoes.delete", "unknown")], [new PermissionDefinition("echoes.audit", "echoes.audit")]);
+        var rejected = registry.AddRange("xihan.test.plugin", [Describe("echoes.create", "known"), Describe("echoes.delete", "unknown")], [new PermissionDefinition("echoes.audit", "echoes.audit")]);
         Assert.Equal("TESTS_VALIDATION_001", rejected.Error?.Code);
         Assert.False(registry.Find("echoes.create").HasValue);
         Assert.False(permissions.Find("echoes.audit").HasValue);
@@ -159,14 +245,14 @@ public sealed class OperationTests
         OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
 
         // 装配之后：一项引用了谁都没定义的码，整组被拒，同组声明的码撤回
-        var rejected = registry.AddRange([Describe("echoes.get", "plugin.read"), Describe("echoes.purge", "plugin.purge")], [new PermissionDefinition("plugin.read", "plugin.read")]);
+        var rejected = registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "plugin.read"), Describe("echoes.purge", "plugin.purge")], [new PermissionDefinition("plugin.read", "plugin.read")]);
         Assert.Equal(KernelErrors.UnregisteredPermission, rejected.Error?.Code);
         Assert.Equal("plugin.purge", rejected.Error?.Details?["permission"]);
         Assert.False(permissions.Find("plugin.read").HasValue);
         Assert.False(registry.Find("echoes.get").HasValue);
 
         // 同组声明的码可以被同组的操作引用；宿主特性登记的码同样可以
-        Assert.True(registry.AddRange([Describe("echoes.get", "plugin.read"), Describe("echoes.list", "echoes.write")], [new PermissionDefinition("plugin.read", "plugin.read")]).IsSuccess);
+        Assert.True(registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "plugin.read"), Describe("echoes.list", "echoes.write")], [new PermissionDefinition("plugin.read", "plugin.read")]).IsSuccess);
         Assert.True(permissions.Find("plugin.read").HasValue);
         await app.StopAsync(CancellationToken.None);
         await provider.DisposeAsync();
@@ -193,7 +279,7 @@ public sealed class OperationTests
         OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
 
         // 装配之后登记（插件握手之后）：未登记的权限码在登记时被拒，整批不进
-        var rejected = registry.AddRange([Describe("echoes.get", "echoes.read"), Describe("echoes.purge", "echoes.purge")], []);
+        var rejected = registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "echoes.read"), Describe("echoes.purge", "echoes.purge")], []);
         Assert.Equal(KernelErrors.UnregisteredPermission, rejected.Error?.Code);
         Assert.Equal("VALIDATION", rejected.Error?.Kind);
         Assert.Equal("echoes.purge", rejected.Error?.Details?["id"]);
@@ -202,7 +288,7 @@ public sealed class OperationTests
         Assert.False(registry.Find("echoes.get").HasValue);
 
         // 已登记的权限码与没有权限要求的操作照常登记
-        Assert.True(registry.AddRange([Describe("echoes.get", "echoes.read"), Describe("echoes.list", null)], []).IsSuccess);
+        Assert.True(registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "echoes.read"), Describe("echoes.list", null)], []).IsSuccess);
         Assert.Equal(KernelErrors.UnregisteredPermission, registry.Add(Describe("echoes.purge", "echoes.purge")).Error?.Code);
         await app.StopAsync(CancellationToken.None);
         await provider.DisposeAsync();

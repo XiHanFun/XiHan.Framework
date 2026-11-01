@@ -334,9 +334,9 @@ public sealed class HttpProtocolTests
         registry.Add(Describe(new OperationContract("orders.export", expose: Expose.Http, permission: "orders.export"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.secret", expose: Expose.Mcp, permission: "orders.secret"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.audit", Stability.Internal, Expose.All, permission: "orders.audit"))).ThrowIfFailure();
-        permissions.Add(new PermissionDefinition("orders.write", "Place orders", "Create orders for the current tenant.")).ThrowIfFailure();
+        permissions.Add("xihan.test.orders", new PermissionDefinition("orders.write", "Place orders", "Create orders for the current tenant.")).ThrowIfFailure();
         // 登记了但没有任何 HTTP 操作引用：授权界面仍需要它
-        permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
+        permissions.Add("xihan.test.orders", new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
 
         using var document = JsonDocument.Parse(OpenApiDocumentBuilder.Build(registry, new HttpProtocolOptions(), permissions, "Orders", "1.0"));
         var paths = document.RootElement.GetProperty("paths");

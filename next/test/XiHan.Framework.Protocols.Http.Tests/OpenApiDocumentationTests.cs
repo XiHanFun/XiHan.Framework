@@ -242,8 +242,8 @@ public sealed class OpenApiDocumentationTests
         registry.Add(Describe(new OperationContract("audits.list", expose: Expose.Http), "xihan.test.orders")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("audits.get", expose: Expose.Http), "xihan.test.billing")).ThrowIfFailure();
         // 定义里是英文显示名（与 BasicApp 相同），中文由区域文案给出
-        permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
-        permissions.Add(new PermissionDefinition("billing.view", "View billing")).ThrowIfFailure();
+        permissions.Add("xihan.test.orders", new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
+        permissions.Add("xihan.test.orders", new PermissionDefinition("billing.view", "View billing")).ThrowIfFailure();
         var export = new RouteEndpoint(
             static _ => Task.CompletedTask,
             RoutePatternFactory.Parse("/exports/{id}"),
