@@ -26,6 +26,7 @@
   "security.issuer.unavailable": "Não foi possível obter os metadados OpenID Connect do emissor '{authority}'.",
   "security.permission.missing": "A permissão '{permission}' está ausente.",
   "security.policy.not_found": "A política '{policy}' não existe.",
+  "security.policy.operation_unregistered": "A operação '{id}' de '{owner}' exige a política '{policy}', que não existe.",
   "security.principal_store.capacity_exceeded": "O armazenamento de principais em memória atingiu sua capacidade de {capacity}.",
   "security.token.invalid": "O token é inválido, expirou ou tem uma assinatura inválida.",
   "security.token.subject_missing": "O token não contém a declaração de sujeito '{claim}'."

@@ -212,7 +212,7 @@ builder.AddXiHan(xihan => xihan
 | `Configuration` | 宿主配置 |
 | `Manifest` / `Node` | 本特性的清单与图谱节点（`Node.IsSelectedFor`、`Node.IsDegraded`、`Node.MissingOptional`） |
 | `AddMiddleware<T>(stage, placement)` | 把中间件挂到某个阶段，归属本特性的清单 ID，并以单例注册中间件类型 |
-| `AddPermission(definition)` | 登记权限码；操作契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`）；端点引用的未登记权限码在调用时被 Authorize 阶段拒绝 |
+| `AddPermission(definition)` | 登记权限码；操作契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`）；端点引用的未登记权限码在宿主建请求管道时核对，启动失败（`SECURITY_VALIDATION_004`） |
 | `AddOperation<TOperation, TRequest, TResponse>(...)` | 登记操作契约，通常由生成的 `AddGeneratedOperations()` 代劳 |
 | `GetBinding(name)` / `TryGetBinding(name)` | 读取宿主解析出的资源绑定 |
 | `Pipeline`、`Permissions`、`Operations`、`Bindings` | 底层的管道构建器、权限表、操作登记表与绑定表 |

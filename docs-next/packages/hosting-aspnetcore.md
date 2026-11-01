@@ -15,7 +15,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 
 ## 概述
 
-宿主不认证、不解析租户、不判定授权，只做协议到内核的翻译。`UseXiHan()` 是一个 ASP.NET Core 中间件：对每个请求，它从 `traceparent`、`baggage`、`xihan-deadline`（或 `grpc-timeout`）、`Accept-Language`、`Authorization` 建调用上下文，记下调用来源，把端点元数据上的授权要求与操作描述放进上下文，然后让其余的 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；调用失败且响应尚未开始时写 Problem Details；调用成功而端点没有执行（幂等回放）时，用端点元数据上的 `OperationResponseWriter` 写出上下文里的响应。应用未就绪时直接回 503，带 `PipelineBypassMetadata` 的端点（探针、文档、gRPC 方法、SignalR Hub）不经内核管道。
+宿主不认证、不解析租户、不判定授权，只做协议到内核的翻译。`UseXiHan()` 是一个 ASP.NET Core 中间件：对每个请求，它从 `traceparent`、`baggage`、`xihan-deadline`（或 `grpc-timeout`）、`Accept-Language`、`Authorization` 建调用上下文，记下调用来源，把端点元数据上的授权要求与操作描述放进上下文，然后让其余的 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；调用失败且响应尚未开始时写 Problem Details；调用成功而端点没有执行（幂等回放）时，用端点元数据上的 `OperationResponseWriter` 写出上下文里的响应。应用未就绪时直接回 503，带 `PipelineBypassMetadata` 的端点（探针、文档、gRPC 方法、SignalR Hub）不经内核管道。装配了授权能力（容器里有 `PolicyCatalog`）时，`UseXiHan()` 在宿主建请求管道时核对全部端点元数据上的授权要求：`RequireXiHanPermission` 的权限码未登记、`RequireXiHanPolicy` 的策略未注册，即抛出 `SECURITY_VALIDATION_004`（一次列出全部），`app.StartAsync()` / `app.Run()` 失败（ADR-0080）。
 
 包里还有三块面向特定场景的能力：`AddAuthentication().AddXiHan(...)` 登记的 ASP.NET Core 认证方案 `XiHan`，让绕过管道的端点也用内核的认证处理器（ADR-0051）；`MapXiHanHealth()` 的三个探针；`HostedBlobUrlFeature` 与 `MapXiHanBlobs()`，给没有原生签名的对象存储（文件系统）签预签名地址并代为收发（ADR-0049）。
 
@@ -75,7 +75,7 @@ app.Run();
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
 | `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live` |
 | `Endpoints.HttpInvocation` | `GetXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
-| `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` |
+| `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
 | `Endpoints.OperationResponseWriter` | 协议适配器挂在端点上的成功响应写出委托（状态码、内容类型与正文）；幂等回放时端点不执行，`UseXiHan()` 在管道成功结束、响应未开始而上下文里有响应对象时用它写出 |

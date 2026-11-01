@@ -17,7 +17,7 @@ ASP.NET Core 宿主适配（Ring 4）。
 
 Problem Details 的扩展成员（ADR-0024 补充）：VALIDATION 种类的错误带 `errors`——对象，键是字段键（`SchemaViolation.Field`：去掉根 `$` 的点分路径，如 `name`、`lines[0].sku`，根级为空串），值是该字段的消息数组；内核校验器的违规带 `kernel.validation.*` 消息键，经 `IMessageLocalizer.Resolve(key, locale, arguments)` 按与 `detail` 相同的区域翻译，应用自校验的文案（没有键）原样，没有装配本地化时用违规的原因文本。所有错误按白名单带 `details`：`Error.Details` 里的字符串、布尔、数值、`Guid`、时间等标量（如 `id`、`capacity`、`retryAfter`），集合与对象（含 `errors` / `violations`）不输出。`ProblemResponse.FromError` / `FieldErrorsOf` / `ScalarDetailsOf` / `WriteTo` 是这套规则的公开入口，响应体由 `WriteTo` 手写，不经源生成上下文。
 
-`Authorization` 头原样进入上下文凭据（`SetCredential`），由安全子系统的 Authenticate 阶段解释；宿主不认证。端点用 `RequireXiHanPermission("orders.read")`、`RequireXiHanAuthentication()`、`RequireXiHanPolicy("name")` 挂授权要求，`UseXiHan()` 把它放进上下文，Authorize 阶段判定。
+`Authorization` 头原样进入上下文凭据（`SetCredential`），由安全子系统的 Authenticate 阶段解释；宿主不认证。端点用 `RequireXiHanPermission("orders.read")`、`RequireXiHanAuthentication()`、`RequireXiHanPolicy("name")` 挂授权要求，`UseXiHan()` 把它放进上下文，Authorize 阶段判定。装配了授权能力时，`UseXiHan()` 在宿主建请求管道时（路由已全部映射）核对全部端点的要求：权限码未登记、策略不存在即 `SECURITY_VALIDATION_004`，一次列出全部，宿主启动失败（ADR-0080）；没有装配授权能力时不判定也不核对。
 
 ## 挂载的配置目录
 

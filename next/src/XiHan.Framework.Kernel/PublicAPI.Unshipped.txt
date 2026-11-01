@@ -268,6 +268,7 @@ XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.O
 XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>! descriptors, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Security.PermissionDefinition!>! permissions) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Operations.OperationRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Count.get -> int
+XiHan.Framework.Kernel.Operations.OperationRegistry.Enforce(System.Func<XiHan.Framework.Kernel.Operations.OperationDescriptor!, XiHan.Framework.Primitives.Error?>! check) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.ExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Find(string! id) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
 XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, int capacity = 10000) -> void

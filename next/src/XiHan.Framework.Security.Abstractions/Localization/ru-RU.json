@@ -26,6 +26,7 @@
   "security.issuer.unavailable": "Не удалось получить метаданные OpenID Connect издателя '{authority}'.",
   "security.permission.missing": "Отсутствует разрешение '{permission}'.",
   "security.policy.not_found": "Политика '{policy}' не существует.",
+  "security.policy.operation_unregistered": "Операция '{id}' из '{owner}' требует политику '{policy}', которая не существует.",
   "security.principal_store.capacity_exceeded": "Хранилище субъектов в памяти достигло предела ёмкости {capacity}.",
   "security.token.invalid": "Токен недействителен, просрочен или имеет неверную подпись.",
   "security.token.subject_missing": "В токене отсутствует утверждение субъекта '{claim}'."

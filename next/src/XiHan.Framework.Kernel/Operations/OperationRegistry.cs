@@ -40,7 +40,7 @@ public sealed class OperationRegistry
     /// 每次登记的每一项都要经过的核对。
     /// </summary>
     /// <remarks>
-    /// 装配阶段为空（定义权限码的特性可能按拓扑排在后面，此时核对会误报）；装配完成时挂上权限码核对。只在 <see cref="_gate"/> 内读写。
+    /// 装配阶段为空（定义权限码的特性可能按拓扑排在后面，此时核对会误报）；装配完成时挂上权限码核对，授权能力启动时挂上策略名核对（<see cref="Enforce"/>）。只在 <see cref="_gate"/> 内读写。
     /// </remarks>
     private readonly List<Func<OperationDescriptor, Error?>> _checks = [];
 
@@ -86,7 +86,7 @@ public sealed class OperationRegistry
     /// 一次登记一组操作连同它们的归属定义的权限码，全部登记或一个都不登记。
     /// </summary>
     /// <remarks>
-    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/> 抛出 <see cref="ArgumentException"/>。
+    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）、经 <see cref="Enforce"/> 挂上的核对不通过（返回核对给出的错误）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/> 抛出 <see cref="ArgumentException"/>。
     /// </remarks>
     /// <param name="descriptors">操作。</param>
     /// <param name="permissions">这组操作的归属定义的权限码；没有时传空集合。</param>
@@ -165,7 +165,7 @@ public sealed class OperationRegistry
     /// </remarks>
     internal void RequireRegisteredPermissions()
     {
-        var unregistered = Require(UnregisteredPermissionOf);
+        var unregistered = Enforce(UnregisteredPermissionOf);
         if (unregistered.Count > 0)
         {
             var violations = unregistered.Select(static d => $"'{d.Id}' of '{d.OwnerId}' requires '{d.Contract.Permission}'");
@@ -185,11 +185,16 @@ public sealed class OperationRegistry
         => _operations.Values.Where(d => d.Contract.IsExposedTo(protocol)).OrderBy(static d => d.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 核对已登记的全部操作并挂上核对，返回不通过的操作（按 ID 排序）。
+    /// 核对已登记的全部操作，并让此后每次登记的每一项都经过同一核对。
     /// </summary>
-    private List<OperationDescriptor> Require(Func<OperationDescriptor, Error?> check)
+    /// <remarks>
+    /// 供容器建好才有判定依据的子系统使用：授权能力启动时才知道有哪些策略，经它核对契约的策略名（ADR-0080）。返回已登记的操作里不通过的（按 ID 排序），由调用方决定怎样失败（通常是启动失败）；此后 <see cref="AddRange"/> 的任一项不通过，整组不登记并返回核对给出的错误。
+    /// </remarks>
+    /// <param name="check">核对一项：通过返回 <see langword="null"/>，否则返回错误。</param>
+    public IReadOnlyList<OperationDescriptor> Enforce(Func<OperationDescriptor, Error?> check)
     {
-        // 核对与挂上在同一个锁里：不会有操作在核对之后、挂上之前登记而漏过
+        ArgumentNullException.ThrowIfNull(check);
+        // 核对与挂上在同一个锁里：不会有操作在核对之后、挂上之前登记而漏过（插件的重试与运行期加载可能与启动并发）
         lock (_gate)
         {
             var failing = All().Where(descriptor => check(descriptor) is not null).ToList();

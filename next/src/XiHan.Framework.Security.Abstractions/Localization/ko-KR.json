@@ -26,6 +26,7 @@
   "security.issuer.unavailable": "발급자 '{authority}'의 OpenID Connect 메타데이터를 가져올 수 없습니다.",
   "security.permission.missing": "권한 '{permission}'이(가) 없습니다.",
   "security.policy.not_found": "정책 '{policy}'이(가) 없습니다.",
+  "security.policy.operation_unregistered": "'{owner}'의 작업 '{id}'에 필요한 정책 '{policy}'이(가) 없습니다.",
   "security.principal_store.capacity_exceeded": "메모리 내 주체 저장소가 용량 한도 {capacity}에 도달했습니다.",
   "security.token.invalid": "토큰이 유효하지 않거나 만료되었거나 서명이 잘못되었습니다.",
   "security.token.subject_missing": "토큰에 주체 클레임 '{claim}'이(가) 없습니다."

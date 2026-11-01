@@ -60,6 +60,14 @@ public static class SecurityErrors
     public const string ConditionAttributeInvalid = "SECURITY_VALIDATION_003";
 
     /// <summary>
+    /// 按名引用的策略不存在（启动时核对）。
+    /// </summary>
+    /// <remarks>
+    /// 操作契约的 <c>Policy</c>（授权能力启动时核对，之后登记的操作在登记时返回）、端点元数据上的要求（<c>UseXiHan()</c> 建请求管道时核对）引用了未注册的策略或未登记的权限码（ADR-0080）。
+    /// </remarks>
+    public const string UnregisteredPolicy = "SECURITY_VALIDATION_004";
+
+    /// <summary>
     /// 取不到条件属性的值。
     /// </summary>
     public const string ConditionAttributeMissing = "SECURITY_NOTFOUND_003";

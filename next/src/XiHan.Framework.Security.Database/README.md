@@ -1,6 +1,6 @@
 # XiHan.Framework.Security.Database
 
-`security.authorization@1` 的数据库 Provider（Ring 3，`role: provider`，RFC-0008，ADR-0027）。权限授予以 `PermissionGrantRecord`（主体种类、主体 ID、权限码、租户）经 `persistence.relational@1` 的仓储读写；`IPermissionGrantStore` 的实现按主体与租户一次查询并进有界的 TTL 缓存。只提供授权：认证仍由 `Security.InMemory`（ApiKey）、`Security.Jwt` 或 `Security.OpenIdConnect` 提供，与 `Security.InMemory` 同时装配时本包顶替其授权部分、内存实现只剩认证。
+`security.authorization@1` 的数据库 Provider（Ring 3，`role: provider`，RFC-0008，ADR-0027）。权限授予以 `PermissionGrantRecord`（主体种类、主体 ID、权限码、租户）经 `persistence.relational@1` 的仓储读写；`IPermissionGrantStore` 的实现按主体与租户一次查询并进有界的 TTL 缓存。只提供授权：认证仍由 `Security.InMemory`（ApiKey）、`Security.Jwt` 或 `Security.OpenIdConnect` 提供，与 `Security.InMemory` 同时装配时本包顶替其授权部分、内存实现只剩认证。被选为授权能力时，特性启动时调用 `PolicyCatalog.EnforceOn` 核对操作契约按名引用的策略：不存在（含 `permission:<code>` 的权限码未登记）即 `SECURITY_VALIDATION_004`，本特性启动失败（默认失败策略下应用启动失败）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080）。
 
 ```csharp
 builder.AddXiHan(x => x

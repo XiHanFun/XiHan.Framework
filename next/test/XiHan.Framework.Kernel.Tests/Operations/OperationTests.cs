@@ -130,6 +130,27 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public void Registry_Enforce_ReturnsFailingOperations_AndChecksEveryLaterRegistration()
+    {
+        var permissions = new PermissionRegistry();
+        var registry = new OperationRegistry(permissions);
+        OperationDescriptor Describe(string id, string? policy) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, policy: policy), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        Assert.True(registry.AddRange([Describe("echoes.get", "known"), Describe("echoes.list", "unknown"), Describe("echoes.copy", "unknown")], []).IsSuccess);
+
+        // 挂上核对时返回已登记的不通过项（按 ID 排序），由调用方决定怎样失败
+        var failing = registry.Enforce(static d => d.Contract.Policy == "unknown" ? Error.Validation("TESTS_VALIDATION_001", "tests.policy.unknown") : null);
+        Assert.Equal(["echoes.copy", "echoes.list"], failing.Select(static d => d.Id));
+
+        // 此后每次登记都经过它：不通过整组不进，同组的权限码撤回
+        var rejected = registry.AddRange([Describe("echoes.create", "known"), Describe("echoes.delete", "unknown")], [new PermissionDefinition("echoes.audit", "echoes.audit")]);
+        Assert.Equal("TESTS_VALIDATION_001", rejected.Error?.Code);
+        Assert.False(registry.Find("echoes.create").HasValue);
+        Assert.False(permissions.Find("echoes.audit").HasValue);
+        Assert.True(registry.Add(Describe("echoes.create", "known")).IsSuccess);
+        Assert.Throws<ArgumentNullException>(() => registry.Enforce(null!));
+    }
+
+    [Fact]
     public async Task Registry_AddRange_AfterAssembly_RollsBackDeclaredPermissionsWhenAnOperationIsRejected()
     {
         var (provider, app) = await StartAsync(new EchoFeature(registerPermission: true));

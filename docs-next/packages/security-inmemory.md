@@ -20,7 +20,7 @@
 | 能力被本包提供时 | 注册 |
 | --- | --- |
 | `security.authentication@1` | `InMemoryPrincipalStore`、`ApiKeyAuthenticationHandler`、Authenticate 阶段的 `AuthenticationMiddleware` |
-| `security.authorization@1` | `InMemoryPermissionGrantStore` 与 `IPermissionGrantStore`、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog`、Authorize 阶段的 `AuthorizationMiddleware` |
+| `security.authorization@1` | `InMemoryPermissionGrantStore` 与 `IPermissionGrantStore`、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog`、Authorize 阶段的 `AuthorizationMiddleware`；启动时核对操作契约引用的策略（`SECURITY_VALIDATION_004`，ADR-0080） |
 
 清单角色是 `default`：装配 `Security.Jwt` 或 `Security.OpenIdConnect` 后本包让出认证、只提供授权；装配 `Security.Database` 后让出授权、只提供认证；两边都被顶替时本包不装配。健康项 `security.inmemory.capacity` 只看本包仍在提供的那部分存储。
 
@@ -124,6 +124,7 @@ public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
 
 ## 行为与限制
 
+- 被选为授权能力时，特性启动时调用 `PolicyCatalog.EnforceOn` 核对操作契约按名引用的策略：不存在（含 `permission:<code>` 的权限码未登记）即 `SECURITY_VALIDATION_004`，本特性启动失败（默认失败策略下应用启动失败）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080）。
 - 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条租户声明（有 `Tenant` 时）、附加声明。租户声明的类型取 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`），与多租户的 `ClaimTenantResolver` 读同一个配置键，改了它 ApiKey 主体的租户照样被认出。
 - API Key 逐条做常量时间比较；找不到返回 `SECURITY_DENIED_003`。
 - 容量：新增主体超过 `MaxPrincipals`、新增授予超过 `MaxGrants` 时返回 `SECURITY_UNAVAILABLE_002`；替换已有主体、重复授予不占容量。配置里的条目超过上限时，构造存储即抛出 `FrameworkException`。

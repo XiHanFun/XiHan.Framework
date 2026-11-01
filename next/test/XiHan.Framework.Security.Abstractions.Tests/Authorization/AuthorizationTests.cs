@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -244,6 +245,52 @@ public sealed class AuthorizationTests
     }
 
     [Fact]
+    public void PolicyCatalog_EnforceOn_ListsEveryContractReferencingAMissingPolicy()
+    {
+        var permissions = SecurityHosts.Registry(SecurityHosts.OrdersRead);
+        var registry = new OperationRegistry(permissions);
+        // 已知策略、已登记权限码的权限策略、只写权限码（装配时由内核核对）的都通过；不存在的策略与未登记的权限策略各列一项
+        registry.Add(Describe(new OperationContract("orders.list", policy: AuthenticatedPolicy.PolicyName))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.export", policy: "permission:orders.read"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get", permission: "orders.read"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.approve", policy: "approvers"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.purge", policy: "permission:orders.purge"))).ThrowIfFailure();
+        var catalog = new PolicyCatalog([new AuthenticatedPolicy()], permissions, new PermissionChecker(new DictionaryGrantStore(), new SecurityOptions()));
+
+        var exception = Assert.Throws<FrameworkException>(() => catalog.EnforceOn(registry));
+
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, exception.Code);
+        Assert.Contains("'orders.approve' of 'xihan.test.security' requires policy 'approvers'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("'orders.purge' of 'xihan.test.security' requires policy 'permission:orders.purge'", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("orders.list", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("orders.export", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PolicyCatalog_EnforceOn_ChecksOperationsRegisteredAfterwards()
+    {
+        var permissions = SecurityHosts.Registry(SecurityHosts.OrdersRead);
+        var registry = new OperationRegistry(permissions);
+        registry.Add(Describe(new OperationContract("orders.list", policy: AuthenticatedPolicy.PolicyName))).ThrowIfFailure();
+        var catalog = new PolicyCatalog([new AuthenticatedPolicy()], permissions, new PermissionChecker(new DictionaryGrantStore(), new SecurityOptions()));
+        catalog.EnforceOn(registry);
+
+        // 之后登记（插件握手之后）：引用了不存在的策略，整组不进，同组声明的权限码撤回
+        var rejected = registry.AddRange([Describe(new OperationContract("invoices.list", policy: "auditors"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]);
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, rejected.Error?.Code);
+        Assert.Equal("VALIDATION", rejected.Error?.Kind);
+        Assert.Equal(SecurityMessages.OperationPolicyUnregistered, rejected.Error?.MessageKey);
+        Assert.Equal(("invoices.list", "xihan.plugins.billing", "auditors"), (rejected.Error?.Details?["id"], rejected.Error?.Details?["owner"], rejected.Error?.Details?["policy"]));
+        Assert.False(registry.Find("invoices.list").HasValue);
+        Assert.False(permissions.Find("invoices.read").HasValue);
+
+        // 同组声明的权限码让同组的权限策略可用
+        Assert.True(registry.AddRange([Describe(new OperationContract("invoices.get", policy: "permission:invoices.read"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]).IsSuccess);
+        Assert.True(registry.Add(Describe(new OperationContract("invoices.export", policy: AuthenticatedPolicy.PolicyName))).IsSuccess);
+        Assert.Throws<ArgumentNullException>(() => catalog.EnforceOn(null!));
+    }
+
+    [Fact]
     public async Task NoRequirement_PassesThrough()
     {
         var context = SecurityHosts.Context(Services());
@@ -357,4 +404,10 @@ public sealed class AuthorizationTests
         /// <inheritdoc />
         public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
     }
+
+    /// <summary>
+    /// 带指定契约的操作描述。
+    /// </summary>
+    private static OperationDescriptor<NoopOperation, NoopRequest, NoopResponse> Describe(OperationContract contract, string owner = "xihan.test.security")
+        => new(contract, owner, NoopJsonContext.Default.NoopRequest, NoopJsonContext.Default.NoopResponse);
 }

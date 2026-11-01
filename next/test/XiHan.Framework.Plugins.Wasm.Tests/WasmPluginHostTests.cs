@@ -19,6 +19,8 @@ using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Wasm.Runtime;
 using XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.InMemory;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Plugins.Wasm.Tests;
@@ -392,6 +394,47 @@ public sealed class WasmPluginHostTests
 
         Assert.Equal(KernelErrors.DuplicatePermission, exception.Code);
         Assert.Contains("wat.call-permission", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_PolicyOnItsOwnDeclaredCode_PassesTheAuthorizationStartCheck()
+    {
+        // 插件声明的码在配置阶段登记，授权能力启动时核对策略：permission:wat.audit 此时已可用（ADR-0080）
+        using var declaring = WatPlugin.Declaring(["wat.audit"], null, policy: "permission:wat.audit");
+
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]);
+
+        Assert.Equal("permission:wat.audit", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Policy);
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_ReferencingAMissingPolicy_FailsTheStart()
+    {
+        using var declaring = WatPlugin.Declaring(["wat.audit"], null, policy: "auditors");
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]));
+
+        Assert.Equal(KernelErrors.FeatureStartFailed, exception.Code);
+        var inner = Assert.IsType<FrameworkException>(exception.InnerException);
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, inner.Code);
+        Assert.Contains("'wat.call' of 'xihan.tests.wat' requires policy 'auditors'", inner.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AfterTheAuthorizationStart_RejectsAMissingPolicy_AndKeepsNoDeclaredCode()
+    {
+        using var declaring = WatPlugin.Declaring(["wat.audit"], null, policy: "auditors");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        // 启动之后登记：策略不存在，整组被拒，声明的码撤回
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, loaded.Error?.Code);
+        Assert.Equal("auditors", loaded.Error?.Details?["policy"]);
+        Assert.Empty(plugins.Plugins);
+        Assert.False(host.Services.GetRequiredService<PermissionRegistry>().Find("wat.audit").HasValue);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
     }
 
     [Theory]

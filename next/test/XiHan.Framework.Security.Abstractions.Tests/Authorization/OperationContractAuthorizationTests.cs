@@ -94,8 +94,8 @@ public sealed class OperationContractAuthorizationTests
         // 没有授权要求的契约放行匿名调用
         Assert.True(await RunAsync(Context(new OperationContract("orders.list"))));
 
-        // 契约里的策略名在调用时查找：不存在按策略不存在拒绝，配置错误不能变成越权
-        // （契约的权限码在装配时核对，未登记即启动失败，见内核 OperationRegistryTests）
+        // 契约的策略名在授权能力启动时核对（PolicyCatalog.EnforceOn，ADR-0080），权限码在装配时核对；
+        // 没经过核对的登记表到了调用时仍找不到策略，按策略不存在拒绝，配置错误不能变成越权
         var missing = Context(new OperationContract("orders.list", policy: "missing"), SecurityHosts.Alice("editor"));
         Assert.False(await RunAsync(missing));
         Assert.Equal(SecurityErrors.PolicyNotFound, missing.GetOutcome().ValueOrThrow().Error?.Code);

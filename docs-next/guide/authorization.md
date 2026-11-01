@@ -104,8 +104,23 @@ app.Run();
 
 1. 取授权要求：显式要求优先，其次是操作契约（权限码优先于策略名）；都没有则放行。
 2. 在 `PolicyCatalog` 里按名查找策略。先找登记的 `IPolicy`（策略名区分大小写）；没有时，名字形如 `permission:<code>` 且权限码已登记，就动态创建 `PermissionPolicy`。
-3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。操作契约的权限码已在装配时核对，走到这里的只有按名给出的策略：契约的 `Policy`、端点上的 `RequireXiHanPolicy` / `RequireXiHanPermission` 与 `RequireAuthorization` 显式写入的要求。
+3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。按名引用的策略大多已在启动时核对（见下一节），走到这里的只剩启动时看不到的要求：应用代码以 `RequireAuthorization` 显式写入的、启动之后才加进来的端点。
 4. 调用策略。`IPolicy.EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝；失败是无法判定（授予存储读不到等），调用以该失败结束，既不放行，也不改写成拒绝。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
+
+### 启动时核对策略引用
+
+引用了不存在的策略是编程错误，与未登记的权限码一样在启动时报出来，不等到调用时 404（ADR-0080）：
+
+| 引用 | 什么时候核对 | 失败 |
+| --- | --- | --- |
+| 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005` |
+| 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）启动时，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：该特性启动失败（默认失败策略下应用启动失败）；插件整体登记失败 |
+| 端点上的 `RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` | `UseXiHan()` 在宿主建请求管道时（路由已全部映射） | `SECURITY_VALIDATION_004`：宿主启动失败（`app.StartAsync` / `app.Run` 抛出） |
+
+- 异常一次列出全部违规项，如 `'orders.approve' of 'xihan.app.orders' requires policy 'approvers'`、`'HTTP: GET /orders/purge' requires permission 'orders.purge', which is not registered`。
+- 策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以契约的策略在启动时而不是装配时核对；配置阶段发现的插件的操作与它声明的权限码此时都已登记，`permission:<插件声明的码>` 能通过。
+- 没有装配授权能力（容器里没有 `PolicyCatalog`）时都不核对：此时 Authorize 阶段也不判定任何要求。
+- 自己实现 `security.authorization@1` 的 Provider，要在启动时同样调用 `PolicyCatalog.EnforceOn(OperationRegistry)`。
 
 内置两种策略：
 
@@ -386,7 +401,8 @@ public static class GeoAttributes
 | `SECURITY_DENIED_001` | 未认证：权限策略或 `authenticated` 策略遇到匿名主体 | 401 |
 | `SECURITY_DENIED_002` | 策略拒绝（策略返回未初始化的结果，或自定义策略以它为原因） | 403 |
 | `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
-| `SECURITY_NOTFOUND_001` | 策略不存在，或端点、显式要求里 `permission:<code>` 的权限码未登记（操作契约的权限码在装配时核对） | 404 |
+| `SECURITY_NOTFOUND_001` | 调用时才看到的要求（`RequireAuthorization` 显式写入的、启动之后才加进来的端点）引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 | 404 |
+| `SECURITY_VALIDATION_004` | 操作契约的 `Policy`、端点上的要求引用了不存在的策略或未登记的权限码：启动时抛出、启动失败；授权能力启动之后登记的操作（插件握手之后）在登记时返回，插件登记失败 | — |
 | `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`Security.Database` 的逐项结果） | — |
 | `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据（数据库授予存储的连接、超时、事务失败），不当作不持有 | 503 |
 | `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满（`Grant` 与健康项 `security.inmemory.capacity`） | — |

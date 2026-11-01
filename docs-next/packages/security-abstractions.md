@@ -144,7 +144,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 ## 行为与限制
 
 - 认证：没有凭据保持匿名；方案找不到返回 `SECURITY_VALIDATION_001`；认证成功保留已有租户；`RequireAuthentication` 在认证之后检查。
-- 策略查找：注册的策略按名区分大小写匹配；`permission:<code>` 只为 `PermissionRegistry` 里登记过的权限码创建；找不到返回 `SECURITY_NOTFOUND_001`，宁可拒绝不可放行。操作契约的权限码在装配时由内核核对（`KERNEL_VALIDATION_005`），这条路径只剩按名给出的策略（契约的 `Policy`、端点元数据、显式要求）。
+- 策略查找：注册的策略按名区分大小写匹配；`permission:<code>` 只为 `PermissionRegistry` 里登记过的权限码创建；找不到返回 `SECURITY_NOTFOUND_001`，宁可拒绝不可放行。操作契约的权限码在装配时由内核核对（`KERNEL_VALIDATION_005`），契约的 `Policy` 在授权能力启动时经 `PolicyCatalog.EnforceOn` 核对、端点元数据在 `UseXiHan()` 建请求管道时核对（`SECURITY_VALIDATION_004`，启动失败，ADR-0080），这条路径只剩启动时看不到的要求（`RequireAuthorization` 显式写入的、启动之后才加进来的端点）。
+- `PolicyCatalog.EnforceOn(OperationRegistry)`：核对已登记的全部操作契约的 `Policy` 都在目录里（`permission:<code>` 要求权限码已登记），不在即抛出 `SECURITY_VALIDATION_004`（`FrameworkException`，一次列出全部）；同时经 `OperationRegistry.Enforce` 挂到登记表上，此后登记的操作（插件握手之后）引用了不存在的策略，登记时返回同一错误码（消息键 `security.policy.operation_unregistered`，参数 `id`、`owner`、`policy`），整组不登记。`security.authorization@1` 的 Provider 在启动时调用它；`Security.InMemory` 与 `Security.Database` 被选为授权能力时调用。
 - 权限判定：匿名主体不持有任何权限，不访问存储；授予按序数精确匹配或 `*`；顺序是用户授予 → 角色授予 → 授予来源 → 过滤器，命中即止。存储、来源或过滤器返回的失败原样返回（不当作不持有，ADR-0071），抛出的异常照常传播。替换 `IPermissionChecker` 的实现须同样并上全部来源并施加全部过滤器。
 - `PermissionChecker` 的构造函数接收全部登记的 `IPermissionFilter` 与 `IPermissionGrantSource`（可为空集合），集合里出现 `null` 抛出 `ArgumentException`。
 - 条件引擎的登记表在首次解析时建好，重名与别名冲突即抛出；`MemoizingConditionAttributeSource` 按单次调用使用，不是线程安全的。
@@ -158,7 +159,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 | `SECURITY_VALIDATION_001` | 不支持的认证方案 |
 | `SECURITY_VALIDATION_002` | 条件无效（属性未登记、运算符与值种类不搭配、条件值解析不了） |
 | `SECURITY_VALIDATION_003` | 条件属性的值不是登记的值种类 |
-| `SECURITY_NOTFOUND_001` | 策略不存在，或按名给出的 `permission:<code>` 的权限码未登记 |
+| `SECURITY_VALIDATION_004` | 按名引用的策略不存在：操作契约的 `Policy`（授权能力启动时，之后登记的在登记时）、端点元数据（`UseXiHan()` 建请求管道时）引用了未注册的策略或未登记的权限码；启动失败 |
+| `SECURITY_NOTFOUND_001` | 调用时才看到的要求（显式写入的、启动之后加进来的端点）引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 |
 | `SECURITY_NOTFOUND_002` | 要撤销的授予不存在 |
 | `SECURITY_NOTFOUND_003` | 取不到条件属性的值 |
 | `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达：授予存储、授予来源或收窄过滤器读不到数据（HTTP 503，不当作不持有） |

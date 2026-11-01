@@ -75,8 +75,9 @@ internal sealed class WatPlugin : IDisposable
     /// <param name="permission">操作要求的权限码；为空时操作没有权限要求。</param>
     /// <param name="pluginId">清单 ID。</param>
     /// <param name="operation">操作 ID。</param>
-    public static WatPlugin Declaring(IReadOnlyList<string> declared, string? permission, string pluginId = PluginId, string operation = Operation)
-        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission, declared, pluginId, operation);
+    /// <param name="policy">操作要求的策略名；与 <paramref name="permission"/> 二选一。</param>
+    public static WatPlugin Declaring(IReadOnlyList<string> declared, string? permission, string pluginId = PluginId, string operation = Operation, string? policy = null)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission, declared, pluginId, operation, policy);
 
     /// <summary>
     /// 生成一个贡献中间件的插件。
@@ -127,7 +128,8 @@ internal sealed class WatPlugin : IDisposable
         string? operationPermission = null,
         IReadOnlyList<string>? declaredPermissions = null,
         string pluginId = PluginId,
-        string operation = Operation)
+        string operation = Operation,
+        string? operationPolicy = null)
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
@@ -159,9 +161,7 @@ internal sealed class WatPlugin : IDisposable
             ["protocolVersion"] = 1,
             ["primitives"] = 1,
             ["manifest"] = manifest,
-            ["operations"] = new JsonArray(operationPermission is null
-                ? new JsonObject { ["id"] = operation, ["stability"] = "experimental" }
-                : new JsonObject { ["id"] = operation, ["stability"] = "experimental", ["permission"] = operationPermission }),
+            ["operations"] = new JsonArray(Declaration(operation, operationPermission, operationPolicy)),
         }.ToJsonString();
 
         var segments = new StringBuilder();
@@ -224,6 +224,25 @@ internal sealed class WatPlugin : IDisposable
         File.WriteAllText(Path.Combine(directory, "xihan.manifest.json"), manifest);
         File.WriteAllText(Path.Combine(directory, "plugin.wat"), module);
         return new WatPlugin(directory);
+    }
+
+    /// <summary>
+    /// 握手里的操作声明：可带权限码或策略名。
+    /// </summary>
+    private static JsonObject Declaration(string operation, string? permission, string? policy)
+    {
+        var declaration = new JsonObject { ["id"] = operation, ["stability"] = "experimental" };
+        if (permission is not null)
+        {
+            declaration["permission"] = permission;
+        }
+
+        if (policy is not null)
+        {
+            declaration["policy"] = policy;
+        }
+
+        return declaration;
     }
 
     /// <summary>

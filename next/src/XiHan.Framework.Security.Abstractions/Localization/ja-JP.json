@@ -26,6 +26,7 @@
   "security.issuer.unavailable": "発行者 '{authority}' の OpenID Connect メタデータを取得できませんでした。",
   "security.permission.missing": "権限 '{permission}' がありません。",
   "security.policy.not_found": "ポリシー '{policy}' は存在しません。",
+  "security.policy.operation_unregistered": "'{owner}' の操作 '{id}' が要求するポリシー '{policy}' は存在しません。",
   "security.principal_store.capacity_exceeded": "インメモリプリンシパルストアは容量上限 {capacity} に達しました。",
   "security.token.invalid": "トークンが無効、期限切れ、または署名が不正です。",
   "security.token.subject_missing": "トークンにサブジェクトクレーム '{claim}' がありません。"

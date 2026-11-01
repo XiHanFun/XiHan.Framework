@@ -42,6 +42,14 @@ public static class SecurityMessages
     public const string PolicyNotFound = "security.policy.not_found";
 
     /// <summary>
+    /// 操作契约引用的策略不存在。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>owner</c>、<c>policy</c>。授权能力启动之后登记的操作（插件握手之后）在登记时返回。
+    /// </remarks>
+    public const string OperationPolicyUnregistered = "security.policy.operation_unregistered";
+
+    /// <summary>
     /// 缺少权限。
     /// </summary>
     /// <remarks>

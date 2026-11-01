@@ -5,6 +5,7 @@ using System.Collections.Frozen;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
@@ -73,6 +74,26 @@ public sealed class DatabaseSecurityTests
         Assert.Equal([(typeof(AuthorizationMiddleware).FullName!, PipelineStage.Authorize)], feature.Manifest.Contributes.Pipeline.Select(static p => (p.Middleware, p.Stage)));
         Assert.Equal(SecurityOptions.ConfigurationSection, feature.Manifest.Contributes.Config?.Section);
         Assert.Empty(feature.Manifest.Contributes.Health);
+    }
+
+    [Fact]
+    public async Task Feature_ChecksContractPoliciesAtStart()
+    {
+        // 数据库授权是选中的授权能力：启动时核对契约按名引用的策略，不存在即本特性启动失败（ADR-0080）
+        var approvals = new StubFeature(TestManifests.Create("xihan.app.approvals", requires: ["security.authorization@1"]))
+        {
+            OnConfigure = static ctx => ctx.AddOperation<WriteOrderOperation, OrderRequest, OrderResponse>(new OperationContract("orders.approve", policy: "approvers"), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderResponse),
+        };
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
+            b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>().UseFeature(approvals),
+            _configuration));
+
+        Assert.Equal(KernelErrors.FeatureStartFailed, exception.Code);
+        Assert.Contains("xihan.security.database", exception.Message, StringComparison.Ordinal);
+        var inner = Assert.IsType<FrameworkException>(exception.InnerException);
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, inner.Code);
+        Assert.Contains("'orders.approve' of 'xihan.app.approvals' requires policy 'approvers'", inner.Message, StringComparison.Ordinal);
     }
 
     [Fact]

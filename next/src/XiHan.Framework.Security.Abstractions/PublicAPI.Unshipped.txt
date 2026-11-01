@@ -32,6 +32,7 @@ XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.Name.get ->
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.PermissionCode.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.PermissionPolicy(string! permissionCode, XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker! checker) -> void
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog
+XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.EnforceOn(XiHan.Framework.Kernel.Operations.OperationRegistry! operations) -> void
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Security.IPolicy!>
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.Names.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Security.Abstractions.Authorization.PolicyCatalog.PolicyCatalog(System.Collections.Generic.IEnumerable<XiHan.Framework.Kernel.Security.IPolicy!>! policies, XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker! checker) -> void
@@ -319,6 +320,7 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.PermissionMissing = "
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyDenied = "SECURITY_DENIED_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyNotFound = "SECURITY_NOTFOUND_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "SECURITY_UNAVAILABLE_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.UnregisteredPolicy = "SECURITY_VALIDATION_004" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
@@ -346,6 +348,7 @@ const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreUnavailab
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidToken = "security.token.invalid" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.IssuerUnavailable = "security.issuer.unavailable" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.OperationPolicyUnregistered = "security.policy.operation_unregistered" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.PermissionMissing = "security.permission.missing" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.PolicyNotFound = "security.policy.not_found" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.PrincipalStoreCapacityExceeded = "security.principal_store.capacity_exceeded" -> string!

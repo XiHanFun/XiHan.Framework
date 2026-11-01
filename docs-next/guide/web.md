@@ -151,7 +151,7 @@ app.MapGet("/orders/export", () => Results.Text("id,name"))
     .RequireXiHanPermission("orders.read");
 ```
 
-`OrderEventCounter` 与 `OrderStatistics` 是 `samples/SimpleApp` 里的类型。判定由安全子系统完成：没有装配 `security.authorization@1` 时要求只进入上下文，不被判定。权限码必须由某个特性用 `FeatureContext.AddPermission` 登记，未登记的权限码与不存在的策略都以 `SECURITY_NOTFOUND_001` 拒绝。端点上的要求优先于操作契约上的权限或策略。认证与授权的配置见[认证](./authentication)与[授权](./authorization)。
+`OrderEventCounter` 与 `OrderStatistics` 是 `samples/SimpleApp` 里的类型。判定由安全子系统完成：没有装配 `security.authorization@1` 时要求只进入上下文，不被判定。权限码必须由某个特性用 `FeatureContext.AddPermission` 登记；装配了授权能力时，`UseXiHan()` 在宿主建请求管道时核对全部端点的要求，未登记的权限码与不存在的策略让宿主启动失败（`SECURITY_VALIDATION_004`，一次列出全部，ADR-0080）。端点上的要求优先于操作契约上的权限或策略。认证与授权的配置见[认证](./authentication)与[授权](./authorization)。
 
 ## Problem Details
 
@@ -257,7 +257,7 @@ internal sealed partial class AppJsonContext : JsonSerializerContext;
 | 未认证 / 凭据无效、过期或签名不符 | 401 | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 授予存储、授予来源或收窄过滤器读不到数据（授权无法判定） | 503 | `SECURITY_UNAVAILABLE_001` |
-| 策略不存在，或端点要求的权限码未登记（操作契约的权限码装配时核对，未登记启动失败） | 404 | `SECURITY_NOTFOUND_001` |
+| 调用时才看到的要求（`RequireAuthorization` 显式写入的、启动之后才加进来的端点）引用的策略不存在（端点元数据与操作契约的引用在启动时核对，不合格启动失败） | 404 | `SECURITY_NOTFOUND_001` |
 
 ## 相关
 

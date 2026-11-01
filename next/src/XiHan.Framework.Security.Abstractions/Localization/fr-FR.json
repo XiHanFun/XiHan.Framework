@@ -26,6 +26,7 @@
   "security.issuer.unavailable": "Les métadonnées OpenID Connect de l'émetteur '{authority}' n'ont pas pu être récupérées.",
   "security.permission.missing": "La permission '{permission}' est manquante.",
   "security.policy.not_found": "La stratégie '{policy}' n'existe pas.",
+  "security.policy.operation_unregistered": "L'opération '{id}' de '{owner}' requiert la stratégie '{policy}', qui n'existe pas.",
   "security.principal_store.capacity_exceeded": "Le magasin de principaux en mémoire a atteint sa capacité de {capacity}.",
   "security.token.invalid": "Le jeton est invalide, expiré ou sa signature est incorrecte.",
   "security.token.subject_missing": "Le jeton ne contient pas la revendication de sujet '{claim}'."

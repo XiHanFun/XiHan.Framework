@@ -35,74 +35,85 @@ public static class ApplicationBuilderExtensions
     /// 让其余 ASP.NET Core 管道在内核管道内执行。
     /// </summary>
     /// <remarks>
-    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；成功而端点没有执行（幂等回放）时用端点元数据上的 <see cref="OperationResponseWriter"/> 写出上下文里的响应；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。放在路由之后。
+    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；成功而端点没有执行（幂等回放）时用端点元数据上的 <see cref="OperationResponseWriter"/> 写出上下文里的响应；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。宿主建请求管道时（路由已全部映射）核对端点元数据上的授权要求引用的策略都存在，引用了不存在的策略或未登记的权限码即启动失败（<c>SECURITY_VALIDATION_004</c>，ADR-0080）。放在路由之后。
     /// </remarks>
     public static IApplicationBuilder UseXiHan(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
         var xihan = app.ApplicationServices.GetRequiredService<App>();
 
-        return app.Use(async (httpContext, next) =>
+        return app.Use(next =>
         {
-            // 标注了绕过元数据的端点（探针、静态资源等）直接放行，应用未就绪时也要能访问
-            if (httpContext.GetEndpoint()?.Metadata.GetMetadata<PipelineBypassMetadata>() is not null)
-            {
-                await next(httpContext).ConfigureAwait(false);
-                return;
-            }
-
-            // 未处于服务状态时还没有调用上下文，trace-id 留空
-            if (!xihan.State.IsServing())
-            {
-                await WriteProblemAsync(httpContext, Error.Unavailable(KernelErrors.NotServing, KernelMessages.NotServing, MessageArguments.Of(("state", xihan.State.ToString()))), traceId: string.Empty, context: null).ConfigureAwait(false);
-                return;
-            }
-
-            var context = HttpInvocation.CreateContext(httpContext);
-            if (httpContext.GetEndpoint()?.Metadata.GetMetadata<AuthorizationRequirement>() is { } requirement)
-            {
-                context.RequireAuthorization(requirement);
-            }
-
-            // 操作端点把描述与载荷绑定挂在元数据上：进入管道前把描述放进上下文（Authorize 阶段按契约判定），并先绑定载荷（Validate 阶段按 Schema 校验并解码），端点内只剩执行；
-            // 绑定失败（请求体不是 JSON 对象等）不进管道，直接写 Problem Details
-            var endpoint = httpContext.GetEndpoint();
-            if (endpoint?.Metadata.GetMetadata<OperationDescriptor>() is { } operation)
-            {
-                context.SetOperation(operation);
-                if (endpoint.Metadata.GetMetadata<OperationPayloadBinder>() is { } binder)
-                {
-                    var bound = await binder(httpContext, context.CancellationToken).ConfigureAwait(false);
-                    if (!bound.TryGetValue(out var payload))
-                    {
-                        await WriteProblemAsync(httpContext, bound.Error!, context.TraceId, context).ConfigureAwait(false);
-                        return;
-                    }
-
-                    context.SetOperationPayload(payload);
-                }
-            }
-
-            // 其余 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；端点通过上下文设置结果，异常由内核翻译为失败结果
-            var outcome = await xihan.InvokeAsync(context, async _ => await next(httpContext).ConfigureAwait(false)).ConfigureAwait(false);
-
-            // 管道成功结束而端点没有写出（Idempotency 阶段回放了首次调用的结果与响应，Handle 没有执行）：按端点的约定写出上下文里的响应
-            if (outcome.IsSuccess
-                && !httpContext.Response.HasStarted
-                && endpoint?.Metadata.GetMetadata<OperationResponseWriter>() is { } writer
-                && context.GetOperation().TryGetValue(out var replayed)
-                && context.GetOperationResponse().TryGetValue(out var response))
-            {
-                await writer(httpContext, replayed, replayed.EncodeResponse(response), context.CancellationToken).ConfigureAwait(false);
-                return;
-            }
-
-            // 响应已开始写出时无法再改状态码与正文，只能保留端点已写的内容
-            if (outcome.IsFailure && !httpContext.Response.HasStarted)
-            {
-                await WriteProblemAsync(httpContext, outcome.Error!, context.TraceId, context).ConfigureAwait(false);
-            }
+            // 中间件工厂在宿主建请求管道时执行一次：此刻 Map* 都已调用完、UseEndpoints 已把数据源交给路由，
+            // 在这里核对端点上的授权要求，引用了不存在的策略就让宿主启动失败，而不是等到调用时才 404
+            EndpointRequirementCheck.Verify(app);
+            return httpContext => InvokeAsync(httpContext, next, xihan);
         });
+    }
+
+    /// <summary>
+    /// 一次请求经过内核管道。
+    /// </summary>
+    private static async Task InvokeAsync(HttpContext httpContext, RequestDelegate next, App xihan)
+    {
+        // 标注了绕过元数据的端点（探针、静态资源等）直接放行，应用未就绪时也要能访问
+        if (httpContext.GetEndpoint()?.Metadata.GetMetadata<PipelineBypassMetadata>() is not null)
+        {
+            await next(httpContext).ConfigureAwait(false);
+            return;
+        }
+
+        // 未处于服务状态时还没有调用上下文，trace-id 留空
+        if (!xihan.State.IsServing())
+        {
+            await WriteProblemAsync(httpContext, Error.Unavailable(KernelErrors.NotServing, KernelMessages.NotServing, MessageArguments.Of(("state", xihan.State.ToString()))), traceId: string.Empty, context: null).ConfigureAwait(false);
+            return;
+        }
+
+        var context = HttpInvocation.CreateContext(httpContext);
+        if (httpContext.GetEndpoint()?.Metadata.GetMetadata<AuthorizationRequirement>() is { } requirement)
+        {
+            context.RequireAuthorization(requirement);
+        }
+
+        // 操作端点把描述与载荷绑定挂在元数据上：进入管道前把描述放进上下文（Authorize 阶段按契约判定），并先绑定载荷（Validate 阶段按 Schema 校验并解码），端点内只剩执行；
+        // 绑定失败（请求体不是 JSON 对象等）不进管道，直接写 Problem Details
+        var endpoint = httpContext.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<OperationDescriptor>() is { } operation)
+        {
+            context.SetOperation(operation);
+            if (endpoint.Metadata.GetMetadata<OperationPayloadBinder>() is { } binder)
+            {
+                var bound = await binder(httpContext, context.CancellationToken).ConfigureAwait(false);
+                if (!bound.TryGetValue(out var payload))
+                {
+                    await WriteProblemAsync(httpContext, bound.Error!, context.TraceId, context).ConfigureAwait(false);
+                    return;
+                }
+
+                context.SetOperationPayload(payload);
+            }
+        }
+
+        // 其余 ASP.NET Core 管道作为内核管道的 Handle 阶段执行；端点通过上下文设置结果，异常由内核翻译为失败结果
+        var outcome = await xihan.InvokeAsync(context, async _ => await next(httpContext).ConfigureAwait(false)).ConfigureAwait(false);
+
+        // 管道成功结束而端点没有写出（Idempotency 阶段回放了首次调用的结果与响应，Handle 没有执行）：按端点的约定写出上下文里的响应
+        if (outcome.IsSuccess
+            && !httpContext.Response.HasStarted
+            && endpoint?.Metadata.GetMetadata<OperationResponseWriter>() is { } writer
+            && context.GetOperation().TryGetValue(out var replayed)
+            && context.GetOperationResponse().TryGetValue(out var response))
+        {
+            await writer(httpContext, replayed, replayed.EncodeResponse(response), context.CancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        // 响应已开始写出时无法再改状态码与正文，只能保留端点已写的内容
+        if (outcome.IsFailure && !httpContext.Response.HasStarted)
+        {
+            await WriteProblemAsync(httpContext, outcome.Error!, context.TraceId, context).ConfigureAwait(false);
+        }
     }
 
     /// <summary>

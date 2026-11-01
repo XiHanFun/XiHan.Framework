@@ -68,7 +68,8 @@ public sealed class OrdersFeature : IFeature
         context.Services.AddSingleton<OrderEventCounter>();
         context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 
-        // 权限码在这里登记，操作契约与端点上的 RequireXiHanPermission 引用它；操作契约引用了没登记的权限码，装配完成时启动失败（KERNEL_VALIDATION_005）
+        // 权限码在这里登记，操作契约与端点上的 RequireXiHanPermission 引用它：操作契约引用了没登记的权限码，装配完成时启动失败（KERNEL_VALIDATION_005）；
+        // 端点上引用的权限码与策略在宿主建请求管道时核对，契约的策略名在授权能力启动时核对，不存在同样启动失败（SECURITY_VALIDATION_004）
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
 
