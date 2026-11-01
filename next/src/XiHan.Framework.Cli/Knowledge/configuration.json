@@ -313,7 +313,7 @@
           "type": "string",
           "required": true,
           "sample": "localhost:6379",
-          "summary": "StackExchange.Redis 连接字符串，不能为空白；没有时取绑定 cache 的值"
+          "summary": "StackExchange.Redis 连接字符串，不能为空白；绑定 cache 的值优先，没有绑定或其值为空时读本键"
         },
         {
           "key": "KeyPrefix",
@@ -368,7 +368,7 @@
           "type": "string",
           "required": true,
           "sample": "http://localhost:8848",
-          "summary": "服务地址，逗号或分号分隔的绝对 http(s) URL，按序尝试；没有时取绑定 nacos 的值"
+          "summary": "服务地址，逗号或分号分隔的绝对 http(s) URL，按序尝试；绑定 nacos 的值优先，没有绑定或其值为空时读本键"
         },
         {
           "key": "Username",
@@ -657,7 +657,7 @@
           "type": "string",
           "required": true,
           "sample": "localhost:9092",
-          "summary": "引导地址，逗号分隔的 host:port；没有时取绑定 stream 的值"
+          "summary": "引导地址，逗号分隔的 host:port；绑定 stream 的值优先，没有绑定或其值为空时读本键"
         },
         {
           "key": "GroupId",
@@ -754,7 +754,7 @@
           "type": "string",
           "required": true,
           "sample": "amqp://localhost:5672",
-          "summary": "AMQP URI（amqp:// 或 amqps://）；没有时取绑定 queue 的值"
+          "summary": "AMQP URI（amqp:// 或 amqps://）；绑定 queue 的值优先，没有绑定或其值为空时读本键"
         },
         {
           "key": "QueuePrefix",

@@ -806,6 +806,10 @@
         {
           "id": "Microsoft.EntityFrameworkCore",
           "version": "10.0.13"
+        },
+        {
+          "id": "Microsoft.EntityFrameworkCore.Relational",
+          "version": "10.0.13"
         }
       ],
       "frameworkReferences": []
@@ -1128,6 +1132,10 @@
         "XiHan.Framework.Scheduling.Abstractions"
       ],
       "dependencies": [
+        {
+          "id": "Microsoft.Extensions.TimeProvider.Testing",
+          "version": "10.11.0"
+        },
         {
           "id": "xunit.v3.assert",
           "version": "4.0.2"
@@ -1563,7 +1571,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Caching",
+      "config": "XiHan:Caching:Hybrid",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -1697,7 +1705,7 @@
           "required": false
         }
       ],
-      "config": "XiHan:Configuration",
+      "config": "XiHan:Configuration:Nacos",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -1726,7 +1734,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:ObjectStorage",
+      "config": "XiHan:ObjectStorage:SignedUrls",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -1813,7 +1821,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Messaging",
+      "config": "XiHan:Messaging:Outbox",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2055,7 +2063,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Observability",
+      "config": "XiHan:Observability:Host",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2079,7 +2087,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Observability",
+      "config": "XiHan:Observability:OpenTelemetry",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2106,7 +2114,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Persistence",
+      "config": "XiHan:Persistence:Snowflake",
       "pipeline": [
         {
           "middleware": "XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeUnavailableMiddleware",
@@ -2178,7 +2186,7 @@
           "required": false
         }
       ],
-      "config": "XiHan:Persistence",
+      "config": "XiHan:Persistence:EntityFrameworkCore",
       "pipeline": [
         {
           "middleware": "XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware",
@@ -2211,7 +2219,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Persistence",
+      "config": "XiHan:Persistence:InMemory",
       "pipeline": [
         {
           "middleware": "XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware",
@@ -2255,7 +2263,7 @@
           "required": false
         }
       ],
-      "config": "XiHan:Persistence",
+      "config": "XiHan:Persistence:SqlSugar",
       "pipeline": [
         {
           "middleware": "XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware",
@@ -2288,7 +2296,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Plugins",
+      "config": "XiHan:Plugins:OutOfProcess",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2312,7 +2320,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Plugins",
+      "config": "XiHan:Plugins:Wasm",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2341,7 +2349,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Protocols",
+      "config": "XiHan:Protocols:CloudEvents",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2365,7 +2373,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Protocols",
+      "config": "XiHan:Protocols:Grpc",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2389,7 +2397,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Protocols",
+      "config": "XiHan:Protocols:Http",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2413,7 +2421,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Protocols",
+      "config": "XiHan:Protocols:Mcp",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2496,7 +2504,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Scheduling",
+      "config": "XiHan:Scheduling:Kubernetes",
       "pipeline": [],
       "operations": [],
       "permissions": [],
@@ -2596,7 +2604,7 @@
         }
       ],
       "bindings": [],
-      "config": "XiHan:Security",
+      "config": "XiHan:Security:Ip2Region",
       "pipeline": [],
       "operations": [],
       "permissions": [],
