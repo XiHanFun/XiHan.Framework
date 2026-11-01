@@ -24,7 +24,7 @@ public static class SqlSugarConventions
     /// 判定引用类型属性可空性的上下文。
     /// </summary>
     /// <remarks>
-    /// 线程安全，可复用。
+    /// 不是线程安全的（内部缓存不加锁），只经 <see cref="IsNullableReference"/> 加锁使用。
     /// </remarks>
     private static readonly NullabilityInfoContext _nullability = new();
 
@@ -196,9 +196,22 @@ public static class SqlSugarConventions
 
         // Nullable<T> 值类型与可空引用类型（string?）的列可空：SqlSugar 的 CodeFirst 不从类型推断可空，需要显式告诉它
         if (Nullable.GetUnderlyingType(property.PropertyType) is not null
-            || (!property.PropertyType.IsValueType && _nullability.Create(property).WriteState == NullabilityState.Nullable))
+            || (!property.PropertyType.IsValueType && IsNullableReference(property)))
         {
             column.IsNullable = true;
+        }
+    }
+
+    /// <summary>
+    /// 引用类型属性是否声明为可空（<c>string?</c> 等）。
+    /// </summary>
+    private static bool IsNullableReference(PropertyInfo property)
+    {
+        // NullabilityInfoContext 的缓存是不加锁的字典：多个客户端会并发地首次建实体映射（并行的请求、并行的测试），
+        // 共用的上下文不加锁时字典被并发写坏，建映射抛出“已添加了具有相同键的项”，启动或第一次查询随之失败
+        lock (_nullability)
+        {
+            return _nullability.Create(property).WriteState == NullabilityState.Nullable;
         }
     }
 
