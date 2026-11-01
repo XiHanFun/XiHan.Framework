@@ -18,10 +18,11 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// 每主题一条有界通道、单消费者顺序投递的内存代理。
 /// </summary>
 /// <remarks>
-/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。主题数有上限（<see cref="InMemoryMessagingOptions.MaxTopics"/>），超出时发布到新主题返回 <see cref="MessagingErrors.TopicLimit"/>。
+/// 只有被订阅的主题（本进程登记了处理器，或交给 <see cref="StartAsync"/> 消费）才有通道；发布到没人订阅的主题直接丢弃并记一条 Debug 日志，发布照常成功，不建通道、不占主题名额。
+/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。被订阅的主题数有上限（<see cref="InMemoryMessagingOptions.MaxTopics"/>），超出时启动失败（<see cref="MessagingErrors.TopicLimit"/>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
+public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, MessageSubscriptions subscriptions, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
     /// <summary>
     /// 内存代理选项：每主题容量与主题数上限。
@@ -32,6 +33,14 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 消息选项：最多投递次数。
     /// </summary>
     private readonly MessagingOptions _messaging = messaging ?? throw new ArgumentNullException(nameof(messaging));
+
+    /// <summary>
+    /// 本进程的订阅表。
+    /// </summary>
+    /// <remarks>
+    /// 发布到的主题有没有人订阅以它为准：订阅表在装配时定好，启动消费之前发布到被订阅主题的消息照样排队、启动后投递。
+    /// </remarks>
+    private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
 
     /// <summary>
     /// 应用。
@@ -47,20 +56,12 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private readonly ILogger _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<InMemoryMessageBroker>();
 
     /// <summary>
-    /// 主题到队列的映射。
+    /// 被订阅主题到队列的映射。
     /// </summary>
     /// <remarks>
-    /// 首次发布或消费时创建，不回收；条目数不超过 <see cref="InMemoryMessagingOptions.MaxTopics"/>。
+    /// 首次发布或消费时创建，不回收；只为被订阅的主题创建，条目数受订阅表与 <see cref="StartAsync"/> 的上限判定约束。
     /// </remarks>
     private readonly ConcurrentDictionary<string, TopicQueue> _topics = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 创建主题队列的锁。
-    /// </summary>
-    /// <remarks>
-    /// 主题数判定与创建在锁内完成，并发创建不会越过上限；已有主题的读取不加锁。
-    /// </remarks>
-    private readonly Lock _topicsGate = new();
 
     /// <summary>
     /// 每个被消费主题的消费循环任务。
@@ -82,7 +83,8 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         TopicName.Validate(topic);
         if (!TryQueue(topic, out var queue))
         {
-            return ValueTask.FromResult<Result>(TopicLimit(topic));
+            LogDropped(_logger, 1, topic);
+            return ValueTask.FromResult(Result.Success());
         }
 
         // TryWrite 不等待：队列满立即返回 QueueFull，由发布方决定如何处理，不让发布者被消费速度拖住；
@@ -115,8 +117,9 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         var results = new Result[envelopes.Count];
         if (!TryQueue(topic, out var queue))
         {
-            // 主题数已达上限：整批同一错误，不创建新主题
-            Array.Fill(results, TopicLimit(topic));
+            // 没人订阅：整批丢弃、逐项成功，不建队列
+            LogDropped(_logger, deliveries.Length, topic);
+            Array.Fill(results, Result.Success());
             return ValueTask.FromResult<IReadOnlyList<Result>>(results);
         }
 
@@ -149,14 +152,15 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             throw new InvalidOperationException("The in-memory broker is already consuming.");
         }
 
-        // 先取到全部订阅主题的队列再起消费循环：主题数超限时启动失败，不留下只消费了一部分主题的代理
-        var queues = new List<TopicQueue>(topics.Count);
-        foreach (var topic in topics)
+        // 先按上限判定再建队列、起消费循环：被订阅的主题（已有队列的与这次要消费的）超限时启动失败，不留下只消费了一部分主题的代理
+        var subscribed = new HashSet<string>(_topics.Keys, StringComparer.Ordinal);
+        subscribed.UnionWith(topics);
+        if (subscribed.Count > _options.MaxTopics)
         {
-            queues.Add(TryQueue(topic, out var queue)
-                ? queue
-                : throw new FrameworkException(MessagingErrors.TopicLimit, $"The in-memory broker already has the maximum of {_options.MaxTopics} topics; cannot subscribe to topic '{topic}'. Raise {InMemoryMessagingOptions.ConfigurationSection}:MaxTopics."));
+            throw new FrameworkException(MessagingErrors.TopicLimit, $"The in-memory broker allows at most {_options.MaxTopics} subscribed topics, but {subscribed.Count} are subscribed. Raise {InMemoryMessagingOptions.ConfigurationSection}:MaxTopics.");
         }
+
+        var queues = topics.Select(QueueOf).ToList();
 
         _stopping = new CancellationTokenSource();
         foreach (var queue in queues)
@@ -240,10 +244,10 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     }
 
     /// <summary>
-    /// 取（必要时创建）主题的队列。
+    /// 取发布要进的队列：被订阅的主题必要时创建。
     /// </summary>
     /// <remarks>
-    /// 主题不存在且主题数已达上限时返回 <see langword="false"/>。
+    /// 没人订阅（没有队列、订阅表里也没有）返回 <see langword="false"/>，不创建。
     /// </remarks>
     private bool TryQueue(string topic, [NotNullWhen(true)] out TopicQueue? queue)
     {
@@ -252,29 +256,23 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             return true;
         }
 
-        // 新主题：数量判定与创建在同一把锁内，并发发布到不同新主题时不会越过上限
-        lock (_topicsGate)
+        // 没人订阅的主题不建队列：没有消费者，缓冲只会占着内存与主题名额，直到队列排满
+        if (_subscriptions.HandlersFor(topic).Count == 0)
         {
-            if (_topics.TryGetValue(topic, out queue))
-            {
-                return true;
-            }
-
-            if (_topics.Count >= _options.MaxTopics)
-            {
-                return false;
-            }
-
-            queue = new TopicQueue(_options.MaxQueuedMessages);
-            _topics[topic] = queue;
-            return true;
+            return false;
         }
+
+        queue = QueueOf(topic);
+        return true;
     }
 
     /// <summary>
-    /// 构造主题数已达上限的错误。
+    /// 取（必要时创建）主题的队列，不判定订阅与上限。
     /// </summary>
-    private Error TopicLimit(string topic) => Error.Unavailable(MessagingErrors.TopicLimit, MessagingMessages.TopicLimit, MessageArguments.Of(("topic", topic), ("limit", _options.MaxTopics)));
+    /// <remarks>
+    /// 并发创建同一主题时只有一个队列胜出，其余的丢弃（通道没有需要释放的资源）。
+    /// </remarks>
+    private TopicQueue QueueOf(string topic) => _topics.GetOrAdd(topic, static (_, capacity) => new TopicQueue(capacity), _options.MaxQueuedMessages);
 
     /// <summary>
     /// 构造队列已满的错误。
@@ -330,6 +328,15 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             }
         }
     }
+
+    /// <summary>
+    /// 记录发布到没人订阅的主题的消息被丢弃。
+    /// </summary>
+    /// <remarks>
+    /// Debug 级别：调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态，按 Warning 记会让每次作业运行都刷日志；主题名写错时打开本类别的 Debug 日志排查。
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped {Count} message(s) published to topic '{Topic}' because nothing subscribes to it.")]
+    private static partial void LogDropped(ILogger logger, int count, string topic);
 
     /// <summary>
     /// 记录一条消息重试到上限后进入死信。

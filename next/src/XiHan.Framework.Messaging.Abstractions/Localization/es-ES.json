@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "El atributo 'specversion' debe ser '{specVersion}'.",
   "messaging.handler.failed": "El controlador de mensajes produjo una excepción no controlada: {reason}",
   "messaging.queue.full": "La cola en memoria del tema '{topic}' está llena (capacidad {capacity}).",
-  "messaging.topic.invalid": "El tema '{topic}' no es válido.",
-  "messaging.topic.limit": "El agente en memoria ya tiene el máximo de {limit} temas; no se puede crear el tema '{topic}'."
+  "messaging.topic.invalid": "El tema '{topic}' no es válido."
 }

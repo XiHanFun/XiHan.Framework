@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "'specversion' 属性は '{specVersion}' でなければなりません。",
   "messaging.handler.failed": "メッセージハンドラーが未処理の例外をスローしました: {reason}",
   "messaging.queue.full": "トピック '{topic}' のインメモリキューが満杯です (容量 {capacity})。",
-  "messaging.topic.invalid": "トピック '{topic}' が不正です。",
-  "messaging.topic.limit": "インメモリブローカーのトピック数が上限 {limit} に達しているため、トピック '{topic}' を作成できません。"
+  "messaging.topic.invalid": "トピック '{topic}' が不正です。"
 }

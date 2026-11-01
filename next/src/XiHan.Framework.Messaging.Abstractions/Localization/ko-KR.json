@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "'specversion' 특성은 '{specVersion}'이어야 합니다.",
   "messaging.handler.failed": "메시지 처리기가 처리되지 않은 예외를 발생시켰습니다: {reason}",
   "messaging.queue.full": "토픽 '{topic}'의 메모리 내 큐가 가득 찼습니다(용량 {capacity}).",
-  "messaging.topic.invalid": "토픽 '{topic}'이(가) 올바르지 않습니다.",
-  "messaging.topic.limit": "메모리 내 브로커의 토픽 수가 이미 최대 {limit}개입니다. 토픽 '{topic}'을(를) 만들 수 없습니다."
+  "messaging.topic.invalid": "토픽 '{topic}'이(가) 올바르지 않습니다."
 }

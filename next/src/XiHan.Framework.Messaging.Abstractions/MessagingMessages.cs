@@ -95,14 +95,6 @@ public static class MessagingMessages
     public const string QueueFull = "messaging.queue.full";
 
     /// <summary>
-    /// 内存代理的主题数已达上限。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>topic</c>、<c>limit</c>。
-    /// </remarks>
-    public const string TopicLimit = "messaging.topic.limit";
-
-    /// <summary>
     /// 处理器抛出未处理异常。
     /// </summary>
     /// <remarks>

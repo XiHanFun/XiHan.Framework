@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "L'attribut 'specversion' doit être '{specVersion}'.",
   "messaging.handler.failed": "Le gestionnaire de messages a levé une exception non gérée : {reason}",
   "messaging.queue.full": "La file d'attente en mémoire du sujet '{topic}' est pleine (capacité {capacity}).",
-  "messaging.topic.invalid": "Le sujet '{topic}' n'est pas valide.",
-  "messaging.topic.limit": "Le courtier en mémoire a déjà atteint le maximum de {limit} sujets ; impossible de créer le sujet '{topic}'."
+  "messaging.topic.invalid": "Le sujet '{topic}' n'est pas valide."
 }

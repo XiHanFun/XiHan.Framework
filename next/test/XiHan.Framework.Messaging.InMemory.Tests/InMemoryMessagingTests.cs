@@ -4,11 +4,13 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Messaging.Conformance;
@@ -52,46 +54,53 @@ public sealed class InMemoryMessagingTests
     }
 
     [Fact]
-    public async Task Topics_AreCapped_AndANewTopicBeyondTheLimitFailsExplicitly()
+    public async Task Publish_ToATopicNobodySubscribes_IsDroppedAndLogged_WithoutTakingATopicSlot()
     {
+        var log = new DeliveryLog();
+        var logs = new LogCapture();
         await using var host = await TestHost.StartAsync(
             static b => b.UseFeature<InMemoryMessagingFeature>(),
-            [new("XiHan:Messaging:InMemory:MaxTopics", "2")],
+            [new("XiHan:Messaging:InMemory:MaxTopics", "1")],
             services =>
             {
-                services.AddSingleton(new DeliveryLog());
+                services.AddSingleton<ILoggerFactory>(logs);
+                services.AddSingleton(log);
                 services.AddMessageHandler<RecordingHandler>(Topic);
             });
         var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
-
-        // 订阅的主题占一个名额，第二个主题首次发布时创建
         Assert.Equal(1, broker.TopicCount);
+
+        // 没人订阅：发布成功、消息丢弃，不建主题、不占名额（名额已满也照样成功）
         Assert.True((await broker.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
-        Assert.Equal(2, broker.TopicCount);
-
-        var rejected = await broker.PublishAsync("overflow", Envelope("2"), CancellationToken.None);
-        Assert.Equal(MessagingErrors.TopicLimit, rejected.Error?.Code);
-        Assert.Equal(MessagingMessages.TopicLimit, rejected.Error?.MessageKey);
-        Assert.Equal("overflow", rejected.Error?.Details?["topic"]);
-        Assert.Equal(2, rejected.Error?.Details?["limit"]);
-        var batch = await broker.PublishManyAsync("overflow", [Envelope("3"), Envelope("4")], CancellationToken.None);
+        var batch = await broker.PublishManyAsync("idle", [Envelope("2"), Envelope("3")], CancellationToken.None);
         Assert.Equal(2, batch.Count);
-        Assert.All(batch, static r => Assert.Equal(MessagingErrors.TopicLimit, r.Error?.Code));
+        Assert.All(batch, static r => Assert.True(r.IsSuccess));
+        Assert.Equal(1, broker.TopicCount);
+        Assert.Equal(0, broker.QueuedCount("idle"));
+        Assert.Equal(0, broker.DeliveredCount("idle"));
+        Assert.Empty(broker.DeadLetters("idle"));
 
-        // 已有主题照常发布；只读的计数访问不创建主题
-        Assert.True((await broker.PublishAsync("idle", Envelope("5"), CancellationToken.None)).IsSuccess);
-        Assert.Equal(0, broker.QueuedCount("overflow"));
-        Assert.Equal(0, broker.DeliveredCount("overflow"));
-        Assert.Empty(broker.DeadLetters("overflow"));
-        Assert.Equal(2, broker.TopicCount);
-        Assert.Equal(2, broker.QueuedCount("idle"));
+        // 每次丢弃记一条 Debug 日志，带条数与主题
+        var dropped = logs.Entries.Where(static e => e.Category == typeof(InMemoryMessageBroker).FullName && e.Message.Contains("'idle'", StringComparison.Ordinal)).ToList();
+        Assert.Equal(
+            [
+                (LogLevel.Debug, "Dropped 1 message(s) published to topic 'idle' because nothing subscribes to it."),
+                (LogLevel.Debug, "Dropped 2 message(s) published to topic 'idle' because nothing subscribes to it."),
+            ],
+            dropped.Select(static e => (e.Level, e.Message)));
+
+        // 被订阅的主题照常排队与投递
+        Assert.True((await broker.PublishAsync(Topic, Envelope("4"), CancellationToken.None)).IsSuccess);
+        Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "4", 1, TimeSpan.FromSeconds(10)));
+        Assert.DoesNotContain(log.All, static r => r.Delivery.Topic == "idle");
     }
 
     [Fact]
     public async Task Start_FailsBeforeConsuming_WhenSubscribedTopicsExceedTheLimit()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
-        using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxTopics = 1 }, host.Services.GetRequiredService<MessagingOptions>(), host.App, NullLoggerFactory.Instance);
+        var subscriptions = new MessageSubscriptions().Add("a", typeof(RecordingHandler)).Add("b", typeof(RecordingHandler));
+        using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxTopics = 1 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
 
         var exception = await Assert.ThrowsAsync<FrameworkException>(() => broker.StartAsync(["a", "b"], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None));
 
@@ -118,16 +127,18 @@ public sealed class InMemoryMessagingTests
             });
         var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
 
-        // 未订阅的主题没有消费者，用它验证容量
-        Assert.True((await broker.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
+        // 订阅了、还没开始消费的代理：消息留在通道里，用它验证容量
+        var subscriptions = new MessageSubscriptions().Add("idle", typeof(RecordingHandler));
+        using var idle = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxQueuedMessages = 2 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
+        Assert.True((await idle.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
         // 批量发布容量不足时整批 QueueFull，不写入半批
-        var overflow = await broker.PublishManyAsync("idle", [Envelope("2"), Envelope("3")], CancellationToken.None);
+        var overflow = await idle.PublishManyAsync("idle", [Envelope("2"), Envelope("3")], CancellationToken.None);
         Assert.All(overflow, static r => Assert.Equal(MessagingErrors.QueueFull, r.Error?.Code));
-        Assert.Equal(1, broker.QueuedCount("idle"));
-        Assert.All(await broker.PublishManyAsync("idle", [Envelope("2")], CancellationToken.None), static r => Assert.True(r.IsSuccess));
-        var full = await broker.PublishAsync("idle", Envelope("3"), CancellationToken.None);
+        Assert.Equal(1, idle.QueuedCount("idle"));
+        Assert.All(await idle.PublishManyAsync("idle", [Envelope("2")], CancellationToken.None), static r => Assert.True(r.IsSuccess));
+        var full = await idle.PublishAsync("idle", Envelope("3"), CancellationToken.None);
         Assert.Equal(MessagingErrors.QueueFull, full.Error?.Code);
-        Assert.Equal(2, broker.QueuedCount("idle"));
+        Assert.Equal(2, idle.QueuedCount("idle"));
 
         Assert.True((await broker.PublishAsync(Topic, Envelope("bad"), CancellationToken.None)).IsSuccess);
         Assert.True((await broker.PublishAsync(Topic, Envelope("good"), CancellationToken.None)).IsSuccess);

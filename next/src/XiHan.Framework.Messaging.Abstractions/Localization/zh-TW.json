@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "'specversion' 屬性必須是 '{specVersion}'。",
   "messaging.handler.failed": "訊息處理器擲回了未處理的例外：{reason}",
   "messaging.queue.full": "主題 '{topic}' 的記憶體佇列已滿（容量 {capacity}）。",
-  "messaging.topic.invalid": "主題 '{topic}' 不合法。",
-  "messaging.topic.limit": "記憶體代理的主題數已達上限 {limit}，無法建立主題 '{topic}'。"
+  "messaging.topic.invalid": "主題 '{topic}' 不合法。"
 }

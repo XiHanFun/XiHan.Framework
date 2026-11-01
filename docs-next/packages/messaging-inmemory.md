@@ -17,9 +17,10 @@
 
 `InMemoryMessageBroker` 实现 `IMessageBroker`，并且自己就是健康项的贡献者：
 
-- 每个主题在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`），创建后不回收。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
-- 主题数有上限 `MaxTopics`：已有这么多主题时，发布到新主题返回 `MESSAGING_UNAVAILABLE_003`（批量发布每一项都是它，不创建主题），订阅的主题超出上限时启动失败（`FrameworkException`，一个消费循环也不起）；已有主题不受影响。
-- 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布的消息留在通道里，启动后投递。
+- 每个被订阅的主题（本进程用 `AddMessageHandler` 登记了处理器）在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`），创建后不回收。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
+- 发布到没人订阅的主题：消息直接丢弃，发布照常成功（批量逐项成功），不建通道、不占主题名额，每次发布记一条 Debug 日志（`Dropped {Count} message(s) published to topic ...`）。调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态，所以不按 Warning 记；主题名写错时打开 `XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker` 类别的 Debug 日志排查。
+- 被订阅的主题数有上限 `MaxTopics`：超出时启动失败（`FrameworkException`，`MESSAGING_UNAVAILABLE_003`，一个消费循环也不起）。
+- 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布到被订阅主题的消息留在通道里，启动后投递。
 - 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾；达到上限、或重新入队时通道已满，进入该主题的死信列表。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。
 - 停止时取消消费循环，把正在处理的那条放回通道，并等待循环结束。
 
@@ -52,7 +53,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMessagingFeature>());
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 每个主题的通道容量，也是该主题死信列表的容量 |
-| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 主题数上限（订阅的与发布到的合计） |
+| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 被订阅的主题数上限，超出时启动失败；没人订阅的主题不计 |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
 
 ```json
@@ -91,7 +92,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 ## 行为与限制
 
 - 只在单进程内有效：进程退出丢失通道与死信里的全部消息，多实例之间不共享。
-- 只消费订阅了的主题；发布到没有订阅的主题时消息一直留在通道里，排满后发布返回 `MESSAGING_UNAVAILABLE_002`。这样的主题同样占用 `MaxTopics` 的名额。
+- 只为订阅了的主题缓冲与消费；发布到没人订阅的主题的消息直接丢弃（Debug 日志），不缓冲，之后再有人订阅也收不到。需要「先发后订」的留存语义时换 RabbitMQ（持久队列）或 Kafka（按位点重放）。
 - 每个主题一个消费者，处理器串行执行；重试排到队尾，同一主题后面的消息先于重试被处理。
 - 重试之间不等待；处理器抛出的异常记为 `MESSAGING_UNEXPECTED_001`，与返回失败同样计一次尝试。
 

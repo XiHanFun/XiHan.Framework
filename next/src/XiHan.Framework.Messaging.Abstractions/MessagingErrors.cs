@@ -45,8 +45,11 @@ public static class MessagingErrors
     public const string QueueFull = "MESSAGING_UNAVAILABLE_002";
 
     /// <summary>
-    /// 内存代理的主题数已达上限。
+    /// 内存代理被订阅的主题数超过上限。
     /// </summary>
+    /// <remarks>
+    /// 启动失败时 <c>FrameworkException</c> 携带的码；发布到没人订阅的主题直接丢弃，不会遇到上限。
+    /// </remarks>
     public const string TopicLimit = "MESSAGING_UNAVAILABLE_003";
 
     /// <summary>

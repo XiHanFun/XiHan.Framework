@@ -11,7 +11,7 @@
 | `messaging.queue@1` | 工作队列：发布、按主题消费、至少一次、重试、死信 | `Messaging.InMemory`（单进程） | `Messaging.RabbitMQ`、`Messaging.Kafka` |
 | `messaging.stream@1` | 有序分区流：在队列之上按分区键有序、按消费组保存位点、按时刻重放 | — | `Messaging.Kafka` |
 
-`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失。再 `UseFeature` 一个显式 Provider 就顶替它：`RabbitMQMessagingFeature` 只提供队列，`KafkaMessagingFeature` 同时提供队列与流。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`）指定一个，规则见[能力包与清单](./modularity)。
+`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失；内存代理只为本进程订阅了的主题缓冲消息，发布到没人订阅的主题直接丢弃（记 Debug 日志，发布照常成功）。再 `UseFeature` 一个显式 Provider 就顶替它：`RabbitMQMessagingFeature` 只提供队列，`KafkaMessagingFeature` 同时提供队列与流。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`）指定一个，规则见[能力包与清单](./modularity)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -311,7 +311,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
-| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 内存代理的主题数上限，超出时发布到新主题返回 `MESSAGING_UNAVAILABLE_003` |
+| `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 内存代理被订阅的主题数上限，超出时启动失败（`MESSAGING_UNAVAILABLE_003`）；发布到没人订阅的主题直接丢弃，不计入 |
 | `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |
 | `XiHan:Messaging:Kafka:*` | — | — | 引导地址、消费组、主题前缀、透传配置，见 [Messaging.Kafka](../packages/messaging-kafka#配置) |
 
@@ -333,7 +333,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时抛出） |
 | `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
 | `MESSAGING_UNAVAILABLE_002` | 内存代理的主题队列已满 |
-| `MESSAGING_UNAVAILABLE_003` | 内存代理的主题数已达上限（`MaxTopics`），不能再创建新主题 |
+| `MESSAGING_UNAVAILABLE_003` | 内存代理被订阅的主题数超过上限（`MaxTopics`），启动失败 |
 | `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
 
 ## 相关

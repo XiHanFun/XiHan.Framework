@@ -37,7 +37,7 @@ public sealed record InMemoryMessagingOptions
     /// 主题数上限。
     /// </summary>
     /// <remarks>
-    /// 默认 1000。每个主题一条通道与一份死信列表，首次发布或订阅时创建、此后不回收；已有这么多主题时，发布到新主题返回 <c>MESSAGING_UNAVAILABLE_003</c>，订阅新主题启动失败。
+    /// 默认 1000。每个被订阅的主题一条通道与一份死信列表，首次发布或消费时创建、此后不回收；被订阅的主题超过上限时启动失败（<c>MESSAGING_UNAVAILABLE_003</c>）。发布到没人订阅的主题直接丢弃，不建通道、不占名额。
     /// </remarks>
     public int MaxTopics
     {

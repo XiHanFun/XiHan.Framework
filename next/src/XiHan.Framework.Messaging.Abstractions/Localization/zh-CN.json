@@ -10,6 +10,5 @@
   "messaging.envelope.spec_version": "'specversion' 属性必须是 '{specVersion}'。",
   "messaging.handler.failed": "消息处理器抛出了未处理的异常：{reason}",
   "messaging.queue.full": "主题 '{topic}' 的内存队列已满（容量 {capacity}）。",
-  "messaging.topic.invalid": "主题 '{topic}' 不合法。",
-  "messaging.topic.limit": "内存代理的主题数已达上限 {limit}，无法创建主题 '{topic}'。"
+  "messaging.topic.invalid": "主题 '{topic}' 不合法。"
 }

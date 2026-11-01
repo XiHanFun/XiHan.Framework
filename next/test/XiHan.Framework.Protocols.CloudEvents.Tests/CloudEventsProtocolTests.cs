@@ -156,7 +156,7 @@ public sealed class CloudEventsProtocolTests
         var (app, client, log, _) = await StartAsync(("XiHan:Protocols:CloudEvents:Inbound", "publish"));
         await using var host = app;
 
-        // 发布模式：先 202，投递由代理异步完成；没有订阅者的主题也接受
+        // 发布模式：先 202，投递由代理异步完成；没有订阅者的主题也接受（内存代理丢弃它）
         Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, "orders", extensions: [("xihantenant", "acme")])).StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, "idle", "evt-2")).StatusCode);
         await log.WaitAsync(1, TimeSpan.FromSeconds(10));

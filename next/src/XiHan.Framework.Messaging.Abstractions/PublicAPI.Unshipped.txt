@@ -178,7 +178,6 @@ const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeSpecVersi
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.HandlerFailed = "messaging.handler.failed" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.InvalidTopic = "messaging.topic.invalid" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.QueueFull = "messaging.queue.full" -> string!
-const XiHan.Framework.Messaging.Abstractions.MessagingMessages.TopicLimit = "messaging.topic.limit" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingOptions.ConfigurationSection = "XiHan:Messaging" -> string!
 const XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.ConfigurationSection = "XiHan:Messaging:Outbox" -> string!
 override XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Equals(object? obj) -> bool
