@@ -1,8 +1,8 @@
-# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播、只装 OpenAIFeature 时提示词启动校验、MCP stdio 按 UTF-8 读
+# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播、只装 OpenAIFeature 时提示词启动校验、MCP stdio 按 UTF-8 读、Kustomize 不起 Kafka 与 Nacos
 
 ## 状态
 
-已采纳（`spec/protocol/cloudevents.md`、`spec/rfcs/0022-ai.md`、`spec/protocol/mcp.md` 随之修订；修订 ADR-0074）。
+已采纳（`spec/protocol/cloudevents.md`、`spec/rfcs/0022-ai.md`、`spec/protocol/mcp.md`、`spec/rfcs/0016-packaging.md` 随之修订；修订 ADR-0074）。
 
 ## 日期
 
@@ -87,3 +87,23 @@ ADR-0074 让提示增强器在创建时取定并试渲染知识库配置引用�
 - 公开 API 不变（内部构造函数从 `TextReader` 改为 `Func<Stream>`）。
 - 行为：在代码页不是 UTF-8 的 Windows 控制台里，stdio MCP 服务收到的非 ASCII 参数现在正确，以前是乱码；Linux、macOS 与代码页 65001 的控制台不受影响。
 - 测试：`McpStdioTests.Command_DecodesStdinAsUtf8_AndAnswersInAscii`——带 BOM 的 UTF-8 中文参数原样到达操作，答复只含 ASCII。改动前在代码页 936 下失败（第一条消息按 GBK 解码后不是合法 JSON，-32700）、65001 下通过；改动后两种代码页都通过。`dotnet test` 会把控制台切成 UTF-8，复现要直接运行测试程序（`chcp 936` 后执行测试可执行文件）。
+
+## Kustomize 不在集群里起 Kafka 与 Nacos
+
+### 背景
+
+ADR-0076 让 `xihan pack` 支持 Kafka（`stream`）与 Nacos（`configuration:remote`）绑定：Compose 起单节点 KRaft 与 standalone Nacos，Aspire 用 `AddKafka` 与固定标签的 Nacos 容器，Kustomize 照旧只出 Secret 示例与挂载。Kustomize 要不要也为这两种绑定生成集群内的单节点服务，留作待定。
+
+### 决策
+
+维持现状，定为规则：Kustomize 产物只包含应用自己，六种绑定类型一律只生成 Secret 示例（`type`、`uri`）与挂载，Kafka 与 Nacos 与 PostgreSQL、Redis、RabbitMQ、MinIO 一样不在集群里起服务。代码不变，RFC-0016「绑定的依赖服务」第 4 条、文档站部署与配置指南、CLI README 写明。
+
+### 理由
+
+- 集群里的有状态依赖要按环境定副本数、存储类、备份、升级与安全策略，生成器给不出通用的正确答案；生成一个单节点清单容易被原样用到生产。
+- 部署方本来就用各自的 Helm Chart、Operator 或托管服务提供这些依赖，应用只需要按 Service Binding 规范拿到连接。
+- 单节点的本地联调形态已经由 Compose 与 Aspire 提供，Kustomize 不必重复。
+
+### 影响
+
+无代码与行为变化。

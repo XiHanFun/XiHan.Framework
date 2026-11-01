@@ -117,6 +117,8 @@ ENTRYPOINT ["dotnet", "KubernetesApp.dll"]
 
 Deployment 带三个探针、停机宽限、Pod 与容器的安全上下文（`runAsNonRoot`、`seccompProfile: RuntimeDefault`、`allowPrivilegeEscalation: false`、丢弃全部能力、只读根文件系统，`/tmp` 是 emptyDir）、资源、配置挂载与绑定挂载；Service 暴露同名的 `http` / `grpc` 端口；`kustomization.yaml` 的 `images` 写入 `image.tag`。
 
+Kustomize 产物只包含应用自己，不在集群里起依赖服务：六种绑定类型一律只生成 Secret 示例 `bindings.example.yaml`（键 `type` 与 `uri`）与挂载，PostgreSQL、Redis、RabbitMQ、MinIO 如此，Kafka（`stream`）与 Nacos（`configuration:remote`）也一样（ADR-0083）。集群里的数据库、缓存、消息与配置中心要按环境定副本数、存储类、备份与升级策略，生成器给不出通用的正确答案，由部署方用各自的 Helm Chart、Operator 或托管服务提供，再按示例创建绑定 Secret。单节点的本地联调形态见下文的 Compose 与 Aspire。
+
 ### Compose 与 Aspire
 
 Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。
