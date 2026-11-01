@@ -28,6 +28,14 @@ public static class PersistenceErrors
     public const string DataSourceNotFound = "PERSISTENCE_NOTFOUND_002";
 
     /// <summary>
+    /// 库里没有要读结构的表。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Schema.ISchemaReader.GetTablesAsync"/> 的逐项结果；参数 <c>dataSource</c>、<c>table</c>。
+    /// </remarks>
+    public const string TableNotFound = "PERSISTENCE_NOTFOUND_003";
+
+    /// <summary>
     /// 乐观并发冲突。
     /// </summary>
     public const string Concurrency = "PERSISTENCE_CONFLICT_001";
@@ -75,7 +83,7 @@ public static class PersistenceErrors
     /// 查询的取出条数超过上限。
     /// </summary>
     /// <remarks>
-    /// <see cref="Queries.EntityQuery{T}.Take"/> 大于 <see cref="Queries.EntityQuery.DefaultMaxTake"/>：构造查询时以异常抛出，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）。
+    /// <see cref="Queries.EntityQuery{T}.Take"/> 或 <see cref="Schema.TableListQuery.Take"/> 大于 <see cref="Queries.EntityQuery.DefaultMaxTake"/>：构造查询时以异常抛出，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）。一次读结构的表数超过 <see cref="Schema.SchemaLimits.MaxTablesPerRead"/> 以结果返回。
     /// </remarks>
     public const string TakeExceeded = "PERSISTENCE_VALIDATION_005";
 
@@ -124,10 +132,10 @@ public static class PersistenceErrors
     public const string WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005";
 
     /// <summary>
-    /// 运行时数据源连不上。
+    /// 数据源连不上或读取失败。
     /// </summary>
     /// <remarks>
-    /// 测试连接、健康探测；参数 <c>name</c>、<c>reason</c>（驱动消息，连接串与口令已脱敏）。
+    /// 运行时数据源的测试连接与健康探测，缺省连接与运行时数据源的库结构读取；参数 <c>name</c>、<c>reason</c>（驱动消息，连接串与口令已脱敏）。
     /// </remarks>
     public const string DataSourceUnavailable = "PERSISTENCE_UNAVAILABLE_006";
 
@@ -143,7 +151,7 @@ public static class PersistenceErrors
     /// 当前的持久化 Provider 不支持该能力。
     /// </summary>
     /// <remarks>
-    /// 运行时数据源：EF Core 与内存实现。
+    /// 运行时数据源与库结构读取：EF Core 与内存实现。
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
 }

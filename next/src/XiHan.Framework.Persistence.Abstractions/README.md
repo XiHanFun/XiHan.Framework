@@ -13,6 +13,7 @@
 | `PersistenceConventions` | Provider 共用的协议约定：创建时间、修改时间、租户、并发戳、软删除；`ApplyOnUpdate(entity, stored, now)` 让更新沿用存储行的创建时间、租户与删除标记（协议字段只由 Provider 写入） |
 | `LongTextAttribute`、`EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | Provider 中立的建表声明：`[LongText]` 长文本列；`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]` 在实体类上声明索引（可多个、可多列、可唯一，全部升序），`EntityIndexes.Resolve(type, table)` 按统一规则推出名字与列——SqlSugar 与 EF Core 两个 Provider 都经它建出同名索引，见下文「索引声明」 |
 | `IRepositoryRegistrar`、`AddRepository<TEntity, TKey>()` | 应用显式登记实体，Provider 据此注册闭合泛型的仓储；换 Provider 不改业务代码 |
+| `ISchemaReader`、`TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo`、`SchemaLimits`、`IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols`、`RegisteredEntity` | 库结构读取与实体目录（ADR-0078）：读缺省连接或运行时数据源的表与列（主键、自增、可空、长度、精度与小数位、注释、缺省值），分表折叠成逻辑表；枚举 `AddRepository` 登记的实体（表、列、协议、`[EntityIndex]` 索引），见下文 |
 | `DataSourceRegistry`、`DataSourceDefinition`、`IDataSource`、`IDataSourceProvider`、`DataSourceOptions`、`DatabaseTypes`、`ConnectionStrings` | 运行时数据源（ADR-0078）：按应用记录里的定义（名字、数据库类型、连接串）连外部库，按名缓存、定义变了替换、`RemoveAsync` 显式失效、登记数有上限、每个数据源一条健康项、测试连接不登记；连接串不进日志、错误与健康详情，见下文 |
 
 ```csharp
@@ -109,6 +110,22 @@ public sealed class Order : IEntity<Guid>, IMultiTenant, ISoftDeletable { … }
 - 健康：每个数据源一条 `persistence.datasource.<name>`（数据 `databaseType`、`provider`），按 `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds`（缺省 15，也是单次探测超时）在后台打开连接再关闭；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。
 - 失败：连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`（同名的已登记实例不受影响）；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`。
 - 机密：`DataSourceDefinition.ToString()` 不含连接串；`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留。日志只记名字与数据库类型。
+
+## 库结构读取与实体目录
+
+`ISchemaReader` 读关系库的结构，`IEntityCatalog` 枚举已登记的实体（RFC-0005「库结构读取与实体目录」，ADR-0078）。SqlSugar 实现两者；EF Core 与内存实现只实现实体目录，读结构返回 `PERSISTENCE_UNAVAILABLE_008`。
+
+```csharp
+var page = await schema.ListTablesAsync(dataSource: null, new TableListQuery { Keyword = "order", Take = 50 }, ct);   // null = 应用的缺省连接
+var tables = await schema.GetTablesAsync(definition, ["LegacyOrder", "Sys_Customer"], ct);                       // 运行时数据源：先按定义登记再读
+var entities = await catalog.ListAsync(ct);                                                                       // 已登记实体的表、列、协议、索引
+```
+
+- 列表：按名字排序，`Keyword` 在名字与注释里包含匹配，`Skip` / `Take` 分页（`Take` 最多 1000，超过 `PERSISTENCE_VALIDATION_005`），返回过滤后的总数。
+- 批量读结构：一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`（原因已脱敏）；空集合不连库。`GetTableAsync` 是单项特例。
+- 列：类型名、序号、主键（一律不可空）、自增、可空、长度（定点数族以外）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。
+- 分表：已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板把物理表折叠成一张逻辑表（`Order_{year}{month}{day}` → `Order`），`PhysicalTables` 新到旧，列取最新的物理表。
+- 实体目录：每个登记的实体一条（重复登记只一条），表名与列名是映射声明的写法，分表是逻辑名；`Protocols` 标出聚合根、创建 / 修改时间、并发戳、软删除、多租户；`Indexes` 是 `[EntityIndex]` 推出的索引。
 
 ## 雪花标识
 

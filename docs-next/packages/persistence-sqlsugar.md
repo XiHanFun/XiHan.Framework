@@ -276,6 +276,7 @@ public sealed class ChangeBuffer
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_DENIED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
+- 库结构读取与实体目录（ADR-0078）：读表与读列经 `DbMaintenance`（同步 API）；缺省连接 `CopyNew` 另开不在事务里的连接，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`。实体目录取 `EntityMaintenance.GetEntityInfo`。SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；PostgreSQL 的注释、identity、serial 缺省值与加引号的大小写混合表名都能读到。
 - 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
 
 ## 相关

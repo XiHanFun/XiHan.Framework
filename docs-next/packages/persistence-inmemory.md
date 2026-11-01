@@ -100,6 +100,7 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）：写入在进覆盖层之前就返回 `PERSISTENCE_DENIED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
 - 进程退出数据即丢失；多个进程之间不共享。
 - 健康项 `persistence.inmemory.capacity`：任一张表达到容量即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，报告按实体名排序的第一个满表），否则 Ready。
+- 实体目录（ADR-0078）：表名取实体类型名，列取有公开 setter 的非集合属性、列名即属性名；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 运行时数据源（ADR-0078）不支持：内存实现没有数据库。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 
 | 错误码 | 何时出现 |
@@ -111,7 +112,7 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（抛异常） |
 | `PERSISTENCE_DENIED_001` | 只读工作单元里新增、更新、删除；提交时返回写入阶段被拒的同一错误 |
 | `PERSISTENCE_UNAVAILABLE_002` | 表已满（提交结果与健康项） |
-| `PERSISTENCE_UNAVAILABLE_008` | 运行时数据源：内存实现不支持 |
+| `PERSISTENCE_UNAVAILABLE_008` | 运行时数据源与库结构读取：内存实现不支持 |
 
 ## 相关
 

@@ -12,6 +12,7 @@
 - 提交时校验：覆盖层记下每个写过的标识首次读到的已提交状态，提交按建表先后给涉及的表依次加锁，在全部锁内逐表校验——新增的标识已被别的工作单元提交返回 `PERSISTENCE_CONFLICT_002`；更新或删除的行已被删除、带并发戳的行戳已变返回 `PERSISTENCE_CONFLICT_001`；之后是容量——全部通过才逐表应用，跨表原子，失败时任何一张表都不改。
 - 更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标（调用方实例上的其他改动不写入），删除标记再同步回调用方实例。
 - 运行时数据源（ADR-0078）不支持：内存实现没有数据库。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
+- 实体目录（ADR-0078）：没有表，表名取实体类型名，列取有公开 setter 的非集合属性、列名即属性名（这是它的存储形态），主键是 `Id`。库结构读取不支持（`PERSISTENCE_UNAVAILABLE_008`）。
 - 健康项 `persistence.inmemory.capacity`（存储自己实现，同步计算）：任一实体的表达到 `MaxEntitiesPerType` 即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，`entity` 是按序数顺序的第一个满表），否则 Ready。
 
 ## 依赖方向

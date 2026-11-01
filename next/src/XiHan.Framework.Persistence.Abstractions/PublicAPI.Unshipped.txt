@@ -159,12 +159,124 @@ XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.EntityType.get -> System.Type!
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.KeyType.get -> System.Type!
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>() -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar! registrar) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Entities.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar!>!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.RepositoryRegistrations() -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo!
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.ColumnInfo() -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Comment.get -> string?
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Comment.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.DataType.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.DataType.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.DefaultValue.get -> string?
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.DefaultValue.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Equals(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsIdentity.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsIdentity.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsNullable.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsNullable.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsPrimaryKey.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.IsPrimaryKey.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Length.get -> int?
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Length.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Name.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Ordinal.get -> int
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Ordinal.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Precision.get -> int?
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Precision.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Scale.get -> int?
+XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Scale.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Column.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Column.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Deconstruct(out string! Property, out string! Column, out System.Type! Type, out bool IsKey, out bool IsNullable) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.EntityColumnMapping(string! Property, string! Column, System.Type! Type, bool IsKey, bool IsNullable) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Equals(XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsKey.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsKey.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsNullable.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsNullable.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Property.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Property.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Type.get -> System.Type!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Type.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.Columns.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping!>!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.EntityMapping(XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity! entity, string! table, bool isSplit, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping!>! columns) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.EntityType.get -> System.Type!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.Indexes.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.EntityIndex!>!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.IsSplit.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.KeyColumns.get -> System.Collections.Generic.IEnumerable<XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping!>!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.KeyType.get -> System.Type!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.Protocols.get -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.Table.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.AggregateRoot = 1 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.ConcurrencyStamp = 8 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.CreationTime = 2 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.ModificationTime = 4 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.MultiTenant = 32 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.None = 0 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols.SoftDeletable = 16 -> XiHan.Framework.Persistence.Abstractions.Schema.EntityProtocols
+XiHan.Framework.Persistence.Abstractions.Schema.IEntityCatalog
+XiHan.Framework.Persistence.Abstractions.Schema.IEntityCatalog.ListAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping!>!>
+XiHan.Framework.Persistence.Abstractions.Schema.ISchemaReader
+XiHan.Framework.Persistence.Abstractions.Schema.ISchemaReader.GetTablesAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition? dataSource, System.Collections.Generic.IReadOnlyList<string!>! tables, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.Schema.TableSchema!>>!>>!
+XiHan.Framework.Persistence.Abstractions.Schema.ISchemaReader.ListTablesAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition? dataSource, XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.Schema.TablePage!>>!
+XiHan.Framework.Persistence.Abstractions.Schema.SchemaLimits
+XiHan.Framework.Persistence.Abstractions.Schema.SchemaReaderExtensions
+XiHan.Framework.Persistence.Abstractions.Schema.SchemaServiceCollectionExtensions
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Comment.get -> string?
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Comment.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TableInfo? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.IsSplit.get -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.IsSplit.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Name.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.PhysicalTables.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.PhysicalTables.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.TableInfo() -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery!
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Keyword.get -> string?
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Keyword.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Skip.get -> int
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Skip.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.TableListQuery() -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.get -> int
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TablePage!
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>! Items, out int Total) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TablePage? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>!
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Items.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.TablePage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>! Items, int Total) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Total.get -> int
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Total.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TableSchema!
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Columns.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo!>!
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Columns.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Deconstruct(out XiHan.Framework.Persistence.Abstractions.Schema.TableInfo! Table, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo!>! Columns) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TableSchema? other) -> bool
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Table.get -> XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Table.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.TableSchema(XiHan.Framework.Persistence.Abstractions.Schema.TableInfo! Table, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo!>! Columns) -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Clear() -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker.Count.get -> int
@@ -238,6 +350,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PER
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotSupported = "PERSISTENCE_UNAVAILABLE_008" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReadOnly = "PERSISTENCE_DENIED_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TableNotFound = "PERSISTENCE_NOTFOUND_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TakeExceeded = "PERSISTENCE_VALIDATION_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TenantRequired = "PERSISTENCE_VALIDATION_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.UniqueKeyConflict = "PERSISTENCE_CONFLICT_003" -> string!
@@ -259,13 +372,18 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.EventsUndispa
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NestedInvocation = "persistence.unit_of_work.nested" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "persistence.entity.not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.SchemaNotSupported = "persistence.schema.not_supported" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.SchemaReadFailed = "persistence.schema.read_failed" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavailable = "persistence.store.unavailable" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TableNotFound = "persistence.schema.table_not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TakeExceeded = "persistence.query.take_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TooManyTables = "persistence.schema.too_many_tables" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
+const XiHan.Framework.Persistence.Abstractions.Schema.SchemaLimits.MaxTablesPerRead = 100 -> int
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.GetHashCode() -> int
@@ -283,6 +401,25 @@ override XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.ToString()
 override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.EntityMapping.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.TablePage.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.TablePage.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
@@ -320,6 +457,20 @@ static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator !=(Xi
 static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations!
+static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? left, XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? left, XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.SchemaReaderExtensions.GetTableAsync(this XiHan.Framework.Persistence.Abstractions.Schema.ISchemaReader! reader, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition? dataSource, string! table, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.Schema.TableSchema!>>!
+static XiHan.Framework.Persistence.Abstractions.Schema.SchemaServiceCollectionExtensions.AddUnsupportedSchemaReader(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.TableInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.TableInfo? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TableInfo.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.TableInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.TableInfo? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery? left, XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery? left, XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TablePage.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.TablePage? left, XiHan.Framework.Persistence.Abstractions.Schema.TablePage? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TablePage.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.TablePage? left, XiHan.Framework.Persistence.Abstractions.Schema.TablePage? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.TableSchema? left, XiHan.Framework.Persistence.Abstractions.Schema.TableSchema? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.TableSchema? left, XiHan.Framework.Persistence.Abstractions.Schema.TableSchema? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Default.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator !=(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.operator ==(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? left, XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? right) -> bool

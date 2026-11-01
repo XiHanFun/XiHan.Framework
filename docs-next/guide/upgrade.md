@@ -26,6 +26,7 @@
 | 运行期 DataAnnotations 校验 | 注解在编译期折进 JSON Schema，Validate 阶段执行，加 `IValidatableObject` 自校验 | [数据校验](./validation) |
 | 实体基类（多层继承） | 实体协议接口组合：`IEntity<TKey>`、`IAggregateRoot<TKey>`、`IMultiTenant`、`ISoftDeletable`、`IHasCreationTime` 等 | [领域模型](./domain) |
 | `Data` 包（绑定 SqlSugar） | `Persistence.Abstractions` 的仓储与查询，Provider 选 `InMemory`、`EntityFrameworkCore` 或 `SqlSugar` | [持久化](./persistence) |
+| `Data` 的 `IDynamicConnectionRegistrar`、`IDatabaseMetadataProvider`；扫描 `[SugarTable]` 认出已有实体 | `Persistence.Abstractions` 的 `DataSourceRegistry`（运行时数据源：按定义登记、定义变了替换、`RemoveAsync` 失效、测试连接）、`ISchemaReader`（表与列、分表折叠）、`IEntityCatalog`（已登记实体的表、列、协议、索引）；SqlSugar 实现 | [持久化](./persistence#运行时数据源) |
 | `[UnitOfWork]`、`IUnitOfWorkManager` | Transaction 阶段：每次操作调用一个工作单元；管道外显式开启 `IUnitOfWork` | [工作单元与事务](./uow) |
 | `ICurrentUser`、`ICurrentTenant` | 调用上下文：`context.GetSecurity()` 的主体与租户；调用链深处用 `IInvocationAccessor` | [依赖注入](./dependency-injection#取得当前调用的上下文) |
 | `[PermissionAuthorize]`、`[Authorize]` | 操作契约的 `Permission` / `Policy`，Authorize 阶段判定；权限码先用 `AddPermission` 登记 | [授权](./authorization) |

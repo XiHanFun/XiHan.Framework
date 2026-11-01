@@ -93,6 +93,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
 | `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
+| `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
+| `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询、一页表、表（分表的逻辑名与物理表）、表结构、列 |
+| `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |
+| `RegisteredEntity` | `…Abstractions.Repositories` | `RepositoryRegistrations.Entities` 的一项：实体类型与标识类型 |
+| `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
 | `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
 | `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
 | `IDataSource`、`IDataSourceProvider` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源与探测的 Provider 端口（SqlSugar 实现） |
@@ -156,6 +161,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 索引声明（ADR-0072）：名字是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引末尾带 `IsDeleted`；声明错误（没有列、列名重复、不是公开属性、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
 - 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
 - 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](../guide/persistence#运行时数据源)。
+- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](../guide/persistence#库结构读取与实体目录)。
 
 错误码：
 
@@ -176,6 +182,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
 | `PERSISTENCE_VALIDATION_006` | `PersistenceErrors.DataSourceInvalid` | 运行时数据源的数据库类型不认识、连接串格式错 |
 | `PERSISTENCE_NOTFOUND_002` | `PersistenceErrors.DataSourceNotFound` | 运行时数据源没有在本进程登记 |
+| `PERSISTENCE_NOTFOUND_003` | `PersistenceErrors.TableNotFound` | 要读结构的表不在库里（逐项结果） |
 | `PERSISTENCE_UNAVAILABLE_006` | `PersistenceErrors.DataSourceUnavailable` | 运行时数据源连不上（参数 `name`、`reason`，已脱敏） |
 | `PERSISTENCE_UNAVAILABLE_007` | `PersistenceErrors.DataSourceCapacityExceeded` | 运行时数据源登记已满 |
 | `PERSISTENCE_UNAVAILABLE_008` | `PersistenceErrors.NotSupported` | 当前的持久化 Provider 不支持该能力 |

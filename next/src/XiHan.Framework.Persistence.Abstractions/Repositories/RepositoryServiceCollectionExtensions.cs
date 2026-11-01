@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Primitives;
@@ -19,7 +20,7 @@ public static class RepositoryServiceCollectionExtensions
     /// <remarks>
     /// 可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
     /// </remarks>
-    public static IServiceCollection AddRepository<TEntity, TKey>(this IServiceCollection services)
+    public static IServiceCollection AddRepository<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(this IServiceCollection services)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {

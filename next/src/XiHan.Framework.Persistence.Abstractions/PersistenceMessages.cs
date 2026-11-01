@@ -186,6 +186,38 @@ public static class PersistenceMessages
     public const string DataSourcesNotSupported = "persistence.datasource.not_supported";
 
     /// <summary>
+    /// 库里没有要读结构的表。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>dataSource</c>、<c>table</c>。与 <see cref="PersistenceErrors.TableNotFound"/> 搭配。
+    /// </remarks>
+    public const string TableNotFound = "persistence.schema.table_not_found";
+
+    /// <summary>
+    /// 一次读结构的表数超过上限。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>、<c>max</c>。与 <see cref="PersistenceErrors.TakeExceeded"/> 搭配。
+    /// </remarks>
+    public const string TooManyTables = "persistence.schema.too_many_tables";
+
+    /// <summary>
+    /// 读库结构失败。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>（数据源名，缺省连接为 <c>default</c>）、<c>reason</c>（已脱敏）。与 <see cref="PersistenceErrors.DataSourceUnavailable"/> 搭配。
+    /// </remarks>
+    public const string SchemaReadFailed = "persistence.schema.read_failed";
+
+    /// <summary>
+    /// 当前的持久化 Provider 不能读库结构。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="PersistenceErrors.NotSupported"/> 搭配。
+    /// </remarks>
+    public const string SchemaNotSupported = "persistence.schema.not_supported";
+
+    /// <summary>
     /// 延迟装载的目录。
     /// </summary>
     /// <remarks>

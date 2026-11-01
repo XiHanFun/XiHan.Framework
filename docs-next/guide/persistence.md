@@ -356,6 +356,36 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用 |
 | Provider | SqlSugar 支持（数据库类型是 SqlSugar `DbType` 的名字，`DatabaseTypes` 列出常用的；客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、PostgreSQL 不自动转小写）。EF Core 与内存实现不支持，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
 
+## 库结构读取与实体目录
+
+代码生成要列出库里的表、读出列结构（导入与同步结构），还要认出哪些表由已登记的实体建出（沿用已有实体）。`ISchemaReader` 与 `IEntityCatalog` 提供这两样：
+
+```csharp
+public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog)
+{
+    // dataSource 为 null 读应用的缺省连接，否则读运行时数据源（先按定义登记再读）
+    public Task<Result<TablePage>> ListAsync(DataSourceDefinition? dataSource, string? keyword, int skip, int take, CancellationToken ct)
+        => schema.ListTablesAsync(dataSource, new TableListQuery { Keyword = keyword, Skip = skip, Take = take }, ct);
+
+    public Task<Result<IReadOnlyList<Result<TableSchema>>>> ReadAsync(DataSourceDefinition? dataSource, IReadOnlyList<string> tables, CancellationToken ct)
+        => schema.GetTablesAsync(dataSource, tables, ct);           // 一次最多 100 张，逐项结果
+
+    public async Task<EntityMapping?> ExistingEntityAsync(string table, CancellationToken ct)
+        => (await catalog.ListAsync(ct)).FirstOrDefault(m => string.Equals(m.Table, table, StringComparison.OrdinalIgnoreCase));
+}
+```
+
+| 项 | 规则 |
+| --- | --- |
+| 列表 | 按名字排序；`Keyword` 在名字与注释里不区分大小写地包含匹配；`Skip` / `Take` 分页（`Take` 最多 1000），返回过滤后的总数；库里的表一次读出、在内存里分页 |
+| 读结构 | 一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`；空集合不连库 |
+| 列 | 类型名、序号、主键、自增、可空、长度、精度与小数位、注释、缺省值（数据库报告的原文）；主键列一律不可空 |
+| 分表 | 已登记的分表实体按表名模板把 `Order_20261101` 这类物理表折叠成逻辑表 `Order`，`PhysicalTables` 新到旧，列取最新的物理表 |
+| 实体目录 | 每个登记的实体一条：表名（映射声明的写法，分表是逻辑名）、列映射、`EntityProtocols`（聚合根、创建 / 修改时间、并发戳、软删除、多租户）、`[EntityIndex]` 推出的索引；PostgreSQL 的物理名可能是小写，对照时不区分大小写 |
+| 缺省连接 | 另开一个不在事务里的连接读，PostgreSQL 系语句失败不会中止调用的事务 |
+| SQLite 的限制 | 没有表与列注释；`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；长度与精度取自声明的类型；自增只认 `AUTOINCREMENT` |
+| Provider | SqlSugar 两者都支持。EF Core 的实体目录取 DbContext 模型、读结构不支持；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
+
 ## 配置
 
 | 键 | 类型 | 缺省 | 说明 |
@@ -379,10 +409,11 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）；同一服务作用域里再经管道的嵌套调用 | 状态错误抛异常；嵌套调用是调用结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_VALIDATION_004` | SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接（装配错误） | 启动失败；运行时抛 `FrameworkException` |
-| `PERSISTENCE_VALIDATION_005` | 查询的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max` | 构造查询时抛 `FrameworkException`；调用里由 Transaction 阶段转为校验结果（HTTP 400） |
+| `PERSISTENCE_VALIDATION_005` | 查询或表列表的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max`；一次读结构超过 100 张表，参数 `count`、`max` | 构造查询时抛 `FrameworkException`；调用里由 Transaction 阶段转为校验结果（HTTP 400） |
 | `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_NOTFOUND_002` | 运行时数据源没有在本进程登记（`GetAsync`） | `Result` |
+| `PERSISTENCE_NOTFOUND_003` | 要读结构的表不在库里 | 逐项 `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
 | `PERSISTENCE_DENIED_001` | 只读工作单元里新增、更新、删除（只读操作里的写入，HTTP 403） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛异常、Transaction 阶段转为结果 |
@@ -390,9 +421,9 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
 | `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |
-| `PERSISTENCE_UNAVAILABLE_006` | 运行时数据源连不上（测试连接、健康探测），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
+| `PERSISTENCE_UNAVAILABLE_006` | 数据源连不上或读取失败（测试连接、健康探测、库结构读取），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
 | `PERSISTENCE_UNAVAILABLE_007` | 运行时数据源登记已满 | `Result` |
-| `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源） | `Result` |
+| `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源与库结构读取） | `Result` |
 
 `PERSISTENCE_UNAVAILABLE_004` 与 `005` 属于雪花标识生成器，见[标识生成](./distributed-ids#失败与错误码)。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误](./errors)。
 

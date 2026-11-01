@@ -15,6 +15,7 @@ using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.Schema;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -167,6 +168,10 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         // 运行时数据源：按应用记录里的定义连外部库，与上面的作用域客户端互不相干（RFC-0005「运行时数据源」）
         context.Services.AddDataSourceProvider<SqlSugarDataSourceProvider>(context.Configuration);
+        // 库结构读取与实体目录：缺省连接与运行时数据源都能读，分表按已登记实体的模板折叠（RFC-0005「库结构读取与实体目录」）
+        context.Services.TryAddSingleton<SqlSugarEntityCatalog>();
+        context.Services.TryAddSingleton<IEntityCatalog>(static sp => sp.GetRequiredService<SqlSugarEntityCatalog>());
+        context.Services.TryAddSingleton<ISchemaReader, SqlSugarSchemaReader>();
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);

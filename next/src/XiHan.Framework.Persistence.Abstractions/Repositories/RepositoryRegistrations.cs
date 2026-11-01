@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Primitives;
@@ -20,6 +21,11 @@ public sealed class RepositoryRegistrations
     /// 每个动作把一种实体交给 Provider 注册。
     /// </remarks>
     private readonly List<Action<IServiceCollection, IRepositoryRegistrar>> _registrations = [];
+
+    /// <summary>
+    /// 登记过的实体，按首次登记的顺序，同一实体类型只一条。
+    /// </summary>
+    private readonly List<RegisteredEntity> _entities = [];
 
     /// <summary>
     /// <see cref="ApplyTo"/> 之后记住的服务集合。
@@ -43,12 +49,25 @@ public sealed class RepositoryRegistrations
     public IReadOnlyList<Action<IServiceCollection, IRepositoryRegistrar>> Items => _registrations;
 
     /// <summary>
+    /// 登记过的实体与标识类型。
+    /// </summary>
+    /// <remarks>
+    /// 按首次登记的顺序，同一实体类型登记多次只一条。实体目录（<see cref="Schema.IEntityCatalog"/>）据此枚举。
+    /// </remarks>
+    public IReadOnlyList<RegisteredEntity> Entities => _entities;
+
+    /// <summary>
     /// 登记实体。
     /// </summary>
-    public void Add<TEntity, TKey>()
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
+        if (!_entities.Exists(static e => e.EntityType == typeof(TEntity)))
+        {
+            _entities.Add(new RegisteredEntity(typeof(TEntity), typeof(TKey)));
+        }
+
         Action<IServiceCollection, IRepositoryRegistrar> registration = static (services, registrar) => registrar.Register<TEntity, TKey>(services);
         _registrations.Add(registration);
         if (_services is not null && _registrar is not null)

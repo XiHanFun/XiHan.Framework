@@ -15,6 +15,7 @@ using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.Schema;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -127,6 +128,9 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         // 运行时数据源不支持：数据库 Provider（UseNpgsql 等）由应用选、本包不引用，按数据库类型建不出连接；注册表照样登记，取用返回 PERSISTENCE_UNAVAILABLE_008
         context.Services.AddDataSourceRegistry();
+        // 实体目录取 DbContext 模型；库结构读取不支持：跨库读结构在 EF Core 里是设计期脚手架服务，返回 PERSISTENCE_UNAVAILABLE_008
+        context.Services.TryAddSingleton<IEntityCatalog, EntityFrameworkCoreEntityCatalog>();
+        context.Services.AddUnsupportedSchemaReader();
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);
