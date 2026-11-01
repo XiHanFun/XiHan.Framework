@@ -65,6 +65,58 @@ public sealed class MiddlewareTests
     }
 
     [Fact]
+    public async Task Deadline_Reached_WhileDownstreamReportsCancellationAsAResult_RecordsTimeout()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
+        var middleware = new DeadlineMiddleware(time);
+        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
+
+        // 下游（如插件运行时）接住取消、自己写下取消结果、正常返回，不抛异常
+        var invocation = middleware.InvokeAsync(context, async inner =>
+        {
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, inner.CancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                inner.SetOutcome(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            }
+        });
+        time.Advance(TimeSpan.FromSeconds(6));
+        await invocation;
+
+        // 截止令牌触发、外部令牌没有：按超时报告
+        Assert.Equal(KernelErrors.DeadlineExceeded, context.GetOutcome().ValueOrThrow().Error!.Code);
+    }
+
+    [Fact]
+    public async Task Deadline_ExternalCancellation_ReportedAsAResult_StaysCancelled()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var time = new FakeTimeProvider();
+        var middleware = new DeadlineMiddleware(time);
+        var context = App.CreateContext(_services, cancellation.Token, deadline: time.GetUtcNow().AddMinutes(1));
+
+        var invocation = middleware.InvokeAsync(context, async inner =>
+        {
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, inner.CancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                inner.SetOutcome(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            }
+        });
+        await cancellation.CancelAsync();
+        await invocation;
+
+        // 截止时间没到、外部取消：保持取消
+        Assert.Equal(KernelErrors.Cancelled, context.GetOutcome().ValueOrThrow().Error!.Code);
+    }
+
+    [Fact]
     public async Task Deadline_ExternalCancellation_RecordsCancelled()
     {
         using var cancellation = new CancellationTokenSource();

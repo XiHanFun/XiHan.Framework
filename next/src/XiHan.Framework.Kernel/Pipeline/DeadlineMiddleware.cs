@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Pipeline;
 /// Resilience 阶段的内置中间件。
 /// </summary>
 /// <remarks>
-/// 把 <see cref="InvocationContext.Deadline"/> 落为取消，超时记为 <see cref="KernelErrors.DeadlineExceeded"/>，外部取消记为 <see cref="KernelErrors.Cancelled"/>。
+/// 把 <see cref="InvocationContext.Deadline"/> 落为取消，超时记为 <see cref="KernelErrors.DeadlineExceeded"/>，外部取消记为 <see cref="KernelErrors.Cancelled"/>。下游接住取消、自己写了 <see cref="KernelErrors.Cancelled"/> 结果（插件运行时把 gRPC 的取消映射成结果）而截止令牌已触发、外部令牌没有时，同样按超时改写（RFC-0003 第 1 条）。
 /// </remarks>
 /// <param name="timeProvider">时间源。</param>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -55,7 +55,7 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
     /// 执行下游并把取消翻译为结果。
     /// </summary>
     /// <remarks>
-    /// 先看截止令牌（超时），再看原上下文的令牌（外部取消）；其余取消原样抛出。
+    /// 先看截止令牌（超时），再看原上下文的令牌（外部取消）；其余取消原样抛出。下游正常返回、写下的是取消结果时，按触发的是哪个令牌纠正成超时。
     /// </remarks>
     /// <param name="original">原上下文，结果写回这里。</param>
     /// <param name="scoped">传给下游的上下文，可能是带链接令牌的派生实例。</param>
@@ -75,6 +75,18 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
         catch (OperationCanceledException) when (original.CancellationToken.IsCancellationRequested)
         {
             original.SetOutcome(new Error(KernelErrors.Cancelled, KernelMessages.Cancelled));
+            return;
+        }
+
+        // 下游把取消接住并写成了取消结果（不抛异常）：只有它知道取消发生了，不知道是哪个令牌触发的。下游若按时钟判断
+        // 是否已过截止时间，会与这里的定时器差几毫秒——定时器按系统节拍触发，可能早于时钟读数到达截止时间——把超时报成取消。
+        // 这里知道：截止令牌已触发而外部令牌没有，取消就来自截止时间，按超时报告
+        if (deadlineToken.IsCancellationRequested
+            && !original.CancellationToken.IsCancellationRequested
+            && original.GetOutcome().TryGetValue(out var outcome)
+            && outcome.Error?.Code == KernelErrors.Cancelled)
+        {
+            original.SetOutcome(new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded));
         }
     }
 }

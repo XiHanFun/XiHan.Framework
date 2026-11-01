@@ -220,13 +220,22 @@ public sealed class OutOfProcessPluginHostTests
     [Fact]
     public async Task Deadline_IsPropagatedToThePlugin()
     {
-        await using var host = await EchoPluginHost.StartAsync();
+        // 宿主这边的截止时间按注入的时钟判定（DeadlineMiddleware 与插件运行时都取容器里的 TimeProvider）：时钟不推进，宿主就不会
+        // 自己超时，用例不受墙钟快慢影响。时钟从当前时刻起步，截止时间放在一小时后，gRPC 截止时间换算出的 grpc-timeout 也是一小时；
+        // 带到 100 纳秒的零头，核对 RFC 3339 往返不丢精度
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature(PingFeature()), services: s => s.AddSingleton<TimeProvider>(clock));
+        var deadline = clock.GetUtcNow().AddHours(1).AddTicks(1_234_567);
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: DateTimeOffset.UtcNow.AddMilliseconds(300));
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: deadline);
 
-        var response = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest("echoes.create", Encoding.UTF8.GetBytes("""{"text":"slow","delayMs":5000}""")));
+        // 插件把收到的 InvokeRequest.metadata 原样带进宿主回调 pings.create，宿主按其中的 deadline 建回调上下文（invocation.md §2）：
+        // 回显出的截止时间就是插件进程收到的那一个
+        var response = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest("echoes.relay", Encoding.UTF8.GetBytes("""{"operation":"pings.create","payload":{"name":"deadline"}}""")));
 
-        Assert.Equal(KernelErrors.DeadlineExceeded, response.Outcome.Error?.Code);
+        Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
+        var received = EchoPluginHost.Payload(response).GetProperty("deadline").GetDateTimeOffset();
+        Assert.Equal(deadline.UtcTicks, received.UtcTicks);
     }
 
     [Fact]

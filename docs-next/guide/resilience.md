@@ -17,6 +17,8 @@
 
 截止时间随调用传播：HTTP 用请求头 `xihan-deadline`（RFC 3339，UTC），gRPC 用 `grpc-timeout`，命令行用 `--timeout`；下游调用的截止时间不晚于上游。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时。`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
 
+下游接住取消、自己写下 `KERNEL_CANCELLED_001` 结果正常返回（不抛异常）时，`DeadlineMiddleware` 按触发的令牌归因：截止令牌已触发而调用方没有取消，就改写为 `KERNEL_TIMEOUT_001`（ADR-0085）。不要在下游用 `context.IsExpired(now)` 区分超时与取消——定时器按系统节拍触发，可能早于时钟读数到达截止时间，几毫秒的差就会把超时判成取消。
+
 ## 按操作的限制
 
 内核的 `ResilienceMiddleware` 紧随 `DeadlineMiddleware`，只作用于带操作描述的调用；宿主自定义端点、消息派发与作业派发不受它约束。每个操作 ID 各持一份限制实例，判定顺序固定为熔断 → 限流 → 并发：
