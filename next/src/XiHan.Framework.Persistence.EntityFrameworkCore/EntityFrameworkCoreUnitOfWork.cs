@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败，此后提交只回滚并返回那个错误。
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWork, IAsyncDisposable
@@ -72,13 +72,20 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     /// 确保数据库事务已开启。
     /// </summary>
     /// <remarks>
-    /// 仓储在每次写入前调用；只读工作单元不会调用。
+    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Context"/> 写入（<c>SaveChanges</c>、<c>ExecuteUpdate</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果。
     /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
         {
             throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{State}' and cannot begin a transaction.");
+        }
+
+        // 只读工作单元不开事务：直接写入的调用方拿到异常就不会执行写入；同时记下失败，捕获异常后仍去提交的调用方得到同一错误
+        if (IsReadOnly)
+        {
+            Fail(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
+            throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes.");
         }
 
         // 只开一次：第一次写入开启事务，之后的写入复用同一事务
@@ -93,18 +100,18 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
-        // 写入阶段已失败（并发新增撞上同一标识）：调用方忽略了那次失败也不能提交
+        // 写入阶段已失败（并发新增撞上同一标识、只读工作单元拒绝了写入）：调用方忽略了那次失败也不能提交
         if (_failure is { } failure)
         {
             await RollbackAsync(cancellationToken).ConfigureAwait(false);
             return failure;
         }
 
-        // 只读工作单元里仓储已在写入前拒绝；这里兜住绕过仓储直接改跟踪实体的情况
+        // 只读工作单元里仓储已在写入前拒绝；这里兜住绕过仓储直接改跟踪实体的情况：那是一次没有保存的写入，拒绝而不是丢弃
         if (IsReadOnly && Context.ChangeTracker.HasChanges())
         {
             await RollbackAsync(cancellationToken).ConfigureAwait(false);
-            return Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly);
+            return Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
         }
 
         try
@@ -161,7 +168,7 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     /// 标为失败。
     /// </summary>
     /// <remarks>
-    /// 仓储在写入阶段发现并发新增撞上同一标识时调用；只记第一次。
+    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次。
     /// </remarks>
     internal void Fail(Error error)
     {

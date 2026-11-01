@@ -6,6 +6,7 @@ using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
@@ -983,6 +984,139 @@ public abstract class RepositoryConformance
             Assert.False(o.IsDeleted);
             Assert.Null(o.DeletedAt);
         });
+    }
+
+    /// <summary>
+    /// 用例 26：只读操作里的写入都被拒绝，读照常。
+    /// </summary>
+    /// <remarks>
+    /// 在动词为 <c>get</c> 的操作里：查找与计数照常；单条与批量的新增、更新、删除都返回 <see cref="PersistenceErrors.ReadOnly"/>，空批量仍返回空列表。处理器忽略全部拒绝而返回成功时调用仍以它结束，把拒绝作为结果返回时同样以它结束；存储不变。
+    /// </remarks>
+    [Fact]
+    public async Task ReadOnlyOperation_RejectsEveryWrite_AndReadsAsUsual()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var existing = Guid.CreateVersion7();
+        var fresh = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = existing, Name = "existing", Amount = 1 }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        var stored = (await FindAsync<ConformanceOrder, Guid>(host, existing).ConfigureAwait(false)).ValueOrThrow();
+        var codes = new List<string?>();
+        var found = false;
+        long count = -1;
+        var emptyBatch = -1;
+
+        var ignored = await InvokeScriptAsync(host, ReadScriptOperation.Id, async context =>
+        {
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var cancellationToken = context.CancellationToken;
+            found = (await repository.FindAsync(existing, cancellationToken).ConfigureAwait(false)).HasValue;
+            count = await repository.CountAsync(EntityQuery.All<ConformanceOrder>(), cancellationToken).ConfigureAwait(false);
+            stored.Name = "changed";
+            codes.Add((await repository.AddAsync(new ConformanceOrder { Id = fresh, Name = "fresh" }, cancellationToken).ConfigureAwait(false)).Error?.Code);
+            codes.Add((await repository.UpdateAsync(stored, cancellationToken).ConfigureAwait(false)).Error?.Code);
+            codes.Add((await repository.RemoveAsync(stored, cancellationToken).ConfigureAwait(false)).Error?.Code);
+            codes.AddRange((await repository.AddRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7() }, new ConformanceOrder { Id = Guid.CreateVersion7() }], cancellationToken).ConfigureAwait(false)).Select(static r => r.Error?.Code));
+            codes.AddRange((await repository.UpdateRangeAsync([stored], cancellationToken).ConfigureAwait(false)).Select(static r => r.Error?.Code));
+            codes.AddRange((await repository.RemoveRangeAsync([stored], cancellationToken).ConfigureAwait(false)).Select(static r => r.Error?.Code));
+            emptyBatch = (await repository.AddRangeAsync([], cancellationToken).ConfigureAwait(false)).Count;
+
+            // 忽略全部拒绝：工作单元已记下失败，提交返回同一错误
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(found);
+        Assert.Equal(1, count);
+        Assert.Equal(Enumerable.Repeat<string?>(PersistenceErrors.ReadOnly, 7), codes);
+        Assert.Equal(0, emptyBatch);
+        Assert.Equal(PersistenceErrors.ReadOnly, ignored.Error?.Code);
+
+        var propagated = await InvokeScriptAsync(host, ReadScriptOperation.Id, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = fresh }, context.CancellationToken)).ConfigureAwait(false);
+        Assert.Equal(PersistenceErrors.ReadOnly, propagated.Error?.Code);
+
+        Assert.Equal("existing", (await FindAsync<ConformanceOrder, Guid>(host, existing).ConfigureAwait(false)).ValueOrThrow().Name);
+        Assert.False((await FindAsync<ConformanceOrder, Guid>(host, fresh).ConfigureAwait(false)).HasValue);
+        Assert.Equal(1, await CountAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 27：只读操作在新的服务作用域里调用写操作，写入照常提交。
+    /// </summary>
+    /// <remarks>
+    /// 只读不向内传播：内层写操作开自己的可写工作单元、成功即提交；外层自己的写入仍被拒绝、调用以 <see cref="PersistenceErrors.ReadOnly"/> 结束，已提交的内层写入不随外层回滚。
+    /// </remarks>
+    [Fact]
+    public async Task WriteOperation_CalledFromReadOnlyOperation_InItsOwnScope_Commits()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var scripts = host.Services.GetRequiredService<ConformanceScripts>();
+        var inner = Guid.CreateVersion7();
+        var outer = Guid.CreateVersion7();
+        Result<ConformanceScriptResponse> nested = default;
+        Result outerWrite = default;
+
+        var result = await InvokeScriptAsync(host, ReadScriptOperation.Id, async context =>
+        {
+            // 嵌套调用新建服务作用域与上下文（沿用 Baggage），内层得到自己的工作单元
+            await using var scope = context.Services.CreateAsyncScope();
+            var call = App.CreateContext(scope.ServiceProvider, context.CancellationToken, baggage: new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal));
+            var key = scripts.Add(c => Repository<ConformanceOrder, Guid>(c).AddAsync(new ConformanceOrder { Id = inner, Name = "inner" }, c.CancellationToken));
+            nested = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<ConformanceScriptRequest, ConformanceScriptResponse>(call, WriteScriptOperation.Id, new ConformanceScriptRequest(key)).ConfigureAwait(false);
+            outerWrite = await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = outer, Name = "outer" }, context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(nested.IsSuccess, nested.ToString());
+        Assert.Equal(PersistenceErrors.ReadOnly, outerWrite.Error?.Code);
+        Assert.Equal(PersistenceErrors.ReadOnly, result.Error?.Code);
+        Assert.Equal("inner", (await FindAsync<ConformanceOrder, Guid>(host, inner).ConfigureAwait(false)).ValueOrThrow().Name);
+        Assert.False((await FindAsync<ConformanceOrder, Guid>(host, outer).ConfigureAwait(false)).HasValue);
+    }
+
+    /// <summary>
+    /// 用例 28：同一服务作用域里再经管道的调用被拒绝。
+    /// </summary>
+    /// <remarks>
+    /// 内层以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束，处理器不执行。作用域里的工作单元已由外层开始：内层不加入它、也不再开始它；外层的工作单元不受影响，照常提交自己的写入。
+    /// </remarks>
+    [Fact]
+    public async Task NestedInvocation_InTheSameScope_EndsWithInvalidState_WithoutRunningTheHandler()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var scripts = host.Services.GetRequiredService<ConformanceScripts>();
+        var id = Guid.CreateVersion7();
+        var ran = false;
+        Result<ConformanceScriptResponse> nested = default;
+
+        var result = await InvokeScriptAsync(host, WriteScriptOperation.Id, async context =>
+        {
+            // 以外层的服务作用域建上下文：作用域里只有一个工作单元，且已经开始
+            var call = App.CreateContext(context.Services, context.CancellationToken, baggage: new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal));
+            var key = scripts.Add(_ =>
+            {
+                ran = true;
+                return Task.FromResult(Result.Success());
+            });
+            nested = await context.Services.GetRequiredService<IOperationInvoker>().InvokeAsync<ConformanceScriptRequest, ConformanceScriptResponse>(call, ReadScriptOperation.Id, new ConformanceScriptRequest(key)).ConfigureAwait(false);
+            return await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "outer" }, context.CancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.False(ran);
+        Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, nested.Error?.Code);
+        Assert.Equal("outer", (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().Name);
+    }
+
+    /// <summary>
+    /// 经套件操作在一次完整管道调用内执行 <paramref name="script"/>，其返回值作为调用结果。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="operationId"/> 选只读的 <see cref="ReadScriptOperation"/> 或可写的 <see cref="WriteScriptOperation"/>。
+    /// </remarks>
+    private static async Task<Result> InvokeScriptAsync(TestHost host, string operationId, Func<InvocationContext, Task<Result>> script)
+    {
+        var key = host.Services.GetRequiredService<ConformanceScripts>().Add(script);
+        var result = await host.InvokeOperationAsync<ConformanceScriptRequest, ConformanceScriptResponse>(operationId, new ConformanceScriptRequest(key)).ConfigureAwait(false);
+        return result.IsSuccess ? Result.Success() : result.Error!;
     }
 
     /// <summary>

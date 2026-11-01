@@ -57,7 +57,7 @@ public sealed record OperationContract
     /// 是否只读（不改变状态、可重复调用）。
     /// </summary>
     /// <remarks>
-    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法。
+    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法；装配了持久化时 Transaction 阶段据此开只读工作单元（不开数据库事务，写入以 <c>PERSISTENCE_DENIED_001</c> 拒绝）。
     /// </remarks>
     public bool IsReadOnly { get; }
 

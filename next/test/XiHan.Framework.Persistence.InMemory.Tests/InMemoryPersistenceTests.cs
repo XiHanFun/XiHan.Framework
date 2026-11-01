@@ -130,17 +130,24 @@ public sealed class InMemoryPersistenceTests
     }
 
     [Fact]
-    public async Task ReadOnlyUnitOfWork_RejectsWritesAtCommit()
+    public async Task ReadOnlyUnitOfWork_RejectsWritesImmediately_AndCommitReturnsTheRejection()
     {
-        var (_, unitOfWork, repository) = Arrange();
+        var (store, unitOfWork, repository) = Arrange();
         await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
-        await repository.AddAsync(new Widget { Id = Guid.NewGuid() }, CancellationToken.None);
+        var id = Guid.NewGuid();
+
+        var added = await repository.AddAsync(new Widget { Id = id }, CancellationToken.None);
+
+        // 写入时就拒绝、不进覆盖层：同一工作单元里也查不到
+        Assert.Equal(PersistenceErrors.ReadOnly, added.Error?.Code);
+        Assert.False((await repository.FindAsync(id, CancellationToken.None)).HasValue);
+        Assert.Empty(await repository.AddRangeAsync([], CancellationToken.None));
 
         var commit = await unitOfWork.CommitAsync(CancellationToken.None);
 
-        Assert.True(commit.IsFailure);
-        Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, commit.Error!.Code);
+        Assert.Equal(PersistenceErrors.ReadOnly, commit.Error?.Code);
         Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
+        Assert.False(store.Table<Widget, Guid>().Find(id).HasValue);
     }
 
     [Fact]

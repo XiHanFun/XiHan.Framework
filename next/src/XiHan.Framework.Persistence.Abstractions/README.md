@@ -6,7 +6,7 @@
 | --- | --- |
 | `IRepository<TEntity, TKey>` | 查找、查询、计数、新增、更新、删除，以及按标识集合查找与批量新增 / 更新 / 删除（`FindManyAsync`、`AddRangeAsync` / `UpdateRangeAsync` / `RemoveRangeAsync`：逐项 `Result` 与入参一一对应、通过校验的项一次写入）；可恢复失败用 `Result` 返回 |
 | `EntityQuery<T>` | 过滤（规约）、排序、分页、是否包含已删除、时间范围提示（`Within`：只影响分表 / 分区 Provider 扫描的表，不过滤行）；`Take` 取 1 到 `EntityQuery.DefaultMaxTake`（1000），超出在构造时抛出 `ArgumentOutOfRangeException`，不截断 |
-| `IUnitOfWork` | 事务边界与当前租户；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启、提交或回滚；`DomainEvents`（`DomainEventTracker`）登记本工作单元写过的聚合 |
+| `IUnitOfWork` | 事务边界与当前租户；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启、提交或回滚；`DomainEvents`（`DomainEventTracker`）登记本工作单元写过的聚合；只读操作（`OperationContract.IsReadOnly`）开只读工作单元，见下文 |
 | `IDomainEventDispatcher` | 领域事件的派发端口：处理器成功后、提交前，中间件把带有未派发事件的聚合交给它（Messaging 子系统实现，发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚；有事件却没有派发器返回 `PERSISTENCE_VALIDATION_003`，不静默丢弃 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | 标识生成端口；Provider 注册 `IIdGenerator<Guid>`（UUID 版本 7，时间有序） |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId`、`IWorkerIdSource`（`FixedWorkerIdSource` / `LeasedWorkerIdSource`） | 雪花 `long` 标识（ADR-0033）：应用显式装配特性后得到 `IIdGenerator<long>`，41 位毫秒 + 10 位机器位 + 12 位序列；机器位显式配置或经 `IDistributedLock` 租约分配；`SnowflakeId.Parse` 还原时间戳、机器位与序列，见下文 |
@@ -17,6 +17,16 @@
 builder.Services.AddRepository<Order, Guid>();          // 应用登记实体
 builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任一 Provider 的特性
 ```
+
+## 只读工作单元与嵌套调用
+
+`UnitOfWorkMiddleware` 按本次调用的操作契约开工作单元（ADR-0073）：动词 `get` / `list` 或声明了 `ReadOnly = true` 的操作开只读工作单元，写操作与不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元。
+
+- 只读工作单元不开数据库事务，查找、查询、计数照常。
+- 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_DENIED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 403），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
+- Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
+- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
+- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly)` 决定，`UnitOfWorkOptions.Default` 可写。
 
 ## 雪花标识
 

@@ -10,5 +10,6 @@
   "persistence.store.unavailable": "無法連線關聯式資料庫。",
   "persistence.unit_of_work.concurrency_conflict": "提交時發生樂觀並行衝突：{reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' 記錄了 {count} 個領域事件，但沒有註冊領域事件派發器。",
-  "persistence.unit_of_work.read_only": "唯讀工作單元不接受寫入。"
+  "persistence.unit_of_work.nested": "本服務作用域的工作單元已經開始過：巢狀呼叫必須在自己的服務作用域裡執行。",
+  "persistence.unit_of_work.read_only": "工作單元是唯讀的，不接受寫入：唯讀操作（動詞 get / list，或宣告了 ReadOnly）不能寫入資料。"
 }

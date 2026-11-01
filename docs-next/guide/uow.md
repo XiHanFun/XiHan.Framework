@@ -22,18 +22,19 @@
 
 经管道的每次调用（HTTP、gRPC、MCP、命令行、消息派发）都经过 Transaction 阶段，`UnitOfWorkMiddleware` 按下面的顺序处理：
 
-1. 从调用的作用域取 `IUnitOfWork`，以 Tenant 阶段写入安全上下文的租户开始它。
-2. 调用下一步（Handle 阶段的处理器）。
-3. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果。
-4. 调用结果是失败：回滚，保留原失败结果。
-5. 有聚合带着未派发的领域事件：没有注册 `IDomainEventDispatcher` 时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发器返回失败时回滚，调用以该失败结束；派发成功清空登记，进入提交。
-6. 提交；提交失败时用它覆盖调用结果，调用方看到真实的持久化错误。
+1. 从调用的作用域取 `IUnitOfWork`。它已经开始过（同一个服务作用域里再经管道的嵌套调用）时，以 `PERSISTENCE_VALIDATION_002` 结束本次调用，不执行处理器，见下文[嵌套调用](#嵌套调用)。
+2. 以 Tenant 阶段写入安全上下文的租户开始它：本次调用的操作契约只读（`get` / `list`，或 `ReadOnly = true`）时开只读工作单元，其余调用开可写工作单元。
+3. 调用下一步（Handle 阶段的处理器）。
+4. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果；只读工作单元里直接写入入口抛出的 `PERSISTENCE_DENIED_001` 例外，回滚后转为同码的结果。
+5. 调用结果是失败：回滚，保留原失败结果。
+6. 有聚合带着未派发的领域事件：没有注册 `IDomainEventDispatcher` 时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发器返回失败时回滚，调用以该失败结束；派发成功清空登记，进入提交。
+7. 提交；提交失败时用它覆盖调用结果，调用方看到真实的持久化错误。
 
 所以操作代码不调用提交，只决定成败：返回 `Result` 失败或抛出异常，本次调用的全部写入都回滚，包括批量方法里已通过校验的项。
 
 数据库事务是延迟开启的：EF Core 与 SqlSugar Provider 在第一次写入时才开事务，只读过数据的调用不开事务，提交时也无事可做。这让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。
 
-中间件开启的工作单元总是可写的。操作契约上的 `ReadOnly`（以及 `get`、`list` 动词）只影响协议推导（HTTP 方法、MCP 的提示），不会让工作单元只读；只读工作单元只能在管道外经 `UnitOfWorkOptions` 显式开启。
+只读操作的工作单元从一开始就是只读的，连事务都不开；它的写入怎样被拒绝见下文[只读操作与只读工作单元](#只读操作与只读工作单元)。
 
 ## 提交与失败
 
@@ -47,7 +48,10 @@
 | 提交时并发冲突（EF Core 的并发令牌在提交时不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉） | 回滚 | `PERSISTENCE_CONFLICT_001` |
 | 提交时标识重复（内存实现发现新增的标识已被别人提交；关系型 Provider 写入时已撞上主键、处理器却返回了成功） | 回滚 | `PERSISTENCE_CONFLICT_002` |
 | 提交时内存表超出容量 | 回滚 | `PERSISTENCE_UNAVAILABLE_002` |
-| 只读工作单元有未提交的变更 | 回滚 | `PERSISTENCE_VALIDATION_002` |
+| 只读工作单元拒绝过写入（处理器忽略了那次失败而返回成功） | 回滚 | `PERSISTENCE_DENIED_001` |
+| 只读工作单元里直接写入入口 `EnsureTransactionAsync` 抛出 | 回滚 | `PERSISTENCE_DENIED_001` |
+| EF Core 只读工作单元有未保存的跟踪变更 | 回滚 | `PERSISTENCE_DENIED_001` |
+| 同一服务作用域里再经管道的嵌套调用 | 不动外层的工作单元 | `PERSISTENCE_VALIDATION_002`（只结束内层） |
 
 标识重复在 `AddAsync` / `AddRangeAsync` 时就按项返回 `PERSISTENCE_CONFLICT_002`，不留到提交。两个工作单元并发新增同一标识时，后到者在关系型 Provider 上于写入时得到它，之后提交只回滚并返回同一错误；在内存实现上于提交时得到它（见[持久化的并发新增同一标识](./persistence#并发新增同一标识)）。
 
@@ -174,23 +178,50 @@ if (pending.Count > 0)
 (await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();
 ```
 
-## 只读工作单元
+## 只读操作与只读工作单元
 
-`new UnitOfWorkOptions(IsReadOnly: true)` 开启只读工作单元，查询照常，写入被拒绝并返回 `PERSISTENCE_VALIDATION_002`：
+只读操作——动词是 `get` / `list`，或以 `[Operation(..., ReadOnly = true)]` 声明的查询变体（`departments.tree`、`users.list-online`）——在 Transaction 阶段得到只读工作单元（ADR-0073）。管道外用 `new UnitOfWorkOptions(IsReadOnly: true)` 开启的也一样：
 
-| Provider | 拒绝的时机 |
-| --- | --- |
-| 内存 | 写入先进覆盖层，提交时统一拒绝并记为回滚 |
-| EF Core | 仓储写入时返回失败；绕过仓储改了跟踪实体的，提交时拒绝 |
-| SqlSugar | 仓储写入时返回失败 |
+- 不开数据库事务；查找、查询、计数照常。
+- 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_DENIED_001`（批量逐项都是它；空集合不算写入，仍返回空列表）。
+- 拒绝同时把工作单元记为失败。处理器忽略这个失败、照常返回成功时，提交回滚并返回同一错误，调用以它结束——误写不会被悄悄吞掉。
+- 直接用 `DbContext` 或 SqlSugar 客户端写入之前要调用工作单元的 `EnsureTransactionAsync`：只读工作单元里它抛出携带 `PERSISTENCE_DENIED_001` 的 `FrameworkException`，写入不会执行；Transaction 阶段把它转为同码的结果，不变成 500。不经 `EnsureTransactionAsync` 直接执行的写入不在守卫之内，也不在事务里。
+- EF Core 提交时还查变更跟踪器：只读操作里把读出的实体改了却没保存，同样以 `PERSISTENCE_DENIED_001` 回滚。只读操作里不要把读出的实体当草稿修改，要变换就映射成响应对象。
 
-只读工作单元不开数据库事务。框架读取租户目录与权限授予、调度与工作流探测租约时都用它，后台的统计、报表这类只读路径也建议用它。
+`PERSISTENCE_DENIED_001` 是操作实现的缺陷，不是调用方能改正的输入：HTTP 403、gRPC `PermissionDenied`，熔断不计数。修正的办法是让操作不再写入，或者它本来就要写（记访问次数、补建缺失的行），就去掉只读声明、换一个非只读的动词，或把写入放进新服务作用域里的另一次调用（见下文）。
+
+| Provider | 仓储写入 | `EnsureTransactionAsync` | 提交 |
+| --- | --- | --- | --- |
+| 内存 | 进覆盖层之前拒绝 | 没有这个入口 | 返回写入时的拒绝 |
+| EF Core | 写入前拒绝 | 抛出 | 返回写入时的拒绝；有未保存的跟踪变更也拒绝 |
+| SqlSugar | 写入前拒绝 | 抛出 | 返回写入时的拒绝 |
+
+框架读取租户目录与权限授予、审计查询、调度与工作流探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它。框架的发件箱、审计落库、调度与工作流存储写入时开的是可写工作单元（`UnitOfWorkOptions.Default`），不受操作契约影响。
+
+## 嵌套调用
+
+一次调用一个工作单元，各调用按自己的契约开自己的。在操作里经管道再调另一个操作（`IOperationInvoker.InvokeAsync`、`App.InvokeAsync`），要新建服务作用域，内层才有自己的工作单元：
+
+```csharp
+// 在 orders.get 的处理器里：记一次查看，写入交给 order-views.create（scopes 是构造函数注入的 IServiceScopeFactory）
+await using var scope = scopes.CreateAsyncScope();
+var call = App.CreateContext(scope.ServiceProvider, context.CancellationToken, baggage: new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal));
+call.SetSecurity(context.GetSecurity());   // 以调用方的身份执行，Authorize 阶段照常按契约判定
+var invoker = scope.ServiceProvider.GetRequiredService<IOperationInvoker>();
+var recorded = await invoker.InvokeAsync<RecordViewRequest, RecordViewResponse>(call, RecordView.Id, new RecordViewRequest(request.Id));
+```
+
+- 只读不向内、也不向外传播：只读操作里调用的写操作在自己的可写工作单元里写入、成功即自行提交；外层随后失败也不会把它回滚（它不在外层的事务里），外层自己的仓储仍然只读。写操作里调用只读操作，内层只读。要与外层同进退的写入不应拆成嵌套调用。
+- 用同一个服务作用域再经管道——传入外层的 `context`、由它派生的上下文，或 `App.CreateContext(context.Services, …)`——作用域里的工作单元已经开始过：内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束，处理器不执行，外层的工作单元不受影响。内层不加入外层的工作单元：加入会让内层写入的成败取决于外层是否只读，内层失败时已写入的部分又会随外层一起提交。
+
+AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行，各自一个服务作用域。
 
 ## 错误码
 
 | 错误码 | 含义 | 形式 |
 | --- | --- | --- |
-| `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作；只读工作单元写入 | 状态错误抛 `FrameworkException`；只读写入返回 `Result` |
+| `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作；同一服务作用域里再经管道的嵌套调用 | 状态错误抛 `FrameworkException`；嵌套调用是调用结果 |
+| `PERSISTENCE_DENIED_001` | 只读工作单元拒绝写入（HTTP 403） | 仓储写入返回 `Result`、提交返回同一错误；`EnsureTransactionAsync` 抛 `FrameworkException`，Transaction 阶段转为结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在没有活动工作单元时使用 | `FrameworkException` |
 | `PERSISTENCE_CONFLICT_001` | 提交时乐观并发冲突 | 提交结果 |

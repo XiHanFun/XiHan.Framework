@@ -662,13 +662,18 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// <summary>
     /// 写入前：要求活动工作单元、拒绝只读、确保事务已开启。
     /// </summary>
+    /// <remarks>
+    /// 只读工作单元里返回 <see cref="PersistenceErrors.ReadOnly"/>、不触后端，并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误。
+    /// </remarks>
     private async ValueTask<Error?> PrepareWriteAsync(CancellationToken cancellationToken)
     {
         // 读取 Client 即完成“必须有活动工作单元”的校验
         _ = Client;
         if (_unitOfWork.IsReadOnly)
         {
-            return Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly);
+            var rejected = Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
+            _unitOfWork.Fail(rejected);
+            return rejected;
         }
 
         await _unitOfWork.EnsureTransactionAsync(cancellationToken).ConfigureAwait(false);

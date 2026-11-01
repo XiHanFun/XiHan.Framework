@@ -288,9 +288,35 @@ public sealed class SqlSugarPersistenceTests : IDisposable
 
         var added = await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None);
 
-        Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, added.Error?.Code);
-        Assert.True((await unitOfWork.CommitAsync(CancellationToken.None)).IsSuccess);
-        Assert.Equal(UnitOfWorkState.Committed, unitOfWork.State);
+        // 仓储在写入前就拒绝、不触数据库；拒绝把工作单元记为失败，忽略了这次失败的提交仍返回同一错误
+        Assert.Equal(PersistenceErrors.ReadOnly, added.Error?.Code);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await unitOfWork.CommitAsync(CancellationToken.None)).Error?.Code);
+        Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
+    }
+
+    [Fact]
+    public async Task ReadOnlyUnitOfWork_DirectWriteEntry_Throws_AndNothingIsWritten()
+    {
+        await using var host = await _database.StartHostAsync();
+        var id = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository(context).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, context.CancellationToken))).ThrowIfFailure();
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var unitOfWork = (SqlSugarUnitOfWork)scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+
+        // 直接用客户端写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_DENIED_001 的异常，调用方的写入不会执行
+        var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.EnsureTransactionAsync(CancellationToken.None));
+
+        Assert.Equal(PersistenceErrors.ReadOnly, thrown.Code);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await unitOfWork.CommitAsync(CancellationToken.None)).Error?.Code);
+        Maybe<ConformanceOrder> stored = default;
+        (await RunAsync(host, async context =>
+        {
+            stored = await Repository(context).FindAsync(id, context.CancellationToken);
+            return Result.Success();
+        })).ThrowIfFailure();
+        Assert.Equal("v1", stored.ValueOrThrow().Name);
     }
 
     [Fact]

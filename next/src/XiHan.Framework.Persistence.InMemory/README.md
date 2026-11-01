@@ -6,6 +6,7 @@
 
 - 每种实体一张表，容量上限 `XiHan:Persistence:InMemory:MaxEntitiesPerType`（默认 100000），超出返回 `PERSISTENCE_UNAVAILABLE_002`。
 - 工作单元读己之写：新增、更新、删除先进覆盖层；回滚丢弃。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）的写入在进覆盖层之前就返回 `PERSISTENCE_DENIED_001`（批量逐项都是它），并把工作单元记为失败，提交回滚并返回同一错误。
 - 软删除、创建与修改时间、租户写入与过滤、并发戳刷新按 `PersistenceConventions` 执行。
 - 读写都复制：查找、`FindManyAsync`、查询交出的是副本，写入存的是调用方实例的副本（`InMemoryTable.Find` / `Snapshot` 同样交出副本）。在读出的实例上的修改不经仓储写回就碰不到存储，回滚后不留痕迹。副本是字段逐一的浅复制：标量与协议字段互不影响，集合、嵌套对象等引用类型字段（含聚合的领域事件缓冲）仍与副本共享，不在隔离范围内。
 - 提交时校验：覆盖层记下每个写过的标识首次读到的已提交状态，提交按建表先后给涉及的表依次加锁，在全部锁内逐表校验——新增的标识已被别的工作单元提交返回 `PERSISTENCE_CONFLICT_002`；更新或删除的行已被删除、带并发戳的行戳已变返回 `PERSISTENCE_CONFLICT_001`；之后是容量——全部通过才逐表应用，跨表原子，失败时任何一张表都不改。

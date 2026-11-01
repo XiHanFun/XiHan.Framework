@@ -81,7 +81,9 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_NullableValue
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_ReturnsAtMostTheMaximumTake_AndLargerTakesAreRejected() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_WithTimeRangeHint_OnUnpartitionedEntity_ReturnsAllRows() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.MultiTenant_RequiresTenant_AndIsolatesTenants() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.NestedInvocation_InTheSameScope_EndsWithInvalidState_WithoutRunningTheHandler() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Provider_RegistersIdGenerator_AndDeclaresCapability() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.ReadOnlyOperation_RejectsEveryWrite_AndReadsAsUsual() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.RemoveRange_SoftDeletesOrDeletes_AndReportsMissingPerItem() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_PlainEntity_DeletesPhysically() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Remove_SoftDeletable_HidesEntity_UntilIncludeDeleted() -> System.Threading.Tasks.Task!
@@ -95,6 +97,7 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_Missing_ReturnNotFound() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_KeepsStoredTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.WriteOperation_CalledFromReadOnlyOperation_InItsOwnScope_Commits() -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.CreateGenerator(System.TimeProvider! clock) -> XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>!
 abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.GetUtcNow() -> System.DateTimeOffset

@@ -10,5 +10,6 @@
   "persistence.store.unavailable": "无法连接关系数据库。",
   "persistence.unit_of_work.concurrency_conflict": "提交时发生乐观并发冲突：{reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' 记录了 {count} 个领域事件，但没有注册领域事件派发器。",
-  "persistence.unit_of_work.read_only": "只读工作单元不接受写入。"
+  "persistence.unit_of_work.nested": "本服务作用域的工作单元已经开始过：嵌套调用必须在自己的服务作用域里执行。",
+  "persistence.unit_of_work.read_only": "工作单元是只读的，不接受写入：只读操作（动词 get / list，或声明了 ReadOnly）不能写入数据。"
 }

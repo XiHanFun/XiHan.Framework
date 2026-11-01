@@ -9,7 +9,7 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// 开启工作单元的选项。
 /// </summary>
 /// <param name="TenantId">当前租户；多租户实体据此写入与过滤。</param>
-/// <param name="IsReadOnly">只读：提交时不写入。</param>
+/// <param name="IsReadOnly">只读：不开数据库事务，仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，Provider 的直接写入入口抛出携带它的异常。Transaction 阶段为只读操作开只读工作单元。</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false)
 {

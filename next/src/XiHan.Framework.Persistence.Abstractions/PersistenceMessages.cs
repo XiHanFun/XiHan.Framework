@@ -55,7 +55,18 @@ public static class PersistenceMessages
     /// <summary>
     /// 只读工作单元拒绝写入。
     /// </summary>
+    /// <remarks>
+    /// 与 <see cref="PersistenceErrors.ReadOnly"/> 搭配。
+    /// </remarks>
     public const string ReadOnly = "persistence.unit_of_work.read_only";
+
+    /// <summary>
+    /// 同一服务作用域里再经管道发起的嵌套调用。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 搭配。
+    /// </remarks>
+    public const string NestedInvocation = "persistence.unit_of_work.nested";
 
     /// <summary>
     /// 聚合有未派发的领域事件但没有注册派发器。

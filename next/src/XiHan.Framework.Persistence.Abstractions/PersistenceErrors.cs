@@ -37,6 +37,9 @@ public static class PersistenceErrors
     /// <summary>
     /// 工作单元状态不允许该操作。
     /// </summary>
+    /// <remarks>
+    /// 重复开始、未开始就提交以异常抛出；同一服务作用域里再经管道发起的嵌套调用由 Transaction 阶段以结果结束（不执行处理器）。
+    /// </remarks>
     public const string InvalidUnitOfWorkState = "PERSISTENCE_VALIDATION_002";
 
     /// <summary>
@@ -51,6 +54,14 @@ public static class PersistenceErrors
     /// SqlSugar 实体的 <c>[Tenant(configId)]</c> 指向客户端里没有的连接，是装配错误。以异常抛出，缺省落点规则下在启动时校验。
     /// </remarks>
     public const string UnknownConnection = "PERSISTENCE_VALIDATION_004";
+
+    /// <summary>
+    /// 只读工作单元拒绝写入。
+    /// </summary>
+    /// <remarks>
+    /// 只读操作（<c>OperationContract.IsReadOnly</c>）或以 <see cref="UnitOfWork.UnitOfWorkOptions.IsReadOnly"/> 开启的工作单元里新增、更新、删除（含批量）。仓储写入返回结果并把工作单元记为失败，提交返回同一错误；Provider 的直接写入入口（<c>EnsureTransactionAsync</c>）以异常抛出，Transaction 阶段转为同码结果。HTTP 403。
+    /// </remarks>
+    public const string ReadOnly = "PERSISTENCE_DENIED_001";
 
     /// <summary>
     /// 没有活动的工作单元。

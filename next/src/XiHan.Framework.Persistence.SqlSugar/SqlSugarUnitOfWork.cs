@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。
+/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -100,13 +100,20 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 确保数据库事务已开启。
     /// </summary>
     /// <remarks>
-    /// 仓储在每次写入前调用；只读工作单元不会调用。
+    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Client"/> 或 <see cref="ConnectionFor"/> 写入（<c>Insertable</c>、<c>Updateable</c>、<c>Deleteable</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果。
     /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
         if (State != UnitOfWorkState.Active)
         {
             throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{State}' and cannot begin a transaction.");
+        }
+
+        // 只读工作单元不开事务：直接写入的调用方拿到异常就不会执行写入；同时记下失败，捕获异常后仍去提交的调用方得到同一错误
+        if (IsReadOnly)
+        {
+            Fail(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
+            throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes.");
         }
 
         // 只开一次：第一次写入经 ITenant 在已打开的连接上开启事务并置"全连接事务"标记，之后首次触及的连接由 SqlSugar 在取连接时补开事务；
@@ -172,7 +179,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 标为失败。
     /// </summary>
     /// <remarks>
-    /// 仓储在写入阶段发现并发新增撞上同一标识时调用；只记第一次。
+    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次。
     /// </remarks>
     internal void Fail(Error error)
     {

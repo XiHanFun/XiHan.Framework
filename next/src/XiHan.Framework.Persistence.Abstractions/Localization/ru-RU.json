@@ -10,5 +10,6 @@
   "persistence.store.unavailable": "Реляционная база данных недоступна.",
   "persistence.unit_of_work.concurrency_conflict": "Конфликт оптимистичного параллелизма при фиксации: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' записал {count} доменных событий, но диспетчер доменных событий не зарегистрирован.",
-  "persistence.unit_of_work.read_only": "Единица работы только для чтения не принимает записи."
+  "persistence.unit_of_work.nested": "Единица работы этой области служб уже запущена: вложенный вызов должен выполняться в собственной области служб.",
+  "persistence.unit_of_work.read_only": "Единица работы доступна только для чтения и не принимает записи: операции только для чтения (глагол get или list либо объявленные ReadOnly) не должны записывать данные."
 }

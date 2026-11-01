@@ -10,5 +10,6 @@
   "persistence.store.unavailable": "リレーショナルデータベースに接続できません。",
   "persistence.unit_of_work.concurrency_conflict": "コミット中に楽観的同時実行の競合が発生しました: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' は {count} 件のドメインイベントを記録しましたが、ドメインイベントディスパッチャーが登録されていません。",
-  "persistence.unit_of_work.read_only": "読み取り専用の作業単位は書き込みを受け付けません。"
+  "persistence.unit_of_work.nested": "このサービススコープの作業単位はすでに開始されています。入れ子の呼び出しは独自のサービススコープで実行する必要があります。",
+  "persistence.unit_of_work.read_only": "作業単位は読み取り専用のため、書き込みを受け付けません。読み取り専用の操作（動詞 get / list、または ReadOnly を宣言したもの）はデータを書き込めません。"
 }

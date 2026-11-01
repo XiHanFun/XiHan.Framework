@@ -24,7 +24,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 更新游离实体时先比对并发戳，不符返回 `PERSISTENCE_CONFLICT_001`；跟踪实体由 EF 的并发令牌保护。
 - 更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（`OriginalValues`），游离实例复制过来的值、直接改在跟踪实例上的值都不生效，写入路径也按原值判定可见性；提交时保存的残余变更（绕过仓储改了跟踪实体）同样不改创建时间与租户。保存成功后协议字段同步回游离实例。
 - 新增撞上主键约束（检查之后别的事务提交了同一标识）：`SaveChanges` 已回到自动建的保存点，仓储把这次新增的实体移出跟踪，在同一事务里核对这些标识，确已存在就返回 `PERSISTENCE_CONFLICT_002`（批量时这次写入的项统一报告），否则异常原样抛出；之后工作单元只能回滚，提交回滚并返回同一错误。
-- 只读工作单元在写入时就返回 `PERSISTENCE_VALIDATION_002`。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_DENIED_001` 并把工作单元记为失败（提交返回同一错误）；直接用 `DbContext` 写入前调用的 `EnsureTransactionAsync` 抛出携带它的异常，Transaction 阶段转为同码结果；绕过仓储改了跟踪实体而未保存的，提交时以它回滚。读出的实体在只读操作里不要当作草稿修改。
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
 - 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，DbContext 选项按作用域构建，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给配置回调，其余调用用应用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。
 - `XiHan:Persistence:EntityFrameworkCore:EnsureCreated=true` 时启动即建表，只用于开发与测试；生产用迁移。

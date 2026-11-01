@@ -49,7 +49,7 @@ public sealed class OperationAttribute : Attribute
     /// 声明非标准动词的操作是只读的（不改变状态、可重复调用）。
     /// </summary>
     /// <remarks>
-    /// <c>get</c> / <c>list</c> 本来就是只读，<c>tree</c>、<c>list-online</c> 这类查询变体在这里声明。协议据此推导：MCP 的 <c>readOnlyHint</c> / <c>idempotentHint</c> 为真、<c>destructiveHint</c> 为假，HTTP 走 <c>GET …:{verb}</c>（请求带嵌套对象时仍是 POST）。不能用在 <c>create</c> / <c>update</c> / <c>delete</c> 上（生成器报 <c>XHG005</c>，契约构造抛出）。
+    /// <c>get</c> / <c>list</c> 本来就是只读，<c>tree</c>、<c>list-online</c> 这类查询变体在这里声明。协议据此推导：MCP 的 <c>readOnlyHint</c> / <c>idempotentHint</c> 为真、<c>destructiveHint</c> 为假，HTTP 走 <c>GET …:{verb}</c>（请求带嵌套对象时仍是 POST）；装配了持久化时 Transaction 阶段为它开只读工作单元，处理器里的写入以 <c>PERSISTENCE_DENIED_001</c> 拒绝。不能用在 <c>create</c> / <c>update</c> / <c>delete</c> 上（生成器报 <c>XHG005</c>，契约构造抛出）。
     /// </remarks>
     public bool ReadOnly { get; init; }
 

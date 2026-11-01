@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// 内存仓储。
 /// </summary>
 /// <remarks>
-/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。读写都复制：查找与查询交出的是副本，写入存的是调用方实例的副本，调用方在读出的实例上的修改不经仓储写回就碰不到表与覆盖层。更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标。批量方法在同一次调用里逐项进入覆盖层，提交时由工作单元校验后原子应用。
+/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。读写都复制：查找与查询交出的是副本，写入存的是调用方实例的副本，调用方在读出的实例上的修改不经仓储写回就碰不到表与覆盖层。更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标。批量方法在同一次调用里逐项进入覆盖层，提交时由工作单元校验后原子应用。只读工作单元里的写入在进入覆盖层之前以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMemoryUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -97,7 +97,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(Add(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Add(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -106,6 +106,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
+        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        {
+            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+        }
+
         var now = _timeProvider.GetUtcNow();
         var results = new Result[entities.Count];
         // 逐项进入覆盖层：前一项已写入，后一项的同键判定就能看见它，批内重复自然成为 Duplicate
@@ -123,7 +128,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(Update(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Update(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -132,6 +137,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
+        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        {
+            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+        }
+
         var now = _timeProvider.GetUtcNow();
         var results = new Result[entities.Count];
         for (var index = 0; index < entities.Count; index++)
@@ -148,7 +158,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(Remove(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Remove(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -157,6 +167,11 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
+        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        {
+            return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
+        }
+
         var now = _timeProvider.GetUtcNow();
         var results = new Result[entities.Count];
         // 逐项施加：软删除的实体打标后立即不可见，物理删除的进入删除集合，同一实体第二次就是 NotFound
@@ -259,6 +274,34 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
 
         _unitOfWork.DomainEvents.Track(entity);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// 只读工作单元拒绝写入。
+    /// </summary>
+    /// <remarks>
+    /// 只读时返回 <see cref="PersistenceErrors.ReadOnly"/> 并把工作单元记为失败（处理器忽略这次失败而返回成功时，提交返回同一错误）；可写时返回 <see langword="null"/>。在进入覆盖层之前判定，只读工作单元的覆盖层始终为空。
+    /// </remarks>
+    private Error? RejectReadOnly()
+    {
+        if (!_unitOfWork.IsReadOnly)
+        {
+            return null;
+        }
+
+        var error = Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
+        _unitOfWork.Fail(error);
+        return error;
+    }
+
+    /// <summary>
+    /// 同一结果给每一项。
+    /// </summary>
+    private static Result[] Repeat(Result result, int count)
+    {
+        var results = new Result[count];
+        Array.Fill(results, result);
+        return results;
     }
 
     /// <summary>

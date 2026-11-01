@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// 内存工作单元。
 /// </summary>
 /// <remarks>
-/// 变更先进覆盖层（读己之写），提交时按涉及的表依次加锁，逐表校验每个写过的标识首次读到的状态（新增的标识已被别人提交即标识重复，更新或删除的行已被删、带戳的行戳已变即并发冲突），全部通过才逐表应用，跨表原子；回滚丢弃覆盖层。
+/// 变更先进覆盖层（读己之写），提交时按涉及的表依次加锁，逐表校验每个写过的标识首次读到的状态（新增的标识已被别人提交即标识重复，更新或删除的行已被删、带戳的行戳已变即并发冲突），全部通过才逐表应用，跨表原子；回滚丢弃覆盖层。只读工作单元里仓储在写入时就拒绝（<see cref="PersistenceErrors.ReadOnly"/>），覆盖层始终为空；拒绝过写入的工作单元提交时回滚并返回同一错误。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
@@ -29,6 +29,14 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     /// 工作单元是作用域服务，不需要并发保护。
     /// </remarks>
     private readonly Dictionary<Type, IPendingChanges> _pending = [];
+
+    /// <summary>
+    /// 写入阶段记下的失败。
+    /// </summary>
+    /// <remarks>
+    /// 非空时提交只回滚并返回它。
+    /// </remarks>
+    private Error? _failure;
 
     /// <inheritdoc />
     public UnitOfWorkState State { get; private set; } = UnitOfWorkState.NotStarted;
@@ -68,12 +76,12 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be committed.");
         }
 
-        // 只读工作单元允许仓储把变更写进覆盖层，但在提交点统一拒绝并回滚，而不是在每次写入时判断
-        if (IsReadOnly && _pending.Values.Any(static p => p.HasChanges))
+        // 写入阶段已失败（只读工作单元拒绝了写入）：处理器忽略了那次失败也不能当作成功，回滚并返回同一错误
+        if (_failure is { } failure)
         {
             _pending.Clear();
             State = UnitOfWorkState.RolledBack;
-            return Task.FromResult<Result>(Error.Validation(PersistenceErrors.InvalidUnitOfWorkState, PersistenceMessages.ReadOnly));
+            return Task.FromResult<Result>(failure);
         }
 
         var committed = Commit();
@@ -89,6 +97,18 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         _pending.Clear();
         State = UnitOfWorkState.RolledBack;
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 标为失败。
+    /// </summary>
+    /// <remarks>
+    /// 仓储在只读工作单元里拒绝写入时调用；只记第一次。
+    /// </remarks>
+    internal void Fail(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        _failure ??= error;
     }
 
     /// <summary>

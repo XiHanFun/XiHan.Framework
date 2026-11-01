@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -14,7 +15,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Tests;
 /// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策。
 /// </summary>
 /// <remarks>
-/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传。
+/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传、按契约开只读工作单元、只读写入异常转为结果、同一作用域的嵌套调用。
 /// </remarks>
 public sealed class UnitOfWorkMiddlewareTests
 {
@@ -146,5 +147,72 @@ public sealed class UnitOfWorkMiddlewareTests
 
         Assert.Equal("acme", unitOfWork.TenantId);
         Assert.False(unitOfWork.IsReadOnly);
+    }
+
+    [Theory]
+    [InlineData("orders.get", false, true)]
+    [InlineData("orders.list", false, true)]
+    [InlineData("departments.tree", true, true)]
+    [InlineData("departments.tree", false, false)]
+    [InlineData("orders.create", false, false)]
+    public async Task OperationContract_DecidesWhetherTheUnitOfWorkIsReadOnly(string operationId, bool declaredReadOnly, bool expected)
+    {
+        var (context, unitOfWork) = Arrange();
+        context.SetOperation(new ContractOnlyDescriptor(new OperationContract(operationId, readOnly: declaredReadOnly)));
+
+        await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
+
+        Assert.Equal(expected, unitOfWork.IsReadOnly);
+        Assert.Equal(["begin", "commit"], unitOfWork.Calls);
+    }
+
+    [Fact]
+    public async Task ReadOnlyDirectWrite_RollsBack_AndBecomesDeniedOutcome()
+    {
+        var (context, unitOfWork) = Arrange();
+        context.SetOperation(new ContractOnlyDescriptor(new OperationContract("orders.get")));
+
+        // Provider 的直接写入入口在只读工作单元里抛出：不作为未处理异常离开，转为同码结果
+        await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes."));
+
+        Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
+        var error = context.GetOutcome().ValueOrThrow().Error!;
+        Assert.Equal(PersistenceErrors.ReadOnly, error.Code);
+        Assert.Equal("DENIED", error.Kind);
+        Assert.Equal(PersistenceMessages.ReadOnly, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task OtherFrameworkExceptions_RollBack_AndRethrow()
+    {
+        var (context, unitOfWork) = Arrange();
+
+        var thrown = await Assert.ThrowsAsync<FrameworkException>(async () =>
+            await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, "No unit of work.")));
+
+        Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, thrown.Code);
+        Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
+    }
+
+    [Fact]
+    public async Task UnitOfWorkAlreadyStarted_EndsTheNestedInvocation_WithoutRunningTheHandler()
+    {
+        var (context, unitOfWork) = Arrange();
+        // 外层调用已经开始了作用域里的工作单元
+        await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        var ran = false;
+
+        await new UnitOfWorkMiddleware().InvokeAsync(context, _ =>
+        {
+            ran = true;
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.False(ran);
+        Assert.Equal(["begin"], unitOfWork.Calls);
+        Assert.Equal(UnitOfWorkState.Active, unitOfWork.State);
+        var error = context.GetOutcome().ValueOrThrow().Error!;
+        Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, error.Code);
+        Assert.Equal(PersistenceMessages.NestedInvocation, error.MessageKey);
     }
 }

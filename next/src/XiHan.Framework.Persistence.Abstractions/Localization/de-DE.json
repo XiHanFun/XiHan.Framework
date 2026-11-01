@@ -10,5 +10,6 @@
   "persistence.store.unavailable": "Die relationale Datenbank ist nicht erreichbar.",
   "persistence.unit_of_work.concurrency_conflict": "Beim Commit ist ein optimistischer Nebenläufigkeitskonflikt aufgetreten: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' hat {count} Domänenereignis(se) aufgezeichnet, aber es ist kein Domänenereignis-Dispatcher registriert.",
-  "persistence.unit_of_work.read_only": "Eine schreibgeschützte Arbeitseinheit akzeptiert keine Schreibvorgänge."
+  "persistence.unit_of_work.nested": "Die Arbeitseinheit dieses Dienstbereichs wurde bereits gestartet: Ein verschachtelter Aufruf muss in einem eigenen Dienstbereich ausgeführt werden.",
+  "persistence.unit_of_work.read_only": "Die Arbeitseinheit ist schreibgeschützt und akzeptiert keine Schreibvorgänge: Schreibgeschützte Operationen (Verb get oder list oder als ReadOnly deklariert) dürfen nicht schreiben."
 }

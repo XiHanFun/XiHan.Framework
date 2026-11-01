@@ -209,10 +209,43 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 
         var added = await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None);
 
-        // 与内存实现不同：EF 仓储在写入前就拒绝，所以提交时没有残余变更，工作单元正常提交
-        Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, added.Error?.Code);
-        Assert.True((await unitOfWork.CommitAsync(CancellationToken.None)).IsSuccess);
-        Assert.Equal(UnitOfWorkState.Committed, unitOfWork.State);
+        // 仓储在写入前就拒绝、不触数据库；拒绝把工作单元记为失败，忽略了这次失败的提交仍返回同一错误
+        Assert.Equal(PersistenceErrors.ReadOnly, added.Error?.Code);
+        var commit = await unitOfWork.CommitAsync(CancellationToken.None);
+        Assert.Equal(PersistenceErrors.ReadOnly, commit.Error?.Code);
+        Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
+    }
+
+    [Fact]
+    public async Task ReadOnlyUnitOfWork_DirectWriteEntry_Throws_AndUntrackedChangesAreRejectedAtCommit()
+    {
+        await using var host = await _database.StartHostAsync();
+        var id = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository(context).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, context.CancellationToken))).ThrowIfFailure();
+
+        // 直接用 DbContext 写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_DENIED_001 的异常，写入不会执行
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = (EntityFrameworkCoreUnitOfWork)scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+            var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.EnsureTransactionAsync(CancellationToken.None));
+            Assert.Equal(PersistenceErrors.ReadOnly, thrown.Code);
+            Assert.Equal(PersistenceErrors.ReadOnly, (await unitOfWork.CommitAsync(CancellationToken.None)).Error?.Code);
+        }
+
+        // 绕过仓储改了跟踪实体而未保存：提交时拒绝并回滚，存储不变
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+            var loaded = (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().FindAsync(id, CancellationToken.None)).ValueOrThrow();
+            loaded.Name = "changed";
+            var commit = await unitOfWork.CommitAsync(CancellationToken.None);
+            Assert.Equal(PersistenceErrors.ReadOnly, commit.Error?.Code);
+            Assert.Equal(UnitOfWorkState.RolledBack, unitOfWork.State);
+        }
+
+        Assert.Equal("v1", (await FindAsync(host, id)).ValueOrThrow().Name);
     }
 
     [Fact]

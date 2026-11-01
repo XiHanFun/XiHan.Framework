@@ -30,6 +30,9 @@ public interface IUnitOfWork
     /// <summary>
     /// 是否只读。
     /// </summary>
+    /// <remarks>
+    /// 只读工作单元不开数据库事务，写入以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝；拒绝过写入的工作单元提交时回滚并返回同一错误。
+    /// </remarks>
     bool IsReadOnly { get; }
 
     /// <summary>
