@@ -249,7 +249,7 @@ public sealed class CleanupJob : IJob
 | `UnscheduleAsync(names)` | 删除作业与触发器；进行中的运行照常结束，历史保留 | `SCHEDULING_NOTFOUND_001` |
 | `PauseAsync` / `ResumeAsync(names)` | 暂停或恢复作业的全部触发器；暂停期间手动触发仍可用，恢复后错过的按 misfire 策略处理 | `SCHEDULING_NOTFOUND_001` |
 | `PauseTriggersAsync` / `ResumeTriggersAsync(keys)` | 按 `TriggerKey(job, trigger)` 暂停或恢复单个触发器 | `SCHEDULING_NOTFOUND_003` |
-| `TriggerAsync(requests)` | 在本实例立即运行并等待结果，按顺序逐项；不受暂停和领导权限制；本实例调度器开始停止之后不再起新的运行 | `SCHEDULING_NOTFOUND_001`、`SCHEDULING_CONFLICT_001`、`SCHEDULING_UNAVAILABLE_001` |
+| `TriggerAsync(requests)` | 在本实例立即运行并等待结果，按顺序逐项；不受暂停和领导权限制；本实例调度器启动之前与开始停止之后都不起新的运行 | `SCHEDULING_NOTFOUND_001`、`SCHEDULING_CONFLICT_001`、`SCHEDULING_UNAVAILABLE_001` |
 | `EnqueueAsync(requests)` | 插入一个立即到期的一次性触发器（`manual-` 前缀），由集群任一节点运行，不等待；返回触发器名 | `SCHEDULING_NOTFOUND_001` |
 | `CancelRunsAsync(runIds)` | 本实例的运行立即取消令牌，其他节点的在下一个轮询周期取消 | `SCHEDULING_NOTFOUND_004` |
 | `StatusAsync(name)` / `StatusesAsync()` | 作业状态：记录、是否暂停、各触发器的状态与上一次 / 下一次时刻与次数、运行中数量、最近一次完成的结果 | — |
@@ -351,7 +351,7 @@ public sealed class ReportJobMonitor(IJobScheduler scheduler)
 | `Complete` | 没有下一次（一次性已运行、次数用尽、超过 `EndAt`） |
 | `Error` | 无法运行（作业类型未登记），原因在 `TriggerRecord.Error` |
 
-停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，再给它们收尾的时间，最后释放领导租约。
+停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，再给它们收尾的时间，最后释放领导租约。引擎随 Provider 特性启动；启动之前与开始停止之后，本实例的 `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`（HTTP 503）、不起新的运行——这两段时间没有轮询照看运行，停止也只等已经开始的运行，起了就无人等待。`EnqueueAsync` 只写存储，不受影响。
 
 ## 领导选举
 
@@ -480,7 +480,7 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |
-| `SCHEDULING_UNAVAILABLE_001` | 调度器未运行：本实例的调度器已开始停止（宿主排空），`TriggerAsync` 不再起新的运行；再次启动后照常 |
+| `SCHEDULING_UNAVAILABLE_001` | 调度器未运行：本实例的调度器尚未启动，或已开始停止（宿主排空），`TriggerAsync` 不起新的运行；启动后照常 |
 | `SCHEDULING_UNAVAILABLE_002` | 领导选举的存储（数据库、API Server）不可达或超时 |
 | `SCHEDULING_UNAVAILABLE_003` | 作业存储不可达 |
 | `SCHEDULING_UNAVAILABLE_004` | 作业存储容量已满（内存实现的运行历史全部在运行中） |

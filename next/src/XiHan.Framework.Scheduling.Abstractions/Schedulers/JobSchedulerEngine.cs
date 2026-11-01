@@ -155,12 +155,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 已开始停止（直到下次启动）。
+    /// 是否接受手动触发：启动后为真，开始停止时为假，再次启动又为真。
     /// </summary>
     /// <remarks>
-    /// 停止只等待已经开始的运行，之后到达的手动触发不再起新的运行。
+    /// 启动之前没有轮询，停止只等待已经开始的运行：这两段时间里起的手动运行都无人照看，记录会停在运行中直到被判失联。
     /// </remarks>
-    private volatile bool _draining;
+    private volatile bool _accepting;
 
     /// <summary>
     /// 轮询循环。
@@ -259,12 +259,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         }
 
         _startedAt = _clock.GetUtcNow();
-        _draining = false;
         _stopping = new CancellationTokenSource();
         // 定时器在这里而不是在循环任务里创建：否则时钟在循环任务开始前推进时，首个刻度会落在推进之后而丢失
         _timer = new PeriodicTimer(_options.PollInterval, _clock);
         var (timer, stopping) = (_timer, _stopping.Token);
         _loop = Task.Run(() => LoopAsync(timer, stopping), CancellationToken.None);
+        _accepting = true;
         return Task.CompletedTask;
     }
 
@@ -281,7 +281,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
-        _draining = true;
+        _accepting = false;
         await _stopping.CancelAsync().ConfigureAwait(false);
         try
         {
@@ -1316,8 +1316,9 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private async ValueTask<Result> TriggerOneAsync(JobTriggerRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        // 停止开始之后不再起新的手动运行：停止只等待已开始的运行，之后起的运行无人等待，记录会停在运行中直到被判失联
-        if (_draining)
+        // 尚未启动或已开始停止都不起新的手动运行：启动前没有轮询照看（取消请求、维护都不进行），停止只等待已开始的运行，
+        // 这时起的运行无人等待，记录会停在运行中直到被判失联
+        if (!_accepting)
         {
             return Error.Unavailable(SchedulingErrors.SchedulerUnavailable, SchedulingMessages.SchedulerUnavailable);
         }

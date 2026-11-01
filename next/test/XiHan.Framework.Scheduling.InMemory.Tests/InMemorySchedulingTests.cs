@@ -110,6 +110,7 @@ public sealed class InMemorySchedulingTests
             [new("XiHan:Scheduling:PollIntervalSeconds", "3600")],
             services =>
             {
+                services.AddSingleton<TimeProvider>(new FakeTimeProvider(new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)));
                 services.AddSingleton(log);
                 services.AddJob<RecordingJob>("manual", JobSchedule.Every(TimeSpan.FromHours(1)));
             });
@@ -126,6 +127,36 @@ public sealed class InMemorySchedulingTests
         await engine.StartAsync(CancellationToken.None);
         Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
         Assert.Equal(2, log.Runs.Count);
+    }
+
+    [Fact]
+    public async Task ManualTrigger_BeforeTheSchedulerStarts_IsUnavailable()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemorySchedulingFeature>(),
+            [new("XiHan:Scheduling:PollIntervalSeconds", "3600")],
+            services =>
+            {
+                services.AddSingleton<TimeProvider>(new FakeTimeProvider(new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)));
+                services.AddSingleton(log);
+                services.AddJob<RecordingJob>("manual", JobSchedule.Manual);
+            });
+        // 宿主里的引擎已随特性启动；另建一个同样装配、尚未启动的引擎
+        using var engine = ActivatorUtilities.CreateInstance<JobSchedulerEngine>(host.Services);
+
+        // 启动之前没有轮询照看运行：手动触发不起新的运行，与开始停止之后同码
+        var refused = await engine.TriggerAsync("manual", CancellationToken.None);
+        Assert.Equal(SchedulingErrors.SchedulerUnavailable, refused.Error?.Code);
+        Assert.Equal("UNAVAILABLE", refused.Error?.Kind);
+        Assert.Empty(log.Runs);
+
+        // 启动后照常，停止后再次拒绝
+        await engine.StartAsync(CancellationToken.None);
+        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+        await engine.StopAsync(CancellationToken.None);
+        Assert.Equal(SchedulingErrors.SchedulerUnavailable, (await engine.TriggerAsync("manual", CancellationToken.None)).Error?.Code);
+        Assert.Single(log.Runs);
     }
 
     [Fact]
