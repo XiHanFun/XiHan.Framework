@@ -87,6 +87,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.WorkflowTask
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Available_FilterByKindKeyAndDue_WithLimit() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_NameQueries_AreScopedToThePartition() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!

@@ -117,7 +117,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`） |
 | `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowNodeInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
-| `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
+| `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`NodeId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`，以及所属实例的 `DefinitionName` 与 `InstanceStatus`（待办查询下推用）；租户表另有 `TenantId` |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 三个存储实现 |
 | `DatabaseWorkflowTransaction` | 与调用方事务的关系 |
@@ -131,7 +131,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 ## 行为与限制
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
-- 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
+- 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。
+- 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名与状态，写书签时从实例行取，实例新增或状态变化时同步到它的书签行（同一事务），只取状态为 `Running` 的。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_DENIED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
 - 租约行与业务写入不在同一个事务里：SQLite 这类只有一个写者的数据库上，业务事务写过之后再写租约行要等自己的事务结束（忙等超时）。在 SQLite 上要经 `IEntityConnectionSelector` 把 `WorkflowLockRecord` 放到另一个库文件，调用之外的作用域以那个库为根连接；PostgreSQL 等行锁数据库不需要。
@@ -144,6 +145,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 表结构与数据要迁移（ADR-0077）：
 
 - 新建四张 `Platform*` 表；`WorkflowNodeInstanceRecord` 新增非空 `TenantId` 列（取所属实例的租户回填）。
+- 两张书签表新增可空列 `NodeId`、`DefinitionName`、`InstanceStatus`，回填：`NodeId` 取 `Document` 里的 `nodeId`，后两列取所属实例行的 `DefinitionName` 与 `Status`。不回填的行在待办查询里看不到，直到所属实例下一次改状态。
 - `TenantId` 为 NULL 的定义、实例、书签与这些实例的节点实例搬到对应的 `Platform*` 表（同列复制，不带 `TenantId`）。平台定义搬过去之前先查 `(Name, Version)` 重复：旧索引不约束 NULL 行，可能已有重复。
 - 有独立库的租户，把它的行从平台库搬到它自己的库。
 - 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。

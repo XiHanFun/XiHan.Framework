@@ -7,6 +7,7 @@ using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Tasks;
 using Xunit;
 
 namespace XiHan.Framework.Workflow.Conformance.Storage;
@@ -397,6 +398,97 @@ public abstract class WorkflowStoreConformance
         }).ConfigureAwait(false);
         await host.InPartitionAsync("t2", async s => Assert.False((await s.Instances.FindAsync("t2", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue)).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 用例 10：待办查询下推到存储。
+    /// </summary>
+    /// <remarks>
+    /// 只含用户任务、所属实例运行中的书签；按指派人、实例、节点、定义名与创建时间过滤，按创建时间升序或降序分页，计数与列表同条件。实例挂起后它的任务退出结果、恢复后回来；别的分区的任务看不到。
+    /// </remarks>
+    [Fact]
+    public async Task Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        // 取整到秒：创建时间的边界条件不受各存储时间精度的影响
+        var now = DateTimeOffset.UtcNow;
+        now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
+        var a = Instance("conf.a", "inst-qa", now.AddMinutes(-1));
+        var b = Instance("conf.b", "inst-qb", now.AddMinutes(-1));
+        var held = Instance("conf.a", "inst-qs", now.AddMinutes(-1));
+        var t1 = Bookmark(a.Id, "ni-1", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-5));
+        t1.NodeId = "approve";
+        var t2 = Bookmark(b.Id, "ni-2", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-4));
+        t2.NodeId = "review";
+        var t3 = Bookmark(a.Id, "ni-1", BookmarkKinds.UserTask, "bob", null, now.AddSeconds(-3));
+        t3.NodeId = "approve";
+        var t4 = Bookmark(held.Id, "ni-3", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-2));
+        t4.NodeId = "approve";
+        var t5 = Bookmark(a.Id, "ni-4", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-1));
+        t5.NodeId = "approve";
+        var signal = Bookmark(a.Id, "ni-5", BookmarkKinds.Signal, "alice", null, now.AddSeconds(-6));
+        var foreign = Instance("conf.a", "inst-qt", now.AddMinutes(-1));
+        foreign.TenantId = "t1";
+        var foreignTask = Bookmark(foreign.Id, "ni-6", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-7));
+        foreignTask.TenantId = "t1";
+        // 引擎的写回先写实例再写书签，用例照这个顺序
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.True((await s.Instances.SaveAsync(null, [a, b, held], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Bookmarks.SaveAsync(null, [t1, t2, t3, t4, t5, signal], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+        await host.InPartitionAsync("t1", async s =>
+        {
+            Assert.True((await s.Instances.SaveAsync("t1", [foreign], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Bookmarks.SaveAsync("t1", [foreignTask], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([t1.Id, t2.Id, t4.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+            Assert.Equal(4, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+
+        // 挂起：实例的状态变了，它的任务退出结果
+        held.Status = WorkflowInstanceStatus.Suspended;
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Instances.SaveAsync(null, [held], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([t1.Id, t2.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+            Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+            Assert.Equal([t5.Id, t2.Id, t1.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Descending = true }).ConfigureAwait(false));
+            Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false));
+            Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 3 }).ConfigureAwait(false));
+            Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf.a" }).ConfigureAwait(false));
+            Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", NodeId = "review" }).ConfigureAwait(false));
+            Assert.Equal([t1.Id, t3.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { InstanceId = a.Id }).ConfigureAwait(false));
+            Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { InstanceId = a.Id, AssigneeId = "bob" }).ConfigureAwait(false));
+            Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = now.AddSeconds(-4), CreatedTo = now.AddSeconds(-1) }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { InstanceId = held.Id }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+
+        // 恢复：任务回到结果里；别的分区的任务一直看不到
+        held.Status = WorkflowInstanceStatus.Running;
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Instances.SaveAsync(null, [held], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s => Assert.Equal([t1.Id, t2.Id, t4.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false))).ConfigureAwait(false);
+        await host.InPartitionAsync("t1", async s =>
+        {
+            Assert.Equal([foreignTask.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+            Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 待办查询的书签 ID。
+    /// </summary>
+    private static async Task<List<string>> TaskIdsAsync(WorkflowStores stores, UserTaskQuery query)
+        => (await stores.Bookmarks.ListUserTasksAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
+
+    /// <summary>
+    /// 待办查询的总数。
+    /// </summary>
+    private static async Task<long> TaskCountAsync(WorkflowStores stores, UserTaskQuery query)
+        => (await stores.Bookmarks.CountUserTasksAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
 
     /// <summary>
     /// 实例列表的 ID。

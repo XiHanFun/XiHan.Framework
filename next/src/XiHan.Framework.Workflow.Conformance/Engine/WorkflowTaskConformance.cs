@@ -11,6 +11,7 @@ using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
+using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Events;
 using XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 using XiHan.Framework.Workflow.Abstractions.Instances;
@@ -259,7 +260,7 @@ public abstract class WorkflowTaskConformance
     /// 用例 5：条件查询。
     /// </summary>
     /// <remarks>
-    /// 指派人与实例必填其一；按实例、节点、定义名、创建时间过滤；按创建时间升序分页；只含实例运行中的任务。
+    /// 指派人与实例必填其一，分页越界是校验错误；按实例、节点、定义名、创建时间过滤；按创建时间升序或降序分页，带同条件的总数；只含实例运行中的任务（挂起退出、恢复回来）。
     /// </remarks>
     [Fact]
     public async Task Query_FiltersAndPages()
@@ -272,30 +273,51 @@ public abstract class WorkflowTaskConformance
         var third = (await host.StartAsync("conf-query").ConfigureAwait(false)).ValueOrThrow();
 
         Assert.Equal(WorkflowErrors.InputInvalid, (await QueryAsync(host, new UserTaskQuery()).ConfigureAwait(false)).Error?.Code);
+        // 分页越界不在构造时抛出，查询返回校验错误（HTTP 400）；上限与持久化的查询条数上限一致
+        foreach (var invalid in new[] { new UserTaskQuery { AssigneeId = "alice", Limit = 0 }, new UserTaskQuery { AssigneeId = "alice", Limit = UserTaskQuery.MaxLimit + 1 }, new UserTaskQuery { AssigneeId = "alice", Skip = -1 } })
+        {
+            var rejected = await QueryAsync(host, invalid).ConfigureAwait(false);
+            Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
+            Assert.Equal(WorkflowMessages.TaskQueryPageInvalid, rejected.Error?.MessageKey);
+        }
 
-        var all = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Limit = UserTaskQuery.MaxLimit }).ConfigureAwait(false)).ValueOrThrow().Total);
+
+        var allPage = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow();
+        var all = allPage.Items;
+        Assert.Equal(3, allPage.Total);
         Assert.Equal([first.Id, second.Id, third.Id], all.Select(static task => task.InstanceId));
         Assert.True(all.Zip(all.Skip(1)).All(static pair => pair.First.CreatedAt <= pair.Second.CreatedAt));
+        Assert.Equal([third.Id, second.Id, first.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Descending = true }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         var page = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Equal(second.Id, Assert.Single(page).InstanceId);
+        Assert.Equal(second.Id, Assert.Single(page.Items).InstanceId);
+        Assert.Equal(3, page.Total);
 
-        var byInstance = (await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id }).ConfigureAwait(false)).ValueOrThrow();
+        // 挂起的实例的任务退出结果，恢复后回来
+        Assert.Equal(WorkflowInstanceStatus.Suspended, (await host.EngineAsync(engine => engine.SuspendAsync(second.Id, "hold", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        var held = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([first.Id, third.Id], held.Items.Select(static task => task.InstanceId));
+        Assert.Equal(2, held.Total);
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.EngineAsync(engine => engine.ResumeInstanceAsync(second.Id, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow().Total);
+
+        var byInstance = (await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id }).ConfigureAwait(false)).ValueOrThrow().Items;
         Assert.Equal(["alice", "bob"], byInstance.Select(static task => task.AssigneeId).Order());
-        Assert.Equal(2, (await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "approve" }).ConfigureAwait(false)).ValueOrThrow().Count);
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "other" }).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal("alice", Assert.Single((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", InstanceId = third.Id }).ConfigureAwait(false)).ValueOrThrow()).AssigneeId);
-        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-query" }).ConfigureAwait(false)).ValueOrThrow().Count);
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-other" }).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedTo = DateTimeOffset.UtcNow.AddHours(-1) }).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(-1), CreatedTo = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow().Count);
+        Assert.Equal(2, (await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "approve" }).ConfigureAwait(false)).ValueOrThrow().Total);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "other" }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Equal("alice", Assert.Single((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", InstanceId = third.Id }).ConfigureAwait(false)).ValueOrThrow().Items).AssigneeId);
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-query" }).ConfigureAwait(false)).ValueOrThrow().Total);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-other" }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedTo = DateTimeOffset.UtcNow.AddHours(-1) }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(-1), CreatedTo = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow().Items.Count);
 
         // 实例结束后它的任务不再出现
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.CompleteAsync(all[0].Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         var bob = await TaskOfAsync(host, "bob", first.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Completed, (await host.CompleteAsync(bob.Id, "bob", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
-        Assert.Equal([second.Id, third.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow().Select(static task => task.InstanceId));
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { InstanceId = first.Id }).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal([second.Id, third.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
+        Assert.Equal(0, (await QueryAsync(host, new UserTaskQuery { InstanceId = first.Id }).ConfigureAwait(false)).ValueOrThrow().Total);
     }
 
     /// <summary>
@@ -555,7 +577,7 @@ public abstract class WorkflowTaskConformance
     /// <summary>
     /// 条件查询。
     /// </summary>
-    private static ValueTask<Result<IReadOnlyList<UserTask>>> QueryAsync(WorkflowEngineHost host, UserTaskQuery query)
+    private static ValueTask<Result<UserTaskPage>> QueryAsync(WorkflowEngineHost host, UserTaskQuery query)
         => TasksAsync(host, service => service.QueryAsync(query, CancellationToken.None));
 
     /// <summary>

@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "A tarefa '{task}' não pode ser assumida com sua política de conclusão.",
   "workflow.task.outcome_invalid": "O resultado de tarefa '{outcome}' não é permitido.",
   "workflow.task.query_invalid": "A consulta de tarefas é inválida: {reason}",
+  "workflow.task.query_page_invalid": "A página da consulta de tarefas está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
   "workflow.variable.required": "A variável '{name}' é obrigatória."
 }

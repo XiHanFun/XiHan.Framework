@@ -14,11 +14,11 @@
 | `ActivityTypes` 与内置活动 | `Start`（信号 / 定时启动、延迟启动）、`End`、`Terminate`、`SetVariable`、`Decision`、`Parallel`、`Join`、`Delay`（时长 / 时刻 / cron）、`UserTask`、`PublishEvent`、`WaitSignal`、`EventGateway`、`SubWorkflow`、`ForEach`、`Log`、`Fault`、`Compensate`、`Http`（`WorkflowHttpClient`，应用可替换）、`ExternalTask` |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds` | 实例与节点实例（状态、变量、输入输出、私有状态），书签（用户任务 / 定时 / 信号 / 子流程 / 重试 / 节点超时 / 外部任务 / 提醒 / 实例级超时 / 定义级定时） |
 | `IWorkflowEngine`、`WorkflowEngine` | 启动（`StartAt` 延迟、`ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动也只建一个）、消费书签、信号（恢复 + 信号启动），批量挂起 / 恢复 / 取消 / 终止 / 重试 / 改变量 / 跳转 / 迁移 / 清理，实例查询（列表、计数、详情、节点轨迹）；只看得到、操作得了调用方分区的实例与书签；波次执行、一次批量写回、事件在事务里经作用域的发布者发出 |
-| `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskCompletion` … | 待办与查询、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
+| `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion` … | 待办与查询（`QueryAsync` 的过滤、排序与分页下推到存储，返回一页与总数，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002`）、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
 | `IWorkflowExternalTaskService`、`ExternalTask` … | 外部工作者按主题领取（加锁）、完成、失败（重试或故障）、延长锁 |
 | `IAssigneeProvider`、`AssigneeResolver`、`AssigneeRuleTypes` | 指派规则：内置 `User` / `Starter` / `Expression`，应用登记自己的类型 |
 | `IWorkflowExpressionEvaluator`、`ExpressionScope` | 无依赖的小语言：比较、算术、成员与索引、内置函数，`{{ }}` 模板；`Evaluate` 与 `ActivityContext.EvaluateProperty` 返回 `Result<Maybe<JsonNode>>`，结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串（ADR-0059） |
-| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约：存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台），写入的记录必须属于该分区；批量写入；实例查询带多状态 / 发起人 / 时间范围 / 分页与计数；书签的 `AvailableAsync` 以可领取时刻为键限量查询（外部任务领取把条数下推到存储）；`IWorkflowTransaction` 回答能不能加入调用方事务、加入的事务能不能写 |
+| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约：存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台），写入的记录必须属于该分区；批量写入；实例查询带多状态 / 发起人 / 时间范围 / 分页与计数；书签的 `AvailableAsync` 以可领取时刻为键限量查询（外部任务领取把条数下推到存储），`ListUserTasksAsync` / `CountUserTasksAsync` 承接待办查询；`IWorkflowTransaction` 回答能不能加入调用方事务、加入的事务能不能写 |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与按保留期清理（`RetentionDays`、`HousekeepingIntervalSeconds`），Provider 特性启动；每个周期覆盖平台与租户目录（`ITenantStore`，装配了多租户时）里启用的每个租户，逐个分区开调用 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.instance.*` / `node.*` / `task.*` / `external.*` / `custom` 消息（CloudEvents 信封） |
 

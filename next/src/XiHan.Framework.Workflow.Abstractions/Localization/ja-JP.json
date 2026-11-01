@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "タスク '{task}' の完了ポリシーでは引き受けできません。",
   "workflow.task.outcome_invalid": "タスクの結果 '{outcome}' は許可されていません。",
   "workflow.task.query_invalid": "タスククエリが不正です：{reason}",
+  "workflow.task.query_page_invalid": "タスククエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {limit} は 1 から {max} の間である必要があります。",
   "workflow.variable.required": "変数 '{name}' は必須です。"
 }

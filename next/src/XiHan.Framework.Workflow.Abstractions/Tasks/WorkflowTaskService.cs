@@ -112,16 +112,19 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<UserTask>>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<UserTaskPage>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.query", () => QueryCoreAsync(query, cancellationToken), service => service.QueryAsync(query, cancellationToken), cancellationToken);
+        return _scope.RunAsync<IWorkflowTaskService, UserTaskPage>(false, "workflow.task.query", () => QueryCoreAsync(query, cancellationToken), service => service.QueryAsync(query, cancellationToken), cancellationToken);
     }
 
     /// <summary>
     /// 按条件查询待办（在事务里）。
     /// </summary>
-    private async ValueTask<Result<IReadOnlyList<UserTask>>> QueryCoreAsync(UserTaskQuery query, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 过滤、排序与分页都下推到存储；这里只校验条件、把书签换成任务视图。
+    /// </remarks>
+    private async ValueTask<Result<UserTaskPage>> QueryCoreAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
         var assigneeId = query.AssigneeId?.Trim();
         var instanceId = query.InstanceId?.Trim();
@@ -130,36 +133,34 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "AssigneeId or InstanceId is required")));
         }
 
-        // 候选集按索引最窄的一边取：有指派人按种类与键，否则按实例；其余条件在内存里过滤
-        var found = !string.IsNullOrEmpty(assigneeId)
-            ? await _bookmarks.ByKindAndKeyAsync(Tenant, BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false)
-            : await _bookmarks.ByInstanceAsync(Tenant, instanceId!, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var bookmarks))
+        // 分页越界是调用方可以改正的输入（查询常由请求绑定），以校验错误返回而不是抛出；上限与持久化的查询条数上限一致
+        if (query.Skip < 0 || query.Limit is < 1 or > UserTaskQuery.MaxLimit)
         {
-            return found.Error!;
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", UserTaskQuery.MaxLimit)));
         }
 
         var nodeId = query.NodeId?.Trim();
-        var candidates = bookmarks.Where(bookmark =>
-                string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)
-                && (string.IsNullOrEmpty(instanceId) || string.Equals(bookmark.InstanceId, instanceId, StringComparison.Ordinal))
-                && (string.IsNullOrEmpty(nodeId) || string.Equals(bookmark.NodeId, nodeId, StringComparison.Ordinal))
-                && (query.CreatedFrom is not { } from || bookmark.CreatedAt >= from)
-                && (query.CreatedTo is not { } to || bookmark.CreatedAt < to))
-            .ToList();
-        var tasks = await ToTasksAsync(candidates, cancellationToken).ConfigureAwait(false);
-        if (!tasks.TryGetValue(out var visible))
+        var normalized = query with
         {
-            return tasks.Error!;
+            AssigneeId = string.IsNullOrEmpty(assigneeId) ? null : assigneeId,
+            InstanceId = string.IsNullOrEmpty(instanceId) ? null : instanceId,
+            NodeId = string.IsNullOrEmpty(nodeId) ? null : nodeId,
+        };
+        var listed = await _bookmarks.ListUserTasksAsync(Tenant, normalized, cancellationToken).ConfigureAwait(false);
+        if (!listed.TryGetValue(out var bookmarks))
+        {
+            return listed.Error!;
         }
 
-        IEnumerable<UserTask> filtered = visible;
-        if (query.DefinitionName is { } definitionName)
+        var counted = await _bookmarks.CountUserTasksAsync(Tenant, normalized, cancellationToken).ConfigureAwait(false);
+        if (!counted.TryGetValue(out var total))
         {
-            filtered = filtered.Where(task => task.DefinitionName == definitionName);
+            return counted.Error!;
         }
 
-        return filtered.OrderBy(static task => task.CreatedAt).Skip(query.Skip).Take(query.Limit).ToList();
+        // 存储已经只给运行中实例的书签；换视图时再按实例过滤一次只为防御（数据库实现在同一事务里，两次读一致）
+        var tasks = await ToTasksAsync(bookmarks, cancellationToken).ConfigureAwait(false);
+        return tasks.TryGetValue(out var items) ? new UserTaskPage(items, total) : tasks.Error!;
     }
 
     /// <inheritdoc />

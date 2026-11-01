@@ -99,12 +99,12 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `ActivityTypes` 与 `StartActivity`、`UserTaskActivity`、`HttpActivity` 等 | 内置活动的类型名与属性名常量 |
 | `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换） |
 | `IWorkflowOutcomeHandler`、`WorkflowOutcomeContext` | `End` 节点带结果时、结束实例之前调用 |
-| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务 |
+| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤、排序与分页下推到存储，返回 `UserTaskPage(Items, Total)`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
 | `IWorkflowExternalTaskService`、`ExternalTask`、`ExternalTaskCompletion`、`ExternalTaskFailure`、`ExternalTaskLockExtension` | 外部任务 |
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
 | `WorkflowVariables` | `JsonObject` 变量的视图与类型化读取（`Get<T>`、`TryGet<T>`） |
-| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约；存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台）；书签存储的 `AvailableAsync` 按分区、种类、键与可领取时刻限量查询，供外部任务领取下推条数；`IWorkflowTransaction` 回答能不能加入调用方事务（`IsActive`）、能不能写（`EnsureWritable`） |
+| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约；存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台）；书签存储的 `AvailableAsync` 按分区、种类、键与可领取时刻限量查询，供外部任务领取下推条数；`ListUserTasksAsync` / `CountUserTasksAsync` 按待办查询的条件列出与计数运行中实例的用户任务书签；`IWorkflowTransaction` 回答能不能加入调用方事务（`IsActive`）、能不能写（`EnsureWritable`） |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理；引擎选项 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`）、能力 ID |

@@ -837,11 +837,13 @@ XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.AvailableAs
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ByInstanceAsync(string? tenantId, string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ByKindAndKeyAsync(string? tenantId, string! kind, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.BySignalAsync(string? tenantId, string! signalName, string? correlationId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.CountUserTasksAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.DeleteAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.DeleteByInstanceAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! instanceIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.DueAsync(string? tenantId, System.DateTimeOffset now, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.FindAsync(string? tenantId, string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.FindManyAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
+XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ListUserTasksAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.SaveAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>! bookmarks, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.DeleteAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
@@ -873,7 +875,7 @@ XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.ClaimAsync(Syst
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.CompleteAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion!>! completions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.PendingAsync(string! assigneeId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.PendingByInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
-XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.QueryAsync(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
+XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.QueryAsync(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage!>>
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.ReleaseAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease!>! releases, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.ReturnAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn!>! returns, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.IWorkflowTaskService.TransferAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer!>! transfers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
@@ -958,6 +960,15 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy.All = 2 -> 
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy.Any = 1 -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy.Sequential = 3 -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletionPolicy
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage!
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>! Items, out long Total) -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Equals(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Items.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Total.get -> long
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Total.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.UserTaskPage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>! Items, long Total) -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery!
@@ -969,6 +980,8 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.CreatedTo.get -> Syste
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.CreatedTo.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.DefinitionName.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.DefinitionName.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Descending.get -> bool
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Descending.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Equals(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.init -> void
@@ -1031,7 +1044,7 @@ XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.ClaimAsync(Syste
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.CompleteAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion!>! completions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.PendingAsync(string! assigneeId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.PendingByInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
-XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.QueryAsync(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!>!>>
+XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.QueryAsync(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage!>>
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.ReleaseAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease!>! releases, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.ReturnAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn!>! returns, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Tasks.WorkflowTaskService.TransferAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer!>! transfers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
@@ -1253,6 +1266,7 @@ const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Priority =
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Rejected = "rejected" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.ReminderIntervalSeconds = "intervalSeconds" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Title = "title" -> string!
+const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Execution = "workflow.execution" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Version = 1 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.ActiveInstanceExists = "WORKFLOW_CONFLICT_005" -> string!
@@ -1312,6 +1326,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNoReturnTarget 
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNotClaimable = "workflow.task.not_claimable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskOutcomeInvalid = "workflow.task.outcome_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryInvalid = "workflow.task.query_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryPageInvalid = "workflow.task.query_page_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariableRequired = "workflow.variable.required" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowName.MaxLength = 128 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowOptions.ConfigurationSection = "XiHan:Workflow" -> string!
@@ -1402,6 +1417,9 @@ override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskClaim.ToString() ->
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.ToString() -> string!
@@ -1545,6 +1563,8 @@ static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskClaim.operator !=(XiH
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskClaim.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskClaim? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskClaim? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskCompletion? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPage? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease? right) -> bool

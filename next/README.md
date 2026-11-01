@@ -35,7 +35,7 @@ next/
 | `XiHan.Framework.Configuration.Abstractions` | 2 | 远程配置客户端与密钥库契约，以及接进 `IConfigurationBuilder` 的配置源（轮询重载、失败保留最后一份） |
 | `XiHan.Framework.Auditing.Abstractions` | 2 | Observe 阶段审计中间件、调用上下文的动作 / 资源 / 细节扩展、审计查询契约 |
 | `XiHan.Framework.AI.Abstractions` | 2 | AI 契约：基于 `Microsoft.Extensions.AI` 的 Provider 目录、带提示词 / 护栏 / 工具的 `IAIChat`、`Expose.Ai` 操作桥接成模型工具的目录（`AIToolsFeature` 默认提供 `ai.tools@1`）、知识库流水线与 `IKnowledgeStore` 契约 |
-| `XiHan.Framework.Workflow.Abstractions` | 2 | 工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储 / 事务 / 实例锁契约；引擎随调用方事务提交或回滚，数据按平台 / 租户分区隔离 |
+| `XiHan.Framework.Workflow.Abstractions` | 2 | 工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储 / 事务 / 实例锁契约；引擎随调用方事务提交或回滚，数据按平台 / 租户分区隔离，待办查询下推到存储并带总数 |
 | `XiHan.Framework.Localization.InMemory` | 3 | 内存本地化默认实现：汇集各包目录，精确区域 → 同语言 → 默认区域 → `en-US` 回退，设进程默认消息作用域 |
 | `XiHan.Framework.Persistence.InMemory` | 3 | 内存持久化默认实现（`role: default`）：有界、读己之写、软删除与租户隔离 |
 | `XiHan.Framework.Persistence.EntityFrameworkCore` | 3 | EF Core Provider：应用自有 DbContext、事务型工作单元、协议约定（非 AOT） |

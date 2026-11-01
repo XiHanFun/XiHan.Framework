@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "작업 '{task}'의 완료 정책에서는 담당 지정을 지원하지 않습니다.",
   "workflow.task.outcome_invalid": "작업 결과 '{outcome}'은(는) 허용되지 않습니다.",
   "workflow.task.query_invalid": "작업 조회가 잘못되었습니다: {reason}",
+  "workflow.task.query_page_invalid": "작업 조회의 페이지 범위가 잘못되었습니다: 건너뛸 수 {skip}은(는) 음수일 수 없고 페이지 크기 {limit}은(는) 1에서 {max} 사이여야 합니다.",
   "workflow.variable.required": "변수 '{name}'은(는) 필수입니다."
 }

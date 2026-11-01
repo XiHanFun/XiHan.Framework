@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "Die Aufgabe '{task}' kann unter ihrer Abschlussrichtlinie nicht übernommen werden.",
   "workflow.task.outcome_invalid": "Das Aufgabenergebnis '{outcome}' ist nicht erlaubt.",
   "workflow.task.query_invalid": "Die Aufgabenabfrage ist ungültig: {reason}",
+  "workflow.task.query_page_invalid": "Die Seite der Aufgabenabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
   "workflow.variable.required": "Die Variable '{name}' ist erforderlich."
 }

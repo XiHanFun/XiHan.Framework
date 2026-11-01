@@ -41,7 +41,7 @@ public sealed class InMemoryWorkflowTests
         Assert.True((await instances.SaveAsync(null, [Instance("i1")], CancellationToken.None)).IsSuccess);
         Assert.Equal(WorkflowErrors.StoreCapacity, (await instances.SaveAsync(null, [Instance("i2")], CancellationToken.None)).Error?.Code);
 
-        var bookmarks = new InMemoryWorkflowBookmarkStore(options);
+        var bookmarks = new InMemoryWorkflowBookmarkStore(options, instances);
         Assert.True((await bookmarks.SaveAsync(null, [Bookmark("i1")], CancellationToken.None)).IsSuccess);
         Assert.Equal(WorkflowErrors.StoreCapacity, (await bookmarks.SaveAsync(null, [Bookmark("i1")], CancellationToken.None)).Error?.Code);
     }

@@ -37,6 +37,16 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     private readonly InstanceRows<WorkflowInstanceRecord, WorkflowNodeInstanceRecord> _tenant;
 
     /// <summary>
+    /// 平台分区的书签表：实例的状态变了同步到它。
+    /// </summary>
+    private readonly BookmarkRows<PlatformWorkflowBookmarkRecord, PlatformWorkflowInstanceRecord> _platformBookmarks;
+
+    /// <summary>
+    /// 租户分区的书签表：实例的状态变了同步到它。
+    /// </summary>
+    private readonly BookmarkRows<WorkflowBookmarkRecord, WorkflowInstanceRecord> _tenantBookmarks;
+
+    /// <summary>
     /// 创建（作用域服务）。
     /// </summary>
     public DatabaseWorkflowInstanceStore(IServiceProvider services)
@@ -44,14 +54,18 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
         ArgumentNullException.ThrowIfNull(services);
         _unitOfWork = services.GetRequiredService<IUnitOfWork>();
         var sequence = services.GetRequiredService<WriteSequence>();
+        var platformInstances = services.GetRequiredService<IRepository<PlatformWorkflowInstanceRecord, string>>();
+        var tenantInstances = services.GetRequiredService<IRepository<WorkflowInstanceRecord, string>>();
         _platform = new InstanceRows<PlatformWorkflowInstanceRecord, PlatformWorkflowNodeInstanceRecord>(
-            services.GetRequiredService<IRepository<PlatformWorkflowInstanceRecord, string>>(),
+            platformInstances,
             services.GetRequiredService<IRepository<PlatformWorkflowNodeInstanceRecord, string>>(),
             sequence);
         _tenant = new InstanceRows<WorkflowInstanceRecord, WorkflowNodeInstanceRecord>(
-            services.GetRequiredService<IRepository<WorkflowInstanceRecord, string>>(),
+            tenantInstances,
             services.GetRequiredService<IRepository<WorkflowNodeInstanceRecord, string>>(),
             sequence);
+        _platformBookmarks = new BookmarkRows<PlatformWorkflowBookmarkRecord, PlatformWorkflowInstanceRecord>(services.GetRequiredService<IRepository<PlatformWorkflowBookmarkRecord, string>>(), platformInstances, sequence);
+        _tenantBookmarks = new BookmarkRows<WorkflowBookmarkRecord, WorkflowInstanceRecord>(services.GetRequiredService<IRepository<WorkflowBookmarkRecord, string>>(), tenantInstances, sequence);
     }
 
     /// <inheritdoc />
@@ -96,7 +110,9 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
             StorePartition.EnsureOwned(tenantId, instance.TenantId, "instance", instance.Id);
         }
 
-        return StorePartition.OrUnavailable(tenantId is null ? await _platform.SaveAsync(instances, cancellationToken).ConfigureAwait(false) : await _tenant.SaveAsync(instances, cancellationToken).ConfigureAwait(false));
+        return StorePartition.OrUnavailable(tenantId is null
+            ? await SaveAndSyncAsync(_platform, _platformBookmarks, instances, cancellationToken).ConfigureAwait(false)
+            : await SaveAndSyncAsync(_tenant, _tenantBookmarks, instances, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
@@ -129,6 +145,21 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
         ArgumentNullException.ThrowIfNull(nodeInstances);
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.SaveNodeInstancesAsync(nodeInstances, cancellationToken).ConfigureAwait(false) : await _tenant.SaveNodeInstancesAsync(nodeInstances, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 写实例，再把新增的与状态变了的实例同步到它们的书签行。
+    /// </summary>
+    /// <remarks>
+    /// 两步在调用方的同一事务里，任一步失败随调用回滚。
+    /// </remarks>
+    private static async ValueTask<Result> SaveAndSyncAsync<TInstance, TNode, TBookmark>(InstanceRows<TInstance, TNode> rows, BookmarkRows<TBookmark, TInstance> bookmarks, IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken)
+        where TInstance : WorkflowInstanceRow, new()
+        where TNode : WorkflowNodeInstanceRow, new()
+        where TBookmark : WorkflowBookmarkRow, new()
+    {
+        var saved = await rows.SaveAsync(instances, cancellationToken).ConfigureAwait(false);
+        return saved.TryGetValue(out var changed) ? await bookmarks.SyncAsync(changed, cancellationToken).ConfigureAwait(false) : Result.Failure(saved.Error!);
     }
 
     /// <summary>

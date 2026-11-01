@@ -332,7 +332,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
 | `PendingAsync(assigneeId)` / `PendingByInstanceAsync(instanceId)` | 某人或某实例的待办 | — |
-| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间过滤，分页（`Limit` 缺省 100、最大 1000） | `WORKFLOW_VALIDATION_002` |
+| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -340,7 +340,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | `ReturnAsync(returns)` | 退回：目标缺省为本节点之前最近完成的用户任务节点，没有则退回 `Start` 之后的首个节点；以跳转实现 | `WORKFLOW_VALIDATION_002` |
 | `UrgeAsync(urges)` | 催办：发布 `workflow.task.urged`，不改状态 | — |
 
-查询只返回当前分区、实例处于运行中的任务。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
+查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行（数据库实现是 SQL），`Total` 是同条件的总数；`Limit` 缺省 100、最大 1000（`UserTaskQuery.MaxLimit`，与持久化的查询条数上限一致），越界在查询时返回校验错误，HTTP 是 400。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -349,8 +349,9 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 public sealed class Inbox(IWorkflowTaskService tasks)
 {
-    public async ValueTask<IReadOnlyList<UserTask>> ListAsync(string userId, CancellationToken cancellationToken)
-        => (await tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Limit = 50 }, cancellationToken)).ValueOrThrow();
+    // 第 page 页（从 0 起），最新的在前；Total 用来算页数
+    public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
+        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
         => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId, UserTaskOutcomes.Approved, comment), cancellationToken);
@@ -684,7 +685,7 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 | 错误码 | 含义 |
 | --- | --- |
 | `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
-| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件 |
+| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |

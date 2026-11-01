@@ -301,6 +301,14 @@ public static class WorkflowMessages
     public const string TaskQueryInvalid = "workflow.task.query_invalid";
 
     /// <summary>
+    /// 待办查询的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>。
+    /// </remarks>
+    public const string TaskQueryPageInvalid = "workflow.task.query_page_invalid";
+
+    /// <summary>
     /// 工作者没有持有外部任务的锁。
     /// </summary>
     /// <remarks>

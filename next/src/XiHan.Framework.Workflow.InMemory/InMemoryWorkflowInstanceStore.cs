@@ -64,6 +64,29 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
+    /// 运行中实例的定义名（按实例 ID）。
+    /// </summary>
+    /// <remarks>
+    /// 书签存储的待办查询以此与实例连接：不在运行中、不存在或在别的分区的实例不在结果里。
+    /// </remarks>
+    internal Dictionary<string, WorkflowName> RunningDefinitions(string? tenantId, IEnumerable<string> instanceIds)
+    {
+        lock (_lock)
+        {
+            var running = new Dictionary<string, WorkflowName>(StringComparer.Ordinal);
+            foreach (var id in instanceIds)
+            {
+                if (_instances.TryGetValue(PartitionKey.In(tenantId, id), out var entry) && entry.Instance.Status == WorkflowInstanceStatus.Running)
+                {
+                    running[id] = entry.Instance.DefinitionName;
+                }
+            }
+
+            return running;
+        }
+    }
+
+    /// <summary>
     /// 当前实例数（全部分区）。
     /// </summary>
     public int Count

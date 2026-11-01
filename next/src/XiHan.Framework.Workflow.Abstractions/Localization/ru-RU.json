@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "Задачу '{task}' нельзя взять при её политике завершения.",
   "workflow.task.outcome_invalid": "Результат задачи '{outcome}' не разрешён.",
   "workflow.task.query_invalid": "Запрос задач недопустим: {reason}",
+  "workflow.task.query_page_invalid": "Страница запроса задач вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
   "workflow.variable.required": "Переменная '{name}' обязательна."
 }

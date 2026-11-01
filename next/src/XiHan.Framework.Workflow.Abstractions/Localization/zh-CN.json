@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "任务 '{task}' 的完成策略不支持认领。",
   "workflow.task.outcome_invalid": "任务结果 '{outcome}' 不在允许范围内。",
   "workflow.task.query_invalid": "任务查询不合法：{reason}",
+  "workflow.task.query_page_invalid": "待办查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
   "workflow.variable.required": "变量 '{name}' 必填。"
 }

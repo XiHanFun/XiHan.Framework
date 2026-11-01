@@ -62,10 +62,36 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         => await instances.CountAsync(Filter(query), cancellationToken).ConfigureAwait(false);
 
     /// <summary>
-    /// 新增或整体替换实例。
+    /// 新增或整体替换实例，返回要同步书签的行。
     /// </summary>
-    public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowInstance> items, CancellationToken cancellationToken)
-        => RecordQueries.UpsertAsync(instances, items.Select(ToRecord).ToList(), Copy, cancellationToken);
+    /// <remarks>
+    /// 要同步的是新增的行与状态或定义名变了的行：书签行带着所属实例的这两列（待办查询下推），见 <see cref="BookmarkRows{TRow, TInstance}.SyncAsync"/>。
+    /// </remarks>
+    public async ValueTask<Result<IReadOnlyList<TInstance>>> SaveAsync(IReadOnlyList<WorkflowInstance> items, CancellationToken cancellationToken)
+    {
+        var records = items.Select(ToRecord).ToList();
+        var replaced = new HashSet<string>(StringComparer.Ordinal);
+        var changed = new List<TInstance>();
+        var saved = await RecordQueries.UpsertAsync(instances, records, (source, target) =>
+        {
+            // 已有的行在复制之前比较：状态或定义名没变的，书签行不用动（引擎每个波次都写实例，多数写入不改状态）
+            replaced.Add(target.Id);
+            if (!string.Equals(source.Status, target.Status, StringComparison.Ordinal) || !string.Equals(source.DefinitionName, target.DefinitionName, StringComparison.Ordinal))
+            {
+                changed.Add(source);
+            }
+
+            Copy(source, target);
+        }, cancellationToken).ConfigureAwait(false);
+        if (saved.IsFailure)
+        {
+            return saved.Error!;
+        }
+
+        // 新增的行也同步：引擎先写实例再写书签，新实例通常还没有书签，但不依赖这个顺序
+        changed.AddRange(records.Where(record => !replaced.Contains(record.Id)));
+        return Result.Success<IReadOnlyList<TInstance>>(changed);
+    }
 
     /// <summary>
     /// 删除实例，级联节点实例。

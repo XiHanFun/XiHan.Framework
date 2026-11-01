@@ -6,6 +6,7 @@ using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
+using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 namespace XiHan.Framework.Workflow.InMemory;
 
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 有界内存的书签存储。
 /// </summary>
 /// <remarks>
-/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。待办查询与同一特性的实例存储连接，取实例的状态与定义名。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
@@ -39,6 +40,11 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     private readonly int _capacity;
 
     /// <summary>
+    /// 同一特性的实例存储：待办查询按它取实例的状态与定义名。
+    /// </summary>
+    private readonly InMemoryWorkflowInstanceStore _instances;
+
+    /// <summary>
     /// 写入序号。
     /// </summary>
     private long _sequence;
@@ -46,9 +52,11 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     /// <summary>
     /// 创建。
     /// </summary>
-    public InMemoryWorkflowBookmarkStore(InMemoryWorkflowOptions options)
+    public InMemoryWorkflowBookmarkStore(InMemoryWorkflowOptions options, InMemoryWorkflowInstanceStore instances)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(instances);
+        _instances = instances;
         _capacity = options.MaxBookmarks;
     }
 
@@ -126,6 +134,25 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
         {
             return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(InPartition(tenantId).Where(entry => string.Equals(entry.Bookmark.Kind, kind, StringComparison.Ordinal) && string.Equals(entry.Bookmark.Key, key, StringComparison.Ordinal)))));
         }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var matched = UserTasks(tenantId, query);
+        var ordered = query.Descending
+            ? matched.OrderByDescending(static entry => entry.Bookmark.CreatedAt).ThenByDescending(static entry => entry.Sequence)
+            : matched.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence);
+        IReadOnlyList<WorkflowBookmark> page = ordered.Skip(query.Skip).Take(query.Limit).Select(static entry => entry.Bookmark).ToList();
+        return ValueTask.FromResult(Result.Success(page));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<long>> CountUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return ValueTask.FromResult(Result.Success((long)UserTasks(tenantId, query).Count));
     }
 
     /// <inheritdoc />
@@ -246,6 +273,32 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     {
         var partition = PartitionKey.Of(tenantId);
         return _bookmarks.Where(entry => string.Equals(entry.Key.Tenant, partition, StringComparison.Ordinal)).Select(static entry => entry.Value);
+    }
+
+    /// <summary>
+    /// 满足待办查询条件的用户任务书签（深拷贝，未排序）。
+    /// </summary>
+    /// <remarks>
+    /// 先在本表的锁里按书签自己的列筛出候选并拷贝，放锁之后再问实例存储哪些实例在运行中：两把锁不嵌套，不会死锁。没有事务，两步之间实例的状态可能变化。
+    /// </remarks>
+    private List<(WorkflowBookmark Bookmark, long Sequence)> UserTasks(string? tenantId, UserTaskQuery query)
+    {
+        List<(WorkflowBookmark Bookmark, long Sequence)> candidates;
+        lock (_lock)
+        {
+            candidates = InPartition(tenantId)
+                .Where(entry => string.Equals(entry.Bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)
+                    && (query.AssigneeId is null || string.Equals(entry.Bookmark.Key, query.AssigneeId, StringComparison.Ordinal))
+                    && (query.InstanceId is null || string.Equals(entry.Bookmark.InstanceId, query.InstanceId, StringComparison.Ordinal))
+                    && (query.NodeId is null || string.Equals(entry.Bookmark.NodeId, query.NodeId, StringComparison.Ordinal))
+                    && (query.CreatedFrom is not { } from || entry.Bookmark.CreatedAt >= from)
+                    && (query.CreatedTo is not { } to || entry.Bookmark.CreatedAt < to))
+                .Select(static entry => (WorkflowJson.Clone(entry.Bookmark), entry.Sequence))
+                .ToList();
+        }
+
+        var running = _instances.RunningDefinitions(tenantId, candidates.Select(static entry => entry.Bookmark.InstanceId).Distinct(StringComparer.Ordinal));
+        return candidates.Where(entry => running.TryGetValue(entry.Bookmark.InstanceId, out var definition) && (query.DefinitionName is not { } name || definition == name)).ToList();
     }
 
     /// <summary>

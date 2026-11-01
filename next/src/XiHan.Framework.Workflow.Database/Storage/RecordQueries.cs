@@ -113,6 +113,24 @@ internal static class RecordQueries
     }
 
     /// <summary>
+    /// 批量更新这些行。
+    /// </summary>
+    /// <remarks>
+    /// 任一项失败即整体失败（由调用方据此回滚）。
+    /// </remarks>
+    public static async ValueTask<Result> UpdateManyAsync<TEntity>(IRepository<TEntity, string> repository, IReadOnlyList<TEntity> rows, CancellationToken cancellationToken)
+        where TEntity : class, IEntity<string>
+    {
+        if (rows.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        var updated = await repository.UpdateRangeAsync(rows, cancellationToken).ConfigureAwait(false);
+        return FirstFailure(updated) ?? Result.Success();
+    }
+
+    /// <summary>
     /// 批量删除这些行。
     /// </summary>
     /// <remarks>

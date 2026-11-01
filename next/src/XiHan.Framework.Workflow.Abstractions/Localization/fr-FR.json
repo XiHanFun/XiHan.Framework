@@ -36,5 +36,6 @@
   "workflow.task.not_claimable": "La tâche '{task}' ne peut pas être réclamée avec sa politique d'achèvement.",
   "workflow.task.outcome_invalid": "Le résultat de tâche '{outcome}' n'est pas autorisé.",
   "workflow.task.query_invalid": "La requête de tâches est invalide : {reason}",
+  "workflow.task.query_page_invalid": "La page de la requête de tâches est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
   "workflow.variable.required": "La variable '{name}' est obligatoire."
 }

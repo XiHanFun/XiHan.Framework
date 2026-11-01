@@ -8,6 +8,7 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Storage;
+using XiHan.Framework.Workflow.Abstractions.Tasks;
 using XiHan.Framework.Workflow.Database.Entities;
 
 namespace XiHan.Framework.Workflow.Database.Storage;
@@ -29,12 +30,12 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
     /// <summary>
     /// 平台分区的表。
     /// </summary>
-    private readonly BookmarkRows<PlatformWorkflowBookmarkRecord> _platform;
+    private readonly BookmarkRows<PlatformWorkflowBookmarkRecord, PlatformWorkflowInstanceRecord> _platform;
 
     /// <summary>
     /// 租户分区的表。
     /// </summary>
-    private readonly BookmarkRows<WorkflowBookmarkRecord> _tenant;
+    private readonly BookmarkRows<WorkflowBookmarkRecord, WorkflowInstanceRecord> _tenant;
 
     /// <summary>
     /// 创建（作用域服务）。
@@ -44,8 +45,8 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
         ArgumentNullException.ThrowIfNull(services);
         _unitOfWork = services.GetRequiredService<IUnitOfWork>();
         var sequence = services.GetRequiredService<WriteSequence>();
-        _platform = new BookmarkRows<PlatformWorkflowBookmarkRecord>(services.GetRequiredService<IRepository<PlatformWorkflowBookmarkRecord, string>>(), sequence);
-        _tenant = new BookmarkRows<WorkflowBookmarkRecord>(services.GetRequiredService<IRepository<WorkflowBookmarkRecord, string>>(), sequence);
+        _platform = new BookmarkRows<PlatformWorkflowBookmarkRecord, PlatformWorkflowInstanceRecord>(services.GetRequiredService<IRepository<PlatformWorkflowBookmarkRecord, string>>(), services.GetRequiredService<IRepository<PlatformWorkflowInstanceRecord, string>>(), sequence);
+        _tenant = new BookmarkRows<WorkflowBookmarkRecord, WorkflowInstanceRecord>(services.GetRequiredService<IRepository<WorkflowBookmarkRecord, string>>(), services.GetRequiredService<IRepository<WorkflowInstanceRecord, string>>(), sequence);
     }
 
     /// <inheritdoc />
@@ -86,6 +87,22 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
         ArgumentNullException.ThrowIfNull(key);
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.ByKindAndKeyAsync(kind, key, cancellationToken).ConfigureAwait(false) : await _tenant.ByKindAndKeyAsync(kind, key, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListUserTasksAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.ListUserTasksAsync(query, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<long>> CountUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.CountUserTasksAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.CountUserTasksAsync(query, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />

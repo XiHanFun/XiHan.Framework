@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 namespace XiHan.Framework.Workflow.Abstractions.Storage;
 
@@ -45,6 +46,22 @@ public interface IWorkflowBookmarkStore
     /// 按种类与键找，创建时间升序。
     /// </summary>
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string? tenantId, string kind, string key, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按待办查询的条件列出用户任务书签的一页。
+    /// </summary>
+    /// <remarks>
+    /// 只含种类为 <see cref="BookmarkKinds.UserTask"/>、所属实例在运行中（<see cref="WorkflowInstanceStatus.Running"/>）的书签；<see cref="UserTaskQuery.AssigneeId"/> 匹配书签的键，其余条件匹配书签的实例、节点、所属实例的定义名与创建时间。按创建时间排序（<see cref="UserTaskQuery.Descending"/>），同刻按写入先后，跳过 <see cref="UserTaskQuery.Skip"/> 条后最多 <see cref="UserTaskQuery.Limit"/> 条。分页已由调用方校验。实例的状态变了（挂起、恢复、故障、重试），它的书签随之进出结果。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 与 <see cref="ListUserTasksAsync"/> 同条件的用户任务书签总数。
+    /// </summary>
+    /// <remarks>
+    /// 不看分页与排序。
+    /// </remarks>
+    ValueTask<Result<long>> CountUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 种类与键匹配、此刻可以领取的书签，创建时间升序，最多 <paramref name="limit"/> 条。

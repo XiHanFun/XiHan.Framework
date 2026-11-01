@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 书签存储行的公共列。
 /// </summary>
 /// <remarks>
-/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
+/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。待办查询下推用的三列：节点 ID 取自书签，定义名与实例状态取自所属实例，由存储在写书签、写实例时维护（ADR-0077）。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowBookmarkRow : IEntity<string>
@@ -32,6 +32,33 @@ public abstract class WorkflowBookmarkRow : IEntity<string>
     /// </summary>
     [StringLength(128)]
     public string NodeInstanceId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 节点 ID。
+    /// </summary>
+    /// <remarks>
+    /// 可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填）；存储写入的行总有值。
+    /// </remarks>
+    [StringLength(128)]
+    public string? NodeId { get; set; }
+
+    /// <summary>
+    /// 所属实例的定义名。
+    /// </summary>
+    /// <remarks>
+    /// 写书签时从实例行取；实例行还不存在的（定义级定时书签）为空。
+    /// </remarks>
+    [StringLength(256)]
+    public string? DefinitionName { get; set; }
+
+    /// <summary>
+    /// 所属实例的状态（<c>WorkflowInstanceStatus</c> 的名字）。
+    /// </summary>
+    /// <remarks>
+    /// 写书签时从实例行取，实例的状态变了由实例存储同步；待办查询只取 <c>Running</c> 的。
+    /// </remarks>
+    [StringLength(32)]
+    public string? InstanceStatus { get; set; }
 
     /// <summary>
     /// 种类（<c>BookmarkKinds</c>）。
