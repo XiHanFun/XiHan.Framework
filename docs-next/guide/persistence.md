@@ -388,11 +388,12 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | --- | --- |
 | 列表 | 按名字排序；`Keyword` 在名字与注释里不区分大小写地包含匹配；`Skip` / `Take` 分页（`Skip` ≥ 0，`Take` 1～1000），返回过滤后的总数；库里的表一次读出、在内存里分页。分页越界不在构造 `TableListQuery` 时抛出，读取器以结果返回（HTTP 400）：`Skip` 为负或 `Take` 小于 1 是 `PERSISTENCE_VALIDATION_007`，`Take` 超过 1000 是 `PERSISTENCE_VALIDATION_005`，不连库 |
 | 读结构 | 一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`；空集合不连库 |
-| 列 | 类型名、序号、主键、自增、可空、长度、精度与小数位、注释、缺省值（数据库报告的原文）；主键列一律不可空 |
+| 列 | 类型名（不含长度与精度）、序号、主键、自增、可空、长度（只给字符与二进制类型的声明长度：`varchar(50)` 是 50，整数、日期、`text` / `nvarchar(max)` / `CLOB` 为 null）、精度与小数位（定点数族）、注释、缺省值（数据库报告的原文）；主键列一律不可空 |
 | 分表 | 已登记的分表实体按表名模板把 `Order_20261101` 这类物理表折叠成逻辑表 `Order`，`PhysicalTables` 新到旧，列取最新的物理表 |
 | 实体目录 | 每个登记的实体一条：表名（映射声明的写法，分表是逻辑名）、列映射、`EntityProtocols`（聚合根、创建 / 修改时间、并发戳、软删除、多租户）、`[EntityIndex]` 推出的索引；PostgreSQL 的物理名可能是小写，对照时不区分大小写 |
 | 缺省连接 | 另开一个不在事务里的连接读，PostgreSQL 系语句失败不会中止调用的事务 |
 | SQLite 的限制 | 没有表与列注释；`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；长度与精度取自声明的类型；自增只认 `AUTOINCREMENT` |
+| 实测过的数据库 | SQLite、PostgreSQL、MySQL、SQL Server、Oracle（12c 及以上；读连接用户自己的表，不加引号的名字是大写）。达梦等 Oracle 兼容库与 PostgreSQL 衍生库没有验证 |
 | Provider | SqlSugar 两者都支持。EF Core 的实体目录取 DbContext 模型、读结构不支持；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
 
 ## 配置

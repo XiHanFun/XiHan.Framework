@@ -87,7 +87,7 @@ internal sealed class SqlSugarDataSourceProvider : IDataSourceProvider
     /// 按定义建连接配置（每次一份新的）。
     /// </summary>
     /// <remarks>
-    /// <c>ConfigId</c> 是数据源名；每次操作自动开关连接；不施加实体约定；PostgreSQL 不自动转小写——外部库里的标识符可能是加了引号的大小写混合名，转小写就查不到。
+    /// <c>ConfigId</c> 是数据源名；每次操作自动开关连接；不施加实体约定；PostgreSQL 不自动转小写、Oracle 不自动转大写——外部库里的标识符可能是加了引号的大小写混合名，改了大小写就查不到。
     /// </remarks>
     internal static ConnectionConfig CreateConfig(DataSourceDefinition definition, DbType databaseType) => new()
     {
@@ -95,7 +95,7 @@ internal sealed class SqlSugarDataSourceProvider : IDataSourceProvider
         DbType = databaseType,
         ConnectionString = definition.ConnectionString,
         IsAutoCloseConnection = true,
-        MoreSettings = new ConnMoreSettings { PgSqlIsAutoToLower = false, PgSqlIsAutoToLowerCodeFirst = false },
+        MoreSettings = new ConnMoreSettings { PgSqlIsAutoToLower = false, PgSqlIsAutoToLowerCodeFirst = false, IsAutoToUpper = false },
     };
 
     /// <summary>

@@ -8,6 +8,7 @@ using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.Schema;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// SqlSugar 的库结构读取与实体目录。
 /// </summary>
 /// <remarks>
-/// SQLite 上的列属性与限制（没有注释、主键归一为不可空、长度与精度取自声明）、分表折叠、实体目录的表名与索引、运行时数据源读外部库与读取失败；PostgreSQL 上的注释、identity、serial 缺省值与大小写混合的表名（<c>XIHAN_TEST_POSTGRES</c>）。
+/// SQLite 上的列属性与限制（没有注释、主键归一为不可空、长度与精度取自声明）、分表折叠、实体目录的表名与索引、运行时数据源读外部库与读取失败；PostgreSQL 上的注释、identity、serial 缺省值与大小写混合的表名（<c>XIHAN_TEST_POSTGRES</c>）；MySQL、Oracle、SQL Server 上的类型名、长度只给字符与二进制类型、精度与小数位、主键、自增、注释、缺省值、大小写混合的表名、分表折叠与分页总数（<c>XIHAN_TEST_MYSQL</c>、<c>XIHAN_TEST_ORACLE</c>、<c>XIHAN_TEST_SQLSERVER</c>）。
 /// </remarks>
 public sealed class SqlSugarSchemaReaderTests : IDisposable
 {
@@ -173,6 +174,163 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
         Assert.True(Assert.Single(legacy.Columns, static c => c.Name == "Id").IsIdentity);
         await host.Services.GetRequiredService<DataSourceRegistry>().RemoveAsync(["pg"], TestContext.Current.CancellationToken);
         PostgresTestServer.ClearPools();
+    }
+
+    [Fact]
+    public async Task MySql_ReadsTypesKeysCommentsAndDefaults_FoldsSplitTables_AndPages()
+    {
+        using var database = MySqlTestServer.CreateDatabase();
+        await using var host = await StartHostAsync(static services => services.AddRepository<SplitTableRecord, Guid>());
+        var definition = new DataSourceDefinition("mysql", DatabaseTypes.MySql, database.ConnectionString);
+        var client = (await host.Services.GetRequiredService<DataSourceRegistry>().GetOrAddAsync(definition, TestContext.Current.CancellationToken)).ValueOrThrow().GetSqlSugarClient();
+        await client.Ado.ExecuteCommandAsync("""
+            CREATE TABLE probe_items (id bigint NOT NULL AUTO_INCREMENT PRIMARY KEY, name varchar(50) NOT NULL DEFAULT 'x' COMMENT '名称', amount decimal(18,2) NULL, note text, flag tinyint(1) NOT NULL DEFAULT 0, created datetime(6) NULL, code char(8), payload varbinary(16)) COMMENT='项目表';
+            CREATE TABLE `LegacyOrder` (`Id` int NOT NULL PRIMARY KEY, `Title` varchar(20));
+            CREATE TABLE split_records_20260101 (Id char(36) PRIMARY KEY, Text varchar(10));
+            CREATE TABLE split_records_20260201 (Id char(36) PRIMARY KEY, Text varchar(10), Extra int);
+            """);
+
+        var batch = (await Reader(host).GetTablesAsync(definition, ["probe_items", "legacyorder", "split_records"], TestContext.Current.CancellationToken)).ValueOrThrow();
+        var items = batch[0].ValueOrThrow();
+        var columns = items.Columns.ToDictionary(static c => c.Name);
+
+        Assert.Equal("项目表", items.Table.Comment);
+        Assert.Equal("名称", columns["name"].Comment);
+        Assert.Equal(("bigint", true, true, false, (int?)null), (columns["id"].DataType, columns["id"].IsPrimaryKey, columns["id"].IsIdentity, columns["id"].IsNullable, columns["id"].Length));
+        Assert.Equal(("varchar", (int?)50, false, "x"), (columns["name"].DataType, columns["name"].Length, columns["name"].IsNullable, columns["name"].DefaultValue));
+        Assert.Equal(("decimal", (int?)18, (int?)2, (int?)null, true), (columns["amount"].DataType, columns["amount"].Precision, columns["amount"].Scale, columns["amount"].Length, columns["amount"].IsNullable));
+        // 长度只给字符与二进制类型：显示宽度（tinyint(1)）与小数秒精度（datetime(6)）不是长度
+        Assert.Null(columns["note"].Length);
+        Assert.Equal(("tinyint", (int?)null, "0"), (columns["flag"].DataType, columns["flag"].Length, columns["flag"].DefaultValue));
+        Assert.Equal(("datetime", (int?)null, (int?)null), (columns["created"].DataType, columns["created"].Length, columns["created"].Precision));
+        Assert.Equal(8, columns["code"].Length);
+        Assert.Equal(16, columns["payload"].Length);
+        AssertLegacyAndSplit(batch, "LegacyOrder", "Title", "Extra");
+        await AssertPagingAsync(host, definition, ["LegacyOrder", "probe_items", "split_records"], "项目");
+        await host.Services.GetRequiredService<DataSourceRegistry>().RemoveAsync(["mysql"], TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Oracle_ReadsTypesKeysCommentsAndDefaults_FoldsSplitTables_AndPages()
+    {
+        using var schema = OracleTestServer.CreateSchema();
+        await using var host = await StartHostAsync(static services => services.AddRepository<SplitTableRecord, Guid>());
+        var definition = new DataSourceDefinition("oracle", DatabaseTypes.Oracle, schema.ConnectionString);
+        var client = (await host.Services.GetRequiredService<DataSourceRegistry>().GetOrAddAsync(definition, TestContext.Current.CancellationToken)).ValueOrThrow().GetSqlSugarClient();
+        foreach (var statement in new[]
+        {
+            "CREATE TABLE probe_items (id NUMBER(19) GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, name VARCHAR2(50) DEFAULT 'x' NOT NULL, amount NUMBER(18,2), note CLOB, created TIMESTAMP, code CHAR(8), nname NVARCHAR2(30), payload RAW(16), cnt NUMBER)",
+            "COMMENT ON TABLE probe_items IS '项目表'",
+            "COMMENT ON COLUMN probe_items.name IS '名称'",
+            "CREATE TABLE \"LegacyOrder\" (\"Id\" NUMBER(10) PRIMARY KEY, \"Title\" VARCHAR2(20))",
+            "CREATE TABLE split_records_20260101 (Id CHAR(36) PRIMARY KEY, Text VARCHAR2(10))",
+            "CREATE TABLE split_records_20260201 (Id CHAR(36) PRIMARY KEY, Text VARCHAR2(10), Extra NUMBER(10))",
+        })
+        {
+            await client.Ado.ExecuteCommandAsync(statement);
+        }
+
+        var batch = (await Reader(host).GetTablesAsync(definition, ["probe_items", "LegacyOrder", "split_records"], TestContext.Current.CancellationToken)).ValueOrThrow();
+        var items = batch[0].ValueOrThrow();
+        var columns = items.Columns.ToDictionary(static c => c.Name);
+
+        // 不加引号的名字在 Oracle 里是大写；类型名是数据库的（不含长度与精度），不是 CLR 类型名
+        Assert.Equal("PROBE_ITEMS", items.Table.Name);
+        Assert.Equal("项目表", items.Table.Comment);
+        Assert.Equal(["ID", "NAME", "AMOUNT", "NOTE", "CREATED", "CODE", "NNAME", "PAYLOAD", "CNT"], items.Columns.Select(static c => c.Name));
+        Assert.Equal(Enumerable.Range(0, 9), items.Columns.Select(static c => c.Ordinal));
+        Assert.Equal(("NUMBER", true, true, false, (int?)19, (int?)0), (columns["ID"].DataType, columns["ID"].IsPrimaryKey, columns["ID"].IsIdentity, columns["ID"].IsNullable, columns["ID"].Precision, columns["ID"].Scale));
+        Assert.Contains("nextval", columns["ID"].DefaultValue, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(("VARCHAR2", (int?)50, false, "'x'", "名称"), (columns["NAME"].DataType, columns["NAME"].Length, columns["NAME"].IsNullable, columns["NAME"].DefaultValue, columns["NAME"].Comment));
+        Assert.Equal(("NUMBER", (int?)18, (int?)2, (int?)null, true), (columns["AMOUNT"].DataType, columns["AMOUNT"].Precision, columns["AMOUNT"].Scale, columns["AMOUNT"].Length, columns["AMOUNT"].IsNullable));
+        Assert.Equal(("CLOB", (int?)null), (columns["NOTE"].DataType, columns["NOTE"].Length));
+        Assert.Equal(("TIMESTAMP", (int?)null, (int?)null), (columns["CREATED"].DataType, columns["CREATED"].Length, columns["CREATED"].Precision));
+        Assert.Equal(("CHAR", (int?)8), (columns["CODE"].DataType, columns["CODE"].Length));
+        // NVARCHAR2 的长度是字符数，不是字节数
+        Assert.Equal(("NVARCHAR2", (int?)30), (columns["NNAME"].DataType, columns["NNAME"].Length));
+        Assert.Equal(("RAW", (int?)16), (columns["PAYLOAD"].DataType, columns["PAYLOAD"].Length));
+        // 不带精度的 NUMBER 没有精度与小数位
+        Assert.Equal(("NUMBER", (int?)null, (int?)null), (columns["CNT"].DataType, columns["CNT"].Precision, columns["CNT"].Scale));
+        Assert.All(items.Columns.Where(static c => c.Name != "NAME"), static c => Assert.Null(c.Comment));
+        AssertLegacyAndSplit(batch, "LegacyOrder", "Title", "EXTRA");
+        await AssertPagingAsync(host, definition, ["LegacyOrder", "PROBE_ITEMS", "split_records"], "项目");
+        await host.Services.GetRequiredService<DataSourceRegistry>().RemoveAsync(["oracle"], TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task SqlServer_ReadsTypesKeysCommentsAndDefaults_FoldsSplitTables_AndPages()
+    {
+        using var database = SqlServerTestServer.CreateDatabase();
+        await using var host = await StartHostAsync(static services => services.AddRepository<SplitTableRecord, Guid>());
+        var definition = new DataSourceDefinition("mssql", DatabaseTypes.SqlServer, database.ConnectionString);
+        var client = (await host.Services.GetRequiredService<DataSourceRegistry>().GetOrAddAsync(definition, TestContext.Current.CancellationToken)).ValueOrThrow().GetSqlSugarClient();
+        await client.Ado.ExecuteCommandAsync("""
+            CREATE TABLE probe_items (id bigint IDENTITY(1,1) PRIMARY KEY, name nvarchar(50) NOT NULL DEFAULT 'x', amount decimal(18,2) NULL, note nvarchar(max), created datetime2, code char(8), flag bit NOT NULL DEFAULT 0, price money, payload varbinary(16));
+            EXEC sp_addextendedproperty 'MS_Description', N'项目表', 'SCHEMA', 'dbo', 'TABLE', 'probe_items';
+            EXEC sp_addextendedproperty 'MS_Description', N'名称', 'SCHEMA', 'dbo', 'TABLE', 'probe_items', 'COLUMN', 'name';
+            CREATE TABLE [LegacyOrder] ([Id] int PRIMARY KEY, [Title] varchar(20));
+            CREATE TABLE split_records_20260101 (Id char(36) PRIMARY KEY, Text varchar(10));
+            CREATE TABLE split_records_20260201 (Id char(36) PRIMARY KEY, Text varchar(10), Extra int);
+            """);
+
+        var batch = (await Reader(host).GetTablesAsync(definition, ["probe_items", "legacyorder", "split_records"], TestContext.Current.CancellationToken)).ValueOrThrow();
+        var items = batch[0].ValueOrThrow();
+        var columns = items.Columns.ToDictionary(static c => c.Name);
+
+        Assert.Equal("项目表", items.Table.Comment);
+        Assert.Equal("名称", columns["name"].Comment);
+        Assert.Equal(("bigint", true, true, false, (int?)null), (columns["id"].DataType, columns["id"].IsPrimaryKey, columns["id"].IsIdentity, columns["id"].IsNullable, columns["id"].Length));
+        Assert.Equal(("nvarchar", (int?)50, false, "('x')"), (columns["name"].DataType, columns["name"].Length, columns["name"].IsNullable, columns["name"].DefaultValue));
+        Assert.Equal(((int?)18, (int?)2, (int?)null), (columns["amount"].Precision, columns["amount"].Scale, columns["amount"].Length));
+        // nvarchar(max) 没有上限；日期、bit 的长度不是长度
+        Assert.Null(columns["note"].Length);
+        Assert.Equal(("datetime2", (int?)null), (columns["created"].DataType, columns["created"].Length));
+        Assert.Equal(("bit", (int?)null, "((0))"), (columns["flag"].DataType, columns["flag"].Length, columns["flag"].DefaultValue));
+        Assert.Equal(("money", (int?)19, (int?)4), (columns["price"].DataType, columns["price"].Precision, columns["price"].Scale));
+        Assert.Equal(8, columns["code"].Length);
+        Assert.Equal(16, columns["payload"].Length);
+        AssertLegacyAndSplit(batch, "LegacyOrder", "Title", "Extra");
+        await AssertPagingAsync(host, definition, ["LegacyOrder", "probe_items", "split_records"], "项目");
+        await host.Services.GetRequiredService<DataSourceRegistry>().RemoveAsync(["mssql"], TestContext.Current.CancellationToken);
+        SqlServerTestServer.ClearPools();
+    }
+
+    /// <summary>
+    /// 核对大小写混合的表与折叠后的分表。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="batch"/> 依次是项目表、大小写混合的表、分表的逻辑名；分表的列取最新的物理表（多一列 <paramref name="extra"/>）。
+    /// </remarks>
+    private static void AssertLegacyAndSplit(IReadOnlyList<Result<TableSchema>> batch, string legacy, string title, string extra)
+    {
+        var legacySchema = batch[1].ValueOrThrow();
+        Assert.Equal(legacy, legacySchema.Table.Name);
+        Assert.Equal(20, Assert.Single(legacySchema.Columns, c => c.Name == title).Length);
+        Assert.Single(legacySchema.Columns, static c => c.IsPrimaryKey);
+        var split = batch[2].ValueOrThrow();
+        Assert.Equal("split_records", split.Table.Name);
+        Assert.True(split.Table.IsSplit);
+        Assert.Equal(2, split.Table.PhysicalTables.Count);
+        Assert.EndsWith("20260201", split.Table.PhysicalTables[0], StringComparison.Ordinal);
+        Assert.Contains(split.Columns, c => c.Name == extra);
+    }
+
+    /// <summary>
+    /// 核对表列表的排序、分页总数与按注释的关键字。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="names"/> 是库里按名字（不区分大小写）排好的全部表，分表已折叠。
+    /// </remarks>
+    private static async Task AssertPagingAsync(TestHost host, DataSourceDefinition definition, string[] names, string commentKeyword)
+    {
+        var all = (await Reader(host).ListTablesAsync(definition, new TableListQuery(), TestContext.Current.CancellationToken)).ValueOrThrow();
+        var page = (await Reader(host).ListTablesAsync(definition, new TableListQuery { Skip = 1, Take = 1 }, TestContext.Current.CancellationToken)).ValueOrThrow();
+        var commented = (await Reader(host).ListTablesAsync(definition, new TableListQuery { Keyword = commentKeyword }, TestContext.Current.CancellationToken)).ValueOrThrow();
+
+        Assert.Equal(names, all.Items.Select(static t => t.Name));
+        Assert.Equal(names.Length, all.Total);
+        Assert.Equal((names.Length, names[1]), (page.Total, Assert.Single(page.Items).Name));
+        Assert.Equal((1, names[1]), (commented.Total, Assert.Single(commented.Items).Name));
     }
 
     /// <summary>

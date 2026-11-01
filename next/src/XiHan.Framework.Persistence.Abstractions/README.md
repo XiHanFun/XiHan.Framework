@@ -84,7 +84,7 @@ var entities = await catalog.ListAsync(ct);                                     
 
 - 列表：按名字排序，`Keyword` 在名字与注释里包含匹配，`Skip` / `Take` 分页，返回过滤后的总数。分页越界不在构造 `TableListQuery` 时抛出：读结构的 Provider 先经 `TableListQuery.Validate()` 核对，`Skip` 为负或 `Take` 小于 1 返回 `PERSISTENCE_VALIDATION_007`，`Take` 超过 1000 返回 `PERSISTENCE_VALIDATION_005`（都是 400 的结果，不连库、不登记数据源；ADR-0084）。
 - 批量读结构：一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`（原因已脱敏）；空集合不连库。`GetTableAsync` 是单项特例。
-- 列：类型名、序号、主键（一律不可空）、自增、可空、长度（定点数族以外）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。
+- 列：类型名（不含长度与精度）、序号、主键（一律不可空）、自增、可空、长度（只给字符与二进制类型的声明长度；没有上限的与其余类型为 null）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。
 - 分表：已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板把物理表折叠成一张逻辑表（`Order_{year}{month}{day}` → `Order`），`PhysicalTables` 新到旧，列取最新的物理表。
 - 实体目录：每个登记的实体一条（重复登记只一条），表名与列名是映射声明的写法，分表是逻辑名；`Protocols` 标出聚合根、创建 / 修改时间、并发戳、软删除、多租户；`Indexes` 是 `[EntityIndex]` 推出的索引。
 

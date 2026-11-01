@@ -156,7 +156,7 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 }
 ```
 
-`Persistence.InMemory`、`Persistence.EntityFrameworkCore`（SQLite）、`Persistence.SqlSugar`（SQLite，设置了 `XIHAN_TEST_POSTGRES` 时另跑 PostgreSQL）通过仓储套件；`GuidV7IdGenerator`（`Guid`）与 `SnowflakeIdGenerator`（`long`）通过标识生成器套件。
+`Persistence.InMemory`、`Persistence.EntityFrameworkCore`（SQLite）、`Persistence.SqlSugar`（SQLite，设置了 `XIHAN_TEST_POSTGRES` 时另跑 PostgreSQL）通过仓储套件；`Persistence.SqlSugar` 的库结构套件另在 PostgreSQL、MySQL、SQL Server、Oracle 上跑（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE`）；`GuidV7IdGenerator`（`Guid`）与 `SnowflakeIdGenerator`（`long`）通过标识生成器套件。
 
 ## Plugins
 

@@ -27,6 +27,14 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     /// </summary>
     private static readonly HashSet<string> _precisionTypes = new(StringComparer.OrdinalIgnoreCase) { "decimal", "dec", "numeric", "number", "money", "smallmoney" };
 
+    /// <summary>
+    /// 有声明长度的类型名（字符与二进制）。
+    /// </summary>
+    /// <remarks>
+    /// 只有它们的长度是长度：别的类型数据库报告的是显示宽度（MySQL <c>tinyint(1)</c>）、小数秒位数（<c>datetime(6)</c>）、存储字节数或二进制精度（SQL Server <c>int</c> 的 10、<c>float</c> 的 53），当成长度会误导代码生成。
+    /// </remarks>
+    private static readonly HashSet<string> _lengthTypes = new(StringComparer.OrdinalIgnoreCase) { "char", "nchar", "varchar", "nvarchar", "varchar2", "nvarchar2", "character", "character varying", "bpchar", "binary", "varbinary", "raw" };
+
     /// <inheritdoc />
     public async Task<Result<TablePage>> ListTablesAsync(DataSourceDefinition? dataSource, TableListQuery query, CancellationToken cancellationToken)
     {
@@ -91,7 +99,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
                 {
                     token.ThrowIfCancellationRequested();
                     // 分表的列取最新的物理表：旧分表建于加列之前时会少列
-                    var columns = client.DbMaintenance.GetColumnInfosByTableName(table.PhysicalTables[0], false);
+                    var columns = ReadColumns(client, table.PhysicalTables[0]);
                     schema = new TableSchema(table, [.. columns.Select(static (c, i) => Map(c, i))]);
                     read[table.Name] = schema;
                 }
@@ -205,15 +213,27 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
+    /// 读一张物理表的列。
+    /// </summary>
+    /// <remarks>
+    /// Oracle 查数据字典（<see cref="OracleColumns"/>），别的数据库用 SqlSugar 的读列。
+    /// </remarks>
+    private static List<DbColumnInfo> ReadColumns(SqlSugarClient client, string table)
+        => client.CurrentConnectionConfig.DbType == DbType.Oracle
+            ? OracleColumns.Read(client, table)
+            : client.DbMaintenance.GetColumnInfosByTableName(table, false);
+
+    /// <summary>
     /// 把 SqlSugar 的列信息换成中立的列。
     /// </summary>
     /// <remarks>
-    /// 定点数族的长度是精度、小数位取 <c>DecimalDigits</c>；其余类型的长度原样（0 为 null）。SQLite 对 <c>INTEGER PRIMARY KEY</c> 报告可空，主键列一律报告为不可空。
+    /// 定点数族的长度是精度、小数位取 <c>DecimalDigits</c>；字符与二进制类型的长度是声明的长度（0 与负数——<c>nvarchar(max)</c>——为 null）；其余类型没有长度。SQLite 对 <c>INTEGER PRIMARY KEY</c> 报告可空，主键列一律报告为不可空。
     /// </remarks>
     private static ColumnInfo Map(DbColumnInfo column, int ordinal)
     {
         var dataType = column.DataType ?? string.Empty;
-        var isPrecision = _precisionTypes.Contains(dataType.Split('(')[0].Trim());
+        var baseType = dataType.Split('(')[0].Trim();
+        var isPrecision = _precisionTypes.Contains(baseType);
         int? length = column.Length > 0 ? column.Length : null;
         return new ColumnInfo
         {
@@ -223,7 +243,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
             IsPrimaryKey = column.IsPrimarykey,
             IsIdentity = column.IsIdentity,
             IsNullable = column.IsNullable && !column.IsPrimarykey,
-            Length = isPrecision ? null : length,
+            Length = _lengthTypes.Contains(baseType) ? length : null,
             Precision = isPrecision ? length : null,
             Scale = isPrecision && length is not null ? Math.Max(column.DecimalDigits, 0) : null,
             Comment = NullIfBlank(column.ColumnDescription),
