@@ -39,7 +39,9 @@ public static class CapabilityResolver
         }
 
         // 第一遍：为每条 requires 选提供者并建边。同一能力只记录第一次选中的提供者，后续依赖者复用同一结果。
+        // 有人依赖（且解析到了提供者）的能力记为被要求的；配置或代码指定了提供者的能力同样是被要求的，回填时一并判定
         var providers = new Dictionary<string, ResolvedNode>(StringComparer.Ordinal);
+        var demanded = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in nodes.Values)
         {
             foreach (var requirement in node.Manifest.Requires)
@@ -53,6 +55,7 @@ public static class CapabilityResolver
 
                 node.AddDependency(provider);
                 providers.TryAdd(requirement.Id, provider);
+                demanded.Add(requirement.Id);
             }
         }
 
@@ -68,9 +71,10 @@ public static class CapabilityResolver
         }
 
         // 把选中结果回填到节点：未被任何能力选中的节点将被宿主视为 shadowed，不装配。
+        // 没人依赖、也没人指定的能力只是兜底选出：照样算选中，但不是被要求的（特性可据此放宽跨能力的一致性约束）
         foreach (var (capabilityId, provider) in providers)
         {
-            provider.AddSelected(capabilityId);
+            provider.AddSelected(capabilityId, demanded.Contains(capabilityId) || providerSelections.ContainsKey(capabilityId));
         }
 
         var ordered = Sort(manifests.Select(m => nodes[m.Id]).ToList());

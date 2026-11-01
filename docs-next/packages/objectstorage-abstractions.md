@@ -19,7 +19,7 @@
 
 标识在构造时校验：容器名 `ContainerName` 兼容 S3 桶名，键 `BlobKey` 是 `/` 分段的路径，不合法抛出 `ArgumentException`，不会进入 Provider。基础设施失败（IO、网络）以 `OBJECTSTORAGE_UNAVAILABLE_001` 的失败结果返回，不抛出。
 
-分片上传与预签名是两个可选能力，接口独立：存储没有原生预签名时，宿主可以代为收发（`Hosting.AspNetCore` 的 `HostedBlobUrlFeature`）。命名存储实例（ADR-0050）让一个应用同时用多个存储：每个装配了的存储包登记一个 `IBlobStoreProvider`（被别的存储顶替时也登记），注册表 `BlobStores` 按定义建实例、按名缓存、定义变了就替换。缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，存储包装配时以 `BlobStoreSelection.EnsureSameStore` 核对（ADR-0075）。
+分片上传与预签名是两个可选能力，接口独立：存储没有原生预签名时，宿主可以代为收发（`Hosting.AspNetCore` 的 `HostedBlobUrlFeature`）。命名存储实例（ADR-0050）让一个应用同时用多个存储：每个装配了的存储包登记一个 `IBlobStoreProvider`（被别的存储顶替时也登记），注册表 `BlobStores` 按定义建实例、按名缓存、定义变了就替换。缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，存储包装配时以 `BlobStoreSelection.ProvidesDefaultInstance` 核对，只约束被要求的契约（ADR-0075、ADR-0082）。
 
 ## 何时使用
 
@@ -79,7 +79,7 @@
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
 | `Stores.BlobStoreDefinition` | 实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名与设置；`Describes(other)` 判断定义是否相同 |
 | `Stores.IBlobStoreProvider` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)`、`ProbeAsync(store)` |
-| `Stores.BlobStoreSelection` | `EnsureSameStore(node)`：存储包被选为分片上传或预签名却没被选为对象存储时抛 `OBJECTSTORAGE_VALIDATION_004` |
+| `Stores.BlobStoreSelection` | `ProvidesDefaultInstance(node)`：被选为对象存储返回 `true`（缺省存储）；没被选为对象存储、却被要求提供分片上传或预签名（有依赖或经配置指定）时抛 `OBJECTSTORAGE_VALIDATION_004`；两者都只是兜底选出时返回 `false`，存储包按被顶替处理 |
 | `Stores.BlobStoreServiceCollectionExtensions` | `AddBlobStoreProvider<TProvider>(configuration)`：存储包装配时登记 Provider，并确保注册表只登记一次 |
 | `ObjectStorageCapabilities` / `ObjectStorageErrors` / `ObjectStorageMessages` | 能力 ID、错误码与消息键常量，`ObjectStorageMessages.Catalog` 是本包的消息目录 |
 
@@ -149,7 +149,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_001` | `RangeNotSatisfiable` | 读取范围的起点不在对象内 |
 | `OBJECTSTORAGE_VALIDATION_002` | `PartsInvalid` | 分片清单不合法 |
 | `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名实例的定义不合法 |
-| `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致（装配时抛出，启动失败） |
+| `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败 |

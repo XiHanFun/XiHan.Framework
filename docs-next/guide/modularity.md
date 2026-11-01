@@ -134,7 +134,7 @@ public sealed class OrdersFeature : IFeature
 
 1. 收集清单：内核清单（`xihan.kernel.core`，提供全部 `kernel.*` 能力）加上所有经 `UseFeature` 加入的特性，校验每份清单的格式与 ID 唯一。
 2. 为每条 `Requires` 选出唯一的提供者（规则见下一节）；没有被任何特性依赖的能力也按同一规则选出提供者。
-3. 把选择结果回填到图谱节点：每个节点知道自己被选中提供哪些能力（`ResolvedNode.SelectedCapabilities`）。声明了能力却一个都没被选中的节点标为 shadowed，不装配、不启动；特性实现了 `IShadowAwareFeature` 时改调它的 `ConfigureShadowed`，只登记与能力选择无关的服务（对象存储的命名实例 Provider 就是这样）。
+3. 把选择结果回填到图谱节点：每个节点知道自己被选中提供哪些能力（`ResolvedNode.SelectedCapabilities`）。声明了能力却一个都没被选中的节点标为 shadowed，不装配、不启动；特性实现了 `IShadowAwareFeature` 时改调它的 `ConfigureShadowed`，只登记与能力选择无关的服务（对象存储的命名实例 Provider 就是这样）。节点还区分每项选中是不是被要求的（`ResolvedNode.IsRequestedFor`）：有特性依赖这项能力，或 `XiHan:Providers` / `UseProvider` 指定了提供者，是被要求的；没人依赖也没人指定、只按上一步兜底选出的不是。兜底选出照样算选中，图谱不变；特性可据此只为被要求的能力承担跨能力的约束（对象存储的「缺省三个契约同一存储」就只约束被要求的）。
 4. 拓扑排序：被依赖者在前，`UseFeature` 的顺序只决定同一层次内的次序。
 5. 解析资源绑定，校验每个特性的必需绑定（缺失报 `KERNEL_HOSTING_001`）。
 6. 按拓扑顺序调用各特性的 `Configure`，再把 `App`、内置中间件、权限表、操作登记表与宿主服务注册进容器。
@@ -210,7 +210,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `Services` | 宿主的 `IServiceCollection`，显式注册服务 |
 | `Configuration` | 宿主配置 |
-| `Manifest` / `Node` | 本特性的清单与图谱节点（`Node.IsSelectedFor`、`Node.IsDegraded`、`Node.MissingOptional`） |
+| `Manifest` / `Node` | 本特性的清单与图谱节点（`Node.IsSelectedFor`、`Node.IsRequestedFor`、`Node.IsDegraded`、`Node.MissingOptional`） |
 | `AddMiddleware<T>(stage, placement)` | 把中间件挂到某个阶段，归属本特性的清单 ID，并以单例注册中间件类型 |
 | `AddPermission(definition)` | 登记权限码；操作契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`）；端点引用的未登记权限码在宿主建请求管道时核对，启动失败（`SECURITY_VALIDATION_004`） |
 | `AddOperation<TOperation, TRequest, TResponse>(...)` | 登记操作契约，通常由生成的 `AddGeneratedOperations()` 代劳 |

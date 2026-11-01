@@ -83,7 +83,7 @@ await builder.Build().RunAsync();
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`、`AddOperation`、`GetBinding` / `TryGetBinding` |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |
-| `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记 |
+| `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记；`IsRequestedFor` 区分被要求的选中（有依赖或经 `XiHan:Providers` / `UseProvider` 指定）与兜底选出 |
 | `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
 | `InvocationContextExtensions` | `GetOutcome` / `SetOutcome`、`GetOrigin` / `SetOrigin`、`Get` / `Set`（`ContextItemKey<T>`） |

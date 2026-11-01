@@ -37,7 +37,7 @@
 builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
 ```
 
-本包是缺省存储时不要再装 `HostedBlobUrlFeature`：两者都提供 `objectstorage.presign@1`，S3 自己能签名。缺省存储另选了文件系统、本包只为命名实例而装时，本包被顶替，只登记 `s3` 命名实例 Provider；这时预签名要指定给 `xihan.hosting.blob-urls`，三项能力都不归本包，否则 `OBJECTSTORAGE_VALIDATION_004` 启动失败（缺省的三个契约必须同一存储）。
+本包是缺省存储时不要再装 `HostedBlobUrlFeature`：两者都提供 `objectstorage.presign@1`，S3 自己能签名。缺省存储另选了文件系统、本包只为命名实例而装时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可：本包的分片上传与预签名只是兜底选出（没人依赖、没人指定），本包按被顶替处理，只登记 `s3` 命名实例 Provider，不读配置节与绑定、不建客户端、不探测，也不必装 `HostedBlobUrlFeature`。有特性依赖分片上传或预签名、或配置把它们指定给本包时，它们是被要求的，与缺省对象存储不一致即 `OBJECTSTORAGE_VALIDATION_004` 启动失败（缺省的三个契约必须同一存储）；要缺省的预签名就装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。
 
 ## 配置
 
@@ -85,7 +85,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 | 类型 | 说明 |
 | --- | --- |
-| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection`；`CreateClient(options)` 按选项建 `AmazonS3Client` |
+| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection`；`CreateClient(options)` 按选项建 `AmazonS3Client` |
 | `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；公开构造函数接收外部的 `IAmazonS3`，此时不拥有客户端 |
 | `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |

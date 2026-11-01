@@ -332,7 +332,7 @@ static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.operato
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.IsValidName(string? name) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
-static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection.EnsureSameStore(XiHan.Framework.Kernel.Capabilities.ResolvedNode! node) -> void
+static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection.ProvidesDefaultInstance(XiHan.Framework.Kernel.Capabilities.ResolvedNode! node) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions.AddBlobStoreProvider<TProvider>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static readonly XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.DefaultExpiresIn -> System.TimeSpan
 static readonly XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.MaxExpiresIn -> System.TimeSpan

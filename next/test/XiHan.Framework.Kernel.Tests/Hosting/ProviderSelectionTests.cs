@@ -53,6 +53,43 @@ public sealed class ProviderSelectionTests
     }
 
     [Fact]
+    public void Resolve_MarksSelectionsRequested_OnlyWhenRequiredOrConfigured()
+    {
+        // 必需依赖与可选依赖都算被要求；没人依赖的能力是兜底选出
+        var app = Manifests.Create("xihan.app.main", requires: ["caching.distributed@1", "caching.local@1?"]);
+        var required = CapabilityResolver.Resolve([KernelCapabilities.Manifest, Memory(), Redis(), app]);
+        Assert.True(required["xihan.caching.redis"].IsRequestedFor("caching.distributed"));
+        Assert.True(required["xihan.caching.inmemory"].IsRequestedFor("caching.local"));
+        Assert.False(required["xihan.caching.inmemory"].IsRequestedFor("caching.distributed"));
+
+        var fallback = CapabilityResolver.Resolve([KernelCapabilities.Manifest, Memory(), Redis()]);
+        Assert.True(fallback["xihan.caching.redis"].IsSelectedFor("caching.distributed"));
+        Assert.False(fallback["xihan.caching.redis"].IsRequestedFor("caching.distributed"));
+        Assert.True(fallback["xihan.caching.inmemory"].IsSelectedFor("caching.local"));
+        Assert.False(fallback["xihan.caching.inmemory"].IsRequestedFor("caching.local"));
+        // 兜底选出照样算选中：选中集合与图谱不变
+        Assert.Equal(["caching.local"], fallback["xihan.caching.inmemory"].SelectedCapabilities);
+
+        // 配置指定了提供者也是被要求的，即使没人依赖
+        var configured = CapabilityResolver.Resolve([KernelCapabilities.Manifest, Memory(), Redis()], new Dictionary<string, string>(StringComparer.Ordinal) { ["caching.distributed"] = "xihan.caching.inmemory" });
+        Assert.True(configured["xihan.caching.inmemory"].IsRequestedFor("caching.distributed"));
+        Assert.False(configured["xihan.caching.inmemory"].IsRequestedFor("caching.local"));
+        Assert.True(configured["xihan.caching.redis"].IsShadowed);
+        Assert.False(configured["xihan.caching.redis"].IsRequestedFor("caching.distributed"));
+    }
+
+    [Fact]
+    public void Build_UseProvider_MarksTheSelectionRequested()
+    {
+        var (provider, _) = Hosts.BuildApp(static b => b.UseFeature(new RecordingFeature(Memory(), [])).UseFeature(new RecordingFeature(Redis(), [])).UseProvider("caching.local", "xihan.caching.inmemory"));
+        using var _ = provider;
+
+        var graph = provider.GetRequiredService<ResolvedGraph>();
+        Assert.True(graph["xihan.caching.inmemory"].IsRequestedFor("caching.local"));
+        Assert.False(graph["xihan.caching.redis"].IsRequestedFor("caching.distributed"));
+    }
+
+    [Fact]
     public void Resolve_ExplicitProviderBeatsDefault_WhetherOrNotRequired()
     {
         var app = Manifests.Create("xihan.app.main", requires: ["caching.distributed@1"]);

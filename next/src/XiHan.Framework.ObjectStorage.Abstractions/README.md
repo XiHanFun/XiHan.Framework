@@ -12,7 +12,7 @@
 | `Multipart.IBlobMultipartStore` | 分片上传（`objectstorage.multipart@1`）：`Start` / `UploadPart`（1–10000，可乱序、可重传）/ `ListParts` / `Complete`（升序、ETag 相符、非末片 ≥ 5 MiB）/ `Abort`；`BlobMultipartUpload` 可持久化后续传 |
 | `Signing.IBlobUrlSigner` | 预签名地址（`objectstorage.presign@1`）：`BlobUrlRequest.ForDownload` / `ForUpload` / `ForPart`，缺省 30 分钟；`BlobSignedUrl` 带客户端必须发送的头；`BlobContentDisposition` 统一下载文件名的写法 |
 | `Stores.BlobStores`、`BlobStoreDefinition`、`IBlobStoreProvider` | 命名存储实例（ADR-0050）：定义是实例名、Provider 名（`filesystem` / `s3`）与设置（键同 Provider 配置节，未知键报错）；注册表按名缓存，`GetAsync(name)` 取已建的或配置节 `XiHan:ObjectStorage:Stores:<name>` 定义的，`GetOrAddAsync(definition)` 同定义复用、定义变了替换并释放旧实例，`RemoveAsync` 释放；每个实例一条健康项 `objectstorage.store.<name>`。存储包装配时经 `AddBlobStoreProvider<T>(configuration)` 登记 Provider，被别的存储顶替时也登记（`IShadowAwareFeature`） |
-| `Stores.BlobStoreSelection` | 缺省实例的一致性（ADR-0075）：`EnsureSameStore(node)` 在存储包的 `Configure` 开头核对，被选为 `objectstorage.multipart` 或 `objectstorage.presign` 的存储包必须同时被选为 `objectstorage.blob`，否则 `OBJECTSTORAGE_VALIDATION_004` 启动失败；宿主代收发的签名器不受约束 |
+| `Stores.BlobStoreSelection` | 缺省实例的一致性（ADR-0075、ADR-0082）：`ProvidesDefaultInstance(node)` 在存储包的 `Configure` 开头核对——被选为 `objectstorage.blob` 是缺省存储；没被选为对象存储却被要求（有依赖或经配置 / 代码指定，`ResolvedNode.IsRequestedFor`）提供 `objectstorage.multipart` 或 `objectstorage.presign` 时 `OBJECTSTORAGE_VALIDATION_004` 启动失败；两者都只是兜底选出时返回 `false`，存储包按被顶替处理；宿主代收发的签名器不受约束 |
 
 ```csharp
 var put = await store.PutAsync("invoices", "2026/10/inv-1.pdf", stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);

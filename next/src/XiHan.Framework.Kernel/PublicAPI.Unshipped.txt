@@ -23,6 +23,7 @@ XiHan.Framework.Kernel.Capabilities.ResolvedGraph.this[string! manifestId].get -
 XiHan.Framework.Kernel.Capabilities.ResolvedNode
 XiHan.Framework.Kernel.Capabilities.ResolvedNode.Dependencies.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Capabilities.ResolvedNode!>!
 XiHan.Framework.Kernel.Capabilities.ResolvedNode.IsDegraded.get -> bool
+XiHan.Framework.Kernel.Capabilities.ResolvedNode.IsRequestedFor(string! capabilityId) -> bool
 XiHan.Framework.Kernel.Capabilities.ResolvedNode.IsSelectedFor(string! capabilityId) -> bool
 XiHan.Framework.Kernel.Capabilities.ResolvedNode.IsShadowed.get -> bool
 XiHan.Framework.Kernel.Capabilities.ResolvedNode.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!

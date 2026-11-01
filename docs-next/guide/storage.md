@@ -377,22 +377,24 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 
 每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶）。
 
-::: warning 混装文件系统与 S3 时三项能力一起指定
-缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。要以文件系统为缺省实例、同时用 S3 的命名实例，三项都要指定，并装配 `HostedBlobUrlFeature` 让宿主代收发预签名：
+::: warning 混装文件系统与 S3 时怎样指定缺省存储
+缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，这条规则只约束被要求的契约：有特性在清单里依赖了这项能力，或 `XiHan:Providers` / `UseProvider` 指定了它的提供者。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。
+
+以文件系统为缺省实例、只用 S3 的命名实例时，指定对象存储一项就够：
 
 ```json
 {
   "XiHan": {
     "Providers": {
-      "objectstorage.blob": "xihan.objectstorage.filesystem",
-      "objectstorage.multipart": "xihan.objectstorage.filesystem",
-      "objectstorage.presign": "xihan.hosting.blob-urls"
+      "objectstorage.blob": "xihan.objectstorage.filesystem"
     }
   }
 }
 ```
 
-只指定一部分、让某个存储包被选为分片上传或预签名却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出要改的键。选择规则见[能力包与清单](./modularity)。
+这时 S3 的分片上传与预签名只是兜底选出（没人依赖、没人指定），S3 按被顶替处理，只登记命名实例；容器里没有缺省的 `IBlobMultipartStore` 与 `IBlobUrlSigner`，也不必装 `HostedBlobUrlFeature`。要用缺省的分片上传，再指定 `"objectstorage.multipart": "xihan.objectstorage.filesystem"`；要用缺省的预签名，装配 `HostedBlobUrlFeature` 并指定 `"objectstorage.presign": "xihan.hosting.blob-urls"`（它与 S3 都是显式 Provider，不指定本来就是 `KERNEL_CAPABILITY_004`）。
+
+存储包被要求提供分片上传或预签名、却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出被要求的能力与要改的键：比如只指定了对象存储，而应用的某个特性依赖 `objectstorage.presign`，预签名就解析到 S3 且是被要求的。选择规则见[能力包与清单](./modularity)。
 :::
 
 ## 两个实现

@@ -28,6 +28,11 @@ public sealed class ResolvedNode
     private readonly HashSet<string> _selected = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 被选中且是被要求的能力 ID（<see cref="_selected"/> 的子集）。
+    /// </summary>
+    private readonly HashSet<string> _requested = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 创建节点。
     /// </summary>
     /// <remarks>
@@ -82,6 +87,21 @@ public sealed class ResolvedNode
     }
 
     /// <summary>
+    /// 本节点是否被选中提供该能力，且这一选择是被要求的。
+    /// </summary>
+    /// <remarks>
+    /// 被要求：有清单依赖这项能力（必需或可选，且解析到了提供者），或配置 <c>XiHan:Providers:&lt;能力ID&gt;</c> / 代码的 <c>UseProvider</c> 指定了提供者。
+    /// 没人依赖也没人指定、只按「没被依赖的能力也选出提供者」的规则选出的是兜底选出，返回 <see langword="false"/>；兜底选出照样算选中（<see cref="IsSelectedFor"/>）。
+    /// 特性据此只为被要求的能力承担跨能力的一致性约束（RFC-0002 解析规则 4）。
+    /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
+    public bool IsRequestedFor(string capabilityId)
+    {
+        ArgumentNullException.ThrowIfNull(capabilityId);
+        return _requested.Contains(capabilityId);
+    }
+
+    /// <summary>
     /// 追加一个依赖节点。
     /// </summary>
     /// <remarks>
@@ -103,7 +123,16 @@ public sealed class ResolvedNode
     /// <remarks>
     /// 求解期调用。
     /// </remarks>
-    internal void AddSelected(string capabilityId) => _selected.Add(capabilityId);
+    /// <param name="capabilityId">能力 ID。</param>
+    /// <param name="requested">这一选择是否被要求（有清单依赖或配置 / 代码指定）。</param>
+    internal void AddSelected(string capabilityId, bool requested)
+    {
+        _selected.Add(capabilityId);
+        if (requested)
+        {
+            _requested.Add(capabilityId);
+        }
+    }
 
     /// <inheritdoc />
     public override string ToString() => Manifest.Id;

@@ -25,7 +25,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储的能力包入口。
 /// </summary>
 /// <remarks>
-/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。被选中的能力必须包括 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替时经 <see cref="ConfigureShadowed"/> 只登记它，不建缺省客户端、不探测。
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
@@ -47,6 +47,14 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// 启动时起循环的健康探针，停止时结束它。
     /// </summary>
     private PeriodicHealthContributor? _health;
+
+    /// <summary>
+    /// 本特性是否提供缺省实例。
+    /// </summary>
+    /// <remarks>
+    /// 由 <see cref="Configure"/> 判定（<see cref="BlobStoreSelection.ProvidesDefaultInstance"/>）；不提供时与被顶替相同，启动时不探测。
+    /// </remarks>
+    private bool _providesDefault;
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -79,19 +87,23 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
-        BlobStoreSelection.EnsureSameStore(context.Node);
+        // 命名实例：按定义（配置 XiHan:ObjectStorage:Stores 或应用运行时登记）各建各的客户端，与是否提供缺省实例无关
+        context.Services.AddBlobStoreProvider<S3BlobStoreProvider>(context.Configuration);
+        // 没被选为缺省对象存储、分片上传与预签名也只是兜底选出：没有人会经本包取用缺省实例，与被顶替相同，到此为止；
+        // 被要求却与缺省对象存储不一致时这里启动失败
+        _providesDefault = BlobStoreSelection.ProvidesDefaultInstance(context.Node);
+        if (!_providesDefault)
+        {
+            return;
+        }
+
         var options = S3ObjectStorageOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         // 应用自己注册的客户端优先（自定义凭据链、代理、重试策略）
         context.Services.TryAddSingleton<IAmazonS3>(_ => CreateClient(options));
         context.Services.TryAddSingleton<S3BlobStore>();
-        // 命名实例：按定义（配置 XiHan:ObjectStorage:Stores 或应用运行时登记）各建各的客户端
-        context.Services.AddBlobStoreProvider<S3BlobStoreProvider>(context.Configuration);
-        if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Blob))
-        {
-            context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<S3BlobStore>());
-        }
-
+        // 走到这里本包已被选为 objectstorage.blob，是缺省存储；其余能力被选中就注册（兜底选出的也注册）
+        context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<S3BlobStore>());
         if (context.Node.IsSelectedFor(ObjectStorageCapabilities.Multipart))
         {
             context.Services.TryAddSingleton<IBlobMultipartStore>(static sp => sp.GetRequiredService<S3BlobStore>());
@@ -122,6 +134,11 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
+        if (!_providesDefault)
+        {
+            return;
+        }
+
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
         await _health.StartAsync(cancellationToken).ConfigureAwait(false);
     }
