@@ -15,8 +15,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 卸载按归属撤回插件登记的代理操作与权限码，之后可以直接再加载（<c>spec/plugin/invocation.md</c> §1，ADR-0085）。
+/// 卸载按归属撤回插件的登记，之后可以直接再加载。
 /// </summary>
+/// <remarks>
+/// 撤回的是代理操作与清单声明的权限码（<c>spec/plugin/invocation.md</c> §1，ADR-0085）。
+/// </remarks>
 public sealed class WasmPluginUnloadTests
 {
     [Fact]

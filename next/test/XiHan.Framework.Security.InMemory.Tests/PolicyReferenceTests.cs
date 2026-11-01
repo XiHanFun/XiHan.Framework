@@ -11,8 +11,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 内存安全特性作为授权能力时，在启动核对里核对操作契约按名引用的策略（ADR-0080、ADR-0085）。
+/// 授权能力在启动核对里核对契约按名引用的策略。
 /// </summary>
+/// <remarks>
+/// 内存安全特性被选为授权能力时（ADR-0080、ADR-0085）。
+/// </remarks>
 public sealed class PolicyReferenceTests
 {
     /// <summary>
