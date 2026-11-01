@@ -123,7 +123,7 @@ public sealed class CliHostTests
     {
         var (help, helpOutput, _) = await RunAsync(null, "help", "--locale", "en-US");
         Assert.Equal(CommandLineExitCodes.Success, help);
-        foreach (var command in new[] { "pack", "migrate", "mcp", "graph", "pipeline", "operations", "invoke", "version", "help" })
+        foreach (var command in new[] { "pack", "migrate", "mcp", "setup", "graph", "pipeline", "operations", "invoke", "version", "help" })
         {
             Assert.Contains(command, helpOutput, StringComparison.Ordinal);
         }

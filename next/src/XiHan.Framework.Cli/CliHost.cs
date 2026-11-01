@@ -69,6 +69,7 @@ internal static class CliHost
         services.AddXiHanCommand<PackCommand>();
         services.AddSingleton<ICommand>(new MigrateCommand(migrationRuleSets));
         services.AddSingleton<ICommand>(new McpCommand(input));
+        services.AddXiHanCommand<SetupCommand>();
         foreach (var (name, description) in new[] { ("graph", CliMessages.GraphDescription), ("pipeline", CliMessages.PipelineDescription), ("operations", CliMessages.OperationsDescription), ("invoke", CliMessages.InvokeDescription) })
         {
             services.AddSingleton<ICommand>(provider => new ForwardCommand(name, description, provider.GetRequiredService<IProcessLauncher>()));

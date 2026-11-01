@@ -34,6 +34,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Knowledge/catalog.json" LogicalName="knowledge/catalog.json" />
     <EmbeddedResource Include="Knowledge/configuration.json" LogicalName="knowledge/configuration.json" />
+    <EmbeddedResource Include="skills/xihan-framework/SKILL.md" LogicalName="skills/xihan-framework/SKILL.md" WithCulture="false" />
     <EmbeddedResource Include="../../../docs-next/**/*.md" Exclude="../../../docs-next/node_modules/**;../../../docs-next/.vitepress/**;../../../docs-next/public/**" LogicalName="docs/docs-next/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
     <EmbeddedResource Include="../../spec/rfcs/*.md" LogicalName="docs/next/spec/rfcs/%(Filename)%(Extension)" WithCulture="false" Visible="false" />
     <EmbeddedResource Include="../../spec/conventions/*.md" LogicalName="docs/next/spec/conventions/%(Filename)%(Extension)" WithCulture="false" Visible="false" />

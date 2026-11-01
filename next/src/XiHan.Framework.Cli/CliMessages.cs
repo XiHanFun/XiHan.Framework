@@ -245,6 +245,139 @@ public static class CliMessages
     public const string KnowledgeLimitInvalid = "cli.knowledge.limit_invalid";
 
     /// <summary>
+    /// <c>setup</c> 命令说明。
+    /// </summary>
+    public const string SetupDescription = "cli.setup.description";
+
+    /// <summary>
+    /// <c>--client</c> 不认识。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>client</c>、<c>known</c>。
+    /// </remarks>
+    public const string SetupClientInvalid = "cli.setup.client_invalid";
+
+    /// <summary>
+    /// <c>--mode</c> 不认识。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>mode</c>、<c>known</c>。
+    /// </remarks>
+    public const string SetupModeInvalid = "cli.setup.mode_invalid";
+
+    /// <summary>
+    /// 找不到项目根目录。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupRootNotFound = "cli.setup.root_not_found";
+
+    /// <summary>
+    /// 编码助手的配置文件不是合法 JSON。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>、<c>reason</c>。
+    /// </remarks>
+    public const string SetupConfigInvalid = "cli.setup.config_invalid";
+
+    /// <summary>
+    /// 编码助手的配置文件顶层不是对象。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupConfigNotObject = "cli.setup.config_not_object";
+
+    /// <summary>
+    /// 已把服务写进 JSON 配置。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>server</c>、<c>key</c>、<c>path</c>。
+    /// </remarks>
+    public const string SetupJsonWritten = "cli.setup.json_written";
+
+    /// <summary>
+    /// 试运行：将把服务写进 JSON 配置。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>server</c>、<c>key</c>、<c>path</c>。
+    /// </remarks>
+    public const string SetupJsonPlanned = "cli.setup.json_planned";
+
+    /// <summary>
+    /// 已写入文件。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupFileWritten = "cli.setup.file_written";
+
+    /// <summary>
+    /// 试运行：将写入文件。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupFilePlanned = "cli.setup.file_planned";
+
+    /// <summary>
+    /// 请把片段加进配置。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupPrint = "cli.setup.print";
+
+    /// <summary>
+    /// <c>--check</c>：配置已就绪。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>client</c>、<c>version</c>。
+    /// </remarks>
+    public const string SetupReady = "cli.setup.ready";
+
+    /// <summary>
+    /// <c>--check</c>：配置未就绪。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>client</c>、<c>problems</c>。
+    /// </remarks>
+    public const string SetupNotReady = "cli.setup.not_ready";
+
+    /// <summary>
+    /// 未就绪的一项：缺少文件。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupMissingFile = "cli.setup.missing_file";
+
+    /// <summary>
+    /// 未就绪的一项：配置里没有本服务。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>、<c>server</c>。
+    /// </remarks>
+    public const string SetupMissingEntry = "cli.setup.missing_entry";
+
+    /// <summary>
+    /// 未就绪的一项：本服务的配置与期望不同。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>、<c>server</c>。
+    /// </remarks>
+    public const string SetupEntryDiffers = "cli.setup.entry_differs";
+
+    /// <summary>
+    /// 未就绪的一项：技能文件与当前版本不同。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>。
+    /// </remarks>
+    public const string SetupSkillDiffers = "cli.setup.skill_differs";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(CliMessages));

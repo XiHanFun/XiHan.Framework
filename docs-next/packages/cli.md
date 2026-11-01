@@ -23,6 +23,7 @@
 | `graph` / `pipeline` / `operations` / `invoke` | 转发给应用的命令行宿主 |
 | `migrate <来源版本>` | 按来源版本的规则集改写源码；当前没有登记任何规则集 |
 | `mcp` | 以 stdio 提供框架离线知识库的 MCP 服务，三个只读 tool：`xihan_framework_info`、`xihan_framework_config`、`xihan_framework_search` |
+| `setup --client <claude\|cursor\|vscode\|codex>` | 把 `mcp` 服务与使用技能写进编码助手的项目配置 |
 | `version` | 打印框架名与版本 |
 | `help` | 命令列表；没有命令时打印到 stderr 并以 64 退出 |
 
@@ -100,6 +101,35 @@ dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- mcp    # 不安装、按版本�
 
 数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
 
+### setup
+
+```bash
+xihan setup --client <claude|cursor|vscode|codex> [--mode mcp|skill|both] [--pin <版本>] [--path <目录>] [--dry-run] [--check]
+dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- setup --client claude    # 不安装、按版本运行
+```
+
+把 `mcp` 服务（服务名 `xihan-framework`，命令 `dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）写进编码助手的项目配置，并按 `--mode` 写入使用技能：
+
+| `--client` | MCP 配置 | 技能 |
+| --- | --- | --- |
+| `claude` | `.mcp.json` 的 `mcpServers`；Windows 上命令写成 `cmd /c dnx …` | `.claude/skills/xihan-framework/SKILL.md` |
+| `cursor` | `.cursor/mcp.json` 的 `mcpServers` | `.agents/skills/xihan-framework/SKILL.md` |
+| `vscode` | `.vscode/mcp.json` 的 `servers`，每项带 `"type": "stdio"` | 同上 |
+| `codex` | 不写文件，打印 `~/.codex/config.toml` 的 `[mcp_servers.xihan-framework]` 片段 | 同上 |
+
+| 选项 | 缺省 | 说明 |
+| --- | --- | --- |
+| `--client` | — | 必填 |
+| `--mode` | `both` | `mcp` 只写服务配置，`skill` 只写技能 |
+| `--pin` | 项目引用的 `XiHan.Framework.*` 版本，没有时为工具版本 | 服务钉住的工具版本 |
+| `--path` | 当前目录 | 从这里向上找项目根：git 根，否则第一个含解决方案或项目文件的目录 |
+| `--dry-run` | — | 只打印要写的内容 |
+| `--check` | — | 核对配置与技能是否已就绪 |
+
+- 幂等：JSON 配置只替换本服务那一项，别的服务与顶层键原样保留，重复执行得到相同的文件；技能文件整份覆盖。
+- 要合并的配置文件读不了（带注释的 JSONC、顶层不是对象）时一个文件都不写，按 `--dry-run` 打印的片段手工合并。
+- 版本：数据随工具版本走，`--pin` 与项目引用的版本一致时，编码助手查到的就是项目在用的那一版。
+
 ## 行为与限制
 
 退出码：
@@ -116,6 +146,11 @@ dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- mcp    # 不安装、按版本�
 | `migrate` 的 `--path` 不存在 | `CLI_NOTFOUND_002` | 3 |
 | `migrate` 的来源版本没有规则集 | `CLI_VALIDATION_002` | 64 |
 | `migrate --fixers` 有不认识的规则编号 | `CLI_VALIDATION_003` | 64 |
+| `setup` 的 `--client` 或 `--mode` 不认识 | `CLI_VALIDATION_005` | 64 |
+| `setup` 找不到项目根 | `CLI_NOTFOUND_004` | 3 |
+| `setup` 要合并的配置文件读不了（不改动任何文件） | `CLI_VALIDATION_006` | 2 |
+| `setup --check` 未就绪（`detail` 列出各项） | `CLI_CONFLICT_001` | 5 |
+| `mcp` 在 stdin 关闭后 | — | 0 |
 | 被 Ctrl+C 取消 | — | 8 |
 
 - Ctrl+C 先取消当前命令，让它按取消语义收尾，而不是直接终止进程。

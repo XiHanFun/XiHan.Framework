@@ -53,4 +53,27 @@ internal static class CliErrors
     /// 既没给检索词也没给页面，或条数超出范围。
     /// </remarks>
     public const string KnowledgeSearchInvalid = "CLI_VALIDATION_004";
+
+    /// <summary>
+    /// <c>setup</c> 找不到项目根目录。
+    /// </summary>
+    public const string SetupRootNotFound = "CLI_NOTFOUND_004";
+
+    /// <summary>
+    /// <c>setup</c> 的 <c>--client</c> 或 <c>--mode</c> 不认识。
+    /// </summary>
+    public const string SetupOptionInvalid = "CLI_VALIDATION_005";
+
+    /// <summary>
+    /// <c>setup</c> 要合并的编码助手配置不是合法的 JSON 对象。
+    /// </summary>
+    /// <remarks>
+    /// 不改动任何文件。
+    /// </remarks>
+    public const string SetupConfigInvalid = "CLI_VALIDATION_006";
+
+    /// <summary>
+    /// <c>setup --check</c>：配置未就绪。
+    /// </summary>
+    public const string SetupNotReady = "CLI_CONFLICT_001";
 }

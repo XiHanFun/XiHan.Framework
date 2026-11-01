@@ -12,7 +12,15 @@
 | `xihan_framework_config` | 配置键：完整路径、类型、缺省值、必填、取值范围与 appsettings 片段 |
 | `xihan_framework_search` | 检索文档，或以 `page` 取一页全文 |
 
-三个 tool 都只读，结果是结构化 JSON，查不到时返回 `isError` 与最接近的候选。项目根的 `.mcp.json`（Claude Code）或 `.cursor/mcp.json`（Cursor）：
+三个 tool 都只读，结果是结构化 JSON，查不到时返回 `isError` 与最接近的候选。
+
+最省事的是在项目根运行 `setup`，它读出项目引用的框架版本，把服务写进对应工具的配置，并写入使用技能（只要 MCP 时加 `--mode mcp`，`--dry-run` 只打印，`--check` 核对是否就绪）：
+
+```bash
+dnx XiHan.Framework.Cli --yes -- setup --client claude    # 或 cursor、vscode、codex
+```
+
+手写配置时，项目根的 `.mcp.json`（Claude Code）或 `.cursor/mcp.json`（Cursor）：
 
 ```json
 {

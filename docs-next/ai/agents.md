@@ -37,7 +37,7 @@
 | 框架知识库 MCP | `xihan_framework_info`（包、特性、能力）、`xihan_framework_config`（配置键与缺省值）、`xihan_framework_search`（文档检索与全文） | `xihan mcp`，见 [MCP Server](./mcp) |
 | 应用的 MCP 端点 | 把应用自己的操作作为 MCP tool 交给 AI 工具调用 | 见 [MCP Server](./mcp) |
 
-框架知识库的 MCP 服务 `xihan mcp`（`dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）按工具版本提供包、特性清单、能力、配置键与文档的查询，配法见 [MCP Server](./mcp#框架知识库-xihan-mcp)。4.x 的 `xihan-framework` 只描述 4.x。
+框架知识库的 MCP 服务 `xihan mcp`（`dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）按工具版本提供包、特性清单、能力、配置键与文档的查询，在项目根运行 `dnx XiHan.Framework.Cli --yes -- setup --client <claude|cursor|vscode|codex>` 即可写好配置与使用技能，配法见 [MCP Server](./mcp#框架知识库-xihan-mcp)。4.x 的 `xihan-framework` 只描述 4.x。
 
 ## 给 AI 工具的检查清单
 

@@ -45,6 +45,7 @@ dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1 --add
 | `xihan pack` | 读 `xihan.app.json`，生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，见[部署与打包](../guide/deployment) |
 | `xihan migrate <来源版本>` | 通用的代码迁移机制；当前没有登记任何规则集，任何来源版本都返回 `CLI_VALIDATION_002` |
 | `xihan mcp` | 以 stdio 提供框架离线知识库的 MCP 服务（包与特性清单、配置键、文档），见 [MCP Server](./mcp) |
+| `xihan setup --client <claude\|cursor\|vscode\|codex>` | 把 `mcp` 服务与使用技能写进编码助手的项目配置，`--check` 核对是否就绪 |
 | `xihan version` | 框架版本 |
 | `xihan help` | 命令列表 |
 

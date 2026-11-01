@@ -92,3 +92,23 @@
 - `XiHan.Framework.Cli` 新增对 `Protocols.Mcp` 的引用；为让顶级语句的 `Program` 不被 ASP.NET Core 的源生成器公开，显式声明为 `internal`。
 - 新错误码 `CLI_NOTFOUND_003`、`CLI_VALIDATION_004`；新消息键 `cli.mcp.*`、`cli.info.*`、`cli.config.*`、`cli.search.*`、`cli.knowledge.*`。
 - 任何改动特性清单、项目文件说明与引用、`next/README.md` 包表的提交，都要运行 `Update-CliKnowledge.ps1` 更新 `catalog.json`；改动 Options 读取的键、缺省值或范围的提交，要按 `KnowledgeConfigurationTests` 的失败信息更新 `configuration.json`。这是有意的门禁：索引与代码不一致就不能合入。
+
+## 三、`xihan setup`：把服务写进编码助手的配置
+
+### 背景
+
+4.x 的 `setup` 由 `SetupPlanner` 规划动作：`--client claude|cursor|vscode|codex`、`--mode mcp|skill|both`、`--pin`、`--dry-run`、`--check`；JSON 配置只改本服务一项，Codex 只打印片段，技能写进 `.claude/skills` 或 `.agents/skills`。BasicApp 的 AI 文档让用户用它一次写好框架与组件库两个服务。
+
+### 决策
+
+照 4.x 的行为在 5.0 重做，并补两处：
+
+- 客户端、模式、写入位置、`dnx` 命令（Windows 上的 Claude Code 经 `cmd /c`）、版本选择（`--pin` → 项目引用的 `XiHan.Framework.*` 版本 → 工具版本）、`--dry-run` 与 `--check` 与 4.x 一致，服务名仍是 `xihan-framework`；技能换成 5.0 的写法（特性与能力、操作契约、`Result` / `Error`、消息键、管道中间件、资源绑定），随工具嵌入。
+- 新增 `--path`：从给定目录向上找项目根（缺省当前目录），测试与脚本不必改工作目录。
+- 先把要合并的 JSON 配置都读通再写：任何一份读不了（含注释的 JSONC、顶层不是对象）就一个文件都不写（4.x 会先写技能再在配置上失败）。
+- 输出与提示文案全部走 CLI 的消息键（10 种语言）；失败按命令行宿主的约定输出 Problem JSON：`--client` / `--mode` 不认识 `CLI_VALIDATION_005`（64），找不到项目根 `CLI_NOTFOUND_004`（3），配置读不了 `CLI_VALIDATION_006`（2），`--check` 未就绪 `CLI_CONFLICT_001`（5，`detail` 列出各项；4.x 是退出码 1 加 ✗ 行）。
+
+### 影响
+
+- 新错误码 `CLI_NOTFOUND_004`、`CLI_VALIDATION_005`、`CLI_VALIDATION_006`、`CLI_CONFLICT_001`；新消息键 `cli.setup.*`。
+- 写入 `.mcp.json` 等文件时用 LF 与两空格缩进重排整份 JSON（内容不变）；原文件里的注释无法保留，所以带注释的文件直接拒绝而不是静默丢掉注释。

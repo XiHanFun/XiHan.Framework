@@ -26,6 +26,11 @@ internal sealed class FrameworkKnowledge
     public const string ConfigurationResource = "knowledge/configuration.json";
 
     /// <summary>
+    /// 使用技能的资源名。
+    /// </summary>
+    public const string SkillResource = "skills/xihan-framework/SKILL.md";
+
+    /// <summary>
     /// 文档页资源名的前缀，其后是仓库内路径。
     /// </summary>
     public const string DocsPrefix = "docs/";
@@ -110,6 +115,14 @@ internal sealed class FrameworkKnowledge
 
         return new FrameworkKnowledge(catalog, configuration, pages);
     }
+
+    /// <summary>
+    /// 读使用技能 <c>SKILL.md</c> 的原文。
+    /// </summary>
+    /// <remarks>
+    /// <c>setup</c> 把它写进项目，供编码助手按任务加载。
+    /// </remarks>
+    public static string ReadSkill() => ReadResource(typeof(FrameworkKnowledge).Assembly, SkillResource);
 
     /// <summary>
     /// 解析一页 Markdown。
