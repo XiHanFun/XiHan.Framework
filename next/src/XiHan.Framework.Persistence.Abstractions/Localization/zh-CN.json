@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "实体 '{entity}' 没有标识为 '{id}' 的条目。",
   "persistence.entity.stale_stamp": "实体 '{entity}'（标识 '{id}'）的并发戳已过期。",
   "persistence.entity.tenant_required": "实体 '{entity}' 是多租户实体，但当前调用没有租户。",
+  "persistence.query.take_exceeded": "查询要取 {take} 行，超过一次最多可读的 {max} 行；请分页读取，每页最多 {max} 行。",
   "persistence.snowflake.clock_moved_backwards": "时钟回拨超过容忍阈值：时钟追上之前不生成雪花标识。",
   "persistence.snowflake.worker_unavailable": "当前没有持有雪花标识的机器位：租约尚未取得或已丢失。",
   "persistence.store.capacity_exceeded": "实体 '{entity}' 的内存表已达到容量上限 {capacity}。",

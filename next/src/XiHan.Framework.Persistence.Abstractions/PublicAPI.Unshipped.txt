@@ -175,6 +175,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfW
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReadOnly = "PERSISTENCE_DENIED_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TakeExceeded = "PERSISTENCE_VALIDATION_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TenantRequired = "PERSISTENCE_VALIDATION_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.UnknownConnection = "PERSISTENCE_VALIDATION_004" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005" -> string!
@@ -190,6 +191,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "p
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavailable = "persistence.store.unavailable" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TakeExceeded = "persistence.query.take_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int

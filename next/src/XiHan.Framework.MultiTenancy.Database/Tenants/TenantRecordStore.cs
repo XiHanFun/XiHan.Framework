@@ -164,7 +164,7 @@ public sealed class TenantRecordStore
     /// 按 ID 排序分页列出租户，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
     /// </summary>
     /// <remarks>
-    /// 不走缓存。
+    /// 不走缓存。<paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果。
     /// </remarks>
     public async Task<IReadOnlyList<TenantInfo>> ListAsync(int skip, int take, CancellationToken cancellationToken)
     {

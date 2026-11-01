@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "A entidade '{entity}' não tem nenhum item com o identificador '{id}'.",
   "persistence.entity.stale_stamp": "O carimbo de concorrência de '{entity}' com o identificador '{id}' está desatualizado.",
   "persistence.entity.tenant_required": "A entidade '{entity}' é multilocatário, mas a chamada atual não tem locatário.",
+  "persistence.query.take_exceeded": "A consulta solicita {take} linhas, mais do que as {max} que podem ser lidas de uma vez; pagine os resultados com no máximo {max} linhas por página.",
   "persistence.snowflake.clock_moved_backwards": "O relógio voltou além da tolerância; IDs snowflake não são gerados até que ele se recupere.",
   "persistence.snowflake.worker_unavailable": "Nenhum ID de worker snowflake está em posse no momento: o arrendamento não foi adquirido ou foi perdido.",
   "persistence.store.capacity_exceeded": "A tabela em memória de '{entity}' atingiu sua capacidade de {capacity}.",

@@ -43,12 +43,17 @@ public sealed record EntityQuery<T>
     /// 取出条数上限。
     /// </summary>
     /// <remarks>
-    /// 1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限。超出范围在构造查询时抛出 <see cref="ArgumentOutOfRangeException"/>，不静默截断：要更多行就分页。Provider 不得返回超过此数的结果。
+    /// 1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限。大于上限是调用方可以改正的输入（上限是存储一侧的约束，调用方事先不知道）：抛出携带 <see cref="PersistenceErrors.TakeExceeded"/> 的 <see cref="FrameworkException"/>，调用里由 Transaction 阶段回滚并转为同码的校验结果（HTTP 400），之外仍是异常。小于 1 构不成查询，是编程错误，抛出 <see cref="ArgumentOutOfRangeException"/>。不静默截断：要更多行就分页。Provider 不得返回超过此数的结果。
     /// </remarks>
     public int Take
     {
         get => field;
-        init => field = value is >= 1 and <= EntityQuery.DefaultMaxTake ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"'Take' must be between 1 and {EntityQuery.DefaultMaxTake}; page through larger results.");
+        init => field = value switch
+        {
+            < 1 => throw new ArgumentOutOfRangeException(nameof(value), value, "'Take' must be at least 1."),
+            > EntityQuery.DefaultMaxTake => throw new TakeExceededException(value),
+            _ => value,
+        };
     } = EntityQuery.DefaultMaxTake;
 
     /// <summary>
@@ -87,7 +92,7 @@ public sealed record EntityQuery<T>
     /// 派生分页的查询。
     /// </summary>
     /// <remarks>
-    /// <paramref name="skip"/> 为负、<paramref name="take"/> 不在 1 到 <see cref="EntityQuery.DefaultMaxTake"/> 之间抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// <paramref name="skip"/> 为负、<paramref name="take"/> 小于 1 抛出 <see cref="ArgumentOutOfRangeException"/>；<paramref name="take"/> 大于 <see cref="EntityQuery.DefaultMaxTake"/> 抛出携带 <see cref="PersistenceErrors.TakeExceeded"/> 的 <see cref="FrameworkException"/>（调用里转为校验结果）。
     /// </remarks>
     public EntityQuery<T> Page(int skip, int take) => this with { Skip = skip, Take = take };
 

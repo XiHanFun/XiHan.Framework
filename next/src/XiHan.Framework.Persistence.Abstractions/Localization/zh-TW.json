@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "實體 '{entity}' 沒有識別碼為 '{id}' 的項目。",
   "persistence.entity.stale_stamp": "實體 '{entity}'（識別碼 '{id}'）的並行戳記已過期。",
   "persistence.entity.tenant_required": "實體 '{entity}' 是多租戶實體，但目前呼叫沒有租戶。",
+  "persistence.query.take_exceeded": "查詢要取 {take} 列，超過一次最多可讀的 {max} 列；請分頁讀取，每頁最多 {max} 列。",
   "persistence.snowflake.clock_moved_backwards": "時鐘回撥超過容忍閾值：時鐘追上之前不產生雪花識別碼。",
   "persistence.snowflake.worker_unavailable": "目前沒有持有雪花識別碼的機器位：租約尚未取得或已遺失。",
   "persistence.store.capacity_exceeded": "實體 '{entity}' 的記憶體資料表已達到容量上限 {capacity}。",

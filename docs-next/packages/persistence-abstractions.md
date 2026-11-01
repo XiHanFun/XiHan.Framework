@@ -133,7 +133,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 ## 行为与限制
 
 - 仓储只在活动的工作单元里工作；在 Transaction 阶段之外直接使用抛出携带 `PERSISTENCE_UNAVAILABLE_001` 的 `FrameworkException`。
-- 查询缺省 `Skip` 0、`Take` 1000，`Take` 的上限也是 1000（`EntityQuery.DefaultMaxTake`）；`Page` 的 `skip` 小于 0、`take` 不在 1 到 1000 之间抛出 `ArgumentOutOfRangeException`，不静默截断，要更多行就分页。`Within` 只是分表扫描范围的提示，不过滤行。
+- 查询缺省 `Skip` 0、`Take` 1000，`Take` 的上限也是 1000（`EntityQuery.DefaultMaxTake`）；`take` 超过上限抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，在调用里由 Transaction 阶段回滚并转为同码的校验结果（HTTP 400，参数 `take`、`max`），Transaction 之外仍是异常；`skip` 小于 0、`take` 小于 1 是编程错误，抛出 `ArgumentOutOfRangeException`；都不静默截断，要更多行就分页。`Within` 只是分表扫描范围的提示，不过滤行。
 - 批量方法的结果与入参等长、顺序一一对应；空集合不访问后端但仍要求活动的工作单元；批内重复项按入参顺序逐项施加语义。
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_DENIED_001`（HTTP 403）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073）。
@@ -154,6 +154,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |
 | `PERSISTENCE_VALIDATION_003` | `PersistenceErrors.EventsUndispatched` | 有未派发的领域事件但没有派发器 |
 | `PERSISTENCE_VALIDATION_004` | `PersistenceErrors.UnknownConnection` | 实体落点指向的连接不存在（SqlSugar `[Tenant]`，装配错误，抛异常） |
+| `PERSISTENCE_VALIDATION_005` | `PersistenceErrors.TakeExceeded` | 查询的取出条数超过上限（构造时抛异常；调用里转为校验结果，HTTP 400） |
 | `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
 | `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |

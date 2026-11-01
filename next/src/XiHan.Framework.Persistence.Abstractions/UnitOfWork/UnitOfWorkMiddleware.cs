@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// <remarks>
 /// 用当前租户开启作用域内的 <see cref="IUnitOfWork"/>：调用带操作描述且契约只读（<see cref="OperationContract.IsReadOnly"/>）时开只读工作单元，其余调用开可写工作单元。调用成功时先派发工作单元里聚合的领域事件（经 <see cref="IDomainEventDispatcher"/>，装配了发件箱时随业务写入同一事务），再提交；失败或异常回滚。
 /// <para>
-/// 只读工作单元里 Provider 直接写入入口抛出的 <see cref="PersistenceErrors.ReadOnly"/> 在这里回滚并转为同码结果，不作为未处理异常离开管道。同一服务作用域里再经管道发起的嵌套调用遇到已经开始过的工作单元，以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束、不执行处理器：嵌套调用要新建服务作用域，各开自己的工作单元（RFC-0005）。
+/// 只读工作单元里 Provider 直接写入入口抛出的 <see cref="PersistenceErrors.ReadOnly"/>、构造查询时取出条数超过上限抛出的 <see cref="PersistenceErrors.TakeExceeded"/>，在这里回滚并转为同码结果（HTTP 403 / 400），不作为未处理异常离开管道；其余异常回滚后原样抛出。同一服务作用域里再经管道发起的嵌套调用遇到已经开始过的工作单元，以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束、不执行处理器：嵌套调用要新建服务作用域，各开自己的工作单元（RFC-0005）。
 /// </para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -54,6 +55,14 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
             // 转为同码结果（HTTP 403），不让 Observe 阶段包成 KERNEL_UNEXPECTED_001；回滚用 None 令牌保证一定执行
             await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
             context.SetOutcome(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
+            return;
+        }
+        catch (TakeExceededException exception)
+        {
+            // 查询的取出条数超过上限：页大小多半来自调用方，上限是存储一侧的约束、调用方事先不知道，是能改正的输入而不是缺陷；
+            // 转为同码的校验结果（HTTP 400，带请求的条数与上限），已做的写入随之回滚。Transaction 之外构造的超限查询仍以异常抛出
+            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+            context.SetOutcome(Error.Validation(PersistenceErrors.TakeExceeded, PersistenceMessages.TakeExceeded, MessageArguments.Of(("take", exception.Take), ("max", EntityQuery.DefaultMaxTake))));
             return;
         }
         catch

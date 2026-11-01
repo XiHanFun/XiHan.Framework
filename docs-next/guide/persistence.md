@@ -79,11 +79,11 @@ public void Configure(FeatureContext context)
 | `EntityQuery.All<T>()` | — | 无条件、缺省分页，按类型缓存同一实例 |
 | `Where(spec)` | 不过滤 | 过滤规约；多次调用按 And 组合 |
 | `OrderBy(key, descending)` | 不排序 | 追加一级排序，多次调用按声明顺序叠加 |
-| `Page(skip, take)` | `Skip` 0、`Take` 1000 | `skip` 小于 0、`take` 不在 1 到 `EntityQuery.DefaultMaxTake`（1000）之间抛出 `ArgumentOutOfRangeException`，不截断；缺省 `Take` 就是这个上限，要更多行就分页 |
+| `Page(skip, take)` | `Skip` 0、`Take` 1000 | `take` 大于 `EntityQuery.DefaultMaxTake`（1000）抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）；`skip` 小于 0、`take` 小于 1 是编程错误，抛出 `ArgumentOutOfRangeException`。不截断；缺省 `Take` 就是这个上限，要更多行就分页 |
 | `IncludeDeleted` | `false` | 为 `true` 时包含已软删除的实体 |
 | `Within(from, to)` | 不限定 | 时间范围提示，两端都含；只影响按时间分表的 Provider 扫描哪些表，不过滤行 |
 
-下面的操作按金额过滤、按创建时间倒序分页，并返回总数。分页参数来自请求时用 `[Range]` 约束，超出范围由 Validate 阶段返回字段级错误，不会走到构造查询时的 `ArgumentOutOfRangeException`（那会成为 `KERNEL_UNEXPECTED_001`）。`OrderResponse` 来自 SimpleApp；新的请求与响应类型要登记进应用的 `JsonSerializerContext`（SimpleApp 的 `SampleJsonContext`），否则 `Kernel.Generators` 报 `XHG002`。
+下面的操作按金额过滤、按创建时间倒序分页，并返回总数。分页参数来自请求时用 `[Range]` 约束：超出范围由 Validate 阶段返回 `KERNEL_VALIDATION_003` 并指出字段，进不到处理器。没有约束时，超过上限的 `take` 在构造查询时被拒绝，调用以 `PERSISTENCE_VALIDATION_005`（HTTP 400，参数 `take`、`max`）结束、已做的写入回滚；负的 `skip` 与小于 1 的 `take` 则是 `ArgumentOutOfRangeException`，成为 `KERNEL_UNEXPECTED_001`，所以两头都要约束。`OrderResponse` 来自 SimpleApp；新的请求与响应类型要登记进应用的 `JsonSerializerContext`（SimpleApp 的 `SampleJsonContext`），否则 `Kernel.Generators` 报 `XHG002`。
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -329,6 +329,7 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）；同一服务作用域里再经管道的嵌套调用 | 状态错误抛异常；嵌套调用是调用结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_VALIDATION_004` | SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接（装配错误） | 启动失败；运行时抛 `FrameworkException` |
+| `PERSISTENCE_VALIDATION_005` | 查询的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max` | 构造查询时抛 `FrameworkException`；调用里由 Transaction 阶段转为校验结果（HTTP 400） |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |

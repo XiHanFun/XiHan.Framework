@@ -56,6 +56,14 @@ public static class PersistenceErrors
     public const string UnknownConnection = "PERSISTENCE_VALIDATION_004";
 
     /// <summary>
+    /// 查询的取出条数超过上限。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Queries.EntityQuery{T}.Take"/> 大于 <see cref="Queries.EntityQuery.DefaultMaxTake"/>：构造查询时以异常抛出，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）。
+    /// </remarks>
+    public const string TakeExceeded = "PERSISTENCE_VALIDATION_005";
+
+    /// <summary>
     /// 只读工作单元拒绝写入。
     /// </summary>
     /// <remarks>

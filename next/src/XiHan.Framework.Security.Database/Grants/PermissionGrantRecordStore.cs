@@ -162,7 +162,7 @@ public sealed class PermissionGrantRecordStore
     /// 列出授予行。
     /// </summary>
     /// <remarks>
-    /// <paramref name="subject"/> 为 <see langword="null"/> 不按主体过滤，<paramref name="tenantId"/> 为 <see langword="null"/> 不按租户过滤（否则只列该租户专属的行）；按主体种类、主体 ID、权限码、租户排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
+    /// <paramref name="subject"/> 为 <see langword="null"/> 不按主体过滤，<paramref name="tenantId"/> 为 <see langword="null"/> 不按租户过滤（否则只列该租户专属的行）；按主体种类、主体 ID、权限码、租户排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页；<paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果。
     /// </remarks>
     public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(GrantSubject? subject, string? tenantId, int skip, int take, CancellationToken cancellationToken)
     {

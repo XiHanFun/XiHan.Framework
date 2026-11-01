@@ -450,7 +450,7 @@ public abstract class RepositoryConformance
     /// 用例 11d：一次查询最多取 <see cref="EntityQuery.DefaultMaxTake"/> 条。
     /// </summary>
     /// <remarks>
-    /// 比上限多一条数据：缺省查询与取满上限的查询都只返回上限条，计数仍是全部，第二页取到剩下的一条；超过上限的取出条数在构造查询时就被拒绝，不交给 Provider 截断。
+    /// 比上限多一条数据：缺省查询与取满上限的查询都只返回上限条，计数仍是全部，第二页取到剩下的一条。超过上限的取出条数在构造查询时就以 <see cref="PersistenceErrors.TakeExceeded"/> 拒绝，不交给 Provider 截断；调用里先写入、再用超限的条数构造查询，调用以该码的校验结果结束，写入回滚。
     /// </remarks>
     [Fact]
     public async Task List_ReturnsAtMostTheMaximumTake_AndLargerTakesAreRejected()
@@ -465,7 +465,22 @@ public abstract class RepositoryConformance
         Assert.Equal(EntityQuery.DefaultMaxTake, (await ListAsync<ConformanceItem, int>(host, ordered.Page(0, EntityQuery.DefaultMaxTake)).ConfigureAwait(false)).Count);
         Assert.Equal([EntityQuery.DefaultMaxTake + 1], (await ListAsync<ConformanceItem, int>(host, ordered.Page(EntityQuery.DefaultMaxTake, EntityQuery.DefaultMaxTake)).ConfigureAwait(false)).Select(static i => i.Id));
         Assert.Equal(EntityQuery.DefaultMaxTake + 1, await CountAsync<ConformanceItem, int>(host, ordered).ConfigureAwait(false));
-        Assert.Throws<ArgumentOutOfRangeException>(() => ordered.Page(0, EntityQuery.DefaultMaxTake + 1));
+        Assert.Equal(PersistenceErrors.TakeExceeded, Assert.ThrowsAny<FrameworkException>(() => ordered.Page(0, EntityQuery.DefaultMaxTake + 1)).Code);
+
+        var written = Guid.CreateVersion7();
+        var rejected = await RunAsync(host, async context =>
+        {
+            (await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = written, Name = "written" }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            // 页大小来自调用方且没有在请求契约上限定：构造查询时就被拒绝，不会走到 Provider
+            _ = await Repository<ConformanceItem, int>(context).ListAsync(ordered.Page(0, EntityQuery.DefaultMaxTake * 5), context.CancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.Equal(PersistenceErrors.TakeExceeded, rejected.Error?.Code);
+        Assert.Equal("VALIDATION", rejected.Error?.Kind);
+        Assert.Equal(EntityQuery.DefaultMaxTake * 5, rejected.Error?.Details?["take"]);
+        Assert.Equal(EntityQuery.DefaultMaxTake, rejected.Error?.Details?["max"]);
+        Assert.False((await FindAsync<ConformanceOrder, Guid>(host, written).ConfigureAwait(false)).HasValue);
     }
 
     /// <summary>

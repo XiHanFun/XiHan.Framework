@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Tests;
 /// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策。
 /// </summary>
 /// <remarks>
-/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传、按契约开只读工作单元、只读写入异常转为结果、同一作用域的嵌套调用。
+/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传、按契约开只读工作单元、只读写入与取出条数超限的异常转为结果、同一作用域的嵌套调用。
 /// </remarks>
 public sealed class UnitOfWorkMiddlewareTests
 {
@@ -180,6 +181,27 @@ public sealed class UnitOfWorkMiddlewareTests
         Assert.Equal(PersistenceErrors.ReadOnly, error.Code);
         Assert.Equal("DENIED", error.Kind);
         Assert.Equal(PersistenceMessages.ReadOnly, error.MessageKey);
+    }
+
+    [Fact]
+    public async Task TakeAboveTheMaximum_RollsBack_AndBecomesValidationOutcome()
+    {
+        var (context, unitOfWork) = Arrange();
+
+        // 处理器用调用方给的页大小构造查询：超过上限在构造时抛出，Transaction 阶段转为带请求条数与上限的校验结果
+        await new UnitOfWorkMiddleware().InvokeAsync(context, static call =>
+        {
+            call.Items["query"] = EntityQuery.All<Widget>().Page(0, 5000);
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
+        var error = context.GetOutcome().ValueOrThrow().Error!;
+        Assert.Equal(PersistenceErrors.TakeExceeded, error.Code);
+        Assert.Equal("VALIDATION", error.Kind);
+        Assert.Equal(PersistenceMessages.TakeExceeded, error.MessageKey);
+        Assert.Equal(5000, error.Details!["take"]);
+        Assert.Equal(EntityQuery.DefaultMaxTake, error.Details["max"]);
     }
 
     [Fact]

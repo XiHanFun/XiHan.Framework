@@ -15,7 +15,7 @@ public static class EntityQuery
     /// 页大小上限，也是缺省页大小。
     /// </summary>
     /// <remarks>
-    /// <see cref="EntityQuery{T}.Take"/> 超过它在构造查询时抛出 <see cref="ArgumentOutOfRangeException"/>，不静默截断。
+    /// <see cref="EntityQuery{T}.Take"/> 超过它在构造查询时抛出携带 <see cref="PersistenceErrors.TakeExceeded"/> 的 <see cref="FrameworkException"/>，调用里由 Transaction 阶段转为同码的校验结果；不静默截断。
     /// </remarks>
     public const int DefaultMaxTake = 1_000;
 

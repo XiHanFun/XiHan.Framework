@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
@@ -56,12 +57,14 @@ public sealed class EntityQueryTests
     [Fact]
     public void Page_RejectsNegativeSkip_AndTakeOutsideOneToTheMaximum()
     {
+        // 构不成查询的值是编程错误
         Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<Widget>().Page(-1, 10));
         Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<Widget>().Page(0, 0));
-        // 上限是校验而不是截断：超过就拒绝，等于上限照常
+        Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<Widget>() with { Take = -5 });
+        // 上限是校验而不是截断：超过就以带码的异常拒绝（调用里转为校验结果），等于上限照常
         Assert.Equal(EntityQuery.DefaultMaxTake, EntityQuery.All<Widget>().Page(0, EntityQuery.DefaultMaxTake).Take);
-        Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<Widget>().Page(0, EntityQuery.DefaultMaxTake + 1));
-        Assert.Throws<ArgumentOutOfRangeException>(static () => EntityQuery.All<Widget>() with { Take = int.MaxValue });
+        Assert.Equal(PersistenceErrors.TakeExceeded, Assert.ThrowsAny<FrameworkException>(static () => EntityQuery.All<Widget>().Page(0, EntityQuery.DefaultMaxTake + 1)).Code);
+        Assert.Equal(PersistenceErrors.TakeExceeded, Assert.ThrowsAny<FrameworkException>(static () => EntityQuery.All<Widget>() with { Take = int.MaxValue }).Code);
         Assert.Throws<ArgumentNullException>(static () => EntityQuery.All<Widget>().Where(null!));
         Assert.Throws<ArgumentNullException>(static () => EntityQuery.All<Widget>().OrderBy(null!));
     }

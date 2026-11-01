@@ -61,6 +61,14 @@ public static class PersistenceMessages
     public const string ReadOnly = "persistence.unit_of_work.read_only";
 
     /// <summary>
+    /// 查询的取出条数超过上限。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>take</c>（请求的条数）、<c>max</c>（上限）。与 <see cref="PersistenceErrors.TakeExceeded"/> 搭配。
+    /// </remarks>
+    public const string TakeExceeded = "persistence.query.take_exceeded";
+
+    /// <summary>
     /// 同一服务作用域里再经管道发起的嵌套调用。
     /// </summary>
     /// <remarks>
