@@ -1,6 +1,33 @@
 # MCP Server
 
-本页说明怎样把基于 5.0 的应用作为 MCP 服务端接入 Claude Code、Cursor、VS Code、Codex 等 AI 工具，让 AI 工具在开发过程中直接调用应用的操作。5.0 目前没有提供文档知识库的 MCP 服务端，4.x 的 `xihan-framework mcp` 不适用于 5.0。
+本页说明两种 MCP 服务端怎样接入 Claude Code、Cursor、VS Code、Codex 等 AI 工具：框架自带的知识库服务 `xihan mcp`，让 AI 工具按版本查证包、能力、配置键与文档；以及把基于 5.0 的应用作为 MCP 服务端，让 AI 工具在开发过程中直接调用应用的操作。4.x 的 `xihan-framework mcp` 只描述 4.x，不适用于 5.0。
+
+## 框架知识库：xihan mcp
+
+`XiHan.Framework.Cli` 的 `mcp` 命令以 stdio 提供框架的离线知识库，数据随工具版本一起构建（包与特性清单、各 Options 读取的配置键与缺省值、文档站、RFC 与各包 README），用 `dnx` 按版本运行，不需要安装：
+
+| tool | 用途 |
+| --- | --- |
+| `xihan_framework_info` | 包、特性与能力：安装命令、环层、依赖、特性清单（提供与依赖的能力、绑定、配置节、管道中间件、操作、权限码、健康项）；能力 ID 给出提供者与依赖方 |
+| `xihan_framework_config` | 配置键：完整路径、类型、缺省值、必填、取值范围与 appsettings 片段 |
+| `xihan_framework_search` | 检索文档，或以 `page` 取一页全文 |
+
+三个 tool 都只读，结果是结构化 JSON，查不到时返回 `isError` 与最接近的候选。项目根的 `.mcp.json`（Claude Code）或 `.cursor/mcp.json`（Cursor）：
+
+```json
+{
+  "mcpServers": {
+    "xihan-framework": {
+      "command": "dnx",
+      "args": ["XiHan.Framework.Cli@5.0.0-preview.1", "--yes", "--", "mcp"]
+    }
+  }
+}
+```
+
+版本号写项目引用的 `XiHan.Framework.*` 版本；不一致时服务端在说明与 stderr 里提示。Windows（非 WSL）上 Claude Code 要经 `cmd /c` 调用：`command` 写 `cmd`，`args` 前加 `"/c", "dnx"`。VS Code 的 `.vscode/mcp.json` 顶层键是 `servers`，每一项加 `"type": "stdio"`；Codex 在 `~/.codex/config.toml` 写 `[mcp_servers.xihan-framework]`，`command = "dnx"`，`args` 同上。需要 .NET 10 SDK（`dnx`）。命令细节见 [Cli 包](../packages/cli#mcp)。
+
+下文讲的是另一种：把你的应用作为 MCP 服务端。
 
 ## 什么是 MCP
 

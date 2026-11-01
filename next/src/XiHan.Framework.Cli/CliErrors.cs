@@ -40,4 +40,17 @@ internal static class CliErrors
     /// <c>migrate --fixers</c> 里有不认识的规则编号。
     /// </summary>
     public const string MigrateFixerUnknown = "CLI_VALIDATION_003";
+
+    /// <summary>
+    /// 知识库里查不到包、能力、配置节或文档页。
+    /// </summary>
+    public const string KnowledgeNotFound = "CLI_NOTFOUND_003";
+
+    /// <summary>
+    /// 文档检索的参数不合法。
+    /// </summary>
+    /// <remarks>
+    /// 既没给检索词也没给页面，或条数超出范围。
+    /// </remarks>
+    public const string KnowledgeSearchInvalid = "CLI_VALIDATION_004";
 }

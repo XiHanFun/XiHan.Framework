@@ -83,7 +83,7 @@ next/
 | `XiHan.Framework.Kernel.Analyzers` | 工具链 | Roslyn 分析器 XH0001–XH0005：ApiLevel、命名、Internal 引用、零反射 |
 | `XiHan.Framework.Kernel.Generators` | 工具链 | 源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG005） |
 | `XiHan.Framework.Persistence.Generators` | 工具链 | 源生成器：实体类 → 仓储登记、EF Core 实体登记、软删除 / 租户过滤规约（XHP001–XHP003） |
-| `XiHan.Framework.Cli` | 工具链 | `xihan` 工具：`pack` 从 `xihan.app.json` 生成 Dockerfile / Kustomize / Compose / Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用 |
+| `XiHan.Framework.Cli` | 工具链 | `xihan` 工具：`pack` 从 `xihan.app.json` 生成 Dockerfile / Kustomize / Compose / Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用，`mcp` 以 stdio 提供框架离线知识库（包与特性清单、配置键、文档）的 MCP 服务 |
 | `XiHan.Framework.Testing` | 工具链 | 测试宿主、特性桩、清单与上下文构造 |
 | `XiHan.Framework.Persistence.Conformance` | 工具链 | `persistence.relational` Provider 必须通过的 xUnit 套件 |
 | `XiHan.Framework.Caching.Conformance` | 工具链 | `ICacheStore` 实现必须通过的 xUnit 套件 |

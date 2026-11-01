@@ -39,7 +39,16 @@ internal static class CliHost
     /// <summary>
     /// 以指定的子进程启动器与迁移规则集执行（测试用）。
     /// </summary>
-    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, CancellationToken cancellationToken)
+    public static ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, CancellationToken cancellationToken)
+        => RunAsync(args, output, error, launcher, migrationRuleSets, null, cancellationToken);
+
+    /// <summary>
+    /// 以指定的子进程启动器、迁移规则集与 <c>mcp</c> 的输入执行（测试用）。
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="input"/> 为空时 <c>mcp</c> 以 UTF-8 读标准输入。
+    /// </remarks>
+    public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, TextReader? input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(launcher);
@@ -59,6 +68,7 @@ internal static class CliHost
         services.AddXiHanCommand<VersionCommand>();
         services.AddXiHanCommand<PackCommand>();
         services.AddSingleton<ICommand>(new MigrateCommand(migrationRuleSets));
+        services.AddSingleton<ICommand>(new McpCommand(input));
         foreach (var (name, description) in new[] { ("graph", CliMessages.GraphDescription), ("pipeline", CliMessages.PipelineDescription), ("operations", CliMessages.OperationsDescription), ("invoke", CliMessages.InvokeDescription) })
         {
             services.AddSingleton<ICommand>(provider => new ForwardCommand(name, description, provider.GetRequiredService<IProcessLauncher>()));

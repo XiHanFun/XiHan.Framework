@@ -13,7 +13,7 @@ public sealed class SampleDeployTests
     [Fact]
     public void KubernetesSample_CommittedDeployFolder_MatchesItsManifest()
     {
-        var next = FindNextRoot();
+        var next = TestWorkspace.NextRoot;
         var sample = Path.Combine(next, "samples", "KubernetesApp");
         var manifest = AppManifestReader.Read(Path.Combine(sample, "xihan.app.json")).ValueOrThrow();
         var outputDirectory = Path.Combine(sample, "deploy");
@@ -26,19 +26,5 @@ public sealed class SampleDeployTests
             Assert.True(File.Exists(path), $"'{output.Path}' is missing; run xihan pack for samples/KubernetesApp.");
             Assert.Equal(output.Content, File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal));
         }
-    }
-
-    /// <summary>
-    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）。
-    /// </summary>
-    private static string FindNextRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return directory?.FullName ?? throw new InvalidOperationException("The next/ workspace root was not found above the test output directory.");
     }
 }

@@ -42,3 +42,53 @@
 - 清单里的绑定名要写成 Provider 读取的名字（`stream`、`nacos`），Provider 才取得到注入的值；与其余四种绑定相同。
 - Compose 依赖服务都不映射宿主机端口；要打开 Nacos 控制台时另加 override 文件。
 - 测试：`PackagerTests` 对 Compose 产物做整份快照、对 Aspire 与 Kustomize 做断言；`BindingKindTests` 核对各 Provider 清单声明的绑定类型与 `BindingKind` 一一对应、新增种类固定镜像标签。
+
+## 二、`xihan mcp`：编码助手的框架知识库
+
+### 背景
+
+4.x 的 `XiHan.Framework.Cli`（命令 `xihan-framework`）带一个 stdio 的 MCP 服务端：基于 `ModelContextProtocol` SDK，tool `xihan_framework_list` / `info` / `doc` / `config` / `search` / `changelog` 与两个提示词，数据是构建时嵌入的文档站正文与 `*Module.cs`、`*Options.cs`、`*.csproj` 源码，运行时用正则解析出模块类、`[DependsOn]`、选项属性与初始值。BasicApp 的 AI 文档让编码助手用其中三个 tool 查包、模块与配置键。5.0 的 CLI 没有对应功能，文档站写着「5.0 没有知识库 MCP」。
+
+5.0 的模型不同：没有模块类与 `[DependsOn]`，包的身份与依赖在特性清单（`Manifest`：ID、种类与角色、提供与依赖的能力、绑定、贡献的配置节 / 管道 / 操作 / 权限 / 健康项）里；配置键由各 Options 类的 `FromConfiguration` 手写读取（键名与属性名不一一对应，如 `HealthProbeIntervalSeconds` → `TimeSpan HealthProbeInterval`），属性初始值不等于配置的缺省写法。4.x 那种「正则读源码」的做法既读不到清单（清单是对象初始化器、引用常量），也给不出可靠的键与缺省值。
+
+### 数据从哪里来：备选
+
+1. **读用户项目实际引用的包**：运行时加载项目输出目录里的框架程序集，实例化特性读 `Manifest`，反射 Options。版本天然一致，但要求项目先构建成功、在工具进程里执行用户依赖链上的代码；Options 的缺省值仍要实例化才拿得到，键名仍然拿不到；离线、未构建、跨平台的场景都失效。
+2. **CLI 构建时由 MSBuild 步骤或源生成器生成**：生成器看得到的是语法与元数据，读不到其他程序集里对象初始化器的值，也解析不了 `FromConfiguration` 的语义；MSBuild 步骤要在 CLI 构建时先构建并加载全部包，构建图与并行构建都变复杂。
+3. **随工具嵌入的索引 + 防漂移测试**：索引是仓库里提交的文件，构建时嵌入工具；测试项目引用全部正式包，用真实代码核对索引。
+
+### 决策
+
+取 3，分三部分：
+
+- **包与特性清单** `Knowledge/catalog.json`：由 `XiHan.Framework.Cli.Tests` 从 `next/src/*/*.csproj`（说明、项目引用、包引用 + 中央包管理版本、共享框架）、`next/README.md` 的包表（环层与定位）与各包程序集里全部公开 `IFeature` 实例的 `Manifest` 生成；与代码不一致时 `KnowledgeCatalogTests` 失败，`next/scripts/Update-CliKnowledge.ps1` 重新生成。泛型特性以约束类型封闭，只有委托参数的构造函数传空操作；`Testing.StubFeature`（清单由调用方传入）列在排除名单里，名单本身也受测试约束。
+- **配置键** `Knowledge/configuration.json`：人工逐条整理（50 个 Options 类、240 余个键：键、类型、缺省值的配置写法、必填、上下限 / 开区间下限 / 枚举取值、示例、说明；按名字展开的段写占位符，读取自身节以外的键写绝对路径）。`KnowledgeConfigurationTests` 用记录读取路径的 `IConfiguration` 调用每个 `FromConfiguration`：全量配置下每个键都被读到、节内读到的路径都在索引里；只给必填键能成功、去掉任何一个必填键会失败；每个缺省值与不写该键得到的 Options 按内容相同；上下限取边界成功、越界失败，枚举每个取值成功、`__invalid__` 失败；另要求每个带 `ConfigurationSection` 常量与 `FromConfiguration(IConfiguration, …)` 的公开类型都在索引里。用变异核对过测试本身：改错缺省值、删键、加不存在的键、收紧上下限都会失败。
+- **文档**：构建时把 `docs-next/**/*.md`、`next/spec/rfcs`、`next/spec/conventions` 与各包 `README.md` 作为嵌入资源打进程序集（约 2 MB）。
+
+### MCP 协议：复用 `Protocols.Mcp`
+
+`xihan mcp` 不引入 MCP SDK，而是内嵌一个最小的 XiHan 应用：`Host.CreateEmptyApplicationBuilder`（不读当前目录的 appsettings 与环境变量，不注册控制台日志）+ `InMemoryLocalizationFeature` + `McpProtocolFeature` + 本工具的 `KnowledgeFeature`。三个查询是只读、只暴露给 MCP 的操作 `cli.info` / `cli.config` / `cli.search`，经 `XiHan:Protocols:Mcp:Tools` 改名为 4.x 的 `xihan_framework_info` / `xihan_framework_config` / `xihan_framework_search`；标题与描述是本工具消息目录里的 `cli.info.title` 等（10 种语言，按 `--locale`）；`Protocols.Mcp` 的 stdio 传输处理 JSON-RPC、`tools/list`（只读幂等提示、输入输出 Schema）与 `tools/call`（经内核管道，查不到以 `isError` 返回 `CLI_NOTFOUND_003`）。标准输入按 UTF-8 读（Windows 上重定向的 `Console.In` 用 OEM 代码页，中文检索词会乱码）。代价是工具带入 ASP.NET Core 共享框架（装了 .NET SDK 的机器都有）。
+
+### 输入输出按 5.0 模型
+
+| 4.x | 5.0 |
+| --- | --- |
+| `xihan_framework_info`：包、模块类、`[DependsOn]`、包依赖、配置节 | `xihan_framework_info`：包（安装命令、环层、框架包 / 第三方包 / 共享框架依赖、读取的配置节、相关文档）与其中每个特性的清单（种类与角色、提供与依赖的能力、绑定、配置节、管道中间件、操作、权限码、健康项）；输入能力 ID 时给出提供者（含 `default` 角色）与依赖方 |
+| `xihan_framework_list`：按层列包 | 并入 `xihan_framework_info`：不给 `name` 时列出全部包（环层、定位、特性清单 ID） |
+| `xihan_framework_config`：选项类属性、类型、初始值 | `xihan_framework_config`：Options 读取的配置键（完整路径、类型、缺省值、必填、取值范围）与按缺省值写出的 appsettings 片段；可按节（含子节）、完整键路径（占位符任意匹配）、包、Options 类名或文字查 |
+| `xihan_framework_search`：检索文档站 | `xihan_framework_search`：检索文档站、RFC 与约定、各包 README |
+| `xihan_framework_doc`：取一页全文 | 并入 `xihan_framework_search` 的 `page` 参数 |
+
+输出是结构化 JSON（`structuredContent` 与文本内容相同），不是 4.x 的 Markdown：结构化字段由编码助手直接取用，文本里的说明来自文档与索引，不需要另写本地化的版式文案。
+
+### 没有搬过来的 4.x 功能
+
+- `xihan_framework_changelog` 与命令行的 `list` / `info` / `doc` / `config` / `search` / `changelog` 查询命令：本轮只要求 `mcp` 与 `setup`；5.0 的更新日志是文档站的 `changelog.md`，可经 `xihan_framework_search` 检索与读取。
+- MCP 提示词（`xihan-framework-expert`、`xihan-framework-module`）：`Protocols.Mcp` 只实现 tools，使用规范放在服务端 `instructions` 与 `setup` 写入的技能里。
+- NuGet 的 MCP 服务描述（`.mcp/server.json`、`PackageType=McpServer`）：5.0 的工具包同时承担 `pack` 与转发命令，不改包类型；需要登记到 MCP 注册表时再补。
+
+### 影响
+
+- `XiHan.Framework.Cli` 新增对 `Protocols.Mcp` 的引用；为让顶级语句的 `Program` 不被 ASP.NET Core 的源生成器公开，显式声明为 `internal`。
+- 新错误码 `CLI_NOTFOUND_003`、`CLI_VALIDATION_004`；新消息键 `cli.mcp.*`、`cli.info.*`、`cli.config.*`、`cli.search.*`、`cli.knowledge.*`。
+- 任何改动特性清单、项目文件说明与引用、`next/README.md` 包表的提交，都要运行 `Update-CliKnowledge.ps1` 更新 `catalog.json`；改动 Options 读取的键、缺省值或范围的提交，要按 `KnowledgeConfigurationTests` 的失败信息更新 `configuration.json`。这是有意的门禁：索引与代码不一致就不能合入。

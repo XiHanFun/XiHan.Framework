@@ -12,3 +12,11 @@ Console.CancelKeyPress += (_, eventArgs) =>
 };
 
 return await CliHost.RunAsync(args, Console.Out, Console.Error, cancellation.Token).ConfigureAwait(false);
+
+/// <summary>
+/// 工具入口。
+/// </summary>
+/// <remarks>
+/// 显式声明为内部类型：引用 ASP.NET Core 共享框架后，它的源生成器会把顶级语句的 <c>Program</c> 生成为公开类型。
+/// </remarks>
+internal sealed partial class Program;

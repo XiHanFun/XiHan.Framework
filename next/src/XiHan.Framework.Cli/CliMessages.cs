@@ -154,6 +154,97 @@ public static class CliMessages
     public const string MigrateReportWritten = "cli.migrate.report_written";
 
     /// <summary>
+    /// <c>mcp</c> 命令说明。
+    /// </summary>
+    public const string McpDescription = "cli.mcp.description";
+
+    /// <summary>
+    /// MCP 服务端的使用说明。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>version</c>。
+    /// </remarks>
+    public const string McpInstructions = "cli.mcp.instructions";
+
+    /// <summary>
+    /// 项目引用的框架版本与工具不同。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>project</c>、<c>version</c>。
+    /// </remarks>
+    public const string McpVersionMismatch = "cli.mcp.version_mismatch";
+
+    /// <summary>
+    /// tool <c>xihan_framework_info</c> 的标题。
+    /// </summary>
+    /// <remarks>
+    /// 键由操作 ID <c>cli.info</c> 加 <c>.title</c> 构成，<c>Protocols.Mcp</c> 按它取标题。
+    /// </remarks>
+    public const string InfoTitle = "cli.info.title";
+
+    /// <summary>
+    /// tool <c>xihan_framework_info</c> 的描述。
+    /// </summary>
+    public const string InfoDescription = "cli.info.description";
+
+    /// <summary>
+    /// tool <c>xihan_framework_config</c> 的标题。
+    /// </summary>
+    public const string ConfigTitle = "cli.config.title";
+
+    /// <summary>
+    /// tool <c>xihan_framework_config</c> 的描述。
+    /// </summary>
+    public const string ConfigDescription = "cli.config.description";
+
+    /// <summary>
+    /// tool <c>xihan_framework_search</c> 的标题。
+    /// </summary>
+    public const string SearchTitle = "cli.search.title";
+
+    /// <summary>
+    /// tool <c>xihan_framework_search</c> 的描述。
+    /// </summary>
+    public const string SearchDescription = "cli.search.description";
+
+    /// <summary>
+    /// 知识库里查不到。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>subject</c>。
+    /// </remarks>
+    public const string KnowledgeNotFound = "cli.knowledge.not_found";
+
+    /// <summary>
+    /// 知识库里查不到，附最接近的候选。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>subject</c>、<c>candidates</c>。
+    /// </remarks>
+    public const string KnowledgeNotFoundCandidates = "cli.knowledge.not_found_candidates";
+
+    /// <summary>
+    /// 包不读取任何配置节。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>package</c>。
+    /// </remarks>
+    public const string KnowledgeNoSections = "cli.knowledge.no_sections";
+
+    /// <summary>
+    /// 检索既没给检索词也没给页面。
+    /// </summary>
+    public const string KnowledgeQueryRequired = "cli.knowledge.query_required";
+
+    /// <summary>
+    /// 检索条数超出范围。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>limit</c>、<c>max</c>。
+    /// </remarks>
+    public const string KnowledgeLimitInvalid = "cli.knowledge.limit_invalid";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(CliMessages));

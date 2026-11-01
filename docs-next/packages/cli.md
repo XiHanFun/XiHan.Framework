@@ -1,6 +1,6 @@
 # XiHan.Framework.Cli
 
-命令行工具 `xihan`（.NET 工具包，RFC-0016）：`pack` 从应用清单 `xihan.app.json` 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用自己的命令行宿主，`migrate` 提供按来源版本选规则集的源码迁移机制。适用于本地开发与 CI 里的打包与诊断。
+命令行工具 `xihan`（.NET 工具包，RFC-0016）：`pack` 从应用清单 `xihan.app.json` 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用自己的命令行宿主，`migrate` 提供按来源版本选规则集的源码迁移机制，`mcp` 以 stdio 给编码助手提供框架离线知识库（包与特性清单、配置键与缺省值、文档）。适用于本地开发与 CI 里的打包与诊断，以及让 AI 编码工具按工具版本查证框架。
 
 | 项 | 内容 |
 | --- | --- |
@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（命令名 `xihan`，`PackAsTool`） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Hosting.CommandLine`（解析、帮助、失败输出、退出码）、`XiHan.Framework.Localization.InMemory`（文案）；`Microsoft.CodeAnalysis.CSharp` 4.14.0（`migrate` 的语法树） |
+| 依赖 | `XiHan.Framework.Hosting.CommandLine`（解析、帮助、失败输出、退出码）、`XiHan.Framework.Localization.InMemory`（文案）、`XiHan.Framework.Protocols.Mcp`（`mcp` 的协议与 stdio 传输，带入 ASP.NET Core 共享框架）；`Microsoft.CodeAnalysis.CSharp` 4.14.0（`migrate` 的语法树） |
 | AOT | 不适用（以框架依赖的 .NET 工具运行） |
 | 稳定性 | Preview |
 
@@ -22,6 +22,7 @@
 | `pack` | 从 `xihan.app.json` 生成部署产物，逐行输出写出的文件 |
 | `graph` / `pipeline` / `operations` / `invoke` | 转发给应用的命令行宿主 |
 | `migrate <来源版本>` | 按来源版本的规则集改写源码；当前没有登记任何规则集 |
+| `mcp` | 以 stdio 提供框架离线知识库的 MCP 服务，三个只读 tool：`xihan_framework_info`、`xihan_framework_config`、`xihan_framework_search` |
 | `version` | 打印框架名与版本 |
 | `help` | 命令列表；没有命令时打印到 stderr 并以 64 退出 |
 
@@ -29,6 +30,7 @@
 
 - 生成容器与 Kubernetes 产物：`xihan pack`，写法见[部署与打包](../guide/deployment)。
 - 在仓库根或清单目录里查看应用的能力图谱、管道与操作：`xihan graph` 等转发命令，省去手写 `dotnet run --project … --`。
+- 让 Claude Code、Cursor、VS Code、Codex 等编码助手查证包名、能力 ID、配置键与缺省值：把 `xihan mcp` 配成它们的 MCP 服务，见 [MCP Server](../ai/mcp)。
 - 不需要工具也能做同样的事：转发命令等价于 `dotnet run --project <项目> -- <命令>`，应用要装配 `Hosting.CommandLine`。
 
 ## 安装与启用
@@ -78,6 +80,25 @@ xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则�
 ```
 
 这一版工具没有登记任何规则集：4.x 单独维护，5.0 不提供 4.x → 5.0 的迁移规则（ADR-0021），所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给 5.x 之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。从 4.x 迁移的做法见[从 4.x 迁移](../guide/upgrade)。
+
+### mcp
+
+```bash
+xihan mcp [--path <项目目录>] [--locale <区域>]
+dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- mcp    # 不安装、按版本运行（编码助手配置里的写法）
+```
+
+以 stdio 提供 MCP 服务（协议版本 `2025-06-18`），stdout 每行一条 JSON-RPC 消息，stdin 关闭即退出。工具内嵌一个最小的 XiHan 应用（内存本地化 + `Protocols.Mcp` + 三个只读、只暴露给 MCP 的操作），协议、`tools/list` 与 `tools/call` 都由 [Protocols.Mcp](./protocols-mcp) 处理；tool 的标题与描述按 `--locale`（或当前 UI 区域）取自工具的消息目录。服务名 `xihan-framework`。
+
+| tool | 输入 | 输出 |
+| --- | --- | --- |
+| `xihan_framework_info` | `name`：包 ID、短名（`Caching.Redis`）、文档页名（`caching-redis`）、清单 ID、特性类型名或能力 ID（可带 `@版本`）；不给时列出全部包 | 包：安装命令、环层、框架包 / 第三方包 / 共享框架依赖、每个特性的清单（种类与角色、提供与依赖的能力、绑定、配置节、管道中间件、操作、权限码、健康项）、读取的配置节、相关文档页；能力：提供者（含 `default` 角色）与依赖方 |
+| `xihan_framework_config` | `query`：配置节（含其下子节）、完整键路径（按名字展开的段任意匹配）、包、Options 类名，或键名与说明里的文字；不给时列出全部配置节 | 每个键的完整路径、类型、缺省值、是否必填、上下限或枚举取值、说明，以及按缺省值与必填示例写出的 appsettings 片段 |
+| `xihan_framework_search` | `query`（空格分隔的词须同时出现）与 `limit`（1-50，缺省 10），或 `page`（仓库内路径、`guide/caching`、RFC 编号或包 ID） | 按相关度排序的文档页与摘录，或一页全文 |
+
+结果是结构化 JSON（`structuredContent` 与文本内容相同）。查不到时 `isError`，文本 `CLI_NOTFOUND_003: …` 带最接近的候选；检索既没给 `query` 也没给 `page`、或 `limit` 越界为 `CLI_VALIDATION_004`。
+
+数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
 
 ## 行为与限制
 

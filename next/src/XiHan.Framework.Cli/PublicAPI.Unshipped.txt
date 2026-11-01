@@ -1,10 +1,23 @@
 #nullable enable
+XiHan.Framework.Cli.CliMessages
 const XiHan.Framework.Cli.CliMessages.CatalogName = "cli" -> string!
+const XiHan.Framework.Cli.CliMessages.ConfigDescription = "cli.config.description" -> string!
+const XiHan.Framework.Cli.CliMessages.ConfigTitle = "cli.config.title" -> string!
 const XiHan.Framework.Cli.CliMessages.DotnetUnavailable = "cli.dotnet.unavailable" -> string!
 const XiHan.Framework.Cli.CliMessages.GraphDescription = "cli.graph.description" -> string!
+const XiHan.Framework.Cli.CliMessages.InfoDescription = "cli.info.description" -> string!
+const XiHan.Framework.Cli.CliMessages.InfoTitle = "cli.info.title" -> string!
 const XiHan.Framework.Cli.CliMessages.InvokeDescription = "cli.invoke.description" -> string!
+const XiHan.Framework.Cli.CliMessages.KnowledgeLimitInvalid = "cli.knowledge.limit_invalid" -> string!
+const XiHan.Framework.Cli.CliMessages.KnowledgeNoSections = "cli.knowledge.no_sections" -> string!
+const XiHan.Framework.Cli.CliMessages.KnowledgeNotFound = "cli.knowledge.not_found" -> string!
+const XiHan.Framework.Cli.CliMessages.KnowledgeNotFoundCandidates = "cli.knowledge.not_found_candidates" -> string!
+const XiHan.Framework.Cli.CliMessages.KnowledgeQueryRequired = "cli.knowledge.query_required" -> string!
 const XiHan.Framework.Cli.CliMessages.ManifestInvalid = "cli.manifest.invalid" -> string!
 const XiHan.Framework.Cli.CliMessages.ManifestNotFound = "cli.manifest.not_found" -> string!
+const XiHan.Framework.Cli.CliMessages.McpDescription = "cli.mcp.description" -> string!
+const XiHan.Framework.Cli.CliMessages.McpInstructions = "cli.mcp.instructions" -> string!
+const XiHan.Framework.Cli.CliMessages.McpVersionMismatch = "cli.mcp.version_mismatch" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateDescription = "cli.migrate.description" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateDryRun = "cli.migrate.dry_run" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateFixerUnknown = "cli.migrate.fixer_unknown" -> string!
@@ -19,6 +32,7 @@ const XiHan.Framework.Cli.CliMessages.PackDescription = "cli.pack.description" -
 const XiHan.Framework.Cli.CliMessages.PackKindUnknown = "cli.pack.kind_unknown" -> string!
 const XiHan.Framework.Cli.CliMessages.PackWritten = "cli.pack.written" -> string!
 const XiHan.Framework.Cli.CliMessages.PipelineDescription = "cli.pipeline.description" -> string!
+const XiHan.Framework.Cli.CliMessages.SearchDescription = "cli.search.description" -> string!
+const XiHan.Framework.Cli.CliMessages.SearchTitle = "cli.search.title" -> string!
 const XiHan.Framework.Cli.CliMessages.VersionDescription = "cli.version.description" -> string!
 static XiHan.Framework.Cli.CliMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
-XiHan.Framework.Cli.CliMessages

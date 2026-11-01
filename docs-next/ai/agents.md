@@ -19,7 +19,7 @@
 - 失败：返回 Result / Error，不抛异常；错误码 <域>_<KIND>_<NNN>，Error 的第二个参数是消息键常量，文案写在 Localization/<区域>.json（10 种区域各一个文件）。
 - 横切逻辑：写 IPipelineMiddleware，按 PipelineStage 登记；跨包依赖用 After/Before 声明次序。
 
-类型、成员与命名空间以项目引用的框架源码或包的 PublicAPI.Shipped.txt / PublicAPI.Unshipped.txt 为准，不确定时先查，不要凭记忆补全。
+包名、能力 ID、配置键与缺省值用 xihan-framework MCP 工具查（xihan_framework_info / xihan_framework_config / xihan_framework_search）；类型、成员与命名空间以项目引用的框架源码或包的 PublicAPI.Shipped.txt / PublicAPI.Unshipped.txt 为准，不确定时先查，不要凭记忆补全。
 改完后运行应用的 graph、pipeline、operations 命令（或 xihan graph --project <项目>）核对能力图谱、管道顺序与操作登记。
 ```
 
@@ -34,9 +34,10 @@
 | 公开 API 清单 | 每个包的 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`，逐行列出公开类型与成员 | 框架源码 `next/src/<包 ID>/` |
 | 规范 | RFC、术语表、能力 ID、错误码、Baggage 键、操作 ID 文法 | [XiHan Spec](https://github.com/XiHanFun/framework-spec) |
 | 应用自省命令 | `graph`、`pipeline`、`operations`、`invoke` | 应用的命令行宿主，或 [`xihan` 工具](./cli)转发 |
+| 框架知识库 MCP | `xihan_framework_info`（包、特性、能力）、`xihan_framework_config`（配置键与缺省值）、`xihan_framework_search`（文档检索与全文） | `xihan mcp`，见 [MCP Server](./mcp) |
 | 应用的 MCP 端点 | 把应用自己的操作作为 MCP tool 交给 AI 工具调用 | 见 [MCP Server](./mcp) |
 
-5.0 目前没有离线知识库与文档 MCP 服务端，4.x 的 `XiHan.Framework.Cli` 知识库命令不适用于 5.0。
+框架知识库的 MCP 服务 `xihan mcp`（`dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）按工具版本提供包、特性清单、能力、配置键与文档的查询，配法见 [MCP Server](./mcp#框架知识库-xihan-mcp)。4.x 的 `xihan-framework` 只描述 4.x。
 
 ## 给 AI 工具的检查清单
 
