@@ -153,7 +153,8 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         return _options.Selection switch
         {
             AuditSelection.All => operation.Id,
-            AuditSelection.Protected when operation.Contract.Permission is not null => operation.Id,
+            // 受保护 = 需要授权：声明了权限码或策略名的操作都算，只用策略保护的操作同样是敏感入口
+            AuditSelection.Protected when operation.Contract.Permission is not null || operation.Contract.Policy is not null => operation.Id,
             _ => null,
         };
     }

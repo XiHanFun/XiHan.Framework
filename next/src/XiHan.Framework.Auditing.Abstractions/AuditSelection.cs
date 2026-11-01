@@ -15,8 +15,11 @@ namespace XiHan.Framework.Auditing.Abstractions;
 public enum AuditSelection
 {
     /// <summary>
-    /// 只记声明了权限的操作（默认）。
+    /// 只记需要授权的操作（默认）。
     /// </summary>
+    /// <remarks>
+    /// 契约声明了权限码或策略名的操作；只用策略保护的操作同样记录。
+    /// </remarks>
     Protected = 0,
 
     /// <summary>

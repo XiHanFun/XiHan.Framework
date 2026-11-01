@@ -51,7 +51,7 @@ app.Run();
 
 | `Selection` | 记录的操作 |
 | --- | --- |
-| `Protected`（缺省） | 契约声明了 `Permission` 的操作；只声明 `Policy` 的不算 |
+| `Protected`（缺省） | 需要授权的操作：契约声明了 `Permission` 或 `Policy`（只用策略保护的操作同样记录，ADR-0071） |
 | `All` | 全部操作 |
 | `None` | 只记显式声明了动作的调用 |
 

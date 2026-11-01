@@ -24,7 +24,7 @@ public sealed record AuditingOptions
     /// 没有显式动作时记哪些操作。
     /// </summary>
     /// <remarks>
-    /// 默认只记声明了权限的操作。
+    /// 默认只记需要授权的操作（契约声明了权限码或策略名）。
     /// </remarks>
     public AuditSelection Selection { get; init; } = AuditSelection.Protected;
 

@@ -405,7 +405,7 @@ public static class GeoAttributes
 - [多租户](./multi-tenancy)：检查器按安全上下文里的租户取租户专属授予。
 - [操作契约](./operations)：契约的 `Permission` / `Policy` 是授权要求的主要来源。
 - [HTTP 与 OpenAPI](./http)：OpenAPI 文档以 `x-xihan-permission`、`x-xihan-policy` 与 `components.x-xihan-permissions` 发布授权要求。
-- [审计](./auditing)：Full 组合包的审计中间件缺省只记声明了权限的操作。
+- [审计](./auditing)：Full 组合包的审计中间件缺省只记需要授权的操作（契约声明了权限码或策略名）。
 
 ## 相关
 

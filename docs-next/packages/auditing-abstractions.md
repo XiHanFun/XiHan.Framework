@@ -54,7 +54,7 @@
 | --- | --- |
 | `AuditingCapabilities` | 能力 ID `auditing.trail` 与接口版本 1 |
 | `AuditingOptions` | `Selection`、`IncludeSuccesses`；`ConfigurationSection` 为 `XiHan:Auditing` |
-| `AuditSelection` | `Protected`（只记契约声明了 `Permission` 的操作）、`All`、`None`（只记显式动作） |
+| `AuditSelection` | `Protected`（只记需要授权的操作：契约声明了 `Permission` 或 `Policy`）、`All`、`None`（只记显式动作） |
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
 | `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `GetAuditAction`、`GetAuditResource`、`GetAuditDetails` |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |

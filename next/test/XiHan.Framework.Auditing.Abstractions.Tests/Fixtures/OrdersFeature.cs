@@ -9,10 +9,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 登记三个操作的测试特性。
+/// 登记四个操作的测试特性。
 /// </summary>
 /// <remarks>
-/// 声明了权限的创建、未声明权限的列表、显式声明审计动作的导出。
+/// 声明了权限的创建、只要求策略的审批、未声明授权要求的列表、显式声明审计动作的导出。
 /// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
@@ -26,5 +26,6 @@ internal sealed class OrdersFeature : IFeature
         context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id, permission: "orders.write"), OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ListOrders, ListOrdersRequest, OrderResponse>(new(ListOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ExportOrders, ListOrdersRequest, OrderResponse>(new(ExportOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
+        context.AddOperation<ApproveOrders, ListOrdersRequest, OrderResponse>(new(ApproveOrders.Id, policy: ApproveOrders.Policy), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
     }
 }

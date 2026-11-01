@@ -20,7 +20,7 @@ app.MapXiHanCloudEvents();  // /events
 
 `UseFullProfile()` 在 Standard 之上装配：`FileSystemObjectStorageFeature`、`InMemorySchedulingFeature`、`InMemoryAuditingFeature`、`InMemoryWorkflowFeature`、`AIToolsFeature`、`OpenTelemetryObservabilityFeature`（没有配置端点就不导出）、`HostObservabilityFeature`（运行信息）、`HttpProtocolFeature`、`GrpcProtocolFeature`、`McpProtocolFeature`、`CloudEventsProtocolFeature`。默认实现都是 `role: default`：再 `UseFeature` 一个显式 Provider（如 `DatabaseLocalizationFeature`、S3 对象存储、Kubernetes Lease 领导选举）即顶替对应能力。远程配置与密钥（`Configuration.Abstractions`）没有默认 Provider：.NET 原生的文件与环境变量就是默认，按需在 `IConfigurationBuilder` 上 `AddXiHanRemoteConfiguration` / `AddXiHanSecrets`。
 
-管道在 Standard 之上多了 Observe 末尾的 `AuditMiddleware`（默认只记声明了权限的操作）。
+管道在 Standard 之上多了 Observe 末尾的 `AuditMiddleware`（默认只记需要授权的操作：声明了权限码或策略名）。
 
 ## 依赖方向
 

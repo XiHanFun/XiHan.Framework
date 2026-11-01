@@ -48,7 +48,7 @@ public sealed class AuditMiddlewareTests
     }
 
     [Fact]
-    public async Task Protected_RecordsOnlyOperationsWithPermission_AndExplicitActions()
+    public async Task Protected_RecordsOperationsRequiringAuthorization_AndExplicitActions()
     {
         await using var host = await StartAsync();
         var sink = host.Services.GetRequiredService<RecordingAuditSink>();
@@ -56,18 +56,20 @@ public sealed class AuditMiddlewareTests
 
         Assert.True((await host.InvokeOperationAsync<CreateOrderRequest, OrderResponse>(CreateOrder.Id, new(12.5m), _alice)).IsSuccess);
         Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ListOrders.Id, new(), _alice)).IsSuccess);
+        // 只用策略保护（没有权限码）的操作同样需要授权，同样记录
+        Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ApproveOrders.Id, new(), _alice)).IsSuccess);
         Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ExportOrders.Id, new(), _alice)).IsSuccess);
         // 非操作调用没有动作就不记录
         Assert.True((await host.InvokeAsync(static _ => ValueTask.CompletedTask)).IsSuccess);
 
-        Assert.Equal([CreateOrder.Id, ExportOrders.AuditAction], sink.Events.Select(static e => e.Action));
+        Assert.Equal([CreateOrder.Id, ApproveOrders.Id, ExportOrders.AuditAction], sink.Events.Select(static e => e.Action));
         var created = sink.Events[0];
         Assert.True(created.Outcome.IsSuccess);
         Assert.Equal(("alice", "acme", "xrn:global:orders:acme:order/o-1"), (created.PrincipalId, created.TenantId, created.Resource));
         Assert.Equal(12.5m, created.Details?["amount"]);
         Assert.Equal(32, created.TraceId.Length);
         Assert.True(created.Timestamp <= DateTimeOffset.UtcNow);
-        Assert.Null(sink.Events[1].PrincipalId == null ? null : sink.Events[1].Resource);
+        Assert.Null(sink.Events[2].PrincipalId == null ? null : sink.Events[2].Resource);
     }
 
     [Fact]
