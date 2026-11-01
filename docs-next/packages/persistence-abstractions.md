@@ -94,7 +94,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
 | `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
 | `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
-| `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询、一页表、表（分表的逻辑名与物理表）、表结构、列 |
+| `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询（`Validate()` 核对分页，越界是 `PERSISTENCE_VALIDATION_007` / `005`）、一页表、表（分表的逻辑名与物理表）、表结构、列 |
 | `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |
 | `RegisteredEntity` | `…Abstractions.Repositories` | `RepositoryRegistrations.Entities` 的一项：实体类型、标识类型与登记的命名连接（`Connection`） |
 | `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
@@ -177,11 +177,12 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |
 | `PERSISTENCE_VALIDATION_003` | `PersistenceErrors.EventsUndispatched` | 有未派发的领域事件但没有派发器 |
 | `PERSISTENCE_VALIDATION_004` | `PersistenceErrors.UnknownConnection` | 实体落点不成立（SqlSugar `[Tenant]` 或登记的命名连接不存在、两者不一致；绑定的连接不存在或实体不落在它上面；装配错误，抛异常） |
-| `PERSISTENCE_VALIDATION_005` | `PersistenceErrors.TakeExceeded` | 查询的取出条数超过上限（构造时抛异常；调用里转为校验结果，HTTP 400） |
+| `PERSISTENCE_VALIDATION_005` | `PersistenceErrors.TakeExceeded` | 查询的取出条数超过上限（仓储查询构造时抛异常、调用里转为校验结果；表列表与读结构由读取器以结果返回；HTTP 400） |
 | `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
 | `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
 | `PERSISTENCE_VALIDATION_006` | `PersistenceErrors.DataSourceInvalid` | 运行时数据源的数据库类型不认识、连接串格式错 |
+| `PERSISTENCE_VALIDATION_007` | `PersistenceErrors.ListPageInvalid` | 库结构表列表的分页越界：`Skip` 为负或 `Take` 小于 1（读取器以结果返回，HTTP 400） |
 | `PERSISTENCE_NOTFOUND_002` | `PersistenceErrors.DataSourceNotFound` | 运行时数据源没有在本进程登记 |
 | `PERSISTENCE_NOTFOUND_003` | `PersistenceErrors.TableNotFound` | 要读结构的表不在库里（逐项结果） |
 | `PERSISTENCE_UNAVAILABLE_006` | `PersistenceErrors.DataSourceUnavailable` | 运行时数据源连不上（参数 `name`、`reason`，已脱敏） |

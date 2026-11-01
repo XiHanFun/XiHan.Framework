@@ -68,6 +68,14 @@ public static class CachingMessages
     public const string CapacityReached = "caching.store.capacity_reached";
 
     /// <summary>
+    /// 键列表的每页上限越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>limit</c>（请求的上限）、<c>max</c>（最大值）。与 <see cref="CachingErrors.ListLimitInvalid"/> 搭配。
+    /// </remarks>
+    public const string ListLimitInvalid = "caching.inspector.limit_invalid";
+
+    /// <summary>
     /// 延迟装载的目录。
     /// </summary>
     /// <remarks>

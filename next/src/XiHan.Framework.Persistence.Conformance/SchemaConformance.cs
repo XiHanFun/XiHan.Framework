@@ -124,6 +124,50 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
+    /// 用例 5：表列表的分页越界以校验结果返回，边界值照常。
+    /// </summary>
+    /// <remarks>
+    /// <c>Skip</c> = -1、<c>Take</c> = 0 → <see cref="PersistenceErrors.ListPageInvalid"/>，<c>Take</c> = 1001 → <see cref="PersistenceErrors.TakeExceeded"/>，都在构造查询时不抛出、读取器不连库；经运行时数据源时也不登记它。<c>Skip</c> = 0、<c>Take</c> = 1 与 1000 照常。不读结构的 Provider 仍返回 <see cref="PersistenceErrors.NotSupported"/>。
+    /// </remarks>
+    [Fact]
+    public async Task ListTables_PageOutOfRange_IsAValidationResult()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var reader = host.Services.GetRequiredService<ISchemaReader>();
+        if (!ReadsSchema)
+        {
+            var unsupported = await reader.ListTablesAsync(null, new TableListQuery { Skip = -1 }, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            Assert.Equal(PersistenceErrors.NotSupported, unsupported.Error?.Code);
+            return;
+        }
+
+        foreach (var (query, code) in new[]
+        {
+            (new TableListQuery { Skip = -1 }, PersistenceErrors.ListPageInvalid),
+            (new TableListQuery { Take = 0 }, PersistenceErrors.ListPageInvalid),
+            (new TableListQuery { Take = 1001 }, PersistenceErrors.TakeExceeded),
+        })
+        {
+            var rejected = await reader.ListTablesAsync(null, query, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            Assert.Equal(code, rejected.Error?.Code);
+            Assert.Equal("VALIDATION", rejected.Error!.Kind);
+        }
+
+        // 经运行时数据源：先核对分页，不登记数据源
+        if (CreateDefinition("conformance-page") is { } definition)
+        {
+            var named = await reader.ListTablesAsync(definition, new TableListQuery { Skip = -1 }, TestContext.Current.CancellationToken).ConfigureAwait(false);
+            Assert.Equal(PersistenceErrors.ListPageInvalid, named.Error?.Code);
+            Assert.DoesNotContain(definition.Name, host.Services.GetRequiredService<DataSourceRegistry>().Names);
+        }
+
+        var all = (await reader.ListTablesAsync(null, new TableListQuery { Skip = 0, Take = 1000 }, TestContext.Current.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+        var first = (await reader.ListTablesAsync(null, new TableListQuery { Skip = 0, Take = 1 }, TestContext.Current.CancellationToken).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(all.Total, first.Total);
+        Assert.Equal(all.Items[0].Name, Assert.Single(first.Items).Name);
+    }
+
+    /// <summary>
     /// 用例 3：按表名批量读结构。
     /// </summary>
     /// <remarks>

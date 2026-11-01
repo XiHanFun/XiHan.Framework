@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "A entidade '{entity}' é multilocatário, mas a chamada atual não tem locatário.",
   "persistence.entity.unique_key_conflict": "A entidade '{entity}' já tem um item com a mesma chave no índice único '{index}'.",
   "persistence.query.take_exceeded": "A consulta solicita {take} linhas, mais do que as {max} que podem ser lidas de uma vez; pagine os resultados com no máximo {max} linhas por página.",
+  "persistence.schema.list_page_invalid": "A página da lista de tabelas está fora do intervalo: skip {skip} não pode ser negativo e take {take} deve ser pelo menos 1.",
   "persistence.schema.not_supported": "O provedor de persistência em uso não consegue ler o esquema do banco de dados.",
   "persistence.schema.read_failed": "Falha ao ler o esquema da fonte de dados '{name}': {reason}",
   "persistence.schema.table_not_found": "A fonte de dados '{dataSource}' não tem uma tabela chamada '{table}'.",

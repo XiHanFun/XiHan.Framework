@@ -83,7 +83,7 @@ public static class PersistenceErrors
     /// 查询的取出条数超过上限。
     /// </summary>
     /// <remarks>
-    /// <see cref="Queries.EntityQuery{T}.Take"/> 或 <see cref="Schema.TableListQuery.Take"/> 大于 <see cref="Queries.EntityQuery.DefaultMaxTake"/>：构造查询时以异常抛出，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）。一次读结构的表数超过 <see cref="Schema.SchemaLimits.MaxTablesPerRead"/> 以结果返回。
+    /// <see cref="Queries.EntityQuery{T}.Take"/> 大于 <see cref="Queries.EntityQuery.DefaultMaxTake"/>：构造查询时以异常抛出，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）。<see cref="Schema.TableListQuery.Take"/> 超过上限、一次读结构的表数超过 <see cref="Schema.SchemaLimits.MaxTablesPerRead"/> 由读结构的 Provider 以结果返回。
     /// </remarks>
     public const string TakeExceeded = "PERSISTENCE_VALIDATION_005";
 
@@ -94,6 +94,14 @@ public static class PersistenceErrors
     /// 数据库类型 Provider 不认识、连接串格式错；同名的已登记实例不受影响。
     /// </remarks>
     public const string DataSourceInvalid = "PERSISTENCE_VALIDATION_006";
+
+    /// <summary>
+    /// 库结构表列表的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Schema.TableListQuery.Skip"/> 为负或 <see cref="Schema.TableListQuery.Take"/> 小于 1：不在构造时抛出，读结构的 Provider 以结果返回（HTTP 400）。
+    /// </remarks>
+    public const string ListPageInvalid = "PERSISTENCE_VALIDATION_007";
 
     /// <summary>
     /// 没有活动的工作单元。

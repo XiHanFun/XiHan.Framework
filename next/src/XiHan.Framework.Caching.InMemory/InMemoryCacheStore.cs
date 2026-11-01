@@ -38,9 +38,15 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按键的序数顺序分页，续页标记是上一页最后一个键。
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>。
     /// </remarks>
-    public ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(_table.ListKeys(query));
+    public ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        // 先核对上限再读表：越界是调用方的输入错误，按校验结果返回，不按上限截断
+        var valid = query.Validate();
+        return ValueTask.FromResult(valid.IsSuccess ? Result.Success(_table.ListKeys(query)) : Result.Failure<CacheKeyPage>(valid.Error!));
+    }
 
     /// <inheritdoc />
     public ValueTask<Maybe<CacheEntryInfo>> InspectAsync(CacheKey key, CancellationToken cancellationToken)

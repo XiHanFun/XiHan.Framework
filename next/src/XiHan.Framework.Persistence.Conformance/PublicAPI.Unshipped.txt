@@ -109,6 +109,7 @@ XiHan.Framework.Persistence.Conformance.SchemaConformance
 XiHan.Framework.Persistence.Conformance.SchemaConformance.EntityCatalog_ListsEveryRegisteredEntity_Once() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.SchemaConformance.GetTables_ReadsColumns_ReportsMissingPerItem_AndCapsTheBatch() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.SchemaConformance.ListTables_ContainsEveryEntityTable_OrIsNotSupported() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.SchemaConformance.ListTables_PageOutOfRange_IsAValidationResult() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.SchemaConformance.NamedDataSource_ReadsTheSameSchema() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.SchemaConformance.SchemaConformance() -> void
 XiHan.Framework.Persistence.Conformance.SchemaConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!

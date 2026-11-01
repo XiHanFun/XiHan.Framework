@@ -4,6 +4,7 @@
   "caching.idempotency.key_reused": "La clave de idempotencia ya se usó en otra llamada ('{recorded}'); su resultado no se puede reproducir para '{operation}'.",
   "caching.idempotency.recently_completed": "Una llamada con la misma clave de idempotencia acaba de completarse o sigue en curso; reintente más tarde.",
   "caching.idempotency.response_unavailable": "La respuesta registrada de la operación '{operation}' no se puede reproducir: {reason}",
+  "caching.inspector.limit_invalid": "El límite por página {limit} de la lista de claves debe estar entre 1 y {max}.",
   "caching.lock.held": "El bloqueo del recurso '{resource}' lo tiene otro propietario.",
   "caching.store.capacity_reached": "La caché en memoria alcanzó su capacidad de {capacity} entradas."
 }

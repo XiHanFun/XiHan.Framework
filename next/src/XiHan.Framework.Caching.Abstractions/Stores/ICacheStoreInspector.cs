@@ -19,9 +19,9 @@ public interface ICacheStoreInspector
     /// 按前缀分页列出键。
     /// </summary>
     /// <remarks>
-    /// 已过期的键不列出；分页的顺序与续页标记的含义由实现决定（见各实现）。
+    /// 已过期的键不列出；分页的顺序与续页标记的含义由实现决定（见各实现）。先经 <see cref="CacheKeyQuery.Validate"/> 核对每页上限，越界返回 <see cref="CachingErrors.ListLimitInvalid"/>、不访问后端。
     /// </remarks>
-    ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 读一个条目的大小与剩余存活时间。

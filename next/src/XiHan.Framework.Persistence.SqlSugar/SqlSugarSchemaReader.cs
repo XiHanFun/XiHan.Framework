@@ -31,6 +31,12 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     public async Task<Result<TablePage>> ListTablesAsync(DataSourceDefinition? dataSource, TableListQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 先核对分页：越界是调用方的输入错误，不连库、不登记运行时数据源
+        if (query.Validate() is { IsFailure: true } invalid)
+        {
+            return Result.Failure<TablePage>(invalid.Error!);
+        }
+
         var templates = catalog.GetSnapshot(cancellationToken).SplitTemplates;
         return await ReadAsync(dataSource, (client, _) =>
         {

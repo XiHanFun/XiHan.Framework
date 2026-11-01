@@ -28,6 +28,14 @@ public static class CachingErrors
     public const string InvalidOptions = "CACHING_VALIDATION_002";
 
     /// <summary>
+    /// 键列表的每页上限越界。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Stores.CacheKeyQuery.Limit"/> 不在 1 到 <see cref="Stores.CacheKeyQuery.MaxLimit"/> 之间：不在构造时抛出，<c>ListKeysAsync</c> 以结果返回（HTTP 400）。
+    /// </remarks>
+    public const string ListLimitInvalid = "CACHING_VALIDATION_003";
+
+    /// <summary>
     /// 存储不可达或操作失败。
     /// </summary>
     public const string StoreUnavailable = "CACHING_UNAVAILABLE_001";

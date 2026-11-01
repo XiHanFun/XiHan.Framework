@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
+using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Locking;
 using XiHan.Framework.Caching.Abstractions.Stores;
 using XiHan.Framework.Primitives;
@@ -349,7 +350,7 @@ public abstract class CacheStoreConformance
         var pages = 0;
         do
         {
-            var page = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 2, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false);
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 2, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.All(page.Keys, key => Assert.StartsWith(prefix, key.Value, StringComparison.Ordinal));
             listed.UnionWith(page.Keys.Select(static key => key.Value));
             continuation = page.Continuation;
@@ -375,12 +376,62 @@ public abstract class CacheStoreConformance
         Assert.Equal(5, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
         Assert.All(await store.GetManyAsync(keys, CancellationToken.None).ConfigureAwait(false), static hit => Assert.False(hit.HasValue));
         Assert.Equal("outsider", Text(await store.GetAsync(outsider, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).Keys);
+        Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Keys);
         Assert.Equal(0, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
 
         // 空前缀不能删；不合法的前缀在构造查询时拒绝
         await Assert.ThrowsAsync<ArgumentException>(async () => await inspector.RemoveByPrefixAsync(string.Empty, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
         Assert.Throws<ArgumentException>(() => new CacheKeyQuery { Prefix = "has space" });
+    }
+
+    /// <summary>
+    /// 用例：键列表的每页上限越界以校验结果返回，边界值照常分页。
+    /// </summary>
+    /// <remarks>
+    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。0 与 <see cref="CacheKeyQuery.MaxLimit"/> + 1 返回 <see cref="CachingErrors.ListLimitInvalid"/>（构造查询时不抛出）；1 与 <see cref="CacheKeyQuery.MaxLimit"/> 照常列出。
+    /// </remarks>
+    [Fact]
+    public async Task Inspector_ListLimitOutOfRange_IsAValidationResult()
+    {
+        var store = CreateStore();
+        Assert.SkipWhen(store is not ICacheStoreInspector, "The store does not implement ICacheStoreInspector.");
+        var inspector = (ICacheStoreInspector)store;
+        var prefix = $"conformance:{Guid.NewGuid():N}:";
+        await store.SetManyAsync([new CacheEntry(new CacheKey($"{prefix}a"), Bytes("a"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5))), new CacheEntry(new CacheKey($"{prefix}b"), Bytes("b"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)))], CancellationToken.None).ConfigureAwait(false);
+
+        foreach (var limit in new[] { 0, CacheKeyQuery.MaxLimit + 1, -1 })
+        {
+            var rejected = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = limit }, CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(CachingErrors.ListLimitInvalid, rejected.Error?.Code);
+            Assert.Equal(CachingMessages.ListLimitInvalid, rejected.Error!.MessageKey);
+            Assert.Equal(limit, rejected.Error.Details!["limit"]);
+            Assert.Equal(CacheKeyQuery.MaxLimit, rejected.Error.Details!["max"]);
+        }
+
+        // 边界值照常：上限 1 的续页走完同样列全（Redis 的 SCAN 只把上限当提示值，按集合比较）
+        var listed = new HashSet<string>(StringComparer.Ordinal);
+        string? continuation = null;
+        var pages = 0;
+        do
+        {
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 1, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            listed.UnionWith(page.Keys.Select(static key => key.Value));
+            continuation = page.Continuation;
+            Assert.True(++pages <= 1000, "Listing should reach the last page.");
+        }
+        while (continuation is not null);
+        Assert.Equal([$"{prefix}a", $"{prefix}b"], listed.Order(StringComparer.Ordinal));
+        var widest = new HashSet<string>(StringComparer.Ordinal);
+        continuation = null;
+        do
+        {
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = CacheKeyQuery.MaxLimit, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            widest.UnionWith(page.Keys.Select(static key => key.Value));
+            continuation = page.Continuation;
+        }
+        while (continuation is not null);
+        Assert.Equal(listed, widest);
+        Assert.Equal(2, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
     }
 
     /// <summary>

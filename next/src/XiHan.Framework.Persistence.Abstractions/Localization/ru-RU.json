@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "Сущность '{entity}' является мультиарендной, но у текущего вызова нет арендатора.",
   "persistence.entity.unique_key_conflict": "У сущности '{entity}' уже есть элемент с тем же ключом в уникальном индексе '{index}'.",
   "persistence.query.take_exceeded": "Запрос требует {take} строк — больше, чем {max}, которые можно прочитать за раз; читайте результаты постранично, не более {max} строк на страницу.",
+  "persistence.schema.list_page_invalid": "Страница списка таблиц вне диапазона: skip {skip} не может быть отрицательным, а take {take} должен быть не меньше 1.",
   "persistence.schema.not_supported": "Используемый поставщик хранения не может читать схему базы данных.",
   "persistence.schema.read_failed": "Не удалось прочитать схему источника данных '{name}': {reason}",
   "persistence.schema.table_not_found": "В источнике данных '{dataSource}' нет таблицы '{table}'.",

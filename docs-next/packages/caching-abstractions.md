@@ -103,13 +103,14 @@ public sealed class OneShotGate(ICacheStore store)
 - `LockHandle` 只释放一次；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。锁不可重入、不续约。
 - 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间；同步成员阻塞等待异步存储。
-- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 拒绝空前缀；`CacheKeyQuery.Limit` 为 1 到 `MaxLimit`（1000），默认 100。
+- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 拒绝空前缀；`CacheKeyQuery.Limit` 为 1 到 `MaxLimit`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；跨实例通知可能丢失。
 
 | 错误码 | 含义 |
 | --- | --- |
 | `CACHING_VALIDATION_001` | 缓存键或幂等键不合法 |
 | `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
+| `CACHING_VALIDATION_003` | 键列表的每页上限越界（`CacheKeyQuery.Limit` 不在 1～1000，参数 `limit`、`max`；HTTP 400） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |

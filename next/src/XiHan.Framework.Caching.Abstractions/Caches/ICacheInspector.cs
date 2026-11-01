@@ -19,9 +19,9 @@ public interface ICacheInspector
     /// 按前缀分页列出对象条目的键。
     /// </summary>
     /// <remarks>
-    /// 前缀、上限与续页同 <see cref="ICacheStoreInspector.ListKeysAsync"/>。
+    /// 前缀、上限与续页同 <see cref="ICacheStoreInspector.ListKeysAsync"/>；每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>。
     /// </remarks>
-    ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 一个对象条目的类型与存活时间。

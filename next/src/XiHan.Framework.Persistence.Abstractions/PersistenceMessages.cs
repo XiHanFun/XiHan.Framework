@@ -202,6 +202,14 @@ public static class PersistenceMessages
     public const string TooManyTables = "persistence.schema.too_many_tables";
 
     /// <summary>
+    /// 库结构表列表的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>skip</c>、<c>take</c>。与 <see cref="PersistenceErrors.ListPageInvalid"/> 搭配。
+    /// </remarks>
+    public const string ListPageInvalid = "persistence.schema.list_page_invalid";
+
+    /// <summary>
     /// 读库结构失败。
     /// </summary>
     /// <remarks>

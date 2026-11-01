@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "Die Entität '{entity}' ist mandantenfähig, der aktuelle Aufruf hat jedoch keinen Mandanten.",
   "persistence.entity.unique_key_conflict": "Die Entität '{entity}' hat im eindeutigen Index '{index}' bereits ein Element mit demselben Schlüssel.",
   "persistence.query.take_exceeded": "Die Abfrage fordert {take} Zeilen an, mehr als die {max}, die auf einmal gelesen werden können; lesen Sie die Ergebnisse seitenweise mit höchstens {max} Zeilen pro Seite.",
+  "persistence.schema.list_page_invalid": "Die Seite der Tabellenliste liegt außerhalb des Bereichs: skip {skip} darf nicht negativ sein und take {take} muss mindestens 1 sein.",
   "persistence.schema.not_supported": "Der verwendete Persistenz-Provider kann das Datenbankschema nicht lesen.",
   "persistence.schema.read_failed": "Das Schema der Datenquelle '{name}' konnte nicht gelesen werden: {reason}",
   "persistence.schema.table_not_found": "Die Datenquelle '{dataSource}' hat keine Tabelle namens '{table}'.",

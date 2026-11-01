@@ -386,7 +386,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 
 | 项 | 规则 |
 | --- | --- |
-| 列表 | 按名字排序；`Keyword` 在名字与注释里不区分大小写地包含匹配；`Skip` / `Take` 分页（`Take` 最多 1000），返回过滤后的总数；库里的表一次读出、在内存里分页 |
+| 列表 | 按名字排序；`Keyword` 在名字与注释里不区分大小写地包含匹配；`Skip` / `Take` 分页（`Skip` ≥ 0，`Take` 1～1000），返回过滤后的总数；库里的表一次读出、在内存里分页。分页越界不在构造 `TableListQuery` 时抛出，读取器以结果返回（HTTP 400）：`Skip` 为负或 `Take` 小于 1 是 `PERSISTENCE_VALIDATION_007`，`Take` 超过 1000 是 `PERSISTENCE_VALIDATION_005`，不连库 |
 | 读结构 | 一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`；空集合不连库 |
 | 列 | 类型名、序号、主键、自增、可空、长度、精度与小数位、注释、缺省值（数据库报告的原文）；主键列一律不可空 |
 | 分表 | 已登记的分表实体按表名模板把 `Order_20261101` 这类物理表折叠成逻辑表 `Order`，`PhysicalTables` 新到旧，列取最新的物理表 |
@@ -418,7 +418,8 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）；同一服务作用域里再经管道的嵌套调用 | 状态错误抛异常；嵌套调用是调用结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_VALIDATION_004` | 实体落点不成立（装配错误）：SqlSugar 实体的 `[Tenant]` 或登记的命名连接不在客户端里、两者不一致；工作单元绑定的连接不存在，或绑定连接的工作单元里操作的实体不落在它上面 | 启动失败；运行时抛 `FrameworkException` |
-| `PERSISTENCE_VALIDATION_005` | 查询或表列表的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max`；一次读结构超过 100 张表，参数 `count`、`max` | 构造查询时抛 `FrameworkException`；调用里由 Transaction 阶段转为校验结果（HTTP 400） |
+| `PERSISTENCE_VALIDATION_005` | 查询或表列表的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max`；一次读结构超过 100 张表，参数 `count`、`max` | 仓储查询在构造时抛 `FrameworkException`，调用里由 Transaction 阶段转为校验结果（HTTP 400）；表列表与读结构由读取器以 `Result` 返回 |
+| `PERSISTENCE_VALIDATION_007` | 表列表的 `Skip` 为负或 `Take` 小于 1，参数 `skip`、`take` | `Result`（HTTP 400） |
 | `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_NOTFOUND_002` | 运行时数据源没有在本进程登记（`GetAsync`） | `Result` |

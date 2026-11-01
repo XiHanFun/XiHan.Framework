@@ -262,6 +262,7 @@ XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Skip.init -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.TableListQuery() -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.get -> int
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.init -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TablePage!
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>! Items, out int Total) -> void
@@ -350,6 +351,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.DataSourceUnava
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Duplicate = "PERSISTENCE_CONFLICT_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.EventsUndispatched = "PERSISTENCE_VALIDATION_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.InvalidUnitOfWorkState = "PERSISTENCE_VALIDATION_002" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ListPageInvalid = "PERSISTENCE_VALIDATION_007" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotSupported = "PERSISTENCE_UNAVAILABLE_008" -> string!
@@ -374,6 +376,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceUna
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourcesNotSupported = "persistence.datasource.not_supported" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.Duplicate = "persistence.entity.duplicate" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.EventsUndispatched = "persistence.unit_of_work.events_undispatched" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ListPageInvalid = "persistence.schema.list_page_invalid" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NestedInvocation = "persistence.unit_of_work.nested" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "persistence.entity.not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!

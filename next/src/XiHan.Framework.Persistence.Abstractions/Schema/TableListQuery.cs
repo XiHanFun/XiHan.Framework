@@ -10,7 +10,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Schema;
 /// 列表的过滤与分页。
 /// </summary>
 /// <remarks>
-/// 取出条数与仓储查询同一上限：<see cref="Take"/> 取 1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限。
+/// 取出条数与仓储查询同一上限：<see cref="Take"/> 取 1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由读结构的 Provider 经 <see cref="Validate"/> 以校验结果返回（HTTP 400）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record TableListQuery
@@ -26,27 +26,35 @@ public sealed record TableListQuery
     /// <summary>
     /// 跳过的条数（不小于 0）。
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">为负。</exception>
-    public int Skip
-    {
-        get => field;
-        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "'Skip' must not be negative.");
-    }
+    /// <remarks>
+    /// 为负由 <see cref="Validate"/> 报告。
+    /// </remarks>
+    public int Skip { get; init; }
 
     /// <summary>
     /// 取出的条数（1 到 <see cref="EntityQuery.DefaultMaxTake"/>，缺省取上限）。
     /// </summary>
     /// <remarks>
-    /// 大于上限抛出携带 <see cref="PersistenceErrors.TakeExceeded"/> 的 <see cref="FrameworkException"/>，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400）；小于 1 是编程错误，抛出 <see cref="ArgumentOutOfRangeException"/>。不静默截断，要更多就分页。
+    /// 越界由 <see cref="Validate"/> 报告；不静默截断，要更多就分页。
     /// </remarks>
-    public int Take
+    public int Take { get; init; } = EntityQuery.DefaultMaxTake;
+
+    /// <summary>
+    /// 核对分页参数。
+    /// </summary>
+    /// <remarks>
+    /// 读结构的 Provider 在 <see cref="ISchemaReader.ListTablesAsync"/> 开头调用，失败时原样返回、不连库、不登记数据源。先核对下界再核对上限。
+    /// </remarks>
+    /// <returns>成功；<see cref="Skip"/> 为负或 <see cref="Take"/> 小于 1 时为 <see cref="PersistenceErrors.ListPageInvalid"/> 校验错误，<see cref="Take"/> 超过 <see cref="EntityQuery.DefaultMaxTake"/> 时为 <see cref="PersistenceErrors.TakeExceeded"/> 校验错误。</returns>
+    public Result Validate()
     {
-        get => field;
-        init => field = value switch
+        if (Skip < 0 || Take < 1)
         {
-            < 1 => throw new ArgumentOutOfRangeException(nameof(value), value, "'Take' must be at least 1."),
-            > EntityQuery.DefaultMaxTake => throw new TakeExceededException(value),
-            _ => value,
-        };
-    } = EntityQuery.DefaultMaxTake;
+            return Error.Validation(PersistenceErrors.ListPageInvalid, PersistenceMessages.ListPageInvalid, MessageArguments.Of(("skip", Skip), ("take", Take)));
+        }
+
+        return Take <= EntityQuery.DefaultMaxTake
+            ? Result.Success()
+            : Error.Validation(PersistenceErrors.TakeExceeded, PersistenceMessages.TakeExceeded, MessageArguments.Of(("take", Take), ("max", EntityQuery.DefaultMaxTake)));
+    }
 }

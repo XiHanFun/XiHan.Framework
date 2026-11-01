@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "エンティティ '{entity}' はマルチテナントですが、現在の呼び出しにテナントがありません。",
   "persistence.entity.unique_key_conflict": "エンティティ '{entity}' の一意インデックス '{index}' に同じキーの項目が既に存在します。",
   "persistence.query.take_exceeded": "クエリは {take} 行を要求していますが、一度に読み取れるのは最大 {max} 行です。1 ページ最大 {max} 行でページングしてください。",
+  "persistence.schema.list_page_invalid": "テーブル一覧のページ指定が範囲外です。スキップ数 {skip} は負にできず、取得件数 {take} は 1 以上で指定してください。",
   "persistence.schema.not_supported": "現在の永続化プロバイダーはデータベースのスキーマを読み取れません。",
   "persistence.schema.read_failed": "データソース '{name}' のスキーマの読み取りに失敗しました: {reason}",
   "persistence.schema.table_not_found": "データソース '{dataSource}' にテーブル '{table}' はありません。",

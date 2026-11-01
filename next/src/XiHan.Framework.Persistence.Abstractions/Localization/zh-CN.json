@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "实体 '{entity}' 是多租户实体，但当前调用没有租户。",
   "persistence.entity.unique_key_conflict": "实体 '{entity}' 在唯一索引 '{index}' 上已有相同键的条目。",
   "persistence.query.take_exceeded": "查询要取 {take} 行，超过一次最多可读的 {max} 行；请分页读取，每页最多 {max} 行。",
+  "persistence.schema.list_page_invalid": "表列表的分页越界：跳过条数 {skip} 不能为负，取出条数 {take} 至少为 1。",
   "persistence.schema.not_supported": "当前的持久化 Provider 不能读取库结构。",
   "persistence.schema.read_failed": "读取数据源 '{name}' 的库结构失败：{reason}",
   "persistence.schema.table_not_found": "数据源 '{dataSource}' 里没有名为 '{table}' 的表。",

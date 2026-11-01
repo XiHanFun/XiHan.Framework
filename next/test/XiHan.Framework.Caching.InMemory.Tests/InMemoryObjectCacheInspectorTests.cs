@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
 
@@ -58,7 +59,7 @@ public sealed class InMemoryObjectCacheInspectorTests
         string? continuation = null;
         do
         {
-            var page = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "access:", Limit = 2, Continuation = continuation }, CancellationToken.None);
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "access:", Limit = 2, Continuation = continuation }, CancellationToken.None)).ValueOrThrow();
             Assert.InRange(page.Keys.Count, 1, 2);
             listed.AddRange(page.Keys.Select(static k => k.Value));
             continuation = page.Continuation;
@@ -68,8 +69,13 @@ public sealed class InMemoryObjectCacheInspectorTests
 
         // 字节层：只有直接写进存储的条目
         var bytes = Assert.IsAssignableFrom<ICacheStoreInspector>(_cache.Store);
-        Assert.Equal(["access:lock"], (await bytes.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).Keys.Select(static k => k.Value));
-        Assert.Equal(["identity:session"], (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "identity:" }, CancellationToken.None)).Keys.Select(static k => k.Value));
+        Assert.Equal(["access:lock"], (await bytes.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).ValueOrThrow().Keys.Select(static k => k.Value));
+        Assert.Equal(["identity:session"], (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "identity:" }, CancellationToken.None)).ValueOrThrow().Keys.Select(static k => k.Value));
+
+        // 对象层同样：每页上限越界是校验结果，不在构造查询时抛出
+        Assert.Equal(CachingErrors.ListLimitInvalid, (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "access:", Limit = 0 }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(CachingErrors.ListLimitInvalid, (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "access:", Limit = CacheKeyQuery.MaxLimit + 1 }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(5, (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "access:", Limit = CacheKeyQuery.MaxLimit }, CancellationToken.None)).ValueOrThrow().Keys.Count);
     }
 
     [Fact]
@@ -100,7 +106,7 @@ public sealed class InMemoryObjectCacheInspectorTests
         await _store.SetAsync("access:lock", Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
 
         Assert.Equal(2, await _cache.RemoveByPrefixAsync("access:", CancellationToken.None));
-        Assert.Empty((await _cache.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).Keys);
+        Assert.Empty((await _cache.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).ValueOrThrow().Keys);
         Assert.True((await _cache.GetAsync<Snapshot>("identity:user:1", CancellationToken.None)).HasValue);
         // 字节存储里的同前缀条目不受影响，各层各删
         Assert.True((await _store.GetAsync("access:lock", CancellationToken.None)).HasValue);

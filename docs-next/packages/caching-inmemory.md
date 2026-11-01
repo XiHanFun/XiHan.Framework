@@ -93,7 +93,7 @@ public sealed class ObjectEntries(ICache cache)
             return result;
         }
 
-        var page = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, cancellationToken);
+        var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, cancellationToken)).ValueOrThrow();
         foreach (var key in page.Keys)
         {
             // 查看不读出值、不延长滑动过期；两次调用之间条目可能已过期

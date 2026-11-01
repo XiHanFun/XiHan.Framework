@@ -20,7 +20,7 @@ public interface ISchemaReader
     /// 列出表（不含列）。
     /// </summary>
     /// <remarks>
-    /// 按名字排序（不区分大小写）；<see cref="TableListQuery.Keyword"/> 在名字与注释里不区分大小写地包含匹配；按 <see cref="TableListQuery.Skip"/> / <see cref="TableListQuery.Take"/> 分页，<see cref="TablePage.Total"/> 是过滤后的总数。库里的表一次读出、在内存里过滤与分页。
+    /// 按名字排序（不区分大小写）；<see cref="TableListQuery.Keyword"/> 在名字与注释里不区分大小写地包含匹配；按 <see cref="TableListQuery.Skip"/> / <see cref="TableListQuery.Take"/> 分页，<see cref="TablePage.Total"/> 是过滤后的总数。库里的表一次读出、在内存里过滤与分页。先经 <see cref="TableListQuery.Validate"/> 核对分页，越界返回 <see cref="PersistenceErrors.ListPageInvalid"/> 或 <see cref="PersistenceErrors.TakeExceeded"/>，不连库、不登记数据源；不读结构的 Provider 返回 <see cref="PersistenceErrors.NotSupported"/>。
     /// </remarks>
     /// <param name="dataSource">运行时数据源；<see langword="null"/> 为应用的缺省连接。</param>
     /// <param name="query">过滤与分页。</param>

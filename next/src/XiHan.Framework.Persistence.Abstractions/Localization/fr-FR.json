@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "L'entité '{entity}' est multi-locataire, mais l'appel courant n'a aucun locataire.",
   "persistence.entity.unique_key_conflict": "L'entité '{entity}' possède déjà un élément avec la même clé dans l'index unique '{index}'.",
   "persistence.query.take_exceeded": "La requête demande {take} lignes, plus que les {max} lisibles en une fois ; parcourez les résultats par pages d'au plus {max} lignes.",
+  "persistence.schema.list_page_invalid": "La page de la liste des tables est hors limites : skip {skip} ne doit pas être négatif et take {take} doit valoir au moins 1.",
   "persistence.schema.not_supported": "Le fournisseur de persistance utilisé ne peut pas lire le schéma de la base de données.",
   "persistence.schema.read_failed": "La lecture du schéma de la source de données '{name}' a échoué : {reason}",
   "persistence.schema.table_not_found": "La source de données '{dataSource}' n'a pas de table nommée '{table}'.",

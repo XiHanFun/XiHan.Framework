@@ -4,7 +4,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.Schema;
-using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
@@ -16,14 +15,33 @@ namespace XiHan.Framework.Persistence.Abstractions.Tests;
 /// </remarks>
 public sealed class SchemaContractTests
 {
-    [Fact]
-    public void TableListQuery_TakeAboveTheLimit_IsTakeExceeded_AndNonPositiveIsAProgrammingError()
+    [Theory]
+    [InlineData(-1, 1, PersistenceErrors.ListPageInvalid)]
+    [InlineData(0, 0, PersistenceErrors.ListPageInvalid)]
+    [InlineData(-5, 1001, PersistenceErrors.ListPageInvalid)]
+    [InlineData(0, 1001, PersistenceErrors.TakeExceeded)]
+    [InlineData(0, 1, null)]
+    [InlineData(0, 1000, null)]
+    [InlineData(7, 20, null)]
+    public void TableListQuery_PageOutOfRange_IsAValidationResult_NotAConstructionError(int skip, int take, string? code)
     {
-        var exceeded = Assert.ThrowsAny<FrameworkException>(static () => new TableListQuery { Take = 1001 });
+        // 构造不抛出：查询常由请求绑定，越界由读结构的 Provider 以 400 的校验结果返回
+        var query = new TableListQuery { Skip = skip, Take = take };
 
-        Assert.Equal(PersistenceErrors.TakeExceeded, exceeded.Code);
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new TableListQuery { Take = 0 });
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new TableListQuery { Skip = -1 });
+        var validated = query.Validate();
+
+        Assert.Equal(code, validated.Error?.Code);
+        if (code == PersistenceErrors.ListPageInvalid)
+        {
+            Assert.Equal(PersistenceMessages.ListPageInvalid, validated.Error!.MessageKey);
+            Assert.Equal((skip, take), ((int)validated.Error.Details!["skip"]!, (int)validated.Error.Details["take"]!));
+        }
+        else if (code == PersistenceErrors.TakeExceeded)
+        {
+            Assert.Equal((take, 1000), ((int)validated.Error!.Details!["take"]!, (int)validated.Error.Details["max"]!));
+        }
+
+        Assert.Equal(code is null ? null : "VALIDATION", validated.Error?.Kind);
         Assert.Equal(1000, new TableListQuery().Take);
     }
 

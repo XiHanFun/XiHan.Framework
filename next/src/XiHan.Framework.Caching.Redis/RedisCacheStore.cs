@@ -305,11 +305,17 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.Limit"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。
+    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.Limit"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>，不访问 Redis。
     /// </remarks>
-    public async ValueTask<CacheKeyPage> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 先核对上限：越界是调用方的输入错误，不把它当作 SCAN 的提示值发出去
+        if (query.Validate() is { IsFailure: true } invalid)
+        {
+            return Result.Failure<CacheKeyPage>(invalid.Error!);
+        }
+
         var cursor = query.Continuation ?? "0";
         if (!ulong.TryParse(cursor, NumberStyles.None, CultureInfo.InvariantCulture, out _))
         {

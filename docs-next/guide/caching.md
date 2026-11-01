@@ -385,6 +385,7 @@ L2 的存储没有变更通知时（远程 Provider、内存实现），绕过�
 ```csharp
 using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Primitives;
 
 public sealed class CacheAdmin(ISharedCache cache)
 {
@@ -405,12 +406,13 @@ public sealed class CacheAdmin(ISharedCache cache)
         return keys;
     }
 
-    private static async ValueTask CollectAsync(Func<CacheKeyQuery, ValueTask<CacheKeyPage>> list, string prefix, List<string> keys)
+    private static async ValueTask CollectAsync(Func<CacheKeyQuery, ValueTask<Result<CacheKeyPage>>> list, string prefix, List<string> keys)
     {
         string? continuation = null;
         do
         {
-            var page = await list(new CacheKeyQuery { Prefix = prefix, Limit = 200, Continuation = continuation });
+            // 上限来自请求时越界是 CACHING_VALIDATION_003（400）；这里是常量，直接取值
+            var page = (await list(new CacheKeyQuery { Prefix = prefix, Limit = 200, Continuation = continuation })).ValueOrThrow();
             keys.AddRange(page.Keys.Select(static k => k.Value));
             continuation = page.Continuation;
         }
@@ -419,7 +421,7 @@ public sealed class CacheAdmin(ISharedCache cache)
 }
 ```
 
-- `ListKeysAsync`：`Prefix` 与键同文法，空为全部；`Limit` 为 1 到 1000（默认 100）；没有更多时 `Continuation` 为 `null`。已过期的键不列出。
+- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法在构造查询时抛 `ArgumentException`）；`Limit` 为 1 到 1000（默认 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `limit`、`max`），不访问后端；没有更多时 `Continuation` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
 - `RemoveByPrefixAsync`：返回删除数；前缀不能为空，空前缀抛 `ArgumentException`，没有「清空全部」。
 - 内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`Limit` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。
@@ -485,6 +487,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `CACHING_VALIDATION_001` | 幂等键拼出的存储键不合法，Idempotency 阶段以校验错误结束调用；远程插件报告键不合法 |
 | `CACHING_VALIDATION_002` | 远程插件按操作集校验过期选项时返回，适配器原样成为异常的错误码；.NET 侧的非法选项在调用插件之前直接抛 `ArgumentException` |
+| `CACHING_VALIDATION_003` | 键列表的每页上限 `CacheKeyQuery.Limit` 不在 1～1000：`ListKeysAsync` 以结果返回（HTTP 400） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败，以 `FrameworkException` 抛出 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限，只作为健康项的原因，不拒绝写入 |
 | `CACHING_CONFLICT_001` | 分布式锁被占用，`AcquireAsync` 返回（`TryAcquireAsync` 只返回无值） |
