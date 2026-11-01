@@ -17,7 +17,20 @@
 
 截止时间随调用传播：HTTP 用请求头 `xihan-deadline`（RFC 3339，UTC），gRPC 用 `grpc-timeout`，命令行用 `--timeout`；下游调用的截止时间不晚于上游。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时。`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
 
-下游接住取消、自己写下 `KERNEL_CANCELLED_001` 结果正常返回（不抛异常）时，`DeadlineMiddleware` 按触发的令牌归因：截止令牌已触发而调用方没有取消，就改写为 `KERNEL_TIMEOUT_001`（ADR-0085）。不要在下游用 `context.IsExpired(now)` 区分超时与取消——定时器按系统节拍触发，可能早于时钟读数到达截止时间，几毫秒的差就会把超时判成取消。
+截止时间到了而调用方没有取消，一律报超时：下游抛出的取消按截止令牌归因（与外部取消同时触发时超时优先）；下游接住取消、自己写下 `KERNEL_CANCELLED_001` 结果正常返回（不抛异常）时，截止令牌已触发而调用方没有取消，`DeadlineMiddleware` 同样改写为 `KERNEL_TIMEOUT_001`。不要在下游用 `context.IsExpired(now)` 区分超时与取消——定时器按系统节拍触发，可能早于时钟读数到达截止时间，几毫秒的差就会把超时判成取消；写下取消结果，交给 `DeadlineMiddleware` 归因。
+
+::: warning 行为变化（2026-11-01，ADR-0085、ADR-0088）
+以前下游写成结果的取消原样返回：进程外插件运行时（接住 gRPC 的 `Cancelled`）、Wasm 宿主与运行时、自己接住取消的操作或 Provider，在截止时间到了的调用上偶发报 `KERNEL_CANCELLED_001`。现在这些情形一律是 `KERNEL_TIMEOUT_001`：
+
+| 看哪里 | 以前（偶发） | 现在 |
+| --- | --- | --- |
+| 错误码 / Problem Details `type` | `KERNEL_CANCELLED_001` | `KERNEL_TIMEOUT_001` |
+| HTTP 状态 | 408 | 504 |
+| gRPC 状态 | `Cancelled` | `DeadlineExceeded` |
+| 命令行退出码 | 8（取消） | 7（超时） |
+
+按状态码或错误码决定重试的调用方要按超时处理：截止时间已经用尽，被调方可能已经完成了副作用，非幂等操作重试前带上幂等键（Baggage `xihan.idempotency-key`，见[幂等键](./caching#幂等键)）。调用方自己取消（连接断开、取消令牌）仍是 `KERNEL_CANCELLED_001` / 408。熔断计数不变：`ResilienceMiddleware` 在 `DeadlineMiddleware` 之内，看到的是下游写下的原结果。审计、追踪与访问日志看到的是改写后的超时。
+:::
 
 ## 按操作的限制
 

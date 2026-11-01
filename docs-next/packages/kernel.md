@@ -137,7 +137,7 @@ app.Run();
 | `KERNEL_UNAVAILABLE_001` | 应用未就绪或正在停止（HTTP 503） |
 | `KERNEL_UNAVAILABLE_002` / `003` / `004` | 限流 / 并发上限 / 熔断拒绝 |
 | `KERNEL_UNAVAILABLE_005` | 周期健康探针失败或超时 |
-| `KERNEL_TIMEOUT_001` / `KERNEL_CANCELLED_001` | 超过截止时间 / 调用被取消 |
+| `KERNEL_TIMEOUT_001` / `KERNEL_CANCELLED_001` | 超过截止时间（截止时间到了而调用方没有取消时，下游写下的取消结果也改报超时）/ 调用方取消 |
 | `KERNEL_UNEXPECTED_001` | 调用期间的未处理异常 |
 | `KERNEL_SECURITY_001` / `002` | 权限码重复 / 权限表已满 |
 | `KERNEL_NOTFOUND_001` | 操作未登记 |

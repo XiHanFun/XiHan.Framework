@@ -134,6 +134,8 @@ Sequence  = 三位数字，域内唯一，发布后不复用
 | `CANCELLED` | 408 |
 | `UNEXPECTED` 与其他 | 500 |
 
+截止时间到了而调用方没有取消时一律是 `KERNEL_TIMEOUT_001`（504），包括下游把取消写成 `KERNEL_CANCELLED_001` 结果的情形；408 只表示调用方自己取消（2026-11-01 起的行为变化，见[韧性](./resilience#截止时间)）。
+
 Problem Details 的字段：
 
 ```json
