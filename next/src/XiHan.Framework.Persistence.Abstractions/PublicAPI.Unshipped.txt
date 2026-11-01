@@ -1,4 +1,41 @@
 #nullable enable
+XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.ConnectionString.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.DataSourceDefinition(string! name, string! databaseType, string! connectionString) -> void
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.DatabaseType.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Describes(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! other) -> bool
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Redact(string! text) -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.DataSourceOptions() -> void
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.Equals(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? other) -> bool
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.HealthProbeInterval.init -> void
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.MaxCount.get -> int
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.MaxCount.init -> void
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.DataSourceRegistry(System.Collections.Generic.IEnumerable<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider!>! providers, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory = null) -> void
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.GetAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource!>>
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.GetOrAddAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource!>>
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.IsSupported.get -> bool
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.Names.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.RemoveAsync(System.Collections.Generic.IReadOnlyList<string!>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<bool>!>
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.TestAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceServiceCollectionExtensions
+XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource.DatabaseType.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.CreateAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource!>
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.ProbeAsync(XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Supports(string! databaseType) -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex
 XiHan.Framework.Persistence.Abstractions.EntityIndex.IsUnique.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex.Name.get -> string!
@@ -161,6 +198,16 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.NotStarted = 0 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.RolledBack = 3 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+const XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings.Mask = "***" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.DefaultName = "default" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.ConfigurationSection = "XiHan:Persistence:DataSources" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.MaxCountLimit = 1024 -> int
+const XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceRegistry.HealthPrefix = "persistence.datasource." -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.MySql = "mysql" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.Oracle = "oracle" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.PostgreSql = "postgresql" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.SqlServer = "sqlserver" -> string!
+const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.Sqlite = "sqlite" -> string!
 const XiHan.Framework.Persistence.Abstractions.EntityIndexes.MaxNameLength = 63 -> int
 const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.HealthName = "persistence.snowflake.worker" -> string!
 const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ResourcePrefix = "persistence:snowflake:worker:" -> string!
@@ -179,11 +226,16 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceCapabilities.Version =
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.CapacityExceeded = "PERSISTENCE_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ClockMovedBackwards = "PERSISTENCE_UNAVAILABLE_004" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Concurrency = "PERSISTENCE_CONFLICT_001" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.DataSourceCapacityExceeded = "PERSISTENCE_UNAVAILABLE_007" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.DataSourceInvalid = "PERSISTENCE_VALIDATION_006" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.DataSourceNotFound = "PERSISTENCE_NOTFOUND_002" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.DataSourceUnavailable = "PERSISTENCE_UNAVAILABLE_006" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.Duplicate = "PERSISTENCE_CONFLICT_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.EventsUndispatched = "PERSISTENCE_VALIDATION_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.InvalidUnitOfWorkState = "PERSISTENCE_VALIDATION_002" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotFound = "PERSISTENCE_NOTFOUND_001" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotSupported = "PERSISTENCE_UNAVAILABLE_008" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReadOnly = "PERSISTENCE_DENIED_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TakeExceeded = "PERSISTENCE_VALIDATION_005" -> string!
@@ -196,6 +248,12 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CatalogName =
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ClockMovedBackwards = "persistence.snowflake.clock_moved_backwards" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CommitConflict = "persistence.unit_of_work.concurrency_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ConcurrencyConflict = "persistence.entity.concurrency_conflict" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceCapacityExceeded = "persistence.datasource.capacity_exceeded" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceInvalid = "persistence.datasource.definition_invalid" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceNotFound = "persistence.datasource.not_found" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceTypeUnknown = "persistence.datasource.database_type_unknown" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourceUnavailable = "persistence.datasource.unavailable" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.DataSourcesNotSupported = "persistence.datasource.not_supported" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.Duplicate = "persistence.entity.duplicate" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.EventsUndispatched = "persistence.unit_of_work.events_undispatched" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NestedInvocation = "persistence.unit_of_work.nested" -> string!
@@ -208,6 +266,10 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequire
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
+override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.ToString() -> string!
+override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions.GetHashCode() -> int
@@ -224,6 +286,14 @@ override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.ToString() -
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
+static XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings.Describe(System.Exception! exception, string! connectionString) -> string!
+static XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings.Redact(string! text, string! connectionString) -> string!
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.IsValidName(string? name) -> bool
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions!
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.operator !=(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? left, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.operator ==(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? left, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? right) -> bool
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceServiceCollectionExtensions.AddDataSourceProvider<TProvider>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceServiceCollectionExtensions.AddDataSourceRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Persistence.Abstractions.EntityIndexes.Resolve(System.Type! entityType, string! table) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.EntityIndex!>!
 static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Compose(long timestamp, int workerId, int sequence) -> long
 static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Parse(long value, System.DateTimeOffset epoch) -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId

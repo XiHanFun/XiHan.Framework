@@ -29,6 +29,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 绑定 `db`（`connection:relational`，可选）传给配置回调；缺失时回调自行决定连接。
 - 租户分库：装配了 `multitenancy.sharding@1`（如 `MultiTenancy.InMemory`）时，DbContext 选项按作用域构建，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给配置回调，其余调用用应用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。
 - 索引（ADR-0072）：`ApplyPersistenceConventions()` 把实体上的 `Persistence.Abstractions` `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与列由 `EntityIndexes.Resolve(type, 表名)` 推出，与 SqlSugar 建出的同名；表名取调用时的 `GetTableName()`，`ToTable` 要在它之前配置。从属类型与共享类型实体跳过。框架的数据库记录（授予、翻译、审计、调度、工作流、发件箱）在 `modelBuilder.Entity<T>()` 之后调用它即得到索引，不用再手写 `HasIndex`。
+- 运行时数据源（ADR-0078）不支持：EF Core 的数据库 Provider（`UseNpgsql`、`UseSqlServer` 等）由应用选、本包不引用，按数据库类型建连接要对应的 Provider 包。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`，不返回空结果。
 - `XiHan:Persistence:EntityFrameworkCore:EnsureCreated=true` 时启动即建表，只用于开发与测试；生产用迁移。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按 `XiHan:Persistence:EntityFrameworkCore:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——在独立作用域里取默认连接的 DbContext `CanConnect`，不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。
 

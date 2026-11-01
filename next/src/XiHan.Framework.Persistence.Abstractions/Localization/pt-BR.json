@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "Não é possível registrar a fonte de dados '{name}': o limite de {capacity} fontes de dados foi atingido.",
+  "persistence.datasource.database_type_unknown": "A fonte de dados '{name}' usa o tipo de banco de dados '{databaseType}', que o provedor de persistência não suporta.",
+  "persistence.datasource.definition_invalid": "A definição da fonte de dados '{name}' é inválida: {reason}",
+  "persistence.datasource.not_found": "A fonte de dados '{name}' não está registrada.",
+  "persistence.datasource.not_supported": "O provedor de persistência em uso não suporta fontes de dados em tempo de execução.",
+  "persistence.datasource.unavailable": "Não é possível conectar à fonte de dados '{name}': {reason}",
   "persistence.entity.concurrency_conflict": "Ocorreu um conflito de concorrência otimista em '{entity}': {reason}",
   "persistence.entity.duplicate": "A entidade '{entity}' já tem um item com o identificador '{id}'.",
   "persistence.entity.not_found": "A entidade '{entity}' não tem nenhum item com o identificador '{id}'.",

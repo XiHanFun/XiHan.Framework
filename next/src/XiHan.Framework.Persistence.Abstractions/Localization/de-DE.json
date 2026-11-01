@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "Die Datenquelle '{name}' kann nicht registriert werden: Die Obergrenze von {capacity} Datenquellen ist erreicht.",
+  "persistence.datasource.database_type_unknown": "Die Datenquelle '{name}' verwendet den Datenbanktyp '{databaseType}', den der Persistenz-Provider nicht unterstützt.",
+  "persistence.datasource.definition_invalid": "Die Definition der Datenquelle '{name}' ist ungültig: {reason}",
+  "persistence.datasource.not_found": "Die Datenquelle '{name}' ist nicht registriert.",
+  "persistence.datasource.not_supported": "Der verwendete Persistenz-Provider unterstützt keine Laufzeit-Datenquellen.",
+  "persistence.datasource.unavailable": "Die Datenquelle '{name}' ist nicht erreichbar: {reason}",
   "persistence.entity.concurrency_conflict": "Bei '{entity}' ist ein optimistischer Nebenläufigkeitskonflikt aufgetreten: {reason}",
   "persistence.entity.duplicate": "Die Entität '{entity}' hat bereits ein Element mit der ID '{id}'.",
   "persistence.entity.not_found": "Die Entität '{entity}' hat kein Element mit der ID '{id}'.",

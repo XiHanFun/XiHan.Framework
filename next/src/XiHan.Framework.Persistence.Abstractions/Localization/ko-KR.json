@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "데이터 원본 '{name}'을(를) 등록할 수 없습니다: 데이터 원본 상한 {capacity}개에 도달했습니다.",
+  "persistence.datasource.database_type_unknown": "데이터 원본 '{name}'의 데이터베이스 유형 '{databaseType}'은(는) 현재 영속성 공급자에서 지원되지 않습니다.",
+  "persistence.datasource.definition_invalid": "데이터 원본 '{name}'의 정의가 올바르지 않습니다: {reason}",
+  "persistence.datasource.not_found": "데이터 원본 '{name}'이(가) 등록되어 있지 않습니다.",
+  "persistence.datasource.not_supported": "현재 영속성 공급자는 런타임 데이터 원본을 지원하지 않습니다.",
+  "persistence.datasource.unavailable": "데이터 원본 '{name}'에 연결할 수 없습니다: {reason}",
   "persistence.entity.concurrency_conflict": "'{entity}'에서 낙관적 동시성 충돌이 발생했습니다: {reason}",
   "persistence.entity.duplicate": "엔터티 '{entity}'에 ID '{id}'인 항목이 이미 있습니다.",
   "persistence.entity.not_found": "엔터티 '{entity}'에 ID '{id}'인 항목이 없습니다.",

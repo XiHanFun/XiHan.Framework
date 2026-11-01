@@ -146,6 +146,7 @@ public sealed class OrderReports(AppDbContext db)
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `CanConnect`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
 - 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](../guide/distributed-ids)。
+- 运行时数据源（ADR-0078）不支持：EF Core 的数据库 Provider 由应用选、本包不引用，按数据库类型建不出连接。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 
 ## 相关
 
@@ -156,4 +157,4 @@ public sealed class OrderReports(AppDbContext db)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
 - [Persistence.Generators](./persistence-generators)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0005
+- 决策：ADR-0005、ADR-0078

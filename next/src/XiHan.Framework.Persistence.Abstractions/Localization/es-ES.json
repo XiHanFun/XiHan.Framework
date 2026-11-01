@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "No se puede registrar el origen de datos '{name}': se alcanzó el límite de {capacity} orígenes de datos.",
+  "persistence.datasource.database_type_unknown": "El origen de datos '{name}' usa el tipo de base de datos '{databaseType}', que el proveedor de persistencia no admite.",
+  "persistence.datasource.definition_invalid": "La definición del origen de datos '{name}' no es válida: {reason}",
+  "persistence.datasource.not_found": "El origen de datos '{name}' no está registrado.",
+  "persistence.datasource.not_supported": "El proveedor de persistencia en uso no admite orígenes de datos en tiempo de ejecución.",
+  "persistence.datasource.unavailable": "No se puede conectar con el origen de datos '{name}': {reason}",
   "persistence.entity.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista en '{entity}': {reason}",
   "persistence.entity.duplicate": "La entidad '{entity}' ya tiene un elemento con el identificador '{id}'.",
   "persistence.entity.not_found": "La entidad '{entity}' no tiene ningún elemento con el identificador '{id}'.",

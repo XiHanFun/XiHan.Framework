@@ -1094,6 +1094,28 @@
       ]
     },
     {
+      "section": "XiHan:Persistence:DataSources",
+      "options": "XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions",
+      "package": "XiHan.Framework.Persistence.Abstractions",
+      "keys": [
+        {
+          "key": "MaxCount",
+          "type": "integer",
+          "default": "64",
+          "minimum": 1,
+          "maximum": 1024,
+          "summary": "运行时数据源的登记数上限；满了再登记新名字返回 PERSISTENCE_UNAVAILABLE_007，不淘汰已有的"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 persistence.datasource.<name> 的重探间隔与单次探测超时（秒）"
+        }
+      ]
+    },
+    {
       "section": "XiHan:Persistence:EntityFrameworkCore",
       "options": "XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions",
       "package": "XiHan.Framework.Persistence.EntityFrameworkCore",

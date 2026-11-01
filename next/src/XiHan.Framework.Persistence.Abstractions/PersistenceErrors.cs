@@ -20,6 +20,14 @@ public static class PersistenceErrors
     public const string NotFound = "PERSISTENCE_NOTFOUND_001";
 
     /// <summary>
+    /// 运行时数据源没有在本进程登记。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DataSources.DataSourceRegistry.GetAsync"/> 按名字取，名字没有登记过或已移除。
+    /// </remarks>
+    public const string DataSourceNotFound = "PERSISTENCE_NOTFOUND_002";
+
+    /// <summary>
     /// 乐观并发冲突。
     /// </summary>
     public const string Concurrency = "PERSISTENCE_CONFLICT_001";
@@ -72,6 +80,14 @@ public static class PersistenceErrors
     public const string TakeExceeded = "PERSISTENCE_VALIDATION_005";
 
     /// <summary>
+    /// 运行时数据源的定义不合法。
+    /// </summary>
+    /// <remarks>
+    /// 数据库类型 Provider 不认识、连接串格式错；同名的已登记实例不受影响。
+    /// </remarks>
+    public const string DataSourceInvalid = "PERSISTENCE_VALIDATION_006";
+
+    /// <summary>
     /// 只读工作单元拒绝写入。
     /// </summary>
     /// <remarks>
@@ -106,4 +122,28 @@ public static class PersistenceErrors
     /// 未配置且没有分布式锁、机器位已满、租约尚未取得或已丢失。
     /// </remarks>
     public const string WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005";
+
+    /// <summary>
+    /// 运行时数据源连不上。
+    /// </summary>
+    /// <remarks>
+    /// 测试连接、健康探测；参数 <c>name</c>、<c>reason</c>（驱动消息，连接串与口令已脱敏）。
+    /// </remarks>
+    public const string DataSourceUnavailable = "PERSISTENCE_UNAVAILABLE_006";
+
+    /// <summary>
+    /// 运行时数据源登记已满。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DataSources.DataSourceOptions.MaxCount"/>；不淘汰已有的，替换同名的不占名额。
+    /// </remarks>
+    public const string DataSourceCapacityExceeded = "PERSISTENCE_UNAVAILABLE_007";
+
+    /// <summary>
+    /// 当前的持久化 Provider 不支持该能力。
+    /// </summary>
+    /// <remarks>
+    /// 运行时数据源：EF Core 与内存实现。
+    /// </remarks>
+    public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
 }

@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "データソース '{name}' を登録できません: データソースの上限 {capacity} 件に達しています。",
+  "persistence.datasource.database_type_unknown": "データソース '{name}' のデータベース種別 '{databaseType}' は、現在の永続化プロバイダーではサポートされていません。",
+  "persistence.datasource.definition_invalid": "データソース '{name}' の定義が不正です: {reason}",
+  "persistence.datasource.not_found": "データソース '{name}' は登録されていません。",
+  "persistence.datasource.not_supported": "現在の永続化プロバイダーは実行時データソースをサポートしていません。",
+  "persistence.datasource.unavailable": "データソース '{name}' に接続できません: {reason}",
   "persistence.entity.concurrency_conflict": "'{entity}' で楽観的同時実行の競合が発生しました: {reason}",
   "persistence.entity.duplicate": "エンティティ '{entity}' には ID '{id}' の項目が既に存在します。",
   "persistence.entity.not_found": "エンティティ '{entity}' に ID '{id}' の項目がありません。",

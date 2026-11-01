@@ -12,6 +12,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -124,6 +125,8 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.Services.TryAddScoped<EntityFrameworkCoreUnitOfWork>();
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<EntityFrameworkCoreUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
+        // 运行时数据源不支持：数据库 Provider（UseNpgsql 等）由应用选、本包不引用，按数据库类型建不出连接；注册表照样登记，取用返回 PERSISTENCE_UNAVAILABLE_008
+        context.Services.AddDataSourceRegistry();
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);

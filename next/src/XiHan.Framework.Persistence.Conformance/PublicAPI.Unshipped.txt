@@ -1,4 +1,11 @@
 #nullable enable
+XiHan.Framework.Persistence.Conformance.DataSourceConformance
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.DataSourceConformance() -> void
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.GetOrAdd_ReusesSameDefinition_ReplacesChanged_AndRemoveIsBatch() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.Health_EachRegisteredSourceIsReported() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.Test_Connects_WithoutRegistering_OrIsNotSupported() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.DataSourceConformance.Test_Unreachable_IsUnavailable_WithoutSecrets() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.Advance(System.TimeSpan by) -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.ConformanceClock(System.DateTimeOffset start) -> void
@@ -98,6 +105,9 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_And_Remove_
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_KeepsStoredTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Update_WritesModificationTime_AndRefreshesStamp() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.WriteOperation_CalledFromReadOnlyOperation_InItsOwnScope_Commits() -> System.Threading.Tasks.Task!
+abstract XiHan.Framework.Persistence.Conformance.DataSourceConformance.CreateDefinition(string! name) -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition?
+abstract XiHan.Framework.Persistence.Conformance.DataSourceConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
+abstract XiHan.Framework.Persistence.Conformance.DataSourceConformance.CreateUnreachableDefinition(string! name) -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition?
 abstract XiHan.Framework.Persistence.Conformance.IdGeneratorConformance<TKey>.CreateGenerator(System.TimeProvider! clock) -> XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>!
 abstract XiHan.Framework.Persistence.Conformance.RepositoryConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 override XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceClock.GetUtcNow() -> System.DateTimeOffset
@@ -114,6 +124,8 @@ static XiHan.Framework.Persistence.Conformance.RepositoryConformance.Fold(System
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.ListAsync<TEntity, TKey>(XiHan.Framework.Testing.TestHost! host, XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, string? tenantId = null) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.Repository<TEntity, TKey>(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity!, TKey>!
 static XiHan.Framework.Persistence.Conformance.RepositoryConformance.RunAsync(XiHan.Framework.Testing.TestHost! host, System.Func<XiHan.Framework.Primitives.InvocationContext!, System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!>! action, string? tenantId = null) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
+virtual XiHan.Framework.Persistence.Conformance.DataSourceConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
+virtual XiHan.Framework.Persistence.Conformance.DataSourceConformance.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureApp(XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> void
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void

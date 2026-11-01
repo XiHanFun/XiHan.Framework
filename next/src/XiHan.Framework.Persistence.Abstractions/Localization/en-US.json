@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "Data source '{name}' cannot be registered: the limit of {capacity} data sources has been reached.",
+  "persistence.datasource.database_type_unknown": "Data source '{name}' uses database type '{databaseType}', which the persistence provider does not support.",
+  "persistence.datasource.definition_invalid": "The definition of data source '{name}' is invalid: {reason}",
+  "persistence.datasource.not_found": "Data source '{name}' is not registered.",
+  "persistence.datasource.not_supported": "The persistence provider in use does not support runtime data sources.",
+  "persistence.datasource.unavailable": "Data source '{name}' cannot be reached: {reason}",
   "persistence.entity.concurrency_conflict": "An optimistic concurrency conflict occurred on '{entity}': {reason}",
   "persistence.entity.duplicate": "Entity '{entity}' already has an item with id '{id}'.",
   "persistence.entity.not_found": "Entity '{entity}' has no item with id '{id}'.",

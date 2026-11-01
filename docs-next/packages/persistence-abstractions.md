@@ -67,6 +67,13 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 }
 ```
 
+运行时数据源的注册表读取 `XiHan:Persistence:DataSources`（`DataSourceOptions.ConfigurationSection`）：
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `MaxCount` | 整数 1–1024 | `64` | 登记数上限，满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007` |
+| `HealthProbeIntervalSeconds` | 正数 | `15` | 每个数据源健康项的重探间隔，也是单次探测的超时 |
+
 ## 主要类型
 
 | 类型 | 命名空间 | 说明 |
@@ -86,6 +93,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
 | `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
+| `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
+| `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
+| `IDataSource`、`IDataSourceProvider` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源与探测的 Provider 端口（SqlSugar 实现） |
+| `DataSourceOptions`、`DataSourceServiceCollectionExtensions` | `…Abstractions.DataSources` | 选项；`AddDataSourceProvider<T>(configuration)`、`AddDataSourceRegistry()` |
+| `ConnectionStrings` | `…Abstractions.DataSources` | `Redact(text, connectionString)`、`Describe(exception, connectionString)`：把连接串与口令类键的值换成 `***` |
 
 表中 `…` 代表 `XiHan.Framework.Persistence`。
 
@@ -143,6 +155,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
 - 索引声明（ADR-0072）：名字是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引末尾带 `IsDeleted`；声明错误（没有列、列名重复、不是公开属性、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
 - 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
+- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](../guide/persistence#运行时数据源)。
 
 错误码：
 
@@ -161,6 +174,11 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
 | `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
+| `PERSISTENCE_VALIDATION_006` | `PersistenceErrors.DataSourceInvalid` | 运行时数据源的数据库类型不认识、连接串格式错 |
+| `PERSISTENCE_NOTFOUND_002` | `PersistenceErrors.DataSourceNotFound` | 运行时数据源没有在本进程登记 |
+| `PERSISTENCE_UNAVAILABLE_006` | `PersistenceErrors.DataSourceUnavailable` | 运行时数据源连不上（参数 `name`、`reason`，已脱敏） |
+| `PERSISTENCE_UNAVAILABLE_007` | `PersistenceErrors.DataSourceCapacityExceeded` | 运行时数据源登记已满 |
+| `PERSISTENCE_UNAVAILABLE_008` | `PersistenceErrors.NotSupported` | 当前的持久化 Provider 不支持该能力 |
 | `PERSISTENCE_UNAVAILABLE_004` | `PersistenceErrors.ClockMovedBackwards` | 雪花生成器时钟回拨超过阈值（抛异常；调用里转为结果，HTTP 503） |
 | `PERSISTENCE_UNAVAILABLE_005` | `PersistenceErrors.WorkerIdUnavailable` | 雪花生成器没有可用的机器位（抛异常；调用里转为结果，HTTP 503；健康项上报） |
 

@@ -326,6 +326,36 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 
 回调的第一个参数是 `Maybe<BindingValue>`：绑定缺失时由回调自己决定连接（`binding.ValueOrThrow()` 在缺失时抛出）。装配了 `multitenancy.sharding@1` 时，带分片的调用把租户的连接作为绑定交给同一个回调。
 
+## 运行时数据源
+
+应用在运行时按自己的记录（名字、数据库类型、连接串，通常存在应用自己的库里、口令加密保存）连外部库，比如代码生成要导入的外部数据源、零代码运行时要查的外部表。这些连接由单例 `DataSourceRegistry` 管，与上面的约定连接 `default` / `shard`、租户分库互不相干：不进作用域客户端、不参与实体落点、不进工作单元。
+
+```csharp
+public sealed class CodeGenDataSources(DataSourceRegistry registry)
+{
+    // 记录里读出的定义：名字用记录的标识，连接串里放解密后的口令
+    public ValueTask<Result> TestAsync(DataSourceDefinition definition, CancellationToken ct)
+        => registry.TestAsync(definition, ct);                      // 打开一次连接再关闭，不登记
+
+    public async Task<Result<ISqlSugarClient>> ClientAsync(DataSourceDefinition definition, CancellationToken ct)
+        => (await registry.GetOrAddAsync(definition, ct)).Map(static s => s.GetSqlSugarClient());
+
+    // 记录改了、停用或删了：显式失效，旧连接串不再被本进程使用
+    public ValueTask<IReadOnlyList<bool>> InvalidateAsync(IReadOnlyList<string> names, CancellationToken ct)
+        => registry.RemoveAsync(names, ct);
+}
+```
+
+| 项 | 规则 |
+| --- | --- |
+| 取用 | `GetOrAddAsync(definition)`：同名同定义复用；定义变了建新实例替换旧的并释放旧的。建实例不连库，连不上的库照样登记，使用时报告 |
+| 失效 | 显式 `RemoveAsync(names)`（批量，逐项返回是否登记过）加定义比对，不用配置变化令牌。注册表是进程内的：每次使用都以记录里当前的定义调 `GetOrAddAsync`，别的实例改了记录，本实例下一次取用即替换；只按名字 `GetAsync` 看不到别的实例上的修改 |
+| 容量 | `XiHan:Persistence:DataSources:MaxCount`（缺省 64），满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的 |
+| 测试连接 | `TestAsync(definition)`：建临时实例、打开一次连接再关闭、释放；不登记、不占名额。等多久由取消令牌与连接串里驱动的连接超时决定 |
+| 健康 | 每个数据源一条 `persistence.datasource.<name>`，后台按间隔打开连接再关闭；连不上 Degraded，不影响 readiness |
+| 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用 |
+| Provider | SqlSugar 支持（数据库类型是 SqlSugar `DbType` 的名字，`DatabaseTypes` 列出常用的；客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、PostgreSQL 不自动转小写）。EF Core 与内存实现不支持，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
+
 ## 配置
 
 | 键 | 类型 | 缺省 | 说明 |
@@ -335,6 +365,8 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `XiHan:Persistence:EntityFrameworkCore:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项重探间隔，也是单次探测的超时 |
 | `XiHan:Persistence:SqlSugar:InitTables` | 布尔 | `false` | 启动时建表与加列 |
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项重探间隔，也是单次探测的超时 |
+| `XiHan:Persistence:DataSources:MaxCount` | 1–1024 | `64` | 运行时数据源的登记数上限 |
+| `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds` | 正数 | `15` | 运行时数据源健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Bindings:db` | 字符串 | — | 连接绑定的主值，见上文 |
 
 非法值在启动配置阶段抛出 `ArgumentException`，不回退到缺省值。雪花标识的配置节 `XiHan:Persistence:Snowflake` 见[标识生成](./distributed-ids#配置)。
@@ -348,7 +380,9 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_VALIDATION_004` | SqlSugar 实体的 `[Tenant]` 指向客户端里不存在的连接（装配错误） | 启动失败；运行时抛 `FrameworkException` |
 | `PERSISTENCE_VALIDATION_005` | 查询的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max` | 构造查询时抛 `FrameworkException`；调用里由 Transaction 阶段转为校验结果（HTTP 400） |
+| `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
+| `PERSISTENCE_NOTFOUND_002` | 运行时数据源没有在本进程登记（`GetAsync`） | `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
 | `PERSISTENCE_DENIED_001` | 只读工作单元里新增、更新、删除（只读操作里的写入，HTTP 403） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛异常、Transaction 阶段转为结果 |
@@ -356,6 +390,9 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
 | `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |
+| `PERSISTENCE_UNAVAILABLE_006` | 运行时数据源连不上（测试连接、健康探测），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
+| `PERSISTENCE_UNAVAILABLE_007` | 运行时数据源登记已满 | `Result` |
+| `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源） | `Result` |
 
 `PERSISTENCE_UNAVAILABLE_004` 与 `005` 属于雪花标识生成器，见[标识生成](./distributed-ids#失败与错误码)。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误](./errors)。
 
@@ -377,4 +414,4 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 - [Persistence.SqlSugar 包](../packages/persistence-sqlsugar)
 - [Persistence.Generators 包](../packages/persistence-generators)
 - 规范：RFC-0005《领域协议与持久化》、`conventions/batch-first.md`《批量优先》
-- 决策：ADR-0005、ADR-0012、ADR-0013、ADR-0023、ADR-0036
+- 决策：ADR-0005、ADR-0012、ADR-0013、ADR-0023、ADR-0036、ADR-0078

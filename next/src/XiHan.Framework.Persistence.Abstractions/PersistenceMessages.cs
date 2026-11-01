@@ -138,6 +138,54 @@ public static class PersistenceMessages
     public const string ClockMovedBackwards = "persistence.snowflake.clock_moved_backwards";
 
     /// <summary>
+    /// 运行时数据源没有登记。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。与 <see cref="PersistenceErrors.DataSourceNotFound"/> 搭配。
+    /// </remarks>
+    public const string DataSourceNotFound = "persistence.datasource.not_found";
+
+    /// <summary>
+    /// 数据库类型 Provider 不认识。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>databaseType</c>。与 <see cref="PersistenceErrors.DataSourceInvalid"/> 搭配。
+    /// </remarks>
+    public const string DataSourceTypeUnknown = "persistence.datasource.database_type_unknown";
+
+    /// <summary>
+    /// 数据源定义不合法（连接串格式错等）。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>reason</c>（已脱敏）。与 <see cref="PersistenceErrors.DataSourceInvalid"/> 搭配。
+    /// </remarks>
+    public const string DataSourceInvalid = "persistence.datasource.definition_invalid";
+
+    /// <summary>
+    /// 数据源连不上。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>reason</c>（已脱敏）。与 <see cref="PersistenceErrors.DataSourceUnavailable"/> 搭配。
+    /// </remarks>
+    public const string DataSourceUnavailable = "persistence.datasource.unavailable";
+
+    /// <summary>
+    /// 数据源登记已满。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>（要登记的名字）、<c>capacity</c>。与 <see cref="PersistenceErrors.DataSourceCapacityExceeded"/> 搭配。
+    /// </remarks>
+    public const string DataSourceCapacityExceeded = "persistence.datasource.capacity_exceeded";
+
+    /// <summary>
+    /// 当前的持久化 Provider 不支持运行时数据源。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="PersistenceErrors.NotSupported"/> 搭配。
+    /// </remarks>
+    public const string DataSourcesNotSupported = "persistence.datasource.not_supported";
+
+    /// <summary>
     /// 延迟装载的目录。
     /// </summary>
     /// <remarks>

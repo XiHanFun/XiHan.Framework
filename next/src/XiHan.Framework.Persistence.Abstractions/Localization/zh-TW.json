@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "無法登記資料來源 '{name}'：已達到 {capacity} 個資料來源的上限。",
+  "persistence.datasource.database_type_unknown": "資料來源 '{name}' 的資料庫類型 '{databaseType}' 不受目前的持久化 Provider 支援。",
+  "persistence.datasource.definition_invalid": "資料來源 '{name}' 的定義不合法：{reason}",
+  "persistence.datasource.not_found": "資料來源 '{name}' 未登記。",
+  "persistence.datasource.not_supported": "目前的持久化 Provider 不支援執行階段資料來源。",
+  "persistence.datasource.unavailable": "無法連線資料來源 '{name}'：{reason}",
   "persistence.entity.concurrency_conflict": "實體 '{entity}' 發生樂觀並行衝突：{reason}",
   "persistence.entity.duplicate": "實體 '{entity}' 已存在識別碼為 '{id}' 的項目。",
   "persistence.entity.not_found": "實體 '{entity}' 沒有識別碼為 '{id}' 的項目。",

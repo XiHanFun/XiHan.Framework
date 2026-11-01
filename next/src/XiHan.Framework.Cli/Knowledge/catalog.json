@@ -2263,7 +2263,7 @@
           "required": false
         }
       ],
-      "config": "XiHan:Persistence:SqlSugar",
+      "config": "XiHan:Persistence",
       "pipeline": [
         {
           "middleware": "XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware",

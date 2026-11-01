@@ -1,4 +1,10 @@
 {
+  "persistence.datasource.capacity_exceeded": "无法登记数据源 '{name}'：已达到 {capacity} 个数据源的上限。",
+  "persistence.datasource.database_type_unknown": "数据源 '{name}' 的数据库类型 '{databaseType}' 不受当前持久化 Provider 支持。",
+  "persistence.datasource.definition_invalid": "数据源 '{name}' 的定义不合法：{reason}",
+  "persistence.datasource.not_found": "数据源 '{name}' 没有登记。",
+  "persistence.datasource.not_supported": "当前的持久化 Provider 不支持运行时数据源。",
+  "persistence.datasource.unavailable": "无法连接数据源 '{name}'：{reason}",
   "persistence.entity.concurrency_conflict": "实体 '{entity}' 发生乐观并发冲突：{reason}",
   "persistence.entity.duplicate": "实体 '{entity}' 已存在标识为 '{id}' 的条目。",
   "persistence.entity.not_found": "实体 '{entity}' 没有标识为 '{id}' 的条目。",

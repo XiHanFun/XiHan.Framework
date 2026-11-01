@@ -8,6 +8,7 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -63,6 +64,8 @@ public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
         context.Services.TryAddScoped<InMemoryUnitOfWork>();
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<InMemoryUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
+        // 运行时数据源不支持：内存实现没有数据库；注册表照样登记，取用返回 PERSISTENCE_UNAVAILABLE_008
+        context.Services.AddDataSourceRegistry();
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);

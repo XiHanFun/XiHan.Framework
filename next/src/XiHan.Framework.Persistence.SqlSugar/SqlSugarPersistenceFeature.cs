@@ -12,6 +12,7 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -123,7 +124,8 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
-            Config = new ConfigContribution(SqlSugarPersistenceOptions.ConfigurationSection),
+            // 读本包的 XiHan:Persistence:SqlSugar 与运行时数据源的 XiHan:Persistence:DataSources，写两者的最近公共节（ADR-0075）
+            Config = new ConfigContribution("XiHan:Persistence"),
             Health = [HealthName],
         },
         Entry = typeof(SqlSugarPersistenceFeature).FullName,
@@ -163,6 +165,8 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         context.Services.TryAddScoped<SqlSugarUnitOfWork>();
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<SqlSugarUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
+        // 运行时数据源：按应用记录里的定义连外部库，与上面的作用域客户端互不相干（RFC-0005「运行时数据源」）
+        context.Services.AddDataSourceProvider<SqlSugarDataSourceProvider>(context.Configuration);
         context.AddMiddleware<UnitOfWorkMiddleware>(PipelineStage.Transaction);
         // 回放此前登记的实体，并让此后登记的实体立即注册到本 Provider
         context.Services.GetRepositoryRegistrations().ApplyTo(context.Services, this);

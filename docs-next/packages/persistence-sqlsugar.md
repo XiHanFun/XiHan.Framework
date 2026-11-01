@@ -117,6 +117,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接 |
 | `SqlSugarRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
+| `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
 
 ## 使用示例
 
@@ -274,6 +275,7 @@ public sealed class ChangeBuffer
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_DENIED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
+- 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
 - 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
 
 ## 相关
@@ -285,4 +287,4 @@ public sealed class ChangeBuffer
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044
+- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078
