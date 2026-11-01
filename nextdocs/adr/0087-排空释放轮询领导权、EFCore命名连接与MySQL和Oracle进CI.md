@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0005-persistence.md`、`spec/rfcs/0021-workflow.md`、`spec/conventions/error-codes.md` 随之修订；修订 ADR-0084 第一节（EF Core 的命名连接）、第二节（排空期间的领导权、周期中途进入排空））。
+已采纳（`spec/rfcs/0005-persistence.md`、`spec/rfcs/0021-workflow.md`、`spec/conventions/error-codes.md` 随之修订；修订 ADR-0084 第一节（EF Core 的命名连接）、第二节（排空期间的领导权、周期中途进入排空）、第四节（Oracle 11g 与兼容库改为已定））。
 
 ## 日期
 
@@ -104,3 +104,22 @@ ADR-0084 第二节让 `DueBookmarkPoller.RunCycleAsync` 只在周期开头看一
 - 行为：应用停机时不再出现「同一周期里剩下的每个分区一条」的 `Scanning due workflow bookmarks … 'WORKFLOW_UNAVAILABLE_001'` 与 `Purging ended workflow instances failed …` 告警。公开 API、配置、表结构不变。
 - 与第一节一起：数据库实现里，周期开头在服务状态时照常拿或续领导权，中途进入排空的这个周期停下，下一个周期（仍在排空）释放领导权。
 - 测试：内存与数据库工作流各一个用例，平台加三个租户共四个分区，书签存储的装饰器在平台分区的扫描进行中让应用开始停机（依赖工作流的探针特性停在闸门前，应用一直处在排空中），断言只有平台分区的扫描到达存储、没有工作流的告警；数据库的用例另断言这个周期持有领导权、下一个周期释放。先写用例复现了 acme、contoso、globex 三个分区的扫描告警，再改实现。
+
+## 四、Oracle 11g 与 Oracle 兼容库的读列维持不支持
+
+### 背景
+
+ADR-0084 第四节把 Oracle 的读列改为查数据字典：判自增要 `USER_TAB_COLUMNS.IDENTITY_COLUMN`，这一列 12c 才有，11g 上读列失败；达梦、OceanBase Oracle 模式等兼容库仍走 SqlSugar 的读列（`GetSchemaTable`：CLR 类型名、读不到 identity、缺省值错位），没有验证环境。当时记为待定。
+
+### 决策
+
+维持不支持（用户拍板），在 RFC-0005、docs-next 的持久化指南与 SqlSugar 包页、包 README 写明：11g 及更早读列以 `PERSISTENCE_UNAVAILABLE_006` 失败，不做 11g 分支；兼容库走 SqlSugar 原来的读列，没有验证，读到的结构不作保证。实体目录不连库，不受影响。
+
+### 理由
+
+- 11g 早已停止支持，为它另写一套不判 identity 的读列只是给代码生成一个更差的结果。
+- 兼容库各家与 Oracle 的差异不一，没有验证环境就按「不支持」写明，比写成「可能可用」更不容易误导。
+
+### 影响
+
+无代码与行为变化；错误码 `PERSISTENCE_UNAVAILABLE_006` 的说明补上 11g。需要的应用另起一项、带验证环境再做。

@@ -393,7 +393,8 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | 实体目录 | 每个登记的实体一条：表名（映射声明的写法，分表是逻辑名）、列映射、`EntityProtocols`（聚合根、创建 / 修改时间、并发戳、软删除、多租户）、`[EntityIndex]` 推出的索引；PostgreSQL 的物理名可能是小写，对照时不区分大小写 |
 | 缺省连接 | 另开一个不在事务里的连接读，PostgreSQL 系语句失败不会中止调用的事务 |
 | SQLite 的限制 | 没有表与列注释；`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；长度与精度取自声明的类型；自增只认 `AUTOINCREMENT` |
-| 实测过的数据库 | SQLite、PostgreSQL、MySQL、SQL Server、Oracle（12c 及以上；读连接用户自己的表，不加引号的名字是大写）。达梦等 Oracle 兼容库与 PostgreSQL 衍生库没有验证 |
+| 实测过的数据库 | SQLite、PostgreSQL、MySQL、SQL Server、Oracle（12c 及以上；读连接用户自己的表，不加引号的名字是大写）。PostgreSQL 衍生库没有验证 |
+| 不支持的数据库（已定） | Oracle 11g 及更早：读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`），不做 11g 的分支。达梦、OceanBase Oracle 模式等 Oracle 兼容库：走 SqlSugar 原来的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证（ADR-0087） |
 | Provider | SqlSugar 两者都支持。EF Core 的实体目录取 DbContext 模型、读结构不支持（已定，不计划支持）；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
 
 ## 配置
