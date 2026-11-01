@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Database.Locking;
 /// 租约行的三个原子步骤。
 /// </summary>
 /// <remarks>
-/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交，别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表始终在默认连接（平台库）。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>。
+/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交，别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表在默认连接（平台库），或 <see cref="DatabaseWorkflowOptions.LockConnection"/> 指定的命名连接——那时工作单元绑定这个连接，事务只开在租约库上，SQLite 上不去等调用方事务占着的业务库写锁。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>。
 /// </remarks>
 internal sealed class LeaseTable
 {
@@ -30,12 +30,21 @@ internal sealed class LeaseTable
     private readonly TimeProvider _clock;
 
     /// <summary>
+    /// 每一步开工作单元的选项：可写，绑定 <see cref="DatabaseWorkflowOptions.LockConnection"/>（未配置为缺省落点）。
+    /// </summary>
+    private readonly UnitOfWorkOptions _unitOfWork;
+
+    /// <summary>
     /// 创建。
     /// </summary>
-    public LeaseTable(IServiceProvider services, TimeProvider clock)
+    /// <param name="services">根服务提供者。</param>
+    /// <param name="clock">时钟。</param>
+    /// <param name="lockConnection">租约表的命名连接；<see langword="null"/> 为缺省落点。</param>
+    public LeaseTable(IServiceProvider services, TimeProvider clock, string? lockConnection)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _unitOfWork = new UnitOfWorkOptions(Connection: lockConnection);
     }
 
     /// <summary>
@@ -136,7 +145,7 @@ internal sealed class LeaseTable
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         try
         {
-            await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, cancellationToken).ConfigureAwait(false);
+            await unitOfWork.BeginAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
             var result = await step(scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>()).ConfigureAwait(false);
             if (result.IsFailure)
             {

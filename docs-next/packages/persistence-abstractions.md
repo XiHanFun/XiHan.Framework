@@ -79,11 +79,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | 类型 | 命名空间 | 说明 |
 | --- | --- | --- |
 | `IRepository<TEntity, TKey>` | `…Abstractions.Repositories` | `FindAsync`、`FindManyAsync`、`ListAsync`、`CountAsync`、`AddAsync` / `AddRangeAsync`、`UpdateAsync` / `UpdateRangeAsync`、`RemoveAsync` / `RemoveRangeAsync` |
-| `RepositoryServiceCollectionExtensions` | `…Abstractions.Repositories` | `AddRepository<TEntity, TKey>()`、`GetRepositoryRegistrations()` |
-| `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合 |
+| `RepositoryServiceCollectionExtensions` | `…Abstractions.Repositories` | `AddRepository<TEntity, TKey>(connection)`（`connection` 可选：登记到命名连接）、`GetRepositoryRegistrations()` |
+| `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合；`ConnectionOf(type)` 取实体登记的命名连接 |
 | `EntityQuery<T>`、`EntityQuery` | `…Abstractions.Queries` | 不可变查询：`Where`、`OrderBy`、`Page`、`Within`、`IncludeDeleted`；`EntityQuery.All<T>()`、`DefaultMaxTake`（1000） |
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
-| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、开启选项（`Default`：无租户、可写） |
+| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、开启选项（`TenantId`、`IsReadOnly`、`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
@@ -96,7 +96,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
 | `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询、一页表、表（分表的逻辑名与物理表）、表结构、列 |
 | `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |
-| `RegisteredEntity` | `…Abstractions.Repositories` | `RepositoryRegistrations.Entities` 的一项：实体类型与标识类型 |
+| `RegisteredEntity` | `…Abstractions.Repositories` | `RepositoryRegistrations.Entities` 的一项：实体类型、标识类型与登记的命名连接（`Connection`） |
 | `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
 | `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
 | `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
@@ -160,6 +160,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
 - 索引声明（ADR-0072）：名字是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引是只约束未删除行的部分唯一索引（ADR-0081，PostgreSQL、SQLite、SQL Server 支持，其余数据库启动失败；列里显式写 `IsDeleted` 则是普通唯一索引）；声明错误（没有列、列名重复、不是公开属性、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
 - 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
+- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。只有 SqlSugar 支持；EF Core 与内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](../guide/persistence#命名连接)。
 - 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](../guide/persistence#运行时数据源)。
 - 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](../guide/persistence#库结构读取与实体目录)。
 
@@ -175,7 +176,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_VALIDATION_001` | `PersistenceErrors.TenantRequired` | 多租户实体缺少当前租户 |
 | `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |
 | `PERSISTENCE_VALIDATION_003` | `PersistenceErrors.EventsUndispatched` | 有未派发的领域事件但没有派发器 |
-| `PERSISTENCE_VALIDATION_004` | `PersistenceErrors.UnknownConnection` | 实体落点指向的连接不存在（SqlSugar `[Tenant]`，装配错误，抛异常） |
+| `PERSISTENCE_VALIDATION_004` | `PersistenceErrors.UnknownConnection` | 实体落点不成立（SqlSugar `[Tenant]` 或登记的命名连接不存在、两者不一致；绑定的连接不存在或实体不落在它上面；装配错误，抛异常） |
 | `PERSISTENCE_VALIDATION_005` | `PersistenceErrors.TakeExceeded` | 查询的取出条数超过上限（构造时抛异常；调用里转为校验结果，HTTP 400） |
 | `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
 | `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |

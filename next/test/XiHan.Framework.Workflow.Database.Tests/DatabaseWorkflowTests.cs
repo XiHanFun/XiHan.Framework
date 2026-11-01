@@ -4,9 +4,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.InMemory;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
@@ -118,10 +120,13 @@ public sealed class DatabaseWorkflowTests
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:LockLeaseSeconds"] = "30",
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:HolderId"] = "node-7",
             [$"{DatabaseWorkflowOptions.ConfigurationSection}:HealthProbeIntervalSeconds"] = "20",
+            [$"{DatabaseWorkflowOptions.ConfigurationSection}:LockConnection"] = "leases",
         }).Build();
 
         var options = DatabaseWorkflowOptions.FromConfiguration(configuration);
-        Assert.Equal((TimeSpan.FromMilliseconds(500), 9, TimeSpan.FromSeconds(30), "node-7", TimeSpan.FromSeconds(20)), (options.PollInterval, options.BatchSize, options.LockLease, options.HolderId, options.HealthProbeInterval));
+        Assert.Equal((TimeSpan.FromMilliseconds(500), 9, TimeSpan.FromSeconds(30), "node-7", TimeSpan.FromSeconds(20), "leases"), (options.PollInterval, options.BatchSize, options.LockLease, options.HolderId, options.HealthProbeInterval, options.LockConnection));
+        // 租约表的连接空白视为未配置，与 HolderId 一致
+        Assert.Null(DatabaseWorkflowOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{DatabaseWorkflowOptions.ConfigurationSection}:LockConnection"] = " " }).Build()).LockConnection);
 
         var defaults = new DatabaseWorkflowOptions();
         Assert.Equal((TimeSpan.FromSeconds(1), 100, TimeSpan.FromSeconds(60)), (defaults.PollInterval, defaults.BatchSize, defaults.LockLease));
@@ -131,6 +136,38 @@ public sealed class DatabaseWorkflowTests
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseWorkflowOptions { BatchSize = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseWorkflowOptions { LockLease = TimeSpan.Zero });
         Assert.Throws<ArgumentException>(static () => new DatabaseWorkflowOptions { HolderId = " " });
+        Assert.Null(defaults.LockConnection);
+        Assert.Throws<ArgumentException>(static () => new DatabaseWorkflowOptions { LockConnection = " " });
+    }
+
+    [Fact]
+    public async Task LockConnection_PutsTheLeaseTableInItsOwnDatabase()
+    {
+        await using var database = new SqliteDatabase();
+        var host = await database.StartHostAsync();
+        await using (var held = (await host.Services.GetRequiredService<IWorkflowInstanceLock>().AcquireAsync("instance-1", CancellationToken.None)).ValueOrThrow())
+        {
+            // 租约表只建在租约库上，持有中的租约行也在那里；业务库里没有这张表
+            using var leases = new SqlSugar.SqlSugarClient(SqliteDatabase.Config("leases-read", SqliteDatabase.Connection(database.LeasePath)));
+            using var main = new SqlSugar.SqlSugarClient(SqliteDatabase.Config("main-read", database.ConnectionString));
+            Assert.Equal(["instance-1"], leases.Queryable<WorkflowLockRecord>().Select(static row => row.Id).ToList());
+            Assert.False(main.DbMaintenance.IsAnyTable(main.EntityMaintenance.GetTableName<WorkflowLockRecord>(), false));
+            Assert.True(main.DbMaintenance.IsAnyTable(main.EntityMaintenance.GetTableName<PlatformWorkflowInstanceRecord>(), false));
+        }
+
+        // 内存持久化没有连接：配置了租约表的连接即在装配时失败，不静默落在唯一的存储上
+        var exception = await Assert.ThrowsAnyAsync<Exception>(static () => TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<DatabaseWorkflowFeature>(),
+            [new($"{DatabaseWorkflowOptions.ConfigurationSection}:LockConnection", "leases")]));
+        var codes = new List<string>();
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is FrameworkException framework)
+            {
+                codes.Add(framework.Code);
+            }
+        }
+
+        Assert.Contains(PersistenceErrors.NotSupported, codes);
     }
 
     [Theory]
@@ -379,7 +416,8 @@ public sealed class DatabaseWorkflowTests
     {
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        // 绑定租约表的连接（未配置为缺省落点），与租约步骤一样只在租约库上开事务
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: host.Services.GetRequiredService<DatabaseWorkflowOptions>().LockConnection), CancellationToken.None);
         await action(scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>());
         (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
     }

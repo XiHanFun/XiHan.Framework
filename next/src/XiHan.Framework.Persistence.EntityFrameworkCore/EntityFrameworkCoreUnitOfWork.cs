@@ -62,6 +62,12 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
         }
 
+        // 不支持命名连接（一个 DbContext 一个连接，要分库另起 DbContext）：明确拒绝，不把绑定连接的工作单元当成普通工作单元静默开在缺省连接上
+        if (options.Connection is { } connection)
+        {
+            throw new FrameworkException(PersistenceErrors.NotSupported, $"The EF Core persistence provider does not support binding a unit of work to the named connection '{connection}'.");
+        }
+
         TenantId = options.TenantId;
         IsReadOnly = options.IsReadOnly;
         State = UnitOfWorkState.Active;

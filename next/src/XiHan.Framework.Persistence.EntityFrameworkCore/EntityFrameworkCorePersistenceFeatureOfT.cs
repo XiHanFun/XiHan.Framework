@@ -177,6 +177,12 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         where TKey : notnull, IEquatable<TKey>
     {
         ArgumentNullException.ThrowIfNull(services);
+        // 登记集合先记下实体再交给 Provider 注册，这里查得到它的落点；不支持命名连接就在装配时拒绝，不把它静默放到缺省连接上
+        if (services.GetRepositoryRegistrations().ConnectionOf(typeof(TEntity)) is { } connection)
+        {
+            throw new FrameworkException(PersistenceErrors.NotSupported, $"The EF Core persistence provider does not support placing entity '{typeof(TEntity).FullName}' on the named connection '{connection}' (one DbContext has one connection; register another DbContext for another database).");
+        }
+
         services.TryAddScoped<IRepository<TEntity, TKey>, EntityFrameworkCoreRepository<TEntity, TKey>>();
     }
 

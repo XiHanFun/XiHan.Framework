@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.Database.Polling;
 /// 健康项 <c>workflow.database.poller</c> 的探针。
 /// </summary>
 /// <remarks>
-/// 轮询领导权的租约表可达——读一次 <see cref="PollerLeadership.Resource"/> 的租约行。不经 <c>App.InvokeAsync</c>（启动期应用还不在服务状态会被挡住，探针也不需要 Tenant / Authorize 阶段），而是在根提供者的新作用域里开一个只读工作单元读行（仓储只能在活动的工作单元内使用），读完回滚结束。
+/// 轮询领导权的租约表可达——读一次 <see cref="PollerLeadership.Resource"/> 的租约行。不经 <c>App.InvokeAsync</c>（启动期应用还不在服务状态会被挡住，探针也不需要 Tenant / Authorize 阶段），而是在根提供者的新作用域里开一个只读工作单元读行（仓储只能在活动的工作单元内使用），读完回滚结束；配置了 <see cref="DatabaseWorkflowOptions.LockConnection"/> 时工作单元绑定这个连接，探的就是租约库。
 /// </remarks>
 internal sealed class PollerLeaseProbe
 {
@@ -26,11 +26,18 @@ internal sealed class PollerLeaseProbe
     private readonly IServiceProvider _services;
 
     /// <summary>
+    /// 只读工作单元的选项，绑定租约表的命名连接（未配置为缺省落点）。
+    /// </summary>
+    private readonly UnitOfWorkOptions _unitOfWork;
+
+    /// <summary>
     /// 创建。
     /// </summary>
-    public PollerLeaseProbe(IServiceProvider services)
+    public PollerLeaseProbe(IServiceProvider services, DatabaseWorkflowOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         _services = services ?? throw new ArgumentNullException(nameof(services));
+        _unitOfWork = new UnitOfWorkOptions(IsReadOnly: true, Connection: options.LockConnection);
     }
 
     /// <summary>
@@ -43,7 +50,7 @@ internal sealed class PollerLeaseProbe
     {
         await using var scope = _services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), cancellationToken).ConfigureAwait(false);
+        await unitOfWork.BeginAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
         try
         {
             _ = await scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>().FindAsync(PollerLeadership.Resource, cancellationToken).ConfigureAwait(false);

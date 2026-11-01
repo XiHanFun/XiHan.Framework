@@ -57,15 +57,39 @@ public sealed class RepositoryRegistrations
     public IReadOnlyList<RegisteredEntity> Entities => _entities;
 
     /// <summary>
+    /// 实体登记时指定的命名连接。
+    /// </summary>
+    /// <remarks>
+    /// 没有登记或登记时没有指定为 <see langword="null"/>。Provider 的落点规则据此决定实体落在哪个连接。
+    /// </remarks>
+    public string? ConnectionOf(Type entityType)
+    {
+        ArgumentNullException.ThrowIfNull(entityType);
+        return _entities.Find(e => e.EntityType == entityType)?.Connection;
+    }
+
+    /// <summary>
     /// 登记实体。
     /// </summary>
-    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>()
+    /// <remarks>
+    /// 同一实体可以登记多次（只记一条），但落点必须相同。
+    /// </remarks>
+    /// <param name="connection">实体落点的命名连接，见 <see cref="RegisteredEntity.Connection"/>；<see langword="null"/> 是 Provider 的缺省落点。</param>
+    /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白，或实体已登记到另一个连接（含一次为空、一次非空）。</exception>
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(string? connection = null)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
-        if (!_entities.Exists(static e => e.EntityType == typeof(TEntity)))
+        var entity = new RegisteredEntity(typeof(TEntity), typeof(TKey), connection);
+        var existing = _entities.Find(static e => e.EntityType == typeof(TEntity));
+        if (existing is null)
         {
-            _entities.Add(new RegisteredEntity(typeof(TEntity), typeof(TKey)));
+            _entities.Add(entity);
+        }
+        else if (!string.Equals(existing.Connection, connection, StringComparison.Ordinal))
+        {
+            // 落点只能有一个：两个特性各说各的连接时，静默取其一会让一方的数据落到它不知道的库里
+            throw new ArgumentException($"Entity '{typeof(TEntity).FullName}' is already registered on connection '{existing.Connection ?? "(default)"}' and cannot also be registered on '{connection ?? "(default)"}'.", nameof(connection));
         }
 
         Action<IServiceCollection, IRepositoryRegistrar> registration = static (services, registrar) => registrar.Register<TEntity, TKey>(services);

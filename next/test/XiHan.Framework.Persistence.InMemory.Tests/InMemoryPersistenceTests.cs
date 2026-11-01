@@ -2,10 +2,12 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
@@ -87,6 +89,21 @@ public sealed class InMemoryPersistenceTests
         Assert.Throws<ArgumentException>(static () => InMemoryPersistenceOptions.FromConfiguration(Configuration(("XiHan:Persistence:InMemory:MaxEntitiesPerType", "0"))));
         Assert.Throws<ArgumentException>(static () => InMemoryPersistenceOptions.FromConfiguration(Configuration(("XiHan:Persistence:InMemory:MaxEntitiesPerType", "many"))));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new InMemoryPersistenceOptions { MaxEntitiesPerType = 0 });
+    }
+
+    [Fact]
+    public async Task NamedConnections_AreNotSupported_AtRegistrationOrBegin()
+    {
+        // 内存实现没有连接：实体登记到命名连接在装配时、绑定连接的工作单元在开始时明确拒绝，不静默落在唯一的存储上
+        var services = new ServiceCollection();
+        services.AddRepository<Widget, Guid>("leases");
+        var registered = Assert.Throws<FrameworkException>(() => services.GetRepositoryRegistrations().ApplyTo(services, new InMemoryPersistenceFeature()));
+        Assert.Equal(PersistenceErrors.NotSupported, registered.Code);
+
+        var (_, unitOfWork, _) = Arrange();
+        var begun = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), CancellationToken.None));
+        Assert.Equal(PersistenceErrors.NotSupported, begun.Code);
+        Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
     }
 
     [Fact]

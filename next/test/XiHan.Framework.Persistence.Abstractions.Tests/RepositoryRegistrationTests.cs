@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
@@ -51,6 +52,34 @@ public sealed class RepositoryRegistrationTests
         services.AddRepository<Widget, Guid>();
 
         Assert.Equal(["Widget<Guid>"], registrar.Registered);
+    }
+
+    [Fact]
+    public void AddRepository_WithConnection_RecordsThePlacement_AndRejectsAnotherConnection()
+    {
+        var services = new ServiceCollection();
+        services.AddRepository<Widget, Guid>("leases").AddRepository<Widget, Guid>("leases").AddRepository<AuditedWidget, Guid>();
+        var registrations = services.GetRepositoryRegistrations();
+
+        // 同一实体同一连接可以重复登记；落点只有一个，换个连接（含缺省）就是装配错误
+        Assert.Equal(["leases", null], registrations.Entities.Select(static e => e.Connection));
+        Assert.Equal("leases", registrations.ConnectionOf(typeof(Widget)));
+        Assert.Null(registrations.ConnectionOf(typeof(AuditedWidget)));
+        Assert.Null(registrations.ConnectionOf(typeof(string)));
+        Assert.Throws<ArgumentException>(() => services.AddRepository<Widget, Guid>("archive"));
+        Assert.Throws<ArgumentException>(() => services.AddRepository<Widget, Guid>());
+        Assert.Throws<ArgumentException>(() => services.AddRepository<AuditedWidget, Guid>("leases"));
+        Assert.Throws<ArgumentException>(() => services.AddRepository<Widget, Guid>(" "));
+    }
+
+    [Fact]
+    public void UnitOfWorkOptions_Connection_IsNullByDefault_AndMustNotBeBlank()
+    {
+        Assert.Null(UnitOfWorkOptions.Default.Connection);
+        Assert.Equal("leases", new UnitOfWorkOptions(Connection: "leases").Connection);
+        Assert.Equal("leases", (UnitOfWorkOptions.Default with { Connection = "leases" }).Connection);
+        Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions(Connection: ""));
+        Assert.Throws<ArgumentException>(static () => UnitOfWorkOptions.Default with { Connection = " " });
     }
 
     [Fact]

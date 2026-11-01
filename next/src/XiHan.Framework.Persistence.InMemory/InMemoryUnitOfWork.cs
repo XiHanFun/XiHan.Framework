@@ -59,6 +59,12 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
         }
 
+        // 不支持命名连接（内存实现没有连接）：明确拒绝，不把绑定连接的工作单元当成普通工作单元静默开在缺省连接上
+        if (options.Connection is { } connection)
+        {
+            throw new FrameworkException(PersistenceErrors.NotSupported, $"The in-memory persistence provider does not support binding a unit of work to the named connection '{connection}'.");
+        }
+
         TenantId = options.TenantId;
         IsReadOnly = options.IsReadOnly;
         State = UnitOfWorkState.Active;

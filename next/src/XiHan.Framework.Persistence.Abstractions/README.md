@@ -12,7 +12,7 @@
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId`、`IWorkerIdSource`（`FixedWorkerIdSource` / `LeasedWorkerIdSource`） | 雪花 `long` 标识（ADR-0033）：应用显式装配特性后得到 `IIdGenerator<long>`，41 位毫秒 + 10 位机器位 + 12 位序列；机器位显式配置或经 `IDistributedLock` 租约分配；`SnowflakeId.Parse` 还原时间戳、机器位与序列，见下文 |
 | `PersistenceConventions` | Provider 共用的协议约定：创建时间、修改时间、租户、并发戳、软删除；`ApplyOnUpdate(entity, stored, now)` 让更新沿用存储行的创建时间、租户与删除标记（协议字段只由 Provider 写入） |
 | `LongTextAttribute`、`EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | Provider 中立的建表声明：`[LongText]` 长文本列；`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]` 在实体类上声明索引（可多个、可多列、可唯一，全部升序），`EntityIndexes.Resolve(type, table)` 按统一规则推出名字与列——SqlSugar 与 EF Core 两个 Provider 都经它建出同名索引，见下文「索引声明」 |
-| `IRepositoryRegistrar`、`AddRepository<TEntity, TKey>()` | 应用显式登记实体，Provider 据此注册闭合泛型的仓储；换 Provider 不改业务代码 |
+| `IRepositoryRegistrar`、`AddRepository<TEntity, TKey>(connection)` | 应用显式登记实体，Provider 据此注册闭合泛型的仓储；换 Provider 不改业务代码。`connection` 可选，把实体登记到命名连接（见下文「命名连接」） |
 | `ISchemaReader`、`TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo`、`SchemaLimits`、`IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols`、`RegisteredEntity` | 库结构读取与实体目录（ADR-0078）：读缺省连接或运行时数据源的表与列（主键、自增、可空、长度、精度与小数位、注释、缺省值），分表折叠成逻辑表；枚举 `AddRepository` 登记的实体（表、列、协议、`[EntityIndex]` 索引），见下文 |
 | `DataSourceRegistry`、`DataSourceDefinition`、`IDataSource`、`IDataSourceProvider`、`DataSourceOptions`、`DatabaseTypes`、`ConnectionStrings` | 运行时数据源（ADR-0078）：按应用记录里的定义（名字、数据库类型、连接串）连外部库，按名缓存、定义变了替换、`RemoveAsync` 显式失效、登记数有上限、每个数据源一条健康项、测试连接不登记；连接串不进日志、错误与健康详情，见下文 |
 
@@ -29,7 +29,15 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任�
 - 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_UNEXPECTED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 500：只读操作写数据是代码缺陷，不是调用方的输入或权限），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
 - Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
-- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly)` 决定，`UnitOfWorkOptions.Default` 可写。
+- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`UnitOfWorkOptions.Default` 可写、不绑定连接。
+
+## 命名连接
+
+一部分平台数据要放在另一个库里、并在业务事务进行中另行提交（ADR-0084）。SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，工作流的租约行因此要放在另一个库文件。
+
+- 实体落点：`AddRepository<TEntity, TKey>(connection)` 把实体登记到命名连接（`null` 是 Provider 的缺省落点，非空不能是空白）；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取它。同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。
+- 绑定连接的工作单元：`UnitOfWorkOptions(Connection: name)` 只在这个连接上读写——实体必须落在它上面（否则 `PERSISTENCE_VALIDATION_004`），事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。连接名空白抛 `ArgumentException`。
+- Provider：SqlSugar 是客户端里同名 `ConfigId` 的连接（方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 与内存实现不支持，登记到命名连接在装配时、绑定连接的工作单元在 `BeginAsync` 抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`。
 ## 索引声明
 
 框架自己的表（发件箱、审计、授予、翻译、调度、工作流）与应用实体一样，用本包的 `[EntityIndex]` 声明索引，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`：实体只依赖本包，换 Provider 不改实体（RFC-0005「索引声明」，ADR-0072）。

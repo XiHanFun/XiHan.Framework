@@ -72,10 +72,10 @@ public static class PersistenceErrors
     public const string EventsUndispatched = "PERSISTENCE_VALIDATION_003";
 
     /// <summary>
-    /// 实体落点指向的连接不存在。
+    /// 实体落点不成立。
     /// </summary>
     /// <remarks>
-    /// SqlSugar 实体的 <c>[Tenant(configId)]</c> 指向客户端里没有的连接，是装配错误。以异常抛出，缺省落点规则下在启动时校验。
+    /// 装配错误，以异常抛出：SqlSugar 实体的 <c>[Tenant(configId)]</c> 或登记时指定的命名连接不在客户端里、两者指向不同的连接（缺省落点规则下在启动时校验）；工作单元绑定的连接不在客户端里，或绑定连接的工作单元里操作的实体不落在那个连接上。
     /// </remarks>
     public const string UnknownConnection = "PERSISTENCE_VALIDATION_004";
 
@@ -143,7 +143,7 @@ public static class PersistenceErrors
     /// 当前的持久化 Provider 不支持该能力。
     /// </summary>
     /// <remarks>
-    /// 运行时数据源与库结构读取：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 只支持 PostgreSQL、SQLite、SQL Server，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）。
+    /// 运行时数据源与库结构读取、命名连接（实体登记到命名连接、绑定连接的工作单元）：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 只支持 PostgreSQL、SQLite、SQL Server，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）。
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
 

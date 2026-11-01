@@ -18,14 +18,17 @@ public static class RepositoryServiceCollectionExtensions
     /// 登记实体，由当前装配的持久化 Provider 注册仓储。
     /// </summary>
     /// <remarks>
-    /// 可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。
+    /// 可在 <c>AddXiHan()</c> 之前调用，也可在特性的 <c>Configure</c> 里调用。<paramref name="connection"/> 把实体登记到命名连接（RFC-0005「命名连接」）：SqlSugar 是客户端里同名 <c>ConfigId</c> 的连接，EF Core 与内存实现不支持，装配时抛出携带 <see cref="PersistenceErrors.NotSupported"/> 的异常。
     /// </remarks>
-    public static IServiceCollection AddRepository<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(this IServiceCollection services)
+    /// <param name="services">服务集合。</param>
+    /// <param name="connection">实体落点的命名连接；<see langword="null"/> 是 Provider 的缺省落点。</param>
+    /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白，或实体已登记到另一个连接。</exception>
+    public static IServiceCollection AddRepository<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(this IServiceCollection services, string? connection = null)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.GetRepositoryRegistrations().Add<TEntity, TKey>();
+        services.GetRepositoryRegistrations().Add<TEntity, TKey>(connection);
         return services;
     }
 

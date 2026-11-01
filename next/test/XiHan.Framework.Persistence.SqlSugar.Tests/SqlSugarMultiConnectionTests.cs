@@ -181,7 +181,7 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     public void Selector_RejectsPinnedConnectionThatDoesNotExist()
     {
         using var client = CreateClient(_default.ConnectionString);
-        var selector = new SqlSugarConnectionSelector();
+        var selector = new SqlSugarConnectionSelector(new RepositoryRegistrations());
 
         // 没有分片连接时租户实体与平台实体都落根连接；[Tenant] 指向的连接不存在是装配错误，不回退
         Assert.Same(client, selector.ConnectionFor(typeof(ConformanceOrder), client));

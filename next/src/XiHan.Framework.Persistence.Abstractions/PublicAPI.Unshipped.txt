@@ -161,12 +161,14 @@ XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<TEntity, TKey>
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar
 XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar.Register<TEntity, TKey>(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.Connection.get -> string?
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.EntityType.get -> System.Type!
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.KeyType.get -> System.Type!
-XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType, string? connection = null) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations
-XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>() -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>(string? connection = null) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar! registrar) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ConnectionOf(System.Type! entityType) -> string?
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Entities.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar!>!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.RepositoryRegistrations() -> void
@@ -299,13 +301,15 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.InvokeA
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.UnitOfWorkMiddleware() -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Deconstruct(out string? TenantId, out bool IsReadOnly) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Connection.get -> string?
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Connection.init -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Deconstruct(out string? TenantId, out bool IsReadOnly, out string? Connection) -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? other) -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.init -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.get -> string?
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.init -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false, string? Connection = null) -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
@@ -456,7 +460,7 @@ static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator !=(
 static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string? connection = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations!
 static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool

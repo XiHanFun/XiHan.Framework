@@ -87,6 +87,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `XiHan:Persistence:SqlSugar:InitTables` | 布尔 | `false` | 启动时按已登记的实体建缺表、加缺列；只宜在开发与测试开启 |
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
+| `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | 方式一的命名连接，值是连接串（见下文「命名连接」）；方式二写了这一节装配即失败 |
 
 ```json
 {
@@ -110,11 +111,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | 类型 | 说明 |
 | --- | --- |
 | `SqlSugarPersistenceFeature` | 特性入口；无参构造用应用注册的客户端，带回调的构造由特性创建客户端；`DiffLog` 选出开启差异日志的实体；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.sqlsugar.database`） |
-| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`DiffLog`；`FromConfiguration(configuration)` |
+| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
 | `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
 | `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
-| `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接 |
+| `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接；以 `UnitOfWorkOptions.Connection` 开启时只用那个命名连接 |
 | `SqlSugarRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
 | `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
@@ -126,10 +127,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 客户端可以带多个连接，每种实体落在哪个连接由 `IEntityConnectionSelector` 决定。默认实现 `SqlSugarConnectionSelector` 的规则按顺序：
 
 1. 实体带 SqlSugar 的 `[Tenant(configId)]`：落到该 `ConfigId` 的连接；客户端里没有这个连接是装配错误，抛出携带 `PERSISTENCE_VALIDATION_004` 的 `FrameworkException`，不回退到默认连接。用缺省落点规则时，带 `[Tenant]` 的已登记实体在启动时就校验，连接不存在即中断启动；`shard` 只在带分片的调用里存在，不在启动时校验。
-2. 实体实现 `IMultiTenant`，且客户端里有 `shard` 连接：落到分片连接。
-3. 其余：根（默认）连接。
+2. 实体以 `AddRepository<TEntity, TKey>(connection)` 登记到命名连接：落到同名 `ConfigId` 的连接，校验同上；与 `[Tenant]` 指向不同的连接同样是 `PERSISTENCE_VALIDATION_004`（见下文「命名连接」）。
+3. 实体实现 `IMultiTenant`，且客户端里有 `shard` 连接：落到分片连接。
+4. 其余：根（默认）连接。
 
-方式一在装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，再建一个 `ConfigId = shard` 的连接，与默认连接组成一个客户端：租户实体落分片库，租户目录、授予、发件箱这类不带租户的平台表仍落默认库，同一调用里一起提交或回滚。方式二由应用自己组装连接集合，提供名为 `shard` 的连接即可让第 2 条规则生效。
+方式一在装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，再建一个 `ConfigId = shard` 的连接，与默认连接组成一个客户端：租户实体落分片库，租户目录、授予、发件箱这类不带租户的平台表仍落默认库，同一调用里一起提交或回滚。方式二由应用自己组装连接集合，提供名为 `shard` 的连接即可让第 3 条规则生效。
 
 把审计类实体固定到 `audit` 库（配合上面方式二的客户端）：
 
@@ -153,6 +155,43 @@ public sealed class AccessLog : IEntity<Guid>, IHasCreationTime
 ```
 
 替换规则时，在装配特性之前注册自己的实现：`builder.Services.AddSingleton<IEntityConnectionSelector, MySelector>()`。同一工作单元里对同一实体类型的选择结果必须稳定。
+
+### 命名连接
+
+一部分平台数据要放在另一个库里、并在业务事务进行中另行提交时（RFC-0005「命名连接」，ADR-0084），用两样东西：实体登记到命名连接，管道外的写入开绑定那个连接的工作单元。典型场景是 SQLite 上的工作流租约表——SQLite 只有一个写者，业务事务写过之后，同一个库文件上的另一个事务要等它结束（见 [Workflow.Database](./workflow-database#sqlite-上的租约表)）。
+
+方式一在配置里声明命名连接，回调对每个命名连接各调用一次：绑定的主值换成该连接串、属性沿用 `db` 绑定（`provider` 等），`config.ConfigId` 是连接名，回调据此区分：
+
+```json
+{
+  "XiHan": {
+    "Bindings": { "db": "Data Source=app.db" },
+    "Persistence": {
+      "SqlSugar": {
+        "Connections": { "leases": "Data Source=app.leases.db" }
+      }
+    },
+    "Workflow": { "Database": { "LockConnection": "leases" } }
+  }
+}
+```
+
+```csharp
+// 应用自己的实体也可以登记到命名连接；框架的工作流租约表由 LockConnection 登记
+builder.Services.AddRepository<SyncCursor, string>(connection: "leases");
+
+// 管道外与业务事务互不等待的写入：工作单元绑定这个连接，事务只开在它上面
+await using var scope = services.CreateAsyncScope();
+var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), ct);
+// …经 IRepository<SyncCursor, string> 读写，然后 CommitAsync
+```
+
+- 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
+- 每个作用域的客户端都带上命名连接，排在默认连接之后，根连接仍是默认连接。工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。
+- 普通工作单元里，登记到命名连接的实体照常参与整体事务（同一调用触及的连接顺序提交）；`InitTables` 把它建在那个连接上。
+- 绑定连接的工作单元（`UnitOfWorkOptions(Connection: name)`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
+- 方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端，配置里的 `Connections` 节对它不适用，写了即装配失败。
 
 ::: warning 跨库提交是顺序提交，不是两阶段提交
 一次调用写了多个连接时，提交逐连接进行；后一个连接提交失败时，前一个已经提交。需要严格原子性的写入放在同一个库。
@@ -266,7 +305,7 @@ public sealed class ChangeBuffer
 | 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL / SQLite `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0`，SQL Server 筛选索引（键含可空列另加 `IS NOT NULL`）；只支持这三种数据库，其余（MySQL、Oracle、达梦、源自 PostgreSQL 而未验证的国产库等）上启动即失败（`PERSISTENCE_UNAVAILABLE_008`），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
 
-- `InitTables` 建缺表、加缺列，按落点分组：方式一启动时没有调用也就没有分片，全部实体在默认连接建表；方式二带 `[Tenant]` 的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
+- `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
 - 行锁：更新与删除的读取带 `TranLock`（`FOR UPDATE` / `UPDLOCK`）；SQLite 不支持行锁，由它的数据库级写锁保证；分表实体不加行锁。
 - 游离实例更新：并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；通过后把调用方的实例整行写入，创建时间、租户与删除标记取当前行的值，调用方实例上的这几个值不生效，写入后调用方实例拿到它们。按主键更新影响 0 行（行在加锁前已被删除）也返回 `PERSISTENCE_CONFLICT_001`。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，PostgreSQL 在插入时等对方提交后报主键冲突。PostgreSQL 系语句失败后整个事务进入中止状态，仓储另开一个不在事务里的连接（`CopyNew`，同一份连接配置）核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚：处理器忽略失败返回成功时，提交回滚并返回同一错误，不会对一个已中止的事务执行 `COMMIT`（PostgreSQL 会静默回滚，调用方看到的成功是假的）。

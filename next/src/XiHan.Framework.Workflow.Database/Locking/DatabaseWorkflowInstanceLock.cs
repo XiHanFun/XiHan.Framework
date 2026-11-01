@@ -68,7 +68,7 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(databaseOptions);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _leases = new LeaseTable(services, clock);
+        _leases = new LeaseTable(services, clock, databaseOptions.LockConnection);
         _timeout = options.LockTimeout;
         _lease = databaseOptions.LockLease;
         _holderId = databaseOptions.HolderId;

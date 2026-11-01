@@ -11,7 +11,7 @@ namespace XiHan.Framework.Workflow.Database;
 /// 数据库工作流选项（配置节 <c>XiHan:Workflow:Database</c>）。
 /// </summary>
 /// <remarks>
-/// 到期书签的轮询周期与批大小、租约时长、本节点的持有者标识。
+/// 到期书签的轮询周期与批大小、租约时长、本节点的持有者标识、租约表的命名连接。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseWorkflowOptions
@@ -78,6 +78,18 @@ public sealed record DatabaseWorkflowOptions
     } = _defaultHolderId;
 
     /// <summary>
+    /// 租约表（<c>WorkflowLockRecord</c>）的命名连接。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时租约表在持久化的缺省落点（平台库）。非空时特性把租约表登记到这个连接，租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上（RFC-0005「命名连接」）。SQLite 上必须配：SQLite 只有一个写者，引擎在调用方事务里写过之后再写租约行，同一个库文件上要等的正是调用方自己的事务，忙等超时后以 <c>WORKFLOW_TIMEOUT_001</c> 失败；PostgreSQL 等行级锁的数据库不需要。SqlSugar 是客户端里同名 <c>ConfigId</c> 的连接（方式一在 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明）；EF Core 与内存实现不支持，装配即失败。不能是空白。
+    /// </remarks>
+    public string? LockConnection
+    {
+        get => field;
+        init => field = value is null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The lock connection name must not be blank.", nameof(value));
+    }
+
+    /// <summary>
     /// 健康项 <c>workflow.database.poller</c> 的重探间隔（也是单次探测的超时）。
     /// </summary>
     /// <remarks>
@@ -93,7 +105,7 @@ public sealed record DatabaseWorkflowOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// <c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>HealthProbeIntervalSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理；<c>HolderId</c> 空白视为未配置，与调度选项的 <c>NodeId</c> 一致。
+    /// <c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>LockLeaseSeconds</c>、<c>HolderId</c>、<c>LockConnection</c>、<c>HealthProbeIntervalSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理；<c>HolderId</c> 与 <c>LockConnection</c> 空白视为未配置，与调度选项的 <c>NodeId</c> 一致。
     /// </remarks>
     public static DatabaseWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -117,6 +129,11 @@ public sealed record DatabaseWorkflowOptions
         if (configuration[$"{ConfigurationSection}:HolderId"] is { } holder && !string.IsNullOrWhiteSpace(holder))
         {
             options = options with { HolderId = holder };
+        }
+
+        if (configuration[$"{ConfigurationSection}:LockConnection"] is { } connection && !string.IsNullOrWhiteSpace(connection))
+        {
+            options = options with { LockConnection = connection };
         }
 
         if (Seconds(configuration, "HealthProbeIntervalSeconds") is { } probe)

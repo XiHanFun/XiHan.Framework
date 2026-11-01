@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时经 <see cref="ITenant"/> 在客户端的全部连接上开启数据库事务（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。
+/// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -37,6 +37,14 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 非空时提交只回滚并返回它。
     /// </remarks>
     private Error? _failure;
+
+    /// <summary>
+    /// 绑定的命名连接。
+    /// </summary>
+    /// <remarks>
+    /// 以 <see cref="UnitOfWorkOptions.Connection"/> 开启时为客户端里那个 <c>ConfigId</c> 的连接，否则为 <see langword="null"/>。非空时事务只开在它上面，不经 <see cref="ITenant"/> 牵动其他连接。
+    /// </remarks>
+    private SqlSugarProvider? _bound;
 
     /// <summary>
     /// 创建。
@@ -73,12 +81,22 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 取实体类型应使用的连接。
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。
+    /// 由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。绑定了命名连接的工作单元里，实体不落在那个连接上抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>。
     /// </remarks>
     public ISqlSugarClient ConnectionFor(Type entityType)
     {
         ArgumentNullException.ThrowIfNull(entityType);
-        return _selector.ConnectionFor(entityType, Client);
+        var connection = _selector.ConnectionFor(entityType, Client);
+        if (_bound is null)
+        {
+            return connection;
+        }
+
+        // 绑定连接的工作单元只认这一个连接：实体落在别处时读写会碰到不在事务里、也不该碰的库，按落点错误拒绝
+        var placed = ConfigIdOf(connection);
+        return string.Equals(placed, ConfigIdOf(_bound), StringComparison.Ordinal)
+            ? _bound
+            : throw new FrameworkException(PersistenceErrors.UnknownConnection, $"Entity '{entityType.FullName}' is placed on connection '{placed}', but the unit of work is bound to connection '{ConfigIdOf(_bound)}'.");
     }
 
     /// <inheritdoc />
@@ -88,6 +106,15 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         if (State != UnitOfWorkState.NotStarted)
         {
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
+        }
+
+        if (options.Connection is { } name)
+        {
+            // 先确认连接在客户端里再开始：取不到就是装配错误，不退回默认连接
+            var tenant = Client.AsTenant();
+            _bound = tenant.IsAnyConnection(name)
+                ? tenant.GetConnection(name)
+                : throw new FrameworkException(PersistenceErrors.UnknownConnection, $"The unit of work is bound to connection '{name}', but the SqlSugar client has no connection with that ConfigId.");
         }
 
         TenantId = options.TenantId;
@@ -121,7 +148,16 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         cancellationToken.ThrowIfCancellationRequested();
         if (!_transactionOpen)
         {
-            await Client.AsTenant().BeginTranAsync().ConfigureAwait(false);
+            // 绑定了命名连接：事务只开在它上面。经 ITenant 开会连默认连接一起开，SQLite 上就要等业务事务释放默认库的写锁——等的可能正是同一请求里的业务事务
+            if (_bound is not null)
+            {
+                await _bound.Ado.BeginTranAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await Client.AsTenant().BeginTranAsync().ConfigureAwait(false);
+            }
+
             _transactionOpen = true;
         }
     }
@@ -144,7 +180,15 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         // 没有事务说明本工作单元只读过数据，无需提交；多连接按顺序逐个提交，后一个失败时前一个已经提交（顺序提交，不是两阶段提交）
         if (_transactionOpen)
         {
-            await Client.AsTenant().CommitTranAsync().ConfigureAwait(false);
+            if (_bound is not null)
+            {
+                await _bound.Ado.CommitTranAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await Client.AsTenant().CommitTranAsync().ConfigureAwait(false);
+            }
+
             _transactionOpen = false;
         }
 
@@ -157,8 +201,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     {
         if (_transactionOpen)
         {
-            await Client.AsTenant().RollbackTranAsync().ConfigureAwait(false);
-            _transactionOpen = false;
+            await RollbackTransactionAsync().ConfigureAwait(false);
         }
 
         State = UnitOfWorkState.RolledBack;
@@ -170,10 +213,34 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         // 作用域结束时若事务仍未提交（例如中间件之外的直接使用），释放即回滚
         if (_transactionOpen)
         {
-            await Client.AsTenant().RollbackTranAsync().ConfigureAwait(false);
-            _transactionOpen = false;
+            await RollbackTransactionAsync().ConfigureAwait(false);
         }
     }
+
+    /// <summary>
+    /// 回滚已开启的事务。
+    /// </summary>
+    /// <remarks>
+    /// 绑定了命名连接时只回滚它，否则经 <see cref="ITenant"/> 回滚全部连接。
+    /// </remarks>
+    private async Task RollbackTransactionAsync()
+    {
+        if (_bound is not null)
+        {
+            await _bound.Ado.RollbackTranAsync().ConfigureAwait(false);
+        }
+        else
+        {
+            await Client.AsTenant().RollbackTranAsync().ConfigureAwait(false);
+        }
+
+        _transactionOpen = false;
+    }
+
+    /// <summary>
+    /// 连接的 <c>ConfigId</c>（字符串形式）。
+    /// </summary>
+    private static string? ConfigIdOf(ISqlSugarClient connection) => Convert.ToString(connection.CurrentConnectionConfig.ConfigId, System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
     /// 标为失败。

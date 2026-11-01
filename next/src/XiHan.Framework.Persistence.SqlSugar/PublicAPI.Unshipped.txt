@@ -3,7 +3,7 @@ XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector
 XiHan.Framework.Persistence.SqlSugar.IEntityConnectionSelector.ConnectionFor(System.Type! entityType, SqlSugar.ISqlSugarClient! client) -> SqlSugar.ISqlSugarClient!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.ConnectionFor(System.Type! entityType, SqlSugar.ISqlSugarClient! client) -> SqlSugar.ISqlSugarClient!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.SqlSugarConnectionSelector() -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarConnectionSelector.SqlSugarConnectionSelector(XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations! registrations) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections
 XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDataSource
@@ -33,6 +33,8 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StartAsync(Syste
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Connections.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Connections.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.DiffLog.get -> System.Func<System.Type!, bool>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.DiffLog.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? other) -> bool

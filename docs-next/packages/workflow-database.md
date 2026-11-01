@@ -90,9 +90,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `XiHan:Workflow:Database:BatchSize` | 整数 ≥ 1 | 100 | 每次轮询最多恢复的书签数 |
 | `XiHan:Workflow:Database:LockLeaseSeconds` | 正数 | 60 | 实例锁与轮询领导权的租约时长 |
 | `XiHan:Workflow:Database:HolderId` | 字符串 | `机器名:进程 ID:8 位随机十六进制` | 租约持有者标识，每个节点唯一 |
+| `XiHan:Workflow:Database:LockConnection` | 字符串 | — | 租约表的命名连接；SQLite 上必须配，见下文「SQLite 上的租约表」 |
 | `XiHan:Workflow:Database:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项重探间隔 |
 
-值写错即启动失败：解析不了抛 `ArgumentException`，超出取值范围抛 `ArgumentOutOfRangeException`，消息带出配置键与原值；`HolderId` 空白视为未配置。引擎选项（`LockTimeoutSeconds`、`MaxNodeExecutionsPerBurst`、`RetentionDays` 等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
+值写错即启动失败：解析不了抛 `ArgumentException`，超出取值范围抛 `ArgumentOutOfRangeException`，消息带出配置键与原值；`HolderId` 与 `LockConnection` 空白视为未配置。引擎选项（`LockTimeoutSeconds`、`MaxNodeExecutionsPerBurst`、`RetentionDays` 等）在 `XiHan:Workflow`，见 [Workflow.Abstractions](./workflow-abstractions#配置)。
 
 ```json
 {
@@ -135,10 +136,32 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名与状态，写书签时从实例行取，实例新增或状态变化时同步到它的书签行（同一事务），只取状态为 `Running` 的。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
-- 租约行与业务写入不在同一个事务里：SQLite 这类只有一个写者的数据库上，业务事务写过之后再写租约行要等自己的事务结束（忙等超时）。在 SQLite 上要经 `IEntityConnectionSelector` 把 `WorkflowLockRecord` 放到另一个库文件，调用之外的作用域以那个库为根连接；PostgreSQL 等行锁数据库不需要。
+- 租约行与业务写入不在同一个事务里：SQLite 上要把租约表放到另一个库文件，见下文「SQLite 上的租约表」；PostgreSQL 等行锁数据库不需要。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例。
+
+## SQLite 上的租约表
+
+租约行不随业务事务（ADR-0077）：引擎在调用方事务里写过实例、书签之后，再在自己的工作单元里写租约行。SQLite 只有一个写者（库级写锁），同一个库文件上这个工作单元要等调用方事务结束——等的正是自己，忙等超时后以 `WORKFLOW_TIMEOUT_001` 失败。所以 SQLite 上要把租约表放到另一个库文件（ADR-0084）：
+
+```json
+{
+  "XiHan": {
+    "Bindings": { "db": "Data Source=app.db" },
+    "Persistence": {
+      "SqlSugar": { "Connections": { "leases": "Data Source=app.leases.db" } }
+    },
+    "Workflow": { "Database": { "LockConnection": "leases" } }
+  }
+}
+```
+
+- `LockConnection` 指向持久化的命名连接（[SqlSugar 的命名连接](./persistence-sqlsugar#命名连接)，RFC-0005）：特性把 `WorkflowLockRecord` 登记到这个连接（`InitTables` 把租约表建在那里），租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上；业务调用不碰租约库，业务事务也就不锁它。
+- SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明连接，回调按 `config.ConfigId` 区分；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。连接不在客户端里时启动即失败（`PERSISTENCE_VALIDATION_004`）。
+- EF Core 与内存持久化不支持命名连接，配了 `LockConnection` 即装配失败（`PERSISTENCE_UNAVAILABLE_008`）。EF Core 在 SQLite 上跑数据库工作流时，调用方事务里的取锁会超时；用 PostgreSQL 等行锁数据库，或改用 SqlSugar。
+- 不配置时租约表照旧在平台库（默认连接），行为与以前相同；PostgreSQL、SQL Server、MySQL 等行级锁的数据库不需要配。
+- 多个节点共用租约库：租约库的连接串在各节点上要指向同一个库，SQLite 文件只适合单机的开发与集成测试。
 
 ## 从上一版升级
 

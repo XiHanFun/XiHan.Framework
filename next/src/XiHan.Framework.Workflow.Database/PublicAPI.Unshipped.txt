@@ -15,6 +15,8 @@ XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HealthProbeInterval.ge
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.get -> string!
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.HolderId.init -> void
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockConnection.get -> string?
+XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockConnection.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockLease.get -> System.TimeSpan
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.LockLease.init -> void
 XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions.PollInterval.get -> System.TimeSpan

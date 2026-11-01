@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.SqlSugar;
@@ -54,8 +55,23 @@ public sealed record SqlSugarPersistenceOptions
     } = static _ => false;
 
     /// <summary>
-    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// 方式一（特性按回调建客户端）的命名连接：名字 → 连接串。
     /// </summary>
+    /// <remarks>
+    /// 来自 <c>XiHan:Persistence:SqlSugar:Connections:&lt;name&gt;</c>，缺省为空。每个作用域的客户端都带上它们（<c>ConfigId</c> 是名字，排在默认连接之后），供登记到命名连接的实体与绑定连接的工作单元使用（RFC-0005「命名连接」）。名字合 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>，不能是 <see cref="SqlSugarConnections.Default"/> 或 <see cref="SqlSugarConnections.Shard"/>；连接串是机密，不进日志。
+    /// </remarks>
+    public IReadOnlyDictionary<string, string> Connections
+    {
+        get => field;
+        init => field = ValidateConnections(value);
+    } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>。
+    /// </summary>
+    /// <remarks>
+    /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理。
+    /// </remarks>
     public static SqlSugarPersistenceOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -76,6 +92,45 @@ public sealed record SqlSugarPersistenceOptions
                 : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
         }
 
+        var named = configuration.GetSection($"{ConfigurationSection}:Connections").GetChildren().ToList();
+        if (named.Count > 0)
+        {
+            var connections = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var section in named)
+            {
+                // 子节（嵌套的键）不是连接串：按配置错误报出，不当作空值跳过
+                connections[section.Key] = section.Value ?? throw new ArgumentException($"'{ConfigurationSection}:Connections:{section.Key}' must be a connection string.");
+            }
+
+            options = options with { Connections = connections };
+        }
+
         return options;
+    }
+
+    /// <summary>
+    /// 核对命名连接。
+    /// </summary>
+    /// <remarks>
+    /// 名字不合文法、与约定连接同名、连接串空白都抛出 <see cref="ArgumentException"/>；消息只带名字。返回一份副本。
+    /// </remarks>
+    private static Dictionary<string, string> ValidateConnections(IReadOnlyDictionary<string, string> connections)
+    {
+        ArgumentNullException.ThrowIfNull(connections);
+        var copy = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, connectionString) in connections)
+        {
+            // default 与 shard 是特性自己建的约定连接，命名连接与它们同名会顶替其一
+            if (!DataSourceDefinition.IsValidName(name) || string.Equals(name, SqlSugarConnections.Shard, StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"'{ConfigurationSection}:Connections:{name}' is not a valid connection name: it must match '^[a-z0-9][a-z0-9-]{{0,63}}$' and must not be '{SqlSugarConnections.Default}' or '{SqlSugarConnections.Shard}'.", nameof(connections));
+            }
+
+            copy[name] = !string.IsNullOrWhiteSpace(connectionString)
+                ? connectionString
+                : throw new ArgumentException($"'{ConfigurationSection}:Connections:{name}' must not be blank.", nameof(connections));
+        }
+
+        return copy;
     }
 }

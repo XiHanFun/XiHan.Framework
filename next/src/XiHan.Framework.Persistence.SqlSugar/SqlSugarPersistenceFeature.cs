@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// SqlSugar 持久化的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以作用域内的 <see cref="ISqlSugarClient"/> 实现仓储与工作单元。客户端有两种来源：由本特性按配置回调创建（自动应用 <see cref="SqlSugarConventions"/>；默认连接 <c>ConfigId</c> 为 <see cref="SqlSugarConnections.Default"/>，带租户分片的调用再加一个 <see cref="SqlSugarConnections.Shard"/> 连接），或由应用自己注册（应用须先对连接配置调用 <see cref="SqlSugarConventions.Apply"/>，多连接时自己决定 <c>ConfigId</c>）。实体落在哪个连接由 <see cref="IEntityConnectionSelector"/> 决定。健康项 <see cref="HealthName"/> 按 <see cref="SqlSugarPersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里打开再关闭默认连接。
+/// 提供 <c>persistence.relational@1</c>，以作用域内的 <see cref="ISqlSugarClient"/> 实现仓储与工作单元。客户端有两种来源：由本特性按配置回调创建（自动应用 <see cref="SqlSugarConventions"/>；默认连接 <c>ConfigId</c> 为 <see cref="SqlSugarConnections.Default"/>，<see cref="SqlSugarPersistenceOptions.Connections"/> 的命名连接随后，带租户分片的调用再加一个 <see cref="SqlSugarConnections.Shard"/> 连接），或由应用自己注册（应用须先对连接配置调用 <see cref="SqlSugarConventions.Apply"/>，多连接时自己决定 <c>ConfigId</c>）。实体落在哪个连接由 <see cref="IEntityConnectionSelector"/> 决定。健康项 <see cref="HealthName"/> 按 <see cref="SqlSugarPersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里打开再关闭默认连接。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegistrar
@@ -153,13 +153,30 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             // 默认连接始终在客户端里：平台目录表落默认连接、租户表落分片连接，由 IEntityConnectionSelector 决定，两者在同一客户端里由 AsTenant() 统一开事务
             var binding = context.TryGetBinding(ConnectionBinding);
             var shared = CreateConfig(configure, binding, SqlSugarConnections.Default);
+            // 命名连接（RFC-0005「命名连接」）同样只建一份配置：回调按 ConfigId 区分，绑定的主值换成该连接串、属性沿用 db 绑定（库类型等）。
+            // 它们排在默认连接之后，根连接仍是默认连接；工作单元只在触及的连接上开事务，业务调用不碰命名连接时那个库不被业务事务锁住
+            var named = _options.Connections.Select(pair => CreateConfig(configure, NamedBinding(binding, pair.Value), pair.Key)).ToList();
             context.Services.AddScoped<ISqlSugarClient>(sp =>
             {
                 var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
-                return shard.HasValue
-                    ? new SqlSugarClient([shared, CreateConfig(configure, shard, SqlSugarConnections.Shard)])
-                    : new SqlSugarClient(shared);
+                if (!shard.HasValue && named.Count == 0)
+                {
+                    return new SqlSugarClient(shared);
+                }
+
+                List<ConnectionConfig> configs = [shared, .. named];
+                if (shard.HasValue)
+                {
+                    configs.Add(CreateConfig(configure, shard, SqlSugarConnections.Shard));
+                }
+
+                return new SqlSugarClient(configs);
             });
+        }
+        else if (_options.Connections.Count > 0)
+        {
+            // 方式二由应用自己组装连接集合：这一节对它没有作用，静默忽略会让应用以为命名连接已经建好
+            throw new ArgumentException($"'{SqlSugarPersistenceOptions.ConfigurationSection}:Connections' only applies when the feature creates the client from a configure callback; the application registers its own ISqlSugarClient, so add connections with these ConfigIds to it instead.");
         }
 
         context.Services.TryAddSingleton<IEntityConnectionSelector, SqlSugarConnectionSelector>();
@@ -210,15 +227,15 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 启动时校验实体落点。
     /// </summary>
     /// <remarks>
-    /// 用缺省落点规则时，带 <c>[Tenant(configId)]</c> 的已登记实体指向客户端里没有的连接即以 <see cref="PersistenceErrors.UnknownConnection"/> 中断启动，不等第一次使用才报。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时校验；应用替换了落点规则的不校验。没有这样的实体时不取客户端。
+    /// 用缺省落点规则时，带 <c>[Tenant(configId)]</c> 或登记到命名连接的已登记实体指向客户端里没有的连接、两者指向不同的连接，即以 <see cref="PersistenceErrors.UnknownConnection"/> 中断启动，不等第一次使用才报。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时校验；应用替换了落点规则的不校验。没有这样的实体时不取客户端。
     /// </remarks>
     private async Task ValidatePlacementsAsync(IServiceProvider services)
     {
-        var pinned = _entityTypes
-            .Select(static type => (Type: type, ConfigId: SqlSugarConnectionSelector.PinnedConnection(type)))
-            .Where(static entry => entry.ConfigId is not null && entry.ConfigId != SqlSugarConnections.Shard)
+        var registrations = services.GetRequiredService<RepositoryRegistrations>();
+        var placed = _entityTypes
+            .Where(type => SqlSugarConnectionSelector.PinnedConnection(type) is not null || registrations.ConnectionOf(type) is not null)
             .ToList();
-        if (pinned.Count == 0)
+        if (placed.Count == 0)
         {
             return;
         }
@@ -231,11 +248,13 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         }
 
         var tenant = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().AsTenant();
-        foreach (var (type, configId) in pinned)
+        foreach (var type in placed)
         {
-            if (!tenant.IsAnyConnection(configId))
+            // [Tenant] 与登记的连接不一致在这里抛出；shard 只在带分片的调用里存在
+            var configId = SqlSugarConnectionSelector.Placement(type, registrations.ConnectionOf(type));
+            if (configId is not null && configId != SqlSugarConnections.Shard && !tenant.IsAnyConnection(configId))
             {
-                throw SqlSugarConnectionSelector.UnknownConnection(type, configId!);
+                throw SqlSugarConnectionSelector.UnknownConnection(type, configId);
             }
         }
     }
@@ -271,7 +290,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 为已登记的实体建表。
     /// </summary>
     /// <remarks>
-    /// 客户端是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析；CodeFirst 只有同步 API。按落点分组建表：启动时没有调用也就没有分片，方式一的全部实体都落默认连接；方式二带 <c>[Tenant]</c> 的实体在各自的连接上建表。每个连接经 <see cref="SqlSugarConventions.InitTables"/> 建表，软删除实体的部分唯一索引随之建出。
+    /// 客户端是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析；CodeFirst 只有同步 API。按落点分组建表：启动时没有调用也就没有分片，租户实体落默认连接；带 <c>[Tenant]</c> 或登记到命名连接的实体在各自的连接上建表。每个连接经 <see cref="SqlSugarConventions.InitTables"/> 建表，软删除实体的部分唯一索引随之建出。
     /// </remarks>
     private async Task InitTablesAsync(IServiceProvider services)
     {
@@ -297,6 +316,17 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         // IsValidConnection 自己吞掉打开失败只返回 false，所以这里给出固定的不可达错误而不是异常消息
         return client.Ado.IsValidConnection() ? Result.Success() : Error.Unavailable(PersistenceErrors.StoreUnavailable, PersistenceMessages.StoreUnavailable);
     }
+
+    /// <summary>
+    /// 命名连接交给回调的绑定。
+    /// </summary>
+    /// <remarks>
+    /// 主值是命名连接的连接串，名字、类型与属性（库类型等）沿用 <see cref="ConnectionBinding"/>；没有这个绑定时只有主值。
+    /// </remarks>
+    private static Maybe<BindingValue> NamedBinding(Maybe<BindingValue> binding, string connectionString)
+        => Maybe.Some(binding.TryGetValue(out var value)
+            ? value with { Value = connectionString }
+            : new BindingValue(ConnectionBinding, ConnectionBindingType, connectionString, new Dictionary<string, string>(StringComparer.Ordinal)));
 
     /// <summary>
     /// 按绑定创建连接配置。

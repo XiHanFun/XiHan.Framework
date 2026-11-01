@@ -1206,6 +1206,12 @@
           "default": "15",
           "exclusiveMinimum": 0,
           "summary": "健康项 persistence.sqlsugar.database 的重探间隔与单次探测超时（秒）"
+        },
+        {
+          "key": "Connections:{name}",
+          "type": "string",
+          "sample": "Data Source=leases.db",
+          "summary": "方式一的命名连接：值是连接串，名字合 ^[a-z0-9][a-z0-9-]{0,63}$、不能是 default 或 shard；每个作用域的客户端都带上，回调按 ConfigId 区分；登记到命名连接的实体与绑定连接的工作单元使用"
         }
       ]
     },
@@ -1982,6 +1988,12 @@
           "type": "string",
           "sample": "workflow-node-1",
           "summary": "本节点写进租约行的持有者标识；空白视为未配置，缺省机器名:进程 ID:8 位随机十六进制"
+        },
+        {
+          "key": "LockConnection",
+          "type": "string",
+          "sample": "leases",
+          "summary": "租约表的命名连接（SqlSugar 是同名 ConfigId）；SQLite 上必须配到另一个库文件，否则调用方事务里取实例锁会等自己的事务而超时；空白视为未配置，缺省在平台库"
         },
         {
           "key": "HealthProbeIntervalSeconds",

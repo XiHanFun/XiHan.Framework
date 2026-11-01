@@ -81,7 +81,7 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
         context.Services.AddSingleton(options);
         // 实例锁的等待上限来自引擎选项；几个 Provider 读的是同一份配置，谁先注册都一样
         context.Services.TryAddSingleton(engineOptions);
-        // 租户分区的四张表实现 IMultiTenant（随租户分库），平台分区的四张表与租约表落平台库
+        // 租户分区的四张表实现 IMultiTenant（随租户分库），平台分区的四张表落平台库；租约表落平台库，或配置的命名连接（SQLite 上放到另一个库文件）
         context.Services.AddRepository<WorkflowDefinitionRecord, string>();
         context.Services.AddRepository<WorkflowInstanceRecord, string>();
         context.Services.AddRepository<WorkflowNodeInstanceRecord, string>();
@@ -90,7 +90,7 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
         context.Services.AddRepository<PlatformWorkflowInstanceRecord, string>();
         context.Services.AddRepository<PlatformWorkflowNodeInstanceRecord, string>();
         context.Services.AddRepository<PlatformWorkflowBookmarkRecord, string>();
-        context.Services.AddRepository<WorkflowLockRecord, string>();
+        context.Services.AddRepository<WorkflowLockRecord, string>(options.LockConnection);
         // 写入序号进程内一份：不同作用域的写入也严格递增，同刻的行才按写入顺序排
         context.Services.AddSingleton<WriteSequence>();
         // 存储在调用方的工作单元里读写，按作用域；锁的租约行走自己的工作单元，单例
@@ -100,7 +100,7 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
         context.Services.AddScoped<DatabaseWorkflowTransaction>();
         context.Services.AddSingleton<DatabaseWorkflowInstanceLock>();
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集；无论能力是否被选中，租约表都是本包的存储
-        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp, options).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
         if (!context.Node.IsSelectedFor(WorkflowCapabilities.Execution))
         {
