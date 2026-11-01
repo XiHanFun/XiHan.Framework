@@ -30,6 +30,14 @@ public static class PersistenceErrors
     public const string Duplicate = "PERSISTENCE_CONFLICT_002";
 
     /// <summary>
+    /// 唯一键重复：写入撞上实体声明的唯一索引。
+    /// </summary>
+    /// <remarks>
+    /// 关系型 Provider 在写入失败后核对出来（并发写入同一业务键、同一批里两项同键、软删除再删除同一键）；之后工作单元只能回滚。
+    /// </remarks>
+    public const string UniqueKeyConflict = "PERSISTENCE_CONFLICT_003";
+
+    /// <summary>
     /// 多租户实体缺少当前租户。
     /// </summary>
     public const string TenantRequired = "PERSISTENCE_VALIDATION_001";

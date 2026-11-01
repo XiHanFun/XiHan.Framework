@@ -12,9 +12,13 @@ namespace XiHan.Framework.Scheduling.Database.Entities;
 /// 运行记录行。
 /// </summary>
 /// <remarks>
-/// <c>Id</c> 是运行 ID，状态与触发来源存枚举的整数值，数据是 JSON 文本；同刻排序以写入序号 <see cref="Sequence"/> 为次关键字。没有并发戳：运行记录只由它所在的节点写回，取消请求只改一个标记，后写覆盖先写即可。
+/// <c>Id</c> 是运行 ID，状态与触发来源存枚举的整数值，数据是 JSON 文本；同刻排序以写入序号 <see cref="Sequence"/> 为次关键字。没有并发戳：运行记录只由它所在的节点写回，取消请求只改一个标记，后写覆盖先写即可。索引：<c>(State, NodeId)</c> 供每个节点轮询取消请求、领导者标记失联节点的运行与列出运行中的记录；<c>(Job, CompletedAt)</c> 供每个作业最近一次结束的运行（状态查询逐个作业取一条）；<c>(CompletedAt)</c> 供保留期清理；<c>(ScheduledAt)</c> 供运行记录查询按计划时刻倒序分页与时间范围过滤。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(State), nameof(NodeId))]
+[EntityIndex(nameof(Job), nameof(CompletedAt))]
+[EntityIndex(nameof(CompletedAt))]
+[EntityIndex(nameof(ScheduledAt))]
 public sealed class JobRunEntity : IEntity<string>
 {
     /// <inheritdoc />

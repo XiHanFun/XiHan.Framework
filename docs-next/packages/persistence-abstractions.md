@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Persistence:Snowflake` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
 | AOT | 兼容 |
-| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute` 与雪花标识相关类型为 Preview |
+| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
 
 ## 概述
 
@@ -81,6 +81,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
 | `LongTextAttribute` | `…Abstractions` | 标记长文本列（`[LongText]`） |
+| `EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | `…Abstractions` | 在实体类上声明索引（`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]`）；`EntityIndexes.Resolve(type, table)` 按统一规则推出索引名与列（软删除实体的唯一索引末尾带 `IsDeleted`），`MaxNameLength` 63；Provider 都经它建索引 |
 | `PersistenceCapabilities`、`PersistenceErrors`、`PersistenceMessages` | `…Abstractions` | 能力 ID、错误码、消息键与消息目录 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
@@ -140,6 +141,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
+- 索引声明（ADR-0072）：名字是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引末尾带 `IsDeleted`；声明错误（没有列、列名重复、不是公开属性、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
 - 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
 
 错误码：
@@ -150,6 +152,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_CONFLICT_001` | `PersistenceErrors.Concurrency` | 乐观并发冲突 |
 | `PERSISTENCE_CONFLICT_002` | `PersistenceErrors.Duplicate` | 标识重复 |
 | `PERSISTENCE_DENIED_001` | `PersistenceErrors.ReadOnly` | 只读工作单元拒绝写入（只读操作里的写入；HTTP 403） |
+| `PERSISTENCE_CONFLICT_003` | `PersistenceErrors.UniqueKeyConflict` | 唯一键重复：写入撞上实体声明的唯一索引（关系型 Provider；之后工作单元只能回滚） |
 | `PERSISTENCE_VALIDATION_001` | `PersistenceErrors.TenantRequired` | 多租户实体缺少当前租户 |
 | `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |
 | `PERSISTENCE_VALIDATION_003` | `PersistenceErrors.EventsUndispatched` | 有未派发的领域事件但没有派发器 |

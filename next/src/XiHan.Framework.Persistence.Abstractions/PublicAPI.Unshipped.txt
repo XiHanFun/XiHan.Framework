@@ -1,4 +1,14 @@
 #nullable enable
+XiHan.Framework.Persistence.Abstractions.EntityIndex
+XiHan.Framework.Persistence.Abstractions.EntityIndex.IsUnique.get -> bool
+XiHan.Framework.Persistence.Abstractions.EntityIndex.Name.get -> string!
+XiHan.Framework.Persistence.Abstractions.EntityIndex.Properties.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.EntityIndexAttribute(params string![]! properties) -> void
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.get -> bool
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.set -> void
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.Properties.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Persistence.Abstractions.EntityIndexes
 XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource
 XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
 XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource.FixedWorkerIdSource(int workerId) -> void
@@ -151,6 +161,7 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.NotStarted = 0 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.RolledBack = 3 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
+const XiHan.Framework.Persistence.Abstractions.EntityIndexes.MaxNameLength = 63 -> int
 const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.HealthName = "persistence.snowflake.worker" -> string!
 const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ResourcePrefix = "persistence:snowflake:worker:" -> string!
 const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxSequence = 4095 -> int
@@ -177,6 +188,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReadOnly = "PER
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TakeExceeded = "PERSISTENCE_VALIDATION_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TenantRequired = "PERSISTENCE_VALIDATION_001" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.UniqueKeyConflict = "PERSISTENCE_CONFLICT_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.UnknownConnection = "PERSISTENCE_VALIDATION_004" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.WorkerIdUnavailable = "PERSISTENCE_UNAVAILABLE_005" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.CapacityExceeded = "persistence.store.capacity_exceeded" -> string!
@@ -193,6 +205,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = 
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavailable = "persistence.store.unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TakeExceeded = "persistence.query.take_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
 override XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.GetHashCode() -> int
@@ -211,6 +224,7 @@ override XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.ToString() -
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ToString() -> string!
+static XiHan.Framework.Persistence.Abstractions.EntityIndexes.Resolve(System.Type! entityType, string! table) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.EntityIndex!>!
 static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Compose(long timestamp, int workerId, int sequence) -> long
 static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Parse(long value, System.DateTimeOffset epoch) -> XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
 static XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.operator !=(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId left, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId right) -> bool

@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "엔터티 '{entity}'에 ID '{id}'인 항목이 없습니다.",
   "persistence.entity.stale_stamp": "ID '{id}'인 '{entity}'의 동시성 스탬프가 오래되었습니다.",
   "persistence.entity.tenant_required": "엔터티 '{entity}'은(는) 다중 테넌트이지만 현재 호출에 테넌트가 없습니다.",
+  "persistence.entity.unique_key_conflict": "엔터티 '{entity}'의 고유 인덱스 '{index}'에 같은 키의 항목이 이미 있습니다.",
   "persistence.query.take_exceeded": "쿼리가 {take}개 행을 요청했지만 한 번에 읽을 수 있는 행은 최대 {max}개입니다. 페이지당 최대 {max}개 행으로 나누어 읽으십시오.",
   "persistence.snowflake.clock_moved_backwards": "시계가 허용 범위를 넘어 뒤로 이동했습니다. 따라잡을 때까지 스노우플레이크 ID를 생성하지 않습니다.",
   "persistence.snowflake.worker_unavailable": "현재 보유 중인 스노우플레이크 워커 ID가 없습니다. 리스를 아직 획득하지 못했거나 잃었습니다.",

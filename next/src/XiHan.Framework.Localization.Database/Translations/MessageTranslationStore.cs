@@ -49,7 +49,7 @@ public sealed class MessageTranslationStore
     /// 新增或覆盖，按顺序逐项返回。
     /// </summary>
     /// <remarks>
-    /// 重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。
+    /// 已有的 (键, 区域) 更新那一行，没有的新增；重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。表上 <c>(Key, Locale)</c> 的唯一索引兜住并发：两个调用同时新增同一个键与区域，后插入的撞上索引，那一批新增的项返回 <c>PERSISTENCE_CONFLICT_003</c>（唯一键重复），调用随后只能回滚；重试时读到先提交的那一行，按更新处理，不会写出第二行。内存持久化不建索引、不校验唯一性。
     /// </remarks>
     public async ValueTask<IReadOnlyList<MessageTranslationResult>> UpsertAsync(IReadOnlyList<MessageTranslationEntry> entries, CancellationToken cancellationToken)
     {
@@ -172,28 +172,40 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 按自然键集合一次查询。
+    /// 按自然键集合查询已有的行。
     /// </summary>
     /// <remarks>
-    /// 键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。
+    /// 键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。键每 <see cref="EntityQuery.DefaultMaxTake"/> 个一批，每批的结果按标识分页读完。
     /// </remarks>
     private async Task<Dictionary<MessageTranslationKey, MessageTranslation>> FindManyAsync(IReadOnlyList<MessageTranslationKey> keys, CancellationToken cancellationToken)
     {
-        var names = keys.Select(static k => k.Key).Distinct(StringComparer.Ordinal).ToList();
         var locales = keys.Select(static k => k.Locale).Distinct(StringComparer.Ordinal).ToList();
-        // 两个 IN 的笛卡尔积可能多取回一些行（键 A 的区域 x 与键 B 的区域 y 都在集合里），精确匹配在内存里完成；条数上限取查询允许的最大页
-        var query = EntityQuery.All<MessageTranslation>()
-            .Where(new Specification<MessageTranslation>(t => names.Contains(t.Key) && locales.Contains(t.Locale)))
-            .Page(0, EntityQuery.DefaultMaxTake);
-        var rows = await _repository.ListAsync(query, cancellationToken).ConfigureAwait(false);
         var wanted = new HashSet<MessageTranslationKey>(keys);
         var found = new Dictionary<MessageTranslationKey, MessageTranslation>();
-        foreach (var row in rows)
+        foreach (var chunk in keys.Select(static k => k.Key).Distinct(StringComparer.Ordinal).Chunk(EntityQuery.DefaultMaxTake))
         {
-            var key = new MessageTranslationKey(row.Key, row.Locale);
-            if (wanted.Contains(key))
+            var names = chunk.ToList();
+            // 两个 IN 的笛卡尔积可能多取回一些行（键 A 的区域 x 与键 B 的区域 y 都在集合里），精确匹配在内存里完成。
+            // 结果必须分页读完：只读第一页时，超出一页的已有行被当成新行再插一遍——表上没有唯一索引时就是同一键与区域的第二行
+            var query = EntityQuery.All<MessageTranslation>()
+                .Where(new Specification<MessageTranslation>(t => names.Contains(t.Key) && locales.Contains(t.Locale)))
+                .OrderBy(static t => t.Id);
+            for (var skip = 0; ; skip += EntityQuery.DefaultMaxTake)
             {
-                found[key] = row;
+                var page = await _repository.ListAsync(query.Page(skip, EntityQuery.DefaultMaxTake), cancellationToken).ConfigureAwait(false);
+                foreach (var row in page)
+                {
+                    var key = new MessageTranslationKey(row.Key, row.Locale);
+                    if (wanted.Contains(key))
+                    {
+                        found[key] = row;
+                    }
+                }
+
+                if (page.Count < EntityQuery.DefaultMaxTake)
+                {
+                    break;
+                }
             }
         }
 

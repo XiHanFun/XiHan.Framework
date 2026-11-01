@@ -282,7 +282,7 @@ builder.AddXiHan(xihan => xihan
 
 读写都不经管道：每次在根提供者的新作用域里直接开一个不带租户的工作单元，返回即提交，不加入调用方的事务。审计在调用结束后才知道结果，此时 Transaction 阶段已经提交或回滚，失败的调用同样要记。
 
-`Error.Inner` 不持久化；带消息键的错误按 `ErrorCode` 与 `ErrorMessageKey` 还原，读取方可以再按调用方区域翻译。表结构、长文本列与建议的索引见 [Auditing.Database 包](../packages/auditing-database)。
+`Error.Inner` 不持久化；带消息键的错误按 `ErrorCode` 与 `ErrorMessageKey` 还原，读取方可以再按调用方区域翻译。表结构、长文本列与索引见 [Auditing.Database 包](../packages/auditing-database)。
 
 ## 配置
 

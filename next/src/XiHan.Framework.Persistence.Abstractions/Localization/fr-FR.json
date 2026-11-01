@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "L'entité '{entity}' n'a aucun élément avec l'identifiant '{id}'.",
   "persistence.entity.stale_stamp": "Le jeton de concurrence de '{entity}' avec l'identifiant '{id}' est obsolète.",
   "persistence.entity.tenant_required": "L'entité '{entity}' est multi-locataire, mais l'appel courant n'a aucun locataire.",
+  "persistence.entity.unique_key_conflict": "L'entité '{entity}' possède déjà un élément avec la même clé dans l'index unique '{index}'.",
   "persistence.query.take_exceeded": "La requête demande {take} lignes, plus que les {max} lisibles en une fois ; parcourez les résultats par pages d'au plus {max} lignes.",
   "persistence.snowflake.clock_moved_backwards": "L'horloge a reculé au-delà de la tolérance ; aucun identifiant snowflake n'est généré tant qu'elle n'a pas rattrapé son retard.",
   "persistence.snowflake.worker_unavailable": "Aucun identifiant de worker snowflake n'est actuellement détenu : le bail n'a pas été acquis ou a été perdu.",

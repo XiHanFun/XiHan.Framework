@@ -73,6 +73,7 @@ override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.GetHash
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ToString() -> string!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Apply(SqlSugar.ConnectionConfig! config) -> SqlSugar.ConnectionConfig!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Configure(System.Reflection.PropertyInfo! property, SqlSugar.EntityColumnInfo! column) -> void
+static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.ConfigureIndexes(System.Type! entityType, SqlSugar.EntityInfo! entity) -> void
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.operator !=(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? right) -> bool
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.operator ==(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? right) -> bool
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!

@@ -12,9 +12,10 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 节点实例的存储行。
 /// </summary>
 /// <remarks>
-/// 按实例查询与按开始时间排序用的列，整份节点实例在 JSON 文档里；删实例时级联删除。
+/// 按实例查询与按开始时间排序用的列，整份节点实例在 JSON 文档里；删实例时级联删除。索引：<c>(InstanceId)</c> 供按实例读取与级联删除。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(InstanceId))]
 public sealed class WorkflowNodeInstanceRecord : IEntity<string>
 {
     /// <inheritdoc />

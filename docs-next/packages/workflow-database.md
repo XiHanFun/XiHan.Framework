@@ -70,29 +70,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<WorkflowDefinitionRecord>(static d =>
-        {
-            d.Property(static x => x.Document).HasColumnType("text");
-            d.HasIndex(static x => new { x.Name, x.Version });
-        });
-        modelBuilder.Entity<WorkflowInstanceRecord>(static i =>
-        {
-            i.Property(static x => x.Document).HasColumnType("text");
-            i.HasIndex(static x => new { x.DefinitionName, x.Status, x.CreatedAt });
-        });
-        modelBuilder.Entity<WorkflowNodeInstanceRecord>(static n =>
-        {
-            n.Property(static x => x.Document).HasColumnType("text");
-            n.HasIndex(static x => x.InstanceId);
-        });
-        modelBuilder.Entity<WorkflowBookmarkRecord>(static b =>
-        {
-            b.Property(static x => x.Document).HasColumnType("text");
-            b.HasIndex(static x => x.InstanceId);
-            b.HasIndex(static x => new { x.Kind, x.Key });
-            b.HasIndex(static x => x.DueAt);
-        });
+        modelBuilder.Entity<WorkflowDefinitionRecord>(static d => d.Property(static x => x.Document).HasColumnType("text"));
+        modelBuilder.Entity<WorkflowInstanceRecord>(static i => i.Property(static x => x.Document).HasColumnType("text"));
+        modelBuilder.Entity<WorkflowNodeInstanceRecord>(static n => n.Property(static x => x.Document).HasColumnType("text"));
+        modelBuilder.Entity<WorkflowBookmarkRecord>(static b => b.Property(static x => x.Document).HasColumnType("text"));
         modelBuilder.Entity<WorkflowLockRecord>();
+        // 索引由实体上的 [EntityIndex] 建出
+        modelBuilder.ApplyPersistenceConventions();
     }
 }
 ```
@@ -148,7 +132,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 管道失败（应用不在服务状态、仓储异常、提交失败）→ `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
 - 在一个持有写锁的事务里调用引擎时，SQLite 这类库级写锁的数据库会等到忙等超时；行锁数据库不受影响。
-- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。建议索引：`WorkflowDefinitionRecord(Name, Version)`、`WorkflowInstanceRecord(DefinitionName, Status, CreatedAt)`、`WorkflowNodeInstanceRecord(InstanceId)`、`WorkflowBookmarkRecord(InstanceId)`、`WorkflowBookmarkRecord(Kind, Key)`、`WorkflowBookmarkRecord(DueAt)`。
+- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一；全局定义的租户是 NULL，PostgreSQL、SQLite、MySQL 不约束这些行）、`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_EnAt`（`EndedAt`）、`IX_WorkflowInstanceRecord_CrAt`（`CreatedAt`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_DuAt`（`DueAt`）；租约表只按主键读写。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例。
 

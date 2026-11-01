@@ -13,9 +13,10 @@ namespace XiHan.Framework.Localization.Database.Translations;
 /// 一条翻译。
 /// </summary>
 /// <remarks>
-/// 键与区域共同唯一，模板与语言文件里的写法相同。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;MessageTranslation&gt;()</c>。
+/// 键与区域共同唯一（唯一索引 <c>(Key, Locale)</c>，按键与区域查找也走它），模板与语言文件里的写法相同。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;MessageTranslation&gt;()</c> 后调用 <c>ApplyPersistenceConventions()</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(Key), nameof(Locale), IsUnique = true)]
 public sealed class MessageTranslation : IEntity<Guid>, IHasModificationTime
 {
     /// <inheritdoc />

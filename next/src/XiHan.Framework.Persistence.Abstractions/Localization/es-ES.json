@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "La entidad '{entity}' no tiene ningún elemento con el identificador '{id}'.",
   "persistence.entity.stale_stamp": "El sello de concurrencia de '{entity}' con el identificador '{id}' está obsoleto.",
   "persistence.entity.tenant_required": "La entidad '{entity}' es multiinquilino, pero la llamada actual no tiene inquilino.",
+  "persistence.entity.unique_key_conflict": "La entidad '{entity}' ya tiene un elemento con la misma clave en el índice único '{index}'.",
   "persistence.query.take_exceeded": "La consulta solicita {take} filas, más de las {max} que se pueden leer a la vez; pagine los resultados con un máximo de {max} filas por página.",
   "persistence.snowflake.clock_moved_backwards": "El reloj retrocedió más allá de la tolerancia; no se generan ID snowflake hasta que se recupere.",
   "persistence.snowflake.worker_unavailable": "Actualmente no se posee ningún ID de trabajador snowflake: el arrendamiento no se ha adquirido o se ha perdido.",

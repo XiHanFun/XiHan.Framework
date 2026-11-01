@@ -77,14 +77,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<JobEntity>(static t => t.Property(static x => x.Data).HasColumnType("text"));
-        modelBuilder.Entity<TriggerEntity>(static t =>
-        {
-            t.Property(static x => x.Data).HasColumnType("text");
-            t.HasIndex(static x => new { x.State, x.Local, x.NextFireAt });
-        });
+        modelBuilder.Entity<TriggerEntity>(static t => t.Property(static x => x.Data).HasColumnType("text"));
         modelBuilder.Entity<JobRunEntity>(static t => t.Property(static x => x.Data).HasColumnType("text"));
         modelBuilder.Entity<SchedulerNodeEntity>();
         modelBuilder.Entity<SchedulerLeaseEntity>();
+        // 索引由实体上的 [EntityIndex] 建出
+        modelBuilder.ApplyPersistenceConventions();
     }
 }
 ```
@@ -153,7 +151,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 租约存储不可达 → `SCHEDULING_UNAVAILABLE_002`，不改变持有状态；持有与否按本地时钟与本地记录的到期时刻判断。
 - 保存是「新增或整体替换」：按标识批量取回已有行（每 1000 个一批），有的更新、没有的新增，与别的节点撞上的项重读后再写，最多三轮。
 - 运行历史的每个过滤项都是 SQL 条件，按计划时刻降序、同刻按写入序号降序分页；清理删除 `CompletedAt` 早于保留期的行。
-- 表结构由应用管理，`InitTables` 只用于开发与测试。`Data` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。建议索引：`TriggerEntity(State, Local, NextFireAt)`、`TriggerEntity(Job)`、`TriggerEntity(AcquiredBy)`、`JobRunEntity(Job, ScheduledAt)`、`JobRunEntity(State, NodeId)`、`JobRunEntity(CompletedAt)`。
+- 表结构由应用管理，`InitTables` 只用于开发与测试。`Data` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`IX_TriggerEntity_St_Lo_NeFiAt`（`(State, Local, NextFireAt)`，到期抢占的轮询）、`UX_TriggerEntity_Jo_Na`（`(Job, Name)` 唯一）、`IX_JobRunEntity_St_NoId`（`(State, NodeId)`，取消请求的轮询、失联节点的运行）、`IX_JobRunEntity_Jo_CoAt`（`(Job, CompletedAt)`，每个作业最近一次结束的运行）、`IX_JobRunEntity_CoAt`（`CompletedAt`，保留期清理）、`IX_JobRunEntity_ScAt`（`ScheduledAt`，运行记录倒序分页）；作业、节点、租约表只按主键读写。
 - SQLite 这类库级写锁的数据库下，并发写入按忙等串行；行锁数据库不受影响。
 - 健康项 `scheduling.database.leader`：启动时同步读一次租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 对 SQLite（`Persistence.SqlSugar`）通过 `Scheduling.Conformance` 的存储、调度器与领导选举三个套件。

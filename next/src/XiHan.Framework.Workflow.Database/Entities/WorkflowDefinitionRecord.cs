@@ -12,9 +12,10 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 工作流定义的存储行。
 /// </summary>
 /// <remarks>
-/// 过滤与排序用的列加整份定义的 JSON 文档（<c>WorkflowJson.Serialize</c>）。不实现 <c>IMultiTenant</c>，租户只是普通列，存储不按租户过滤。
+/// 过滤与排序用的列加整份定义的 JSON 文档（<c>WorkflowJson.Serialize</c>）。不实现 <c>IMultiTenant</c>，租户只是普通列，存储不按租户过滤。索引：<c>(Name, TenantId, Version)</c> 唯一，是名字空间里的业务键，按名字与版本查找、取最大版本与最新发布版本都走它；全局定义的租户列是 NULL，PostgreSQL、SQLite、MySQL 的唯一索引不约束含 NULL 的行，全局定义的版本号仍只靠目录按最大版本加一分配。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(Name), nameof(TenantId), nameof(Version), IsUnique = true)]
 public sealed class WorkflowDefinitionRecord : IEntity<string>
 {
     /// <inheritdoc />

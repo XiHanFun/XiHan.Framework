@@ -16,7 +16,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 仓储。
 /// </summary>
 /// <remarks>
-/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告，工作单元随后只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告；新增、更新与软删除撞上唯一索引（实体声明的 <c>[EntityIndex(IsUnique = true)]</c> 或模型里别的唯一索引）时同样在保存点之后核对，按唯一键重复报告；两种情况工作单元随后都只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -231,7 +231,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             return conflict;
         }
 
-        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        var saved = await SaveAsync([existing], cancellationToken).ConfigureAwait(false);
         // 审计字段写在跟踪实例上，保存成功后同步回调用方的游离实例，让它拿到新的修改时间与并发戳
         if (saved.IsSuccess)
         {
@@ -292,7 +292,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             return results;
         }
 
-        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        var saved = await SaveAsync(pending.ConvertAll(static p => p.Existing), cancellationToken).ConfigureAwait(false);
         foreach (var (index, existing) in pending)
         {
             results[index] = saved;
@@ -326,7 +326,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         }
 
         StageRemoval(existing, _timeProvider.GetUtcNow());
-        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        var saved = await SaveAsync([existing], cancellationToken).ConfigureAwait(false);
         if (saved.IsSuccess)
         {
             if (!ReferenceEquals(existing, entity))
@@ -381,7 +381,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             return results;
         }
 
-        var saved = await SaveAsync(cancellationToken).ConfigureAwait(false);
+        var saved = await SaveAsync(pending.ConvertAll(static p => p.Existing), cancellationToken).ConfigureAwait(false);
         foreach (var (index, existing) in pending)
         {
             results[index] = saved;
@@ -423,6 +423,11 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 构造标识重复的错误。
     /// </summary>
     private static Error Duplicate(TKey id) => Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
+
+    /// <summary>
+    /// 构造唯一键重复的错误。
+    /// </summary>
+    private static Error UniqueKeyConflict(string index) => Error.Conflict(PersistenceErrors.UniqueKeyConflict, PersistenceMessages.UniqueKeyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("index", index)));
 
     /// <summary>
     /// 同一结果重复给每一项（写入前置条件不满足时整批同一错误）。
@@ -595,12 +600,12 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 保存变更。
+    /// 保存一次更新或删除。
     /// </summary>
     /// <remarks>
-    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。
+    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。其余保存失败时核对 <paramref name="written"/> 是否撞上了唯一索引（更新把业务键改成别的行已有的值，软删除撞上同一业务键已删除的那一行）：SaveChanges 已回到它自动建的保存点，在同一事务里查（见 <see cref="UniqueKeyConflicts"/>）；撞上就把这些实体移出跟踪（它们的改动没有写进去，之后的保存不再带上），返回唯一键重复并把工作单元标为失败，提交时返回同一错误；没撞上异常原样抛出。
     /// </remarks>
-    private async Task<Result> SaveAsync(CancellationToken cancellationToken)
+    private async Task<Result> SaveAsync(IReadOnlyList<TEntity> written, CancellationToken cancellationToken)
     {
         try
         {
@@ -611,13 +616,29 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
         {
             return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.ConcurrencyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("reason", exception.Message)));
         }
+        catch (DbUpdateException exception) when (exception is not DbUpdateConcurrencyException)
+        {
+            if (await UniqueKeyConflicts.FindAsync<TEntity, TKey>(Context, written, cancellationToken).ConfigureAwait(false) is not { } index)
+            {
+                throw;
+            }
+
+            foreach (var entity in written)
+            {
+                Context.Entry(entity).State = EntityState.Detached;
+            }
+
+            var conflict = UniqueKeyConflict(index);
+            _unitOfWork.Fail(conflict);
+            return conflict;
+        }
     }
 
     /// <summary>
     /// 保存一次新增。
     /// </summary>
     /// <remarks>
-    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。这时 SaveChanges 已回到它自动建的保存点，事务仍可用：把这次新增的实体移出跟踪，在同一事务里查这些标识，有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）并把工作单元标为失败，提交时返回同一错误；一个都不存在说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
+    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。这时 SaveChanges 已回到它自动建的保存点，事务仍可用：把这次新增的实体移出跟踪，在同一事务里查这些标识，有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）；没有就核对唯一索引（同一批里两项同键、库里另一行同键，见 <see cref="UniqueKeyConflicts"/>），撞上即返回唯一键重复（<c>index</c> 是第一个撞上的索引）。两种都把工作单元标为失败，提交时返回同一错误；都不是说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
     /// </remarks>
     private async Task<Error?> SaveAddedAsync(IReadOnlyList<TEntity> added, CancellationToken cancellationToken)
     {
@@ -637,14 +658,22 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
             // 不跟踪、只取主键列：对方的行只用来判定，不进本工作单元的跟踪器
             var taken = (await Set.AsNoTracking().Where(e => ids.Contains(EF.Property<TKey>(e, nameof(IEntity<TKey>.Id)))).Select(e => EF.Property<TKey>(e, nameof(IEntity<TKey>.Id))).ToListAsync(cancellationToken).ConfigureAwait(false)).ToHashSet();
             var collided = ids.FindIndex(taken.Contains);
-            if (collided < 0)
+            Error conflict;
+            if (collided >= 0)
+            {
+                conflict = Duplicate(ids[collided]);
+            }
+            else if (await UniqueKeyConflicts.FindAsync<TEntity, TKey>(Context, added, cancellationToken).ConfigureAwait(false) is { } index)
+            {
+                conflict = UniqueKeyConflict(index);
+            }
+            else
             {
                 throw;
             }
 
-            var duplicate = Duplicate(ids[collided]);
-            _unitOfWork.Fail(duplicate);
-            return duplicate;
+            _unitOfWork.Fail(conflict);
+            return conflict;
         }
     }
 

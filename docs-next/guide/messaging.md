@@ -265,7 +265,7 @@ builder.AddXiHan(xihan => xihan
 
 退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
 
-投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。表结构：`Topic` 长 128，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）。
+投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。表结构：`Topic` 长 128，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）；索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`）由实体上的 `[EntityIndex]` 声明，同时服务取到期消息与保留期清理，EF Core 应用在 `modelBuilder.Entity<OutboxMessage>()` 之后调用 `ApplyPersistenceConventions()` 即得到它。
 
 ## 队列与流
 

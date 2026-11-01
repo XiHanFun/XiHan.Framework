@@ -12,9 +12,12 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 书签的存储行。
 /// </summary>
 /// <remarks>
-/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。
+/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。索引：<c>(InstanceId)</c> 供按实例读取与级联删除；<c>(Kind, Key)</c> 供按信号、用户任务受理人、子流程节点找书签；<c>(DueAt)</c> 供到期书签的轮询。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(InstanceId))]
+[EntityIndex(nameof(Kind), nameof(Key))]
+[EntityIndex(nameof(DueAt))]
 public sealed class WorkflowBookmarkRecord : IEntity<string>
 {
     /// <inheritdoc />

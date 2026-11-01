@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "Entity '{entity}' has no item with id '{id}'.",
   "persistence.entity.stale_stamp": "The concurrency stamp of '{entity}' with id '{id}' is stale.",
   "persistence.entity.tenant_required": "Entity '{entity}' is multi-tenant, but the current invocation has no tenant.",
+  "persistence.entity.unique_key_conflict": "Entity '{entity}' already has an item with the same key in unique index '{index}'.",
   "persistence.query.take_exceeded": "The query asks for {take} rows, more than the {max} that can be read at once; page through the results with at most {max} rows per page.",
   "persistence.snowflake.clock_moved_backwards": "The clock moved backwards beyond the tolerance; snowflake IDs are not generated until it catches up.",
   "persistence.snowflake.worker_unavailable": "No snowflake worker ID is currently held: the lease has not been acquired or has been lost.",

@@ -11,6 +11,7 @@
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | 标识生成端口；Provider 注册 `IIdGenerator<Guid>`（UUID 版本 7，时间有序） |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId`、`IWorkerIdSource`（`FixedWorkerIdSource` / `LeasedWorkerIdSource`） | 雪花 `long` 标识（ADR-0033）：应用显式装配特性后得到 `IIdGenerator<long>`，41 位毫秒 + 10 位机器位 + 12 位序列；机器位显式配置或经 `IDistributedLock` 租约分配；`SnowflakeId.Parse` 还原时间戳、机器位与序列，见下文 |
 | `PersistenceConventions` | Provider 共用的协议约定：创建时间、修改时间、租户、并发戳、软删除；`ApplyOnUpdate(entity, stored, now)` 让更新沿用存储行的创建时间、租户与删除标记（协议字段只由 Provider 写入） |
+| `LongTextAttribute`、`EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | Provider 中立的建表声明：`[LongText]` 长文本列；`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]` 在实体类上声明索引（可多个、可多列、可唯一，全部升序），`EntityIndexes.Resolve(type, table)` 按统一规则推出名字与列——SqlSugar 与 EF Core 两个 Provider 都经它建出同名索引，见下文「索引声明」 |
 | `IRepositoryRegistrar`、`AddRepository<TEntity, TKey>()` | 应用显式登记实体，Provider 据此注册闭合泛型的仓储；换 Provider 不改业务代码 |
 
 ```csharp
@@ -27,6 +28,21 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任�
 - Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
 - 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly)` 决定，`UnitOfWorkOptions.Default` 可写。
+## 索引声明
+
+框架自己的表（发件箱、审计、授予、翻译、调度、工作流）与应用实体一样，用本包的 `[EntityIndex]` 声明索引，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`：实体只依赖本包，换 Provider 不改实体（RFC-0005「索引声明」，ADR-0072）。
+
+```csharp
+[EntityIndex(nameof(TenantId), nameof(Code), IsUnique = true)]   // UX_Order_TeId_Co
+[EntityIndex(nameof(Status), nameof(CreatedAt))]                 // IX_Order_St_CrAt
+public sealed class Order : IEntity<Guid>, IMultiTenant, ISoftDeletable { … }
+```
+
+- 命名：`IX_`（唯一 `UX_`）+ 表名 + 每列的缩写（属性名每个词取前两个字符：`TenantId → TeId`、`NextFireAt → NeFiAt`），下划线连接；表名里字母、数字、下划线以外的字符换成下划线。全名不超过 `EntityIndexes.MaxNameLength`（63，PostgreSQL 的标识符上限），超过即报错、不截断。
+- 软删除：实现 `ISoftDeletable` 的实体，唯一索引末尾自动加 `IsDeleted`（名字不变）——未删除的行之间唯一、删掉的行不占业务键；代价是同一业务键最多一行已删除，删除、重建、再删除同一个键会撞索引。
+- 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等；EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）；要让"全局"这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。
+- 写入撞上唯一索引：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值、软删除撞上同一键已删除的行同样算），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
+- 声明错误（没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列）在 Provider 建模 / 建表时抛 `InvalidOperationException`。内存实现不建索引、不校验唯一性。
 
 ## 雪花标识
 

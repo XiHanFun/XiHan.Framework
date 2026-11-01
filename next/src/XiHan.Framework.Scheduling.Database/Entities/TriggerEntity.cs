@@ -12,9 +12,11 @@ namespace XiHan.Framework.Scheduling.Database.Entities;
 /// 触发器行。
 /// </summary>
 /// <remarks>
-/// <c>Id</c> 是 <c>作业名/触发器名</c>（<c>TriggerKey.ToString()</c>），计划以 <c>JobSchedule.ToString()</c> 的文本持久化，数据是 JSON 文本，状态、misfire 策略与触发来源存枚举的整数值。并发戳让多个节点对同一条触发器的抢占是原子的比较并交换：先改成功的拿到，其余得到冲突。
+/// <c>Id</c> 是 <c>作业名/触发器名</c>（<c>TriggerKey.ToString()</c>），计划以 <c>JobSchedule.ToString()</c> 的文本持久化，数据是 JSON 文本，状态、misfire 策略与触发来源存枚举的整数值。并发戳让多个节点对同一条触发器的抢占是原子的比较并交换：先改成功的拿到，其余得到冲突。索引：<c>(State, Local, NextFireAt)</c> 供到期抢占的轮询（等待中、非本地、到期，按下一次时刻取），恢复时按状态找阻塞与被抢占的触发器也走它的前缀；<c>(Job, Name)</c> 唯一，是触发器的业务键，按作业列出与删除触发器走它。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(State), nameof(Local), nameof(NextFireAt))]
+[EntityIndex(nameof(Job), nameof(Name), IsUnique = true)]
 public sealed class TriggerEntity : IEntity<string>, IHasConcurrencyStamp
 {
     /// <inheritdoc />

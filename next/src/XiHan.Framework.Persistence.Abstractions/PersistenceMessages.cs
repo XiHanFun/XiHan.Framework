@@ -37,6 +37,14 @@ public static class PersistenceMessages
     public const string Duplicate = "persistence.entity.duplicate";
 
     /// <summary>
+    /// 写入撞上唯一索引。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>entity</c>、<c>index</c>（索引名）。
+    /// </remarks>
+    public const string UniqueKeyConflict = "persistence.entity.unique_key_conflict";
+
+    /// <summary>
     /// 并发戳过期。
     /// </summary>
     /// <remarks>

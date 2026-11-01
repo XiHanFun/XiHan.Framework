@@ -15,5 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- 索引名与表名（HasDatabaseName、GetTableName）是关系型元数据：capability 是 persistence.relational，各关系型数据库的 EF Core Provider 本来就依赖它 -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
   </ItemGroup>
 </Project>

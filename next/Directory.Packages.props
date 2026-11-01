@@ -33,6 +33,7 @@
   <!-- Ring 3 实现包按机制引用的第三方库 -->
   <ItemGroup Label="Provider">
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.5" />
     <PackageVersion Include="SqlSugarCore" Version="5.1.4.221" />

@@ -179,7 +179,7 @@ public sealed class RenameOrder(IRepository<Order, Guid> orders) : IOperation<Re
 | EF Core | 写入时：插入撞上主键约束（PostgreSQL 等要等对方提交后才报错），仓储在同一事务里核对标识确已存在，返回标识重复 |
 | SqlSugar | 写入时：同上；PostgreSQL 语句失败后事务已中止，仓储另开连接核对 |
 
-数据库报错后核对不到这个标识（别的唯一索引冲突、外键冲突等），异常照常抛出，调用以 `KERNEL_UNEXPECTED_001` 结束。关系型 Provider 返回标识重复之后，这个工作单元只能回滚：处理器忽略这次失败、返回成功，提交也会回滚并返回同一错误。
+数据库报错后核对不到这个标识，再核对实体的唯一索引（见下文[索引](#索引)），撞上返回 `PERSISTENCE_CONFLICT_003`；两者都不是（外键冲突等），异常照常抛出，调用以 `KERNEL_UNEXPECTED_001` 结束。关系型 Provider 返回标识重复或唯一键重复之后，这个工作单元只能回滚：处理器忽略这次失败、返回成功，提交也会回滚并返回同一错误。
 
 ## 批量方法
 
@@ -279,10 +279,28 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | 没有注解的字符串 | EF Core 缺省（长文本） | SqlSugar 缺省（PostgreSQL 为 `varchar(255)`，超长写入整批失败） |
 | `ConcurrencyStamp` | `ApplyPersistenceConventions()` 设为并发令牌、长度 32 | 长度 32 |
 | `TenantId`、`IsDeleted` | `ApplyPersistenceConventions()` 建索引 | — |
+| `[EntityIndex]` | `ApplyPersistenceConventions()` 映射为 `HasIndex`，名字与 SqlSugar 相同 | `InitTables` 建出 |
 | `DateTimeOffset` | EF Core 缺省 | 经转换器按 UTC 时刻往返 |
 | 可空类型（`int?`、`string?`） | EF Core 缺省 | 列可空 |
 
 SqlSugar 约定也认 DataAnnotations 的 `[MaxLength(n)]` 与无参 `[MaxLength]`，但它们的构造函数带 `RequiresUnreferencedCode`，Native AOT 项目的分析器拒绝，这类项目只用 `[StringLength(n)]` 与 `[LongText]`。框架自己的数据库记录全部显式声明字符串长度，架构测试门禁检查这一点（ADR-0036），应用实体建议同样声明。
+
+### 索引
+
+索引同样声明在实体上，用 `Persistence.Abstractions` 的 `[EntityIndex]`，不标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`，换 Provider 不改实体（ADR-0072）：
+
+```csharp
+[EntityIndex(nameof(TenantId), nameof(Title), IsUnique = true)]   // UX_OrderNote_TeId_Ti
+[EntityIndex(nameof(CreatedAt))]                                   // IX_OrderNote_CrAt
+public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, IHasConcurrencyStamp { … }
+```
+
+- 列按声明顺序、全部升序，一个实体可以声明多个；`IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明。
+- 名字由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写（属性名每个词取前两个字符，`TenantId → TeId`），全名不超过 63 个字符，超过即报错。两个 Provider 建出同名的索引。
+- 软删除实体（`ISoftDeletable`）的唯一索引末尾自动带 `IsDeleted`：删掉的行不占业务键；同一业务键最多一行已删除，删除、重建、再删除同一个键时第二次删除返回 `PERSISTENCE_CONFLICT_003`。
+- 写入撞上唯一索引（并发写入同一业务键、同一批两项同键、把键改成已有的值）返回 `PERSISTENCE_CONFLICT_003`，这次写入的项统一报告，调用随后回滚；重试时先查到已有的行，按更新处理。内存实现不建索引、不校验唯一性。
+- 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行；要让"全局"这类空值参与唯一性，存成非空的哨兵值。
+- 分表实体（SqlSugar `[SplitTable]`）不用 `[EntityIndex]`，直接用 `[SugarIndex]` 与 `{split_table}` 占位符。
 
 表结构的创建：
 
@@ -334,6 +352,7 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
 | `PERSISTENCE_DENIED_001` | 只读工作单元里新增、更新、删除（只读操作里的写入，HTTP 403） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛异常、Transaction 阶段转为结果 |
+| `PERSISTENCE_CONFLICT_003` | 写入撞上实体声明的唯一索引（关系型 Provider） | `Result`，工作单元随后只能回滚 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
 | `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |

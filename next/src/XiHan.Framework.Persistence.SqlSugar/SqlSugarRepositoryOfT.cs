@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// SqlSugar 仓储。
 /// </summary>
 /// <remarks>
-/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值。新增撞上主键约束（检查之后别的事务提交了同一标识）时另开一个不在事务里的连接核对标识确已存在，就按标识重复报告，工作单元随后只能回滚（PostgreSQL 系语句失败后事务已中止，不能在原事务里再查）。实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。<see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即执行，按协议维护审计字段、租户与软删除。实体落在哪个连接由工作单元的 <see cref="IEntityConnectionSelector"/> 决定（平台目录表走默认连接、租户表走分片连接），本仓储的全部操作都在所选连接上执行。批量方法用一次主键 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>InsertableByObject(list)</c> / <c>UpdateableByObject(list)</c> / <c>DeleteableByObject(list)</c>。SqlSugar 没有变更跟踪：更新与删除先在事务内加行锁取回当前行（<c>TranLock</c>，SQLite 由数据库自身的写锁保证），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值。新增撞上主键约束（检查之后别的事务提交了同一标识）时另开一个不在事务里的连接核对标识确已存在，就按标识重复报告；新增、更新与软删除撞上唯一索引（实体声明的 <c>[EntityIndex(IsUnique = true)]</c> 或唯一 <c>[SugarIndex]</c>）时同样另开连接核对，按唯一键重复报告；两种情况工作单元随后都只能回滚（PostgreSQL 系语句失败后事务已中止，不能在原事务里再查）。实体类型没有 <c>new()</c> 约束，所以写入经 SqlSugar 的按对象入口而不是泛型构建器。带 SqlSugar <c>[SplitTable]</c> 的实体自动走分表入口：查询按 <see cref="EntityQuery{T}.TimeRange"/> 限定扫描的表（没有提示就扫全部分表），写入按 <c>[SplitField]</c> 的值落表；分表实体不加行锁，靠并发戳。<see cref="SqlSugarPersistenceOptions.DiffLog"/> 开启的实体，写入（含批量、软删除与分表）带 SqlSugar 差异日志，业务数据为 <see cref="SqlSugarDiffLogData"/>。
 /// </remarks>
 /// <param name="unitOfWork">本作用域的工作单元。</param>
 /// <param name="timeProvider">审计字段使用的时间源。</param>
@@ -168,7 +168,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (await InsertCheckedAsync(entity, [entity.Id]).ConfigureAwait(false) is { } duplicate)
+        if (await InsertCheckedAsync(entity, [entity]).ConfigureAwait(false) is { } duplicate)
         {
             return duplicate;
         }
@@ -225,9 +225,9 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return results;
         }
 
-        // 通过校验的项一次多行插入；写入阶段才撞上的标识重复对这些项统一报告
+        // 通过校验的项一次多行插入；写入阶段才撞上的标识重复或唯一键重复对这些项统一报告
         cancellationToken.ThrowIfCancellationRequested();
-        if (await InsertCheckedAsync(pending, Distinct(pending.Select(static e => e.Id))).ConfigureAwait(false) is { } duplicate)
+        if (await InsertCheckedAsync(pending, pending).ConfigureAwait(false) is { } duplicate)
         {
             foreach (var index in pendingIndexes)
             {
@@ -270,7 +270,13 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         PersistenceConventions.ApplyOnUpdate(entity, existing, _timeProvider.GetUtcNow());
         cancellationToken.ThrowIfCancellationRequested();
         // 行已在本事务内加锁，按主键整行写入；影响 0 行只可能是行在锁定前已被删除，按冲突报告
-        if (await UpdateAsync(entity).ConfigureAwait(false) == 0)
+        var updated = await UpdateCheckedAsync(entity, [entity]).ConfigureAwait(false);
+        if (!updated.TryGetValue(out var affected))
+        {
+            return updated.Error!;
+        }
+
+        if (affected == 0)
         {
             return Error.Conflict(PersistenceErrors.Concurrency, PersistenceMessages.ConcurrencyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("reason", "the row changed after it was read")));
         }
@@ -327,11 +333,17 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
             return results;
         }
 
-        // 通过校验的项一次按主键批量更新
+        // 通过校验的项一次按主键批量更新；写入阶段撞上的唯一键重复对这些项统一报告
         cancellationToken.ThrowIfCancellationRequested();
-        await UpdateAsync(pending).ConfigureAwait(false);
+        var written = await UpdateCheckedAsync(pending, pending).ConfigureAwait(false);
         foreach (var index in pendingIndexes)
         {
+            if (written.IsFailure)
+            {
+                results[index] = written.Error!;
+                continue;
+            }
+
             results[index] = Result.Success();
             _unitOfWork.DomainEvents.Track(entities[index]);
         }
@@ -358,7 +370,12 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         // 软删除在取回的当前行上打标并整行写回，调用方的实例再同步审计字段；不支持软删除的实体按主键真正删除
         if (PersistenceConventions.TrySoftDelete(existing, _timeProvider.GetUtcNow()))
         {
-            await UpdateAsync(existing).ConfigureAwait(false);
+            // 软删除的行带着删除标记进唯一索引：同一业务键已有一行已删除时撞上，按唯一键重复报告
+            if ((await UpdateCheckedAsync(existing, [existing]).ConfigureAwait(false)).Error is { } conflict)
+            {
+                return conflict;
+            }
+
             CopyAuditBack(existing, entity);
         }
         else
@@ -418,9 +435,16 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         // 软删除的行一次批量更新，物理删除的行一次按主键批量删除
         if (tombstones.Count > 0)
         {
-            await UpdateAsync(tombstones.Select(static t => t.Existing).ToList()).ConfigureAwait(false);
+            var marked = tombstones.Select(static t => t.Existing).ToList();
+            var written = await UpdateCheckedAsync(marked, marked).ConfigureAwait(false);
             foreach (var (index, existing) in tombstones)
             {
+                if (written.IsFailure)
+                {
+                    results[index] = written.Error!;
+                    continue;
+                }
+
                 results[index] = Result.Success();
                 CopyAuditBack(existing, entities[index]);
                 _unitOfWork.DomainEvents.Track(entities[index]);
@@ -459,6 +483,11 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     /// 构造标识重复的错误。
     /// </summary>
     private static Error Duplicate(TKey id) => Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
+
+    /// <summary>
+    /// 构造唯一键重复的错误。
+    /// </summary>
+    private static Error UniqueKeyConflict(string index) => Error.Conflict(PersistenceErrors.UniqueKeyConflict, PersistenceMessages.UniqueKeyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("index", index)));
 
     /// <summary>
     /// 构造并发戳过期的错误。
@@ -570,12 +599,12 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
-    /// 插入单个实体或实体列表，写入撞上主键约束时核对是否为并发新增的同一标识。
+    /// 插入单个实体或实体列表，写入失败时核对是否为并发新增的同一标识或撞上了唯一索引。
     /// </summary>
     /// <remarks>
-    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。PostgreSQL 系语句失败后整个事务进入中止状态，不能在原事务里再查，所以另开一个不在事务里的连接（<c>CopyNew</c>，同一份连接配置）查这些标识：有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）并把工作单元标为失败，提交时回滚并返回同一错误；一个都不存在说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
+    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。PostgreSQL 系语句失败后整个事务进入中止状态，不能在原事务里再查，所以另开一个不在事务里的连接（<c>CopyNew</c>，同一份连接配置）查这些标识：有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）；没有就核对唯一索引（同一批里两项同键、已提交的另一行同键，见 <see cref="UniqueKeyConflicts"/>），撞上即返回唯一键重复（<c>index</c> 是第一个撞上的索引）。两种都把工作单元标为失败，提交时回滚并返回同一错误；都不是说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
     /// </remarks>
-    private async Task<Error?> InsertCheckedAsync(object entityOrList, List<TKey> ids)
+    private async Task<Error?> InsertCheckedAsync(object entityOrList, IReadOnlyList<TEntity> written)
     {
         try
         {
@@ -584,21 +613,59 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         }
         catch (DbException)
         {
-            List<TKey> taken;
+            var ids = Distinct(written.Select(static e => e.Id));
+            Error conflict;
             using (var fresh = Client.CopyNew())
             {
-                taken = await Split(fresh.Queryable<TEntity>().In(ids)).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false);
+                var taken = await Split(fresh.Queryable<TEntity>().In(ids)).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false);
+                var collided = ids.FindIndex(taken.Contains);
+                if (collided >= 0)
+                {
+                    conflict = Duplicate(ids[collided]);
+                }
+                else if (!_isSplitTable && await UniqueKeyConflicts.FindAsync<TEntity, TKey>(Client, fresh, written).ConfigureAwait(false) is { } index)
+                {
+                    conflict = UniqueKeyConflict(index);
+                }
+                else
+                {
+                    throw;
+                }
             }
 
-            var collided = ids.FindIndex(taken.Contains);
-            if (collided < 0)
+            _unitOfWork.Fail(conflict);
+            return conflict;
+        }
+    }
+
+    /// <summary>
+    /// 按主键整行更新单个实体或实体列表，写入失败时核对是否撞上了唯一索引。
+    /// </summary>
+    /// <remarks>
+    /// 更新可能把业务键改成别的行已有的值，软删除可能撞上同一业务键已删除的那一行（唯一索引带删除标记）。核对方式与 <see cref="InsertCheckedAsync"/> 相同：另开不在事务里的连接查已提交的行；撞上即返回唯一键重复并把工作单元标为失败，否则异常原样抛出。成功返回影响的行数。
+    /// </remarks>
+    private async Task<Result<int>> UpdateCheckedAsync(object entityOrList, IReadOnlyList<TEntity> written)
+    {
+        try
+        {
+            return await UpdateAsync(entityOrList).ConfigureAwait(false);
+        }
+        catch (DbException)
+        {
+            string? index;
+            using (var fresh = Client.CopyNew())
+            {
+                index = _isSplitTable ? null : await UniqueKeyConflicts.FindAsync<TEntity, TKey>(Client, fresh, written).ConfigureAwait(false);
+            }
+
+            if (index is null)
             {
                 throw;
             }
 
-            var duplicate = Duplicate(ids[collided]);
-            _unitOfWork.Fail(duplicate);
-            return duplicate;
+            var conflict = UniqueKeyConflict(index);
+            _unitOfWork.Fail(conflict);
+            return conflict;
         }
     }
 

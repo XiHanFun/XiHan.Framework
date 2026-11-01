@@ -12,9 +12,13 @@ namespace XiHan.Framework.Auditing.Database.Trail;
 /// 一条审计记录。
 /// </summary>
 /// <remarks>
-/// <c>AuditEvent</c> 的存储行，只追加——不软删除、无并发戳。租户只是普通列，不实现 <c>IMultiTenant</c>，写入与查询都不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;AuditRecord&gt;()</c>，JSON 与消息列用长文本类型。
+/// <c>AuditEvent</c> 的存储行，只追加——不软删除、无并发戳。租户只是普通列，不实现 <c>IMultiTenant</c>，写入与查询都不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;AuditRecord&gt;()</c> 后调用 <c>ApplyPersistenceConventions()</c>，JSON 与消息列用长文本类型。索引：<c>(Sequence)</c> 供按写入序号排序与续页（不唯一：不同节点的序号只按时钟大致有序，可能相同）；<c>(Timestamp)</c> 供时间范围；<c>(TraceId)</c> 供按 trace-id 查找；<c>(TenantId, Sequence)</c> 供按租户的分页查询。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
+[EntityIndex(nameof(Sequence))]
+[EntityIndex(nameof(Timestamp))]
+[EntityIndex(nameof(TraceId))]
+[EntityIndex(nameof(TenantId), nameof(Sequence))]
 public sealed class AuditRecord : IEntity<Guid>
 {
     /// <inheritdoc />

@@ -4,6 +4,7 @@
   "persistence.entity.not_found": "エンティティ '{entity}' に ID '{id}' の項目がありません。",
   "persistence.entity.stale_stamp": "ID '{id}' の '{entity}' の同時実行スタンプが古くなっています。",
   "persistence.entity.tenant_required": "エンティティ '{entity}' はマルチテナントですが、現在の呼び出しにテナントがありません。",
+  "persistence.entity.unique_key_conflict": "エンティティ '{entity}' の一意インデックス '{index}' に同じキーの項目が既に存在します。",
   "persistence.query.take_exceeded": "クエリは {take} 行を要求していますが、一度に読み取れるのは最大 {max} 行です。1 ページ最大 {max} 行でページングしてください。",
   "persistence.snowflake.clock_moved_backwards": "時計が許容範囲を超えて巻き戻りました。追いつくまでスノーフレーク ID は生成されません。",
   "persistence.snowflake.worker_unavailable": "現在スノーフレークのワーカー ID を保持していません。リースが未取得か、失われています。",

@@ -3,6 +3,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
@@ -17,8 +18,9 @@ public static class ModelBuilderExtensions
     /// 对已注册的每个实体。
     /// </summary>
     /// <remarks>
-    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引。在注册全部实体之后调用。
+    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引；实体上的 <see cref="EntityIndexAttribute"/> 映射为 <c>HasIndex</c>（唯一性与索引名按 <see cref="EntityIndexes"/>，名字用此刻的表名推出，与 SqlSugar 建出的同名）。在注册全部实体、配置完表名之后调用。
     /// </remarks>
+    /// <exception cref="InvalidOperationException">实体的索引声明不合法（见 <see cref="EntityIndexes"/>）。</exception>
     public static ModelBuilder ApplyPersistenceConventions(this ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -40,6 +42,18 @@ public static class ModelBuilderExtensions
             if (typeof(ISoftDeletable).IsAssignableFrom(clrType))
             {
                 modelBuilder.Entity(clrType).HasIndex(nameof(ISoftDeletable.IsDeleted));
+            }
+
+            // 从属类型与所有者共用一张表，不能单独作为实体配置；共享类型实体（属性包）没有可声明索引的 CLR 类型
+            if (entityType.IsOwned() || entityType.HasSharedClrType)
+            {
+                continue;
+            }
+
+            // 索引名按表名推出：表名在这里取，ToTable 要在本方法之前配置
+            foreach (var index in EntityIndexes.Resolve(clrType, entityType.GetTableName() ?? clrType.Name))
+            {
+                modelBuilder.Entity(clrType).HasIndex([.. index.Properties]).IsUnique(index.IsUnique).HasDatabaseName(index.Name);
             }
         }
 

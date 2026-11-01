@@ -19,7 +19,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// 发件箱表在 SqlSugar 上的映射与投递循环的查询（ADR-0064）。
 /// </summary>
 /// <remarks>
-/// 主题与失败原因的列长、到期判定里的可空比较（下一次投递时间为空视为到期）、死信不再取到、超过保留期的已投递行被删，在 SQLite 上走一遍真实的 SQL 翻译。
+/// 主题与失败原因的列长、投递与清理共用的索引、到期判定里的可空比较（下一次投递时间为空视为到期）、死信不再取到、超过保留期的已投递行被删，在 SQLite 上走一遍真实的 SQL 翻译。
 /// </remarks>
 public sealed class SqlSugarOutboxTests : IDisposable
 {
@@ -57,6 +57,10 @@ public sealed class SqlSugarOutboxTests : IDisposable
             Assert.Equal(128, columns.Single(static c => c.PropertyName == nameof(OutboxMessage.Topic)).Length);
             Assert.Equal(StaticConfig.CodeFirst_BigString, columns.Single(static c => c.PropertyName == nameof(OutboxMessage.LastError)).DataType);
             Assert.True(columns.Single(static c => c.PropertyName == nameof(OutboxMessage.NextAttemptAt)).IsNullable);
+            // 投递循环（未投递、未进死信，按创建时间）与保留期清理（按投递时间范围）共用的索引在建表时建出
+            Assert.Equal(
+                [("IX_OutboxMessage_DiAt_DeLeAt_CrAt", false, "DispatchedAt,DeadLetteredAt,CreatedAt")],
+                SqliteSchema.Indexes(scope.ServiceProvider.GetRequiredService<ISqlSugarClient>(), nameof(OutboxMessage)).Select(static i => (i.Name, i.IsUnique, string.Join(',', i.Columns))));
         }
 
         // 一条旧行（下一次投递时间为空）、一条会失败的、一条退避到明天的

@@ -11,12 +11,9 @@ builder.AddXiHan(x => x
     }))
     .UseFeature<DatabaseWorkflowFeature>());
 
-// EF Core 应用在自己的 DbContext 里登记五个实体，并给 Document 列用长文本类型
-modelBuilder.Entity<WorkflowInstanceRecord>(static i =>
-{
-    i.Property(static x => x.Document).HasColumnType("text");
-    i.HasIndex(static x => new { x.DefinitionName, x.Status, x.CreatedAt });
-});
+// EF Core 应用在自己的 DbContext 里登记五个实体，并给 Document 列用长文本类型；索引由实体上的 [EntityIndex] 经协议约定建出
+modelBuilder.Entity<WorkflowInstanceRecord>(static i => i.Property(static x => x.Document).HasColumnType("text"));
+modelBuilder.ApplyPersistenceConventions();
 ```
 
 ```json
@@ -52,7 +49,7 @@ modelBuilder.Entity<WorkflowInstanceRecord>(static i =>
 - 实例锁：行不存在就插入（别人先插入 → 重试），存在且过期就带并发戳接管（戳冲突 → 重试），存在未过期就等待（50ms 起每次翻倍、封顶 500ms），超过 `LockTimeout` → `WORKFLOW_TIMEOUT_001`。续约失败只记日志；释放只删自己的行，重复释放无害。每一步都是独立事务，别的节点立刻看得见。
 - 轮询领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。
 - 存储在自己的作用域与事务里执行，不加入调用方的工作单元；在一个持有写锁的事务里调用引擎时，SQLite 等库级写锁的数据库会等到忙等超时，生产库按行锁不受影响。
-- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；建议索引 `WorkflowDefinitionRecord(Name, Version)`、`WorkflowInstanceRecord(DefinitionName, Status, CreatedAt)`、`WorkflowNodeInstanceRecord(InstanceId)`、`WorkflowBookmarkRecord(InstanceId)`、`(Kind, Key)`、`(DueAt)`。
+- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，名字空间里按名字与版本查找、取最大版本与最新发布版本；全局定义的租户列是 NULL，PostgreSQL、SQLite、MySQL 的唯一索引不约束含 NULL 的行）、`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`，级联子实例）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`，按关联 ID 启动时查重）、`IX_WorkflowInstanceRecord_EnAt`（`EndedAt`，保留期清理）、`IX_WorkflowInstanceRecord_CrAt`（`CreatedAt`，列表倒序分页）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`，信号、受理人、子流程节点）、`IX_WorkflowBookmarkRecord_DuAt`（`DueAt`，到期书签的轮询）；租约表只按主键读写。实例列表的其他过滤组合（如按定义与状态）由应用按查询习惯自己加。
 
 ## 依赖方向
 
