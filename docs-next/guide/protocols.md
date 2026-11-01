@@ -316,7 +316,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events \
 
 ### 出站 Webhook
 
-`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>` 配置的地址。它只按具体类型登记，不替换消息代理的发布者，要推送的地方显式注入它。信封按原样发出，不从当前调用补齐扩展（内部发布者才补齐），租户、主体等内部标识不会外推；要带给接收方的扩展显式写进信封。下例把 `orders` 主题上的每条消息转发给外部服务，Webhook 失败时处理器返回失败，消息按消息子系统的规则重试，用尽后进死信：
+`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>` 配置的地址。它只按具体类型登记，不替换消息代理的发布者，要推送的地方显式注入它。信封按原样发出，不从当前调用补齐扩展（内部发布者才补齐）：这是定下的规则（ADR-0074），`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份，并让第三方依赖本该可变的内部 ID；追踪链要不要跨出组织边界也由调用方决定。要带给接收方的扩展显式写进信封。另外，启用了追踪时 .NET 的 HttpClient 会在 HTTP 头里按 W3C 传播当前 Activity（`traceparent` 头，与信封扩展无关），不想把追踪 ID 发给第三方就在命名客户端上关掉传播：`builder.Services.AddHttpClient("xihan.protocols.cloudevents").ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { ActivityHeadersPropagator = null })`。下例把 `orders` 主题上的每条消息转发给外部服务，Webhook 失败时处理器返回失败，消息按消息子系统的规则重试，用尽后进死信：
 
 ```csharp
 using XiHan.Framework.Messaging.Abstractions.Handlers;
