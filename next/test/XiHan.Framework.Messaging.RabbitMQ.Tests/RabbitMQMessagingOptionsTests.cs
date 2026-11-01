@@ -37,4 +37,15 @@ public sealed class RabbitMQMessagingOptionsTests
         Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:PrefetchCount", "0")), binding));
         Assert.Throws<ArgumentException>(static () => new RabbitMQMessagingOptions { Configuration = "not a uri" });
     }
+
+    [Fact]
+    public void Exchange_DefaultsToXihan_IsReadFromConfiguration_AndRejectsEmptyOrReservedNames()
+    {
+        var binding = Maybe.Some(new BindingValue("queue", "queue", "amqp://guest:guest@bound:5672", new Dictionary<string, string>()));
+
+        Assert.Equal("xihan", RabbitMQMessagingOptions.FromConfiguration(Build(), binding).Exchange);
+        Assert.Equal("orders", RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", "orders")), binding).Exchange);
+        Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", " ")), binding));
+        Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", "amq.direct")), binding));
+    }
 }

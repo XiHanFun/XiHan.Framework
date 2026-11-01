@@ -760,7 +760,13 @@
           "key": "QueuePrefix",
           "type": "string",
           "default": "xihan.",
-          "summary": "队列名前缀"
+          "summary": "队列名与路由键的前缀"
+        },
+        {
+          "key": "Exchange",
+          "type": "string",
+          "default": "xihan",
+          "summary": "发布用的 direct 交换机；不能为空、不能以 amq. 开头，发布方与订阅方要一致"
         },
         {
           "key": "PrefetchCount",

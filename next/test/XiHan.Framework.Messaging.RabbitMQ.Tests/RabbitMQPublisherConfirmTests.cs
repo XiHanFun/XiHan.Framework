@@ -16,7 +16,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 /// 发布确认（RFC-0009 投递第 6 条）。
 /// </summary>
 /// <remarks>
-/// 对打桩的连接与通道验证：发布通道开启并跟踪确认，发布等到确认才成功，拒绝或退回按失败返回，批量连续发布后一次等待全部确认；重试与死信的重新发布同样等确认，未确认时原消息退回队列而不是被确认掉。不需要真实 RabbitMQ。
+/// 对打桩的连接与通道验证：发布通道开启并跟踪确认，发布方只声明交换机、经它按路由键发布，等到确认才成功，拒绝按失败返回，退回（没有订阅者）丢弃并成功，批量连续发布后一次等待全部确认；订阅方声明并绑定队列；重试与死信经默认交换机定向重新发布，同样等确认，未确认时原消息退回队列而不是被确认掉。不需要真实 RabbitMQ。
 /// </remarks>
 public sealed class RabbitMQPublisherConfirmTests
 {
@@ -26,9 +26,14 @@ public sealed class RabbitMQPublisherConfirmTests
     private const string Topic = "orders";
 
     /// <summary>
-    /// 主题对应的队列（缺省前缀 <c>xihan.</c>）。
+    /// 主题对应的队列与路由键（缺省前缀 <c>xihan.</c>）。
     /// </summary>
     private const string Queue = "xihan.orders";
+
+    /// <summary>
+    /// 缺省的交换机。
+    /// </summary>
+    private const string Exchange = "xihan";
 
     /// <summary>
     /// 等待条件成立的上限。
@@ -55,10 +60,13 @@ public sealed class RabbitMQPublisherConfirmTests
 
         await broker.ConnectAsync(CancellationToken.None);
 
-        var options = Assert.Single(fake.Channels).Options;
-        Assert.NotNull(options);
-        Assert.True(options.PublisherConfirmationsEnabled);
-        Assert.True(options.PublisherConfirmationTrackingEnabled);
+        var channel = Assert.Single(fake.Channels);
+        Assert.NotNull(channel.Options);
+        Assert.True(channel.Options.PublisherConfirmationsEnabled);
+        Assert.True(channel.Options.PublisherConfirmationTrackingEnabled);
+        // 发布方只声明持久的 direct 交换机，不声明队列
+        Assert.Equal([(Exchange, ExchangeType.Direct, true)], channel.Exchanges);
+        Assert.Empty(channel.Declared);
     }
 
     [Fact]
@@ -76,16 +84,18 @@ public sealed class RabbitMQPublisherConfirmTests
         // 消息已写出、确认未到：发布还没有完成
         Assert.False(publishing.IsCompleted);
         var published = Assert.Single(channel.Published);
+        Assert.Equal(Exchange, published.Exchange);
         Assert.Equal(Queue, published.RoutingKey);
         Assert.True(published.Mandatory);
         Assert.Equal(1, published.Attempt);
+        Assert.Empty(channel.Declared);
 
         channel.ReleaseConfirms();
         Assert.True((await publishing).IsSuccess);
     }
 
     [Fact]
-    public async Task Publish_FailsAsUnavailable_WhenTheBrokerNacksOrReturnsTheMessage()
+    public async Task Publish_FailsAsUnavailable_WhenTheBrokerNacks_AndSucceedsWhenNothingIsBound()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
         var (connection, fake) = FakeRabbitConnection.Create();
@@ -104,11 +114,44 @@ public sealed class RabbitMQPublisherConfirmTests
         Assert.Equal(MessagingErrors.BrokerUnavailable, nacked.Error?.Code);
         Assert.Equal(MessagingMessages.BrokerUnavailable, nacked.Error?.MessageKey);
         Assert.Contains("did not confirm", Assert.IsType<string>(nacked.Error?.Details?["reason"]), StringComparison.Ordinal);
-        Assert.Equal(MessagingErrors.BrokerUnavailable, returned.Error?.Code);
-        Assert.Contains("could not be routed", Assert.IsType<string>(returned.Error?.Details?["reason"]), StringComparison.Ordinal);
+        // 退回：路由键上没有队列绑定，即没有订阅者——丢弃并成功，与内存代理一致，发件箱不会为它重试或记死信
+        Assert.True(returned.IsSuccess, returned.ToString());
         Assert.True(confirmed.IsSuccess);
-        // 退回说明队列已不在：声明缓存被清掉，下一次发布重新声明
-        Assert.Equal([Queue, Queue], Assert.Single(fake.Channels).Declared);
+        // 发布方从不声明队列：退回之后也不会补建一个没人消费的队列
+        Assert.Empty(Assert.Single(fake.Channels).Declared);
+    }
+
+    [Fact]
+    public async Task PublishMany_DropsTheReturnedItems_AndReportsTheRestAsConfirmed()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (connection, fake) = FakeRabbitConnection.Create();
+        fake.OnChannel = static channel => channel.Confirm = static (sequence, _) => sequence is 0 or 2 ? new PublishException((ulong)sequence + 1, isReturn: true) : null;
+        await using var broker = Broker(host, connection);
+
+        var results = await broker.PublishManyAsync("scheduling.job.started", [Envelope("a"), Envelope("b"), Envelope("c")], CancellationToken.None);
+
+        Assert.Equal(3, results.Count);
+        Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
+        var channel = Assert.Single(fake.Channels);
+        Assert.All(channel.Published, static p => Assert.Equal(("xihan", "xihan.scheduling.job.started"), (p.Exchange, p.RoutingKey)));
+        Assert.Empty(channel.Declared);
+    }
+
+    [Fact]
+    public async Task Start_DeclaresTheDurableQueue_AndBindsItToTheExchange()
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var (connection, fake) = FakeRabbitConnection.Create();
+        await using var broker = Broker(host, connection);
+
+        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+
+        // 队列只由订阅方声明：持久、非独占、不自动删除，以同名路由键绑定到交换机
+        var consumer = fake.Channels[1];
+        Assert.Equal([new QueueDeclaration(Queue, Durable: true, Exclusive: false, AutoDelete: false)], consumer.Declared);
+        Assert.Equal([(Queue, Exchange, Queue)], consumer.Bindings);
+        Assert.Empty(fake.Channels[0].Declared);
     }
 
     [Fact]
@@ -130,7 +173,7 @@ public sealed class RabbitMQPublisherConfirmTests
         Assert.True(SpinWait.SpinUntil(() => channel.Published.Count == 3, _patience));
         Assert.False(publishing.IsCompleted);
         Assert.All(channel.Published, static p => Assert.True(p.Mandatory));
-        Assert.Equal([Queue], channel.Declared);
+        Assert.Empty(channel.Declared);
 
         channel.ReleaseConfirms();
         var results = await publishing;
@@ -166,9 +209,12 @@ public sealed class RabbitMQPublisherConfirmTests
 
         await DeliverAsync(consumer, deliveryTag: 7, attempt: 1, CloudEventsFormat.Encode(Envelope("retry")));
 
+        // 重试经默认交换机定向发回所消费的队列，不经主题的交换机，也不重新声明队列
         var republished = Assert.Single(publish.Published);
+        Assert.Equal(string.Empty, republished.Exchange);
         Assert.Equal(Queue, republished.RoutingKey);
         Assert.Equal(2, republished.Attempt);
+        Assert.Empty(publish.Declared);
         Assert.Equal([7UL], consumer.Acked);
         Assert.Empty(consumer.Nacked);
     }
@@ -203,9 +249,13 @@ public sealed class RabbitMQPublisherConfirmTests
 
         // 第 2 次尝试失败即到上限：转入死信队列，死信发布未被确认时原消息退回
         await DeliverAsync(consumer, deliveryTag: 9, attempt: 2, CloudEventsFormat.Encode(Envelope("poison")));
-        Assert.Equal(Queue + ".dlq", Assert.Single(fake.Channels[0].Published).RoutingKey);
+        var deadLettered = Assert.Single(fake.Channels[0].Published);
+        Assert.Equal((string.Empty, Queue + ".dlq"), (deadLettered.Exchange, deadLettered.RoutingKey));
         Assert.Empty(consumer.Acked);
         Assert.Equal([(9UL, true)], consumer.Nacked);
+        // 死信队列由死信的一方声明为持久队列并以同名路由键绑定（即主题加后缀的竞争队列）
+        Assert.Equal([new QueueDeclaration(Queue + ".dlq", Durable: true, Exclusive: false, AutoDelete: false)], fake.Channels[0].Declared);
+        Assert.Equal([(Queue + ".dlq", Exchange, Queue + ".dlq")], fake.Channels[0].Bindings);
 
         // 无法解码的消息同样经确认的死信发布，未确认时退回
         await DeliverAsync(consumer, deliveryTag: 10, attempt: 1, "not json"u8.ToArray());

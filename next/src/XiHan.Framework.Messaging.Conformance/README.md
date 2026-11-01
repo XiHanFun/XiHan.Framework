@@ -9,7 +9,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 }
 ```
 
-套件覆盖：信封属性、扩展与数据完整到达处理器；同一主题按发布顺序投递；主题互不串扰；处理器失败或抛异常时重试到上限后停止且不阻塞后续消息；租户与关联扩展进入 Baggage；非法主题被发布者拒绝。用例以 `Testing.TestHost` 走完整管道，等待投递有超时（`DeliveryTimeout`）。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
+套件覆盖：信封属性、扩展与数据完整到达处理器；同一主题按发布顺序投递；主题互不串扰；处理器失败或抛异常时重试到上限后停止且不阻塞后续消息；租户与关联扩展进入 Baggage；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功。用例以 `Testing.TestHost` 走完整管道，等待投递有超时（`DeliveryTimeout`）。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
 
 ## 依赖方向
 

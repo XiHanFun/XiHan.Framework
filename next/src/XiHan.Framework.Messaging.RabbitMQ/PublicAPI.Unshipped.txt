@@ -20,6 +20,8 @@ XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.<Clone>$() -> XiHan.
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Configuration.get -> string!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Configuration.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Equals(XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions? other) -> bool
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Exchange.get -> string!
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Exchange.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.get -> ushort

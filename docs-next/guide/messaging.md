@@ -71,7 +71,9 @@ builder.AddXiHan(xihan => xihan
 | `PublishAsync(topic, envelope, ct)` | `Result` |
 | `PublishManyAsync(topic, envelopes, ct)` | 与入参等长、顺序一致的 `IReadOnlyList<Result>`；单条是它的特例 |
 
-批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在开启了发布确认的通道上连续发布、一次等待全部确认（代理拒绝或无法路由的项返回 `MESSAGING_UNAVAILABLE_001`），Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
+批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在开启了发布确认的通道上连续发布、一次等待全部确认（代理拒绝的项返回 `MESSAGING_UNAVAILABLE_001`），Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
+
+发布到没人订阅的主题照常成功：内存代理与 RabbitMQ 丢弃消息（RabbitMQ 的发布方只声明交换机，队列由订阅方声明并绑定，消息被退回即说明没有订阅者），记 Debug 日志；Kafka 的消息进主题、按保留期清理。调度、工作流等框架事件发到应用不一定订阅的主题，这是常态，不会让发件箱重试到死信（ADR-0074、ADR-0079）。
 
 在调用内发布时（操作、消息处理器、作业里），`DirectPublisher` 与 `OutboxPublisher` 先从当前调用（`IInvocationAccessor`）给每个信封补上缺失的扩展，处理器就在发布方的追踪链上，带着同样的租户、主体、关联 ID 与区域：
 
@@ -312,7 +314,7 @@ public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer re
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
 | `XiHan:Messaging:InMemory:MaxTopics` | 正整数 | 1000 | 内存代理被订阅的主题数上限，超出时启动失败（`MESSAGING_UNAVAILABLE_003`）；发布到没人订阅的主题直接丢弃，不计入 |
-| `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |
+| `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、交换机、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |
 | `XiHan:Messaging:Kafka:*` | — | — | 引导地址、消费组、主题前缀、透传配置，见 [Messaging.Kafka](../packages/messaging-kafka#配置) |
 
 非法值在装配时抛 `ArgumentException`。

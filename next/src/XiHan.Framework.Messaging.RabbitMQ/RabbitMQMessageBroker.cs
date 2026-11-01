@@ -20,7 +20,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// 基于 RabbitMQ.Client 的代理。
 /// </summary>
 /// <remarks>
-/// 每主题一个持久队列，手动确认，失败重新发布到队尾或死信队列。发布通道开启发布确认，每次发布（含重试与死信的重新发布）都等代理确认，代理拒绝（nack）或无法路由（mandatory 退回）按失败处理。批量发布在同一通道上连续发布、一次持锁、一次声明队列，再一次等待全部确认。
+/// 发布方只声明交换机：消息发到持久的 direct 交换机 <see cref="RabbitMQMessagingOptions.Exchange"/>，路由键是前缀加主题；队列只由订阅方声明并绑定（ADR-0079）。发布到没有队列绑定的路由（mandatory 退回，即没有订阅者）丢弃并记 Debug 日志，发布照常成功。每主题一个持久队列，手动确认，失败经默认交换机重新发布到队尾或死信队列。发布通道开启发布确认，每次发布（含重试与死信的重新发布）都等代理确认，代理拒绝（nack）按失败处理。批量发布在同一通道上连续发布、一次持锁，再一次等待全部确认。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDisposable
@@ -73,10 +73,10 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private readonly SemaphoreSlim _publishGate = new(1, 1);
 
     /// <summary>
-    /// 已声明过的队列名。
+    /// 已声明并绑定过的死信队列名。
     /// </summary>
     /// <remarks>
-    /// 避免每次发布都声明。
+    /// 避免每次死信都声明；死信发布被退回（队列被外部删除）时移除，下一次重新声明。
     /// </remarks>
     private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
 
@@ -165,7 +165,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 建立连接与发布通道。
     /// </summary>
     /// <remarks>
-    /// 发布通道开启发布确认并由客户端跟踪：每次发布在代理确认后才完成，拒绝或退回以 <see cref="PublishException"/> 抛出。
+    /// 发布通道开启发布确认并由客户端跟踪：每次发布在代理确认后才完成，拒绝或退回以 <see cref="PublishException"/> 抛出。随后声明交换机。
     /// </remarks>
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
@@ -180,6 +180,8 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             // 不开确认时 BasicPublishAsync 写出即返回，代理没收下（磁盘告警、内部错误）或无法路由的消息也被当作已发布；
             // 开启并跟踪确认后，每条发布等到 basic.ack 才完成，basic.nack 与 mandatory 的 basic.return 都抛 PublishException
             _publishChannel = await _connection.CreateChannelAsync(new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true), cancellationToken).ConfigureAwait(false);
+            // 发布方只声明交换机、不声明队列：没有订阅者的主题不会因为发布而多出一个没人消费、越堆越多的持久队列（ADR-0079）
+            await _publishChannel.ExchangeDeclareAsync(_options.Exchange, ExchangeType.Direct, durable: true, autoDelete: false, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is RabbitMQClientException or IOException)
         {
@@ -189,18 +191,18 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
 
     /// <inheritdoc />
     /// <remarks>
-    /// 等到代理确认才返回成功；代理拒绝或无法路由返回 <see cref="MessagingErrors.BrokerUnavailable"/>，连接或通道异常抛出携带它的 <see cref="FrameworkException"/>。
+    /// 等到代理确认才返回成功；没有订阅者（退回）时丢弃并成功；代理拒绝返回 <see cref="MessagingErrors.BrokerUnavailable"/>，连接或通道异常抛出携带它的 <see cref="FrameworkException"/>。
     /// </remarks>
     public async ValueTask<Result> PublishAsync(string topic, MessageEnvelope envelope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(envelope);
         TopicName.Validate(topic);
-        return await PublishAsync(QueueOf(topic), envelope, attempt: 1, cancellationToken).ConfigureAwait(false);
+        return (await PublishManyAsync(topic, [envelope], cancellationToken).ConfigureAwait(false))[0];
     }
 
     /// <inheritdoc />
     /// <remarks>
-    /// 连续发布后一次等待全部确认，逐项结果：确认为成功，代理拒绝或无法路由为 <see cref="MessagingErrors.BrokerUnavailable"/>；连接或通道异常让整批抛出。
+    /// 连续发布到交换机后一次等待全部确认，逐项结果：确认为成功，没有订阅者（退回）丢弃并成功，代理拒绝为 <see cref="MessagingErrors.BrokerUnavailable"/>；连接或通道异常让整批抛出。
     /// </remarks>
     public async ValueTask<IReadOnlyList<Result>> PublishManyAsync(string topic, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
     {
@@ -219,27 +221,27 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             bodies[index] = (CloudEventsFormat.Encode(envelopes[index]), envelopes[index].Id);
         }
 
-        var queue = QueueOf(topic);
+        var routingKey = QueueOf(topic);
         if (_publishChannel is null)
         {
             await ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
 
         var results = new Result[bodies.Length];
+        var dropped = 0;
         await _publishGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            // 同一通道上连续发布：一次持锁、一次声明队列，每条写出后立即写下一条，代理按到达顺序入队；
+            // 同一通道上连续发布：一次持锁，每条写出后立即写下一条，代理按到达顺序路由；
             // 全部写出后再逐条等确认（一次等待），每条的确认各自成为该项的结果
             var pending = new Task[bodies.Length];
             var started = 0;
             Exception? failure = null;
             try
             {
-                await DeclareAsync(_publishChannel!, queue, cancellationToken).ConfigureAwait(false);
                 for (; started < bodies.Length; started++)
                 {
-                    pending[started] = _publishChannel!.BasicPublishAsync(string.Empty, queue, mandatory: true, Properties(attempt: 1, bodies[started].Id), bodies[started].Body, cancellationToken).AsTask();
+                    pending[started] = _publishChannel!.BasicPublishAsync(_options.Exchange, routingKey, mandatory: true, Properties(attempt: 1, bodies[started].Id), bodies[started].Body, cancellationToken).AsTask();
                 }
             }
             catch (Exception exception) when (exception is RabbitMQClientException or IOException or OperationCanceledException)
@@ -255,9 +257,16 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
                     await pending[index].ConfigureAwait(false);
                     results[index] = Result.Success();
                 }
+                catch (PublishException exception) when (exception.IsReturn)
+                {
+                    // 退回：路由键上没有任何队列绑定，即没有订阅者。与内存代理一致丢弃、照常成功，
+                    // 不当发布失败——否则发件箱会为没人订阅的框架事件反复重试，最后记进死信
+                    results[index] = Result.Success();
+                    dropped++;
+                }
                 catch (PublishException exception)
                 {
-                    results[index] = NotConfirmed(queue, bodies[index].Id, exception);
+                    results[index] = NotConfirmed(routingKey, bodies[index].Id, exception);
                 }
                 catch (Exception exception) when (exception is RabbitMQClientException or IOException or OperationCanceledException)
                 {
@@ -272,12 +281,17 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
 
             if (failure is not null)
             {
-                throw Unavailable($"Failed to publish to queue '{queue}'", failure);
+                throw Unavailable($"Failed to publish to exchange '{_options.Exchange}' with routing key '{routingKey}'", failure);
             }
         }
         finally
         {
             _publishGate.Release();
+        }
+
+        if (dropped > 0)
+        {
+            LogDropped(_logger, dropped, topic);
         }
 
         return results;
@@ -297,7 +311,8 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             try
             {
                 var channel = await _connection!.CreateChannelAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-                await DeclareAsync(channel, queue, cancellationToken).ConfigureAwait(false);
+                // 队列只由订阅方声明并绑定：持久、非独占，订阅方离线期间的消息留在队列里
+                await DeclareDurableAsync(channel, queue, cancellationToken).ConfigureAwait(false);
                 await channel.BasicQosAsync(0, _options.PrefetchCount, global: false, cancellationToken).ConfigureAwait(false);
 
                 var consumer = new AsyncEventingBasicConsumer(channel);
@@ -375,7 +390,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         {
             LogUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
             var body = received.Body.ToArray();
-            await SettleAsync(channel, received.DeliveryTag, topic, "?", () => PublishAsync(QueueOf(topic) + _messaging.DeadLetterSuffix, body, attempt, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, "?", () => DeadLetterAsync(QueueOf(topic), body, attempt, null, stopping), stopping).ConfigureAwait(false);
             return;
         }
 
@@ -410,12 +425,12 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         // 失败时先重新发布（队尾或死信）并等确认，再确认原消息：顺序保证不丢消息，代价是极端情况下可能重复投递
         if (attempt < _messaging.MaxAttempts)
         {
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishAsync(QueueOf(topic), envelope, attempt + 1, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishToQueueAsync(QueueOf(topic), CloudEventsFormat.Encode(envelope), attempt + 1, envelope.Id, stopping), stopping).ConfigureAwait(false);
         }
         else
         {
             LogDeadLettered(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishAsync(QueueOf(topic) + _messaging.DeadLetterSuffix, envelope, attempt, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => DeadLetterAsync(QueueOf(topic), CloudEventsFormat.Encode(envelope), attempt, envelope.Id, stopping), stopping).ConfigureAwait(false);
         }
     }
 
@@ -464,18 +479,25 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     }
 
     /// <summary>
-    /// 把信封编码为 CloudEvents JSON 后发布到队列，事件 ID 作为消息 ID。
-    /// </summary>
-    private ValueTask<Result> PublishAsync(string queue, MessageEnvelope envelope, int attempt, CancellationToken cancellationToken)
-        => PublishAsync(queue, CloudEventsFormat.Encode(envelope), attempt, cancellationToken, envelope.Id);
-
-    /// <summary>
-    /// 发布原始字节到队列并等代理确认。
+    /// 把一条投递转入死信队列。
     /// </summary>
     /// <remarks>
-    /// 持久化投递、CloudEvents 内容类型、尝试次数写入消息头、mandatory；必要时先连接并声明队列。代理拒绝或无法路由返回失败，连接或通道异常抛出。
+    /// 死信队列由死信的一方（订阅方）声明为持久队列并绑定到交换机，再经默认交换机定向发布。
     /// </remarks>
-    private async ValueTask<Result> PublishAsync(string queue, byte[] body, int attempt, CancellationToken cancellationToken, string? messageId = null)
+    private async ValueTask<Result> DeadLetterAsync(string queue, byte[] body, int attempt, string? messageId, CancellationToken cancellationToken)
+    {
+        var deadLetter = queue + _messaging.DeadLetterSuffix;
+        await EnsureDeadLetterQueueAsync(deadLetter, cancellationToken).ConfigureAwait(false);
+        return await PublishToQueueAsync(deadLetter, body, attempt, messageId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 经默认交换机把原始字节定向发布到一个队列并等代理确认。
+    /// </summary>
+    /// <remarks>
+    /// 用于重试与死信：目标是已知存在的队列，不经主题的交换机——经交换机会把重试也送给同一路由键上的其他队列。持久化投递、CloudEvents 内容类型、尝试次数写入消息头、mandatory；代理拒绝或退回（队列已不存在）返回失败，连接或通道异常抛出。
+    /// </remarks>
+    private async ValueTask<Result> PublishToQueueAsync(string queue, byte[] body, int attempt, string? messageId, CancellationToken cancellationToken)
     {
         if (_publishChannel is null)
         {
@@ -486,7 +508,6 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         await _publishGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await DeclareAsync(_publishChannel!, queue, cancellationToken).ConfigureAwait(false);
             await _publishChannel!.BasicPublishAsync(string.Empty, queue, mandatory: true, Properties(attempt, messageId), body, cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
@@ -505,10 +526,10 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     }
 
     /// <summary>
-    /// 代理没有确认一条发布：拒绝（nack）或无法路由（mandatory 退回）。
+    /// 代理没有确认一条发布：拒绝（nack），或定向发布被退回。
     /// </summary>
     /// <remarks>
-    /// 退回说明队列已不存在（被外部删除），清掉声明缓存让下一次发布重新声明。
+    /// 定向发布（重试、死信）被退回说明目标队列已不存在（被外部删除），清掉死信队列的声明缓存让下一次重新声明。发到交换机的退回不经这里，见 <see cref="PublishManyAsync"/>。
     /// </remarks>
     private Error NotConfirmed(string queue, string messageId, PublishException exception)
     {
@@ -522,7 +543,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
 
         var reason = exception.IsReturn
             ? $"message '{messageId}' could not be routed to queue '{queue}'"
-            : $"the broker did not confirm message '{messageId}' on queue '{queue}'";
+            : $"the broker did not confirm message '{messageId}' routed to '{queue}'";
         LogNotConfirmed(_logger, messageId, queue, exception.IsReturn);
         return Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", reason)));
     }
@@ -539,14 +560,14 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     };
 
     /// <summary>
-    /// 声明持久、非独占、不自动删除的队列。
+    /// 声明死信队列并绑定到交换机。
     /// </summary>
     /// <remarks>
-    /// 同一队列只声明一次。
+    /// 在发布通道上声明，同一队列只声明一次。调用方不持有发布锁。
     /// </remarks>
-    private async Task DeclareAsync(IChannel channel, string queue, CancellationToken cancellationToken)
+    private async Task EnsureDeadLetterQueueAsync(string queue, CancellationToken cancellationToken)
     {
-        // 队列声明是幂等的，但每次都声明会多一次往返；按名缓存已声明的队列
+        // 队列声明是幂等的，但每次死信都声明会多两次往返；按名缓存已声明的死信队列
         lock (_declared)
         {
             if (_declared.Contains(queue))
@@ -555,7 +576,26 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             }
         }
 
-        await channel.QueueDeclareAsync(queue, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (_publishChannel is null)
+        {
+            await ConnectAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        // 声明与绑定同样走发布通道，与发布共用一把锁
+        await _publishGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await DeclareDurableAsync(_publishChannel!, queue, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is RabbitMQClientException or IOException)
+        {
+            throw Unavailable($"Failed to declare dead-letter queue '{queue}'", exception);
+        }
+        finally
+        {
+            _publishGate.Release();
+        }
+
         lock (_declared)
         {
             _declared.Add(queue);
@@ -563,7 +603,19 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     }
 
     /// <summary>
-    /// 主题对应的队列名：前缀加主题。
+    /// 声明持久、非独占、不自动删除的队列，并以同名路由键绑定到交换机。
+    /// </summary>
+    /// <remarks>
+    /// 声明与绑定都是幂等的：订阅方每次启动都执行，先前版本建出的同名队列照常可用。
+    /// </remarks>
+    private async Task DeclareDurableAsync(IChannel channel, string queue, CancellationToken cancellationToken)
+    {
+        await channel.QueueDeclareAsync(queue, durable: true, exclusive: false, autoDelete: false, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await channel.QueueBindAsync(queue, _options.Exchange, queue, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 主题对应的队列名与路由键：前缀加主题。
     /// </summary>
     private string QueueOf(string topic) => _options.QueuePrefix + topic;
 
@@ -572,6 +624,15 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// </summary>
     private static FrameworkException Unavailable(string what, Exception exception)
         => new(MessagingErrors.BrokerUnavailable, $"{what}: {exception.Message}", exception);
+
+    /// <summary>
+    /// 记录发布到没有订阅者的主题的消息被丢弃。
+    /// </summary>
+    /// <remarks>
+    /// Debug 级别：调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态；主题名写错或订阅方还没启动过时打开本类别的 Debug 日志排查。
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped {Count} message(s) published to topic '{Topic}' because no queue is bound to its routing key (nothing subscribes to it).")]
+    private static partial void LogDropped(ILogger logger, int count, string topic);
 
     /// <summary>
     /// 记录一条消息重试到上限后进入死信队列。
@@ -588,7 +649,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <summary>
     /// 记录代理没有确认一条发布。
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "RabbitMQ did not confirm message {MessageId} on queue {Queue} (returned as unroutable: {Returned})")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "RabbitMQ did not confirm message {MessageId} routed to {Queue} (returned as unroutable: {Returned})")]
     private static partial void LogNotConfirmed(ILogger logger, string messageId, string queue, bool returned);
 
     /// <summary>

@@ -1,6 +1,6 @@
 # XiHan.Framework.Messaging.RabbitMQ
 
-`messaging.queue@1` 的 RabbitMQ Provider，基于 RabbitMQ.Client 7：每个主题一个持久队列，手动确认、重试与死信队列。适用于多实例部署下的工作队列。
+`messaging.queue@1` 的 RabbitMQ Provider，基于 RabbitMQ.Client 7：发布到一个 direct 交换机，订阅方为每个主题声明持久队列并绑定，手动确认、重试与死信队列。适用于多实例部署下的工作队列。
 
 | 项 | 内容 |
 | --- | --- |
@@ -17,11 +17,13 @@
 
 `RabbitMQMessageBroker` 实现 `IMessageBroker`。装配后它顶替内存代理，处理器、发布者与发件箱的代码不变。
 
-- 主题映射为持久队列 `<QueuePrefix><topic>`（前缀缺省 `xihan.`），经默认交换机直接路由；队列在第一次发布或消费时声明。
+- 发布方只声明交换机（ADR-0079）：消息发到持久的 direct 交换机 `Exchange`（缺省 `xihan`），路由键 `<QueuePrefix><topic>`（前缀缺省 `xihan.`）。发布方不声明队列。
+- 队列只由订阅方声明：订阅方启动时声明持久队列 `<QueuePrefix><topic>`，以同名路由键绑定到交换机。订阅方第一次启动之后，它离线期间的消息留在队列里；第一次启动之前发布的消息没有队列可进。
 - 消息持久化投递，`content_type` 为 `application/cloudevents+json`，`message_id` 为事件 ID，消息体是 CloudEvents 结构化 JSON。
-- 发布共用一条发布通道，用信号量串行化；通道开启发布确认并由客户端跟踪，消息以 `mandatory` 发出，代理确认后发布才返回成功，代理拒绝（nack）或无法路由（退回）返回 `MESSAGING_UNAVAILABLE_001`。批量发布在这条通道上连续写出整批（一次持锁、一次声明队列），再一次等待全部确认，结果逐项对应。
+- 发布共用一条发布通道，用信号量串行化；通道开启发布确认并由客户端跟踪，消息以 `mandatory` 发出，代理确认后发布才返回成功，代理拒绝（nack）返回 `MESSAGING_UNAVAILABLE_001`。批量发布在这条通道上连续写出整批（一次持锁），再一次等待全部确认，结果逐项对应。
+- 没有订阅者：消息被退回（路由键上没有队列绑定）时丢弃，发布照常成功（批量逐项成功），记一条 Debug 日志，与内存代理一致；发件箱不为它重试，也不记进死信。
 - 每个订阅主题一个通道与一个消费者，预取 `PrefetchCount`（缺省 16），手动确认，单线程派发。
-- 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时重新发布到队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`；重新发布同样等确认，确认了才确认原消息，未被确认或发布失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息不重试，原样进死信队列（同样等确认）。
+- 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时经默认交换机重新发布到所消费队列的队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`（由死信的一方声明为持久队列并绑定到交换机，即主题加后缀的竞争队列）；重新发布同样等确认，确认了才确认原消息，未被确认、被退回（队列已不存在）或发布失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息不重试，原样进死信队列（同样等确认）。
 - 停止时取消消费者；正在处理的消息不确认，连接关闭后由 RabbitMQ 重新投递。
 
 启动时先建立连接与发布通道、再开始消费，连不上时启动失败；停止时先停健康探针与消费，再释放连接。
@@ -57,7 +59,8 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:RabbitMQ:Configuration` | 字符串 | — | AMQP URI（`amqp://` 或 `amqps://`）；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败 |
-| `XiHan:Messaging:RabbitMQ:QueuePrefix` | 字符串 | `xihan.` | 队列名前缀 |
+| `XiHan:Messaging:RabbitMQ:QueuePrefix` | 字符串 | `xihan.` | 队列名与路由键的前缀 |
+| `XiHan:Messaging:RabbitMQ:Exchange` | 字符串 | `xihan` | 发布用的 direct 交换机，不能为空、不能以 `amq.` 开头；发布方与订阅方要一致 |
 | `XiHan:Messaging:RabbitMQ:PrefetchCount` | 1–65535 | 16 | 每个消费者的预取数 |
 | `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
@@ -83,7 +86,7 @@ builder.AddXiHan(xihan => xihan
 | 类型 | 说明 |
 | --- | --- |
 | `RabbitMQMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.rabbitmq.connection`） |
-| `RabbitMQMessagingOptions` | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
+| `RabbitMQMessagingOptions` | `Configuration`、`QueuePrefix`、`Exchange`、`PrefetchCount`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
 | `RabbitMQMessageBroker` | 代理；`ConnectAsync`、`IsConnected`、`CheckConnection()`（健康项用） |
 
 ## 使用示例
@@ -127,15 +130,31 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 
 ## 行为与限制
 
-- 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`，代理拒绝或无法路由的发布返回同一错误码的失败结果（批量逐项）；单条发布遇到不合法主题抛 `ArgumentException`（发布者已先校验，代理收到不合法主题是装配错误）。
+- 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`，代理拒绝的发布返回同一错误码的失败结果（批量逐项）；没有订阅者的发布成功并丢弃；单条发布遇到不合法主题抛 `ArgumentException`（发布者已先校验，代理收到不合法主题是装配错误）。
 - 投递是至少一次：失败时先重新发布再确认原消息，极端情况下会重复投递；处理器按 `Id` + `Source` 去重。
 - 重试排到队尾，同一队列后面的消息先于重试被处理；重试之间不等待。
-- 发布成功表示代理已确认收下（持久队列上的持久消息已落盘）；退回的消息不会进任何队列。
-- 测试：发布确认与重新发布的确认用打桩的连接与通道覆盖，不需要 RabbitMQ；一致性套件需要真实 RabbitMQ，设置环境变量 `XIHAN_TEST_RABBITMQ`（如 `amqp://guest:guest@localhost:5672`）后运行，未设置时跳过。
+- 发布成功表示代理已确认收下（持久队列上的持久消息已落盘），或者没有任何订阅者、消息已丢弃。
+- 交换机被外部删除时发布通道以通道错误关闭，健康项转为 Degraded，要重启实例重新声明。
+- 测试：发布确认、拓扑与重新发布的确认用打桩的连接与通道覆盖，不需要 RabbitMQ；一致性套件与拓扑用例需要真实 RabbitMQ，设置环境变量 `XIHAN_TEST_RABBITMQ`（如 `amqp://guest:guest@localhost:5672`）后运行，未设置时跳过。
 
 | 健康项 | 状态 |
 | --- | --- |
 | `messaging.rabbitmq.connection` | 启动后按 `HealthProbeIntervalSeconds` 在后台检查连接与发布通道是否打开并缓存结果；断开时 Degraded（`MESSAGING_UNAVAILABLE_001`，`reason` 是代理给出的关闭原因），应用仍在服务 |
+
+## 升级说明
+
+- 先前版本由发布方建出、没有人订阅的队列（如 `xihan.scheduling.job.started` 等调度事件 `scheduling.job.*` 的队列）不再收到新消息，框架不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：
+
+  ```bash
+  # 找出没有消费者的队列（consumers 为 0）
+  rabbitmqctl list_queues name messages consumers
+  # 确认是框架主题、没有服务订阅后删除
+  rabbitmqctl delete_queue xihan.scheduling.job.started
+  ```
+
+- 订阅方用到的队列名与参数不变：升级后第一次启动即补上到交换机的绑定，积压照常消费。
+- 滚动升级：发布方已是新版本、订阅方仍是旧版本的那段时间里，新版本发出的消息没有绑定可走，按「没有订阅者」丢弃。先升级订阅方，或让一个新版本的订阅实例先启动一次建好绑定；同一个应用的实例既发布又订阅，第一个新版本实例启动即建好绑定。
+- 希望订阅方上线之前就留存消息的部署，由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机。
 
 ## 相关
 

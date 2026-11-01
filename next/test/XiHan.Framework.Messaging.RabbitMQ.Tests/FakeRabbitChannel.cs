@@ -10,7 +10,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 /// 打桩的 <see cref="IChannel"/>。
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成，只实现代理用到的成员：记录声明、发布、确认与退回，按 <see cref="Confirm"/> 决定每次发布的确认结果，<see cref="HoldConfirms"/> 时确认挂起到 <see cref="ReleaseConfirms"/>。其余成员抛 <see cref="NotSupportedException"/>。
+/// 以 <see cref="DispatchProxy"/> 生成，只实现代理用到的成员：记录交换机与队列的声明、绑定、发布、确认与退回，按 <see cref="Confirm"/> 决定每次发布的确认结果，<see cref="HoldConfirms"/> 时确认挂起到 <see cref="ReleaseConfirms"/>。其余成员抛 <see cref="NotSupportedException"/>。
 /// </remarks>
 public class FakeRabbitChannel : DispatchProxy
 {
@@ -30,9 +30,19 @@ public class FakeRabbitChannel : DispatchProxy
     public CreateChannelOptions? Options { get; set; }
 
     /// <summary>
-    /// 声明过的队列名，按顺序。
+    /// 声明过的队列，按顺序。
     /// </summary>
-    public List<string> Declared { get; } = [];
+    public List<QueueDeclaration> Declared { get; } = [];
+
+    /// <summary>
+    /// 声明过的交换机名与类型，按顺序。
+    /// </summary>
+    public List<(string Name, string Type, bool Durable)> Exchanges { get; } = [];
+
+    /// <summary>
+    /// 绑定过的队列、交换机与路由键，按顺序。
+    /// </summary>
+    public List<(string Queue, string Exchange, string RoutingKey)> Bindings { get; } = [];
 
     /// <summary>
     /// 发布记录，按顺序。
@@ -94,12 +104,26 @@ public class FakeRabbitChannel : DispatchProxy
                 var queue = (string)args[0]!;
                 lock (Declared)
                 {
-                    Declared.Add(queue);
+                    Declared.Add(new QueueDeclaration(queue, (bool)args[1]!, (bool)args[2]!, (bool)args[3]!));
                 }
 
                 return Task.FromResult(new QueueDeclareOk(queue, 0, 0));
+            case "ExchangeDeclareAsync":
+                lock (Exchanges)
+                {
+                    Exchanges.Add(((string)args[0]!, (string)args[1]!, (bool)args[2]!));
+                }
+
+                return Task.CompletedTask;
+            case "QueueBindAsync":
+                lock (Bindings)
+                {
+                    Bindings.Add(((string)args[0]!, (string)args[1]!, (string)args[2]!));
+                }
+
+                return Task.CompletedTask;
             case "BasicPublishAsync":
-                return new ValueTask(Publish((string)args[1]!, (bool)args[2]!, (IReadOnlyBasicProperties)args[3]!, (ReadOnlyMemory<byte>)args[4]!));
+                return new ValueTask(Publish((string)args[0]!, (string)args[1]!, (bool)args[2]!, (IReadOnlyBasicProperties)args[3]!, (ReadOnlyMemory<byte>)args[4]!));
             case "BasicQosAsync":
             case "BasicCancelAsync":
             case "CloseAsync":
@@ -133,13 +157,13 @@ public class FakeRabbitChannel : DispatchProxy
     /// <summary>
     /// 记录一次发布，按 <see cref="Confirm"/> 给出确认结果。
     /// </summary>
-    private Task Publish(string routingKey, bool mandatory, IReadOnlyBasicProperties properties, ReadOnlyMemory<byte> body)
+    private Task Publish(string exchange, string routingKey, bool mandatory, IReadOnlyBasicProperties properties, ReadOnlyMemory<byte> body)
     {
         int sequence;
         lock (Published)
         {
             sequence = Published.Count;
-            Published.Add(new PublishedMessage(routingKey, mandatory, properties, body.ToArray()));
+            Published.Add(new PublishedMessage(exchange, routingKey, mandatory, properties, body.ToArray()));
         }
 
         var outcome = Confirm(sequence, routingKey);

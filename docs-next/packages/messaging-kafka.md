@@ -123,6 +123,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 - 重放：`ReplayAsync(topic, since)` 用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
+- 没人订阅的主题（ADR-0079）：发布到不存在的主题时由 broker 按 `auto.create.topics.enable`（Kafka 缺省开启）自动建出主题，消息只留到保留期（`retention.ms`，缺省 7 天）为止；没有消费组就没有积压，不会像队列那样越堆越多。broker 关闭了自动建主题时，发布到不存在的主题在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒），这类部署要预先建好应用与框架事件（如 `<TopicPrefix>scheduling.job.started`）用到的主题。
 - 测试：一致性套件（含 `MessageStreamConformance` 的同键有序与按时刻重放）需要真实 Kafka，设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，未设置时跳过；本地可以用单节点 KRaft 容器：
 
 ```bash

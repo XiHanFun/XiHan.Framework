@@ -35,6 +35,11 @@ public abstract class MessageBrokerConformance
     public const string ShipmentsTopic = "conformance.shipments";
 
     /// <summary>
+    /// 套件里没人订阅的主题。
+    /// </summary>
+    public const string UnsubscribedTopic = "conformance.unsubscribed";
+
+    /// <summary>
     /// 套件配置的最多投递次数。
     /// </summary>
     public const int MaxAttempts = 2;
@@ -308,6 +313,29 @@ public abstract class MessageBrokerConformance
         });
         Assert.Equal("corr-10", Assert.Single(received, static r => r.Delivery.Envelope.Id == "trace-1").Baggage[BaggageKeys.Correlation]);
         Assert.Equal("explicit", Assert.Single(received, static r => r.Delivery.Envelope.Id == "trace-2").Baggage[BaggageKeys.Correlation]);
+    }
+
+    /// <summary>
+    /// 用例 11：发布到没人订阅的主题成功。
+    /// </summary>
+    /// <remarks>
+    /// 单条与批量都成功、逐项成功，不当作发布失败（RFC-0009，ADR-0074、ADR-0079）：调度、工作流等框架事件照常发到应用不一定订阅的主题。消息是否留存由 Provider 决定（内存代理与 RabbitMQ 丢弃，Kafka 按保留期留在主题里），这里不断言；订阅的主题照常投递。
+    /// </remarks>
+    [Fact]
+    public async Task Publish_ToATopicNobodySubscribes_Succeeds()
+    {
+        var log = new DeliveryLog();
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+
+        var single = await PublishAsync(host, UnsubscribedTopic, Envelope("nobody-1", "conformance.nobody")).ConfigureAwait(false);
+        var batch = await PublishManyAsync(host, UnsubscribedTopic, [Envelope("nobody-2", "conformance.nobody"), Envelope("nobody-3", "conformance.nobody")]).ConfigureAwait(false);
+
+        Assert.True(single.IsSuccess, single.ToString());
+        Assert.Equal(2, batch.Count);
+        Assert.All(batch, static r => Assert.True(r.IsSuccess, r.ToString()));
+        (await PublishAsync(host, OrdersTopic, Envelope("after-nobody", "orders.placed")).ConfigureAwait(false)).ThrowIfFailure();
+        Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "after-nobody", 1, DeliveryTimeout).ConfigureAwait(false));
+        Assert.DoesNotContain(log.All, static r => r.Delivery.Envelope.Id.StartsWith("nobody-", StringComparison.Ordinal));
     }
 
     /// <summary>

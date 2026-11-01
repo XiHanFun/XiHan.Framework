@@ -34,12 +34,26 @@ public sealed record RabbitMQMessagingOptions
     }
 
     /// <summary>
-    /// 队列名前缀。
+    /// 队列名与路由键的前缀。
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan.</c>。
+    /// 默认 <c>xihan.</c>。竞争订阅的队列与主题的路由键都是前缀加主题，前缀不同的应用共用一个交换机也互不串扰。
     /// </remarks>
     public string QueuePrefix { get; init; } = "xihan.";
+
+    /// <summary>
+    /// 发布用的交换机名。
+    /// </summary>
+    /// <remarks>
+    /// 默认 <c>xihan</c>：持久的 direct 交换机，发布方与订阅方都声明它，订阅方的队列以路由键绑定到它（ADR-0079）。不能为空，不能以保留前缀 <c>amq.</c> 开头。
+    /// </remarks>
+    public string Exchange
+    {
+        get => field;
+        init => field = !string.IsNullOrWhiteSpace(value) && !value.StartsWith("amq.", StringComparison.Ordinal)
+            ? value
+            : throw new ArgumentException("The exchange name must not be empty or start with the reserved prefix 'amq.'.", nameof(value));
+    } = "xihan";
 
     /// <summary>
     /// 每个消费者的预取数。
@@ -69,7 +83,7 @@ public sealed record RabbitMQMessagingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016）、<c>QueuePrefix</c>、<c>Exchange</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </remarks>
     public static RabbitMQMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -84,6 +98,11 @@ public sealed record RabbitMQMessagingOptions
         if (configuration[$"{ConfigurationSection}:QueuePrefix"] is { } prefix)
         {
             options = options with { QueuePrefix = prefix };
+        }
+
+        if (configuration[$"{ConfigurationSection}:Exchange"] is { } exchange)
+        {
+            options = options with { Exchange = exchange };
         }
 
         var prefetch = configuration[$"{ConfigurationSection}:PrefetchCount"];
