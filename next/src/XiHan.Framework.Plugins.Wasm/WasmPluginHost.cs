@@ -300,11 +300,13 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 附着到已构建的宿主容器。
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 换用宿主日志与时钟、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）。
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
+        // 在开放任何调用之前换钟：截止时间由 Resilience 阶段按容器的时钟落为定时取消，调用预算与回调计时必须用同一个时钟
+        _context.Clock = services.GetService<TimeProvider>() ?? _context.Clock;
         _loggerFactory = services.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<WasmPluginHost>();
         foreach (var runtime in _order)

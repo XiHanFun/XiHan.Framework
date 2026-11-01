@@ -29,7 +29,10 @@ internal sealed class WasmHostContext(Engine engine, WasmPluginOptions options, 
     /// <summary>
     /// 时钟。
     /// </summary>
-    public TimeProvider Clock { get; } = clock;
+    /// <remarks>
+    /// 配置阶段是构造时给的时钟，附着时换成宿主容器里的 <see cref="TimeProvider"/>：调用预算、导入回调的计时与 Resilience 阶段的截止时间按同一个时钟判定。
+    /// </remarks>
+    public TimeProvider Clock { get; set; } = clock;
 
     /// <summary>
     /// 宿主原语层大版本。

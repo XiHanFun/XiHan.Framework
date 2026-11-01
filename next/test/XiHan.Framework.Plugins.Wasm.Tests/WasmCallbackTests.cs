@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -75,16 +76,23 @@ public sealed class WasmCallbackTests
     [Fact]
     public async Task Invoke_IsBoundByTheOuterDeadline_WhenTheRequestCarriesNone()
     {
-        // 插件经 xihan.invoke 调用一直等待的宿主操作，请求里没有截止时间：新调用要随外层调用在截止时间被取消（wasm.md §4）
+        // 插件经 xihan.invoke 调用一直等待的宿主操作，请求里没有截止时间：新调用要随外层调用在截止时间被取消（wasm.md §4）。
+        // 截止时间按注入的时钟判定，宿主操作开始等待之后才推进时钟，不受墙钟快慢影响；回调上下文的截止时间必须就是外层的那一个
+        var clock = new FakeTimeProvider(_clockStart);
         var probe = new CancellationProbe();
         using var plugin = WatPlugin.Invoking("waits.create", [WasmHostFunctions.PipelinePermission]);
         await using var host = await StartAsync(plugin, [WasmHostFunctions.PipelinePermission], ctx =>
         {
             ctx.Services.AddSingleton(probe);
             ctx.AddOperation<WaitOperation, PingRequest, PingResponse>(new OperationContract("waits.create"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
-        });
+        }, s => s.AddSingleton<TimeProvider>(clock));
+        var deadline = clock.GetUtcNow() + _deadlineAfter;
 
-        var response = await CallAsync(host, DateTimeOffset.UtcNow.AddMilliseconds(300));
+        var call = CallAsync(host, deadline);
+        await WaitUntilEnteredAsync(probe, call);
+        Assert.Equal(deadline, probe.Deadline);
+        clock.Advance(_deadlineAfter);
+        var response = await call.WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.Equal(KernelErrors.DeadlineExceeded, response.Outcome.Error?.Code);
         Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "the host operation behind xihan.invoke must be cancelled at the outer deadline");
@@ -93,15 +101,53 @@ public sealed class WasmCallbackTests
     [Fact]
     public async Task Publish_IsBoundByTheOuterDeadline()
     {
+        // 截止时间按注入的时钟判定：发布器开始等待之后才推进时钟。用墙钟的 300 毫秒时，调用在机器繁忙时可能还没走到 xihan.publish
+        // 就过了截止时间，回调按超时直接返回、不调发布器（CI 上 Published 为 0 的那次失败）
+        var clock = new FakeTimeProvider(_clockStart);
         var probe = new CancellationProbe();
         var publisher = new ProbePublisher(probe);
         using var plugin = WatPlugin.Publishing("wat.events", [WasmHostFunctions.MessagingPermission]);
-        await using var host = await StartAsync(plugin, [WasmHostFunctions.MessagingPermission], services: s => s.AddSingleton<IMessagePublisher>(publisher));
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.MessagingPermission], services: s =>
+        {
+            s.AddSingleton<IMessagePublisher>(publisher);
+            s.AddSingleton<TimeProvider>(clock);
+        });
 
-        await CallAsync(host, DateTimeOffset.UtcNow.AddMilliseconds(300));
+        var call = CallAsync(host, clock.GetUtcNow() + _deadlineAfter);
+        await WaitUntilEnteredAsync(probe, call);
+        clock.Advance(_deadlineAfter);
+        await call.WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.Equal(1, publisher.Published);
         Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "xihan.publish must be cancelled at the outer deadline");
+    }
+
+    /// <summary>
+    /// 注入时钟的起点：远离墙钟，宿主若有哪处仍按墙钟计时，截止时间的判定就对不上。
+    /// </summary>
+    private static readonly DateTimeOffset _clockStart = new(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
+    /// 截止时间距调用开始的时长。
+    /// </summary>
+    /// <remarks>
+    /// 短于调用时限（缺省 30 秒），回调受外层截止时间约束而不是受调用时限约束。
+    /// </remarks>
+    private static readonly TimeSpan _deadlineAfter = TimeSpan.FromSeconds(20);
+
+    /// <summary>
+    /// 等到回调到达宿主、开始等待。
+    /// </summary>
+    /// <remarks>
+    /// 调用先结束说明回调没有到达，带上调用结果失败。
+    /// </remarks>
+    private static async Task WaitUntilEnteredAsync(CancellationProbe probe, Task<OperationResponse> call)
+    {
+        var first = await Task.WhenAny(probe.Entered, call).WaitAsync(TimeSpan.FromSeconds(30));
+        if (first != probe.Entered)
+        {
+            Assert.Fail($"The call ended before its callback reached the host: {(await call).Outcome}.");
+        }
     }
 
     /// <summary>

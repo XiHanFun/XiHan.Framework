@@ -14,6 +14,7 @@ internal sealed class WaitOperation(CancellationProbe probe) : IOperation<PingRe
     /// <inheritdoc />
     public async ValueTask<Result<PingResponse>> HandleAsync(PingRequest request, InvocationContext context)
     {
+        probe.Deadline = context.Deadline;
         await probe.WaitAsync(TimeSpan.FromSeconds(30), context.CancellationToken).ConfigureAwait(false);
         return Result.Success(new PingResponse(request.Name, string.Empty, string.Empty));
     }
