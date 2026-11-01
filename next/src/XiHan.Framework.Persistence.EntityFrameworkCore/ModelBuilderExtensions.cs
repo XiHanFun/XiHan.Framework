@@ -36,7 +36,7 @@ public static class ModelBuilderExtensions
     /// 对已注册的每个实体。
     /// </summary>
     /// <remarks>
-    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引；实体上的 <see cref="EntityIndexAttribute"/> 映射为 <c>HasIndex</c>（唯一性与索引名按 <see cref="EntityIndexes"/>，名字用此刻的表名推出，与 SqlSugar 建出的同名）。软删除实体的唯一索引只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>），另加 <c>HasFilter</c>：条件按 <paramref name="database"/> 的 Provider 写方言（Npgsql <c>"IsDeleted" = false</c>、SQLite <c>"IsDeleted" = 0</c>、SQL Server <c>[IsDeleted] = 0</c>，SQL Server 上键含可空列时另加 <c>IS NOT NULL</c>，与它对唯一索引的缺省一致），列名取此刻的映射；其余关系型 Provider 不支持部分唯一索引，建模时抛出；非关系型 Provider 本来不建索引，不加条件。在 <c>OnModelCreating</c> 里注册全部实体、配置完表名与列名之后调用：<c>modelBuilder.ApplyPersistenceConventions(Database)</c>。
+    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引；实体上的 <see cref="EntityIndexAttribute"/> 映射为 <c>HasIndex</c>（唯一性与索引名按 <see cref="EntityIndexes"/>，名字用此刻的表名推出，与 SqlSugar 建出的同名）。软删除实体的唯一索引只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>），另加 <c>HasFilter</c>：条件按 <paramref name="database"/> 的 Provider 写方言（Npgsql <c>"IsDeleted" = false</c>、SQLite <c>"IsDeleted" = 0</c>、SQL Server <c>[IsDeleted] = 0</c>，SQL Server 上键含可空列时另加 <c>IS NOT NULL</c>，与它对唯一索引的缺省一致），列名取此刻的映射；其余关系型 Provider 不支持部分唯一索引，建模时抛出；非关系型 Provider 本来不建索引，不加条件。Provider 是 SQLite 时，模型里全部实体（含从属类型与复杂类型）的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性存成 UTC ticks 整数（SQLite 的 EF Core Provider 存成文本时翻译不了大小比较与排序），应用已配了值转换或存储类型的属性不动。在 <c>OnModelCreating</c> 里注册全部实体、配置完表名、列名与自己的值转换之后调用：<c>modelBuilder.ApplyPersistenceConventions(Database)</c>。
     /// </remarks>
     /// <param name="modelBuilder">模型构建器。</param>
     /// <param name="database">本 DbContext 的 <see cref="DbContext.Database"/>：据它的 Provider 写部分唯一索引的条件。</param>
@@ -79,6 +79,13 @@ public static class ModelBuilderExtensions
                 modelBuilder.Entity(clrType).HasIndex(nameof(ISoftDeletable.IsDeleted));
             }
 
+            // SQLite 的 EF Core Provider 把 DateTimeOffset 存成文本，翻译不了大小比较与 ORDER BY（到期书签、按时间分页都要）：
+            // 存成 UTC ticks 整数。从属类型与共享类型实体的列同样要转换，所以放在下面的跳过之前
+            if (string.Equals(providerName, SqliteProvider, StringComparison.Ordinal))
+            {
+                StoreDateTimeOffsetsAsUtcTicks(entityType);
+            }
+
             // 从属类型与所有者共用一张表，不能单独作为实体配置；共享类型实体（属性包）没有可声明索引的 CLR 类型
             if (entityType.IsOwned() || entityType.HasSharedClrType)
             {
@@ -114,6 +121,34 @@ public static class ModelBuilderExtensions
         }
 
         return modelBuilder;
+    }
+
+    /// <summary>
+    /// 把时刻属性存成 UTC ticks 整数。
+    /// </summary>
+    /// <remarks>
+    /// 类型上声明的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性，递归到复杂类型。
+    /// 应用已经配了值转换或存储类型的属性（<c>HasConversion</c>、<c>ConfigureConventions</c> 里的 <c>HaveConversion</c>）不动：显式配置优先于约定，已有库的存储格式也就不变。
+    /// </remarks>
+    private static void StoreDateTimeOffsetsAsUtcTicks(IMutableTypeBase type)
+    {
+        foreach (var property in type.GetDeclaredProperties())
+        {
+            if ((Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType) != typeof(DateTimeOffset)
+                || property.GetValueConverter() is not null
+                || property.GetProviderClrType() is not null)
+            {
+                continue;
+            }
+
+            // 不可空类型的转换器同样作用于可空属性：EF Core 不把 null 交给转换器
+            property.SetValueConverter(UtcTicksConverter.Instance);
+        }
+
+        foreach (var complex in type.GetDeclaredComplexProperties())
+        {
+            StoreDateTimeOffsetsAsUtcTicks(complex.ComplexType);
+        }
     }
 
     /// <summary>

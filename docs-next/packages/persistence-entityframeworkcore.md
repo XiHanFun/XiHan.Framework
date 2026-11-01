@@ -107,7 +107,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- |
 | `EntityFrameworkCorePersistenceFeature<TContext>` | 特性入口；构造参数是配置回调；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.entityframeworkcore.database`） |
 | `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`、`Connections`（命名连接）；`FromConfiguration(configuration)` |
-| `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081） |
+| `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081）；SQLite 上 `DateTimeOffset` 与可空 `DateTimeOffset` 属性存成 UTC ticks 整数，应用已配转换的不动（ADR-0091） |
 | `EntityFrameworkCoreUnitOfWork` | 事务型工作单元；`Context` 是本作用域的 `DbContext`（开始时建出：绑定了命名连接就建在那个连接上）；由容器创建，构造不公开 |
 | `EntityFrameworkCoreRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 
@@ -144,6 +144,7 @@ public sealed class OrderReports(AppDbContext db)
 - 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
 - 依赖 `Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据）。
 - 软删除实体的唯一索引只约束未删除的行（ADR-0081）：`HasFilter` 的条件 Npgsql `"IsDeleted" = false`、SQLite `"IsDeleted" = 0`、SQL Server `[IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`）；Pomelo MySQL、Oracle 等不支持部分唯一索引的 Provider 建模即失败，要唯一约束就把 `IsDeleted` 显式写进列。
+- SQLite 上 `ApplyPersistenceConventions(Database)` 把模型里全部 `DateTimeOffset` 与可空 `DateTimeOffset` 属性（含从属类型与复杂类型里的，框架表与应用实体一样）存成 UTC ticks 整数（ADR-0091）：EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大小比较与排序（`SQLite does not support expressions of type 'DateTimeOffset' in ORDER BY clauses`），到期书签、按时间过滤与分页都要用到。写入 `UtcTicks`、读回偏移为零的同一时刻，100 纳秒精度与 SqlSugar 在 SQLite 上的 UTC 日期时间文本一致，整数的比较与排序就是时刻的比较与排序。应用已配了值转换或存储类型的属性（`HasConversion`、`ConfigureConventions` 的 `HaveConversion`）不动；其余 Provider 不动。已有的 SQLite 库：原来没配转换的列存的是 EF Core 的 `DateTimeOffset` 文本，模型改成整数后旧行会被**静默读成错误的时刻**（如 `0001-01-01T00:00:00.0002026`，SQLite 把文本开头的年份当整数），不报错——开发库删了重建（`EnsureCreated`），要留数据的重建表、把列建成 `INTEGER` 并在搬数据时换算成 UTC ticks（换算式见 ADR-0091 第三节）；原来自己配了转换（如 `DateTimeOffsetToBinaryConverter`）的照旧，库不用动。
 - 启动时在独立作用域里取一次模型，建模错误（索引声明不合法、Provider 不支持部分唯一索引）在启动时失败，不论是否开着 `EnsureCreated`。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。

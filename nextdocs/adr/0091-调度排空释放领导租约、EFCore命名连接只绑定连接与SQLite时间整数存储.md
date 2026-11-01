@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0013-scheduling.md`、`spec/rfcs/0005-persistence.md`、`spec/conventions/error-codes.md` 随之修订；完成 ADR-0087 第一节「影响」里调度引擎的待定项；把 ADR-0087 第二节备选 3（普通工作单元里的命名连接）定为不做）。
+已采纳（`spec/rfcs/0013-scheduling.md`、`spec/rfcs/0005-persistence.md`、`spec/conventions/error-codes.md` 随之修订；完成 ADR-0087 第一节「影响」里调度引擎的待定项；把 ADR-0087 第二节备选 3（普通工作单元里的命名连接）定为不做；EF Core 在 SQLite 上的时间列由框架代办，替换第五批让应用自己配转换的做法）。
 
 ## 日期
 
@@ -66,3 +66,48 @@ ADR-0087 第二节让 EF Core 支持命名连接，只做了「绑定连接的�
 ### 影响
 
 无代码、配置与行为变化，只有文档与规范措辞。
+
+## 三、EF Core 在 SQLite 上把 DateTimeOffset 存成 UTC ticks 整数
+
+### 背景
+
+EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大小比较与 `ORDER BY`（`SQLite does not support expressions of type DateTimeOffset in ORDER BY clauses`）。数据库工作流的到期书签、实例与任务列表都按时间过滤和排序，第五批让应用自己在 `ConfigureConventions` 里配 `DateTimeOffsetToBinaryConverter`（文档与测试的 `WorkflowDbContext` 都这样写）。用户拍板：框架代办，应用不用自己配。复现：去掉测试 `WorkflowDbContext` 里的转换，EF Core + SQLite 上的工作流引擎、任务一致性套件与 EF Core 工作流用例 41 例全部失败。
+
+### 备选
+
+作用范围：
+
+1. 只转换框架自己的表（工作流、调度、审计、授予等）：要在 `ModelBuilder` 上认出哪些是框架实体（名单或按命名空间判断），同一个 `DbContext` 里应用实体的 `DateTimeOffset` 照样不能比较与排序，框架的通用仓储（按时间过滤、分页）对应用实体仍然坏着。
+2. 模型里全部实体（框架表与应用实体），应用已经配了值转换或存储类型的属性不动。
+
+存储格式：
+
+1. EF Core 自带的 `DateTimeOffsetToBinaryConverter`：把本地时钟的 ticks 除以 1000 左移 11 位再并上偏移分钟——精度 100 微秒，比 SqlSugar 粗；整数按「本地时钟」排序，偏移不同的值之间不保序（只在全是 UTC 时恰好保序）。
+2. Unix 毫秒：精度 1 毫秒，比 SqlSugar 粗，同一时刻经两个 Provider 往返结果不同。
+3. UTC ticks（`DateTimeOffset.UtcTicks`，读回偏移为零）：100 纳秒，与 SqlSugar 在 SQLite 上存的 UTC 日期时间文本（7 位小数）同精度；随时刻单调，任何偏移写入的值之间都保序。
+
+### 决策
+
+范围选 2、格式选 3。`ModelBuilderExtensions.ApplyPersistenceConventions(Database)` 在 Provider 是 SQLite（`Microsoft.EntityFrameworkCore.Sqlite`）时，给模型里每个实体（含从属类型、共享类型与复杂类型）声明的 `DateTimeOffset` 与 `DateTimeOffset?` 属性设值转换 `UtcTicksConverter`（内部类型，`INTEGER` 列）；属性已有值转换（`HasConversion`、`ConfigureConventions` 的 `HaveConversion`）或存储类型的不动；其余 Provider 不动。RFC-0005 的 Provider 表写明。
+
+### 理由
+
+- 与 SqlSugar 对齐：SqlSugar 对每个实体的每个 `DateTimeOffset` 列都按 UTC 往返（`DateTimeOffsetConverter`），不分框架表与应用表；同一份实体换 Provider，时间的精度与语义不变。
+- 只转换框架表需要一份会过期的名单，还把同一个 `DbContext` 分成能按时间查与不能按时间查两半。
+- 显式配置优先于约定，这是 EF Core 自己的规则；原来照文档配了 `DateTimeOffsetToBinaryConverter` 的应用库不用动。
+
+### 影响
+
+- 公开 API、配置不变；新增内部类型 `UtcTicksConverter`。
+- 行为：EF Core + SQLite 上 `DateTimeOffset` 列建成 `INTEGER`，读回的值偏移为零（原来保留写入时的偏移文本）；比较与排序按时刻。EF Core + SQLite 跑数据库工作流不再需要应用自己配转换。
+- 已有的 SQLite 库（实测 Microsoft.Data.Sqlite 10.0.11）：原来没配转换的列存的是 EF Core 的文本（`2026-11-01 08:00:00+08:00`），升级后按整数读，**旧行被静默读成 `0001-01-01T00:00:00.0002026` 这类错误时刻，不报错**（SQLite 把文本开头的 `2026` 当整数）。开发与测试库删了重建；要留数据的重建表（SQLite 改不了列类型，EF Core 迁移改列类型就是重建表），搬数据时把文本换算成 UTC ticks，换算式（实测往返一致）：
+
+  ```sql
+  (unixepoch(substr(col, 1, 19))
+   - (CASE substr(col, -6, 1) WHEN - THEN -1 ELSE 1 END) * (CAST(substr(col, -5, 2) AS INTEGER) * 3600 + CAST(substr(col, -2, 2) AS INTEGER) * 60)) * 10000000
+  + CASE WHEN substr(col, 20, 1) = . THEN CAST(substr(substr(col, 21, length(col) - 26) || 0000000, 1, 7) AS INTEGER) ELSE 0 END
+  + 621355968000000000
+  ```
+
+  只就地 `UPDATE` 不重建表时，列的声明类型仍是 `TEXT`，整数按文本存，比较退化成等长数字串的文本比较，不要这样留着。原来自己配了转换的列不受影响。
+- 测试：EF Core 测试项目新增四例（SQLite 上存成整数、不同偏移写入的值按时刻比较与排序、可空列判空与比较、100 纳秒往返与偏移为零、库里存的就是 UTC ticks；应用自己配的转换保留；复杂类型也转换、其余 Provider 不转换；转换器的边界值）；工作流测试的 `WorkflowDbContext` 去掉手工转换后 EF Core + SQLite 的引擎、任务一致性套件与工作流用例 41 例全部通过（修前全部失败）。

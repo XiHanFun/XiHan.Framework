@@ -82,7 +82,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 }
 ```
 
-EF Core 的 SQLite Provider 不能比较与排序 `DateTimeOffset`（存成文本），到期书签与实例列表都按时间过滤和排序：SQLite 上在 `ConfigureConventions` 里把它换成整数存储（`configurationBuilder.Properties<DateTimeOffset>().HaveConversion<DateTimeOffsetToBinaryConverter>()`，框架写入的都是 UTC 时刻，换算后保序），租约表照下文「SQLite 上的租约表」放到另一个库文件。数据库测试的 `WorkflowDbContext` 就是这样配的。
+到期书签与实例列表按时间过滤和排序，EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本时翻译不了：这由框架代办，SQLite 上 `ApplyPersistenceConventions(Database)` 把它存成 UTC ticks 整数（ADR-0091，见 [EF Core 的行为与限制](./persistence-entityframeworkcore#行为与限制)），应用不用自己配；原来照旧文档在 `ConfigureConventions` 里配了 `DateTimeOffsetToBinaryConverter` 的，显式配置保留、库不用动。租约表照下文「SQLite 上的租约表」放到另一个库文件。
 
 ## 配置
 

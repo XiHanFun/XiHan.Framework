@@ -280,7 +280,7 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | `ConcurrencyStamp` | `ApplyPersistenceConventions(Database)` 设为并发令牌、长度 32 | 长度 32 |
 | `TenantId`、`IsDeleted` | `ApplyPersistenceConventions(Database)` 建索引 | — |
 | `[EntityIndex]` | `ApplyPersistenceConventions(Database)` 映射为 `HasIndex`，名字与 SqlSugar 相同；软删除实体的唯一索引加 `HasFilter` | `InitTables` 建出；软删除实体的部分唯一索引由 `SqlSugarConventions.InitTables` 补建 |
-| `DateTimeOffset` | EF Core 缺省 | 经转换器按 UTC 时刻往返 |
+| `DateTimeOffset` | EF Core 缺省；SQLite 上 `ApplyPersistenceConventions(Database)` 存成 UTC ticks 整数（比较与排序可用，应用已配转换的不动，ADR-0091） | 经转换器按 UTC 时刻往返 |
 | 可空类型（`int?`、`string?`） | EF Core 缺省 | 列可空 |
 
 SqlSugar 约定也认 DataAnnotations 的 `[MaxLength(n)]` 与无参 `[MaxLength]`，但它们的构造函数带 `RequiresUnreferencedCode`，Native AOT 项目的分析器拒绝，这类项目只用 `[StringLength(n)]` 与 `[LongText]`。框架自己的数据库记录全部显式声明字符串长度，架构测试门禁检查这一点（ADR-0036），应用实体建议同样声明。
