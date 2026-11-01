@@ -19,7 +19,7 @@
 | `IAssigneeProvider`、`AssigneeResolver`、`AssigneeRuleTypes` | 指派规则：内置 `User` / `Starter` / `Expression`，应用登记自己的类型 |
 | `IWorkflowExpressionEvaluator`、`ExpressionScope` | 无依赖的小语言：比较、算术、成员与索引、内置函数，`{{ }}` 模板；`Evaluate` 与 `ActivityContext.EvaluateProperty` 返回 `Result<Maybe<JsonNode>>`，结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串（ADR-0059） |
 | `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约：存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台），写入的记录必须属于该分区；批量写入；实例查询带多状态 / 发起人 / 时间范围 / 分页与计数；书签的 `AvailableAsync` 以可领取时刻为键限量查询（外部任务领取把条数下推到存储），`ListUserTasksAsync` / `CountUserTasksAsync` 承接待办查询；`IWorkflowTransaction` 回答能不能加入调用方事务、加入的事务能不能写 |
-| `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与按保留期清理（`RetentionDays`、`HousekeepingIntervalSeconds`），Provider 特性启动；每个周期覆盖平台与租户目录（`ITenantStore`，装配了多租户时）里启用的每个租户，逐个分区开调用；应用不在服务状态（启动中、排空中）的周期（`RunCycleAsync`）什么也不做、不记告警 |
+| `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与按保留期清理（`RetentionDays`、`HousekeepingIntervalSeconds`），Provider 特性启动；每个周期覆盖平台与租户目录（`ITenantStore`，装配了多租户时）里启用的每个租户，逐个分区开调用；应用不在服务状态（启动中、排空中）的周期（`RunCycleAsync`）什么也不做、不记告警；周期中途进入排空的，下一个失败的分区调用就让周期停下，剩下的分区不再调用、不告警（ADR-0087） |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.instance.*` / `node.*` / `task.*` / `external.*` / `custom` 消息（CloudEvents 信封） |
 
 ```csharp
