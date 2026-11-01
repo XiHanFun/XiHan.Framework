@@ -70,7 +70,7 @@ await registry.RemoveAsync([definition.Name], ct);               // 记录改了
 - 容量：`XiHan:Persistence:DataSources:MaxCount`（缺省 64，1–1024），满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的；替换同名的不占名额。
 - 健康：每个数据源一条 `persistence.datasource.<name>`（数据 `databaseType`、`provider`），按 `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds`（缺省 15，也是单次探测超时）在后台打开连接再关闭；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。
 - 失败：连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`（同名的已登记实例不受影响）；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`。
-- 机密：`DataSourceDefinition.ToString()` 不含连接串；`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留。日志只记名字与数据库类型。
+- 机密：`DataSourceDefinition.ToString()` 不含连接串；`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留（脱敏范围已定，ADR-0084）。日志只记名字与数据库类型。
 
 ## 库结构读取与实体目录
 

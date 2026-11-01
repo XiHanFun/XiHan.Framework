@@ -33,6 +33,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 启动时在独立作用域里取一次模型：索引声明不合法、Provider 不支持部分唯一索引这类建模错误在启动时失败，不论是否开着 `EnsureCreated`。
 - 命名连接（ADR-0084）不支持：一个 `DbContext` 一个连接，要分库另起 `DbContext`。实体以 `AddRepository<TEntity, TKey>(connection)` 登记到命名连接在装配时抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`（启动失败），`UnitOfWorkOptions(Connection: …)` 在 `BeginAsync` 抛出同码异常。所以 EF Core 在 SQLite 上跑数据库工作流时租约表放不到另一个库，调用方事务里的取锁会超时——用 PostgreSQL 等行锁数据库，或改用 SqlSugar。
 - 运行时数据源（ADR-0078）不支持：EF Core 的数据库 Provider（`UseNpgsql`、`UseSqlServer` 等）由应用选、本包不引用，按数据库类型建连接要对应的 Provider 包。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`，不返回空结果。
+- 运行时数据源与库结构读取不计划支持，已定（ADR-0084）：需要代码生成的读结构、外部数据源或零代码运行时的应用用 `Persistence.SqlSugar`。
 - 实体目录（ADR-0078）取 DbContext 模型：表名 `GetTableName()`（没有映射到表时取类型名），列名 `GetColumnName(表)`，影子属性与从属类型不列；登记了却不在模型里的实体抛 `InvalidOperationException`。库结构读取不支持（`PERSISTENCE_UNAVAILABLE_008`）：跨数据库读结构在 EF Core 里是设计期脚手架服务（`Microsoft.EntityFrameworkCore.Design` 的 `IDatabaseModelFactory`，按数据库 Provider 程序集反射发现），ADO.NET 的 `GetSchema` 各驱动返回的列不同、`Microsoft.Data.Sqlite` 不实现。
 - `XiHan:Persistence:EntityFrameworkCore:EnsureCreated=true` 时启动即建表，只用于开发与测试；生产用迁移。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按 `XiHan:Persistence:EntityFrameworkCore:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——在独立作用域里取默认连接的 DbContext `CanConnect`，不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。

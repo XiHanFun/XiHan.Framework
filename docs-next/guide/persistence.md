@@ -297,7 +297,7 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 
 - 列按声明顺序、全部升序，一个实体可以声明多个；`IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明。
 - 名字由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写（属性名每个词取前两个字符，`TenantId → TeId`），全名不超过 63 个字符，超过即报错。两个 Provider 建出同名的索引。
-- 软删除实体（`ISoftDeletable`）的唯一索引只约束未删除的行（部分唯一索引：列就是声明的列，条件 `IsDeleted = false`，ADR-0081）——同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库（MySQL、Oracle 等）上有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；在那些数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引由 `SqlSugarConventions.InitTables` 在建表之后补建（应用自己给租户库建表时也要经它），EF Core 由 `ApplyPersistenceConventions(Database)` 加 `HasFilter`。
+- 软删除实体（`ISoftDeletable`）的唯一索引只约束未删除的行（部分唯一索引：列就是声明的列，条件 `IsDeleted = false`，ADR-0081）——同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库（MySQL、Oracle 等，以及没有验证过的人大金仓、openGauss 等 PostgreSQL 衍生库——维持不支持，真实库验证后再加，ADR-0084）上有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；在那些数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引由 `SqlSugarConventions.InitTables` 在建表之后补建（应用自己给租户库建表时也要经它），EF Core 由 `ApplyPersistenceConventions(Database)` 加 `HasFilter`。
 - 写入撞上唯一索引（并发写入同一业务键、同一批两项同键、把键改成已有的值）返回 `PERSISTENCE_CONFLICT_003`，这次写入的项统一报告，调用随后回滚；重试时先查到已有的行，按更新处理。内存实现不建索引、不校验唯一性。
 - 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行；要让"全局"这类空值参与唯一性，存成非空的哨兵值。
 - 分表实体（SqlSugar `[SplitTable]`）不用 `[EntityIndex]`，直接用 `[SugarIndex]` 与 `{split_table}` 占位符。
@@ -363,7 +363,7 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | 测试连接 | `TestAsync(definition)`：建临时实例、打开一次连接再关闭、释放；不登记、不占名额。等多久由取消令牌与连接串里驱动的连接超时决定 |
 | 健康 | 每个数据源一条 `persistence.datasource.<name>`，后台按间隔打开连接再关闭；连不上 Degraded，不影响 readiness |
 | 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用 |
-| Provider | SqlSugar 支持（数据库类型是 SqlSugar `DbType` 的名字，`DatabaseTypes` 列出常用的；客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、PostgreSQL 不自动转小写）。EF Core 与内存实现不支持，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
+| Provider | SqlSugar 支持（数据库类型是 SqlSugar `DbType` 的名字，`DatabaseTypes` 列出常用的；客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、PostgreSQL 不自动转小写、Oracle 不自动转大写）。EF Core 与内存实现不支持（已定，不计划支持），取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
 
 ## 库结构读取与实体目录
 
@@ -394,7 +394,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | 缺省连接 | 另开一个不在事务里的连接读，PostgreSQL 系语句失败不会中止调用的事务 |
 | SQLite 的限制 | 没有表与列注释；`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；长度与精度取自声明的类型；自增只认 `AUTOINCREMENT` |
 | 实测过的数据库 | SQLite、PostgreSQL、MySQL、SQL Server、Oracle（12c 及以上；读连接用户自己的表，不加引号的名字是大写）。达梦等 Oracle 兼容库与 PostgreSQL 衍生库没有验证 |
-| Provider | SqlSugar 两者都支持。EF Core 的实体目录取 DbContext 模型、读结构不支持；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
+| Provider | SqlSugar 两者都支持。EF Core 的实体目录取 DbContext 模型、读结构不支持（已定，不计划支持）；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
 
 ## 配置
 
