@@ -56,7 +56,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 | `contributes.operations` | 插件服务的全部操作 ID，握手声明的操作必须都在其中 |
 | `contributes.config.section` | `Configure` 时宿主下发的配置节（领域节或其子节，如 `XiHan:Echo` 或 `XiHan:Caching:Remote`），按 `IConfiguration` 展开后序列化为 JSON 对象；没有声明为 `{}` |
 | `contributes.health` | 插件自报的健康项名，未声明的健康项是握手不一致 |
-| `contributes.pipeline` | 只用于 Wasm：中间件名与阶段 |
+| `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了（非空）在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略 |
 | `permissions` | 所需权限，见下一节 |
 | `activation` | `onStartup`（缺省）、`onOperation:<模式>`、`onEvent:<模式>` |
 
@@ -153,7 +153,7 @@ app.Run();
 
 | 失败 | 结果 |
 | --- | --- |
-| 清单不合法、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
+| 清单不合法（含进程外插件的清单写了 `contributes.pipeline`）、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`。进程外插件在应用启动后按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），启动阶段的 `Configure` / `Start` 失败同样重试；首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见），订阅与消息目录要等宿主重启才生效。Wasm 插件的这类失败不重试 |
 | 插件声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` 既不是宿主已登记的、也不在本插件清单里，或操作的 `policy` 不存在 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`；`policy` 不存在在授权能力的启动核对里报 `SECURITY_VALIDATION_004`）；装配完成之后才登记的（重试成功、运行期 `LoadAsync`）插件整体登记失败、按发现时被拒处理，一个权限码与代理操作都不留下（见[插件定义的权限码](#插件定义的权限码)） |
 

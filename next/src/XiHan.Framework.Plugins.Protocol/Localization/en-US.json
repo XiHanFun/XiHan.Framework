@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "Plugin '{id}' is not loaded.",
   "plugins.process.not_out_of_process": "Manifest '{id}' does not describe an out-of-process plugin (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Permissions declared by plugin '{id}' have not been granted: {permissions}.",
+  "plugins.process.pipeline_unsupported": "Plugin '{id}' declares middleware in 'contributes.pipeline' ({middleware}), but only Wasm plugins can contribute middleware.",
   "plugins.process.timeout": "Plugin '{id}' timed out during {phase}.",
   "plugins.process.unavailable": "Plugin '{id}' is not available (state: {state}).",
   "plugins.sandbox.exhausted": "Plugin '{id}' ran out of sandbox resources: {reason}"

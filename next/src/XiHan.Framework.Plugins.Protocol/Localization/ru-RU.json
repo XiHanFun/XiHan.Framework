@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "Плагин '{id}' не загружен.",
   "plugins.process.not_out_of_process": "Манифест '{id}' не описывает внепроцессный плагин (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Разрешения, объявленные плагином '{id}', не были предоставлены: {permissions}.",
+  "plugins.process.pipeline_unsupported": "Плагин '{id}' объявляет промежуточное ПО в 'contributes.pipeline' ({middleware}), но вносить промежуточное ПО могут только плагины Wasm.",
   "plugins.process.timeout": "Плагин '{id}' превысил время ожидания на этапе {phase}.",
   "plugins.process.unavailable": "Плагин '{id}' недоступен (состояние: {state}).",
   "plugins.sandbox.exhausted": "Плагину '{id}' не хватило ресурсов песочницы: {reason}"

@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "外掛 '{id}' 未載入。",
   "plugins.process.not_out_of_process": "清單 '{id}' 描述的不是處理序外外掛（kind={kind}，isolation={isolation}）。",
   "plugins.process.permissions_not_granted": "外掛 '{id}' 宣告的權限未被授予：{permissions}。",
+  "plugins.process.pipeline_unsupported": "外掛 '{id}' 在 'contributes.pipeline' 中宣告了中介軟體（{middleware}），只有 Wasm 外掛能提供中介軟體。",
   "plugins.process.timeout": "外掛 '{id}' 在 {phase} 階段逾時。",
   "plugins.process.unavailable": "外掛 '{id}' 無法使用（狀態：{state}）。",
   "plugins.sandbox.exhausted": "外掛 '{id}' 的沙箱資源不足：{reason}"

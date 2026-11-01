@@ -481,7 +481,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 启动任何插件代码之前的检查：权限、入口与可执行文件。
+    /// 启动任何插件代码之前的检查：清单的贡献、权限、入口与可执行文件。
     /// </summary>
     /// <remarks>
     /// 通过时返回空并给出可执行文件路径。
@@ -489,6 +489,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private static Error? Preflight(PluginSource source, Manifest manifest, out string? executable)
     {
         executable = null;
+
+        // 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）：清单写了中间件而宿主照常加载，作者会以为它生效了。
+        // 与隔离级别不符同属清单不合格，先于权限判定，按发现时被拒处理（lifecycle.md §1），不静默忽略
+        if (manifest.Contributes.Pipeline.Count > 0)
+        {
+            return new Error(PluginErrors.InvalidSource, PluginMessages.PipelineUnsupported, MessageArguments.Of(("id", manifest.Id), ("middleware", string.Join(", ", manifest.Contributes.Pipeline.Select(static p => p.Middleware)))));
+        }
+
         var missing = source.Permissions.Missing(manifest);
         if (missing.Count > 0)
         {

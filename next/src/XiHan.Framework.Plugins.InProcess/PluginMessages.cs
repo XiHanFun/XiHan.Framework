@@ -31,6 +31,14 @@ public static class PluginMessages
     public const string NotInProcess = "plugins.manifest.not_in_process";
 
     /// <summary>
+    /// 进程内插件的清单写了 <c>contributes.pipeline</c>。
+    /// </summary>
+    /// <remarks>
+    /// 只有 Wasm 插件能贡献中间件（RFC-0002 <c>contributes</c>）。参数：<c>id</c>、<c>middleware</c>（声明的中间件名，逗号分隔）。
+    /// </remarks>
+    public const string PipelineUnsupported = "plugins.manifest.pipeline_unsupported";
+
+    /// <summary>
     /// 插件声明的权限未被授予。
     /// </summary>
     /// <remarks>

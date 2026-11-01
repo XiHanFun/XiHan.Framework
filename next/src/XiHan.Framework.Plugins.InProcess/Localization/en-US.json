@@ -6,6 +6,7 @@
   "plugins.manifest.entry_required": "Plugin manifest '{id}' must declare both 'package' (the assembly name) and 'entry' (the entry type).",
   "plugins.manifest.invalid": "The manifest in plugin directory '{directory}' is invalid: {reason}",
   "plugins.manifest.not_in_process": "Manifest '{id}' does not describe an in-process plugin (kind={kind}, isolation={isolation}).",
+  "plugins.manifest.pipeline_unsupported": "Plugin '{id}' declares middleware in 'contributes.pipeline' ({middleware}), but only Wasm plugins can contribute middleware.",
   "plugins.permission.not_granted": "Permissions declared by plugin '{id}' have not been granted: {permissions}.",
   "plugins.plugin.already_loaded": "Plugin '{id}' is already loaded.",
   "plugins.plugin.load_failed": "Plugin '{id}' failed to load: {reason}",

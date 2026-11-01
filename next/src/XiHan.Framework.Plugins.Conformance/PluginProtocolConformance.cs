@@ -70,13 +70,14 @@ public abstract class PluginProtocolConformance
     /// 用例 1：握手与清单相符。
     /// </summary>
     /// <remarks>
-    /// 进程写出合法握手行、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅都在清单声明范围内。
+    /// 进程写出合法握手行、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅都在清单声明范围内；清单不写 <c>contributes.pipeline</c>（进程外插件不能贡献中间件，宿主在发现时拒绝，RFC-0017「范围」）。
     /// </remarks>
     [Fact]
     public async Task Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest()
     {
         await using var session = await LaunchAsync().ConfigureAwait(false);
 
+        Assert.True(session.Manifest.Contributes.Pipeline.Count == 0, "An out-of-process plugin cannot contribute middleware; the host rejects a manifest with 'contributes.pipeline' at discovery.");
         Assert.Equal(PluginProtocol.Version, session.Handshake.ProtocolVersion);
         Assert.NotNull(session.Process.Endpoint);
         Assert.All(session.Handshake.Operations, operation => Assert.Contains(operation.Contract.Id, session.Manifest.Contributes.Operations));

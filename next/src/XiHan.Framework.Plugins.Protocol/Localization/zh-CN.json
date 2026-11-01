@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "插件 '{id}' 未加载。",
   "plugins.process.not_out_of_process": "清单 '{id}' 描述的不是进程外插件（kind={kind}，isolation={isolation}）。",
   "plugins.process.permissions_not_granted": "插件 '{id}' 声明的权限未被授予：{permissions}。",
+  "plugins.process.pipeline_unsupported": "插件 '{id}' 在 'contributes.pipeline' 里声明了中间件（{middleware}），只有 Wasm 插件能贡献中间件。",
   "plugins.process.timeout": "插件 '{id}' 在 {phase} 阶段超时。",
   "plugins.process.unavailable": "插件 '{id}' 不可用（状态：{state}）。",
   "plugins.sandbox.exhausted": "插件 '{id}' 的沙箱资源不足：{reason}"

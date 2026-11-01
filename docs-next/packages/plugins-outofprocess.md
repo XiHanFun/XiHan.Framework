@@ -25,7 +25,7 @@
 
 - 插件用 Go、Rust 等其他语言写，或要独立进程、独立依赖：用本包。Go 有现成的 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go)。
 - 用插件提供子系统能力（远程 Provider，如 [Caching.Remote](./caching-remote)）：用本包发现插件，再装配对应的 `<领域>.Remote` 适配器。
-- 要在管道阶段插入中间件：进程外插件做不到，用 [Plugins.Wasm](./plugins-wasm)。
+- 要在管道阶段插入中间件：进程外插件做不到，用 [Plugins.Wasm](./plugins-wasm)。清单写了 `contributes.pipeline` 的进程外插件在发现时被拒（`PLUGINS_VALIDATION_001`），不会照常加载、把中间件静默忽略。
 - 受信任的 .NET 扩展、不需要独立进程：[Plugins.InProcess](./plugins-inprocess) 更轻。
 
 ## 安装与启用
@@ -135,7 +135,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 
 ## 行为与限制
 
-- 发现失败不阻止应用启动，也不会静默消失：清单不合法、权限未授予、可执行文件不存在的插件不启动进程，以 `Failed` 登记（出现在 `Plugins` 里、可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时只有健康条目 `plugins.<目录名>`），宿主启动时记错误日志，不重试；握手失败的插件同样以 `Failed` 留在宿主里。运行期 `LoadAsync` 的同类失败直接返回给调用方、不登记。
+- 发现失败不阻止应用启动，也不会静默消失：清单不合法（含写了 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，消息键 `plugins.process.pipeline_unsupported`，细节 `middleware` 列出声明的中间件名）、权限未授予、可执行文件不存在的插件不启动进程，以 `Failed` 登记（出现在 `Plugins` 里、可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时只有健康条目 `plugins.<目录名>`），宿主启动时记错误日志，不重试；握手失败的插件同样以 `Failed` 留在宿主里。运行期 `LoadAsync` 的同类失败直接返回给调用方、不登记。
 - 启动阶段的握手、`Configure`、`Start` 失败按重启策略重试（`spec/plugin/lifecycle.md` §6）：宿主附着到容器后按与崩溃相同的退避在后台重试，计入 `RestartLimit`；运行期 `LoadAsync` 的这类失败返回给调用方，插件保持 `Failed` 并同样重试，直到 `UnloadAsync`。首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见，协议适配器不新增路由），握手里的订阅与消息目录要宿主重启才生效（记警告）；声明登记不进去（声明的权限码与已登记的重复 `KERNEL_SECURITY_001`、与已有操作重名，或操作的 `permission` 既不是宿主已登记的、也不在本插件清单里，`KERNEL_VALIDATION_005`，或授权能力的启动核对之后操作的 `policy` 不存在，`SECURITY_VALIDATION_004`）则按发现时被拒处理、不再重试，一个权限码与代理操作都不留下（一个插件的权限码与操作全进或全不进，ADR-0071、ADR-0080）。懒激活插件首次调用时启动失败，该次调用失败，下一次调用再试。宿主附着后改用容器里的 `TimeProvider` 计时退避、健康轮询与停止等待。插件操作与应用操作重名、插件声明的权限码与宿主或别的插件已登记的码重复，都是配置错误，启动失败。
 - 崩溃（进程非 `Stop` 引起的退出，或健康轮询连续失败后被终止）进入 `Failed`（`PLUGINS_UNEXPECTED_002`），按 1 秒起翻倍、上限 60 秒退避重启；窗口内超过 `RestartLimit` 次后保持 `Failed`，直到 `UnloadAsync` + `LoadAsync`。重启后的握手声明必须与首次一致。
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。

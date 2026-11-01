@@ -101,6 +101,13 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
             return new Error(PluginErrors.InvalidSource, PluginMessages.NotInProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
         }
 
+        // 只有 Wasm 插件能贡献中间件：进程内插件拿到的 PluginContext.Pipeline 恒为空，清单里写的中间件不会生效，
+        // 照常加载会让作者以为它生效了。与隔离级别不符同属清单不合格，在加载任何代码之前拒绝，不静默忽略
+        if (manifest.Contributes.Pipeline.Count > 0)
+        {
+            return new Error(PluginErrors.InvalidSource, PluginMessages.PipelineUnsupported, MessageArguments.Of(("id", manifest.Id), ("middleware", string.Join(", ", manifest.Contributes.Pipeline.Select(static p => p.Middleware)))));
+        }
+
         // 权限在加载任何代码之前判定：清单声明了而宿主未授予的权限，一项也不能少
         var missing = source.Permissions.Missing(manifest);
         if (missing.Count > 0)

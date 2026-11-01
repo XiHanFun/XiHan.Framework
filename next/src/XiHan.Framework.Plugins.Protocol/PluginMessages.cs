@@ -45,6 +45,14 @@ public static class PluginMessages
     public const string EntryRequired = "plugins.process.entry_required";
 
     /// <summary>
+    /// 进程外插件的清单写了 <c>contributes.pipeline</c>。
+    /// </summary>
+    /// <remarks>
+    /// 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）。参数：<c>id</c>、<c>middleware</c>（声明的中间件名，逗号分隔）。
+    /// </remarks>
+    public const string PipelineUnsupported = "plugins.process.pipeline_unsupported";
+
+    /// <summary>
     /// 入口可执行文件不存在。
     /// </summary>
     /// <remarks>

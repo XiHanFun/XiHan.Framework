@@ -146,6 +146,60 @@ public sealed class InProcessPluginHostTests
         }
     }
 
+    [Fact]
+    public async Task Load_ManifestContributingMiddleware_IsRejected_InsteadOfIgnoringIt()
+    {
+        await using var host = CreateHost();
+        var directory = Path.Combine(Path.GetTempPath(), "xihan-plugin-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            // 完整的示例插件副本，只在清单里加一项中间件贡献：以前照常加载、这一项被静默忽略（PluginContext.Pipeline 恒为空）
+            CopyTree(PluginDirectory, directory);
+            var manifestPath = Path.Combine(directory, "xihan.manifest.json");
+            var json = await File.ReadAllTextAsync(manifestPath);
+            var edited = json.Replace("\"permissions\": [", "\"contributes\": { \"pipeline\": [ { \"middleware\": \"sample-guard\", \"stage\": \"observe\" } ] },\n  \"permissions\": [", StringComparison.Ordinal);
+            Assert.NotEqual(json, edited);
+            await File.WriteAllTextAsync(manifestPath, edited);
+
+            var result = await host.LoadAsync(new PluginSource(directory, _granted), CancellationToken.None);
+
+            // 只有 Wasm 插件能贡献中间件：在加载任何代码之前拒绝，不登记
+            Assert.True(result.IsFailure, "A manifest contributing middleware must not load as an in-process plugin.");
+            Assert.Equal(PluginErrors.InvalidSource, result.Error!.Code);
+            Assert.Equal(PluginMessages.PipelineUnsupported, result.Error.MessageKey);
+            Assert.Equal("sample-guard", result.Error.Details!["middleware"]);
+            Assert.Empty(host.Plugins);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // 断言失败、插件程序集已被加载时文件仍被占用：临时目录留给系统清理，不掩盖断言本身
+            }
+        }
+    }
+
+    /// <summary>
+    /// 递归复制目录。
+    /// </summary>
+    private static void CopyTree(string source, string target)
+    {
+        Directory.CreateDirectory(target);
+        foreach (var file in Directory.EnumerateFiles(source))
+        {
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        }
+
+        foreach (var child in Directory.EnumerateDirectories(source))
+        {
+            CopyTree(child, Path.Combine(target, Path.GetFileName(child)));
+        }
+    }
+
     /// <summary>
     /// 从测试输出目录向上查找 <c>XiHan.Framework.Next.slnx</c> 所在目录，即 <c>next/</c> 根。
     /// </summary>

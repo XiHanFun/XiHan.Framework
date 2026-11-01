@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "El plugin '{id}' no está cargado.",
   "plugins.process.not_out_of_process": "El manifiesto '{id}' no describe un plugin fuera de proceso (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "Los permisos declarados por el plugin '{id}' no se han concedido: {permissions}.",
+  "plugins.process.pipeline_unsupported": "El plugin '{id}' declara middleware en 'contributes.pipeline' ({middleware}), pero solo los plugins Wasm pueden aportar middleware.",
   "plugins.process.timeout": "El plugin '{id}' agotó el tiempo durante {phase}.",
   "plugins.process.unavailable": "El plugin '{id}' no está disponible (estado: {state}).",
   "plugins.sandbox.exhausted": "El plugin '{id}' agotó los recursos del sandbox: {reason}"

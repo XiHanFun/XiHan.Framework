@@ -6,6 +6,7 @@
   "plugins.manifest.entry_required": "El manifiesto del complemento '{id}' debe declarar tanto 'package' (el nombre del ensamblado) como 'entry' (el tipo de entrada).",
   "plugins.manifest.invalid": "El manifiesto del directorio de complementos '{directory}' no es válido: {reason}",
   "plugins.manifest.not_in_process": "El manifiesto '{id}' no describe un complemento en proceso (kind={kind}, isolation={isolation}).",
+  "plugins.manifest.pipeline_unsupported": "El plugin '{id}' declara middleware en 'contributes.pipeline' ({middleware}), pero solo los plugins Wasm pueden aportar middleware.",
   "plugins.permission.not_granted": "Los permisos declarados por el complemento '{id}' no se han concedido: {permissions}.",
   "plugins.plugin.already_loaded": "El complemento '{id}' ya está cargado.",
   "plugins.plugin.load_failed": "El complemento '{id}' no pudo cargarse: {reason}",

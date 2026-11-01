@@ -41,6 +41,7 @@ const XiHan.Framework.Plugins.Protocol.PluginMessages.ModuleTrapped = "plugins.m
 const XiHan.Framework.Plugins.Protocol.PluginMessages.NotLoaded = "plugins.process.not_loaded" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.NotOutOfProcess = "plugins.process.not_out_of_process" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.PermissionsNotGranted = "plugins.process.permissions_not_granted" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.PipelineUnsupported = "plugins.process.pipeline_unsupported" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessCrashed = "plugins.process.crashed" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessFailed = "plugins.process.failed" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ProcessTimeout = "plugins.process.timeout" -> string!

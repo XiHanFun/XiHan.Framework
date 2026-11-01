@@ -6,6 +6,7 @@
   "plugins.manifest.entry_required": "플러그인 매니페스트 '{id}'에는 'package'(어셈블리 이름)와 'entry'(진입 형식)를 모두 선언해야 합니다.",
   "plugins.manifest.invalid": "플러그인 디렉터리 '{directory}'의 매니페스트가 올바르지 않습니다: {reason}",
   "plugins.manifest.not_in_process": "매니페스트 '{id}'은(는) 인프로세스 플러그인을 설명하지 않습니다(kind={kind}, isolation={isolation}).",
+  "plugins.manifest.pipeline_unsupported": "플러그인 '{id}'이(가) 'contributes.pipeline'에 미들웨어({middleware})를 선언했지만 미들웨어는 Wasm 플러그인만 제공할 수 있습니다.",
   "plugins.permission.not_granted": "플러그인 '{id}'이(가) 선언한 권한이 부여되지 않았습니다: {permissions}.",
   "plugins.plugin.already_loaded": "플러그인 '{id}'이(가) 이미 로드되었습니다.",
   "plugins.plugin.load_failed": "플러그인 '{id}'을(를) 로드하지 못했습니다: {reason}",

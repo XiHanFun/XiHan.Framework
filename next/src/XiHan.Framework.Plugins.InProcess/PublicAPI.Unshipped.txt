@@ -24,4 +24,5 @@ const XiHan.Framework.Plugins.InProcess.PluginMessages.ManifestInvalid = "plugin
 const XiHan.Framework.Plugins.InProcess.PluginMessages.NotInProcess = "plugins.manifest.not_in_process" -> string!
 const XiHan.Framework.Plugins.InProcess.PluginMessages.NotLoaded = "plugins.plugin.not_loaded" -> string!
 const XiHan.Framework.Plugins.InProcess.PluginMessages.PermissionsNotGranted = "plugins.permission.not_granted" -> string!
+const XiHan.Framework.Plugins.InProcess.PluginMessages.PipelineUnsupported = "plugins.manifest.pipeline_unsupported" -> string!
 const XiHan.Framework.Plugins.InProcess.PluginMessages.StopFailed = "plugins.plugin.stop_failed" -> string!

@@ -159,6 +159,42 @@ public sealed class OutOfProcessPluginHostTests
     }
 
     [Fact]
+    public async Task Discovery_RejectsAPluginWhoseManifestContributesMiddleware_AndTheHostStillStarts()
+    {
+        // 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）：清单写了 contributes.pipeline 的进程外插件在发现时被拒，
+        // 不再照常加载、把这个字段静默忽略
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        copy.EditManifest(static manifest => manifest.Replace("\"contributes\": {", "\"contributes\": {\n    \"pipeline\": [ { \"middleware\": \"echo-guard\", \"stage\": \"observe\" } ],", StringComparison.Ordinal));
+        using var logs = new LogCapture();
+        await using var host = await EchoPluginHost.StartAsync(directory: copy.Directory, services: services => services.AddSingleton<ILoggerFactory>(new LoggerFactory([logs])));
+        var plugins = EchoPluginHost.PluginHost(host);
+
+        // 宿主照常启动，插件按发现时被拒登记：Failed、可描述、没有进程，代理操作没有登记
+        var rejected = plugins.Describe(EchoPluginHost.PluginId);
+        Assert.NotNull(rejected);
+        Assert.Equal(LifecycleState.Failed, rejected.Status.State);
+        Assert.Equal(PluginErrors.InvalidSource, rejected.Status.Error?.Code);
+        Assert.Equal(PluginMessages.PipelineUnsupported, rejected.Status.Error?.MessageKey);
+        Assert.Equal("echo-guard", rejected.Status.Error?.Details?["middleware"]);
+        Assert.Null(rejected.ProcessId);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
+
+        // 是健康条目，宿主因此 Degraded 而不是启动失败；附着时记错误日志
+        Assert.Equal(LifecycleState.Degraded, host.App.State);
+        var entry = Assert.Single(host.App.Health().Contributions, static c => c.Name == "plugins." + EchoPluginHost.PluginId);
+        Assert.Equal(LifecycleState.Failed, entry.State);
+        Assert.Equal(PluginErrors.InvalidSource, entry.Error?.Code);
+        Assert.Contains(logs.Entries, static e => e.Level == LogLevel.Error && e.Message.Contains(EchoPluginHost.PluginId, StringComparison.Ordinal) && e.Message.Contains(PluginErrors.InvalidSource, StringComparison.Ordinal));
+
+        // 运行期显式加载同一个插件：同一错误直接返回给调用方，不登记
+        Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
+        Assert.Equal(PluginMessages.PipelineUnsupported, loaded.Error?.MessageKey);
+        Assert.Empty(plugins.Plugins);
+    }
+
+    [Fact]
     public async Task DiscoveredPlugin_DeclaredPermissionCodes_AreRegisteredByTheHost()
     {
         // 副本清单在 contributes.permissions 里声明两个码：宿主在配置阶段登记代理操作时一并替它登记（ADR-0080）

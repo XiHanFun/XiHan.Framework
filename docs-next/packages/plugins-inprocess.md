@@ -19,7 +19,7 @@
 
 加载上下文把名字以 `XiHan.Framework.`、`Microsoft.Extensions.`、`System.`、`netstandard`、`mscorlib` 开头的程序集交给默认上下文，保证 `IPlugin` 等类型与宿主是同一个类型；插件的私有托管与原生依赖按它自己的 `.deps.json` 在插件目录里解析。
 
-插件拿到的 `PluginContext` 含清单、插件自己的 `IServiceCollection`、宿主配置的只读视图与授予的权限。插件容器不能解析宿主服务；`PluginContext.Pipeline` 恒为 `null`，插件不能贡献中间件，也不能向宿主登记操作。
+插件拿到的 `PluginContext` 含清单、插件自己的 `IServiceCollection`、宿主配置的只读视图与授予的权限。插件容器不能解析宿主服务；`PluginContext.Pipeline` 恒为 `null`，插件不能贡献中间件，也不能向宿主登记操作。清单写了 `contributes.pipeline` 的在加载任何代码之前被拒（`PLUGINS_VALIDATION_001`），不会照常加载、把中间件静默忽略。
 
 ## 何时使用
 
@@ -130,7 +130,7 @@ Console.WriteLine(unloaded.IsSuccess);
 
 | 错误码 | 常量 | 时机 |
 | --- | --- | --- |
-| `PLUGINS_VALIDATION_001` | `InvalidSource` | 清单不合法、不是进程内插件、缺 `package` 或 `entry` |
+| `PLUGINS_VALIDATION_001` | `InvalidSource` | 清单不合法、不是进程内插件、缺 `package` 或 `entry`、清单写了 `contributes.pipeline`（只有 Wasm 插件能贡献中间件） |
 | `PLUGINS_VALIDATION_002` | `InvalidEntry` | 入口类型未实现 `IPlugin`，或实例清单 ID 与文件不一致 |
 | `PLUGINS_NOTFOUND_001` | `NotFound` | 程序集或入口类型不存在；卸载未加载的插件 |
 | `PLUGINS_DENIED_001` | `PermissionDenied` | 清单声明的权限未被授予（在加载任何代码之前判定） |

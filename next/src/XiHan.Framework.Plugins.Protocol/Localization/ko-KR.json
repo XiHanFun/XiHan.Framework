@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "플러그인 '{id}'이(가) 로드되지 않았습니다.",
   "plugins.process.not_out_of_process": "매니페스트 '{id}'은(는) 프로세스 외부 플러그인을 설명하지 않습니다 (kind={kind}, isolation={isolation}).",
   "plugins.process.permissions_not_granted": "플러그인 '{id}'이(가) 선언한 권한이 부여되지 않았습니다: {permissions}.",
+  "plugins.process.pipeline_unsupported": "플러그인 '{id}'이(가) 'contributes.pipeline'에 미들웨어({middleware})를 선언했지만 미들웨어는 Wasm 플러그인만 제공할 수 있습니다.",
   "plugins.process.timeout": "플러그인 '{id}'이(가) {phase} 단계에서 시간 초과되었습니다.",
   "plugins.process.unavailable": "플러그인 '{id}'을(를) 사용할 수 없습니다 (상태: {state}).",
   "plugins.sandbox.exhausted": "플러그인 '{id}'의 샌드박스 자원이 부족합니다: {reason}"

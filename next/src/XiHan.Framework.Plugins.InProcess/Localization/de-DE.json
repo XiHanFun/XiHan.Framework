@@ -6,6 +6,7 @@
   "plugins.manifest.entry_required": "Das Plugin-Manifest '{id}' muss sowohl 'package' (den Assemblynamen) als auch 'entry' (den Einstiegstyp) deklarieren.",
   "plugins.manifest.invalid": "Das Manifest im Plugin-Verzeichnis '{directory}' ist ungültig: {reason}",
   "plugins.manifest.not_in_process": "Das Manifest '{id}' beschreibt kein In-Process-Plugin (kind={kind}, isolation={isolation}).",
+  "plugins.manifest.pipeline_unsupported": "Plugin '{id}' deklariert Middleware in 'contributes.pipeline' ({middleware}), aber nur Wasm-Plugins können Middleware beitragen.",
   "plugins.permission.not_granted": "Die vom Plugin '{id}' deklarierten Berechtigungen wurden nicht erteilt: {permissions}.",
   "plugins.plugin.already_loaded": "Das Plugin '{id}' ist bereits geladen.",
   "plugins.plugin.load_failed": "Das Plugin '{id}' konnte nicht geladen werden: {reason}",

@@ -90,7 +90,7 @@ static bool IsTransient(Error error)
 
 | 常量 | 错误码 | 含义 |
 | --- | --- | --- |
-| `InvalidSource` | `PLUGINS_VALIDATION_001` | 插件清单、种类或隔离级别不合法，或缺少 `entry` |
+| `InvalidSource` | `PLUGINS_VALIDATION_001` | 插件清单、种类或隔离级别不合法，或缺少 `entry`，或进程外插件的清单写了 `contributes.pipeline`（只有 Wasm 插件能贡献中间件） |
 | `InvalidHandshake` | `PLUGINS_VALIDATION_003` | 握手行不合法，或协议版本没有交集 |
 | `HandshakeMismatch` | `PLUGINS_VALIDATION_004` | 握手响应与清单不一致：原语层版本、清单字段、未声明或重复的操作 / 健康项 / 订阅（同一主题与类型以两种方式各声明一次也算重复）、订阅方式 `mode` 不是空 / `competing` / `broadcast`，重启后的声明与首次不同 |
 | `InvalidModule` | `PLUGINS_VALIDATION_005` | Wasm 模块不合法（不是 reactor、ABI 版本不支持、缺少必需导出或签名不符、导入了宿主不提供的函数） |

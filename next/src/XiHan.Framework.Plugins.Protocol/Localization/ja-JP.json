@@ -15,6 +15,7 @@
   "plugins.process.not_loaded": "プラグイン '{id}' は読み込まれていません。",
   "plugins.process.not_out_of_process": "マニフェスト '{id}' はプロセス外プラグインを記述していません (kind={kind}, isolation={isolation})。",
   "plugins.process.permissions_not_granted": "プラグイン '{id}' が宣言した権限が付与されていません: {permissions}。",
+  "plugins.process.pipeline_unsupported": "プラグイン '{id}' は 'contributes.pipeline' でミドルウェア ({middleware}) を宣言していますが、ミドルウェアを提供できるのは Wasm プラグインだけです。",
   "plugins.process.timeout": "プラグイン '{id}' は {phase} でタイムアウトしました。",
   "plugins.process.unavailable": "プラグイン '{id}' は利用できません (状態: {state})。",
   "plugins.sandbox.exhausted": "プラグイン '{id}' のサンドボックス資源が不足しています: {reason}"
