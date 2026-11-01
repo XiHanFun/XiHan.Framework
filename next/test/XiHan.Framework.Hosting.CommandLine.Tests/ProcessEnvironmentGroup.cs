@@ -7,7 +7,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Tests;
 /// 改进程环境变量的用例。
 /// </summary>
 /// <remarks>
-/// 环境变量是进程级的：设置期间同一程序集里并行的命令都会拿到同一份凭据。这个集合不与其他集合并行。
+/// 环境变量是进程级的：设置期间同一程序集里并行的命令都会拿到同一份凭据，并行构建的宿主都会装载同一个挂载配置目录。这个集合不与其他集合并行。
 /// </remarks>
 [CollectionDefinition(nameof(ProcessEnvironmentGroup), DisableParallelization = true)]
 public sealed class ProcessEnvironmentGroup;

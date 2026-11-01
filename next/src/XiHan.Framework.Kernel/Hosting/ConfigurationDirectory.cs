@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// 挂载的配置目录约定（RFC-0016）。
 /// </summary>
 /// <remarks>
-/// 环境变量 <c>XIHAN_CONFIG_PATH</c> 指向一个目录（k8s 里是 ConfigMap 的挂载点），宿主把其中的 JSON 文件追加为配置源并监听变化。内核只负责找文件；装载由各宿主（<c>Hosting.AspNetCore</c>、<c>Hosting.CommandLine</c>）的 <c>AddXiHan</c> 完成。
+/// 环境变量 <c>XIHAN_CONFIG_PATH</c> 指向一个目录（k8s 里是 ConfigMap 的挂载点），宿主把其中的 JSON 文件作为配置源插在 <c>appsettings.{环境}.json</c> 之后、环境变量之前，并监听变化。内核只负责找文件与认出 appsettings 文件；装载由各宿主（<c>Hosting.AspNetCore</c>、<c>Hosting.CommandLine</c>）的 <c>AddXiHan</c> 完成。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ConfigurationDirectory
@@ -44,5 +44,20 @@ public static class ConfigurationDirectory
             .OrderBy(static file => string.Equals(Path.GetFileName(file), BaseFileName, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
             .ThenBy(static file => Path.GetFileName(file), StringComparer.Ordinal)
             .ToList();
+    }
+
+    /// <summary>
+    /// 判断文件配置源的路径是否是宿主默认装载的 appsettings 文件。
+    /// </summary>
+    /// <remarks>
+    /// 文件名（不看目录）是 <c>appsettings.json</c> 或 <c>appsettings.{<paramref name="environmentName"/>}.json</c>，不区分大小写。宿主把目录里的文件紧接最后一个这样的配置源插入。
+    /// </remarks>
+    public static bool IsApplicationSettings(string path, string environmentName)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(environmentName);
+        var name = Path.GetFileName(path);
+        return string.Equals(name, BaseFileName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, $"appsettings.{environmentName}.json", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -166,10 +166,10 @@ Compose 里的账号口令是本地联调用的固定开发值。应用服务的
 
 | 环境变量 | 值 | 作用 |
 | --- | --- | --- |
-| `XIHAN_CONFIG_PATH` | `mountPath`（缺省 `/etc/xihan`） | 宿主的 `AddXiHan` 把这个目录里的 JSON 文件追加为 `reloadOnChange` 配置源 |
+| `XIHAN_CONFIG_PATH` | `mountPath`（缺省 `/etc/xihan`） | 宿主的 `AddXiHan` 把这个目录里的 JSON 文件作为 `reloadOnChange` 配置源，插在 `appsettings.{环境}.json` 之后 |
 | `DOTNET_USE_POLLING_FILE_WATCHER` | `1` | ConfigMap 以切换符号链接的方式更新，文件监视必须轮询 |
 
-`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 在装配内核之前处理这个目录：只取顶层 `*.json`，跳过以 `.` 开头的条目（ConfigMap 的 `..data` 之类），`appsettings.json` 最先装载，其余按文件名序数排序随后覆盖。这些源追加在构建器已有配置源之后，优先级高于 `appsettings.json`、环境变量与命令行参数。文件变化后 `IOptionsMonitor<T>` 随之更新，应用不需要重启：
+`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 在装配内核之前处理这个目录：只取顶层 `*.json`，跳过以 `.` 开头的条目（ConfigMap 的 `..data` 之类），`appsettings.json` 最先装载，其余按文件名序数排序随后覆盖。这些源紧接 `appsettings.{环境}.json` 插入：覆盖 `appsettings.json` 与 `appsettings.{环境}.json`，环境变量与命令行参数又覆盖它们，所以 Dockerfile 与 Deployment 以环境变量写的 `XiHan__Kernel__StopTimeoutSeconds` 不会被 ConfigMap 里的同名键改掉（完整顺序见[配置与选项](./configuration#挂载的配置目录与热更新)）。文件变化后 `IOptionsMonitor<T>` 随之更新，应用不需要重启：
 
 ```csharp
 using Microsoft.Extensions.Options;

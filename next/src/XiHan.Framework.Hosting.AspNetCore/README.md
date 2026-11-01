@@ -21,7 +21,7 @@ Problem Details 的扩展成员（ADR-0024 补充）：VALIDATION 种类的错�
 
 ## 挂载的配置目录
 
-`AddXiHan()` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（k8s 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余 `*.json` 按序数随后；都晚于内置配置因而优先，`reloadOnChange` 让 `IOptionsMonitor` 跟着文件变化。`xihan pack` 生成的清单同时设 `DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新）。
+`AddXiHan()` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（k8s 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余 `*.json` 按序数随后；这些文件紧接 `appsettings.{环境}.json` 插入，配置源从低到高依次是 `appsettings.json`、`appsettings.{环境}.json`、挂载目录、用户机密（仅开发环境）、环境变量、命令行参数、应用自己添加的配置源，后者覆盖前者（RFC-0016）。构建器没有 appsettings 文件源（关掉了默认配置）时追加在末尾。`reloadOnChange` 让 `IOptionsMonitor` 跟着文件变化。`xihan pack` 生成的清单同时设 `DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新）。
 
 ## 依赖方向
 

@@ -74,13 +74,25 @@ app.Run();
 
 ## 挂载的配置目录与热更新
 
-环境变量 `XIHAN_CONFIG_PATH` 指向一个目录时（Kubernetes 里是 ConfigMap 的挂载点），`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 把其中的 JSON 文件追加为配置源，并以 `reloadOnChange: true` 监听变化。找文件的规则在内核的 `ConfigurationDirectory.Resolve`：
+环境变量 `XIHAN_CONFIG_PATH` 指向一个目录时（Kubernetes 里是 ConfigMap 的挂载点），`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 把其中的 JSON 文件作为配置源插在 `appsettings.{环境}.json` 之后，并以 `reloadOnChange: true` 监听变化。找文件的规则在内核的 `ConfigurationDirectory.Resolve`：
 
 1. 只取目录顶层的 `*.json`，跳过以 `.` 开头的条目（ConfigMap 挂载工具放置的 `..data` 等）。
 2. `appsettings.json` 最先装载，其余文件按文件名的序数顺序随后装载，后装载的覆盖先装载的同名键。
 3. 目录不存在或环境变量为空时什么都不加。
 
-这些文件追加在 `WebApplication.CreateBuilder` 已有的配置源之后，所以优先级高于 `appsettings.*.json`、环境变量与命令行参数：同一个键同时出现在挂载文件与环境变量里时，挂载文件的值生效。文件列表在启动时确定，运行中新增的文件要重启才装载；已装载文件的内容变化会触发 `IConfiguration` 的重载令牌，`IOptionsMonitor<T>` 随之更新。
+这些文件紧接构建器里最后一个 appsettings 文件源（`appsettings.json` 或 `appsettings.{环境}.json`）插入。`WebApplication.CreateBuilder` 与 `Host.CreateApplicationBuilder` 的配置源因此从低到高是：
+
+| 顺序 | 配置源 |
+| --- | --- |
+| 1 | `appsettings.json` |
+| 2 | `appsettings.{环境}.json` |
+| 3 | `XIHAN_CONFIG_PATH` 目录里的 JSON 文件 |
+| 4 | 用户机密（仅开发环境） |
+| 5 | 环境变量 |
+| 6 | 命令行参数 |
+| 7 | 应用自己添加的配置源（远程配置、密钥等），按添加顺序 |
+
+后者覆盖前者：挂载文件覆盖 appsettings；同一个键同时出现在挂载文件与环境变量里时，环境变量的值生效。`xihan pack` 用环境变量写的 `XiHan__Kernel__StopTimeoutSeconds` 因此不会被 ConfigMap 里的同名键改掉。构建器里没有 appsettings 文件源（应用关掉了默认配置）时，目录里的文件追加在末尾。文件列表在启动时确定，运行中新增的文件要重启才装载；已装载文件的内容变化会触发 `IConfiguration` 的重载令牌，`IOptionsMonitor<T>` 随之更新。
 
 ::: warning ConfigMap 更新要用轮询监视
 kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通知收不到变化。容器里要设 `DOTNET_USE_POLLING_FILE_WATCHER=1`；`xihan pack` 按应用清单的 `config` 生成 ConfigMap 时会一并写入它与 `XIHAN_CONFIG_PATH`（挂载点缺省 `/etc/xihan`）。

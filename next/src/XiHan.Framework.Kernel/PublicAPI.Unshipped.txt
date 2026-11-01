@@ -728,6 +728,7 @@ static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration, string? serviceBindingRoot = null) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
+static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.IsApplicationSettings(string! path, string! environmentName) -> bool
 static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Resolve(string? directory = null) -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator !=(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator ==(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool

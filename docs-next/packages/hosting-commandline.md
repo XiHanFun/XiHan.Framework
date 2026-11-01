@@ -47,7 +47,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 
 | 类型 | 说明 |
 | --- | --- |
-| `HostApplicationBuilderConfigurationExtensions` | `AddXiHan(configure)`：先装载 `XIHAN_CONFIG_PATH` 目录，再交给内核装配应用 |
+| `HostApplicationBuilderConfigurationExtensions` | `AddXiHan(configure)`：先装载 `XIHAN_CONFIG_PATH` 目录（紧接 `appsettings.{环境}.json` 插入），再交给内核装配应用 |
 | `CommandLineServiceCollectionExtensions` | `AddXiHanCommandLine()` 登记运行器与内置命令并把日志改到 stderr；`AddXiHanCommand<TCommand>()` 登记命令 |
 | `CommandLineHostExtensions` | `RunXiHanCommandLineAsync(args)`：启动宿主、执行命令、停止宿主，返回退出码；Ctrl+C 取消命令 |
 | `Commands.ICommand` | 命令：`Name`、`DescriptionKey`（说明的消息键）、`ExecuteAsync(CommandContext)` |

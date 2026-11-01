@@ -38,7 +38,7 @@ builder.Services.AddXiHanCommandLine();
 return await builder.Build().RunXiHanCommandLineAsync(args);
 ```
 
-`GreetingsFeature` 登记了一个操作 `greetings.create`，它的 `[Operation]` 写了 `Expose = Expose.CommandLine | Expose.Mcp`。`HostApplicationBuilder` 上的 `AddXiHan` 与 ASP.NET Core 宿主一样，先装载 `XIHAN_CONFIG_PATH` 目录里的 JSON 文件（可重载），见[宿主与 Web 应用](./web#启用)。`AddXiHanCommandLine()` 清掉通用宿主的默认日志提供器，只留写 stderr 的控制台日志。`RunXiHanCommandLineAsync` 先启动宿主再执行命令，命令结束后按顺序停止宿主；Ctrl+C 取消当前命令（退出码 8），宿主仍正常停止。
+`GreetingsFeature` 登记了一个操作 `greetings.create`，它的 `[Operation]` 写了 `Expose = Expose.CommandLine | Expose.Mcp`。`HostApplicationBuilder` 上的 `AddXiHan` 与 ASP.NET Core 宿主一样，先装载 `XIHAN_CONFIG_PATH` 目录里的 JSON 文件（可重载，紧接 `appsettings.{环境}.json` 插入），见[宿主与 Web 应用](./web#启用)。`AddXiHanCommandLine()` 清掉通用宿主的默认日志提供器，只留写 stderr 的控制台日志。`RunXiHanCommandLineAsync` 先启动宿主再执行命令，命令结束后按顺序停止宿主；Ctrl+C 取消当前命令（退出码 8），宿主仍正常停止。
 
 ## 内置命令
 

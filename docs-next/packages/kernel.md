@@ -34,7 +34,7 @@
 
 ## 何时使用
 
-总是需要；组合包、宿主包与所有子系统包都依赖它。应用通常经 `Hosting.AspNetCore` 或 `Hosting.CommandLine` 间接使用：它们在 `IHostApplicationBuilder` 上提供同名的 `AddXiHan`，ASP.NET Core 版本另外装载 `XIHAN_CONFIG_PATH` 配置目录。
+总是需要；组合包、宿主包与所有子系统包都依赖它。应用通常经 `Hosting.AspNetCore` 或 `Hosting.CommandLine` 间接使用：它们在 `IHostApplicationBuilder` 上提供同名的 `AddXiHan`，两个宿主的版本另外装载 `XIHAN_CONFIG_PATH` 配置目录。
 
 ## 安装与启用
 
@@ -69,7 +69,7 @@ await builder.Build().RunAsync();
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
 | `XiHan:Bindings:<名字>` | — | 资源绑定；另读环境变量 `SERVICE_BINDING_ROOT` 指向的 Service Binding 目录 |
 
-`XIHAN_CONFIG_PATH`（`ConfigurationDirectory.Variable`）指向的目录里的 JSON 文件由 `Hosting.AspNetCore` 的 `AddXiHan` 装载为可重载的配置源。
+`XIHAN_CONFIG_PATH`（`ConfigurationDirectory.Variable`）指向的目录里的 JSON 文件由 `Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 装载为可重载的配置源，插在 `ConfigurationDirectory.IsApplicationSettings` 认出的最后一个 appsettings 文件源之后。
 
 ## 主要类型
 

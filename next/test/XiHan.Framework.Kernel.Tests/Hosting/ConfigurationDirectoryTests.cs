@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Tests.Hosting;
 /// 挂载配置目录的文件解析。
 /// </summary>
 /// <remarks>
-/// 基础文件优先、其余按序数、忽略点开头条目与非 JSON、目录缺失为空。
+/// 基础文件优先、其余按序数、忽略点开头条目与非 JSON、目录缺失为空；宿主插入位置所认的 appsettings 文件名。
 /// </remarks>
 public sealed class ConfigurationDirectoryTests
 {
@@ -33,5 +33,16 @@ public sealed class ConfigurationDirectoryTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void IsApplicationSettings_MatchesBaseAndEnvironmentFileNamesOnly()
+    {
+        Assert.True(ConfigurationDirectory.IsApplicationSettings("appsettings.json", "Production"));
+        Assert.True(ConfigurationDirectory.IsApplicationSettings("AppSettings.Production.JSON", "Production"));
+        Assert.True(ConfigurationDirectory.IsApplicationSettings(Path.Combine("config", "appsettings.Staging.json"), "Staging"));
+        Assert.False(ConfigurationDirectory.IsApplicationSettings("appsettings.Development.json", "Production"));
+        Assert.False(ConfigurationDirectory.IsApplicationSettings("secrets.json", "Production"));
+        Assert.Throws<ArgumentNullException>(static () => ConfigurationDirectory.IsApplicationSettings(null!, "Production"));
     }
 }

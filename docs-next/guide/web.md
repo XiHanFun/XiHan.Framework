@@ -42,7 +42,7 @@ app.MapGet("/", () => "ok");
 app.Run();
 ```
 
-`WebApplicationBuilder` 上的 `AddXiHan` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（Kubernetes 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后；这些文件晚于内置配置装载因而优先，并以 `reloadOnChange` 装载，`IOptionsMonitor` 随文件变化。然后交给内核的 `AddXiHan`：XiHan 应用与宿主共用服务集合和配置，随宿主启动与停止。配置的写法见[配置与选项](./configuration)，挂载目录的部署方式见[部署与打包](./deployment)。
+`WebApplicationBuilder` 上的 `AddXiHan` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（Kubernetes 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后；这些文件紧接 `appsettings.{环境}.json` 插入（覆盖 appsettings，环境变量与命令行参数覆盖它们，顺序见[配置与选项](./configuration#挂载的配置目录与热更新)），并以 `reloadOnChange` 装载，`IOptionsMonitor` 随文件变化。然后交给内核的 `AddXiHan`：XiHan 应用与宿主共用服务集合和配置，随宿主启动与停止。配置的写法见[配置与选项](./configuration)，挂载目录的部署方式见[部署与打包](./deployment)。
 
 和其他 ASP.NET Core 中间件一起用时：
 

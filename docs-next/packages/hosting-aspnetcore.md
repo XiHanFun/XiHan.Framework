@@ -48,7 +48,7 @@ app.Run();
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| 环境变量 `XIHAN_CONFIG_PATH` | 目录 | 无 | 挂载的配置目录：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后，晚于内置配置因而优先，可重载 |
+| 环境变量 `XIHAN_CONFIG_PATH` | 目录 | 无 | 挂载的配置目录：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后，紧接 `appsettings.{环境}.json` 插入（覆盖 appsettings，环境变量与命令行参数覆盖它），可重载 |
 | `XiHan:Security:RoleClaim` | string | `role` | 方案 `XiHan` 转出的 `ClaimsPrincipal` 的角色声明类型 |
 | `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
