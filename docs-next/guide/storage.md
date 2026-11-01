@@ -414,7 +414,7 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 
 不覆盖写入在两个实现上都是原子的：多个写入方同时以 `Overwrite = false` 写同一个新键，只有一个成功，其余 `OBJECTSTORAGE_CONFLICT_001`（一致性套件核对）。S3 靠服务端的条件写入：启动时连不上等情况照常启动，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`；不认条件写入的兼容服务在启动时探明即启动失败，之后才探明的不覆盖写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`（ADR-0089、ADR-0090）。
 
-文件系统存储单进程正确：启动时扫描目录得到已用量，之后在进程内计量，多个进程共享同一目录时配额只是近似。S3 Provider 覆盖 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS、Cloudflare R2 等），`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；各兼容服务对路径式与虚拟主机式寻址的支持不同，按服务商的说明设置 `ForcePathStyle`。两个实现的细节见各自包页。
+文件系统存储单进程正确：启动时扫描目录得到已用量，之后在进程内计量，多个进程共享同一目录时配额只是近似。S3 Provider 覆盖 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS、Cloudflare R2 等），`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；各兼容服务对路径式与虚拟主机式寻址的支持不同，按服务商的说明设置 `ForcePathStyle`。阿里云 OSS、腾讯云 COS、Cloudflare R2 也只用这一个包，不为各家的私有禁止覆盖头做适配：它们是否认标准的 `If-None-Match: *` 框架没有实测，接入前要实测（缺省的条件写入探测即实测，或照 [ObjectStorage.S3](../packages/objectstorage-s3#云厂商的兼容服务) 用 curl 发两次条件写入），不认就关 `ConditionalWrites`——关掉后这个存储上 `Overwrite = false` 的写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`，"只在不存在时写入"的业务要改用不冲突的键或覆盖写入（ADR-0090）。两个实现的细节见各自包页。
 
 ## 错误码
 

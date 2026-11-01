@@ -106,7 +106,23 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 - `Overwrite = false` 的写入、分片上传的发起与完成：有探测在进行就等它；没有而距上一次探测满 1 秒，就地再探一次（每个实例同一时刻只有一个探测，后台重试与写入共用）；仍未确认返回 `OBJECTSTORAGE_UNAVAILABLE_004`（HTTP 503，参数 `reason` 是最近一次探测失败的错误码），不访问写入目标，不退回先查再写。覆盖写入、读取、删除、列举与预签名照常。
 - 健康项 `objectstorage.s3.connection` 为 Degraded，错误是最近一次探测失败的错误码（即便 HEAD 成功），数据 `conditionalWrites` 为 `unconfirmed`；探测通过后即时恢复，不等下一轮健康探测。命名实例的健康项 `objectstorage.store.<name>` 同样 Degraded。
 
-`ConditionalWrites = false` 只给明确不需要不覆盖写入的应用（只做覆盖写入，或凭据只读）：不探测，`HealthBucket` 可以不配；`Overwrite = false` 的写入、分片上传的发起与完成一律返回 `OBJECTSTORAGE_UNAVAILABLE_003`，不访问存储，框架不做没有保证的先查再写。覆盖写入、读取、删除、列举与预签名不受影响。
+`ConditionalWrites = false` 只给明确不需要不覆盖写入的应用（只做覆盖写入，或凭据只读，或服务实测不认条件写入）：不探测，`HealthBucket` 可以不配；`Overwrite = false` 的写入、分片上传的发起与完成一律返回 `OBJECTSTORAGE_UNAVAILABLE_003`，不访问存储，框架不做没有保证的先查再写。覆盖写入、读取、删除、列举与预签名不受影响。关掉之后"只在不存在时写入"在这个存储上不再可用：需要它的业务改用不会冲突的键（如带随机后缀），或改为覆盖写入（`BlobPutOptions` 缺省就是覆盖写入）。
+
+## 云厂商的兼容服务
+
+阿里云 OSS、腾讯云 COS、Cloudflare R2 等兼容服务同样只用本包，框架不为各家的私有请求头做适配（OSS 的 `x-oss-forbid-overwrite`、COS 的 `x-cos-forbid-overwrite` 都不用），不覆盖写入只认标准的 `If-None-Match: *`（ADR-0090）。这几家是否认它框架没有实测，接入前要实测：
+
+1. 直接用缺省的探测：把应用指向该服务，配好 `HealthBucket`。启动时探明不认即启动失败（`KERNEL_HOSTING_002`，内层 `OBJECTSTORAGE_UNAVAILABLE_003`）；探测通过时健康项 `objectstorage.s3.connection` 的数据 `conditionalWrites` 为 `confirmed`。
+2. 或者手工发两次带条件的写入，第二次必须是 412（第一次在键已存在时也是 412，同样说明认）：
+
+```bash
+for i in 1 2; do
+  curl -s -o /dev/null -w "%{http_code}\n" --aws-sigv4 "aws:amz:<区域>:s3" --user "<AccessKey>:<SecretKey>" \
+    -X PUT -H "If-None-Match: *" --data-binary "" "https://<端点>/<桶>/.xihan/probe/conditional-write"
+done
+```
+
+第二次返回 200 就是不认：把 `ConditionalWrites` 设为 `false`（命名实例的设置同名，可以只关那一个实例），并接受上一段写的后果。各家对路径式与虚拟主机式寻址的支持不同，按服务商的说明设置 `ForcePathStyle`。
 
 ## 主要类型
 
