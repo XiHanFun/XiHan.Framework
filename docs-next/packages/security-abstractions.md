@@ -65,13 +65,13 @@
 | `Authorization.PolicyCatalog` | 策略目录：`Find(name)`、`Names`；策略名重复在构造时抛出 `ArgumentException` |
 | `Authorization.AuthenticatedPolicy` | 策略 `authenticated` |
 | `Authorization.PermissionPolicy` | 权限策略：`Prefix`（`permission:`）、`NameFor(code)`、`CodeOf(name)` |
-| `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件 |
+| `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
 | `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
-| `Permissions.IPermissionGrantStore` | 授予存储：`GetGrantsAsync(subject, tenantId)` 返回全局授予加该租户的授予 |
-| `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器 |
-| `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039） |
-| `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045） |
+| `Permissions.IPermissionGrantStore` | 授予存储：`GetGrantsAsync(subject, tenantId)` → `Result<IReadOnlyCollection<string>>`，全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
+| `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
+| `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |
 | `SecurityInvocationExtensions` | `SetCredential` / `GetCredential`、`RequireAuthorization` / `GetAuthorizationRequirement` |
 | `SecurityOptions` | 选项，见上表 |
 | `Conditions.*` | 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`、`ConditionOperator`、`ConditionValueKind`、`ConditionAttributeDescriptor`、`IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator`、`IConditionAttributeSource`、`DictionaryConditionAttributeSource`、`MemoizingConditionAttributeSource`、`ConditionOperatorRules`、`AddConditionAttributes` |
@@ -161,6 +161,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 | `SECURITY_NOTFOUND_001` | 策略不存在或权限码未登记 |
 | `SECURITY_NOTFOUND_002` | 要撤销的授予不存在 |
 | `SECURITY_NOTFOUND_003` | 取不到条件属性的值 |
+| `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达：授予存储、授予来源或收窄过滤器读不到数据（HTTP 503，不当作不持有） |
 | `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
 | `SECURITY_UNAVAILABLE_003` | 签发者的发现文档或 JWKS 不可达且没有缓存 |
 | `SECURITY_UNAVAILABLE_004` | 条件属性暂不可得 |

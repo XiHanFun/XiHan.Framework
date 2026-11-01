@@ -71,6 +71,14 @@ public static class SecurityMessages
     public const string GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded";
 
     /// <summary>
+    /// 授予存储不可达。
+    /// </summary>
+    /// <remarks>
+    /// 错误码 <see cref="SecurityErrors.StoreUnavailable"/>；不带参数：底层原因（连接、超时、事务失败）只进日志与内部错误，不对调用方暴露。
+    /// </remarks>
+    public const string GrantStoreUnavailable = "security.grant_store.unavailable";
+
+    /// <summary>
     /// 主体存储容量已满。
     /// </summary>
     /// <remarks>

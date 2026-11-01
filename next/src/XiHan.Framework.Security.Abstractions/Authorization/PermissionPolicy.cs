@@ -11,7 +11,7 @@ namespace XiHan.Framework.Security.Abstractions.Authorization;
 /// 策略。
 /// </summary>
 /// <remarks>
-/// 主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝。
+/// 主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝；检查器失败（授予存储不可达等）时判定失败，不当作缺少权限。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionPolicy : IPolicy
@@ -68,7 +68,7 @@ public sealed class PermissionPolicy : IPolicy
             : null;
 
     /// <inheritdoc />
-    public async ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         // 先判未认证：匿名主体得到 NotAuthenticated 而不是 PermissionMissing，调用方可以区分未登录与越权
@@ -77,7 +77,14 @@ public sealed class PermissionPolicy : IPolicy
             return AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired));
         }
 
-        return await _checker.HasPermissionAsync(request.Security, PermissionCode, cancellationToken).ConfigureAwait(false)
+        // 检查器的失败（授予存储不可达等）原样作为判定失败返回：它不是拒绝，不能变成 SECURITY_DENIED_004
+        var held = await _checker.HasPermissionAsync(request.Security, PermissionCode, cancellationToken).ConfigureAwait(false);
+        if (!held.TryGetValue(out var granted))
+        {
+            return held.Error!;
+        }
+
+        return granted
             ? AuthorizationResult.Allow()
             : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PermissionMissing, SecurityMessages.PermissionMissing, MessageArguments.Of(("permission", PermissionCode))));
     }

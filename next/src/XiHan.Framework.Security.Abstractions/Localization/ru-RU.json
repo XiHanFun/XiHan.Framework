@@ -22,6 +22,7 @@
   "security.condition.value_required": "Значение условия не может быть пустым.",
   "security.grant.not_found": "Предоставление разрешения '{permission}' субъекту '{subject}' в арендаторе '{tenant}' не найдено.",
   "security.grant_store.capacity_exceeded": "Хранилище разрешений в памяти достигло предела ёмкости {capacity}.",
+  "security.grant_store.unavailable": "Хранилище разрешений недоступно. Повторите попытку позже.",
   "security.issuer.unavailable": "Не удалось получить метаданные OpenID Connect издателя '{authority}'.",
   "security.permission.missing": "Отсутствует разрешение '{permission}'.",
   "security.policy.not_found": "Политика '{policy}' не существует.",

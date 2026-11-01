@@ -22,6 +22,7 @@
   "security.condition.value_required": "La valeur de la condition ne doit pas être vide.",
   "security.grant.not_found": "L'attribution de la permission '{permission}' à '{subject}' dans le locataire '{tenant}' est introuvable.",
   "security.grant_store.capacity_exceeded": "Le magasin d'octrois en mémoire a atteint sa capacité de {capacity}.",
+  "security.grant_store.unavailable": "Le magasin d'octrois d'autorisations est indisponible. Réessayez plus tard.",
   "security.issuer.unavailable": "Les métadonnées OpenID Connect de l'émetteur '{authority}' n'ont pas pu être récupérées.",
   "security.permission.missing": "La permission '{permission}' est manquante.",
   "security.policy.not_found": "La stratégie '{policy}' n'existe pas.",

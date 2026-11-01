@@ -22,6 +22,7 @@
   "security.condition.value_required": "条件值不能为空。",
   "security.grant.not_found": "租户 '{tenant}' 中对 '{subject}' 的权限 '{permission}' 授予不存在。",
   "security.grant_store.capacity_exceeded": "内存授予存储已达到容量上限 {capacity}。",
+  "security.grant_store.unavailable": "权限授予存储暂不可用，请稍后重试。",
   "security.issuer.unavailable": "无法取得签发者 '{authority}' 的 OpenID Connect 元数据。",
   "security.permission.missing": "缺少权限 '{permission}'。",
   "security.policy.not_found": "策略 '{policy}' 不存在。",

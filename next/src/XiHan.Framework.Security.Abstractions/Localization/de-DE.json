@@ -22,6 +22,7 @@
   "security.condition.value_required": "Der Bedingungswert darf nicht leer sein.",
   "security.grant.not_found": "Die Zuweisung der Berechtigung '{permission}' an '{subject}' im Mandanten '{tenant}' wurde nicht gefunden.",
   "security.grant_store.capacity_exceeded": "Der In-Memory-Berechtigungsspeicher hat seine Kapazität von {capacity} erreicht.",
+  "security.grant_store.unavailable": "Der Berechtigungsspeicher ist nicht verfügbar. Versuchen Sie es später erneut.",
   "security.issuer.unavailable": "Die OpenID-Connect-Metadaten des Ausstellers '{authority}' konnten nicht abgerufen werden.",
   "security.permission.missing": "Die Berechtigung '{permission}' fehlt.",
   "security.policy.not_found": "Die Richtlinie '{policy}' existiert nicht.",

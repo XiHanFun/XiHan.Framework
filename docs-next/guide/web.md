@@ -256,6 +256,7 @@ internal sealed partial class AppJsonContext : JsonSerializerContext;
 | 操作端点的请求体不是 JSON 对象 | 400 | `KERNEL_VALIDATION_001` |
 | 未认证 / 凭据无效、过期或签名不符 | 401 | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
+| 授予存储、授予来源或收窄过滤器读不到数据（授权无法判定） | 503 | `SECURITY_UNAVAILABLE_001` |
 | 策略不存在或权限码未登记 | 404 | `SECURITY_NOTFOUND_001` |
 
 ## 相关

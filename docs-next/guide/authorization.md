@@ -103,14 +103,14 @@ app.Run();
 1. 取授权要求：显式要求优先，其次是操作契约（权限码优先于策略名）；都没有则放行。
 2. 在 `PolicyCatalog` 里按名查找策略。先找登记的 `IPolicy`（策略名区分大小写）；没有时，名字形如 `permission:<code>` 且权限码已登记，就动态创建 `PermissionPolicy`。
 3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。
-4. 调用策略。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
+4. 调用策略。`IPolicy.EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝；失败是无法判定（授予存储读不到等），调用以该失败结束，既不放行，也不改写成拒绝。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
 
 内置两种策略：
 
 | 策略名 | 类型 | 判定 |
 | --- | --- | --- |
 | `authenticated` | `AuthenticatedPolicy` | 主体已认证；匿名返回 `SECURITY_DENIED_001` |
-| `permission:<code>` | `PermissionPolicy` | 匿名先返回 `SECURITY_DENIED_001`，调用方据此区分未登录与越权；已认证但不持有权限返回 `SECURITY_DENIED_004` |
+| `permission:<code>` | `PermissionPolicy` | 匿名先返回 `SECURITY_DENIED_001`，调用方据此区分未登录与越权；已认证但不持有权限返回 `SECURITY_DENIED_004`；检查器失败（授予读不到）原样作为判定失败，调用以 `SECURITY_UNAVAILABLE_001`（503）结束 |
 
 `AuthorizationRequirement.Authenticated` 与 `AuthorizationRequirement.Permission(code, resource?)` 是这两种要求的快捷写法，`PermissionPolicy.NameFor(code)` 给出权限码对应的策略名。
 
@@ -125,6 +125,12 @@ app.Run();
 3. 逐个查主体的角色授予，角色取类型为 `XiHan:Security:RoleClaim`（缺省 `role`）的声明值。
 4. 存储都没命中时，按登记顺序查询各 `IPermissionGrantSource`。
 5. 任一步命中即算授予命中，之后按登记顺序调用全部 `IPermissionFilter`，全部放行才算持有。
+
+存储、来源、过滤器、检查器都返回 `Result`：`GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败。检查器遇到第一个失败即原样返回，不再读后面的角色、来源或过滤器。
+
+::: warning 读不到不是没有
+授予存储、来源或过滤器读不到数据时返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束。不要用空集合或 `false` 代替：那会被判定为不持有，调用方拿到 403，客户端会以为权限被收回，网关也不会重试（ADR-0071）。自己调用 `HasPermissionAsync` 的地方（按权限隐藏部件、裁剪响应）同样要处理失败，不能把失败当作不持有。
+:::
 
 内存实现从配置装载授予。配置里的授予都是全局的，值是逗号分隔的权限码；下面是 SimpleApp 的授予：
 
@@ -154,14 +160,15 @@ app.Run();
 | 读取 | 进程内查表 | 按（主体，租户）一次查询全局行加该租户的行，结果缓存 `CacheTimeToLiveSeconds`（缺省 30 秒） |
 | 撤销不存在的授予 | `Revoke` 返回 `false` | 逐项结果 `SECURITY_NOTFOUND_002` |
 
-数据库授予是平台数据，不受当前租户过滤；`PermissionGrantRecordStore` 写入后立即失效涉及主体的缓存，其他实例的缓存靠存活时间收敛。授予存储读取时的基础设施异常照常传播，`PermissionChecker` 不捕获，调用以失败结束而不是放行。装配与示例见 [Security.Database](../packages/security-database)。
+数据库授予是平台数据，不受当前租户过滤；`PermissionGrantRecordStore` 写入后立即失效涉及主体的缓存，其他实例的缓存靠存活时间收敛。数据库故障（连接、超时、事务失败）时授予存储返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束；失败不进缓存，数据库恢复后下一次判定立即重新查库。装配与示例见 [Security.Database](../packages/security-database)。
 
 ## 收窄：IPermissionFilter
 
-`IPermissionFilter`（ADR-0039）在授予命中之后再判定一次，返回 `false` 即视为不持有。它只能拿走权限、不能给出权限，用于套餐白名单、显式拒绝、委托到期这类授予之外的约束。被收窄的权限在权限策略上同样返回 `SECURITY_DENIED_004`，调用方不需要区分"没授予"与"被收窄"。
+`IPermissionFilter`（ADR-0039）在授予命中之后再判定一次，返回成功的 `false` 即视为不持有。它只能拿走权限、不能给出权限，用于套餐白名单、显式拒绝、委托到期这类授予之外的约束。被收窄的权限在权限策略上同样返回 `SECURITY_DENIED_004`，调用方不需要区分"没授予"与"被收窄"。
 
 ```csharp
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
 public sealed class EditionPermissionFilter : IPermissionFilter
@@ -169,8 +176,8 @@ public sealed class EditionPermissionFilter : IPermissionFilter
     // 基础版套餐只开放查询；真实应用按租户从套餐表读取并缓存
     private static readonly HashSet<string> _basicEdition = new(StringComparer.Ordinal) { "orders.read" };
 
-    public ValueTask<bool> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
-        => ValueTask.FromResult(security.Tenant is null || _basicEdition.Contains(permission));
+    public ValueTask<Result<bool>> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(security.Tenant is null || _basicEdition.Contains(permission)));
 }
 ```
 
@@ -179,7 +186,7 @@ public sealed class EditionPermissionFilter : IPermissionFilter
 - 检查器按登记顺序逐个调用，任一返回 `false` 即不持有，后面的不再调用。
 - 匿名主体与授予未命中时不调用过滤器，过滤器里查库或查缓存的开销只花在命中的判定上。
 - 过滤器收到的是具体权限码；主体持有 `*` 时同样会被收窄。
-- 过滤器抛出的异常照常传播，不当作放行或拒绝。
+- 套餐表读不到时返回失败（`Error.Unavailable(SecurityErrors.StoreUnavailable, ...)`），检查器原样返回、调用以 503 结束；跳过它等于放行，返回 `false` 又会变成 403。抛出的异常照常传播。
 
 ## 授予来源：IPermissionGrantSource
 
@@ -187,6 +194,7 @@ public sealed class EditionPermissionFilter : IPermissionFilter
 
 ```csharp
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
@@ -195,12 +203,12 @@ public sealed class ManagerInheritsEditorGrantSource(SecurityOptions options) : 
     // manager 角色继承 editor 的权限；继承关系通常来自应用的角色表
     private static readonly IReadOnlyCollection<string> _editorPermissions = ["orders.read", "orders.write"];
 
-    public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
-        => ValueTask.FromResult<IReadOnlyCollection<string>>(security.Principal.HasClaim(options.RoleClaim, "manager") ? _editorPermissions : []);
+    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(security.Principal.HasClaim(options.RoleClaim, "manager") ? _editorPermissions : []));
 }
 ```
 
-同样按单例登记：`context.Services.AddSingleton<IPermissionGrantSource, ManagerInheritsEditorGrantSource>()`。检查器只在用户与角色的存储授予都没命中时才查询来源，任一来源命中即止；匿名主体不查询。来源拿到整个安全上下文，继承关系或委托一改就生效，不依赖令牌刷新。
+同样按单例登记：`context.Services.AddSingleton<IPermissionGrantSource, ManagerInheritsEditorGrantSource>()`。检查器只在用户与角色的存储授予都没命中时才查询来源，任一来源命中即止；匿名主体不查询。继承关系或委托表读不到时返回失败，不要返回空集合。来源拿到整个安全上下文，继承关系或委托一改就生效，不依赖令牌刷新。
 
 应用替换 `IPermissionChecker` 时，必须同样并上全部授予来源、并在授予命中之后施加全部过滤器（RFC-0008）。
 
@@ -220,19 +228,19 @@ public sealed class TenantMemberPolicy : IPolicy
 
     public string Name => PolicyName;
 
-    public ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+    public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
         var security = request.Security;
         if (!security.Principal.IsAuthenticated)
         {
-            return ValueTask.FromResult(AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired)));
+            return ValueTask.FromResult(Result.Success(AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired))));
         }
 
         // 声明类型与 XiHan:MultiTenancy:TenantClaim 保持一致（缺省 tenant）
         var member = security.Tenant is { } tenant && security.Principal.HasClaim("tenant", tenant.Id);
-        return ValueTask.FromResult(member
+        return ValueTask.FromResult(Result.Success(member
             ? AuthorizationResult.Allow()
-            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PolicyDenied, KernelMessages.DeniedByPolicy)));
+            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PolicyDenied, KernelMessages.DeniedByPolicy))));
     }
 }
 ```
@@ -242,6 +250,7 @@ public sealed class TenantMemberPolicy : IPolicy
 - 策略按名索引，名字重复在 `PolicyCatalog` 构造时抛出 `ArgumentException`。
 - 策略是单例，判定时拿到的是 `AuthorizationRequest`：`Security`（主体与租户）、`Action`（策略名）、`Resource`（资源名），不是调用上下文。
 - 拒绝原因用错误码加消息键（RFC-0010），HTTP 状态码按错误码种类映射：`DENIED` 为 403（`SECURITY_DENIED_001` 与 `SECURITY_DENIED_003` 除外，为 401）。
+- 判定依赖的数据读不到时返回失败（`Result` 的失败，不是 `Deny`），调用以该失败结束：`UNAVAILABLE` 种类为 503。
 
 ## 资源名
 
@@ -377,6 +386,7 @@ public static class GeoAttributes
 | `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
 | `SECURITY_NOTFOUND_001` | 策略不存在，或 `permission:<code>` 的权限码未登记 | 404 |
 | `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`Security.Database` 的逐项结果） | — |
+| `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据（数据库授予存储的连接、超时、事务失败），不当作不持有 | 503 |
 | `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满（`Grant` 与健康项 `security.inmemory.capacity`） | — |
 | `SECURITY_VALIDATION_002` | 条件无效：属性未登记、运算符与值种类不搭配、条件值解析不了 | — |
 | `SECURITY_VALIDATION_003` | 条件属性的值不是登记的值种类 | — |

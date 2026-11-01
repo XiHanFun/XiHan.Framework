@@ -84,7 +84,10 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 进程内的表，读取不会失败，总是返回成功。
+    /// </remarks>
+    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
@@ -100,7 +103,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
                 result.UnionWith(scoped);
             }
 
-            return ValueTask.FromResult<IReadOnlyCollection<string>>(result);
+            return ValueTask.FromResult(Result.Success<IReadOnlyCollection<string>>(result));
         }
     }
 

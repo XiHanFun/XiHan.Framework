@@ -162,37 +162,37 @@ public sealed class DatabaseSecurityTests
         await using var host = await StartAsync(clock);
         var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
 
-        Assert.Empty(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(1, store.CachedEntryCount);
 
         // 绕过记录存储直接写行（不触发失效）：缓存命中，不再查库
         await InsertRowAsync(host, _alice, WriteOrderOperation.Permission);
-        Assert.Empty(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
         // 按主体失效后重新查库
         store.Invalidate(_alice);
         Assert.Equal(0, store.CachedEntryCount);
-        Assert.Equal([WriteOrderOperation.Permission], await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Equal([WriteOrderOperation.Permission], (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
         // 过了存活时间也重新查库
         await InsertRowAsync(host, _alice, "reports.read");
-        Assert.Single(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Single((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
         clock.Advance(TimeSpan.FromSeconds(29));
-        Assert.Single(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Single((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
         clock.Advance(TimeSpan.FromSeconds(2));
-        Assert.Equal(2, (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).Count);
+        Assert.Equal(2, ((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow()).Count);
 
         // 不给主体清空全部；经记录存储写入的立刻可见
-        Assert.Empty(await store.GetGrantsAsync(_bob, "acme", CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(2, store.CachedEntryCount);
         store.Invalidate();
         Assert.Equal(0, store.CachedEntryCount);
-        Assert.Empty(await store.GetGrantsAsync(_bob, "acme", CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.Outcome.IsSuccess));
-        Assert.Equal(["reports.read"], await store.GetGrantsAsync(_bob, "acme", CancellationToken.None));
-        Assert.Empty(await store.GetGrantsAsync(_bob, "other", CancellationToken.None));
+        Assert.Equal(["reports.read"], (await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(_bob, "other", CancellationToken.None)).ValueOrThrow());
         // 返回的是冻结集合：不可变，调用方改不了缓存
-        Assert.IsAssignableFrom<FrozenSet<string>>(await store.GetGrantsAsync(_bob, "acme", CancellationToken.None));
+        Assert.IsAssignableFrom<FrozenSet<string>>((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
     }
 
     [Fact]
@@ -203,19 +203,19 @@ public sealed class DatabaseSecurityTests
         var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
         Assert.Null(host.Services.GetRequiredService<DatabaseSecurityOptions>().CacheTimeToLive);
 
-        Assert.Empty(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
-        Assert.Empty(await store.GetGrantsAsync(_alice, "acme", CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(_alice, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(2, store.CachedEntryCount);
 
         // 不过期：一天后仍是缓存里的旧结果
         await InsertRowAsync(host, _alice, WriteOrderOperation.Permission);
         clock.Advance(TimeSpan.FromDays(1));
-        Assert.Empty(await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
         // 第三个条目进来时已满：整体清空后再写入，之前的主体重新查库
-        Assert.Empty(await store.GetGrantsAsync(_bob, null, CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(_bob, null, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(1, store.CachedEntryCount);
-        Assert.Equal([WriteOrderOperation.Permission], await store.GetGrantsAsync(_alice, null, CancellationToken.None));
+        Assert.Equal([WriteOrderOperation.Permission], (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(2, store.CachedEntryCount);
     }
 

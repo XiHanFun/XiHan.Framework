@@ -13,7 +13,7 @@ namespace XiHan.Framework.Security.Abstractions.Authorization;
 /// Authorize 阶段的中间件。
 /// </summary>
 /// <remarks>
-/// 调用带 <see cref="AuthorizationRequirement"/> 时按名取策略判定；没有要求则放行。策略不存在以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝（宁可拒绝，不可放行）。
+/// 调用带 <see cref="AuthorizationRequirement"/> 时按名取策略判定；没有要求则放行。策略不存在以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝（宁可拒绝，不可放行）；策略判定失败（如 <see cref="SecurityErrors.StoreUnavailable"/>）以该失败结束调用，不当作拒绝。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AuthorizationMiddleware : IPipelineMiddleware
@@ -41,7 +41,14 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
                 return;
             }
 
-            var decision = await policy.EvaluateAsync(new AuthorizationRequest(context.GetSecurity(), requirement.Policy, requirement.Resource), context.CancellationToken).ConfigureAwait(false);
+            var evaluated = await policy.EvaluateAsync(new AuthorizationRequest(context.GetSecurity(), requirement.Policy, requirement.Resource), context.CancellationToken).ConfigureAwait(false);
+            // 判定失败（授予存储不可达等）以该失败结束调用：既不放行，也不改写成拒绝（403），HTTP 按错误种类回 503
+            if (!evaluated.TryGetValue(out var decision))
+            {
+                context.SetOutcome(evaluated.ToResult());
+                return;
+            }
+
             if (!decision.IsAllowed)
             {
                 context.SetOutcome(decision.ToResult());

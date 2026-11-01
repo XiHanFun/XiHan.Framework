@@ -39,9 +39,9 @@ public sealed class AuthorizationTests
     /// <summary>
     /// 构造带策略目录的服务：已认证策略、可选的额外策略，权限登记表只含 <c>orders.read</c>。
     /// </summary>
-    private static IServiceProvider Services(IPolicy? extra = null)
+    private static IServiceProvider Services(IPolicy? extra = null, IPermissionGrantStore? store = null)
     {
-        var checker = new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions());
+        var checker = new PermissionChecker(store ?? new DictionaryGrantStore(_grants), new SecurityOptions());
         var policies = new List<IPolicy> { new AuthenticatedPolicy() };
         if (extra is not null)
         {
@@ -59,13 +59,13 @@ public sealed class AuthorizationTests
         var aliceInAcme = new SecurityContext(SecurityHosts.Alice("editor"), new TenantContext("acme"));
         var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);
 
-        Assert.True(await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None));
-        Assert.True(await checker.HasPermissionAsync(alice, "reports.read", CancellationToken.None));
-        Assert.False(await checker.HasPermissionAsync(alice, "reports.export", CancellationToken.None));
-        Assert.True(await checker.HasPermissionAsync(aliceInAcme, "reports.export", CancellationToken.None));
-        Assert.False(await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None));
-        Assert.True(await checker.HasPermissionAsync(root, "anything.at.all", CancellationToken.None));
-        Assert.False(await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
+        Assert.True((await checker.HasPermissionAsync(alice, "reports.read", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await checker.HasPermissionAsync(alice, "reports.export", CancellationToken.None)).ValueOrThrow());
+        Assert.True((await checker.HasPermissionAsync(aliceInAcme, "reports.export", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None)).ValueOrThrow());
+        Assert.True((await checker.HasPermissionAsync(root, "anything.at.all", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None)).ValueOrThrow());
     }
 
     [Fact]
@@ -79,24 +79,24 @@ public sealed class AuthorizationTests
         var root = new SecurityContext(new Principal("root", "test") { Claims = [new("role", "admin")] }, null);
 
         // 授予命中且全部放行 → 持有；两个过滤器按登记顺序都被调用
-        Assert.True(await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
         Assert.Equal([("alice", "orders.read")], edition.Calls);
         Assert.Equal([("alice", "orders.read")], audit.Calls);
 
         // 持 * 的主体也被收窄：过滤器收到的是具体权限码，拒绝即不持有，后面的过滤器不再调用
-        Assert.False(await checker.HasPermissionAsync(root, "orders.delete", CancellationToken.None));
+        Assert.False((await checker.HasPermissionAsync(root, "orders.delete", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(("root", "orders.delete"), edition.Calls[^1]);
         Assert.Single(audit.Calls);
-        Assert.True(await checker.HasPermissionAsync(root, "reports.read", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(root, "reports.read", CancellationToken.None)).ValueOrThrow());
 
         // 授予未命中与匿名主体不调用过滤器：过滤器只能拿走权限、不能凭空给出
         var before = edition.Calls.Count;
-        Assert.False(await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None));
-        Assert.False(await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None));
+        Assert.False((await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(before, edition.Calls.Count);
 
         // 没有过滤器与过滤器为空集合时行为同原来；集合里有 null 是编程错误
-        Assert.True(await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), []).HasPermissionAsync(root, "orders.delete", CancellationToken.None));
+        Assert.True((await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), []).HasPermissionAsync(root, "orders.delete", CancellationToken.None)).ValueOrThrow());
         Assert.Throws<ArgumentException>(() => new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition, null!]));
     }
 
@@ -112,26 +112,26 @@ public sealed class AuthorizationTests
         var bob = new SecurityContext(new Principal("bob", "test"), null);
 
         // 存储命中时不查来源
-        Assert.True(await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(alice, "orders.read", CancellationToken.None)).ValueOrThrow());
         Assert.Empty(inherited.Calls);
 
         // 存储没命中：按登记顺序查来源，第一个命中即止；来源给出的授予同样经过滤器
-        Assert.True(await checker.HasPermissionAsync(alice, "orders.write", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(alice, "orders.write", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["alice"], inherited.Calls);
         Assert.Empty(delegated.Calls);
         Assert.Equal(("alice", "orders.write"), narrowing.Calls[^1]);
 
         // 来源的 * 也只是授予命中，过滤器照常收窄；来源都没命中就不调用过滤器
-        Assert.True(await checker.HasPermissionAsync(bob, "reports.read", CancellationToken.None));
-        Assert.False(await checker.HasPermissionAsync(bob, "orders.delete", CancellationToken.None));
+        Assert.True((await checker.HasPermissionAsync(bob, "reports.read", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await checker.HasPermissionAsync(bob, "orders.delete", CancellationToken.None)).ValueOrThrow());
         var filtered = narrowing.Calls.Count;
-        Assert.False(await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None));
+        Assert.False((await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(filtered, narrowing.Calls.Count);
         Assert.Equal(["bob", "bob", "alice"], delegated.Calls);
 
         // 匿名主体不查来源；集合里有 null 是编程错误
         var asked = inherited.Calls.Count;
-        Assert.False(await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.write", CancellationToken.None));
+        Assert.False((await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.write", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(asked, inherited.Calls.Count);
         Assert.Throws<ArgumentException>(() => new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [], [inherited, null!]));
     }
@@ -144,10 +144,88 @@ public sealed class AuthorizationTests
         var policy = catalog.Find(PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)).ValueOrThrow();
 
         // 授予命中（editor 持 orders.read）但过滤器拒绝：与缺权限同一个错误码，调用方不需要区分"没授予"与"被收窄"
-        var result = await policy.EvaluateAsync(new AuthorizationRequest(new SecurityContext(SecurityHosts.Alice("editor"), null), PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)), CancellationToken.None);
+        var result = (await policy.EvaluateAsync(new AuthorizationRequest(new SecurityContext(SecurityHosts.Alice("editor"), null), PermissionPolicy.NameFor(SecurityHosts.OrdersRead.Code)), CancellationToken.None)).ValueOrThrow();
         Assert.False(result.IsAllowed);
         Assert.Equal(SecurityErrors.PermissionMissing, result.Reason?.Code);
         Assert.Single(edition.Calls);
+    }
+
+    [Fact]
+    public async Task PermissionChecker_ReturnsTheFailure_WhenStoreSourceOrFilterCannotDecide()
+    {
+        var unavailable = Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable);
+        var alice = new SecurityContext(SecurityHosts.Alice("editor"), null);
+
+        // 存储读不到：失败原样返回，不当作不持有；之后的角色、来源与过滤器都不再访问
+        var store = new DictionaryGrantStore(_grants) { Failure = unavailable };
+        var source = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal));
+        var filter = new RecordingPermissionFilter(allowed: null);
+        var failed = await new PermissionChecker(store, new SecurityOptions(), [filter], [source]).HasPermissionAsync(alice, "orders.read", CancellationToken.None);
+        Assert.Equal(SecurityErrors.StoreUnavailable, failed.Error?.Code);
+        Assert.Equal([GrantSubject.ForUser("alice")], store.Calls);
+        Assert.Empty(source.Calls);
+        Assert.Empty(filter.Calls);
+
+        // 匿名主体不访问存储：存储故障时照样是不持有
+        Assert.False((await new PermissionChecker(store, new SecurityOptions()).HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None)).ValueOrThrow());
+        Assert.Single(store.Calls);
+
+        // 存储没命中、来源读不到：失败，后面的来源不再查询，过滤器不调用
+        var failing = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal)) { Failure = unavailable };
+        var later = new RecordingGrantSource(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["alice"] = ["orders.delete"] });
+        var sourced = await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [filter], [failing, later]).HasPermissionAsync(alice, "orders.delete", CancellationToken.None);
+        Assert.Equal(SecurityErrors.StoreUnavailable, sourced.Error?.Code);
+        Assert.Empty(later.Calls);
+        Assert.Empty(filter.Calls);
+
+        // 授予命中、过滤器读不到：失败而不是收窄或放行，后面的过滤器不再调用
+        var narrowing = new RecordingPermissionFilter(allowed: null) { Failure = unavailable };
+        var after = new RecordingPermissionFilter(allowed: null);
+        var filtered = await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [narrowing, after]).HasPermissionAsync(alice, "orders.read", CancellationToken.None);
+        Assert.Equal(SecurityErrors.StoreUnavailable, filtered.Error?.Code);
+        Assert.Single(narrowing.Calls);
+        Assert.Empty(after.Calls);
+    }
+
+    [Fact]
+    public async Task StoreFailure_EndsTheInvocationAsUnavailable_NotPermissionMissing()
+    {
+        var store = new DictionaryGrantStore(_grants) { Failure = Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable) };
+        var context = SecurityHosts.Context(Services(store: store));
+        context.SetSecurity(new SecurityContext(SecurityHosts.Alice("editor"), null));
+        context.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
+        var reached = new bool[1];
+
+        await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
+
+        // 503 而不是 403：错误种类是 UNAVAILABLE，宿主据此回 503；不放行
+        var outcome = context.GetOutcome().ValueOrThrow();
+        Assert.False(reached[0]);
+        Assert.Equal(SecurityErrors.StoreUnavailable, outcome.Error?.Code);
+        Assert.Equal("UNAVAILABLE", outcome.Error?.Kind);
+
+        // 存储恢复：同一个主体照常放行
+        store.Failure = null;
+        var recovered = SecurityHosts.Context(Services(store: store));
+        recovered.SetSecurity(new SecurityContext(SecurityHosts.Alice("editor"), null));
+        recovered.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
+        await new AuthorizationMiddleware().InvokeAsync(recovered, Handler(reached));
+        Assert.True(reached[0]);
+    }
+
+    [Fact]
+    public async Task PolicyEvaluationFailure_EndsTheInvocation_WithThatFailure()
+    {
+        var policy = new RecordingPolicy("owner-only", static _ => Error.Unavailable("ORDERS_UNAVAILABLE_001", "orders.store.unavailable"));
+        var context = SecurityHosts.Context(Services(policy));
+        context.SetSecurity(new SecurityContext(SecurityHosts.Alice(), null));
+        context.RequireAuthorization(new AuthorizationRequirement("owner-only"));
+        var reached = new bool[1];
+
+        await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
+
+        Assert.False(reached[0]);
+        Assert.Equal("ORDERS_UNAVAILABLE_001", context.GetOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -271,12 +349,12 @@ public sealed class AuthorizationTests
     /// <summary>
     /// 把判定委托给回调的策略，用于观察中间件传入的请求。
     /// </summary>
-    private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, AuthorizationResult> evaluate) : IPolicy
+    private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, Result<AuthorizationResult>> evaluate) : IPolicy
     {
         /// <inheritdoc />
         public string Name => name;
 
         /// <inheritdoc />
-        public ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
+        public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken) => ValueTask.FromResult(evaluate(request));
     }
 }

@@ -6,7 +6,7 @@ XiHan.Framework.Security.InMemory.ApiKeyAuthenticationHandler.Scheme.get -> stri
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Capacity.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Count.get -> int
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string!>!>
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Grant(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.InMemoryPermissionGrantStore(XiHan.Framework.Security.InMemory.InMemorySecurityOptions! options) -> void
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Revoke(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> bool

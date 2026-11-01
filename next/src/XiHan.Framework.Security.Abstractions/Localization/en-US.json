@@ -22,6 +22,7 @@
   "security.condition.value_required": "The condition value must not be empty.",
   "security.grant.not_found": "Grant of '{permission}' to '{subject}' in tenant '{tenant}' was not found.",
   "security.grant_store.capacity_exceeded": "The in-memory grant store has reached its capacity of {capacity}.",
+  "security.grant_store.unavailable": "The permission grant store is unavailable. Try again later.",
   "security.issuer.unavailable": "The OpenID Connect metadata of issuer '{authority}' could not be retrieved.",
   "security.permission.missing": "Permission '{permission}' is missing.",
   "security.policy.not_found": "Policy '{policy}' does not exist.",

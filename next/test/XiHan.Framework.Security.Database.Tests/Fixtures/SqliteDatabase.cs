@@ -4,6 +4,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Testing;
 
@@ -39,9 +40,28 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     public string ConnectionString => $"Data Source={Path}";
 
     /// <summary>
+    /// 为真时此后新建的客户端连向一个不存在的目录，打开连接即失败，模拟数据库不可达。
+    /// </summary>
+    /// <remarks>
+    /// 宿主启动（建表）时必须为假；启动后切换，下一次作用域读取即生效。
+    /// </remarks>
+    public bool Unreachable
+    {
+        get => Volatile.Read(ref _unreachable);
+        set => Volatile.Write(ref _unreachable, value);
+    }
+
+    /// <summary>
+    /// <see cref="Unreachable"/> 的存储。
+    /// </summary>
+    private bool _unreachable;
+
+    /// <summary>
     /// 启动装配了本数据库与 <see cref="DatabaseSecurityFeature"/> 的宿主。
     /// </summary>
-    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null)
+    /// <param name="configuration">追加的配置。</param>
+    /// <param name="features">追加装配的特性（如认证与业务特性）。</param>
+    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<AppBuilder>? features = null)
     {
         EnsureWriteAheadLog();
         var settings = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["XiHan:Persistence:SqlSugar:InitTables"] = "true" };
@@ -51,7 +71,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
         }
 
         _host = await TestHost.StartAsync(
-            static b => b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseSecurityFeature>(),
+            b =>
+            {
+                b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseSecurityFeature>();
+                features?.Invoke(b);
+            },
             settings,
             collection => collection.AddScoped<ISqlSugarClient>(_ => CreateClient()));
         return _host;
@@ -81,6 +105,13 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// </summary>
     private SqlSugarClient CreateClient()
     {
+        if (Unreachable)
+        {
+            // 目录不存在：任何模式都打不开文件，开启工作单元时抛出，与连不上数据库同样表现为基础设施异常
+            var missing = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-missing-{Guid.NewGuid():N}", "grants.db");
+            return new SqlSugarClient(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={missing};Mode=ReadWrite" }));
+        }
+
         var client = new SqlSugarClient(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = ConnectionString }));
         client.Ado.ExecuteCommand("PRAGMA synchronous=OFF");
         return client;

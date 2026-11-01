@@ -110,14 +110,14 @@ public sealed class InMemorySecurityTests
 
         Assert.Equal(1, grants.Count);
         Assert.Equal(1, grants.SubjectCount);
-        Assert.Empty(await grants.GetGrantsAsync(GrantSubject.ForUser("u1"), "acme", CancellationToken.None));
+        Assert.Empty((await grants.GetGrantsAsync(GrantSubject.ForUser("u1"), "acme", CancellationToken.None)).ValueOrThrow());
 
         // 撤销主体的最后一条授予连同它的键一起移除，重复撤销返回假
         Assert.True(grants.Revoke(new PermissionGrant(GrantSubject.ForUser("u0"), "a")));
         Assert.Equal(0, grants.Count);
         Assert.Equal(0, grants.SubjectCount);
         Assert.False(grants.Revoke(new PermissionGrant(GrantSubject.ForUser("u0"), "a")));
-        Assert.Empty(await grants.GetGrantsAsync(GrantSubject.ForUser("u0"), null, CancellationToken.None));
+        Assert.Empty((await grants.GetGrantsAsync(GrantSubject.ForUser("u0"), null, CancellationToken.None)).ValueOrThrow());
 
         // 不同主体反复授予再撤销，授予表不随次数增长
         for (var i = 0; i < 50; i++)
@@ -136,7 +136,7 @@ public sealed class InMemorySecurityTests
         Assert.True(wide.Grant(new PermissionGrant(GrantSubject.ForRole("r"), "b")).IsSuccess);
         Assert.True(wide.Revoke(new PermissionGrant(GrantSubject.ForRole("r"), "a")));
         Assert.Equal(1, wide.SubjectCount);
-        Assert.Equal(["b"], await wide.GetGrantsAsync(GrantSubject.ForRole("r"), null, CancellationToken.None));
+        Assert.Equal(["b"], (await wide.GetGrantsAsync(GrantSubject.ForRole("r"), null, CancellationToken.None)).ValueOrThrow());
     }
 
     [Fact]
@@ -244,8 +244,8 @@ public sealed class InMemorySecurityTests
     private sealed class FixedGrantSource(params string[] grants) : IPermissionGrantSource
     {
         /// <inheritdoc />
-        public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
-            => ValueTask.FromResult<IReadOnlyCollection<string>>(grants);
+        public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Result.Success<IReadOnlyCollection<string>>(grants));
     }
 
     /// <summary>
@@ -259,10 +259,10 @@ public sealed class InMemorySecurityTests
         public List<string> Permissions { get; } = [];
 
         /// <inheritdoc />
-        public ValueTask<bool> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+        public ValueTask<Result<bool>> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
         {
             Permissions.Add(permission);
-            return ValueTask.FromResult(false);
+            return ValueTask.FromResult(Result.Success(false));
         }
     }
 

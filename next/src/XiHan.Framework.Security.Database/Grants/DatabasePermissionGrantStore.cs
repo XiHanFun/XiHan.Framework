@@ -2,8 +2,10 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Frozen;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
 namespace XiHan.Framework.Security.Database.Grants;
@@ -12,7 +14,7 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 数据库授予存储（单例）。
 /// </summary>
 /// <remarks>
-/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；基础设施异常原样抛出，<see cref="PermissionChecker"/> 不捕获，由内核转成 Unexpected 结果。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>。
+/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；数据库故障（连接、超时、事务失败）返回 <see cref="SecurityErrors.StoreUnavailable"/>（HTTP 503）并记警告日志，失败不进缓存，下一次判定重新查库——不能以空集合代替，否则会被判定为不持有（403）。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
@@ -53,9 +55,10 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     /// <summary>
     /// 创建。
     /// </summary>
-    public DatabasePermissionGrantStore(IServiceProvider services, DatabaseSecurityOptions options, TimeProvider clock)
+    public DatabasePermissionGrantStore(IServiceProvider services, DatabaseSecurityOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
-        _invocation = new GrantInvocation(services);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _invocation = new GrantInvocation(services, loggerFactory.CreateLogger<DatabasePermissionGrantStore>());
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
     }
@@ -75,21 +78,27 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
     {
         // 空租户与无租户同义：都只有全局授予，缓存键也归一
         var tenant = string.IsNullOrEmpty(tenantId) ? null : tenantId;
         if (TryGetCached(subject, tenant, out var cached))
         {
-            return cached;
+            return Result.Success<IReadOnlyCollection<string>>(cached);
         }
 
         // 未命中时在锁外查库：并发未命中各自查一次，后写入的覆盖前者，结果相同
         var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveFor(subject, tenant)).OrderBy(static r => r.Id);
-        var rows = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
+        var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
+        // 失败不进缓存：存储恢复后下一次判定立即重新查库，而不是在 TTL 内一直报不可达
+        if (!read.TryGetValue(out var rows))
+        {
+            return read.Error!;
+        }
+
         var grants = rows.Select(static r => r.Permission).ToFrozenSet(StringComparer.Ordinal);
         Store(subject, tenant, grants);
-        return grants;
+        return Result.Success<IReadOnlyCollection<string>>(grants);
     }
 
     /// <summary>

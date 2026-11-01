@@ -26,7 +26,7 @@
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink` |
-| `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`、`AuthorizationResult`、`PermissionDefinition`、`PermissionRegistry` |
+| `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationResult>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationResult`、`PermissionDefinition`、`PermissionRegistry` |
 | `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PermissionGrant` 抽象 |
 | `Kernel.Localization` | 内核自己的消息目录 |
 

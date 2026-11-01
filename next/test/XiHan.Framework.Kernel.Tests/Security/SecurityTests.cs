@@ -126,7 +126,7 @@ public sealed class SecurityTests
         Assert.False(default(AuthorizationResult).IsAllowed);
 
         IPolicy policy = new DenyAll();
-        var result = await policy.EvaluateAsync(new AuthorizationRequest(SecurityContext.Anonymous, "orders.create"), CancellationToken.None);
+        var result = (await policy.EvaluateAsync(new AuthorizationRequest(SecurityContext.Anonymous, "orders.create"), CancellationToken.None)).ValueOrThrow();
         Assert.False(result.IsAllowed);
         Assert.Throws<ArgumentException>(() => new AuthorizationRequest(SecurityContext.Anonymous, " "));
     }
@@ -144,7 +144,7 @@ public sealed class SecurityTests
         /// <summary>
         /// 总是拒绝。
         /// </summary>
-        public ValueTask<AuthorizationResult> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
-            => ValueTask.FromResult(AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all")));
+        public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Result.Success(AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all"))));
     }
 }

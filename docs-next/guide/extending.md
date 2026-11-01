@@ -23,6 +23,7 @@ Provider 是声明 `role: provider`、提供某个子系统能力的特性。下
 ```csharp
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
 namespace Contoso.Security.Files;
@@ -43,19 +44,20 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
         return new FileGrantStore(entries.Select(static e => new PermissionGrant(new GrantSubject(e.Kind, e.Subject), e.Permission, e.Tenant)).ToList());
     }
 
-    public ValueTask<IReadOnlyCollection<string>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
     {
-        // 全局授予（TenantId 为空）对任何租户生效，租户授予只对该租户生效
+        // 全局授予（TenantId 为空）对任何租户生效，租户授予只对该租户生效；
+        // 文件在启动时已读进内存，这里不会失败。读外部存储的实现在故障时返回 SECURITY_UNAVAILABLE_001，不能返回空集合
         IReadOnlyCollection<string> permissions = grants
             .Where(g => g.Subject == subject && (g.TenantId is null || (tenantId is not null && g.TenantId == tenantId)))
             .Select(static g => g.Permission)
             .ToHashSet(StringComparer.Ordinal);
-        return ValueTask.FromResult(permissions);
+        return ValueTask.FromResult(Result.Success(permissions));
     }
 }
 ```
 
-语义以对应的一致性套件为准（这里是主体与权限区分大小写、全局授予对任何租户生效、通配授予 `*` 原样返回）。批量优先：子系统契约里有批量方法的（如 `ICacheStore.SetManyAsync`、`RemoveManyAsync`），Provider 要给出明确的逐项结果、空集合与重复项语义，能用后端原生批量接口时覆写成一次请求。
+语义以对应的一致性套件为准（这里是主体与权限区分大小写、全局授予对任何租户生效、通配授予 `*` 原样返回；读外部存储的实现还要覆写 `CreateUnavailableStoreAsync`，证明故障返回 `SECURITY_UNAVAILABLE_001` 而不是空集合）。批量优先：子系统契约里有批量方法的（如 `ICacheStore.SetManyAsync`、`RemoveManyAsync`），Provider 要给出明确的逐项结果、空集合与重复项语义，能用后端原生批量接口时覆写成一次请求。
 
 ### 2. 写特性与清单
 

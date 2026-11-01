@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Permissions;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace XiHan.Framework.Security.Conformance;
 /// <see cref="IPermissionGrantStore"/> 的一致性套件。
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行；访问外部存储的 Provider 还要覆写 <see cref="CreateUnavailableStoreAsync"/>。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class PermissionGrantStoreConformance
@@ -38,6 +39,14 @@ public abstract class PermissionGrantStoreConformance
     protected abstract ValueTask<IPermissionGrantStore> CreateStoreAsync(IReadOnlyList<PermissionGrant> grants);
 
     /// <summary>
+    /// 创建背后存储不可达的被测存储（连接指向不存在的数据库、服务已停止等）。
+    /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="null"/>，用例 5 跳过：只有进程内的存储（读取不会失败）才可以不覆写。访问外部存储的 Provider 必须覆写，证明故障返回 <see cref="SecurityErrors.StoreUnavailable"/> 而不是空集合。
+    /// </remarks>
+    protected virtual ValueTask<IPermissionGrantStore?> CreateUnavailableStoreAsync() => ValueTask.FromResult<IPermissionGrantStore?>(null);
+
+    /// <summary>
     /// 用例 1：角色与用户的授予分别返回。
     /// </summary>
     /// <remarks>
@@ -48,11 +57,11 @@ public abstract class PermissionGrantStoreConformance
     {
         var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
-        Assert.Equal(["orders.read", "orders.write"], Sorted(await store.GetGrantsAsync(GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Equal([PermissionGrant.All], Sorted(await store.GetGrantsAsync(GrantSubject.ForRole("admin"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Equal(["reports.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("alice"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForUser("nobody"), null, CancellationToken.None).ConfigureAwait(false));
-        Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForRole("alice"), null, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(["orders.read", "orders.write"], Sorted(await GrantsAsync(store, GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal([PermissionGrant.All], Sorted(await GrantsAsync(store, GrantSubject.ForRole("admin"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForUser("nobody"), null, CancellationToken.None).ConfigureAwait(false));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("alice"), null, CancellationToken.None).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -63,9 +72,9 @@ public abstract class PermissionGrantStoreConformance
     {
         var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
-        Assert.Equal(["reports.export", "reports.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)));
-        Assert.Equal(["reports.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)));
-        Assert.Equal(["orders.read", "orders.write"], Sorted(await store.GetGrantsAsync(GrantSubject.ForRole("editor"), "acme", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["reports.export", "reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["orders.read", "orders.write"], Sorted(await GrantsAsync(store, GrantSubject.ForRole("editor"), "acme", CancellationToken.None).ConfigureAwait(false)));
     }
 
     /// <summary>
@@ -76,8 +85,8 @@ public abstract class PermissionGrantStoreConformance
     {
         var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
-        Assert.Equal(["audit.read"], Sorted(await store.GetGrantsAsync(GrantSubject.ForUser("Bob"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForUser("bob"), null, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(["audit.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("Bob"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForUser("bob"), null, CancellationToken.None).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -88,7 +97,36 @@ public abstract class PermissionGrantStoreConformance
     {
         var store = await CreateStoreAsync([]).ConfigureAwait(false);
 
-        Assert.Empty(await store.GetGrantsAsync(GrantSubject.ForRole("admin"), "acme", CancellationToken.None).ConfigureAwait(false));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("admin"), "acme", CancellationToken.None).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 5：存储不可达时返回 <see cref="SecurityErrors.StoreUnavailable"/>，不能以空集合代替。
+    /// </summary>
+    /// <remarks>
+    /// 空集合会被检查器判定为不持有（403）；存储故障必须以失败返回，调用以 503 结束（RFC-0008，ADR-0071）。
+    /// </remarks>
+    [Fact]
+    public async Task UnavailableStore_ReturnsStoreUnavailable_InsteadOfNoGrants()
+    {
+        var store = await CreateUnavailableStoreAsync().ConfigureAwait(false);
+        Assert.SkipWhen(store is null, "No unavailable store is provided; override CreateUnavailableStoreAsync when the store reads external storage.");
+
+        var read = await store!.GetGrantsAsync(GrantSubject.ForRole("admin"), "acme", CancellationToken.None).ConfigureAwait(false);
+
+        Assert.True(read.IsFailure);
+        Assert.Equal(SecurityErrors.StoreUnavailable, read.Error!.Code);
+        Assert.Equal("UNAVAILABLE", read.Error.Kind);
+    }
+
+    /// <summary>
+    /// 读取授予并要求成功：前四个用例的存储都可达，失败即不符合套件。
+    /// </summary>
+    private static async Task<IReadOnlyCollection<string>> GrantsAsync(IPermissionGrantStore store, GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    {
+        var read = await store.GetGrantsAsync(subject, tenantId, cancellationToken).ConfigureAwait(false);
+        Assert.True(read.IsSuccess, $"Reading the grants of {subject} failed: {read.Error}.");
+        return read.ValueOrThrow();
     }
 
     /// <summary>

@@ -444,7 +444,7 @@ XiHan.Framework.Kernel.Security.AuthorizationResult.IsAllowed.get -> bool
 XiHan.Framework.Kernel.Security.AuthorizationResult.Reason.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Kernel.Security.AuthorizationResult.ToResult() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Security.IPolicy
-XiHan.Framework.Kernel.Security.IPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Kernel.Security.AuthorizationResult>
+XiHan.Framework.Kernel.Security.IPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationResult>>
 XiHan.Framework.Kernel.Security.IPolicy.Name.get -> string!
 XiHan.Framework.Kernel.Security.PermissionDefinition
 XiHan.Framework.Kernel.Security.PermissionDefinition.<Clone>$() -> XiHan.Framework.Kernel.Security.PermissionDefinition!

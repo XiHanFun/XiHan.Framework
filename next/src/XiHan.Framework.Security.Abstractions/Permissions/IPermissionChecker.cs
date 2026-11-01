@@ -15,5 +15,8 @@ public interface IPermissionChecker
     /// <summary>
     /// 判定。
     /// </summary>
-    ValueTask<bool> HasPermissionAsync(SecurityContext security, string permission, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 成功的 <see langword="true"/> / <see langword="false"/> 是持有 / 不持有；授予存储、授予来源或收窄过滤器失败时原样返回该失败（如 <see cref="SecurityErrors.StoreUnavailable"/>），调用方不得把失败当作不持有。
+    /// </remarks>
+    ValueTask<Result<bool>> HasPermissionAsync(SecurityContext security, string permission, CancellationToken cancellationToken);
 }

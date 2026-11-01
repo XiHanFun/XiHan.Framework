@@ -10,7 +10,7 @@ namespace XiHan.Framework.Security.Abstractions.Permissions;
 /// RBAC 检查器。
 /// </summary>
 /// <remarks>
-/// 用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。
+/// 用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。存储、来源或过滤器返回的失败原样返回，不当作不持有（RFC-0008，ADR-0071）。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionChecker : IPermissionChecker
@@ -75,7 +75,7 @@ public sealed class PermissionChecker : IPermissionChecker
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> HasPermissionAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+    public async ValueTask<Result<bool>> HasPermissionAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(security);
         ArgumentException.ThrowIfNullOrWhiteSpace(permission);
@@ -85,17 +85,21 @@ public sealed class PermissionChecker : IPermissionChecker
             return false;
         }
 
-        if (!await IsGrantedAsync(security, permission, cancellationToken).ConfigureAwait(false))
+        // 授予读不到是失败而不是"没有授予"：原样返回，调用以 503 结束，不能落到 403
+        var granted = await IsGrantedAsync(security, permission, cancellationToken).ConfigureAwait(false);
+        if (granted.IsFailure || !granted.ValueOrThrow())
         {
-            return false;
+            return granted;
         }
 
-        // 授予命中之后才收窄：过滤器只能拿走权限、不能凭空给出；全部放行才算持有
+        // 授予命中之后才收窄：过滤器只能拿走权限、不能凭空给出；全部放行才算持有。
+        // 过滤器无法判定时同样原样返回失败——跳过它等于放行，按拒绝处理又会把故障变成 403
         foreach (var filter in _filters)
         {
-            if (!await filter.AllowsAsync(security, permission, cancellationToken).ConfigureAwait(false))
+            var allowed = await filter.AllowsAsync(security, permission, cancellationToken).ConfigureAwait(false);
+            if (allowed.IsFailure || !allowed.ValueOrThrow())
             {
-                return false;
+                return allowed;
             }
         }
 
@@ -106,30 +110,33 @@ public sealed class PermissionChecker : IPermissionChecker
     /// 授予是否命中。
     /// </summary>
     /// <remarks>
-    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。
+    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。任一次读取失败立即返回该失败，不再查后面的：用户与角色读的是同一个存储，后面的读取多半同样失败，逐个等待只会拖长失败的调用。
     /// </remarks>
-    private async ValueTask<bool> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+    private async ValueTask<Result<bool>> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
         var tenantId = security.Tenant?.Id;
-        if (Matches(await _store.GetGrantsAsync(GrantSubject.ForUser(security.Principal.Id), tenantId, cancellationToken).ConfigureAwait(false), permission))
+        var own = await _store.GetGrantsAsync(GrantSubject.ForUser(security.Principal.Id), tenantId, cancellationToken).ConfigureAwait(false);
+        if (own.IsFailure || Matches(own.ValueOrThrow(), permission))
         {
-            return true;
+            return own.Map(static _ => true);
         }
 
         foreach (var role in security.Principal.ClaimValues(_options.RoleClaim))
         {
-            if (Matches(await _store.GetGrantsAsync(GrantSubject.ForRole(role), tenantId, cancellationToken).ConfigureAwait(false), permission))
+            var granted = await _store.GetGrantsAsync(GrantSubject.ForRole(role), tenantId, cancellationToken).ConfigureAwait(false);
+            if (granted.IsFailure || Matches(granted.ValueOrThrow(), permission))
             {
-                return true;
+                return granted.Map(static _ => true);
             }
         }
 
         // 存储之外的授予（角色继承、委托等）只能加：命中后与存储授予一样经全部过滤器收窄
         foreach (var source in _sources)
         {
-            if (Matches(await source.GetGrantsAsync(security, cancellationToken).ConfigureAwait(false), permission))
+            var granted = await source.GetGrantsAsync(security, cancellationToken).ConfigureAwait(false);
+            if (granted.IsFailure || Matches(granted.ValueOrThrow(), permission))
             {
-                return true;
+                return granted.Map(static _ => true);
             }
         }
 

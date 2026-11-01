@@ -22,6 +22,7 @@
   "security.condition.value_required": "El valor de la condición no puede estar vacío.",
   "security.grant.not_found": "No se encontró la concesión del permiso '{permission}' a '{subject}' en el inquilino '{tenant}'.",
   "security.grant_store.capacity_exceeded": "El almacén de concesiones en memoria alcanzó su capacidad de {capacity}.",
+  "security.grant_store.unavailable": "El almacén de concesiones de permisos no está disponible. Inténtelo de nuevo más tarde.",
   "security.issuer.unavailable": "No se pudieron obtener los metadatos de OpenID Connect del emisor '{authority}'.",
   "security.permission.missing": "Falta el permiso '{permission}'.",
   "security.policy.not_found": "La política '{policy}' no existe.",

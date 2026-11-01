@@ -105,7 +105,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseSecurityFeature` | 特性入口：登记授予实体的仓储、授予存储、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog` 与 `AuthorizationMiddleware`；不声明健康项 |
 | `DatabaseSecurityOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Grants.PermissionGrantRecord` | 授予行：`Id`、`SubjectKind`、`SubjectId`、`Permission`、`TenantId`、`CreatedAt`；`ToGrant()` 换算成 `PermissionGrant`；`TenantColumnOf(tenantId)` 给出租户列的值 |
-| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetGrantsAsync`、`Invalidate(subject?)`、`CachedEntryCount` |
+| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetGrantsAsync`（`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
 | `Grants.PermissionGrantRecordStore` | 作用域服务：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(subject?, tenantId?, skip, take)` 分页 |
 | `Grants.PermissionGrantResult` | 一项结果：`Grant`、`Outcome` |
 
@@ -144,9 +144,9 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 - 撤销：一次 `RemoveRangeAsync`；不存在的授予与同一批里第二次出现的同一授予返回 `SECURITY_NOTFOUND_002`（消息键 `security.grant.not_found`，参数 `subject` / `permission` / `tenant`，全局时 `tenant` 为 `*`）。
 - 列表：按主体种类、主体 ID、权限码、租户排序；`subject` 为 `null` 不按主体过滤，`tenantId` 为 `null` 不按租户过滤，否则只列该租户专属的行；每页最多 1000 条。
 - 缓存：条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。`PermissionGrantRecordStore` 写入后对涉及的每个主体调用一次 `Invalidate`；写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
-- 故障：读取时的基础设施异常原样抛出，`PermissionChecker` 不捕获，由内核转成失败结果，宁可失败不可放行。
+- 故障：开启、读取、提交只读工作单元时的数据库故障（连接、命令超时、事务失败）返回 `SECURITY_UNAVAILABLE_001`（消息键 `security.grant_store.unavailable`，不带参数），检查器原样返回，调用以 503 结束——不会落到 403。底层原因只记警告日志，不进响应。失败不进缓存，数据库恢复后下一次判定立即重新查库。调用方取消照常抛出；容器里缺工作单元或仓储是装配错误，照常抛出（ADR-0071）。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`(SubjectKind, SubjectId, Permission, TenantId)` 建唯一索引，按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；列长度：`SubjectKind` 32、`SubjectId` 256、`Permission` 256、`TenantId` 128。
-- 通过 `Security.Conformance` 的 `PermissionGrantStoreConformance`，并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
+- 通过 `Security.Conformance` 的 `PermissionGrantStoreConformance`（含存储不可达用例：连接指向不存在的 SQLite 文件），并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
 
 ## 相关
 

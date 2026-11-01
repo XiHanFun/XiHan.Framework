@@ -2,10 +2,16 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
 using XiHan.Framework.Security.Abstractions.Permissions;
 using XiHan.Framework.Security.Database.Grants;
 using XiHan.Framework.Security.Database.Tests.Fixtures;
+using XiHan.Framework.Security.InMemory;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.Database.Tests;
 
@@ -13,7 +19,7 @@ namespace XiHan.Framework.Security.Database.Tests;
 /// 授予实体在真实数据库（SQLite，经 <c>Persistence.SqlSugar</c> 建表）上的映射。
 /// </summary>
 /// <remarks>
-/// 授予 → 查询（含空字符串租户列）→ 撤销。
+/// 授予 → 查询（含空字符串租户列）→ 撤销；数据库不可达时整条判定链以 <c>SECURITY_UNAVAILABLE_001</c> 结束。
 /// </remarks>
 public sealed class SqlitePermissionGrantStoreTests
 {
@@ -38,11 +44,11 @@ public sealed class SqlitePermissionGrantStoreTests
         });
         granted.ThrowIfFailure();
 
-        Assert.Equal(["orders.write"], await store.GetGrantsAsync(editor, null, CancellationToken.None));
-        Assert.Equal(["orders.write"], await store.GetGrantsAsync(editor, "acme", CancellationToken.None));
-        Assert.Empty(await store.GetGrantsAsync(alice, null, CancellationToken.None));
-        Assert.Equal(["reports.export"], await store.GetGrantsAsync(alice, "acme", CancellationToken.None));
-        Assert.Empty(await store.GetGrantsAsync(alice, "other", CancellationToken.None));
+        Assert.Equal(["orders.write"], (await store.GetGrantsAsync(editor, null, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(["orders.write"], (await store.GetGrantsAsync(editor, "acme", CancellationToken.None)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(alice, null, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(["reports.export"], (await store.GetGrantsAsync(alice, "acme", CancellationToken.None)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(alice, "other", CancellationToken.None)).ValueOrThrow());
 
         // 全局行的租户列是空字符串，能原样写入与读回；创建时间由仓储写入
         var listed = await host.InvokeAsync(async context =>
@@ -63,7 +69,54 @@ public sealed class SqlitePermissionGrantStoreTests
         });
         revoked.ThrowIfFailure();
 
-        Assert.Empty(await store.GetGrantsAsync(editor, null, CancellationToken.None));
-        Assert.Equal(["reports.export"], await store.GetGrantsAsync(alice, "acme", CancellationToken.None));
+        Assert.Empty((await store.GetGrantsAsync(editor, null, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(["reports.export"], (await store.GetGrantsAsync(alice, "acme", CancellationToken.None)).ValueOrThrow());
+    }
+
+    [Fact]
+    public async Task UnreachableDatabase_EndsTheCheckAsUnavailable_NotAsPermissionMissing()
+    {
+        await using var database = new SqliteDatabase();
+        var host = await database.StartHostAsync(
+            [
+                new("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
+                new("XiHan:Security:InMemory:Principals:alice:Roles", "editor"),
+            ],
+            static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<OrdersFeature>());
+        var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
+        var granted = await host.InvokeAsync(async context =>
+        {
+            var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(GrantSubject.ForRole("editor"), WriteOrderOperation.Permission)], context.CancellationToken);
+            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
+        });
+        granted.ThrowIfFailure();
+        Assert.True((await WriteOrderAsync(host)).IsSuccess);
+
+        // 数据库断开且缓存已失效：存储返回 SECURITY_UNAVAILABLE_001，不是空集合
+        database.Unreachable = true;
+        store.Invalidate();
+        var read = await store.GetGrantsAsync(GrantSubject.ForUser("alice"), null, CancellationToken.None);
+        Assert.Equal(SecurityErrors.StoreUnavailable, read.Error?.Code);
+        Assert.Equal(0, store.CachedEntryCount);
+
+        // 整条判定链传递失败：调用以 UNAVAILABLE（HTTP 503）结束，不落到 SECURITY_DENIED_004（403）
+        var denied = await WriteOrderAsync(host);
+        Assert.Equal(SecurityErrors.StoreUnavailable, denied.Error?.Code);
+        Assert.Equal("UNAVAILABLE", denied.Error?.Kind);
+
+        // 失败不进缓存：数据库恢复后下一次判定立即重新查库并放行
+        database.Unreachable = false;
+        Assert.True((await WriteOrderAsync(host)).IsSuccess);
+    }
+
+    /// <summary>
+    /// 以 alice 的 ApiKey 经完整管道调用写订单操作。
+    /// </summary>
+    private static async Task<Result<OrderResponse>> WriteOrderAsync(TestHost host)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
+        context.SetCredential(new AuthenticationCredential(ApiKeyAuthenticationHandler.SchemeName, "dev-alice-key"));
+        return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<OrderRequest, OrderResponse>(context, WriteOrderOperation.Id, new OrderRequest("o-1"));
     }
 }
