@@ -140,7 +140,7 @@ kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通�
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses` |
 | `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
 
-`xihan pack` 的应用清单只认 `connection:relational`、`cache:distributed`、`queue`、`blob` 四种绑定类型（见[部署](./deployment)），`stream` 与 `configuration:remote` 两种绑定要应用自己提供。
+表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`，Kustomize 产物按 Service Binding 规范挂 Secret（见[部署](./deployment)）。
 
 应用自己的特性声明绑定的写法：
 

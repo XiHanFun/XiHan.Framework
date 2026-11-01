@@ -31,6 +31,7 @@ internal static class AspireGenerator
             "connection:relational" => "Aspire.Hosting.PostgreSQL",
             "cache:distributed" => "Aspire.Hosting.Redis",
             "queue" => "Aspire.Hosting.RabbitMQ",
+            "stream" => "Aspire.Hosting.Kafka",
             _ => null,
         }).Where(static p => p is not null).OrderBy(static p => p, StringComparer.Ordinal).ToList();
         if (packages.Count > 0)
@@ -62,6 +63,15 @@ internal static class AspireGenerator
                     builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddRabbitMQ(\"{binding}\");\n");
                     references.Add(variable);
                     break;
+                case "stream":
+                    // Aspire 的 Kafka 资源连接串就是引导地址 host:port，与 Kafka Provider 读取绑定主值的形式相同
+                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddKafka(\"{binding}\");\n");
+                    references.Add(variable);
+                    break;
+                case "configuration:remote":
+                    // Aspire 没有 Nacos 集成：以容器运行 standalone，注入端点 URL（路径缺省即上下文路径 /nacos）
+                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"nacos/nacos-server\", \"v2.5.1\").WithEnvironment(\"MODE\", \"standalone\").WithHttpEndpoint(port: 8848, targetPort: 8848, name: \"http\");\n");
+                    break;
                 default:
                     builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"minio/minio\").WithArgs(\"server\", \"/data\").WithHttpEndpoint(port: 9000, targetPort: 9000, name: \"api\");\n");
                     break;
@@ -88,9 +98,13 @@ internal static class AspireGenerator
         {
             var variable = Identifier(binding, lowerFirst: true);
             builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__type\", \"{settings.Type}\")\n");
-            builder.Append(settings.Type == "blob"
-                ? $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable}.GetEndpoint(\"api\"))\n"
-                : $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable})\n");
+            // 容器资源没有连接串，注入它的端点 URL；有集成的资源直接注入连接串
+            builder.Append(settings.Type switch
+            {
+                "blob" => $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable}.GetEndpoint(\"api\"))\n",
+                "configuration:remote" => $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable}.GetEndpoint(\"http\"))\n",
+                _ => $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable})\n",
+            });
             if (references.Contains(variable))
             {
                 builder.Append(CultureInfo.InvariantCulture, $"            .WithReference({variable})\n");

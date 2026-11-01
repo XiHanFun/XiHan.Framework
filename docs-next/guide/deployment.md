@@ -39,7 +39,7 @@
 | `image.aot` | 否 | `false` | 为真时以 Native AOT 发布，运行镜像为 `runtime-deps` |
 | `ports.http` | 否 | `8080` | 1–65535 |
 | `ports.grpc` | 否 | — | 1–65535，不等于 `http`；有值时多暴露一个 h2c 端点 |
-| `bindings.<name>.type` | 有绑定时必填 | — | `connection:relational` / `cache:distributed` / `queue` / `blob`；绑定名 `^[a-z][a-z0-9-]*$` |
+| `bindings.<name>.type` | 有绑定时必填 | — | `connection:relational` / `cache:distributed` / `queue` / `blob` / `stream` / `configuration:remote`；绑定名 `^[a-z][a-z0-9-]*$` |
 | `bindings.<name>.secret` | 否 | `<name 字段>-<绑定名>` | k8s Secret 名 |
 | `config.mountPath` | 否 | `/etc/xihan` | 绝对路径 |
 | `config.files` | 否 | `[]` | 文件名（不含目录分隔符），文件存在时内容进 ConfigMap，否则为 `{}` |
@@ -127,8 +127,12 @@ Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.g
 | `cache:distributed` | `redis:7-alpine` | `<绑定名>:6379` | `AddRedis(<绑定名>)` |
 | `queue` | `rabbitmq:4-alpine` | `amqp://guest:guest@<绑定名>:5672` | `AddRabbitMQ(<绑定名>)` |
 | `blob` | `minio/minio` | `http://<绑定名>:9000` | `AddContainer(<绑定名>, "minio/minio")` |
+| `stream` | `apache/kafka:4.1.0`（单节点 KRaft） | `<绑定名>:9092` | `AddKafka(<绑定名>)` |
+| `configuration:remote` | `nacos/nacos-server:v2.5.1`（standalone） | `http://<绑定名>:8848` | `AddContainer(<绑定名>, "nacos/nacos-server", "v2.5.1")`，注入它的 `http` 端点 |
 
-这四种类型与框架 Provider 声明的绑定对应：持久化的 `db`（`connection:relational`）、`Caching.Redis` 的 `cache`（`cache:distributed`）、`Messaging.RabbitMQ` 的 `queue`（`queue`）、`ObjectStorage.S3` 的 `objectstorage`（`blob`）。`Messaging.Kafka` 的 `stream`（类型 `stream`）与 `Configuration.Nacos` 的 `nacos`（类型 `configuration:remote`）不在其中，`xihan pack` 目前不支持，用到它们时自己提供 `XiHan:Bindings:<名字>`，或只用各自的配置节。
+这六种类型与框架 Provider 声明的绑定一一对应：持久化的 `db`（`connection:relational`）、`Caching.Redis` 的 `cache`（`cache:distributed`）、`Messaging.RabbitMQ` 的 `queue`（`queue`）、`ObjectStorage.S3` 的 `objectstorage`（`blob`）、`Messaging.Kafka` 的 `stream`（`stream`）、`Configuration.Nacos` 的 `nacos`（`configuration:remote`）。清单里的绑定名要写成 Provider 读取的这些名字，Provider 才取得到注入的值。
+
+Kafka 依赖服务是单节点 KRaft（同一进程兼任 broker 与 controller），对外监听地址写成依赖服务名 `PLAINTEXT://<绑定名>:9092`，应用在 Compose 网络里拿到的集群元数据才可达；主题按需自动创建，内部主题副本数为 1。Nacos 依赖服务以 `MODE=standalone` 运行，配置存在内嵌存储里，数据目录挂命名卷 `<绑定名>-data`，删卷才会清空；应用要读的 `dataId` 先在 Nacos 里建好。两者都是 JVM 服务，healthcheck 另设 `start_period`（Kafka 30 秒、Nacos 60 秒），启动期内的失败不计入重试。依赖服务都不映射宿主机端口，要从宿主机访问（如打开 Nacos 控制台）时在 `compose.yaml` 外另加一份 override 文件声明 `ports`。
 
 Compose 里的账号口令是本地联调用的固定开发值。应用服务的 healthcheck 用镜像里的就绪探针请求 `http://127.0.0.1:<ports.http>/health/ready`，`interval`、`timeout`、`start_period` 分别取 `probes.periodSeconds`、`timeoutSeconds`、`startupSeconds`：
 

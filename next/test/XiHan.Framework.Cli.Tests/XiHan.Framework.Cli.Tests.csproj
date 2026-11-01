@@ -5,5 +5,13 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
+    <!-- 声明资源绑定的 Provider：核对清单里的绑定类型都能打包 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.Kafka/XiHan.Framework.Messaging.Kafka.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.S3/XiHan.Framework.ObjectStorage.S3.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Configuration.Nacos/XiHan.Framework.Configuration.Nacos.csproj" />
   </ItemGroup>
 </Project>

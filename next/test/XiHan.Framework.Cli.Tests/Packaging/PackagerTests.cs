@@ -205,6 +205,120 @@ public sealed class PackagerTests
         Assert.Contains(".WithEnvironment(\"OTEL_SERVICE_NAME\", \"orders\")", aspire, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// 用到 Kafka 与 Nacos 两种绑定的清单。
+    /// </summary>
+    private const string StreamAndRemoteConfigurationManifest = """
+        {
+          "name": "events",
+          "project": "Orders.csproj",
+          "bindings": {
+            "stream": { "type": "stream" },
+            "nacos": { "type": "configuration:remote" }
+          }
+        }
+        """;
+
+    [Fact]
+    public void Compose_StreamAndRemoteConfiguration_RunSingleNodeKraftAndStandaloneNacos()
+    {
+        using var fixture = new ManifestFixture(StreamAndRemoteConfigurationManifest);
+        var compose = Generate(fixture, PackKinds.Compose).Files["compose.yaml"];
+
+        // 快照：依赖服务按绑定名排序；值的形式与 Kafka（引导地址）和 Nacos（服务地址 URL）读取绑定主值的方式一致
+        Assert.Equal(
+            """
+            # 由 xihan pack 生成：本地联调用，绑定的依赖以容器提供。
+            name: events
+            services:
+              app:
+                build:
+                  context: ..
+                  dockerfile: deploy/Dockerfile
+                image: events:latest
+                ports:
+                  - "8080:8080"
+                stop_grace_period: 30s
+                healthcheck:
+                  test: ["CMD", "dotnet", "/xihan/healthprobe/XiHanHealthProbe.dll", "8080", "/health/ready"]
+                  interval: 10s
+                  timeout: 2s
+                  start_period: 60s
+                environment:
+                  XiHan__Bindings__nacos__type: configuration:remote
+                  XiHan__Bindings__nacos__value: http://nacos:8848
+                  XiHan__Bindings__stream__type: stream
+                  XiHan__Bindings__stream__value: stream:9092
+                depends_on:
+                  nacos:
+                    condition: service_healthy
+                  stream:
+                    condition: service_healthy
+              nacos:
+                image: nacos/nacos-server:v2.5.1
+                environment:
+                  MODE: standalone
+                healthcheck:
+                  test: ["CMD", "curl", "-fs", "http://localhost:8848/nacos/v1/console/health/readiness"]
+                  interval: 10s
+                  start_period: 60s
+                volumes:
+                  - nacos-data:/home/nacos/data
+              stream:
+                image: apache/kafka:4.1.0
+                environment:
+                  KAFKA_NODE_ID: "1"
+                  KAFKA_PROCESS_ROLES: "broker,controller"
+                  KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+                  KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://stream:9092
+                  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+                  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+                  KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+                  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+                  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+                  KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+                  KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+                healthcheck:
+                  test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+                  interval: 10s
+                  start_period: 30s
+            volumes:
+              nacos-data: {}
+
+            """.Replace("\r\n", "\n", StringComparison.Ordinal),
+            compose);
+    }
+
+    [Fact]
+    public void Aspire_StreamAndRemoteConfiguration_AddKafkaAndAPinnedNacosContainer()
+    {
+        using var fixture = new ManifestFixture(StreamAndRemoteConfigurationManifest);
+        var aspire = Generate(fixture, PackKinds.Aspire).Files["aspire/XiHanAppHost.g.cs"];
+
+        Assert.Contains("// 需要的包：Aspire.Hosting.Kafka\n", aspire, StringComparison.Ordinal);
+        Assert.Contains("var stream = builder.AddKafka(\"stream\");", aspire, StringComparison.Ordinal);
+        Assert.Contains("var nacos = builder.AddContainer(\"nacos\", \"nacos/nacos-server\", \"v2.5.1\").WithEnvironment(\"MODE\", \"standalone\").WithHttpEndpoint(port: 8848, targetPort: 8848, name: \"http\");", aspire, StringComparison.Ordinal);
+        Assert.Contains(".WithEnvironment(\"XiHan__Bindings__nacos__type\", \"configuration:remote\")\n            .WithEnvironment(\"XiHan__Bindings__nacos__value\", nacos.GetEndpoint(\"http\"))\n", aspire, StringComparison.Ordinal);
+        Assert.Contains(".WithEnvironment(\"XiHan__Bindings__stream__type\", \"stream\")\n            .WithEnvironment(\"XiHan__Bindings__stream__value\", stream)\n            .WithReference(stream)\n", aspire, StringComparison.Ordinal);
+        Assert.DoesNotContain(".WithReference(nacos)", aspire, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Kustomize_StreamAndRemoteConfiguration_MountOneSecretPerBinding()
+    {
+        using var fixture = new ManifestFixture(StreamAndRemoteConfigurationManifest);
+        var files = Generate(fixture, PackKinds.Kustomize).Files;
+
+        var deployment = files["kustomize/deployment.yaml"];
+        Assert.Contains("mountPath: /bindings/nacos\n              readOnly: true", deployment, StringComparison.Ordinal);
+        Assert.Contains("mountPath: /bindings/stream\n              readOnly: true", deployment, StringComparison.Ordinal);
+        Assert.Contains("secretName: events-nacos", deployment, StringComparison.Ordinal);
+        Assert.Contains("secretName: events-stream", deployment, StringComparison.Ordinal);
+        var secrets = files["kustomize/bindings.example.yaml"];
+        Assert.Contains("name: events-nacos\nstringData:\n  type: configuration:remote\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("name: events-stream\nstringData:\n  type: stream\n", secrets, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task WriteAsync_WritesLfUtf8FilesIntoNestedDirectories()
     {

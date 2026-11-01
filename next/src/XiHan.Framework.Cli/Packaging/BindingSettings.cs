@@ -9,8 +9,11 @@ namespace XiHan.Framework.Cli.Packaging;
 internal sealed record BindingSettings
 {
     /// <summary>
-    /// 类型：<c>connection:relational</c>、<c>cache:distributed</c>、<c>queue</c>、<c>blob</c>。
+    /// 绑定类型。
     /// </summary>
+    /// <remarks>
+    /// <c>connection:relational</c>、<c>cache:distributed</c>、<c>queue</c>、<c>blob</c>、<c>stream</c>、<c>configuration:remote</c>，见 <see cref="BindingKind.All"/>。
+    /// </remarks>
     public string Type { get; set; } = string.Empty;
 
     /// <summary>
