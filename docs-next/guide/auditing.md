@@ -57,6 +57,26 @@ app.Run();
 
 `IncludeSuccesses` 缺省为 `true`；设为 `false` 后成功的调用不再记录，只留失败。两个键的值不区分大小写，取值不合法时装配阶段抛出 `ArgumentException`，应用启动失败。
 
+### 按操作排除
+
+`Protected` 会把只用 `authenticated` 策略保护的只读查询也记下来（当前用户的权限、会话角色、我的登录日志……），前端每次加载都调的接口会让审计表涨得很快。`XiHan:Auditing:Exclude` 列出不想记的操作（ADR-0080）：
+
+```json
+{
+  "XiHan": {
+    "Auditing": {
+      "Exclude": [ "permissions.current", "profile.*", "my-*" ]
+    }
+  }
+}
+```
+
+- 每项是操作 ID（精确匹配），或以 `*` 结尾的前缀：`profile.*` 是资源 `profile` 的全部操作，`my-*` 是资源名以 `my-` 开头的全部操作；按序数比较，区分大小写。
+- 只作用于按 `Selection` 挑出的操作：处理器调用了 `SetAuditAction` 的调用照样记录，排除不压掉代码要求留痕的动作。
+- 不配置、或列表为空，与以前完全一样。
+- 必须写成列表（环境变量写 `XiHan__Auditing__Exclude__0`）；写成单个值、某一项是空白、单独的 `*`、`*` 不在末尾、大写或其他字符，读选项时抛出 `ArgumentException`（消息指出配置键与那一项），应用启动失败。
+- 不核对操作是否已登记：模块可以按配置开关，插件的操作可能在启动之后才登记，列了不存在的操作只是不命中。
+
 ## 结果怎么取
 
 事件的 `Outcome` 按以下顺序确定：
@@ -292,6 +312,7 @@ builder.AddXiHan(xihan => xihan
     "Auditing": {
       "Selection": "Protected",
       "IncludeSuccesses": true,
+      "Exclude": [ "permissions.current" ],
       "InMemory": { "Capacity": 10000, "LogEvents": true },
       "Database": { "QueueCapacity": 10000, "BatchSize": 100, "FlushIntervalSeconds": 1, "LogEvents": true }
     }
@@ -303,6 +324,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Auditing:Selection` | `Protected` / `All` / `None` | `Protected` | 没有显式动作时记哪些操作 |
 | `XiHan:Auditing:IncludeSuccesses` | bool | `true` | 为 `false` 只记失败 |
+| `XiHan:Auditing:Exclude` | 字符串列表：操作 ID 或 `*` 结尾的前缀 | 空 | 按选择规则挑出的操作命中即不记，显式动作照记，见[按操作排除](#按操作排除) |
 | `XiHan:Auditing:InMemory:Capacity` | int，大于 0 | 10000 | 内存存储保留的事件数 |
 | `XiHan:Auditing:InMemory:LogEvents` | bool | `true` | 每条事件写一条 Information 日志 |
 | `XiHan:Auditing:Database:QueueCapacity` | int，大于 0 | 10000 | 等待落库的事件数上限 |

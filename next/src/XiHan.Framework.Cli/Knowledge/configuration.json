@@ -182,6 +182,12 @@
           "type": "boolean",
           "default": "true",
           "summary": "是否记录成功的调用；为 false 时只记失败"
+        },
+        {
+          "key": "Exclude:{index}",
+          "type": "string",
+          "sample": "permissions.current",
+          "summary": "按操作排除：操作 ID，或以 * 结尾的前缀（profile.*、my-*）；按选择规则挑出的操作命中即不记，显式动作照记；须写成列表，某一项不合法或写成单个值时启动失败"
         }
       ]
     },

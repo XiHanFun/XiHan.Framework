@@ -31,6 +31,11 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     private readonly AuditingOptions _options;
 
     /// <summary>
+    /// 按操作排除的匹配器。
+    /// </summary>
+    private readonly AuditExclusions _exclusions;
+
+    /// <summary>
     /// 时钟。
     /// </summary>
     private readonly TimeProvider _clock;
@@ -48,7 +53,8 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _sink = sink ?? throw new ArgumentNullException(nameof(sink));
         _options = options ?? throw new ArgumentNullException(nameof(options));
-        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _exclusions = new AuditExclusions(options.Exclude);
+        _clock =clock ?? throw new ArgumentNullException(nameof(clock));
         _logger = loggerFactory.CreateLogger<AuditMiddleware>();
     }
 
@@ -136,10 +142,11 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     /// 动作。
     /// </summary>
     /// <remarks>
-    /// 显式声明优先；否则按选择规则看当前操作。
+    /// 显式声明优先；否则按选择规则看当前操作，再去掉按操作排除的。
     /// </remarks>
     private string? ResolveAction(InvocationContext context)
     {
+        // 显式动作是代码要求必须留痕的调用（登录、导出），按操作排除只针对按规则挑出的操作，不压掉它
         if (context.GetAuditAction().TryGetValue(out var explicitAction))
         {
             return explicitAction;
@@ -150,13 +157,15 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
             return null;
         }
 
-        return _options.Selection switch
+        var selected = _options.Selection switch
         {
-            AuditSelection.All => operation.Id,
+            AuditSelection.All => true,
             // 受保护 = 需要授权：声明了权限码或策略名的操作都算，只用策略保护的操作同样是敏感入口
-            AuditSelection.Protected when operation.Contract.Permission is not null || operation.Contract.Policy is not null => operation.Id,
-            _ => null,
+            AuditSelection.Protected => operation.Contract.Permission is not null || operation.Contract.Policy is not null,
+            _ => false,
         };
+
+        return selected && !_exclusions.Excludes(operation.Id) ? operation.Id : null;
     }
 
     /// <summary>

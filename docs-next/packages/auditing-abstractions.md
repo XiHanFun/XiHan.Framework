@@ -41,19 +41,20 @@
 | --- | --- | --- | --- |
 | `XiHan:Auditing:Selection` | `Protected` / `All` / `None`（不区分大小写） | `Protected` | 没有显式动作时记哪些操作 |
 | `XiHan:Auditing:IncludeSuccesses` | bool | `true` | 为 `false` 时只记失败 |
+| `XiHan:Auditing:Exclude` | 字符串列表：操作 ID，或以 `*` 结尾的前缀（`profile.*`、`my-*`） | 空 | 按选择规则挑出的操作命中即不记；显式动作照记；必须写成列表 |
 
 ```json
-{ "XiHan": { "Auditing": { "Selection": "All", "IncludeSuccesses": false } } }
+{ "XiHan": { "Auditing": { "Selection": "All", "IncludeSuccesses": false, "Exclude": [ "permissions.current", "profile.*" ] } } }
 ```
 
-值不合法时 `AuditingOptions.FromConfiguration` 抛出 `ArgumentException`，应用在装配阶段失败。
+值不合法时 `AuditingOptions.FromConfiguration` 抛出 `ArgumentException`，应用在装配阶段失败；`Exclude` 写成单个值、某一项是空白、单独的 `*`、`*` 不在末尾或含大写与其他字符，同样失败，消息指出配置键与那一项（ADR-0080）。
 
 ## 主要类型
 
 | 类型 | 说明 |
 | --- | --- |
 | `AuditingCapabilities` | 能力 ID `auditing.trail` 与接口版本 1 |
-| `AuditingOptions` | `Selection`、`IncludeSuccesses`；`ConfigurationSection` 为 `XiHan:Auditing` |
+| `AuditingOptions` | `Selection`、`IncludeSuccesses`、`Exclude`（init 时同样校验每一项）；`ConfigurationSection` 为 `XiHan:Auditing` |
 | `AuditSelection` | `Protected`（只记需要授权的操作：契约声明了 `Permission` 或 `Policy`）、`All`、`None`（只记显式动作） |
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
 | `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `GetAuditAction`、`GetAuditResource`、`GetAuditDetails` |
@@ -102,7 +103,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 ## 行为与限制
 
-- 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
+- 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，再去掉 `Exclude` 命中的操作，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
 - 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。

@@ -29,11 +29,16 @@ public sealed class AuditMiddlewareTests
     private static readonly Dictionary<string, string> _alice = new(StringComparer.Ordinal) { [BaggageKeys.Principal] = "alice", [BaggageKeys.Tenant] = "acme" };
 
     /// <summary>
-    /// 启动装配了记录接收器与订单操作的宿主，可指定 <c>XiHan:Auditing</c> 的两个选项。
+    /// 启动装配了记录接收器与订单操作的宿主，可指定 <c>XiHan:Auditing</c> 的选项与排除项。
     /// </summary>
-    private static Task<TestHost> StartAsync(string? selection = null, string? includeSuccesses = null)
+    private static Task<TestHost> StartAsync(string? selection = null, string? includeSuccesses = null, IReadOnlyList<string>? exclude = null)
     {
         var configuration = new Dictionary<string, string?>(StringComparer.Ordinal);
+        for (var i = 0; i < (exclude?.Count ?? 0); i++)
+        {
+            configuration[$"XiHan:Auditing:Exclude:{i}"] = exclude![i];
+        }
+
         if (selection is not null)
         {
             configuration["XiHan:Auditing:Selection"] = selection;
@@ -120,6 +125,91 @@ public sealed class AuditMiddlewareTests
         await none.InvokeOperationAsync<CreateOrderRequest, OrderResponse>(CreateOrder.Id, new(1));
         await none.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ExportOrders.Id, new());
         Assert.Equal([ExportOrders.AuditAction], none.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+    }
+
+    [Fact]
+    public async Task Exclude_SkipsSelectedOperationsByIdOrPrefix_ButKeepsExplicitActions()
+    {
+        // 精确 ID：只去掉 orders.create，同样受保护的 orders.approve 照记
+        await using var exact = await StartAsync(exclude: ["orders.create"]);
+        await InvokeAllAsync(exact);
+        Assert.Equal([ApproveOrders.Id, ExportOrders.AuditAction], exact.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+
+        // 前缀：orders.* 去掉订单资源的全部操作；ExportOrders 显式声明了动作，不受排除影响
+        await using var prefix = await StartAsync(selection: "All", exclude: ["orders.*"]);
+        await InvokeAllAsync(prefix);
+        Assert.Equal([ExportOrders.AuditAction], prefix.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+
+        // 资源名前缀：ord* 同样命中 orders.*；不命中的前缀与不配置时一样
+        await using var partial = await StartAsync(selection: "All", exclude: ["ord*"]);
+        await InvokeAllAsync(partial);
+        Assert.Equal([ExportOrders.AuditAction], partial.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+
+        await using var miss = await StartAsync(selection: "All", exclude: ["orders.creat", "invoices.*", "orders.lists*"]);
+        await InvokeAllAsync(miss);
+        Assert.Equal([CreateOrder.Id, ListOrders.Id, ApproveOrders.Id, ExportOrders.AuditAction], miss.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+
+        // 依次调用四个订单操作：创建、列表、审批（只用策略保护）、导出（显式动作）
+        static async Task InvokeAllAsync(TestHost host)
+        {
+            Assert.True((await host.InvokeOperationAsync<CreateOrderRequest, OrderResponse>(CreateOrder.Id, new(1), _alice)).IsSuccess);
+            Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ListOrders.Id, new(), _alice)).IsSuccess);
+            Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ApproveOrders.Id, new(), _alice)).IsSuccess);
+            Assert.True((await host.InvokeOperationAsync<ListOrdersRequest, OrderResponse>(ExportOrders.Id, new(), _alice)).IsSuccess);
+        }
+    }
+
+    [Fact]
+    public async Task Exclude_NotConfigured_BehavesAsBefore()
+    {
+        await using var host = await StartAsync();
+
+        Assert.Empty(host.Services.GetRequiredService<AuditingOptions>().Exclude);
+        Assert.True((await host.InvokeOperationAsync<CreateOrderRequest, OrderResponse>(CreateOrder.Id, new(1), _alice)).IsSuccess);
+        Assert.Equal([CreateOrder.Id], host.Services.GetRequiredService<RecordingAuditSink>().Events.Select(static e => e.Action));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("*")]
+    [InlineData("orders")]
+    [InlineData("orders.")]
+    [InlineData("Orders.list")]
+    [InlineData("orders.*.x")]
+    [InlineData("orders*list")]
+    [InlineData("orders.list.*")]
+    [InlineData("*.list")]
+    public async Task Exclude_InvalidEntry_FailsTheAssembly(string entry)
+    {
+        var configuration = new Dictionary<string, string?>(StringComparer.Ordinal) { ["XiHan:Auditing:Exclude:0"] = "orders.list", ["XiHan:Auditing:Exclude:1"] = entry };
+
+        // 读选项在特性配置时：不合法的一项让装配失败，消息指出配置键与那一项
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => TestHost.StartAsync(static b => b.UseFeature<RecordingAuditingFeature>().UseFeature<OrdersFeature>(), configuration));
+
+        Assert.Contains("'XiHan:Auditing:Exclude:1'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains($"'{entry}'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Exclude_Options_ParseListsAndRejectSingleValuesAndInvalidCode()
+    {
+        var options = AuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["XiHan:Auditing:Exclude:0"] = "permissions.current",
+            ["XiHan:Auditing:Exclude:1"] = "profile.*",
+            ["XiHan:Auditing:Exclude:2"] = "my-*",
+        }).Build());
+        Assert.Equal(["permissions.current", "profile.*", "my-*"], options.Exclude);
+
+        // 写成单个值（环境变量常见）不当作没配
+        var single = Assert.Throws<ArgumentException>(static () => AuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Auditing:Exclude"] = "orders.list" }).Build()));
+        Assert.Contains("must be a list", single.Message, StringComparison.Ordinal);
+
+        // 代码里构造同样校验
+        Assert.Equal(["orders.*"], new AuditingOptions { Exclude = ["orders.*"] }.Exclude);
+        Assert.Throws<ArgumentException>(static () => new AuditingOptions { Exclude = ["orders"] });
+        Assert.Throws<ArgumentNullException>(static () => new AuditingOptions { Exclude = null! });
     }
 
     [Fact]

@@ -11,6 +11,8 @@ XiHan.Framework.Auditing.Abstractions.AuditingOptions
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.AuditingOptions!
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.AuditingOptions() -> void
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.Equals(XiHan.Framework.Auditing.Abstractions.AuditingOptions? other) -> bool
+XiHan.Framework.Auditing.Abstractions.AuditingOptions.Exclude.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Auditing.Abstractions.AuditingOptions.Exclude.init -> void
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.IncludeSuccesses.get -> bool
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.IncludeSuccesses.init -> void
 XiHan.Framework.Auditing.Abstractions.AuditingOptions.Selection.get -> XiHan.Framework.Auditing.Abstractions.AuditSelection
