@@ -97,7 +97,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 - 声明的码与已登记的重复是冲突（`KERNEL_SECURITY_001`）：两个插件声明同一个码，后登记的那个整体失败；宿主特性定义的码插件又声明，不论谁先登记都失败。配置阶段的冲突是启动失败。
 - 权限码与代理操作一次登记、全进或全不进，任何一项不过都不留下这个插件的权限码。
 - 操作的 `policy` 同样要存在：配置阶段发现的插件在授权能力的启动核对里一并核对（不论失败策略都拒绝启动），之后登记的在登记时核对，不存在即 `SECURITY_VALIDATION_004`；`permission:<本插件声明的码>` 能通过。
-- 卸载时按归属撤回：插件的代理操作与它声明的码一次撤回，之后可以直接再加载（见[运行期加载与卸载](#运行期加载与卸载)）。
+- 卸载时按归属撤回：插件的代理操作、它声明的码与 Wasm 插件贡献的中间件一次撤回，之后可以直接再加载（见[运行期加载与卸载](#运行期加载与卸载)）。
 - 进程内插件有自己的容器，不向应用的登记表贡献操作，也不登记权限码。
 
 加载之后各宿主对权限的强制方式。回调权限按「清单声明且已被授予」判定：清单是插件权限的唯一事实源，宿主授予了而清单没有声明的权限不生效，不能靠多授予让插件获得清单里没写的回调能力。
@@ -174,7 +174,7 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载（`UnloadAsync`）先按归属（清单 ID）一次撤回插件登记的代理操作与它声明的权限码，再停止插件（ADR-0085）：之后按 ID 调用这些操作返回 `KERNEL_NOTFOUND_001`（不进管道），撤回之前已经在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件（同一版本或新版本）可以直接再 `LoadAsync`，不用重启宿主。别的插件或宿主的操作引用了被撤回的权限码时，在码重新登记之前它们的授权按策略不存在拒绝（`SECURITY_NOTFOUND_001`）。不随卸载撤回的：配置阶段接进容器的订阅与消息目录（卸载期间发给它的事件不投给任何插件，再加载后恢复；变了要重启宿主），协议适配器在启动时发布的路由与文档（按操作 ID 转交调用器，再加载后同一 ID 照常可用），Wasm 插件贡献的中间件（卸载后失败即关闭，见 [Plugins.Wasm](../packages/plugins-wasm)）。Wasm 宿主拒绝在运行期加载贡献中间件的插件（`PLUGINS_VALIDATION_005`），因为中间件必须在管道构建前登记。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手、`Configure` 或 `Start` 失败时，错误返回给调用方，插件保持 `Failed` 并按重启策略在后台重试，不想再试就 `UnloadAsync`；清单、权限、入口不合格的直接返回、不登记。
+运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载（`UnloadAsync`）先按归属（清单 ID）一次撤回插件登记的代理操作与它声明的权限码，再停止插件（ADR-0085）：之后按 ID 调用这些操作返回 `KERNEL_NOTFOUND_001`（不进管道），撤回之前已经在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件（同一版本或新版本）可以直接再 `LoadAsync`，不用重启宿主。别的插件或宿主的操作引用了被撤回的权限码时，在码重新登记之前它们的授权按策略不存在拒绝（`SECURITY_NOTFOUND_001`）。Wasm 插件贡献的中间件也随卸载按归属撤出管道、随再加载回来（ADR-0088，见[Wasm 插件贡献中间件](#wasm-插件贡献中间件)），贡献中间件的插件同样可以在运行期加载。不随卸载撤回的：配置阶段接进容器的订阅与消息目录（卸载期间发给它的事件不投给任何插件，再加载后恢复；变了要重启宿主），协议适配器在启动时发布的路由与文档（按操作 ID 转交调用器，再加载后同一 ID 照常可用）。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手、`Configure` 或 `Start` 失败时，错误返回给调用方，插件保持 `Failed` 并按重启策略在后台重试，不想再试就 `UnloadAsync`；清单、权限、入口不合格的直接返回、不登记。
 
 ### 进程内宿主
 
@@ -292,7 +292,14 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | before | `SHORT_CIRCUIT` | 把应答里的失败结果写为调用结果，不进入下游；结果缺失或不是失败按 `KERNEL_VALIDATION_001` 处理 |
 | after | 任意 | 只观察下游结果，动作与 Baggage 忽略 |
 
-中间件只看得到元数据、操作 ID 与结果，看不到也改不了载荷，需要载荷的逻辑写成操作。每次钩子调用的时限是 `MiddlewareTimeoutMilliseconds`（缺省 100 毫秒）。中间件陷阱、超时或无响应时调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃处理并重建：安全相关的阶段不能失败即放行。每个中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段（基准位置是阶段末尾），清单的 `before` / `after` 按 RFC-0004 参与排序：每一项先按本插件 `contributes.pipeline` 里的中间件名解析，否则原样作为管道里的中间件名，即另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名（如 `after` 一项写租户解析中间件的类型全名，插件中间件就排在它后面）。目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`，在宿主构建或打印管道时报出。示例 `samples/EchoWasmPlugin` 的 `echo-guard` 在 `observe` 阶段把租户 `blocked` 短路为 `ECHOWASM_DENIED_001`。
+中间件只看得到元数据、操作 ID 与结果，看不到也改不了载荷，需要载荷的逻辑写成操作。每次钩子调用的时限是 `MiddlewareTimeoutMilliseconds`（缺省 100 毫秒）。中间件陷阱、超时或无响应时调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃处理并重建：安全相关的阶段不能失败即放行。每个中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段（基准位置是阶段末尾），清单的 `before` / `after` 按 RFC-0004 参与排序：每一项先按本插件 `contributes.pipeline` 里的中间件名解析，否则原样作为管道里的中间件名，即另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名（如 `after` 一项写租户解析中间件的类型全名，插件中间件就排在它后面）。目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`：配置阶段发现的插件在宿主构建或打印管道时报出，运行期 `LoadAsync` 的插件在加载时报出、整个插件不登记。示例 `samples/EchoWasmPlugin` 的 `echo-guard` 在 `observe` 阶段把租户 `blocked` 短路为 `ECHOWASM_DENIED_001`。
+
+中间件随插件的运行期加载与卸载进出管道（ADR-0088，内核的成组登记 `PipelineBuilder.UseOwned` 与按归属撤回 `RemoveOwnedBy`，见[执行管道](./pipeline#运行期改动)）：
+
+- 运行期 `LoadAsync`：中间件与代理操作、声明的权限码一次登记，全进或全不进；次序约束在加载时立即核对，不过就整个插件不登记、管道不变。加载成功之后开始的调用经过它的中间件。
+- `UnloadAsync`：先把中间件撤出管道，再撤回操作与权限码、停止插件。卸载之后开始的调用不再经过它的中间件，经过它原来所在阶段的调用照常进入下游，不会因为插件不在了而失败；卸载之前已经进入管道的调用按进入时的管道走完，插件停止后它的钩子以 `PLUGINS_UNAVAILABLE_001` 失败即关闭。
+- 宿主或别的插件的中间件以次序约束引用了它的中间件（比如宿主中间件声明 `After(类型全名, "xihan.samples.echowasm:echo-guard")`）时，卸载被拒（`KERNEL_PIPELINE_003`）、什么都不撤，先撤回引用方。
+- 卸载之后可以直接再加载同一插件（同一版本或新版本），中间件按排序规则回到原来的位置，不用重启宿主。
 
 ::: warning Windows 上 Wasm 宿主的可执行项目要关闭 CET 兼容
 wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突；.NET 9 起 apphost 默认开启 CET 兼容，影子栈强制时第一次陷阱就让整个进程 fail-fast（退出码 `0xC0000409`）。宿主、测试与一致性套件的可执行项目都要设 `<CETCompat>false</CETCompat>`。`WasmPluginHost` 创建时检测进程的影子栈策略，强制时以 `PLUGINS_UNAVAILABLE_003` 抛出 `FrameworkException`。Linux 与 macOS 不受影响。

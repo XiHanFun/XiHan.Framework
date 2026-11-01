@@ -10,6 +10,7 @@ using Wasmtime;
 using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol;
@@ -26,7 +27,7 @@ namespace XiHan.Framework.Plugins.Wasm;
 /// Wasm 插件宿主（<c>isolation: wasm</c>，RFC-0018，Experimental）。
 /// </summary>
 /// <remarks>
-/// 按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载（贡献中间件的插件除外）。
+/// 按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载，插件贡献的中间件随加载成组登记进管道、随卸载按归属撤回（ADR-0088）。
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IAsyncDisposable
@@ -65,10 +66,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 串行化代理操作的登记与撤回。
+    /// 串行化代理操作与中间件的登记与撤回。
     /// </summary>
     /// <remarks>
-    /// 运行期加载的登记不持有 <see cref="_gate"/>，撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，与卸载交错的加载不会留下指向已卸载插件的登记（ADR-0085）。
+    /// 运行期加载的登记不持有 <see cref="_gate"/>，撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，与卸载交错的加载不会留下指向已卸载插件的登记或中间件（ADR-0085、ADR-0088）。
     /// </remarks>
     private readonly Lock _registration = new();
 
@@ -115,6 +116,14 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 由特性在配置阶段提供。
     /// </remarks>
     private OperationRegistry? _registry;
+
+    /// <summary>
+    /// 插件中间件登记到的管道。
+    /// </summary>
+    /// <remarks>
+    /// 由特性在配置阶段提供；运行期加载经它成组登记插件贡献的中间件，卸载经它按归属撤回（ADR-0088）。
+    /// </remarks>
+    private PipelineBuilder? _pipeline;
 
     /// <summary>
     /// 创建宿主：建一个启用 epoch 中断的引擎并开始计时。
@@ -174,6 +183,44 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     internal void UseRegistry(OperationRegistry registry) => _registry = registry;
 
     /// <summary>
+    /// 指定插件中间件的管道。
+    /// </summary>
+    internal void UsePipeline(PipelineBuilder pipeline) => _pipeline = pipeline;
+
+    /// <summary>
+    /// 把插件清单贡献的中间件登记进管道并声明相对次序。
+    /// </summary>
+    /// <remarks>
+    /// 每个贡献项一个实例，以 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c> 为名登记在所在阶段末尾，归属为清单 ID（<c>spec/plugin/wasm.md</c> §6）。<c>before</c> / <c>after</c> 的每一项先按本插件的中间件名解析，否则原样作为管道里的中间件名（另一个插件的 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c>，或只登记一次的宿主中间件类型全名）。配置阶段直接登记，目标在构建管道时解析；运行期加载时在 <see cref="PipelineBuilder.UseOwned"/> 里登记、立即核对。约束只声明在本插件的中间件上，按归属撤回时一并撤掉。
+    /// </remarks>
+    internal static void AddMiddleware(PipelineBuilder pipeline, WasmPluginRuntime runtime)
+    {
+        var contributions = runtime.Manifest.Contributes.Pipeline;
+        var own = contributions.Select(static c => c.Middleware).ToHashSet(StringComparer.Ordinal);
+        string Name(string middleware) => $"{runtime.Manifest.Id}:{middleware}";
+        string Target(string reference) => own.Contains(reference) ? Name(reference) : reference;
+
+        foreach (var contribution in contributions)
+        {
+            pipeline.UseNamedInstance(Name(contribution.Middleware), new WasmMiddleware(runtime, contribution.Middleware, contribution.Stage), contribution.Stage, Placement.End, runtime.Manifest.Id);
+        }
+
+        // 约束在本插件的中间件都登记之后声明：互相引用的两项不论清单里谁先谁后都能找到对方
+        foreach (var contribution in contributions)
+        {
+            foreach (var later in contribution.Before)
+            {
+                pipeline.Before(Name(contribution.Middleware), Target(later));
+            }
+
+            foreach (var earlier in contribution.After)
+            {
+                pipeline.After(Name(contribution.Middleware), Target(earlier));
+            }
+        }
+    }
+
+    /// <summary>
     /// 同步发现一个插件目录（配置阶段使用）。
     /// </summary>
     /// <remarks>
@@ -183,6 +230,9 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 代理操作、声明的权限码与贡献的中间件一次登记、全进或全不进（ADR-0085、ADR-0088）：中间件在 <see cref="PipelineBuilder.UseOwned"/> 里成组登记并立即核对，约束目标未登记、有歧义、跨阶段（<c>KERNEL_PIPELINE_003</c>）或成环（<c>KERNEL_PIPELINE_001</c>）时整个插件登记失败、已登记的操作与权限码撤回、管道不变。登记成功之后开始的调用经过插件的中间件。
+    /// </remarks>
     public async Task<Result<PluginStatus>> LoadAsync(PluginSource source, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -190,12 +240,6 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         if (!manifest.TryGetValue(out var read))
         {
             return manifest.Error!;
-        }
-
-        // 中间件必须在管道构建前登记：运行期加载的插件不能贡献中间件
-        if (read.Contributes.Pipeline.Count > 0)
-        {
-            return new Error(PluginErrors.InvalidModule, PluginMessages.ModuleInvalid, MessageArguments.Of(("id", read.Id), ("reason", "plugins contributing middleware cannot be loaded at run time")));
         }
 
         var discovered = await DiscoverAsync(source, read, _options.MountsFor(read.Id), keepRejected: false, cancellationToken).ConfigureAwait(false);
@@ -218,7 +262,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先按归属（清单 ID）撤回插件登记的代理操作与权限码，再停止并丢弃实例（<c>plugin/invocation.md</c> §1，ADR-0085）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅、消息目录与中间件在配置阶段接进容器与管道，不随卸载撤回；贡献了中间件的插件卸载后，它的中间件失败即关闭（<c>plugin/wasm.md</c> §6）。
+    /// 先按归属（清单 ID）撤回插件贡献的中间件、登记的代理操作与权限码，再停止并丢弃实例（<c>plugin/invocation.md</c> §1、<c>plugin/wasm.md</c> §6，ADR-0085、ADR-0088）：撤回之后开始的调用不再经过它的中间件，按 ID 调用它的操作返回 <c>KERNEL_NOTFOUND_001</c>；撤回之前已经进入管道的调用照常完成，或在插件停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束。卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。别的中间件以次序约束引用了它的中间件时卸载被拒（<c>KERNEL_PIPELINE_003</c>），什么都不撤、插件照常服务。订阅与消息目录在配置阶段接进容器，不随卸载撤回。
     /// </remarks>
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
@@ -227,15 +271,18 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         WasmPluginRuntime? runtime;
         try
         {
-            if (!_plugins.TryRemove(manifestId, out runtime))
+            if (!_plugins.TryGetValue(manifestId, out runtime))
             {
                 return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", manifestId)));
             }
 
-            _order.Remove(runtime);
             // 撤回与移出在同一段 _gate 里：同一插件的再加载（DiscoverAsync 同样先取 _gate）一定看到撤回已经完成；
-            // 先撤回再停止实例，新的调用立刻得到未登记
-            Withdraw(runtime);
+            // 先撤回再停止实例，新的调用立刻不再经过它的中间件、得到操作未登记
+            var withdrawn = Withdraw(runtime);
+            if (withdrawn.IsFailure)
+            {
+                return withdrawn.Error!;
+            }
         }
         finally
         {
@@ -243,6 +290,8 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         }
 
         await runtime.StopAsync("unload", cancellationToken).ConfigureAwait(false);
+        // 撤回之前已经进入管道的调用可能还在等运行时的锁：等它们按不可用离开再释放
+        await runtime.DrainAsync().ConfigureAwait(false);
         runtime.Dispose();
         return Result.Success();
     }
@@ -343,6 +392,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         await StopAllAsync(CancellationToken.None).ConfigureAwait(false);
         foreach (var runtime in _order.ToList())
         {
+            await runtime.DrainAsync().ConfigureAwait(false);
             runtime.Dispose();
         }
 
@@ -513,10 +563,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把运行时清单声明的权限码与握手声明的操作登记进宿主。
+    /// 把运行时清单声明的权限码、握手声明的操作与清单贡献的中间件登记进宿主。
     /// </summary>
     /// <remarks>
-    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。运行时已不是宿主里的当前运行时（卸载与运行期加载交错）时不登记，返回未加载。
+    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，或中间件的约束目标未登记、有歧义、跨阶段、成环，插件整体登记失败，不会留下半组指向被拒插件的权限码、代理操作与中间件。运行时已不是宿主里的当前运行时（卸载与运行期加载交错）时不登记，返回未加载。
     /// </remarks>
     private Result Register(WasmPluginRuntime runtime)
     {
@@ -533,27 +583,79 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
                 return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", runtime.Manifest.Id)));
             }
 
-            return PluginContributions.Register(_registry, runtime.Manifest, runtime.Handshake, runtime);
+            var registered = PluginContributions.Register(_registry, runtime.Manifest, runtime.Handshake, runtime);
+            if (registered.IsFailure)
+            {
+                return registered;
+            }
+
+            // 操作先进、中间件后进：中间件进不去时撤回操作与权限码不会失败，回滚总能完成
+            var middleware = UseMiddleware(runtime);
+            if (middleware.IsFailure)
+            {
+                PluginContributions.Withdraw(_registry, runtime.Manifest.Id);
+            }
+
+            return middleware;
         }
     }
 
     /// <summary>
-    /// 撤回运行时登记的权限码与代理操作。
+    /// 把运行时清单贡献的中间件成组登记进管道。
     /// </summary>
     /// <remarks>
-    /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做。
+    /// 在 <see cref="_registration"/> 内调用。没有贡献中间件时什么都不做；登记被拒时管道不变，返回内核的错误（<c>KERNEL_PIPELINE_003</c> / <c>KERNEL_PIPELINE_001</c>）。
     /// </remarks>
-    private void Withdraw(WasmPluginRuntime runtime)
+    private Result UseMiddleware(WasmPluginRuntime runtime)
     {
-        if (_registry is null)
+        if (_pipeline is null || runtime.Manifest.Contributes.Pipeline.Count == 0)
         {
-            return;
+            return Result.Success();
         }
 
+        try
+        {
+            // 成组登记并立即排序核对：运行期没有「之后构建管道时再报」的机会，约束不成立就整组不进
+            _pipeline.UseOwned(runtime.Manifest.Id, pipeline => AddMiddleware(pipeline, runtime));
+            return Result.Success();
+        }
+        catch (FrameworkException exception)
+        {
+            return exception.ToError();
+        }
+    }
+
+    /// <summary>
+    /// 把运行时移出宿主，并撤回它贡献的中间件、登记的权限码与代理操作。
+    /// </summary>
+    /// <remarks>
+    /// 卸载时在 <see cref="_gate"/> 内调用。先撤中间件：别的中间件以次序约束引用了它的中间件时撤不了（<c>KERNEL_PIPELINE_003</c>），这时什么都不改、运行时留在宿主里照常服务。撤回与移出在同一段 <see cref="_registration"/> 里，与运行期加载的登记互斥。
+    /// </remarks>
+    private Result Withdraw(WasmPluginRuntime runtime)
+    {
         lock (_registration)
         {
-            PluginContributions.Withdraw(_registry, runtime.Manifest.Id);
+            if (_pipeline is not null)
+            {
+                try
+                {
+                    _pipeline.RemoveOwnedBy(runtime.Manifest.Id);
+                }
+                catch (FrameworkException exception)
+                {
+                    return exception.ToError();
+                }
+            }
+
+            _plugins.TryRemove(runtime.Manifest.Id, out _);
+            _order.Remove(runtime);
+            if (_registry is not null)
+            {
+                PluginContributions.Withdraw(_registry, runtime.Manifest.Id);
+            }
         }
+
+        return Result.Success();
     }
 
     /// <summary>

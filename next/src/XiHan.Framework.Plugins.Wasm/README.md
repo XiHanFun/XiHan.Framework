@@ -39,7 +39,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<WasmPluginsFeature>());
 - 陷阱、超时与无响应把插件记为 `Failed` 并按 1 秒起翻倍、上限 60 秒的退避重建实例，`RestartWindow` 内超过 `RestartLimit` 次后保持 `Failed`；每个插件是应用的健康条目 `plugins.<清单 ID>`。
 - 沙箱：线性内存与栈上限、无网络、文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到工作目录的 `stdout.log` / `stderr.log`，日志应走 `xihan.log`。
 - 宿主进程（Windows）：影子栈强制时第一次陷阱就让整个进程 fail-fast（退出码 `0xC0000409`），所以宿主、测试与一致性套件的可执行项目都要设 `<CETCompat>false</CETCompat>`；创建宿主时检测进程的影子栈策略，强制时以 `PLUGINS_UNAVAILABLE_003` 抛出 `FrameworkException`。
-- `IPluginHost.LoadAsync` / `UnloadAsync` 可在运行期加载与卸载不贡献中间件的插件。卸载先按归属（清单 ID）撤回插件的代理操作与声明的权限码、再停止并丢弃实例（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，同一插件可以直接再加载、不用重启宿主。贡献了中间件的插件卸载后，中间件不随之撤回，经过它所在阶段的调用失败即关闭（`PLUGINS_UNAVAILABLE_001`），换版本要重启宿主。
+- `IPluginHost.LoadAsync` / `UnloadAsync` 可在运行期加载与卸载插件，含贡献中间件的插件（ADR-0088）。加载时代理操作、声明的权限码与中间件一次登记、全进或全不进：中间件经 `PipelineBuilder.UseOwned` 成组登记并立即核对次序约束，不过（`KERNEL_PIPELINE_003` / `KERNEL_PIPELINE_001`）就整个插件不登记、管道不变。卸载先按归属（清单 ID）把中间件撤出管道（`PipelineBuilder.RemoveOwnedBy`），再撤回代理操作与声明的权限码、停止实例，等在途调用离开后释放（ADR-0085、ADR-0088）：之后开始的调用不再经过它的中间件、调用它的操作返回 `KERNEL_NOTFOUND_001`；卸载之前已经进入管道的调用按进入时的管道走完，插件停止后钩子失败即关闭（`PLUGINS_UNAVAILABLE_001`）；别的中间件以次序约束引用了它的中间件时卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤。同一插件可以直接再加载、中间件回到原来的位置，不用重启宿主。
 
 不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
 

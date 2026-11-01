@@ -226,15 +226,27 @@ public sealed class WasmPluginHostTests
     }
 
     [Fact]
-    public async Task LoadAsync_AtRuntime_RejectsMiddlewareContributions()
+    public async Task LoadAsync_AtRuntime_RegistersTheMiddleware_OrNothingWhenItsConstraintsCannotBeResolved()
     {
+        using var dangling = WatPlugin.WithMiddleware(new JsonArray(new JsonObject { ["middleware"] = "guard", ["stage"] = "observe", ["before"] = new JsonArray("xihan.other:missing") }));
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
         var plugins = host.Services.GetRequiredService<IPluginHost>();
+        var pipeline = host.App.DescribePipeline();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
-
-        Assert.Equal(PluginErrors.InvalidModule, loaded.Error?.Code);
+        // 约束目标未登记：运行期没有「构建管道时再报」，整个插件登记失败，操作与中间件都不留下
+        var rejected = await plugins.LoadAsync(new PluginSource(dangling.Directory, new PermissionGrant([])), CancellationToken.None);
+        Assert.Equal(KernelErrors.PipelineRegistration, rejected.Error?.Code);
+        Assert.Contains("xihan.other:missing", rejected.Error!.Message, StringComparison.Ordinal);
         Assert.Empty(plugins.Plugins);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+        Assert.Equal(pipeline, host.App.DescribePipeline());
+
+        // 贡献中间件的插件可以在运行期加载：中间件成组登记进管道，之后的调用经过它
+        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        Assert.True(loaded.IsSuccess, loaded.ToString());
+        Assert.Contains("WasmMiddleware[xihan.samples.echowasm:echo-guard]", host.App.DescribePipeline(), StringComparison.Ordinal);
+        var blocked = await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"x"}""", new Dictionary<string, string> { [BaggageKeys.Tenant] = "blocked" });
+        Assert.Equal("ECHOWASM_DENIED_001", blocked.Outcome.Error?.Code);
     }
 
     [Fact]

@@ -125,6 +125,8 @@ builder.AddXiHan(xihan => xihan
 | `UseNamedInstance(name, instance, stage, placement, owner)` | 同一类型登记多个实例，按名字区分，打印为 `类型名[名字]` |
 | `Before<T, TOther>()` / `After<T, TOther>()` | 同阶段内的次序约束 |
 | `Before(名字, 目标)` / `After(名字, 目标)` | 按名字的次序约束：名字是 `UseNamedInstance` 的实例名，或只登记一次的中间件类型全名 |
+| `UseOwned(owner, configure)` | 一次登记同一归属的一组中间件与它们的约束，全进或全不进、立即核对；应用构建之后改管道只能用它（见[运行期改动](#运行期改动)） |
+| `RemoveOwnedBy(owner)` | 按归属撤回登记的全部中间件，返回个数；会留下悬空约束时什么都不撤、报 `KERNEL_PIPELINE_003` |
 
 清单里的 `Contributes.Pipeline` 用 `PipelineContribution` 声明中间件归属的阶段，供 `graph` 命令与插件宿主读取；真正生效的仍是 `Configure` 里的登记，两者应保持一致。
 
@@ -142,6 +144,27 @@ builder.AddXiHan(xihan => xihan
 :::
 
 同一类型默认只能登记一次，重复登记报 `KERNEL_PIPELINE_003`；需要多个实例时用 `UseNamedInstance`，此时不能再用按类型的 `Before` / `After` 约束它，改用按名字的 `Before(名字, 目标)` / `After(名字, 目标)`：约束主体在声明时须已登记，目标在排序时解析，未登记、同一个名字对应多个中间件或跨阶段同样报 `KERNEL_PIPELINE_003`。Wasm 插件清单里的 `before` / `after` 就是这样落到管道上的（[插件](./plugins)）。
+
+## 运行期改动
+
+应用构建之后，管道可以按归属成组地加进或撤出中间件（RFC-0004「运行期改动」，ADR-0088）。Wasm 插件的运行期加载与卸载就是这样把它贡献的中间件接进、撤出管道的；应用一般用不到这两个方法。
+
+```csharp
+// pipeline 是装配时拿到的 PipelineBuilder（FeatureContext.Pipeline 或 AppBuilder.Pipeline），应用构建之后仍可以成组改动。
+// 一组中间件归属同一个清单 ID：组内只能登记这个归属的中间件，约束只能挂在组内的中间件上（目标可以在组外）
+pipeline.UseOwned("xihan.plugins.audit", group => group
+    .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, owner: "xihan.plugins.audit")
+    .After("xihan.plugins.audit:trail", typeof(ObserveMiddleware).FullName!));
+
+// 撤回同一归属的全部中间件，返回撤回的个数
+var removed = pipeline.RemoveOwnedBy("xihan.plugins.audit");
+```
+
+- 全进或全不进：回调返回后、撤回之后立即排一次整条管道，约束目标未登记、有歧义、跨阶段（`KERNEL_PIPELINE_003`）或成环（`KERNEL_PIPELINE_001`）就整体还原、抛出，管道不变。
+- 撤回不留悬空约束：别的归属的中间件以约束引用了要撤回的中间件时，`RemoveOwnedBy` 什么都不撤、报 `KERNEL_PIPELINE_003`，先撤回引用方。
+- 应用构建之后，`Use*`、`Before` / `After` 单独调用报 `KERNEL_PIPELINE_003`（它们不立即核对，构建之后这样改会让下一次调用才失败）；组内也只能按实例登记，按类型登记的进不了已经建好的容器。
+- 管道按版本构建：每次改动版本前进，改动后的第一次调用重建委托。每次调用在进入管道时取一次委托——已经在执行的调用按进入时的管道走完，改动返回之后开始的调用一定经过改动后的管道。
+- 同一归属撤回后再成组登记同样的中间件，按排序规则回到原来的位置。
 
 ## 打印与检查
 

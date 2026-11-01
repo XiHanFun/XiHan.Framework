@@ -49,12 +49,17 @@ public sealed partial class App : IDisposable
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
 
     /// <summary>
-    /// 延迟构建的管道委托。
+    /// 串行化管道委托的重建。
+    /// </summary>
+    private readonly Lock _pipelineGate = new();
+
+    /// <summary>
+    /// 已构建的管道委托与它对应的管道版本。
     /// </summary>
     /// <remarks>
-    /// 首次访问 <see cref="Pipeline"/> 时构建并缓存。
+    /// 首次访问 <see cref="Pipeline"/> 时构建；管道改动（成组登记、按归属撤回）使版本前进后，下一次访问重建。为空表示还没有构建过。
     /// </remarks>
-    private readonly Lazy<PipelineStep> _pipeline;
+    private PipelineSnapshot? _pipeline;
 
     /// <summary>
     /// 启动核对是否已全部通过。
@@ -78,7 +83,6 @@ public sealed partial class App : IDisposable
         _services = services;
         _model = model;
         _logger = loggerFactory.CreateLogger<App>();
-        _pipeline = new Lazy<PipelineStep>(() => model.Pipeline.Build(Terminal));
     }
 
     /// <summary>
@@ -169,12 +173,37 @@ public sealed partial class App : IDisposable
             : state;
 
     /// <summary>
-    /// 已构建的管道委托。
+    /// 当前管道的委托。
     /// </summary>
     /// <remarks>
-    /// 首次访问时构建。
+    /// 首次访问时构建，之后复用；管道在运行期改动（<see cref="PipelineBuilder.UseOwned"/>、<see cref="PipelineBuilder.RemoveOwnedBy"/>，如插件的运行期加载与卸载）之后的首次访问重新构建。每次调用在进入管道时取一次：已经取到委托、正在执行的调用按取到时的管道走完，之后开始的调用经过改动后的管道（RFC-0004「运行期改动」）。
     /// </remarks>
-    public PipelineStep Pipeline => _pipeline.Value;
+    public PipelineStep Pipeline
+    {
+        get
+        {
+            // 热路径不取锁：版本没变就复用已构建的委托
+            var snapshot = Volatile.Read(ref _pipeline);
+            if (snapshot is not null && snapshot.Version == _model.Pipeline.Version)
+            {
+                return snapshot.Step;
+            }
+
+            lock (_pipelineGate)
+            {
+                // 拿到锁后再判一次：并发的调用在版本变化后只重建一次
+                snapshot = _pipeline;
+                if (snapshot is not null && snapshot.Version == _model.Pipeline.Version)
+                {
+                    return snapshot.Step;
+                }
+
+                var step = _model.Pipeline.Build(Terminal, out var version);
+                Volatile.Write(ref _pipeline, new PipelineSnapshot(version, step));
+                return step;
+            }
+        }
+    }
 
     /// <summary>
     /// 打印已解析图。
@@ -251,7 +280,7 @@ public sealed partial class App : IDisposable
             throw new FrameworkException(KernelErrors.InvalidAppState, $"The application is in state '{State}' and cannot accept invocations.");
         }
 
-        // 处理器通过上下文传给终点而不是闭包捕获：管道委托只构建一次，对所有调用共享。
+        // 处理器通过上下文传给终点而不是闭包捕获：管道委托每个版本只构建一次，对所有调用共享。
         context.Set(_handlerKey, handler);
 
         // 调用链深处不传上下文的服务经 IInvocationAccessor 取当前上下文：进入管道前设置，离开时恢复上一层（同一作用域内的嵌套调用）
@@ -545,4 +574,22 @@ public sealed partial class App : IDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Application state is '{State}'.")]
     private static partial void LogState(ILogger logger, LifecycleState state);
+
+    /// <summary>
+    /// 一个版本的管道委托。
+    /// </summary>
+    /// <param name="version">委托对应的管道版本。</param>
+    /// <param name="step">构建出的委托。</param>
+    private sealed class PipelineSnapshot(long version, PipelineStep step)
+    {
+        /// <summary>
+        /// 委托对应的管道版本。
+        /// </summary>
+        public long Version { get; } = version;
+
+        /// <summary>
+        /// 构建出的委托。
+        /// </summary>
+        public PipelineStep Step { get; } = step;
+    }
 }

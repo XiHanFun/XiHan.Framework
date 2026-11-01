@@ -171,9 +171,9 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002` |
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |
 | 中间件 before 短路却没给失败结果 | 按 `KERNEL_VALIDATION_001` 处理 |
-| 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | `PLUGINS_VALIDATION_005` |
-| `UnloadAsync` | 先按归属撤回插件的代理操作与声明的权限码、再停止并丢弃实例（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，不用重启宿主 |
-| 卸载贡献了中间件的插件 | 中间件在管道构建前登记、不随卸载撤回：经过它所在阶段的调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭）；运行期又不能加载这类插件，换版本要重启宿主 |
+| 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | 中间件与代理操作、声明的权限码一次登记、全进或全不进（ADR-0088）；次序约束在加载时核对，目标未登记、有歧义、跨阶段（`KERNEL_PIPELINE_003`）或成环（`KERNEL_PIPELINE_001`）时返回该错误，插件不登记、管道不变 |
+| `UnloadAsync` | 先按归属撤回插件贡献的中间件、代理操作与声明的权限码，再停止实例、等在途调用离开后释放（ADR-0085、ADR-0088）：之后开始的调用不再经过它的中间件、调用它的操作返回 `KERNEL_NOTFOUND_001`；在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，中间件回到原来的位置，不用重启宿主 |
+| 卸载的插件的中间件被别的中间件以次序约束引用 | 卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤，插件照常服务；先撤回引用方 |
 | 清单声明的权限码与已登记的重复（宿主特性定义的或另一个插件声明的）、声明的操作与已有操作重名，或 `permission` 既不是宿主已登记的、也不在本插件清单里，或 `policy` 不存在 | 配置阶段发现的启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`；`policy` 不存在在授权能力启动时报 `SECURITY_VALIDATION_004`）；运行期 `LoadAsync` 返回失败，一个权限码与代理操作都不留下 |
 | 清单 `contributes.permissions` 不合权限码文法或有重复 | 清单读不出，按发现时被拒（`PLUGINS_VALIDATION_001`） |
 | 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |

@@ -356,10 +356,12 @@ XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Build(XiHan.Framework.Kernel.Pip
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Describe() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Pipeline.MiddlewareDescriptor!>!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Dump() -> string!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.PipelineBuilder() -> void
+XiHan.Framework.Kernel.Pipeline.PipelineBuilder.RemoveOwnedBy(string! owner) -> int
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.Use<TMiddleware>() -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseAt<TMiddleware>(XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseInstance<TMiddleware>(TMiddleware! instance, XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseNamedInstance(string! name, XiHan.Framework.Kernel.Pipeline.IPipelineMiddleware! instance, XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End, string! owner = "app") -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
+XiHan.Framework.Kernel.Pipeline.PipelineBuilder.UseOwned(string! owner, System.Action<XiHan.Framework.Kernel.Pipeline.PipelineBuilder!>! configure) -> XiHan.Framework.Kernel.Pipeline.PipelineBuilder!
 XiHan.Framework.Kernel.Pipeline.PipelineStep
 XiHan.Framework.Kernel.Pipeline.Placement
 XiHan.Framework.Kernel.Pipeline.Placement.Beginning = 1 -> XiHan.Framework.Kernel.Pipeline.Placement

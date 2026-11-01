@@ -70,8 +70,11 @@ public static class PluginErrors
     public const string Crashed = "PLUGINS_UNEXPECTED_002";
 
     /// <summary>
-    /// Wasm 模块不合法，或运行期加载含中间件贡献的插件。
+    /// Wasm 模块不合法。
     /// </summary>
+    /// <remarks>
+    /// 不是 reactor、ABI 版本不支持、缺少必需导出或签名不符、导入了宿主不提供的函数。
+    /// </remarks>
     public const string InvalidModule = "PLUGINS_VALIDATION_005";
 
     /// <summary>

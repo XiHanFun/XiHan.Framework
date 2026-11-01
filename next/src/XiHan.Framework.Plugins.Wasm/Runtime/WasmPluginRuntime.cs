@@ -144,6 +144,19 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// 进行中的调用数。
+    /// </summary>
+    /// <remarks>
+    /// 操作、事件、中间件钩子与健康轮询进入时加一、离开时减一（<see cref="TryEnter"/> / <see cref="Exit"/>）。卸载时撤回之前已经进入管道的调用可能还在等调用锁，释放前要等它们离开（<see cref="DrainAsync"/>）。
+    /// </remarks>
+    private int _active;
+
+    /// <summary>
+    /// 停止之后进行中的调用归零的信号。
+    /// </summary>
+    private readonly TaskCompletionSource _idle = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
     /// 创建运行时。
     /// </summary>
     public WasmPluginRuntime(Manifest manifest, string directory, string modulePath, PermissionGrant permissions, IReadOnlyDictionary<string, string> mounts, WasmHostContext host, ILogger logger)
@@ -356,22 +369,34 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// <inheritdoc />
     public async ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context)
     {
-        var acquired = await AcquireAsync(context.CancellationToken).ConfigureAwait(false);
-        if (!acquired.TryGetValue(out var instance))
+        if (!TryEnter())
         {
-            return acquired.Error!;
+            return Unavailable();
         }
 
-        var request = new InvokeRequest { Operation = operation, Payload = ByteString.CopyFrom(payload.Span), Metadata = PluginMetadata.FromContext(context) };
-        var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
-        if (!response.TryGetValue(out var invoked))
+        try
         {
-            return Expired(response.Error!, context);
-        }
+            var acquired = await AcquireAsync(context.CancellationToken).ConfigureAwait(false);
+            if (!acquired.TryGetValue(out var instance))
+            {
+                return acquired.Error!;
+            }
 
-        return invoked.Status is { Ok: true }
-            ? Result.Success<object>(new PluginPayload(invoked.Payload.Memory))
-            : Expired(PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!, context);
+            var request = new InvokeRequest { Operation = operation, Payload = ByteString.CopyFrom(payload.Span), Metadata = PluginMetadata.FromContext(context) };
+            var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
+            if (!response.TryGetValue(out var invoked))
+            {
+                return Expired(response.Error!, context);
+            }
+
+            return invoked.Status is { Ok: true }
+                ? Result.Success<object>(new PluginPayload(invoked.Payload.Memory))
+                : Expired(PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!, context);
+        }
+        finally
+        {
+            Exit();
+        }
     }
 
     /// <summary>
@@ -379,16 +404,28 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     public async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
-        var acquired = await AcquireAsync(context.CancellationToken).ConfigureAwait(false);
-        if (!acquired.TryGetValue(out var instance))
+        if (!TryEnter())
         {
-            return acquired.Error!;
+            return Unavailable();
         }
 
-        var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
-        var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
-        var delivered = response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
-        return delivered.IsSuccess ? delivered : Expired(delivered.Error!, context);
+        try
+        {
+            var acquired = await AcquireAsync(context.CancellationToken).ConfigureAwait(false);
+            if (!acquired.TryGetValue(out var instance))
+            {
+                return acquired.Error!;
+            }
+
+            var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
+            var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
+            var delivered = response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
+            return delivered.IsSuccess ? delivered : Expired(delivered.Error!, context);
+        }
+        finally
+        {
+            Exit();
+        }
     }
 
     /// <summary>
@@ -396,26 +433,87 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     public async ValueTask<Result<MiddlewareResponse>> MiddlewareAsync(string middleware, PipelineStage stage, string phase, InvocationContext context, Result? outcome, CancellationToken cancellationToken)
     {
-        var acquired = await AcquireAsync(cancellationToken).ConfigureAwait(false);
-        if (!acquired.TryGetValue(out var instance))
+        if (!TryEnter())
         {
-            return acquired.Error!;
+            return Unavailable();
         }
 
-        var request = new MiddlewareRequest
+        try
         {
-            Middleware = middleware,
-            Stage = stage.ToManifestName(),
-            Phase = phase,
-            Metadata = PluginMetadata.FromContext(context),
-            Operation = context.GetOperation().TryGetValue(out var descriptor) ? descriptor.Id : string.Empty,
-        };
-        if (outcome is { } downstream)
+            var acquired = await AcquireAsync(cancellationToken).ConfigureAwait(false);
+            if (!acquired.TryGetValue(out var instance))
+            {
+                return acquired.Error!;
+            }
+
+            var request = new MiddlewareRequest
+            {
+                Middleware = middleware,
+                Stage = stage.ToManifestName(),
+                Phase = phase,
+                Metadata = PluginMetadata.FromContext(context),
+                Operation = context.GetOperation().TryGetValue(out var descriptor) ? descriptor.Id : string.Empty,
+            };
+            if (outcome is { } downstream)
+            {
+                request.Outcome = PluginErrorMapper.ToStatus(downstream);
+            }
+
+            return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, null, cancellationToken).ConfigureAwait(false);
+        }
+        finally
         {
-            request.Outcome = PluginErrorMapper.ToStatus(downstream);
+            Exit();
+        }
+    }
+
+    /// <summary>
+    /// 等停止之前进入的调用都离开。
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="StopAsync"/> 之后、<see cref="Dispose"/> 之前调用：卸载时撤回之前已经进入管道的调用（在途的操作、中间件钩子）可能还在等调用锁或生命周期锁，释放了它们会撞上已释放的对象（ADR-0088）。停止时实例已经丢弃，它们拿到锁后只会按不可用返回，很快离开。
+    /// </remarks>
+    public Task DrainAsync()
+    {
+        // _stopping 已为真：此后进来的调用都在 TryEnter 里直接离开；此刻没有进行中的调用就不用等
+        if (Volatile.Read(ref _active) == 0)
+        {
+            _idle.TrySetResult();
         }
 
-        return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, null, cancellationToken).ConfigureAwait(false);
+        return _idle.Task;
+    }
+
+    /// <summary>
+    /// 登记一个进行中的调用。
+    /// </summary>
+    /// <remarks>
+    /// 停止之后返回假并不登记，调用方直接按不可用返回、不碰调用锁与实例。先加一再看停止标志：与 <see cref="DrainAsync"/> 先置停止标志再看计数配对，两边至少有一边看到对方。
+    /// </remarks>
+    private bool TryEnter()
+    {
+        Interlocked.Increment(ref _active);
+        if (!_stopping)
+        {
+            return true;
+        }
+
+        Exit();
+        return false;
+    }
+
+    /// <summary>
+    /// 一个进行中的调用离开。
+    /// </summary>
+    /// <remarks>
+    /// 停止之后最后一个离开的调用放行等在 <see cref="DrainAsync"/> 上的释放。
+    /// </remarks>
+    private void Exit()
+    {
+        if (Interlocked.Decrement(ref _active) == 0 && _stopping)
+        {
+            _idle.TrySetResult();
+        }
     }
 
     /// <summary>
@@ -448,9 +546,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </remarks>
     private async Task<Result<WasmInstance>> AcquireAsync(CancellationToken cancellationToken)
     {
-        if (IsServing)
+        // 实例只读一次：停止、卸载与崩溃处理随时可能把它置空，先判在服务再读第二次可能拿到空，
+        // 而 CallAsync 在调用锁里核对的是「仍是同一个实例」，空对空会被当成同一个
+        if (Serving() is { } serving)
         {
-            return _instance!;
+            return serving;
         }
 
         if (_stopping || _restartPending)
@@ -464,7 +564,19 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             return running.Error!;
         }
 
-        return IsServing ? _instance! : Unavailable();
+        return Serving() is { } started ? started : Unavailable();
+    }
+
+    /// <summary>
+    /// 可服务的当前实例。
+    /// </summary>
+    /// <remarks>
+    /// 实例为空或状态不在服务中时为空。
+    /// </remarks>
+    private WasmInstance? Serving()
+    {
+        var instance = _instance;
+        return instance is not null && State is LifecycleState.Started or LifecycleState.Ready or LifecycleState.Degraded ? instance : null;
     }
 
     /// <summary>
@@ -884,12 +996,22 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 return;
             }
 
-            if (!ReferenceEquals(_instance, instance) || _stopping)
+            // 停止之后不再轮询；登记为进行中的调用，释放运行时前会等这一轮结束
+            if (!ReferenceEquals(_instance, instance) || !TryEnter())
             {
                 return;
             }
 
-            var health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, null, token).ConfigureAwait(false);
+            Result<HealthResponse> health;
+            try
+            {
+                health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, null, token).ConfigureAwait(false);
+            }
+            finally
+            {
+                Exit();
+            }
+
             if (health.TryGetValue(out var response))
             {
                 failures = 0;

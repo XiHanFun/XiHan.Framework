@@ -13,7 +13,7 @@ namespace XiHan.Framework.Kernel.Pipeline;
 /// 按固定阶段组装执行管道（RFC-0004）。
 /// </summary>
 /// <remarks>
-/// 特性（<c>FeatureContext.AddMiddleware</c>）与应用（<c>AppBuilder.ConfigurePipeline</c>）在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。按类型登记的中间件由 <c>AppBuilder.Build</c> 以单例补登记进容器；不经 <c>AppBuilder</c> 直接使用时由调用方注册。
+/// 特性（<c>FeatureContext.AddMiddleware</c>）与应用（<c>AppBuilder.ConfigurePipeline</c>）在阶段内登记中间件并声明相对约束，构建时得到确定、可打印的顺序。按类型登记的中间件由 <c>AppBuilder.Build</c> 以单例补登记进容器；不经 <c>AppBuilder</c> 直接使用时由调用方注册。应用构建之后只能经 <see cref="UseOwned"/> 成组登记、经 <see cref="RemoveOwnedBy"/> 按归属撤回（RFC-0004「运行期改动」）；全部成员线程安全。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PipelineBuilder
@@ -35,6 +35,54 @@ public sealed class PipelineBuilder
     /// 类型的约束目标经 <see cref="FindByType"/> 解析。
     /// </remarks>
     private readonly Dictionary<MiddlewareKey, Registration> _byKey = [];
+
+    /// <summary>
+    /// 串行化登记、撤回、排序与构建。
+    /// </summary>
+    /// <remarks>
+    /// 配置阶段只有装配线程在登记；应用构建之后，插件宿主可能在运行期成组登记或按归属撤回，与并发调用取管道快照（<see cref="Build(PipelineStep, out long)"/>）、打印互斥。可重入：<see cref="UseOwned"/> 持锁期间回调里的登记再次进入。
+    /// </remarks>
+    private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 下一个注册序号。
+    /// </summary>
+    /// <remarks>
+    /// 单调递增、不随撤回回退：按归属撤回之后再登记的中间件不会与留下的注册重号。
+    /// </remarks>
+    private int _nextSequence;
+
+    /// <summary>
+    /// 管道版本。
+    /// </summary>
+    /// <remarks>
+    /// 每次改动加一，在 <see cref="_gate"/> 内写、无锁读；应用据此判断已构建的委托是否过时。
+    /// </remarks>
+    private long _version;
+
+    /// <summary>
+    /// 应用是否已构建。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="RegisterServices"/> 之后为真：容器已建好、按类型登记的中间件进不了容器，管道只能经 <see cref="UseOwned"/> 按实例成组登记、经 <see cref="RemoveOwnedBy"/> 撤回。
+    /// </remarks>
+    private bool _sealed;
+
+    /// <summary>
+    /// 正在成组登记的归属。
+    /// </summary>
+    /// <remarks>
+    /// 只在 <see cref="UseOwned"/> 持锁期间非空：组内的登记与次序约束都必须属于它，撤回时才能一个不漏、一个不多。
+    /// </remarks>
+    private string? _group;
+
+    /// <summary>
+    /// 管道版本。
+    /// </summary>
+    /// <remarks>
+    /// 每次登记、约束、成组登记与撤回都加一；<c>App</c> 版本没变时复用已构建的委托。
+    /// </remarks>
+    internal long Version => Volatile.Read(ref _version);
 
     /// <summary>
     /// 在 <see cref="PipelineStage.Transaction"/> 阶段末尾添加中间件。
@@ -89,8 +137,13 @@ public sealed class PipelineBuilder
         where TMiddleware : class, IPipelineMiddleware
         where TOther : class, IPipelineMiddleware
     {
-        var registration = Require(typeof(TMiddleware));
-        registration.Before.Add(typeof(TOther));
+        lock (_gate)
+        {
+            var registration = Constrain(Require(typeof(TMiddleware)));
+            registration.Before.Add(typeof(TOther));
+            Touch();
+        }
+
         return this;
     }
 
@@ -104,8 +157,13 @@ public sealed class PipelineBuilder
         where TMiddleware : class, IPipelineMiddleware
         where TOther : class, IPipelineMiddleware
     {
-        var registration = Require(typeof(TMiddleware));
-        registration.After.Add(typeof(TOther));
+        lock (_gate)
+        {
+            var registration = Constrain(Require(typeof(TMiddleware)));
+            registration.After.Add(typeof(TOther));
+            Touch();
+        }
+
         return this;
     }
 
@@ -120,7 +178,12 @@ public sealed class PipelineBuilder
     public PipelineBuilder Before(string middleware, string other)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(other);
-        RequireByName(middleware).BeforeNames.Add(other);
+        lock (_gate)
+        {
+            Constrain(RequireByName(middleware)).BeforeNames.Add(other);
+            Touch();
+        }
+
         return this;
     }
 
@@ -135,8 +198,98 @@ public sealed class PipelineBuilder
     public PipelineBuilder After(string middleware, string other)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(other);
-        RequireByName(middleware).AfterNames.Add(other);
+        lock (_gate)
+        {
+            Constrain(RequireByName(middleware)).AfterNames.Add(other);
+            Touch();
+        }
+
         return this;
+    }
+
+    /// <summary>
+    /// 一次登记同一归属的一组中间件与它们的次序约束，全进或全不进。
+    /// </summary>
+    /// <remarks>
+    /// <para><paramref name="configure"/> 在构建器的锁里执行，只应调用本构建器的登记方法：组内登记的归属都必须是 <paramref name="owner"/>，次序约束只能声明在组内的中间件上（目标可以在组外），否则抛出 <see cref="KernelErrors.PipelineRegistration"/>——这样 <see cref="RemoveOwnedBy"/> 撤回的恰好是这一组。</para>
+    /// <para>回调返回后立即按排序规则核对整条管道，约束目标未登记、有歧义、跨阶段（<see cref="KernelErrors.PipelineRegistration"/>）或成环（<see cref="KernelErrors.PipelineCycle"/>）时撤掉组内的全部登记再抛出，管道不变；不像配置阶段的单项登记那样等到构建或打印管道时才报。应用构建之后（容器已建好）组内只能按实例登记（<see cref="UseInstance"/>、<see cref="UseNamedInstance"/>）。成功后管道版本前进：之后开始的调用经过新登记的中间件，已经取到管道委托、正在执行的调用不受影响。不能嵌套。</para>
+    /// </remarks>
+    /// <param name="owner">这一组的归属（插件或特性的清单 ID）。</param>
+    /// <param name="configure">在构建器上登记这一组的回调。</param>
+    public PipelineBuilder UseOwned(string owner, Action<PipelineBuilder> configure)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+        ArgumentNullException.ThrowIfNull(configure);
+        lock (_gate)
+        {
+            if (_group is not null)
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, $"A middleware group owned by '{_group}' is being registered; groups cannot be nested.");
+            }
+
+            var start = _registrations.Count;
+            _group = owner;
+            try
+            {
+                configure(this);
+                // 组内约束的目标可能在组外：此刻排序一次核对整条管道，不把错误留给之后的调用在构建时才撞上
+                _ = Order();
+            }
+            catch
+            {
+                // 组内的登记都追加在末尾，约束只挂在组内的登记上：截掉末尾即恢复到成组登记之前
+                Restore(_registrations.Take(start).ToList());
+                throw;
+            }
+            finally
+            {
+                _group = null;
+            }
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// 按归属撤回登记的全部中间件。
+    /// </summary>
+    /// <remarks>
+    /// 在构建器的锁里一次撤回该归属的全部中间件（连同挂在它们上面的次序约束），之后立即按排序规则核对剩下的管道：别的归属的中间件以次序约束引用了被撤回的中间件时，撤回会留下指向不存在的中间件的约束，这时什么都不撤、抛出 <see cref="KernelErrors.PipelineRegistration"/>，先撤回引用方。没有该归属的登记时什么都不做、返回 0。成功后管道版本前进：之后开始的调用不再经过被撤回的中间件，已经取到管道委托、正在执行的调用仍按原来的管道走完。不能在 <see cref="UseOwned"/> 的回调里调用。
+    /// </remarks>
+    /// <param name="owner">归属（插件或特性的清单 ID）。</param>
+    /// <returns>撤回的中间件数。</returns>
+    public int RemoveOwnedBy(string owner)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+        lock (_gate)
+        {
+            if (_group is not null)
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, $"A middleware group owned by '{_group}' is being registered; middleware cannot be removed meanwhile.");
+            }
+
+            var kept = _registrations.Where(r => !string.Equals(r.Owner, owner, StringComparison.Ordinal)).ToList();
+            var removed = _registrations.Count - kept.Count;
+            if (removed == 0)
+            {
+                return 0;
+            }
+
+            var original = _registrations.ToList();
+            Restore(kept);
+            try
+            {
+                // 撤回不能留下悬空的约束：剩下的管道排不出来就整体还原，插件照常服务，由调用方先撤回引用方
+                _ = Order();
+            }
+            catch
+            {
+                Restore(original);
+                throw;
+            }
+
+            return removed;
+        }
     }
 
     /// <summary>
@@ -145,7 +298,13 @@ public sealed class PipelineBuilder
     /// <remarks>
     /// 约束成环抛出 <see cref="KernelErrors.PipelineCycle"/>，约束引用未注册或跨阶段的中间件抛出 <see cref="KernelErrors.PipelineRegistration"/>。
     /// </remarks>
-    public IReadOnlyList<MiddlewareDescriptor> Describe() => Order().Select(static r => r.Descriptor).ToList();
+    public IReadOnlyList<MiddlewareDescriptor> Describe()
+    {
+        lock (_gate)
+        {
+            return Order().Select(static r => r.Descriptor).ToList();
+        }
+    }
 
     /// <summary>
     /// 按 RFC-0004 的格式打印最终顺序，一行一个中间件。
@@ -179,9 +338,15 @@ public sealed class PipelineBuilder
     internal void RegisterServices(IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        foreach (var registration in _registrations)
+        lock (_gate)
         {
-            registration.Register?.Invoke(services);
+            foreach (var registration in _registrations)
+            {
+                registration.Register?.Invoke(services);
+            }
+
+            // 容器随后建好：之后按类型登记的中间件进不了容器，单项登记也不再核对就生效，统统改走成组登记
+            _sealed = true;
         }
     }
 
@@ -191,10 +356,26 @@ public sealed class PipelineBuilder
     /// <remarks>
     /// 每次调用时中间件从 <see cref="InvocationContext.Services"/> 解析；<paramref name="terminal"/> 在所有中间件之后执行。
     /// </remarks>
-    public PipelineStep Build(PipelineStep terminal)
+    public PipelineStep Build(PipelineStep terminal) => Build(terminal, out _);
+
+    /// <summary>
+    /// 构建管道委托并给出它对应的管道版本。
+    /// </summary>
+    /// <remarks>
+    /// 排序与取版本在同一段锁里：委托恰好是该版本的管道，之后的改动使版本前进。<c>App</c> 据此缓存委托。
+    /// </remarks>
+    /// <param name="terminal">所有中间件之后执行的终点。</param>
+    /// <param name="version">委托对应的管道版本。</param>
+    internal PipelineStep Build(PipelineStep terminal, out long version)
     {
         ArgumentNullException.ThrowIfNull(terminal);
-        var ordered = Order();
+        List<Registration> ordered;
+        lock (_gate)
+        {
+            ordered = Order();
+            version = _version;
+        }
+
         // 从终点向前逐层包裹：每一层捕获它的下一步，最终返回最外层（第一个中间件）的委托。
         var next = terminal;
         for (var i = ordered.Count - 1; i >= 0; i--)
@@ -228,18 +409,96 @@ public sealed class PipelineBuilder
             throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{stage}'.");
         }
 
-        var key = new MiddlewareKey(middleware, name);
-        if (_byKey.ContainsKey(key))
+        lock (_gate)
         {
-            throw new FrameworkException(KernelErrors.PipelineRegistration, name is null
-                ? $"Middleware '{middleware.FullName}' is already registered; each middleware type may appear only once in a pipeline unless its instances are named."
-                : $"Middleware '{middleware.FullName}' named '{name}' is already registered; instance names must be unique within a type.");
+            EnsureMutable();
+            var label = name is null ? middleware.FullName : $"{middleware.FullName}[{name}]";
+            if (_group is not null && !string.Equals(owner, _group, StringComparison.Ordinal))
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{label}' is owned by '{owner}' but is registered in the group owned by '{_group}'; a group has exactly one owner.");
+            }
+
+            // 容器已经建好：按类型登记的中间件补登记不进去，每次调用解析都会失败，现在就拒绝
+            if (_sealed && register is not null)
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{label}' cannot be registered by type after the application has been built; register an instance with 'UseInstance' or 'UseNamedInstance'.");
+            }
+
+            var key = new MiddlewareKey(middleware, name);
+            if (_byKey.ContainsKey(key))
+            {
+                throw new FrameworkException(KernelErrors.PipelineRegistration, name is null
+                    ? $"Middleware '{middleware.FullName}' is already registered; each middleware type may appear only once in a pipeline unless its instances are named."
+                    : $"Middleware '{middleware.FullName}' named '{name}' is already registered; instance names must be unique within a type.");
+            }
+
+            var registration = new Registration(middleware, name, stage, placement, owner, _nextSequence++, resolve, register);
+            _registrations.Add(registration);
+            _byKey[key] = registration;
+            Touch();
         }
 
-        var registration = new Registration(middleware, name, stage, placement, owner, _registrations.Count, resolve, register);
-        _registrations.Add(registration);
-        _byKey[key] = registration;
         return this;
+    }
+
+    /// <summary>
+    /// 应用构建之后拒绝单项改动。
+    /// </summary>
+    /// <remarks>
+    /// 单项登记与约束不立即核对（目标可以晚于约束登记），应用构建之后这样改会让下一次调用在构建管道时才失败；成组登记（<see cref="UseOwned"/>）期间放行，由它在回调之后整体核对。
+    /// </remarks>
+    private void EnsureMutable()
+    {
+        if (_sealed && _group is null)
+        {
+            throw new FrameworkException(KernelErrors.PipelineRegistration, "The pipeline of a built application can only be changed with 'UseOwned' or 'RemoveOwnedBy'.");
+        }
+    }
+
+    /// <summary>
+    /// 核对能否在约束主体上声明次序约束。
+    /// </summary>
+    /// <remarks>
+    /// 应用构建之后只能在成组登记里声明；成组登记时主体必须是组内的中间件：挂在组外中间件上的约束不会随这一组撤回。
+    /// </remarks>
+    /// <param name="registration">约束主体。</param>
+    private Registration Constrain(Registration registration)
+    {
+        EnsureMutable();
+        if (_group is not null && !string.Equals(registration.Owner, _group, StringComparison.Ordinal))
+        {
+            throw new FrameworkException(KernelErrors.PipelineRegistration, $"Middleware '{registration.Label}' is not in the group owned by '{_group}'; a group can only declare ordering constraints for its own middleware.");
+        }
+
+        return registration;
+    }
+
+    /// <summary>
+    /// 管道版本前进。
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="_gate"/> 内调用；读取方无锁读取。
+    /// </remarks>
+    private void Touch() => Volatile.Write(ref _version, _version + 1);
+
+    /// <summary>
+    /// 把注册换成给定的列表并重建索引。
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="_gate"/> 内调用，撤回与回滚共用；注册对象本身（含挂在上面的约束）不变。
+    /// </remarks>
+    /// <param name="registrations">新的注册列表，按注册顺序。</param>
+    private void Restore(List<Registration> registrations)
+    {
+        _registrations.Clear();
+        _registrations.AddRange(registrations);
+        _byKey.Clear();
+        foreach (var registration in registrations)
+        {
+            _byKey[new MiddlewareKey(registration.Middleware, registration.Name)] = registration;
+        }
+
+        Touch();
     }
 
     /// <summary>
