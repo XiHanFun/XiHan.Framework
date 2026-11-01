@@ -934,13 +934,13 @@
         {
           "key": "AccessKey",
           "type": "string",
-          "sample": "minioadmin",
+          "sample": "rustfsadmin",
           "summary": "访问密钥 ID；与 SecretKey 都没有时用 AWS SDK 默认凭据链；绑定属性 accessKey 优先（空白不算）"
         },
         {
           "key": "SecretKey",
           "type": "string",
-          "sample": "minioadmin",
+          "sample": "rustfsadmin",
           "summary": "访问密钥；绑定属性 secretKey 优先（空白不算）"
         },
         {

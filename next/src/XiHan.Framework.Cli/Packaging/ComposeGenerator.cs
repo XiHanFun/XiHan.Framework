@@ -47,11 +47,11 @@ internal static class ComposeGenerator
         {
             yaml.Pair(6, "XiHan__Bindings__" + binding + "__type", settings.Type)
                 .Pair(6, "XiHan__Bindings__" + binding + "__value", BindingKind.Find(settings.Type)!.ComposeValue(binding, manifest.Name));
-            // MinIO 的凭据不在主值里：以绑定的属性注入，覆盖 S3 Provider 配置节里的同名键（RFC-0016）；其余类型的凭据在主值里或服务未开认证
+            // S3 的凭据不在主值里：以绑定的属性注入，覆盖 S3 Provider 配置节里的同名键（RFC-0016）；其余类型的凭据在主值里或服务未开认证
             if (settings.Type == "blob")
             {
-                yaml.Pair(6, "XiHan__Bindings__" + binding + "__accessKey", BindingKind.MinioUser)
-                    .Pair(6, "XiHan__Bindings__" + binding + "__secretKey", BindingKind.MinioPassword);
+                yaml.Pair(6, "XiHan__Bindings__" + binding + "__accessKey", BindingKind.BlobAccessKey)
+                    .Pair(6, "XiHan__Bindings__" + binding + "__secretKey", BindingKind.BlobSecretKey);
             }
         }
 
@@ -131,12 +131,12 @@ internal static class ComposeGenerator
                     volumes.Add(binding + "-data");
                     break;
                 default:
-                    yaml.Line(4, "command: [\"server\", \"/data\"]")
-                        .Line(4, "environment:")
-                        .Pair(6, "MINIO_ROOT_USER", BindingKind.MinioUser)
-                        .Pair(6, "MINIO_ROOT_PASSWORD", BindingKind.MinioPassword)
+                    // S3 兼容的 RustFS（ADR-0086）：镜像缺省就以 /data 为数据目录启动，根凭据取自环境变量；健康端点 /health 不要求认证
+                    yaml.Line(4, "environment:")
+                        .Pair(6, "RUSTFS_ACCESS_KEY", BindingKind.BlobAccessKey)
+                        .Pair(6, "RUSTFS_SECRET_KEY", BindingKind.BlobSecretKey)
                         .Line(4, "healthcheck:")
-                        .Line(6, "test: [\"CMD\", \"mc\", \"ready\", \"local\"]")
+                        .Line(6, $"test: [\"CMD\", \"curl\", \"-fs\", \"http://localhost:{kind.Port}/health\"]")
                         .Pair(6, "interval", "5s")
                         .Line(4, "volumes:")
                         .Line(6, "- " + binding + "-data:/data");

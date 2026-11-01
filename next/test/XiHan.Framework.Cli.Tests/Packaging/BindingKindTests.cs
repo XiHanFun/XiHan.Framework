@@ -55,11 +55,13 @@ public sealed class BindingKindTests
     [Fact]
     public void EveryBindingKind_PinsItsComposeImageTag()
     {
-        // 新增的种类固定镜像版本；blob 的 MinIO 镜像沿用既有写法
-        foreach (var kind in BindingKind.All.Where(static k => k.Type != "blob"))
+        // 依赖服务镜像一律固定版本（RFC-0016 规则 2），blob 也不例外（ADR-0086）
+        foreach (var kind in BindingKind.All)
         {
-            var tag = kind.Image[(kind.Image.LastIndexOf(':') + 1)..];
-            Assert.True(kind.Image.Contains(':', StringComparison.Ordinal) && tag != "latest", $"'{kind.Type}' must pin its image tag, but uses '{kind.Image}'.");
+            Assert.True(kind.Image.Contains(':', StringComparison.Ordinal) && kind.ImageTag != "latest", $"'{kind.Type}' must pin its image tag, but uses '{kind.Image}'.");
+            Assert.Equal(kind.Image, kind.ImageName + ":" + kind.ImageTag);
         }
+
+        Assert.Equal(("rustfs/rustfs", "1.0.4"), (BindingKind.Find("blob")!.ImageName, BindingKind.Find("blob")!.ImageTag));
     }
 }

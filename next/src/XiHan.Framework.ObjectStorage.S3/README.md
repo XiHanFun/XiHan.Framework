@@ -7,7 +7,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 ```
 
 ```json
-{ "XiHan": { "ObjectStorage": { "S3": { "ServiceUrl": "http://localhost:9000", "Region": "us-east-1", "AccessKey": "minioadmin", "SecretKey": "minioadmin", "ForcePathStyle": true, "EnsureBuckets": false } } } }
+{ "XiHan": { "ObjectStorage": { "S3": { "ServiceUrl": "http://localhost:9000", "Region": "us-east-1", "AccessKey": "rustfsadmin", "SecretKey": "rustfsadmin", "ForcePathStyle": true, "EnsureBuckets": false } } } }
 ```
 
 绑定 `objectstorage`（`blob`，可选；类型取 RFC-0016 的绑定类型词表）存在时逐项覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`；空白的主值与属性不算给出（RFC-0016「资源绑定与配置节」）。
@@ -15,7 +15,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 ## 规则
 
 - `ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域（默认 `us-east-1`），并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` / `SecretKey` 都为空时走 SDK 默认凭据链（环境变量、配置文件、实例角色）。应用自己注册的 `IAmazonS3` 优先于本特性创建的客户端。
-- 写入：`Overwrite = false` 先 HEAD 再带 `If-None-Match: *` 写入，服务端支持条件写入（Amazon S3、MinIO）时由它保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。`EnsureBuckets = true` 时桶不存在就建桶再重试一次，默认由基础设施预先建桶。
+- 写入：`Overwrite = false` 先 HEAD 再带 `If-None-Match: *` 写入，服务端支持条件写入（Amazon S3、MinIO、RustFS）时由它保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。`EnsureBuckets = true` 时桶不存在就建桶再重试一次，默认由基础设施预先建桶。
 - 读取：`Get` 的内容流释放时连同响应一起释放；`Head` 返回长度、内容类型、ETag、修改时间与去掉 `x-amz-meta-` 前缀的自定义元数据。
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
 - 列举：`ListObjectsV2` 按前缀分页（S3 保证键的序数顺序），续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为默认值、自定义元数据为空，需要时再 `Head`；不符合键文法的对象（如以 `/` 结尾的"目录"占位）跳过；桶不存在视作空容器。
@@ -32,8 +32,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 
 ## 测试
 
-`ObjectStorage.S3.Tests` 在设置环境变量 `XIHAN_TEST_S3`（服务端点，如 `http://localhost:9000`）时对真实服务跑 `ObjectStorage.Conformance` 全部用例（含命名实例的 `BlobStoreProviderConformance`），`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `minioadmin`；未设置时跳过。本地用 `docker run -p 9000:9000 quay.io/minio/minio server /data` 起一个 MinIO 即可。
+`ObjectStorage.S3.Tests` 在设置环境变量 `XIHAN_TEST_S3`（服务端点，如 `http://localhost:9000`）时对真实服务跑 `ObjectStorage.Conformance` 全部用例（含命名实例的 `BlobStoreProviderConformance`），`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`；未设置时跳过。本地用 `docker run -p 9000:9000 rustfs/rustfs:1.0.4` 起一个 S3 兼容的 RustFS 即可（不设 `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` 时根凭据就是 `rustfsadmin`；MinIO 社区版已停发镜像，选型见 ADR-0086）。
 
 ## 状态
 
-P5：可用，通过 `ObjectStorage.Conformance`（MinIO）。
+P5：可用，通过 `ObjectStorage.Conformance`（RustFS 1.0.4，此前 MinIO）。

@@ -22,7 +22,7 @@ internal sealed record BindingKind(string Type, string Image, int Port)
         new("connection:relational", "postgres:17-alpine", 5432),
         new("cache:distributed", "redis:7-alpine", 6379),
         new("queue", "rabbitmq:4-alpine", 5672),
-        new("blob", "minio/minio", 9000),
+        new("blob", "rustfs/rustfs:1.0.4", 9000),
         new("stream", "apache/kafka:4.1.0", 9092),
         new("configuration:remote", "nacos/nacos-server:v2.5.1", 8848),
     ];
@@ -47,18 +47,31 @@ internal sealed record BindingKind(string Type, string Image, int Port)
     };
 
     /// <summary>
-    /// 本地联调的 MinIO 根用户名。
+    /// 镜像名（不含标签）。
     /// </summary>
     /// <remarks>
-    /// Compose 与 Aspire 以它启动 MinIO，并作为 <c>blob</c> 绑定的属性 <c>accessKey</c> 注入应用（RFC-0016「资源绑定与配置节」）。只用于本地联调。
+    /// Aspire 的容器资源把镜像名与标签分开传。
     /// </remarks>
-    public const string MinioUser = "xihan";
+    public string ImageName => Image[..Image.LastIndexOf(':')];
 
     /// <summary>
-    /// 本地联调的 MinIO 根密码。
+    /// 镜像标签。
+    /// </summary>
+    public string ImageTag => Image[(Image.LastIndexOf(':') + 1)..];
+
+    /// <summary>
+    /// 本地联调的 S3 访问密钥 ID。
     /// </summary>
     /// <remarks>
-    /// 作为 <c>blob</c> 绑定的属性 <c>secretKey</c> 注入应用；MinIO 要求至少 8 个字符。只用于本地联调。
+    /// Compose 与 Aspire 以它启动 RustFS（<c>RUSTFS_ACCESS_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>accessKey</c> 注入应用（RFC-0016「资源绑定与配置节」）。只用于本地联调。
     /// </remarks>
-    public const string MinioPassword = "xihanxihan";
+    public const string BlobAccessKey = "xihan";
+
+    /// <summary>
+    /// 本地联调的 S3 访问密钥。
+    /// </summary>
+    /// <remarks>
+    /// RustFS 以它启动（<c>RUSTFS_SECRET_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>secretKey</c> 注入应用；取至少 8 个字符，兼容服务多有此下限。只用于本地联调。
+    /// </remarks>
+    public const string BlobSecretKey = "xihanxihan";
 }

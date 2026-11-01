@@ -70,19 +70,16 @@ internal static class AspireGenerator
                     break;
                 case "configuration:remote":
                     // Aspire 没有 Nacos 集成：以容器运行 standalone，注入端点 URL（路径缺省即上下文路径 /nacos）
-                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"nacos/nacos-server\", \"v2.5.1\").WithEnvironment(\"MODE\", \"standalone\").WithHttpEndpoint(port: 8848, targetPort: 8848, name: \"http\");\n");
+                    var nacos = BindingKind.Find(settings.Type)!;
+                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"{nacos.ImageName}\", \"{nacos.ImageTag}\").WithEnvironment(\"MODE\", \"standalone\").WithHttpEndpoint(port: {nacos.Port}, targetPort: {nacos.Port}, name: \"http\");\n");
                     break;
                 default:
-                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"minio/minio\").WithArgs(\"server\", \"/data\").WithHttpEndpoint(port: 9000, targetPort: 9000, name: \"api\");\n");
+                    // Aspire 没有 RustFS 集成：以容器运行，用固定的本地联调凭据启动，应用经 blob 绑定的属性拿到同一对凭据（RFC-0016）；
+                    // 其余资源的凭据在 Aspire 集成的连接串里，或服务没有开认证
+                    var blob = BindingKind.Find(settings.Type)!;
+                    builder.Append(CultureInfo.InvariantCulture, $"        var {variable} = builder.AddContainer(\"{binding}\", \"{blob.ImageName}\", \"{blob.ImageTag}\").WithEnvironment(\"RUSTFS_ACCESS_KEY\", \"{BindingKind.BlobAccessKey}\").WithEnvironment(\"RUSTFS_SECRET_KEY\", \"{BindingKind.BlobSecretKey}\").WithHttpEndpoint(port: {blob.Port}, targetPort: {blob.Port}, name: \"api\");\n");
                     break;
             }
-        }
-
-        // MinIO 容器以固定的本地联调凭据启动，应用经 blob 绑定的属性拿到同一对凭据（RFC-0016）；
-        // 其余资源的凭据在 Aspire 集成的连接串里，或服务没有开认证
-        foreach (var binding in manifest.Bindings.Where(static b => b.Value.Type == "blob").Select(static b => b.Key).Order(StringComparer.Ordinal))
-        {
-            builder.Append(CultureInfo.InvariantCulture, $"        {Identifier(binding, lowerFirst: true)}.WithEnvironment(\"MINIO_ROOT_USER\", \"{BindingKind.MinioUser}\").WithEnvironment(\"MINIO_ROOT_PASSWORD\", \"{BindingKind.MinioPassword}\");\n");
         }
 
         builder.Append(CultureInfo.InvariantCulture, $"        var app = builder.AddProject<{project}>(\"{manifest.Name}\")\n");
@@ -114,8 +111,8 @@ internal static class AspireGenerator
             });
             if (settings.Type == "blob")
             {
-                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__accessKey\", \"{BindingKind.MinioUser}\")\n");
-                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__secretKey\", \"{BindingKind.MinioPassword}\")\n");
+                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__accessKey\", \"{BindingKind.BlobAccessKey}\")\n");
+                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__secretKey\", \"{BindingKind.BlobSecretKey}\")\n");
             }
 
             if (references.Contains(variable))

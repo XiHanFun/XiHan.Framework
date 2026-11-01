@@ -74,7 +74,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 ```text
 /bindings/objectstorage/type          blob
-/bindings/objectstorage/uri           http://minio:9000
+/bindings/objectstorage/uri           http://s3.internal:9000
 /bindings/objectstorage/accessKey     dev-access-key
 /bindings/objectstorage/secretKey     dev-secret-key
 ```
@@ -92,10 +92,10 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 ## 使用示例
 
-本地用 MinIO 开发：
+本地用 S3 兼容的 RustFS 开发（MinIO 社区版已停发镜像，ADR-0086）：
 
 ```bash
-docker run -p 9000:9000 quay.io/minio/minio server /data
+docker run -p 9000:9000 -e RUSTFS_ACCESS_KEY=rustfsadmin -e RUSTFS_SECRET_KEY=rustfsadmin rustfs/rustfs:1.0.4
 ```
 
 按租户使用不同的桶与密钥，定义来自应用自己的库：
@@ -121,7 +121,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 
 ## 行为与限制
 
-- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入；服务端支持条件写入（Amazon S3、MinIO）时由它保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`。
+- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入；服务端支持条件写入（Amazon S3、MinIO、RustFS）时由它保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；不认 `If-None-Match` 的兼容服务（实测 Garage、Zenko CloudServer）只剩先 HEAD 的检查，并发写入可能覆盖。
 - 不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。
 - 读取：`GetAsync` 的内容流释放时连同响应一起释放；`HeadAsync` 返回长度、内容类型、ETag、修改时间与去掉 `x-amz-meta-` 前缀的自定义元数据。
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
@@ -132,7 +132,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
 - 健康项 `objectstorage.s3.connection`：启动时同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，原因是 SDK 的异常消息），应用仍在服务。
 - 命名实例被替换、移除或应用停止时释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；探测对实例的 `HealthBucket` 做 HEAD，没配时列桶。
-- 通过 `ObjectStorage.Conformance` 全部用例（对 MinIO 验证）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `minioadmin`；未设置时跳过。
+- 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，此前对 MinIO 验证；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。
 
 | 错误码 | 含义 |
 | --- | --- |

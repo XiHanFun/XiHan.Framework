@@ -10,7 +10,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 真实的 S3 兼容服务来自环境变量 <c>XIHAN_TEST_S3</c>。
 /// </summary>
 /// <remarks>
-/// 服务端点，如 <c>http://localhost:9000</c>。密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>minioadmin</c>）。未设置端点时跳过需要它的用例。
+/// 服务端点，如 <c>http://localhost:9000</c>。密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>rustfsadmin</c>，即 RustFS 镜像不设密钥时的根凭据，ADR-0086）。未设置端点时跳过需要它的用例。
 /// </remarks>
 internal static class S3TestServer
 {
@@ -45,12 +45,12 @@ internal static class S3TestServer
     /// <summary>
     /// 访问密钥 ID。
     /// </summary>
-    public static string AccessKey => Environment.GetEnvironmentVariable("XIHAN_TEST_S3_ACCESS_KEY") is { Length: > 0 } key ? key : "minioadmin";
+    public static string AccessKey => Environment.GetEnvironmentVariable("XIHAN_TEST_S3_ACCESS_KEY") is { Length: > 0 } key ? key : "rustfsadmin";
 
     /// <summary>
     /// 访问密钥。
     /// </summary>
-    public static string SecretKey => Environment.GetEnvironmentVariable("XIHAN_TEST_S3_SECRET_KEY") is { Length: > 0 } key ? key : "minioadmin";
+    public static string SecretKey => Environment.GetEnvironmentVariable("XIHAN_TEST_S3_SECRET_KEY") is { Length: > 0 } key ? key : "rustfsadmin";
 
     /// <summary>
     /// 返回服务端点。

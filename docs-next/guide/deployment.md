@@ -117,24 +117,28 @@ ENTRYPOINT ["dotnet", "KubernetesApp.dll"]
 
 Deployment 带三个探针、停机宽限、Pod 与容器的安全上下文（`runAsNonRoot`、`seccompProfile: RuntimeDefault`、`allowPrivilegeEscalation: false`、丢弃全部能力、只读根文件系统，`/tmp` 是 emptyDir）、资源、配置挂载与绑定挂载；Service 暴露同名的 `http` / `grpc` 端口；`kustomization.yaml` 的 `images` 写入 `image.tag`。
 
-Kustomize 产物只包含应用自己，不在集群里起依赖服务：六种绑定类型一律只生成 Secret 示例 `bindings.example.yaml`（键 `type` 与 `uri`）与挂载，PostgreSQL、Redis、RabbitMQ、MinIO 如此，Kafka（`stream`）与 Nacos（`configuration:remote`）也一样（ADR-0083）。集群里的数据库、缓存、消息与配置中心要按环境定副本数、存储类、备份与升级策略，生成器给不出通用的正确答案，由部署方用各自的 Helm Chart、Operator 或托管服务提供，再按示例创建绑定 Secret。单节点的本地联调形态见下文的 Compose 与 Aspire。
+Kustomize 产物只包含应用自己，不在集群里起依赖服务：六种绑定类型一律只生成 Secret 示例 `bindings.example.yaml`（键 `type` 与 `uri`）与挂载，PostgreSQL、Redis、RabbitMQ、S3 兼容存储如此，Kafka（`stream`）与 Nacos（`configuration:remote`）也一样（ADR-0083）。集群里的数据库、缓存、消息与配置中心要按环境定副本数、存储类、备份与升级策略，生成器给不出通用的正确答案，由部署方用各自的 Helm Chart、Operator 或托管服务提供，再按示例创建绑定 Secret。单节点的本地联调形态见下文的 Compose 与 Aspire。
 
 ### Compose 与 Aspire
 
-Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。`blob` 的凭据不在主值里：两者都以 `MINIO_ROOT_USER=xihan`、`MINIO_ROOT_PASSWORD=xihanxihan` 启动 MinIO，并把同一对值作为绑定属性 `XiHan__Bindings__<绑定名>__accessKey` / `__secretKey` 注入，覆盖 S3 配置节里的同名键（[配置](./configuration)「资源绑定」）；其余类型的凭据已在主值里（PostgreSQL 连接串、AMQP URI，Aspire 集成资源的连接串自带口令），或依赖服务没开认证（Redis、Kafka、Nacos）。
+Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。`blob` 的凭据不在主值里：两者都以 `RUSTFS_ACCESS_KEY=xihan`、`RUSTFS_SECRET_KEY=xihanxihan` 启动 S3 兼容的 RustFS，并把同一对值作为绑定属性 `XiHan__Bindings__<绑定名>__accessKey` / `__secretKey` 注入，覆盖 S3 配置节里的同名键（[配置](./configuration)「资源绑定」）；其余类型的凭据已在主值里（PostgreSQL 连接串、AMQP URI，Aspire 集成资源的连接串自带口令），或依赖服务没开认证（Redis、Kafka、Nacos）。
 
 | 绑定类型 | Compose 镜像 | 注入的 `value` | Aspire |
 | --- | --- | --- | --- |
 | `connection:relational` | `postgres:17-alpine` | `Host=<绑定名>;Port=5432;Database=<应用名>;Username=xihan;Password=xihan` | `AddPostgres(<绑定名>).AddDatabase(<应用名>)` |
 | `cache:distributed` | `redis:7-alpine` | `<绑定名>:6379` | `AddRedis(<绑定名>)` |
 | `queue` | `rabbitmq:4-alpine` | `amqp://guest:guest@<绑定名>:5672` | `AddRabbitMQ(<绑定名>)` |
-| `blob` | `minio/minio` | `http://<绑定名>:9000` | `AddContainer(<绑定名>, "minio/minio")` |
+| `blob` | `rustfs/rustfs:1.0.4`（S3 兼容） | `http://<绑定名>:9000` | `AddContainer(<绑定名>, "rustfs/rustfs", "1.0.4")`，注入它的 `api` 端点 |
 | `stream` | `apache/kafka:4.1.0`（单节点 KRaft） | `<绑定名>:9092` | `AddKafka(<绑定名>)` |
 | `configuration:remote` | `nacos/nacos-server:v2.5.1`（standalone） | `http://<绑定名>:8848` | `AddContainer(<绑定名>, "nacos/nacos-server", "v2.5.1")`，注入它的 `http` 端点 |
 
 这六种类型与框架 Provider 声明的绑定一一对应：持久化的 `db`（`connection:relational`）、`Caching.Redis` 的 `cache`（`cache:distributed`）、`Messaging.RabbitMQ` 的 `queue`（`queue`）、`ObjectStorage.S3` 的 `objectstorage`（`blob`）、`Messaging.Kafka` 的 `stream`（`stream`）、`Configuration.Nacos` 的 `nacos`（`configuration:remote`）。清单里的绑定名要写成 Provider 读取的这些名字，Provider 才取得到注入的值。
 
-Kafka 依赖服务是单节点 KRaft（同一进程兼任 broker 与 controller），对外监听地址写成依赖服务名 `PLAINTEXT://<绑定名>:9092`，应用在 Compose 网络里拿到的集群元数据才可达；主题按需自动创建，内部主题副本数为 1。Nacos 依赖服务以 `MODE=standalone` 运行，配置存在内嵌存储里，数据目录挂命名卷 `<绑定名>-data`，删卷才会清空；应用要读的 `dataId` 先在 Nacos 里建好。两者都是 JVM 服务，healthcheck 另设 `start_period`（Kafka 30 秒、Nacos 60 秒），启动期内的失败不计入重试。依赖服务都不映射宿主机端口，要从宿主机访问（如打开 Nacos 控制台）时在 `compose.yaml` 外另加一份 override 文件声明 `ports`。
+Kafka 依赖服务是单节点 KRaft（同一进程兼任 broker 与 controller），对外监听地址写成依赖服务名 `PLAINTEXT://<绑定名>:9092`，应用在 Compose 网络里拿到的集群元数据才可达；主题按需自动创建，内部主题副本数为 1。Nacos 依赖服务以 `MODE=standalone` 运行，配置存在内嵌存储里，数据目录挂命名卷 `<绑定名>-data`，删卷才会清空；应用要读的 `dataId` 先在 Nacos 里建好。两者都是 JVM 服务，healthcheck 另设 `start_period`（Kafka 30 秒、Nacos 60 秒），启动期内的失败不计入重试。
+
+`blob` 的依赖服务是 RustFS（Apache-2.0）而不是 MinIO：MinIO 社区版已停发镜像，Docker Hub 上的 `minio/minio` 拉取不到。RustFS 以 `/data` 为数据目录（挂命名卷 `<绑定名>-data`），healthcheck 请求不需认证的 `/health`；桶不会自动创建，应用开 `XiHan:ObjectStorage:S3:EnsureBuckets` 或先自行建桶。选型时实测过的其余 S3 兼容服务与差异见 ADR-0086；生产环境照常连 Amazon S3 或其他兼容服务，S3 Provider 不绑定某一家。
+
+依赖服务都不映射宿主机端口，要从宿主机访问（如打开 Nacos 控制台）时在 `compose.yaml` 外另加一份 override 文件声明 `ports`。
 
 Compose 里的账号口令是本地联调用的固定开发值。应用服务的 healthcheck 用镜像里的就绪探针请求 `http://127.0.0.1:<ports.http>/health/ready`，`interval`、`timeout`、`start_period` 分别取 `probes.periodSeconds`、`timeoutSeconds`、`startupSeconds`：
 

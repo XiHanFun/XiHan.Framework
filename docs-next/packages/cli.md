@@ -156,7 +156,7 @@ dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- setup --client claude    # 不�
 - Ctrl+C 先取消当前命令，让它按取消语义收尾，而不是直接终止进程。
 - `pack` 只读清单与它引用的文件（项目、构建上下文、`config.files`），不构建项目、不调用 Docker 或 kubectl。
 - 生成的 Compose 应用服务 healthcheck 用 Dockerfile 随镜像构建的就绪探针 `/xihan/healthprobe` 请求 `/health/ready`（chiseled 镜像里没有 `curl` 与 `wget`；AOT 镜像里是原生可执行文件，否则以 `dotnet` 运行框架依赖的探针），`interval` / `timeout` / `start_period` 取 `probes` 的三个秒数。
-- 绑定在 Compose 与 Aspire 里以 `XiHan__Bindings__<名>__type` / `__value` 注入；`blob` 的 MinIO 以固定的本地联调凭据启动，同一对值另作绑定属性 `accessKey` / `secretKey` 注入，覆盖 S3 配置节里的同名键。Kustomize 的 `bindings.example.yaml` 以注释列出各类型可单独给出的凭据键（RFC-0016「资源绑定与配置节」）。
+- 绑定在 Compose 与 Aspire 里以 `XiHan__Bindings__<名>__type` / `__value` 注入；`blob` 的依赖服务是 S3 兼容的 RustFS（`rustfs/rustfs:1.0.4`，MinIO 社区版已停发镜像，ADR-0086），以固定的本地联调凭据启动，同一对值另作绑定属性 `accessKey` / `secretKey` 注入，覆盖 S3 配置节里的同名键。Kustomize 的 `bindings.example.yaml` 以注释列出各类型可单独给出的凭据键（RFC-0016「资源绑定与配置节」）。
 - `CliMessages.Catalog` 是工具的消息目录（目录名 `cli`），10 种区域各一个文件。
 
 ## 相关

@@ -140,7 +140,7 @@ kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通�
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses`；属性 `username`、`password` 覆盖 `Username`、`Password` |
 | `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
 
-表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`（MinIO 另注入 `accessKey`、`secretKey` 两个属性，其余服务的凭据在主值里或没开认证），Kustomize 产物不在集群里起依赖服务（Kafka、Nacos 也不起），只按 Service Binding 规范挂 Secret，示例 Secret 以注释列出各类型可单独给出的凭据键（见[部署](./deployment)）。
+表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`（`blob` 的依赖服务是 S3 兼容的 RustFS，另注入 `accessKey`、`secretKey` 两个属性，其余服务的凭据在主值里或没开认证），Kustomize 产物不在集群里起依赖服务（Kafka、Nacos 也不起），只按 Service Binding 规范挂 Secret，示例 Secret 以注释列出各类型可单独给出的凭据键（见[部署](./deployment)）。
 
 应用自己的特性声明绑定的写法：
 

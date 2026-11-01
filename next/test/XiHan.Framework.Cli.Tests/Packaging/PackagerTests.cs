@@ -180,13 +180,13 @@ public sealed class PackagerTests
         Assert.Contains("XiHan__Bindings__cache__value: cache:6379", compose, StringComparison.Ordinal);
         Assert.Contains("XiHan__Bindings__queue__value: amqp://guest:guest@queue:5672", compose, StringComparison.Ordinal);
         Assert.Contains("XiHan__Bindings__blob__value: http://blob:9000\n      XiHan__Bindings__blob__accessKey: xihan\n      XiHan__Bindings__blob__secretKey: xihanxihan\n", compose, StringComparison.Ordinal);
-        Assert.Contains("MINIO_ROOT_USER: xihan\n      MINIO_ROOT_PASSWORD: xihanxihan\n", compose, StringComparison.Ordinal);
+        Assert.Contains("  blob:\n    image: rustfs/rustfs:1.0.4\n    environment:\n      RUSTFS_ACCESS_KEY: xihan\n      RUSTFS_SECRET_KEY: xihanxihan\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-fs\", \"http://localhost:9000/health\"]\n      interval: 5s\n    volumes:\n      - blob-data:/data\n", compose, StringComparison.Ordinal);
+        Assert.DoesNotContain("minio", compose, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("XiHan__Bindings__queue__password", compose, StringComparison.Ordinal);
         Assert.Contains("depends_on:\n      blob:\n        condition: service_healthy", compose, StringComparison.Ordinal);
         Assert.Contains("  db:\n    image: postgres:17-alpine", compose, StringComparison.Ordinal);
         Assert.Contains("  cache:\n    image: redis:7-alpine", compose, StringComparison.Ordinal);
         Assert.Contains("  queue:\n    image: rabbitmq:4-alpine", compose, StringComparison.Ordinal);
-        Assert.Contains("  blob:\n    image: minio/minio", compose, StringComparison.Ordinal);
         Assert.Contains("volumes:\n  blob-data: {}\n  db-data: {}", compose, StringComparison.Ordinal);
     }
 
@@ -202,7 +202,8 @@ public sealed class PackagerTests
         Assert.Contains("var db = builder.AddPostgres(\"db\").AddDatabase(\"orders\");", aspire, StringComparison.Ordinal);
         Assert.Contains("var cache = builder.AddRedis(\"cache\");", aspire, StringComparison.Ordinal);
         Assert.Contains("var queue = builder.AddRabbitMQ(\"queue\");", aspire, StringComparison.Ordinal);
-        Assert.Contains("var blob = builder.AddContainer(\"blob\", \"minio/minio\")", aspire, StringComparison.Ordinal);
+        Assert.Contains("var blob = builder.AddContainer(\"blob\", \"rustfs/rustfs\", \"1.0.4\").WithEnvironment(\"RUSTFS_ACCESS_KEY\", \"xihan\").WithEnvironment(\"RUSTFS_SECRET_KEY\", \"xihanxihan\").WithHttpEndpoint(port: 9000, targetPort: 9000, name: \"api\");\n", aspire, StringComparison.Ordinal);
+        Assert.DoesNotContain("minio", aspire, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("builder.AddProject<Projects.Orders>(\"orders\")", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithHttpEndpoint(port: 8080, name: \"http\")", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEndpoint(port: 8081, scheme: \"http\", name: \"grpc\")", aspire, StringComparison.Ordinal);
@@ -210,7 +211,6 @@ public sealed class PackagerTests
         Assert.Contains(".WithEnvironment(\"XiHan__Bindings__db__type\", \"connection:relational\")", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"XiHan__Bindings__db__value\", db)\n            .WithReference(db)", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"XiHan__Bindings__blob__value\", blob.GetEndpoint(\"api\"))\n            .WithEnvironment(\"XiHan__Bindings__blob__accessKey\", \"xihan\")\n            .WithEnvironment(\"XiHan__Bindings__blob__secretKey\", \"xihanxihan\")\n", aspire, StringComparison.Ordinal);
-        Assert.Contains("        blob.WithEnvironment(\"MINIO_ROOT_USER\", \"xihan\").WithEnvironment(\"MINIO_ROOT_PASSWORD\", \"xihanxihan\");\n        var app = builder.AddProject", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"OTEL_SERVICE_NAME\", \"orders\")", aspire, StringComparison.Ordinal);
     }
 
