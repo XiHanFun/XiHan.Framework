@@ -37,7 +37,7 @@ public sealed class OpenTelemetryObservabilityFeature : IFeature
         Role = ManifestRole.Default,
         Provides = [new CapabilityDeclaration(ObservabilityCapabilities.Export, ObservabilityCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Observability") },
+        Contributes = new Contributions { Config = new ConfigContribution(OpenTelemetryOptions.ConfigurationSection) },
         Entry = typeof(OpenTelemetryObservabilityFeature).FullName,
     };
 

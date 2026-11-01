@@ -91,6 +91,16 @@ public sealed class ManifestReaderTests
     }
 
     [Fact]
+    public void Read_AcceptsSubsectionConfig_AndRejectsIllFormedSections()
+    {
+        const string Template = """{ "id": "xihan.caching.redis", "version": "5.0.0", "primitives": "1", "stability": "stable", "kind": "provider", "contributes": { "config": { "section": "SECTION" } } }""";
+
+        Assert.Equal("XiHan:Caching:Redis", ManifestReader.Read(Template.Replace("SECTION", "XiHan:Caching:Redis", StringComparison.Ordinal)).ValueOrThrow().Contributes.Config!.Section);
+        Assert.Equal(KernelErrors.InvalidManifest, ManifestReader.Read(Template.Replace("SECTION", "XiHan:Caching:redis", StringComparison.Ordinal)).Error!.Code);
+        Assert.Equal(KernelErrors.InvalidManifest, ManifestReader.Read(Template.Replace("SECTION", "XiHan:Caching:", StringComparison.Ordinal)).Error!.Code);
+    }
+
+    [Fact]
     public void ReadFile_MissingFile_ReturnsError()
     {
         var result = ManifestReader.ReadFile(Path.Combine(Path.GetTempPath(), "missing-" + Guid.NewGuid().ToString("N") + ".json"));

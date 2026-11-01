@@ -47,7 +47,7 @@ public sealed class OutOfProcessPluginsFeature : IHostedFeature
         Kind = ManifestKind.Capability,
         Provides = [new CapabilityDeclaration(Capability, 1)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Plugins") },
+        Contributes = new Contributions { Config = new ConfigContribution(OutOfProcessPluginOptions.ConfigurationSection) },
         Entry = typeof(OutOfProcessPluginsFeature).FullName,
     };
 

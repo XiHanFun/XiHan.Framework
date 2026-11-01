@@ -40,7 +40,7 @@ public sealed class HybridCachingFeature : IFeature
         ],
         Contributes = new Contributions
         {
-            Config = new ConfigContribution("XiHan:Caching"),
+            Config = new ConfigContribution(HybridCachingOptions.ConfigurationSection),
         },
         Entry = typeof(HybridCachingFeature).FullName,
     };

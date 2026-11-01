@@ -21,6 +21,8 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 }
 ```
 
+清单的 `contributes.config` 声明 `XiHan:Plugins:OutOfProcess`。宿主另读别的领域的两项共享设置，不在清单里（RFC-0002「配置节」）：`XiHan:Kernel:StopTimeoutSeconds`（插件停止宽限的缺省）与 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域）；每个插件收到的是它自己清单声明的配置节。
+
 ## 责任边界
 
 - 配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`、核对 `Grants` 授予的权限、启动进程、读 stdout 握手行、调用 `Handshake` 并核对清单（`spec/plugin/handshake.md`）。声明的操作登记为代理操作（与本地操作一样经完整管道，由协议适配器按 `expose` 发布），消息目录接进本地化器，订阅的主题登记事件处理器。发现失败的插件以 `Failed` 留在宿主里，不阻止应用启动：清单、权限或入口不合格的不启动进程，同样可描述、是健康条目 `plugins.<清单 ID>`（清单读不出来时为 `plugins.<目录名>`），宿主附着到容器时逐个记错误日志（`spec/plugin/lifecycle.md` §1）。

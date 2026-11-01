@@ -54,7 +54,7 @@ public sealed class SnowflakeIdFeature : IHostedFeature
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(SnowflakeUnavailableMiddleware).FullName!, PipelineStage.Resilience)],
-            Config = new ConfigContribution("XiHan:Persistence"),
+            Config = new ConfigContribution(SnowflakeOptions.ConfigurationSection),
             Health = [LeasedWorkerIdSource.HealthName],
         },
         Entry = typeof(SnowflakeIdFeature).FullName,

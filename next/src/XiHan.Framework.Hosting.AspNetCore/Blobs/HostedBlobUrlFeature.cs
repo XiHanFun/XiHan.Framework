@@ -38,7 +38,7 @@ public sealed class HostedBlobUrlFeature : IFeature
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             new CapabilityRequirement(ObjectStorageCapabilities.Blob, ObjectStorageCapabilities.Version),
         ],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:ObjectStorage") },
+        Contributes = new Contributions { Config = new ConfigContribution(HostedBlobUrlOptions.ConfigurationSection) },
         Entry = typeof(HostedBlobUrlFeature).FullName,
     };
 

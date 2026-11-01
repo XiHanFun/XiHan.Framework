@@ -31,7 +31,7 @@ public sealed class HttpProtocolFeature : IFeature
         Provides = [new CapabilityDeclaration(HttpProtocolCapabilities.Http, HttpProtocolCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         // 清单只声明领域级配置节 XiHan:Protocols；本适配器读其下的 Http 子节
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Protocols") },
+        Contributes = new Contributions { Config = new ConfigContribution(HttpProtocolOptions.ConfigurationSection) },
         Entry = typeof(HttpProtocolFeature).FullName,
     };
 

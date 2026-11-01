@@ -36,7 +36,7 @@ public sealed class GrpcProtocolFeature : IFeature
         Provides = [new CapabilityDeclaration(GrpcProtocolCapabilities.Grpc, GrpcProtocolCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         // 清单只声明领域级配置节 XiHan:Protocols；本适配器读其下的 Grpc 子节
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Protocols") },
+        Contributes = new Contributions { Config = new ConfigContribution(GrpcProtocolOptions.ConfigurationSection) },
         Entry = typeof(GrpcProtocolFeature).FullName,
     };
 

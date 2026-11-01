@@ -8,7 +8,7 @@
 | 环层 | Ring 3（实现） |
 | 能力 | 提供 `scheduling.leader@1`（`role: provider`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `KubernetesSchedulingFeature`（清单 ID `xihan.scheduling.kubernetes`） |
-| 配置节 | `XiHan:Scheduling:Kubernetes`（清单 `contributes.config` 按 RFC-0002 声明领域节 `XiHan:Scheduling`，子节包含在内） |
+| 配置节 | `XiHan:Scheduling:Kubernetes`（清单 `contributes.config` 声明的也是这一节） |
 | 依赖 | `XiHan.Framework.Scheduling.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
 | 稳定性 | Preview |

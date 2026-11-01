@@ -28,6 +28,8 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<WasmPluginsFeature>());
 }
 ```
 
+清单的 `contributes.config` 声明 `XiHan:Plugins:Wasm`。宿主另读 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域），属于本地化领域，不在清单里（RFC-0002「配置节」）；每个插件收到的是它自己清单声明的配置节。
+
 ## 责任边界
 
 - 配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`、校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予）、编译模块并校验导出 / 导入表、实例化并 `xihan_handshake`、核对清单。声明的操作登记为代理操作，消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（`handle` 阶段不允许），`before` / `after` 按 RFC-0004 参与排序（先按本插件的中间件名解析，否则作为管道里的中间件名，`spec/plugin/wasm.md` §6）。发现失败的插件以 `Failed` 留在宿主里：清单、权限或模块文件不合格的不实例化，同样可描述、是健康条目（清单读不出来时为 `plugins.<目录名>`），宿主附着到容器时逐个记错误日志（`spec/plugin/lifecycle.md` §1）。

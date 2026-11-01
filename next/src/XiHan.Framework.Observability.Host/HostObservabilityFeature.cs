@@ -37,7 +37,7 @@ public sealed class HostObservabilityFeature : IHostedFeature
         Role = ManifestRole.Default,
         Provides = [new CapabilityDeclaration(ObservabilityCapabilities.Host, ObservabilityCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Observability") },
+        Contributes = new Contributions { Config = new ConfigContribution(HostObservabilityOptions.ConfigurationSection) },
         Entry = typeof(HostObservabilityFeature).FullName,
     };
 

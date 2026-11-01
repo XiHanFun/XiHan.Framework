@@ -14,7 +14,7 @@
 
 ## 配置节命名
 
-框架的配置节一律以 `XiHan:<领域>` 开头，领域词取自规范术语表（`Kernel`、`Persistence`、`Caching`、`Localization`、`ObjectStorage`、`Configuration` 等）。实现包的配置在领域节下再加一段实现名，例如 `XiHan:Caching:Redis`、`XiHan:ObjectStorage:FileSystem`；领域节本身放抽象层的选项，例如 `XiHan:Localization:DefaultLocale`。
+框架的配置节一律以 `XiHan:<领域>` 开头，领域词取自规范术语表（`Kernel`、`Persistence`、`Caching`、`Localization`、`ObjectStorage`、`Configuration` 等）。实现包的配置在领域节下再加一段实现名，例如 `XiHan:Caching:Redis`、`XiHan:ObjectStorage:FileSystem`；领域节本身放抽象层的选项，例如 `XiHan:Localization:DefaultLocale`。特性清单的 `Contributes.Config` 声明它在本领域里读取的配置的最近公共节：只读自己子节的写子节（`Caching.Hybrid` 写 `XiHan:Caching:Hybrid`），同时读领域节下的公共选项的写领域节（`Caching.Redis` 还读 `XiHan:Caching:Idempotency`，写 `XiHan:Caching`），见 RFC-0002「配置节」。
 
 | 写法 | 例子 |
 | --- | --- |

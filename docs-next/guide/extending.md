@@ -172,7 +172,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 | `Provides` | 能力 ID 加接口版本 | 依赖按能力 ID 声明，不按包名；只提供真正实现了的能力，`Security.Database` 就只提供授权、不提供认证 |
 | `Requires` | 用到的能力 | 缺失报 `KERNEL_CAPABILITY_001`，循环报 `KERNEL_CAPABILITY_002`；可选依赖写 `optional: true` |
 | `Contributes.Pipeline` | 中间件类型全名与阶段 | 与 `AddMiddleware` 的阶段一致，`xihan graph` / `pipeline` 据此展示 |
-| `Contributes.Config` | `XiHan:<领域>` | 配置节文法 `^XiHan:[A-Z][A-Za-z0-9]*$`，子键由 Provider 自己约定 |
+| `Contributes.Config` | `XiHan:<领域>` 或其子节 | 文法 `^XiHan:[A-Z][A-Za-z0-9]*(:[A-Z][A-Za-z0-9]*)*$`；写特性在本领域里读取的配置的最近公共节：只读自己子节写子节（如 `XiHan:Caching:Hybrid`），同时读领域公共选项写领域节（本例还读 `SecurityOptions`，所以写 `XiHan:Security`；RFC-0002「配置节」） |
 | `Contributes.Health` | 条目名 `<领域>.<机制>.<对象>` | 声明的条目必须由同一个包以 `IHealthContributor` 实现，反之亦然 |
 
 `context.Node.IsSelectedFor(...)` 是关键：同一能力的多个实现都可能被引用，只有被选中的那个注册服务与中间件，被顶替的特性不装配、不启动（RFC-0002 第 4 条）；有与能力选择无关的服务要登记（如命名实例的 Provider）时实现 `IShadowAwareFeature`，被顶替时内核改调 `ConfigureShadowed`。

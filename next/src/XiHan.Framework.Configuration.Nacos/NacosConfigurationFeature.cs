@@ -45,7 +45,7 @@ public sealed class NacosConfigurationFeature : IFeature
         Bindings = [new Binding(ConnectionBinding, "configuration:remote", required: false)],
         Contributes = new Contributions
         {
-            Config = new ConfigContribution("XiHan:Configuration"),
+            Config = new ConfigContribution(NacosOptions.ConfigurationSection),
         },
         Entry = typeof(NacosConfigurationFeature).FullName,
     };

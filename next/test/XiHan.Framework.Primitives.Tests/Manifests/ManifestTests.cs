@@ -105,6 +105,19 @@ public sealed class ManifestTests
     }
 
     [Fact]
+    public void ConfigContribution_AcceptsDomainSectionAndNestedPascalCaseSubsections()
+    {
+        Assert.Equal("XiHan:Caching", new ConfigContribution("XiHan:Caching").Section);
+        Assert.Equal("XiHan:Caching:Redis", new ConfigContribution("XiHan:Caching:Redis").Section);
+        Assert.Equal("XiHan:Plugins:OutOfProcess:Grants", new ConfigContribution("XiHan:Plugins:OutOfProcess:Grants").Section);
+
+        foreach (var invalid in new[] { "XiHan", "XiHan:", "XiHan:Caching:", "XiHan:caching", "XiHan:Caching:redis", "XiHan::Redis", "XiHan:Caching:Redis-Cluster", "Caching:Redis" })
+        {
+            Assert.Throws<ArgumentException>(() => new ConfigContribution(invalid));
+        }
+    }
+
+    [Fact]
     public void Manifest_Validate_EnforcesCrossFieldRules()
     {
         var pluginWithoutIsolation = CreateProvider() with { Kind = ManifestKind.Plugin };

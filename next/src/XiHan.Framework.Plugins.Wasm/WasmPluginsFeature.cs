@@ -48,7 +48,7 @@ public sealed class WasmPluginsFeature : IHostedFeature
         Kind = ManifestKind.Capability,
         Provides = [new CapabilityDeclaration(Capability, 1)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Plugins") },
+        Contributes = new Contributions { Config = new ConfigContribution(WasmPluginOptions.ConfigurationSection) },
         Entry = typeof(WasmPluginsFeature).FullName,
     };
 

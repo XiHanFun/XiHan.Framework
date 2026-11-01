@@ -54,7 +54,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 | `isolation` | `in-process` / `wasm` / `out-of-process` |
 | `entry` | 进程内：入口类型全名，程序集按 `package` 取 `<package>.dll`；进程外：相对插件目录的可执行文件（Windows 上没有扩展名时补 `.exe`）；Wasm：相对插件目录的 `.wasm`（参考实现也接受 `.wat` 文本） |
 | `contributes.operations` | 插件服务的全部操作 ID，握手声明的操作必须都在其中 |
-| `contributes.config.section` | `Configure` 时宿主下发的配置节，按 `IConfiguration` 展开后序列化为 JSON 对象；没有声明为 `{}` |
+| `contributes.config.section` | `Configure` 时宿主下发的配置节（领域节或其子节，如 `XiHan:Echo` 或 `XiHan:Caching:Remote`），按 `IConfiguration` 展开后序列化为 JSON 对象；没有声明为 `{}` |
 | `contributes.health` | 插件自报的健康项名，未声明的健康项是握手不一致 |
 | `contributes.pipeline` | 只用于 Wasm：中间件名与阶段 |
 | `permissions` | 所需权限，见下一节 |

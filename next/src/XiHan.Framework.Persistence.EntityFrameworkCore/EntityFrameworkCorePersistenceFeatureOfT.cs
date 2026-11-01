@@ -96,7 +96,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
-            Config = new ConfigContribution("XiHan:Persistence"),
+            Config = new ConfigContribution(EntityFrameworkCorePersistenceOptions.ConfigurationSection),
             Health = [HealthName],
         },
         Entry = typeof(EntityFrameworkCorePersistenceFeature<>).FullName,

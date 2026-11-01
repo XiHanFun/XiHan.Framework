@@ -53,7 +53,7 @@ public sealed class OutboxFeature : IHostedFeature, IDisposable
             new CapabilityRequirement(MessagingCapabilities.Queue, MessagingCapabilities.Version),
             new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
         ],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Messaging") },
+        Contributes = new Contributions { Config = new ConfigContribution(OutboxOptions.ConfigurationSection) },
         Entry = typeof(OutboxFeature).FullName,
     };
 

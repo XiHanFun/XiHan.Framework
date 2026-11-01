@@ -35,7 +35,7 @@ public sealed class KubernetesSchedulingFeature : IFeature
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(SchedulingCapabilities.Leader, SchedulingCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Config = new ConfigContribution("XiHan:Scheduling") },
+        Contributes = new Contributions { Config = new ConfigContribution(KubernetesSchedulingOptions.ConfigurationSection) },
         Entry = typeof(KubernetesSchedulingFeature).FullName,
     };
 

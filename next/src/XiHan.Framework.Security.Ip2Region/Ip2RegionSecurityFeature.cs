@@ -34,7 +34,7 @@ public sealed class Ip2RegionSecurityFeature : IFeature
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
         Contributes = new Contributions
         {
-            Config = new ConfigContribution("XiHan:Security"),
+            Config = new ConfigContribution(Ip2RegionOptions.ConfigurationSection),
         },
         Entry = typeof(Ip2RegionSecurityFeature).FullName,
     };
