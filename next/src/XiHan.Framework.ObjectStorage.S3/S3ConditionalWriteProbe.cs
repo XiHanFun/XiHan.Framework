@@ -7,6 +7,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using XiHan.Framework.ObjectStorage.Abstractions;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.ObjectStorage.S3;
@@ -23,9 +24,9 @@ internal static class S3ConditionalWriteProbe
     /// 探测键。
     /// </summary>
     /// <remarks>
-    /// 框架专用前缀 <c>.xihan/</c> 下的空对象，可单独授权（如 IAM 策略只放行 <c>arn:aws:s3:::&lt;桶&gt;/.xihan/probe/*</c> 的写入）。
+    /// 保留前缀（<see cref="BlobKey.ReservedSegment"/>）下的空对象：不在键文法之内，业务写不进，各 Provider 列举时跳过，不混进业务列举（ADR-0090）；可单独授权（如 IAM 策略只放行 <c>arn:aws:s3:::&lt;桶&gt;/.xihan/probe/*</c> 的写入）。名字与 ADR-0089 相同，已在桶里的旧探测键无需迁移。
     /// </remarks>
-    internal const string ProbeKey = ".xihan/probe/conditional-write";
+    internal const string ProbeKey = BlobKey.ReservedSegment + "/probe/conditional-write";
 
     /// <summary>
     /// 核对条件写入开启时配置了探测用的桶。

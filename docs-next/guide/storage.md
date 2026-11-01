@@ -65,10 +65,12 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 标识 | 规则 | 例子 |
 | --- | --- | --- |
 | 容器 `ContainerName` | `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`，与 S3 桶名兼容 | `invoices` |
-| 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；区分大小写 | `2026/10/inv-1.pdf` |
+| 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
 | 自定义元数据名 | `^[a-z0-9][a-z0-9-]{0,63}$`，值为任意字符串 | `uploaded-by` |
 
 `ContainerName` 与 `BlobKey` 都能从 `string` 隐式转换，不合法在构造时抛出 `ArgumentException`，不会进入 Provider。来自用户输入的键先用 `BlobKey.IsValid` 判断。
+
+首段是 `.xihan` 的键（`BlobKey.ReservedSegment`，`.xihan` 本身与 `.xihan/…`，区分大小写）保留给框架自己的对象，例如 S3 的条件写入探测键 `.xihan/probe/conditional-write`：业务写不进、读不到、删不掉，各存储列举时跳过存储里已有的这类对象，所以它们不会混进业务列举（ADR-0090）。以 `.xihan` 开头的查询前缀不报错，列举结果总是空的。
 
 ## 读写
 

@@ -194,6 +194,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.Name.get ->
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.DefaultContentType = "application/octet-stream" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.MaxLength = 1024 -> int
+const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.ReservedSegment = ".xihan" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Separator = '/' -> char
 const XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.MaxPageSize = 1000 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart.MaxPartNumber = 10000 -> int
@@ -310,6 +311,7 @@ static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobStoreExtensions.PutA
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobStoreExtensions.ReadAllBytesAsync(this XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<byte[]!>>
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload? right) -> bool
+static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsReserved(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsValid(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsValidPrefix(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Validate(string! value) -> string!

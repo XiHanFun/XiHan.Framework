@@ -337,6 +337,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
                 }
 
                 var key = BlobPathEncoding.ToKey(Path.GetRelativePath(data, file));
+                // 不符合键文法的文件（外部放入的、保留前缀下的框架对象，ADR-0090）不是本契约的对象，跳过
                 if (BlobKey.IsValid(key) && key.StartsWith(query.Prefix, StringComparison.Ordinal) && (after is null || string.CompareOrdinal(key, after) > 0))
                 {
                     keys.Add(key);

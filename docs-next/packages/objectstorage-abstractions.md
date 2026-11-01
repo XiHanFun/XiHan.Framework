@@ -59,7 +59,7 @@
 | 类型 | 说明 |
 | --- | --- |
 | `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，可从 `string` 隐式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，区分大小写；`IsValid`、`IsValidPrefix`、`Validate`，可从 `string` 隐式转换 |
+| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，可从 `string` 隐式转换 |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
@@ -118,6 +118,7 @@ var link = (await signer.SignAsync("invoices", key, BlobUrlRequest.ForDownload(d
 
 ```csharp
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Conformance;
 
 namespace Storage.Tests;
@@ -126,6 +127,10 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 {
     // 返回被测的存储；实现了 IBlobMultipartStore 时分片用例一并执行，否则跳过
     protected override IBlobStore CreateStore() => new AzureBlobStore(TestSettings.ConnectionString);
+
+    // 绕过契约直接写一个对象（键可以在保留前缀下），用来核对列举跳过框架自己的对象
+    protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
+        => TestSettings.UploadRawAsync(container.Value, key, content);
 }
 ```
 
@@ -135,7 +140,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 - 写入：已存在且 `Overwrite = false` 的项返回 `OBJECTSTORAGE_CONFLICT_001`，不写入；不覆盖写入是原子的，多个写入方同时写同一个新键只有一个成功（一致性套件核对，ADR-0089）；配额或单对象大小超限返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不写入。空列表返回空，重复的键按顺序各执行一次。
 - 删除：不存在的项成功并报告为不存在；同一批里重复的键第二次报告不存在。
-- 列举：键的序数顺序；续页标记不透明，原样带回。
+- 列举：键的序数顺序；续页标记不透明，原样带回。不符合键文法的对象（保留前缀 `.xihan` 下的框架对象，如 S3 的条件写入探测键；S3 的目录占位）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止（ADR-0090）。
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
 - 分片上传：编号 1–10000，可乱序、可重传；完成时清单编号严格升序、ETag 相符、非末片至少 5 MiB；完成前对象不可见；放弃是幂等的。
 - 预签名：有效期 1 秒到 7 天，签名在本地计算，不检查对象是否存在。

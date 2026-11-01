@@ -295,7 +295,7 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
             var items = new List<BlobMetadata>(response.KeyCount ?? 0);
             foreach (var entry in response.S3Objects ?? [])
             {
-                // 不符合键文法的对象（如以 / 结尾的"目录"占位）不是本契约的对象，跳过
+                // 不符合键文法的对象不是本契约的对象，跳过：以 / 结尾的"目录"占位，以及保留前缀下框架自己的对象（如条件写入探测键，ADR-0090）
                 if (BlobKey.IsValid(entry.Key))
                 {
                     items.Add(new BlobMetadata(new BlobKey(entry.Key), entry.Size ?? 0, BlobPutOptions.DefaultContentType, Unquote(entry.ETag), ToTimestamp(entry.LastModified), EmptyMetadata));

@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Amazon.S3.Model;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Conformance;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
@@ -16,4 +18,14 @@ public sealed class S3BlobStoreConformanceTests : BlobStoreConformance
 {
     /// <inheritdoc />
     protected override IBlobStore CreateStore() => S3TestServer.CreateStore(Container.Value);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 经共享客户端直接写对象（与条件写入探测写探测键的方式相同）。
+    /// </remarks>
+    protected override async Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
+    {
+        using var body = new MemoryStream(content, writable: false);
+        await S3TestServer.Client().PutObjectAsync(new PutObjectRequest { BucketName = container.Value, Key = key, InputStream = body });
+    }
 }

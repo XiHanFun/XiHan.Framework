@@ -11,6 +11,8 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.ObjectStorage.Abstractions.Listing;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
@@ -54,6 +56,10 @@ public sealed class S3ConditionalWriteTests
         // 不提供分片上传时只探单次写入
         Assert.True((await Probe(fake, multipart: false)).IsSuccess);
         Assert.Equal(["PutObject"], fake.Requests.Skip(11));
+
+        // 探测键在保留前缀下：业务键写不进它，列举跳过它（ADR-0090）
+        Assert.True(BlobKey.IsReserved(Key));
+        Assert.False(BlobKey.IsValid(Key));
     }
 
     [Fact]
@@ -284,6 +290,10 @@ public sealed class S3ConditionalWriteTests
         // 桶里只多一个空的探测键（被拒的分片上传随即放弃，替身用例核对；有的兼容服务列未完成上传时不按桶过滤，这里不列）
         var probe = await client.GetObjectMetadataAsync(fresh, Key);
         Assert.Equal(0L, probe.ContentLength);
+
+        // 探测键在保留前缀下，业务列举看不到它（ADR-0090）
+        var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System);
+        Assert.Empty((await store.ListAsync(fresh, new BlobQuery(), CancellationToken.None)).ValueOrThrow().Items);
         await client.DeleteObjectAsync(fresh, Key);
         await client.DeleteBucketAsync(fresh);
 

@@ -13,6 +13,7 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PutMany_ReturnsOn
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_OverwritesOrConflicts_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_ThenGet_RoundTripsContentAndMetadata() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.ReservedKeys_AreRejected_AndSkippedWhenListing() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.BlobStoreProviderConformance() -> void
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_RejectsUnknownSettings() -> System.Threading.Tasks.Task!
@@ -20,6 +21,7 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_Yi
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_ReusesReplacesAndRemovesInstances() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_TranslatesDefinitionErrors_AndKeepsTheExistingInstance() -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.CreateStore() -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PlantOutsideContractAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, string! key, byte[]! content) -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.CreateProvider() -> XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.OtherValidSettings() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.ValidSettings() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

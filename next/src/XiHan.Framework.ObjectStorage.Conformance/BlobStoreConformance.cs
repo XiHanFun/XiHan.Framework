@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.Conformance;
 /// <see cref="IBlobStore"/> 的一致性套件。
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateStore"/> 与 <see cref="PlantOutsideContractAsync"/>，全部用例随之执行。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class BlobStoreConformance
@@ -34,6 +34,17 @@ public abstract class BlobStoreConformance
     /// 每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键。
     /// </remarks>
     protected abstract IBlobStore CreateStore();
+
+    /// <summary>
+    /// 绕过契约直接在底层存储里放入一个对象。
+    /// </summary>
+    /// <remarks>
+    /// 键不必符合键文法（用例 13 放入保留前缀 <see cref="BlobKey.ReservedSegment"/> 下的对象，模拟框架自己写入的对象，如 S3 的条件写入探测键）；内容随意，元数据不必齐全。用例只经契约列举，核对这类对象被跳过（ADR-0090）。
+    /// </remarks>
+    /// <param name="container">容器。</param>
+    /// <param name="key">键文本。</param>
+    /// <param name="content">内容。</param>
+    protected abstract Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content);
 
     /// <summary>
     /// 用例 1：写入后能读到同样的字节、内容类型与自定义元数据。
@@ -410,6 +421,40 @@ public abstract class BlobStoreConformance
         var winner = Assert.Single(winners);
         Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.BlobExists, r.Error?.Code));
         Assert.Equal("writer-" + winner, Text((await store.ReadAllBytesAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
+    }
+
+    /// <summary>
+    /// 用例 13：保留前缀下的键构造时拒绝，存储里已有的这类对象列举时跳过。
+    /// </summary>
+    /// <remarks>
+    /// 首段是 <see cref="BlobKey.ReservedSegment"/> 的键留给框架自己的对象（ADR-0090）：不在键文法之内，只看首段且区分大小写。经 <see cref="PlantOutsideContractAsync"/> 放入这样的对象后，以保留前缀列举为空，按更短的前缀列举只有业务对象。放入的键固定、业务对象用完即删，反复运行不在共享存储里累积。
+    /// </remarks>
+    [Fact]
+    public async Task ReservedKeys_AreRejected_AndSkippedWhenListing()
+    {
+        Assert.Throws<ArgumentException>(static () => new BlobKey(BlobKey.ReservedSegment));
+        Assert.Throws<ArgumentException>(static () => new BlobKey(BlobKey.ReservedSegment + "/probe/conditional-write"));
+        Assert.False(BlobKey.IsValid(BlobKey.ReservedSegment + "/a"));
+        Assert.True(BlobKey.IsReserved(BlobKey.ReservedSegment + "/a"));
+        Assert.True(BlobKey.IsValid(BlobKey.ReservedSegment + "x/a"));
+        Assert.True(BlobKey.IsValid(".XiHan/a"));
+        Assert.True(BlobKey.IsValid("a/" + BlobKey.ReservedSegment + "/b"));
+
+        var store = CreateStore();
+        var lookalike = new BlobKey(BlobKey.ReservedSegment + "x/" + Guid.NewGuid().ToString("N")[..8]);
+        await PlantOutsideContractAsync(Container, BlobKey.ReservedSegment + "/conformance/planted", Encoding.UTF8.GetBytes("framework")).ConfigureAwait(false);
+        Assert.True((await store.PutAsync(Container, lookalike, Bytes("business"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        try
+        {
+            Assert.Empty((await store.ListAsync(Container, new BlobQuery { Prefix = BlobKey.ReservedSegment + "/" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items);
+            var listed = (await store.ListAsync(Container, new BlobQuery { Prefix = BlobKey.ReservedSegment }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.DoesNotContain(listed.Items, static m => BlobKey.IsReserved(m.Key.Value));
+            Assert.Contains(listed.Items, m => m.Key == lookalike);
+        }
+        finally
+        {
+            await store.DeleteAsync(Container, lookalike, CancellationToken.None).ConfigureAwait(false);
+        }
     }
 
     /// <summary>

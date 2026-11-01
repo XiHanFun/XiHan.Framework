@@ -4,7 +4,7 @@
 
 | 契约 | 用途 |
 | --- | --- |
-| `ContainerName`、`BlobKey`、`BlobPutOptions` | 容器名（S3 桶名文法）、`/` 分段的键、写入选项（内容类型、自定义元数据、是否覆盖）；不合法在构造时抛出 |
+| `ContainerName`、`BlobKey`、`BlobPutOptions` | 容器名（S3 桶名文法）、`/` 分段的键、写入选项（内容类型、自定义元数据、是否覆盖）；不合法在构造时抛出。首段是 `BlobKey.ReservedSegment`（`.xihan`）的键保留给框架自己的对象（如 S3 的条件写入探测键），不在键文法之内，各 Provider 列举时跳过（ADR-0090） |
 | `IBlobStore` | `Put(container, uploads[])`、`Get`、`Head`、`Delete(container, keys[])`、`List(container, query)`；写入与删除是批量的，逐项结果 |
 | `BlobStoreExtensions` | 单条便捷方法：`Put(stream | bytes)`、`Delete(key)`、`Exists`、`ReadAllBytes`，都转调批量方法 |
 | `BlobMetadata`、`BlobContent`、`BlobPage`、`BlobQuery` | 元数据（长度、内容类型、ETag、修改时间、自定义元数据）、读取到的流、分页列举 |

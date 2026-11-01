@@ -88,7 +88,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 - 缺省实例在启动时、健康探针之前探一次；命名实例在建出时探一次，每个实例各探各的。
 - 在 `HealthBucket` 里对探测键 `.xihan/probe/conditional-write` 带 `If-None-Match: *` 写两次，第二次必须被拒（412）；提供分片上传时再以同一个键带条件完成一次分片上传，也必须被拒，被拒的上传随即放弃。
-- 探测键是空对象，写入后不删除：任何一次 412 都证明服务认条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动、后台重试都得到同一结论。凭据只需要对这个键的 `s3:PutObject` 与 `s3:AbortMultipartUpload`，不需要删除或列举；按空前缀列举该桶时会看到它。
+- 探测键是空对象，写入后不删除：任何一次 412 都证明服务认条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动、后台重试都得到同一结论。凭据只需要对这个键的 `s3:PutObject` 与 `s3:AbortMultipartUpload`，不需要删除或列举。探测键在保留前缀 `.xihan` 下，不在键文法之内，业务列举跳过它（ADR-0090）；它从 ADR-0089 起就是这个名字，桶里已有的探测键无需迁移，也不必删除。
 - 单次探测以 `HealthProbeIntervalSeconds` 为超时；`EnsureBuckets` 开启时探测桶不存在就先建桶。
 
 一次探测的结论只有探明不认才是失败，其余都是"尚未确认"：
@@ -168,7 +168,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 - 不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。
 - 读取：`GetAsync` 的内容流释放时连同响应一起释放；`HeadAsync` 返回长度、内容类型、ETag、修改时间与去掉 `x-amz-meta-` 前缀的自定义元数据。
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
-- 列举：`ListObjectsV2` 按前缀分页，续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`；不符合键文法的对象（以 `/` 结尾的「目录」占位）跳过；桶不存在视作空容器。
+- 列举：`ListObjectsV2` 按前缀分页，续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`；不符合键文法的对象（以 `/` 结尾的「目录」占位、保留前缀 `.xihan` 下的框架对象如探测键）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止；桶不存在视作空容器。
 - 范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长；起点越界（416）返回 `OBJECTSTORAGE_VALIDATION_001`。
 - 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。
 - 预签名经 SDK 在本地签出（签名 V4，端点是 http 时按 http 签）：下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号。
