@@ -174,7 +174,7 @@ builder.Services.AddXiHanCommand<VersionCommand>();
 
 ## MCP stdio
 
-装配了 `McpProtocolFeature` 时，`mcp` 命令以 stdio 提供 MCP 服务端：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。MCP 客户端以子进程方式启动应用：
+装配了 `McpProtocolFeature` 时，`mcp` 命令以 stdio 提供 MCP 服务端：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 按 UTF-8 解码，与控制台代码页无关；答复只含 ASCII（非 ASCII 字符按 JSON 转义）。MCP 客户端以子进程方式启动应用：
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp

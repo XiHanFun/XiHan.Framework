@@ -229,7 +229,7 @@ MCP 协议版本 `2025-06-18`，消息为 JSON-RPC 2.0，HTTP 上是 Streamable 
 
 ### stdio 传输
 
-命令行宿主里同一个服务端经 stdio 提供：装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 后运行 `mcp` 命令，stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，MCP 客户端以子进程方式连接。
+命令行宿主里同一个服务端经 stdio 提供：装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 后运行 `mcp` 命令，stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，MCP 客户端以子进程方式连接。stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
 
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp

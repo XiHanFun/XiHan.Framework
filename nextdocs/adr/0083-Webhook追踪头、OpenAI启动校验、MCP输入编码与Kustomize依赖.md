@@ -1,8 +1,8 @@
-# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播、只装 OpenAIFeature 时提示词启动校验
+# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播、只装 OpenAIFeature 时提示词启动校验、MCP stdio 按 UTF-8 读
 
 ## 状态
 
-已采纳（`spec/protocol/cloudevents.md`、`spec/rfcs/0022-ai.md` 随之修订；修订 ADR-0074）。
+已采纳（`spec/protocol/cloudevents.md`、`spec/rfcs/0022-ai.md`、`spec/protocol/mcp.md` 随之修订；修订 ADR-0074）。
 
 ## 日期
 
@@ -62,3 +62,28 @@ ADR-0074 让提示增强器在创建时取定并试渲染知识库配置引用�
 - 启动期新增失败条件：只装 `OpenAIFeature`（不装 `AIToolsFeature` 与 `VectorDataKnowledgeFeature`）的应用，`XiHan:AI:Knowledge:PromptName` 指向不存在的模板或模板用了别的占位符时启动失败；以前在第一次解析增强器时抛出。
 - `OpenAIFeature` 按拓扑顺序参与启动与停止；它的清单（能力、依赖、配置节）不变。
 - 测试：只装 `OpenAIFeature` 时缺模板、多占位符都在启动时失败，配置正确时照常启动、增强只用配置的模板；改动之前该用例失败（启动没有抛出）。
+
+## MCP stdio 的标准输入按 UTF-8 解码
+
+### 背景
+
+`Protocols.Mcp` 的 `McpStdioCommand` 用 `Console.In` 读 stdin。Windows 上 stdin 被重定向时，`Console.In` 按控制台输入代码页（`GetConsoleCP`，简体中文系统是 936，英文系统是 437）解码，而 MCP 客户端按 UTF-8 写消息：应用自己的 stdio MCP 服务收到的中文参数是乱码，消息开头带 UTF-8 BOM 时第一条整条解析失败。`xihan mcp` 自己按 UTF-8 读 stdin 避开了，`McpStdioCommand` 没有。
+
+### 决策
+
+- `mcp` 命令打开标准输入的字节流（`Console.OpenStandardInput()`），以 `Encoding.UTF8` 解码，不按 BOM 改换编码（开头的 UTF-8 BOM 跳过、不算内容）。
+- 输出不改：服务端用 `Utf8JsonWriter` 的缺省编码器，非 ASCII 字符都转义成 `\uXXXX`，答复只含 ASCII，经宿主给的输出（`Console.Out`）按任何兼容 ASCII 的代码页写出都是同样的字节，即合法的 UTF-8。
+- 不改控制台的代码页：`Console.InputEncoding` / `OutputEncoding` 的赋值会调用 `SetConsoleCP` / `SetConsoleOutputCP` 改整个控制台，波及启动它的终端。
+- `McpStdioTransport.RunAsync` 仍收 `TextReader`，参数文档写明按 UTF-8 构造、不要直接用 `Console.In`。
+
+### 理由
+
+- MCP 规范规定 stdio 消息是 UTF-8，解码不能取决于运行环境的控制台设置。
+- 输出只含 ASCII 是服务端写 JSON 的现有性质，用测试锁住即可；不必绕过宿主给的输出另开标准输出流，命令仍经命令行宿主的输出抽象。
+- 测试接缝改为字节流（内部构造函数收 `Func<Stream>`）：用例给的是 UTF-8 字节，与客户端实际写入的一样，解码由命令自己完成，接缝本身覆盖了这处逻辑。
+
+### 影响
+
+- 公开 API 不变（内部构造函数从 `TextReader` 改为 `Func<Stream>`）。
+- 行为：在代码页不是 UTF-8 的 Windows 控制台里，stdio MCP 服务收到的非 ASCII 参数现在正确，以前是乱码；Linux、macOS 与代码页 65001 的控制台不受影响。
+- 测试：`McpStdioTests.Command_DecodesStdinAsUtf8_AndAnswersInAscii`——带 BOM 的 UTF-8 中文参数原样到达操作，答复只含 ASCII。改动前在代码页 936 下失败（第一条消息按 GBK 解码后不是合法 JSON，-32700）、65001 下通过；改动后两种代码页都通过。`dotnet test` 会把控制台切成 UTF-8，复现要直接运行测试程序（`chcp 936` 后执行测试可执行文件）。

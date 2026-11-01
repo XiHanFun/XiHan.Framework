@@ -25,4 +25,4 @@ app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/cal
 
 ## 状态
 
-P3：可用。传输：Streamable HTTP（`MapXiHanMcp()`）与 stdio（命令行宿主的 `mcp` 命令，`McpStdioTransport`：stdin / stdout 每行一条 JSON-RPC 消息，日志走 stderr）。
+P3：可用。传输：Streamable HTTP（`MapXiHanMcp()`）与 stdio（命令行宿主的 `mcp` 命令，`McpStdioTransport`：stdin / stdout 每行一条 JSON-RPC 消息，日志走 stderr；`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，答复只含 ASCII，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器）。

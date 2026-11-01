@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -98,17 +99,17 @@ public sealed class McpStdioTests
     }
 
     /// <summary>
-    /// 以给定的命令行参数执行 <c>mcp</c> 命令，输入是逐行拼起来的消息。
+    /// 以给定的命令行参数执行 <c>mcp</c> 命令，输入是逐行拼起来的消息按 UTF-8 编码的字节。
     /// </summary>
     /// <remarks>
-    /// 返回退出码、stdout 的各行与 stderr。
+    /// 与 MCP 客户端写进 stdin 的一样是字节，解码由命令自己完成。返回退出码、stdout 的各行与 stderr。
     /// </remarks>
     private static async Task<(int ExitCode, List<string> Lines, string Error)> RunCommandAsync(IHost host, string[] args, params string[] messages)
     {
         var output = new StringWriter();
         var error = new StringWriter();
         await using var scope = host.Services.CreateAsyncScope();
-        var command = new McpStdioCommand(new StringReader(string.Join('\n', messages)));
+        var command = new McpStdioCommand(() => new MemoryStream(Encoding.UTF8.GetBytes(string.Join('\n', messages))));
         var exitCode = await command.ExecuteAsync(new CommandContext(CommandLineParser.Parse(["mcp", .. args]), scope.ServiceProvider, output, error, CancellationToken.None));
         var lines = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => l.TrimEnd('\r')).ToList();
         return (exitCode, lines, error.ToString());
@@ -148,6 +149,35 @@ public sealed class McpStdioTests
             Assert.Equal(
                 [new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = "orders_create" }, new InvocationOrigin { Protocol = InvocationProtocols.Mcp, Target = "orders_get" }],
                 host.Services.GetRequiredService<OriginLog>().Origins);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Command_DecodesStdinAsUtf8_AndAnswersInAscii()
+    {
+        using var host = await StartAsync();
+        try
+        {
+            // MCP 客户端按 UTF-8 写 stdin（开头可能带 BOM）：不能按控制台输入代码页（Windows 上的 936、437 等）解码，否则中文参数成乱码
+            var (exitCode, lines, error) = await RunCommandAsync(
+                host,
+                [],
+                "﻿" + """{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"orders_get","arguments":{"id":"订单-7","name":"张三","page":1}}}""");
+
+            Assert.Equal(CommandLineExitCodes.Success, exitCode);
+            Assert.Empty(error);
+            var line = Assert.Single(lines);
+            using var called = JsonDocument.Parse(line);
+            var reply = default(JsonElement);
+            Assert.True(called.RootElement.TryGetProperty("result", out var result) && result.TryGetProperty("structuredContent", out reply), line);
+            Assert.Equal(("订单-7", "张三"), (reply.GetProperty("id").GetString(), reply.GetProperty("name").GetString()));
+
+            // 答复只含 ASCII（非 ASCII 字符按 JSON 转义）：按任何兼容 ASCII 的控制台输出代码页写出都是同样的字节，即合法的 UTF-8
+            Assert.True(line.All(char.IsAscii), line);
         }
         finally
         {

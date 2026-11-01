@@ -26,7 +26,7 @@ public static class McpStdioTransport
     /// </remarks>
     /// <param name="server">MCP 服务端。</param>
     /// <param name="services">服务；每条消息从它创建作用域。</param>
-    /// <param name="input">输入（stdin）。</param>
+    /// <param name="input">输入（stdin）。MCP 消息是 UTF-8，按 UTF-8 构造读取器；不要直接用 <see cref="Console.In"/>，它在 Windows 上按控制台代码页解码。</param>
     /// <param name="output">输出（stdout）。</param>
     /// <param name="cancellationToken">取消令牌。</param>
     public static Task RunAsync(McpServer server, IServiceProvider services, TextReader input, TextWriter output, CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ public static class McpStdioTransport
     /// </remarks>
     /// <param name="server">MCP 服务端。</param>
     /// <param name="services">服务；每条消息从它创建作用域。</param>
-    /// <param name="input">输入（stdin）。</param>
+    /// <param name="input">输入（stdin）。MCP 消息是 UTF-8，按 UTF-8 构造读取器；不要直接用 <see cref="Console.In"/>，它在 Windows 上按控制台代码页解码。</param>
     /// <param name="output">输出（stdout）。</param>
     /// <param name="createContext">以服务作用域构造调用上下文：会话的凭据、Baggage 与时限都在这里带上。</param>
     /// <param name="cancellationToken">取消令牌。</param>
