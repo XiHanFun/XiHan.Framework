@@ -44,7 +44,7 @@ AI 工具写完代码后，按这几项自查最容易出错的地方：
 
 1. 每个新特性都在 `AddXiHan` 里 `UseFeature` 了，清单 ID 唯一，`Requires` 用 `<领域>Capabilities` 常量。
 2. 每个操作的请求与响应类型都登记到了 `JsonSerializerContext`（否则编译报 `XHG002`）。
-3. 操作的 `Permission` 引用的权限码在特性里用 `AddPermission` 登记过。
+3. 操作的 `Permission` 引用的权限码在特性里用 `AddPermission` 登记过（没登记启动即失败，`KERNEL_VALIDATION_005`）。
 4. 新增的消息键在 10 个语言文件里各有一行，占位符与 `en-US.json` 一致。
 5. 管道外使用仓储时自己开启了工作单元。
 6. 没有引入反射、`dynamic` 或运行期程序集扫描。

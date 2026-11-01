@@ -177,7 +177,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// 首次握手在重试中才成功时交给宿主登记声明。
     /// </summary>
     /// <remarks>
-    /// 发现时握手失败的插件那时还没有声明可登记；返回失败（如与已有操作重名）时插件按发现时被拒处理、不再重试。
+    /// 发现时握手失败的插件那时还没有声明可登记；返回失败（如与已有操作重名、引用了未登记的权限码）时插件按发现时被拒处理、不再重试。
     /// </remarks>
     public Func<PluginRuntime, Result>? Discovered { get; set; }
 
@@ -807,7 +807,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
 
             if (Discovered?.Invoke(this) is { IsFailure: true } registered)
             {
-                // 声明登记不进去（如与已有操作重名）是配置错误，重试也不会好
+                // 声明登记不进去（如与已有操作重名、引用了未登记的权限码）是配置错误，重试也不会好
                 await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {

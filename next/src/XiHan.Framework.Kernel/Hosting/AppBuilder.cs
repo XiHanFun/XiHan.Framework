@@ -246,6 +246,10 @@ public sealed class AppBuilder
             runtimes.Add(new FeatureRuntime(node, feature));
         }
 
+        // 装配完成：全部特性的操作与权限码都已登记（登记顺序按拓扑，定义权限的特性可能排在引用它的特性之后），
+        // 此刻核对操作引用的权限码——未登记是编程错误，启动即失败；之后登记的操作（插件握手之后）由登记表逐个核对
+        operations.RequireRegisteredPermissions(permissions);
+
         // 按类型登记的中间件（特性的 AddMiddleware 与应用的 ConfigurePipeline 一样）补登记为单例：应用自己的登记不覆盖，
         // 不会等到第一次调用才因为容器里没有它而失败
         Pipeline.RegisterServices(Services);

@@ -58,7 +58,9 @@ public sealed class OrdersFeature : IFeature
 }
 ```
 
-清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。策略目录只为登记过的权限码创建权限策略；HTTP 协议适配器发布 OpenAPI 时，`components.x-xihan-permissions` 也取登记表里的显示名与说明。
+清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。
+
+操作契约的 `Permission` 引用的权限码必须已登记：全部特性配置完、装配完成时一次核对，有未登记的即抛出 `KERNEL_VALIDATION_005`（一次列出全部），应用启动失败（ADR-0071）。核对在装配完成时而不是登记操作时，所以权限码可以由别的特性登记。装配完成之后才登记的操作（进程外 / Wasm 插件握手之后）在登记时核对，引用了未登记的权限码，插件整体登记失败。策略目录只为登记过的权限码创建权限策略；HTTP 协议适配器发布 OpenAPI 时，`components.x-xihan-permissions` 也取登记表里的显示名与说明。
 
 ## 声明授权要求
 
@@ -102,7 +104,7 @@ app.Run();
 
 1. 取授权要求：显式要求优先，其次是操作契约（权限码优先于策略名）；都没有则放行。
 2. 在 `PolicyCatalog` 里按名查找策略。先找登记的 `IPolicy`（策略名区分大小写）；没有时，名字形如 `permission:<code>` 且权限码已登记，就动态创建 `PermissionPolicy`。
-3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。
+3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。操作契约的权限码已在装配时核对，走到这里的只有按名给出的策略：契约的 `Policy`、端点上的 `RequireXiHanPolicy` / `RequireXiHanPermission` 与 `RequireAuthorization` 显式写入的要求。
 4. 调用策略。`IPolicy.EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝；失败是无法判定（授予存储读不到等），调用以该失败结束，既不放行，也不改写成拒绝。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
 
 内置两种策略：
@@ -384,7 +386,7 @@ public static class GeoAttributes
 | `SECURITY_DENIED_001` | 未认证：权限策略或 `authenticated` 策略遇到匿名主体 | 401 |
 | `SECURITY_DENIED_002` | 策略拒绝（策略返回未初始化的结果，或自定义策略以它为原因） | 403 |
 | `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
-| `SECURITY_NOTFOUND_001` | 策略不存在，或 `permission:<code>` 的权限码未登记 | 404 |
+| `SECURITY_NOTFOUND_001` | 策略不存在，或端点、显式要求里 `permission:<code>` 的权限码未登记（操作契约的权限码在装配时核对） | 404 |
 | `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`Security.Database` 的逐项结果） | — |
 | `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据（数据库授予存储的连接、超时、事务失败），不当作不持有 | 503 |
 | `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满（`Grant` 与健康项 `security.inmemory.capacity`） | — |
@@ -393,6 +395,7 @@ public static class GeoAttributes
 | `SECURITY_NOTFOUND_003` | 取不到条件属性的值 | — |
 | `SECURITY_UNAVAILABLE_004` | 条件属性暂不可得，补齐后再求值 | — |
 | `KERNEL_SECURITY_001` / `KERNEL_SECURITY_002` | 权限码重复 / 权限登记表已满，装配时抛出 | — |
+| `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；插件握手之后登记的操作在登记时返回，插件登记失败 | — |
 
 条件相关的四个错误码出现在编译结果与说明里，不直接成为调用结果。
 

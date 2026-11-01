@@ -158,7 +158,7 @@ context.AddOperation<CreateOrder, PlaceOrderRequest, OrderResponse>(
     OrdersJsonContext.Default.OrderResponse);
 ```
 
-操作登记表 `OperationRegistry` 的 ID 必须唯一（重复报 `KERNEL_OPERATION_001`），容量 10000（满了报 `KERNEL_OPERATION_002`），都是配置期异常。`Permission` 引用的权限码要先用 `AddPermission` 登记；装配时不核对，未登记的权限码在调用时由 Authorize 阶段返回 `SECURITY_NOTFOUND_001`。
+操作登记表 `OperationRegistry` 的 ID 必须唯一（重复报 `KERNEL_OPERATION_001`），容量 10000（满了报 `KERNEL_OPERATION_002`），都是配置期异常。`Permission` 引用的权限码要用 `AddPermission` 登记：装配完成时一次核对，未登记即抛出 `KERNEL_VALIDATION_005`、启动失败（一次列出全部操作）；登记可以在别的特性里，只要装配完成时已有。装配完成之后登记的操作（插件握手之后）在登记时核对。`OperationRegistry.AddRange` 一次登记一组、全进或全不进，插件的代理操作经它登记。
 
 ## 标题与描述
 

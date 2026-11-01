@@ -500,6 +500,9 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// <summary>
     /// 把运行时握手声明的操作登记为代理操作。
     /// </summary>
+    /// <remarks>
+    /// 一组一次登记、全进或全不进：任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的代理操作。
+    /// </remarks>
     private Result Register(WasmPluginRuntime runtime)
     {
         if (_registry is null || runtime.Handshake is null)
@@ -507,16 +510,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             return Result.Success();
         }
 
-        foreach (var operation in runtime.Handshake.Operations)
-        {
-            var added = _registry.Add(new ProxyOperationDescriptor(operation.Contract, runtime.Manifest.Id, runtime, operation.Schema));
-            if (added.IsFailure)
-            {
-                return added;
-            }
-        }
-
-        return Result.Success();
+        return _registry.AddRange(runtime.Handshake.Operations.Select(operation => (OperationDescriptor)new ProxyOperationDescriptor(operation.Contract, runtime.Manifest.Id, runtime, operation.Schema)).ToList());
     }
 
     /// <summary>

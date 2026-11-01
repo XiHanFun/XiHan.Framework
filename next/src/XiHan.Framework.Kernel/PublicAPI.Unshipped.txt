@@ -263,6 +263,7 @@ XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TRes
 XiHan.Framework.Kernel.Operations.OperationInvocationExtensions
 XiHan.Framework.Kernel.Operations.OperationRegistry
 XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>! descriptors) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Operations.OperationRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Count.get -> int
 XiHan.Framework.Kernel.Operations.OperationRegistry.ExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
@@ -570,6 +571,7 @@ const XiHan.Framework.Kernel.KernelErrors.SchemaViolation = "KERNEL_VALIDATION_0
 const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownOperation = "KERNEL_NOTFOUND_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
+const XiHan.Framework.Kernel.KernelErrors.UnregisteredPermission = "KERNEL_VALIDATION_005" -> string!
 const XiHan.Framework.Kernel.KernelMessages.Cancelled = "kernel.invocation.cancelled" -> string!
 const XiHan.Framework.Kernel.KernelMessages.CircuitOpen = "kernel.resilience.circuit_open" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ConcurrencyExceeded = "kernel.resilience.concurrency_exceeded" -> string!
@@ -589,6 +591,7 @@ const XiHan.Framework.Kernel.KernelMessages.ManifestInvalid = "kernel.manifest.i
 const XiHan.Framework.Kernel.KernelMessages.ManifestInvalidJson = "kernel.manifest.invalid_json" -> string!
 const XiHan.Framework.Kernel.KernelMessages.NotServing = "kernel.hosting.not_serving" -> string!
 const XiHan.Framework.Kernel.KernelMessages.OperationNoResponse = "kernel.operation.no_response" -> string!
+const XiHan.Framework.Kernel.KernelMessages.OperationPermissionUnregistered = "kernel.operation.permission_unregistered" -> string!
 const XiHan.Framework.Kernel.KernelMessages.OperationRegistryFull = "kernel.operation.registry_full" -> string!
 const XiHan.Framework.Kernel.KernelMessages.OperationTypeMismatch = "kernel.operation.type_mismatch" -> string!
 const XiHan.Framework.Kernel.KernelMessages.PermissionRegistryFull = "kernel.permission.registry_full" -> string!

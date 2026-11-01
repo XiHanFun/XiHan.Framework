@@ -168,6 +168,14 @@ public static class KernelErrors
     public const string RequestInvalid = "KERNEL_VALIDATION_004";
 
     /// <summary>
+    /// 操作引用了未登记的权限码。
+    /// </summary>
+    /// <remarks>
+    /// 装配完成时以 <see cref="FrameworkException"/> 抛出，启动失败；装配之后登记的操作（插件握手之后）在登记时返回失败。
+    /// </remarks>
+    public const string UnregisteredPermission = "KERNEL_VALIDATION_005";
+
+    /// <summary>
     /// 操作 ID 重复登记。
     /// </summary>
     public const string DuplicateOperation = "KERNEL_OPERATION_001";

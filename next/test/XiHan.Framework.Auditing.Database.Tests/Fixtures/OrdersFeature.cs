@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 
@@ -17,5 +18,8 @@ internal sealed class OrdersFeature : IFeature
 
     /// <inheritdoc />
     public void Configure(FeatureContext context)
-        => context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id, permission: "orders.write"), OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
+    {
+        context.AddPermission(new PermissionDefinition("orders.write", "Write orders"));
+        context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id, permission: "orders.write"), OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
+    }
 }

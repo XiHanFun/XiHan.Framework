@@ -71,6 +71,67 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public void Registry_AddRange_RegistersAllOrNothing()
+    {
+        var registry = new OperationRegistry(capacity: 3);
+        OperationDescriptor Describe(string id, string owner = "owner-a") => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+
+        // 同一批里重复：返回重复，登记表不变
+        var duplicated = registry.AddRange([Describe("echoes.get"), Describe("echoes.list"), Describe("echoes.get", "owner-b")]);
+        Assert.Equal(KernelErrors.DuplicateOperation, duplicated.Error?.Code);
+        Assert.Equal(0, registry.Count);
+
+        // 整批进；与已登记的重复同样整批不进
+        Assert.True(registry.AddRange([Describe("echoes.get"), Describe("echoes.list")]).IsSuccess);
+        Assert.Equal(KernelErrors.DuplicateOperation, registry.AddRange([Describe("echoes.create"), Describe("echoes.get")]).Error?.Code);
+        Assert.False(registry.Find("echoes.create").HasValue);
+
+        // 整批超出容量：一个都不进
+        Assert.Equal(KernelErrors.OperationRegistryFull, registry.AddRange([Describe("echoes.create"), Describe("echoes.delete")]).Error?.Code);
+        Assert.Equal(2, registry.Count);
+
+        Assert.True(registry.AddRange([]).IsSuccess);
+        Assert.Throws<ArgumentException>(() => registry.AddRange([Describe("echoes.create"), null!]));
+        Assert.Equal(2, registry.Count);
+    }
+
+    [Fact]
+    public void AddOperation_WithUnregisteredPermission_FailsAtBuild_ListingEveryOffender()
+    {
+        var exception = Assert.Throws<FrameworkException>(static () => Hosts.BuildApp(b => b
+            .UseFeature(new EchoFeature(registerPermission: false))
+            .UseFeature(new EchoFeature("xihan.test.echo2", "echoes.copy", capture: false, registerPermission: false))));
+
+        Assert.Equal(KernelErrors.UnregisteredPermission, exception.Code);
+        Assert.Contains("'echoes.create' of 'xihan.test.echo' requires 'echoes.write'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("'echoes.copy' of 'xihan.test.echo2' requires 'echoes.write'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Permissions_AreCheckedWhenAssemblyCompletes_AndLateRegistrationsAreRejected()
+    {
+        // 权限码由另一个特性登记：登记操作的那一刻还没有它，装配完成时已经有了
+        var (provider, app) = await StartAsync(new EchoFeature(registerPermission: false), new PermissionsFeature("xihan.test.permissions", "echoes.write", "echoes.read"));
+        var registry = provider.GetRequiredService<OperationRegistry>();
+        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+
+        // 装配之后登记（插件握手之后）：未登记的权限码在登记时被拒，整批不进
+        var rejected = registry.AddRange([Describe("echoes.get", "echoes.read"), Describe("echoes.purge", "echoes.purge")]);
+        Assert.Equal(KernelErrors.UnregisteredPermission, rejected.Error?.Code);
+        Assert.Equal("VALIDATION", rejected.Error?.Kind);
+        Assert.Equal("echoes.purge", rejected.Error?.Details?["id"]);
+        Assert.Equal("xihan.test.plugin", rejected.Error?.Details?["owner"]);
+        Assert.Equal("echoes.purge", rejected.Error?.Details?["permission"]);
+        Assert.False(registry.Find("echoes.get").HasValue);
+
+        // 已登记的权限码与没有权限要求的操作照常登记
+        Assert.True(registry.AddRange([Describe("echoes.get", "echoes.read"), Describe("echoes.list", null)]).IsSuccess);
+        Assert.Equal(KernelErrors.UnregisteredPermission, registry.Add(Describe("echoes.purge", "echoes.purge")).Error?.Code);
+        await app.StopAsync(CancellationToken.None);
+        await provider.DisposeAsync();
+    }
+
+    [Fact]
     public void DecodeResponse_RoundTripsEncodeResponse_AndRejectsNullOrInvalidJson()
     {
         var descriptor = new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(EchoOperation.Contract, "owner", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);

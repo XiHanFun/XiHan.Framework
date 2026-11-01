@@ -9,6 +9,7 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -232,6 +233,49 @@ public sealed class WasmPluginHostTests
 
         Assert.Equal(PluginErrors.InvalidModule, loaded.Error?.Code);
         Assert.Empty(plugins.Plugins);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_RejectsOperationsRequiringUnregisteredPermissions()
+    {
+        using var guarded = WatPlugin.Guarded("wat.call-permission");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        // 装配完成之后登记：权限码没登记，插件整体登记失败，不留下代理操作
+        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(KernelErrors.UnregisteredPermission, loaded.Error?.Code);
+        Assert.Empty(plugins.Plugins);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_RegistersOperationsRequiringRegisteredPermissions()
+    {
+        using var guarded = WatPlugin.Guarded("wat.call-permission");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.app.permissions"))
+        {
+            OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("wat.call-permission", "Call the WAT plugin")),
+        }));
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(guarded.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.True(loaded.IsSuccess, loaded.ToString());
+        Assert.Equal("wat.call-permission", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Permission);
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_RequiringAnUnregisteredPermission_FailsTheAssembly()
+    {
+        using var guarded = WatPlugin.Guarded("wat.call-permission");
+
+        // 配置阶段发现的插件随应用一起装配：与应用自己的操作一样，在装配完成时核对，启动失败
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", guarded.Directory)]));
+
+        Assert.Equal(KernelErrors.UnregisteredPermission, exception.Code);
+        Assert.Contains("'wat.call' of 'xihan.tests.wat' requires 'wat.call-permission'", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

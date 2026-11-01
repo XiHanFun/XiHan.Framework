@@ -57,6 +57,15 @@ internal sealed class WatPlugin : IDisposable
         => Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8) }, permissions, null);
 
     /// <summary>
+    /// 生成一个声明 <see cref="Operation"/> 要求权限码 <paramref name="permission"/> 的插件。
+    /// </summary>
+    /// <remarks>
+    /// 用来核对宿主拒绝引用了未登记权限码的代理操作；导出与 <see cref="Invoking"/> 相同。
+    /// </remarks>
+    public static WatPlugin Guarded(string permission)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission);
+
+    /// <summary>
     /// 生成一个贡献中间件的插件。
     /// </summary>
     /// <remarks>
@@ -97,7 +106,7 @@ internal sealed class WatPlugin : IDisposable
     /// <summary>
     /// 写清单与模块文本。
     /// </summary>
-    private static WatPlugin Create(string import, JsonObject request, IReadOnlyList<string> permissions, JsonArray? pipeline)
+    private static WatPlugin Create(string import, JsonObject request, IReadOnlyList<string> permissions, JsonArray? pipeline, string? operationPermission = null)
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(Operation) };
         if (pipeline is not null)
@@ -124,7 +133,9 @@ internal sealed class WatPlugin : IDisposable
             ["protocolVersion"] = 1,
             ["primitives"] = 1,
             ["manifest"] = manifest,
-            ["operations"] = new JsonArray(new JsonObject { ["id"] = Operation, ["stability"] = "experimental" }),
+            ["operations"] = new JsonArray(operationPermission is null
+                ? new JsonObject { ["id"] = Operation, ["stability"] = "experimental" }
+                : new JsonObject { ["id"] = Operation, ["stability"] = "experimental", ["permission"] = operationPermission }),
         }.ToJsonString();
 
         var segments = new StringBuilder();

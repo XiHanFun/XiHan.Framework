@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
@@ -72,11 +73,8 @@ public sealed class WasmPluginsFeature : IHostedFeature
                 continue;
             }
 
-            foreach (var operation in runtime.Handshake.Operations)
-            {
-                // 与应用自己的操作重名是配置错误，启动失败
-                context.Operations.Add(new ProxyOperationDescriptor(operation.Contract, runtime.Manifest.Id, runtime, operation.Schema)).ThrowIfFailure();
-            }
+            // 与应用自己的操作重名是配置错误，启动失败；引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败
+            context.Operations.AddRange(runtime.Handshake.Operations.Select(operation => (OperationDescriptor)new ProxyOperationDescriptor(operation.Contract, runtime.Manifest.Id, runtime, operation.Schema)).ToList()).ThrowIfFailure();
 
             foreach (var catalog in runtime.Handshake.Catalogs)
             {

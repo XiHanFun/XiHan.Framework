@@ -141,6 +141,7 @@ app.Run();
 | `KERNEL_SECURITY_001` / `002` | 权限码重复 / 权限表已满 |
 | `KERNEL_NOTFOUND_001` | 操作未登记 |
 | `KERNEL_VALIDATION_001`–`004` | 载荷非法、类型化调用类型不符、不满足 Schema、自校验失败 |
+| `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；装配之后的登记（插件握手之后）返回失败 |
 | `KERNEL_OPERATION_001` / `002` | 操作 ID 重复 / 登记表已满 |
 
 ## 相关

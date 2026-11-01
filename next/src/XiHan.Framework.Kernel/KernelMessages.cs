@@ -157,6 +157,14 @@ public static class KernelMessages
     public const string OperationRegistryFull = "kernel.operation.registry_full";
 
     /// <summary>
+    /// 操作引用了未登记的权限码。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>owner</c>、<c>permission</c>。
+    /// </remarks>
+    public const string OperationPermissionUnregistered = "kernel.operation.permission_unregistered";
+
+    /// <summary>
     /// 操作成功结束却没有产生响应对象。
     /// </summary>
     /// <remarks>

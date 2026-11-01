@@ -137,7 +137,7 @@ app.Run();
 | --- | --- |
 | 清单不合法、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`。进程外插件在应用启动后按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），启动阶段的 `Configure` / `Start` 失败同样重试；首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见），订阅与消息目录要等宿主重启才生效。Wasm 插件的这类失败不重试 |
-| 插件声明的操作与应用已有操作重名 | 配置错误，应用启动失败 |
+| 插件声明的操作与应用已有操作重名，或操作的 `permission` 不是宿主已登记的权限码 | 配置错误，应用启动失败（`KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`）；装配完成之后才登记的（重试成功、运行期 `LoadAsync`）插件整体登记失败、按发现时被拒处理，一个代理操作都不留下。权限码只能由宿主的特性登记，清单 `contributes.permissions` 不会替插件登记 |
 
 ### 运行期加载与卸载
 
