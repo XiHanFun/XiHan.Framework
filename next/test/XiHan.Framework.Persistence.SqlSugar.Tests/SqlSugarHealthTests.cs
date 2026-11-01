@@ -13,17 +13,10 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// </summary>
 /// <remarks>
 /// 选项里的探测间隔解析；数据库可达时 Ready，连接串指向不存在的目录时 Degraded 并带 <see cref="PersistenceErrors.StoreUnavailable"/>，应用仍就绪。
+/// 可达的库用每个用例独立的内存库：不落文件，用例结束不用删文件，超载时也不会因文件被占用而在释放时失败。
 /// </remarks>
-public sealed class SqlSugarHealthTests : IDisposable
+public sealed class SqlSugarHealthTests
 {
-    /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
-    /// </summary>
-    private readonly SqliteDatabase _database = new();
-
-    /// <inheritdoc />
-    public void Dispose() => _database.Dispose();
-
     [Fact]
     public void Options_ParseHealthProbeInterval_AndRejectNonPositive()
     {
@@ -38,7 +31,8 @@ public sealed class SqlSugarHealthTests : IDisposable
     [Fact]
     public async Task Health_IsReady_WhenTheDatabaseIsReachable()
     {
-        await using var host = await _database.StartHostAsync();
+        using var database = new SqliteMemoryDatabase();
+        await using var host = await database.StartHostAsync();
 
         var health = host.App.Health();
         var status = Assert.Single(health.Contributions, static c => c.Name == SqlSugarPersistenceFeature.HealthName);
