@@ -95,6 +95,58 @@ public sealed class AppTests
     }
 
     [Fact]
+    public async Task StartupChecks_RunOnceBeforeAnyFeatureStarts_InRegistrationOrder()
+    {
+        var log = new List<string>();
+        var first = new RecordingFeature(Manifests.Create("xihan.test.first"), log) { OnConfigure = ctx => ctx.AddStartupCheck(services => log.Add(services.GetService<App>() is null ? "check:first:no-container" : "check:first")) };
+        var second = new RecordingFeature(Manifests.Create("xihan.test.second"), log) { OnConfigure = ctx => ctx.AddStartupCheck(_ => log.Add("check:second")) };
+        var (provider, app) = Hosts.BuildApp(b => b.UseFeature(first).UseFeature(second));
+        using var _ = provider;
+
+        await app.StartAsync(CancellationToken.None);
+        await app.StartAsync(CancellationToken.None);
+
+        // 配置之后、第一个特性启动之前按登记顺序各执行一次，拿到的是建好的容器；重复启动不再核对
+        Assert.Equal(["configure:xihan.test.first", "configure:xihan.test.second", "check:first", "check:second", "start:xihan.test.first", "start:xihan.test.second"], log);
+        Assert.Equal(LifecycleState.Ready, app.State);
+    }
+
+    [Theory]
+    [InlineData(FailurePolicy.TerminateStartup)]
+    [InlineData(FailurePolicy.IsolateFeature)]
+    public async Task StartupCheckFailure_TerminatesTheStart_UnderEitherFailurePolicy(FailurePolicy policy)
+    {
+        var log = new List<string>();
+        var checking = new RecordingFeature(Manifests.Create("xihan.test.checking"), log)
+        {
+            OnConfigure = ctx => ctx
+                .AddStartupCheck(static _ => throw new FrameworkException("TESTS_VALIDATION_001", "A contract references something that does not exist."))
+                .AddStartupCheck(_ => log.Add("check:later")),
+        };
+        var healthy = new RecordingFeature(Manifests.Create("xihan.test.healthy"), log);
+        var (provider, app) = Hosts.BuildApp(b => b.UseFeature(checking).UseFeature(healthy).UseOptions(new KernelOptions { FailurePolicy = policy }));
+        using var _ = provider;
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => app.StartAsync(CancellationToken.None));
+
+        // 原样抛出，不包成特性启动失败；隔离策略也不例外：后面的核对与全部特性都没有执行，应用不在服务
+        Assert.Equal("TESTS_VALIDATION_001", exception.Code);
+        Assert.DoesNotContain(log, static e => e.StartsWith("start:", StringComparison.Ordinal) || e == "check:later");
+        Assert.All(app.Features, static f => Assert.Equal(LifecycleState.Configured, f.State));
+        Assert.False(app.State.IsServing());
+    }
+
+    [Fact]
+    public void AddStartupCheck_RejectsNull()
+    {
+        var feature = new RecordingFeature(Manifests.Create("xihan.test.null"), []) { OnConfigure = static ctx => Assert.Throws<ArgumentNullException>(() => ctx.AddStartupCheck(null!)) };
+
+        var (provider, _) = Hosts.BuildApp(b => b.UseFeature(feature));
+
+        provider.Dispose();
+    }
+
+    [Fact]
     public async Task StopTimeout_MarksFeatureFailedButStopsOthers()
     {
         var log = new List<string>();

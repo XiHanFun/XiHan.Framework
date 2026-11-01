@@ -21,20 +21,15 @@ namespace XiHan.Framework.Security.InMemory;
 /// 内存安全的能力包入口。
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。只为被选中的能力注册服务与中间件；被选为授权能力时在启动时核对操作契约引用的策略（ADR-0080）。
+/// 默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。只为被选中的能力注册服务与中间件；被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemorySecurityFeature : IHostedFeature
+public sealed class InMemorySecurityFeature : IFeature
 {
     /// <summary>
     /// 健康项名：主体与授予存储是否都还有余量。
     /// </summary>
     public const string HealthName = "security.inmemory.capacity";
-
-    /// <summary>
-    /// 是否被选为授权能力（配置阶段记下，启动时据此核对策略引用）。
-    /// </summary>
-    private bool _authorizes;
 
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -93,26 +88,10 @@ public sealed class InMemorySecurityFeature : IHostedFeature
             context.Services.AddSingleton<IPolicy, AuthenticatedPolicy>();
             context.Services.TryAddSingleton<PolicyCatalog>();
             context.AddMiddleware<AuthorizationMiddleware>(PipelineStage.Authorize);
-            _authorizes = true;
+            // 契约按名引用的策略在启动核对里核对（ADR-0085）：策略是容器里的 IPolicy，容器建好才知道全部策略名；
+            // 启动核对在任何特性启动之前执行、不归失败策略管——引用了不存在的策略在隔离策略下也拒绝启动。
+            // 核对同时挂到登记表上，此后插件握手登记的操作在登记时逐个核对，引用了不存在的策略整组被拒
+            context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
         }
     }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// 被选为授权能力时核对操作契约按名引用的策略（ADR-0080）：策略是容器里的 <see cref="IPolicy"/>，容器建好才知道全部策略名，所以放在启动而不是配置阶段；引用了不存在的策略即 <see cref="SecurityErrors.UnregisteredPolicy"/>，本特性启动失败。
-    /// </remarks>
-    public Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        if (_authorizes)
-        {
-            // 核对已登记的操作并挂到登记表上：此后插件握手登记的操作在登记时逐个核对，引用了不存在的策略整组被拒
-            services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>());
-        }
-
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

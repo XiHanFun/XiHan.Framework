@@ -124,7 +124,7 @@ public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
 
 ## 行为与限制
 
-- 被选为授权能力时，特性启动时调用 `PolicyCatalog.EnforceOn` 核对操作契约按名引用的策略：不存在（含 `permission:<code>` 的权限码未登记）即 `SECURITY_VALIDATION_004`，本特性启动失败（默认失败策略下应用启动失败）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080）。
+- 被选为授权能力时，特性在 `Configure` 里登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（`IsolateFeature` 也一样，不包成 `KERNEL_HOSTING_002`）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080、ADR-0085）。特性本身不实现 `IHostedFeature`。
 - 认证成功的主体按顺序带上：每个角色一条类型为 `XiHan:Security:RoleClaim` 的声明、一条租户声明（有 `Tenant` 时）、附加声明。租户声明的类型取 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`），与多租户的 `ClaimTenantResolver` 读同一个配置键，改了它 ApiKey 主体的租户照样被认出。
 - API Key 逐条做常量时间比较；找不到返回 `SECURITY_DENIED_003`。
 - 容量：新增主体超过 `MaxPrincipals`、新增授予超过 `MaxGrants` 时返回 `SECURITY_UNAVAILABLE_002`；替换已有主体、重复授予不占容量。配置里的条目超过上限时，构造存储即抛出 `FrameworkException`。

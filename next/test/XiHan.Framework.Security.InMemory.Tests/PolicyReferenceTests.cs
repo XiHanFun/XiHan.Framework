@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
@@ -12,7 +11,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 内存安全特性作为授权能力时，启动时核对操作契约按名引用的策略（ADR-0080）。
+/// 内存安全特性作为授权能力时，在启动核对里核对操作契约按名引用的策略（ADR-0080、ADR-0085）。
 /// </summary>
 public sealed class PolicyReferenceTests
 {
@@ -70,13 +69,23 @@ public sealed class PolicyReferenceTests
             new OperationContract("approvals.approve", policy: "approvers"),
             new OperationContract("approvals.export", policy: "permission:approvals.export")))));
 
-        // 授权能力在启动时核对：本特性启动失败（默认失败策略下应用启动失败），内层是策略不存在
-        Assert.Equal(KernelErrors.FeatureStartFailed, exception.Code);
-        var inner = Assert.IsType<FrameworkException>(exception.InnerException);
-        Assert.Equal(SecurityErrors.UnregisteredPolicy, inner.Code);
-        Assert.Contains("'approvals.approve' of 'xihan.app.approvals' requires policy 'approvers'", inner.Message, StringComparison.Ordinal);
-        Assert.Contains("'approvals.export' of 'xihan.app.approvals' requires policy 'permission:approvals.export'", inner.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("approvals.list", inner.Message, StringComparison.Ordinal);
+        // 授权能力登记的启动核对：任何特性启动之前执行，策略不存在原样抛出、终止启动（不包成特性启动失败），一次列出全部
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, exception.Code);
+        Assert.Contains("'approvals.approve' of 'xihan.app.approvals' requires policy 'approvers'", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("'approvals.export' of 'xihan.app.approvals' requires policy 'permission:approvals.export'", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("approvals.list", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ContractReferencingAMissingPolicy_FailsTheStart_EvenUnderTheIsolatePolicy()
+    {
+        // 隔离策略只管特性启动失败：坏的策略名是装配错误，启动核对不归它管，照样拒绝启动，而不是隔离授权特性、让应用降级运行
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
+            static b => b.UseFeature<InMemorySecurityFeature>().UseFeature(Approvals(new OperationContract("approvals.approve", policy: "approvers"))),
+            [new("XiHan:Kernel:FailurePolicy", "IsolateFeature")]));
+
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, exception.Code);
+        Assert.Contains("'approvals.approve' of 'xihan.app.approvals' requires policy 'approvers'", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

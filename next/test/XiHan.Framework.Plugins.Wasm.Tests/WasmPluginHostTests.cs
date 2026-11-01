@@ -414,10 +414,9 @@ public sealed class WasmPluginHostTests
 
         var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]));
 
-        Assert.Equal(KernelErrors.FeatureStartFailed, exception.Code);
-        var inner = Assert.IsType<FrameworkException>(exception.InnerException);
-        Assert.Equal(SecurityErrors.UnregisteredPolicy, inner.Code);
-        Assert.Contains("'wat.call' of 'xihan.tests.wat' requires policy 'auditors'", inner.Message, StringComparison.Ordinal);
+        // 授权能力的启动核对：配置阶段发现的插件的操作一并核对，策略不存在即终止启动
+        Assert.Equal(SecurityErrors.UnregisteredPolicy, exception.Code);
+        Assert.Contains("'wat.call' of 'xihan.tests.wat' requires policy 'auditors'", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

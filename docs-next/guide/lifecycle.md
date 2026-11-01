@@ -124,6 +124,25 @@ public sealed class ReportWarmer
 
 应用状态由各特性状态聚合：有失败且策略为终止 → `Failed`；全部停止 → `Stopped`；任一特性在排空或已停止 → `Draining`；全部可服务 → `Ready`（有 `Degraded` 则 `Degraded`）。应用就绪后，任一健康条目报告 `Degraded` 或 `Failed` 只把应用从 `Ready` 压成 `Degraded`，不让应用退出。
 
+失败策略只管特性启动时的失败（连不上外部服务这类运行条件）。装配错误不归它管，不论策略都终止启动：装配完成时的核对（如契约引用了未登记的权限码，`KERNEL_VALIDATION_005`）在 `AppBuilder.Build` 里抛出，要等容器建好才能做的核对放在启动核对里。
+
+## 启动核对
+
+特性在 `Configure` 里用 `FeatureContext.AddStartupCheck(check)` 登记要等容器建好才能做的装配核对，最典型的是授权能力核对操作契约引用的策略名（策略是容器里的 `IPolicy`，[授权](./authorization#启动时核对策略引用)）：
+
+```csharp
+public void Configure(FeatureContext context)
+{
+    // 核对不通过时抛出带错误码的 FrameworkException，一次列出全部问题
+    context.AddStartupCheck(static services => services.GetRequiredService<ReportCatalog>().EnsureEveryReportHasATemplate());
+}
+```
+
+- 时机：宿主启动应用时，容器建好之后、第一个特性启动之前，按登记顺序各执行一次；重复启动时通过过的核对不再执行。
+- 失败：任一抛出即终止启动，异常原样抛出（不包成 `KERNEL_HOSTING_002`），后面的核对与全部特性都不再执行，记一条 Error 日志。
+- 不归失败策略管（ADR-0085）：`IsolateFeature` 下同样终止。核对的是引用了不存在的东西这类装配错误，隔离哪个特性都修不好，只会让应用带着错误降级运行。
+- 连接外部服务、预热缓存这类可能因运行条件失败的工作不要放进启动核对，放在 `IHostedFeature.StartAsync` 里，由失败策略决定是终止还是隔离。
+
 ## 健康条目
 
 特性之外的健康信息由 `IHealthContributor` 提供：外部连接是否可用、内存存储是否接近容量、插件进程是否存活。内核从容器里取出全部 `IHealthContributor`，每次读健康快照时调用 `Check()`，返回的 `ContributorStatus` 进入快照的 `Contributions`：

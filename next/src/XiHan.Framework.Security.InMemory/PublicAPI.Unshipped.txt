@@ -21,8 +21,6 @@ XiHan.Framework.Security.InMemory.InMemorySecurityFeature
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.InMemorySecurityFeature() -> void
 XiHan.Framework.Security.InMemory.InMemorySecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Security.InMemory.InMemorySecurityFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Security.InMemory.InMemorySecurityFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor
 XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Security.InMemory.InMemorySecurityHealthContributor.InMemorySecurityHealthContributor(XiHan.Framework.Security.InMemory.InMemoryPrincipalStore? principals, XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore? grants) -> void

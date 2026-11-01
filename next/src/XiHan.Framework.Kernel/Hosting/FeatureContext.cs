@@ -22,6 +22,11 @@ namespace XiHan.Framework.Kernel.Hosting;
 public sealed class FeatureContext
 {
     /// <summary>
+    /// 全部特性共用的启动核对列表，按登记顺序。
+    /// </summary>
+    private readonly List<(string OwnerId, Action<IServiceProvider> Check)> _startupChecks;
+
+    /// <summary>
     /// 创建特性上下文。
     /// </summary>
     /// <remarks>
@@ -34,6 +39,7 @@ public sealed class FeatureContext
     /// <param name="bindings">宿主解析出的全部绑定。</param>
     /// <param name="permissions">权限注册表。</param>
     /// <param name="operations">应用级操作登记表。</param>
+    /// <param name="startupChecks">全部特性共用的启动核对列表，<see cref="AddStartupCheck"/> 往里追加。</param>
     internal FeatureContext(
         ResolvedNode node,
         IServiceCollection services,
@@ -41,7 +47,8 @@ public sealed class FeatureContext
         PipelineBuilder pipeline,
         IReadOnlyDictionary<string, BindingValue> bindings,
         PermissionRegistry permissions,
-        OperationRegistry operations)
+        OperationRegistry operations,
+        List<(string OwnerId, Action<IServiceProvider> Check)> startupChecks)
     {
         Node = node;
         Services = services;
@@ -50,6 +57,7 @@ public sealed class FeatureContext
         Bindings = bindings;
         Permissions = permissions;
         Operations = operations;
+        _startupChecks = startupChecks;
     }
 
     /// <summary>
@@ -161,6 +169,20 @@ public sealed class FeatureContext
     public FeatureContext AddPermission(PermissionDefinition permission)
     {
         Permissions.Add(Manifest.Id, permission).ThrowIfFailure();
+        return this;
+    }
+
+    /// <summary>
+    /// 登记一项启动核对。
+    /// </summary>
+    /// <remarks>
+    /// 给容器建好才能做的装配核对用（如授权能力核对操作契约按名引用的策略，ADR-0085）。宿主启动应用时，内核在容器建好之后、第一个特性启动之前按登记顺序各执行一次：任一抛出即终止启动，异常原样抛出（不包成 <see cref="KernelErrors.FeatureStartFailed"/>），之后的核对与全部特性都不再执行；重复启动时通过过的核对不再执行。启动核对不归 <see cref="KernelOptions.FailurePolicy"/> 管：它核对的是装配错误，隔离哪个特性都修不好。核对不通过时抛出携带错误码的 <see cref="FrameworkException"/>，一次列出全部问题。
+    /// </remarks>
+    /// <param name="check">核对：参数是根服务提供器；通过时正常返回，不通过时抛出。</param>
+    public FeatureContext AddStartupCheck(Action<IServiceProvider> check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        _startupChecks.Add((Manifest.Id, check));
         return this;
     }
 }

@@ -17,8 +17,6 @@ XiHan.Framework.Security.Database.DatabaseSecurityFeature
 XiHan.Framework.Security.Database.DatabaseSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.Database.DatabaseSecurityFeature.DatabaseSecurityFeature() -> void
 XiHan.Framework.Security.Database.DatabaseSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
-XiHan.Framework.Security.Database.DatabaseSecurityFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Security.Database.DatabaseSecurityFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Database.DatabaseSecurityOptions
 XiHan.Framework.Security.Database.DatabaseSecurityOptions.<Clone>$() -> XiHan.Framework.Security.Database.DatabaseSecurityOptions!
 XiHan.Framework.Security.Database.DatabaseSecurityOptions.CacheSize.get -> int

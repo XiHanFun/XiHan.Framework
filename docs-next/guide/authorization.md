@@ -114,13 +114,18 @@ app.Run();
 | 引用 | 什么时候核对 | 失败 |
 | --- | --- | --- |
 | 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005` |
-| 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）启动时，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：该特性启动失败（默认失败策略下应用启动失败）；插件整体登记失败 |
+| 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）登记的启动核对：容器建好之后、任何特性启动之前，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：宿主启动失败，不论失败策略（`IsolateFeature` 也一样，ADR-0085）；插件整体登记失败 |
 | 端点上的 `RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` | `UseXiHan()` 在宿主建请求管道时（路由已全部映射） | `SECURITY_VALIDATION_004`：宿主启动失败（`app.StartAsync` / `app.Run` 抛出） |
 
 - 异常一次列出全部违规项，如 `'orders.approve' of 'xihan.app.orders' requires policy 'approvers'`、`'HTTP: GET /orders/purge' requires permission 'orders.purge', which is not registered`。
-- 策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以契约的策略在启动时而不是装配时核对；配置阶段发现的插件的操作与它声明的权限码此时都已登记，`permission:<插件声明的码>` 能通过。
+- 策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以契约的策略在启动核对里而不是装配时核对；配置阶段发现的插件的操作与它声明的权限码此时都已登记，`permission:<插件声明的码>` 能通过。
+- 启动核对不归内核的失败策略管（[生命周期与健康](./lifecycle#启动核对)）：坏的策略名是装配错误，隔离授权特性修不好它，只会让应用带着坏契约降级运行，所以 `XiHan:Kernel:FailurePolicy = IsolateFeature` 时同样拒绝启动。异常就是 `SECURITY_VALIDATION_004` 本身，不包成 `KERNEL_HOSTING_002`。
 - 没有装配授权能力（容器里没有 `PolicyCatalog`）时都不核对：此时 Authorize 阶段也不判定任何要求。
-- 自己实现 `security.authorization@1` 的 Provider，要在启动时同样调用 `PolicyCatalog.EnforceOn(OperationRegistry)`。
+- 自己实现 `security.authorization@1` 的 Provider，被选中时要在 `Configure` 里同样登记启动核对：
+
+```csharp
+context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
+```
 
 内置两种策略：
 

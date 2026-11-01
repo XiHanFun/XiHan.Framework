@@ -142,7 +142,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 
 ## 行为与限制
 
-- 被选为授权能力时，特性启动时调用 `PolicyCatalog.EnforceOn` 核对操作契约按名引用的策略：不存在（含 `permission:<code>` 的权限码未登记）即 `SECURITY_VALIDATION_004`，本特性启动失败（默认失败策略下应用启动失败）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080）。
+- 被选为授权能力时，特性在 `Configure` 里登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（`IsolateFeature` 也一样，不包成 `KERNEL_HOSTING_002`）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080、ADR-0085）。特性本身不实现 `IHostedFeature`。
 - 授予：一次查询取回已有行（主体种类、主体 ID、权限码、租户各取集合做 `IN`，再在内存里精确匹配），已存在的返回成功且不重复写，同一批里重复的项同样成功，没有的用一次 `AddRangeAsync` 写入。空集合直接返回空结果。
 - 租户：全局授予的 `TenantId` 用 `null`；`GrantAsync` 与 `RevokeAsync` 遇到空白租户视为编程错误，在访问数据库前抛出 `ArgumentException`。
 - 撤销：一次 `RemoveRangeAsync`；不存在的授予与同一批里第二次出现的同一授予返回 `SECURITY_NOTFOUND_002`（消息键 `security.grant.not_found`，参数 `subject` / `permission` / `tenant`，全局时 `tenant` 为 `*`）。

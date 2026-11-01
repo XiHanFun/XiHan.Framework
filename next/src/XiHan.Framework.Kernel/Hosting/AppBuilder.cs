@@ -202,6 +202,7 @@ public sealed class AppBuilder
         var bindings = BindingResolver.Resolve(Configuration, _serviceBindingRoot);
         var permissions = new PermissionRegistry();
         var operations = new OperationRegistry(permissions);
+        var startupChecks = new List<(string OwnerId, Action<IServiceProvider> Check)>();
 
         // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后；
         // Resilience 阶段先截止时间再限制（同 Placement、同归属按注册顺序）。
@@ -232,7 +233,7 @@ public sealed class AppBuilder
             {
                 if (feature is IShadowAwareFeature shadowAware)
                 {
-                    shadowAware.ConfigureShadowed(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations));
+                    shadowAware.ConfigureShadowed(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations, startupChecks));
                 }
 
                 continue;
@@ -253,7 +254,7 @@ public sealed class AppBuilder
                 }
             }
 
-            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations));
+            feature.Configure(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations, startupChecks));
             runtimes.Add(new FeatureRuntime(node, feature));
         }
 
@@ -277,7 +278,7 @@ public sealed class AppBuilder
         Services.TryAddScoped<IInvocationAccessor>(static sp => sp.GetRequiredService<InvocationAccessor>());
         Services.AddSingleton(options);
         Services.AddSingleton(graph);
-        Services.AddSingleton(new AppModel(graph, runtimes, Pipeline, options, bindings));
+        Services.AddSingleton(new AppModel(graph, runtimes, Pipeline, options, bindings, startupChecks));
         Services.AddSingleton<App>();
         Services.AddHostedService<AppHostedService>();
         return graph;

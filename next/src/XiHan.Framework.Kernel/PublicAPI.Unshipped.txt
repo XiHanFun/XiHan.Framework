@@ -128,6 +128,7 @@ XiHan.Framework.Kernel.Hosting.FeatureContext
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddMiddleware<TMiddleware>(XiHan.Framework.Primitives.PipelineStage stage, XiHan.Framework.Kernel.Pipeline.Placement placement = XiHan.Framework.Kernel.Pipeline.Placement.End) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddOperation<TOperation, TRequest, TResponse>(XiHan.Framework.Kernel.Operations.OperationContract! contract, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo, XiHan.Framework.Kernel.Operations.OperationSchema? schema = null) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.AddPermission(XiHan.Framework.Kernel.Security.PermissionDefinition! permission) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
+XiHan.Framework.Kernel.Hosting.FeatureContext.AddStartupCheck(System.Action<System.IServiceProvider!>! check) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Bindings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 XiHan.Framework.Kernel.Hosting.FeatureContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
 XiHan.Framework.Kernel.Hosting.FeatureContext.GetBinding(string! name) -> XiHan.Framework.Kernel.Hosting.BindingValue!

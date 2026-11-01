@@ -214,6 +214,7 @@ builder.AddXiHan(xihan => xihan
 | `AddMiddleware<T>(stage, placement)` | 把中间件挂到某个阶段，归属本特性的清单 ID，并以单例注册中间件类型 |
 | `AddPermission(definition)` | 登记权限码，归属本特性的清单 ID；操作契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`）；端点引用的未登记权限码在宿主建请求管道时核对，启动失败（`SECURITY_VALIDATION_004`） |
 | `AddOperation<TOperation, TRequest, TResponse>(...)` | 登记操作契约，通常由生成的 `AddGeneratedOperations()` 代劳 |
+| `AddStartupCheck(check)` | 登记启动核对：要等容器建好才能做的装配核对（如授权能力核对契约引用的策略），在任何特性启动之前执行，抛出即终止启动、不归失败策略管，见[生命周期与健康](./lifecycle#启动核对) |
 | `GetBinding(name)` / `TryGetBinding(name)` | 读取宿主解析出的资源绑定 |
 | `Pipeline`、`Permissions`、`Operations`、`Bindings` | 底层的管道构建器、权限表、操作登记表与绑定表 |
 

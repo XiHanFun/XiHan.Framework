@@ -57,6 +57,14 @@ public sealed partial class App : IDisposable
     private readonly Lazy<PipelineStep> _pipeline;
 
     /// <summary>
+    /// 启动核对是否已全部通过。
+    /// </summary>
+    /// <remarks>
+    /// 只在 <see cref="_lifecycleLock"/> 内读写；通过后重复调用 <see cref="StartAsync"/> 不再核对。
+    /// </remarks>
+    private bool _checked;
+
+    /// <summary>
     /// 创建应用实例。
     /// </summary>
     /// <remarks>
@@ -260,10 +268,10 @@ public sealed partial class App : IDisposable
     }
 
     /// <summary>
-    /// 按拓扑顺序启动特性。
+    /// 执行启动核对，再按拓扑顺序启动特性。
     /// </summary>
     /// <remarks>
-    /// 失败按 <see cref="KernelOptions.FailurePolicy"/> 处理。
+    /// 启动核对（<see cref="FeatureContext.AddStartupCheck"/>）在任何特性启动之前按登记顺序执行，任一抛出即原样抛出、终止启动，不归 <see cref="KernelOptions.FailurePolicy"/> 管；特性启动失败按 <see cref="KernelOptions.FailurePolicy"/> 处理。
     /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -278,6 +286,8 @@ public sealed partial class App : IDisposable
                 LogGraph(_logger, graph);
                 LogPipeline(_logger, pipeline);
             }
+
+            RunStartupChecks();
 
             foreach (var runtime in _model.Features)
             {
@@ -301,6 +311,38 @@ public sealed partial class App : IDisposable
         {
             _lifecycleLock.Release();
         }
+    }
+
+    /// <summary>
+    /// 执行启动核对。
+    /// </summary>
+    /// <remarks>
+    /// 在生命周期锁内、第一个特性启动之前调用；全部通过后记下，重复启动不再执行。
+    /// </remarks>
+    private void RunStartupChecks()
+    {
+        if (_checked)
+        {
+            return;
+        }
+
+        // 启动核对查的是装配错误（契约引用了不存在的策略这类），隔离哪个特性都修不好，所以不经失败策略：
+        // 任一不过就原样抛出、终止启动，后面的核对与全部特性都不再执行。放在任何特性启动之前，
+        // 核对挂到登记表上的规则（OperationRegistry.Enforce）也就先于插件宿主启动后的重试登记生效
+        foreach (var (ownerId, check) in _model.StartupChecks)
+        {
+            try
+            {
+                check(_services);
+            }
+            catch (Exception exception)
+            {
+                LogStartupCheckFailed(_logger, exception, ownerId);
+                throw;
+            }
+        }
+
+        _checked = true;
     }
 
     /// <summary>
@@ -491,6 +533,12 @@ public sealed partial class App : IDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Feature '{FeatureId}' failed.")]
     private static partial void LogFeatureFailed(ILogger logger, Exception exception, string featureId);
+
+    /// <summary>
+    /// 记录启动核对不通过（启动随之终止）。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "A startup check registered by feature '{FeatureId}' failed; startup is terminated regardless of the failure policy.")]
+    private static partial void LogStartupCheckFailed(ILogger logger, Exception exception, string featureId);
 
     /// <summary>
     /// 记录启动或停止完成后的应用聚合状态。
