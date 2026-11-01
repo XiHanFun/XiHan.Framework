@@ -34,20 +34,11 @@ public sealed record InMemoryMessagingOptions
     } = 10_000;
 
     /// <summary>
-    /// 主题数上限。
+    /// 从配置读取：<c>MaxQueuedMessages</c>。
     /// </summary>
     /// <remarks>
-    /// 默认 1000。每个被订阅的主题一条通道与一份死信列表，首次发布或消费时创建、此后不回收；被订阅的主题超过上限时启动失败（<c>MESSAGING_UNAVAILABLE_003</c>）。发布到没人订阅的主题直接丢弃，不建通道、不占名额。
+    /// 主题数不另设上限（ADR-0082）：通道只为订阅表里的主题创建，订阅表在装配时定好、之后只读，发布到没人订阅的主题直接丢弃。
     /// </remarks>
-    public int MaxTopics
-    {
-        get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of topics must be positive.");
-    } = 1_000;
-
-    /// <summary>
-    /// 从配置读取：<c>MaxQueuedMessages</c>、<c>MaxTopics</c>。
-    /// </summary>
     public static InMemoryMessagingOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
@@ -55,11 +46,6 @@ public sealed record InMemoryMessagingOptions
         if (ReadPositive(configuration, "MaxQueuedMessages") is { } queued)
         {
             options = options with { MaxQueuedMessages = queued };
-        }
-
-        if (ReadPositive(configuration, "MaxTopics") is { } topics)
-        {
-            options = options with { MaxTopics = topics };
         }
 
         return options;

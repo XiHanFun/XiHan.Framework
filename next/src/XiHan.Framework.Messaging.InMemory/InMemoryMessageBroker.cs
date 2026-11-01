@@ -20,13 +20,13 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// <remarks>
 /// 只有被订阅的主题（本进程以任一订阅方式登记了处理器，或交给 <see cref="StartAsync"/> 消费）才有通道；发布到没人订阅的主题直接丢弃并记一条 Debug 日志，发布照常成功，不建通道、不占主题名额。
 /// 单进程就是一个实例（RFC-0009「订阅方式」）：一条消息给主题的每种订阅方式各入队一份投递，竞争订阅与广播订阅各收到一次、各自重试；广播投递到上限后丢弃并记日志，不进死信列表。
-/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。被订阅的主题数有上限（<see cref="InMemoryMessagingOptions.MaxTopics"/>），超出时启动失败（<see cref="MessagingErrors.TopicLimit"/>）。
+/// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。通道数不超过订阅表里的主题数（订阅表在装配时定好、之后只读），不随发布增长，所以不另设主题数上限（ADR-0082）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, MessageSubscriptions subscriptions, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
     /// <summary>
-    /// 内存代理选项：每主题容量与主题数上限。
+    /// 内存代理选项：每主题容量。
     /// </summary>
     private readonly InMemoryMessagingOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -65,7 +65,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 被订阅主题到队列的映射。
     /// </summary>
     /// <remarks>
-    /// 首次发布或消费时创建，不回收；只为被订阅的主题创建，条目数受订阅表与 <see cref="StartAsync"/> 的上限判定约束。
+    /// 首次发布或消费时创建，不回收；只为被订阅的主题（订阅表里的，或交给 <see cref="StartAsync"/> 消费的）创建，条目数不超过这些主题数，不随发布增长。
     /// </remarks>
     private readonly ConcurrentDictionary<string, TopicQueue> _topics = new(StringComparer.Ordinal);
 
@@ -180,15 +180,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             throw new InvalidOperationException("The in-memory broker is already consuming.");
         }
 
-        // 先按上限判定再建队列、起消费循环：被订阅的主题（已有队列的与这次要消费的）超限时启动失败，不留下只消费了一部分主题的代理
         var topics = subscriptions.GroupBy(static s => s.Topic, StringComparer.Ordinal).ToList();
-        var subscribed = new HashSet<string>(_topics.Keys, StringComparer.Ordinal);
-        subscribed.UnionWith(topics.Select(static t => t.Key));
-        if (subscribed.Count > _options.MaxTopics)
-        {
-            throw new FrameworkException(MessagingErrors.TopicLimit, $"The in-memory broker allows at most {_options.MaxTopics} subscribed topics, but {subscribed.Count} are subscribed. Raise {InMemoryMessagingOptions.ConfigurationSection}:MaxTopics.");
-        }
-
         var queues = new List<TopicQueue>(topics.Count);
         foreach (var topic in topics)
         {
@@ -292,7 +284,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             return true;
         }
 
-        // 没人订阅的主题不建队列：没有消费者，缓冲只会占着内存与主题名额，直到队列排满
+        // 没人订阅的主题不建队列：没有消费者，缓冲只会占着内存，直到队列排满
         if (SubscribedModes(topic).Length == 0)
         {
             return false;

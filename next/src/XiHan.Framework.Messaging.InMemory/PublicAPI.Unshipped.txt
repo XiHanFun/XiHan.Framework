@@ -23,8 +23,6 @@ XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(XiHan.Framewo
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.InMemoryMessagingOptions() -> void
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.get -> int
 XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxQueuedMessages.init -> void
-XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxTopics.get -> int
-XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.MaxTopics.init -> void
 const XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature.HealthName = "messaging.inmemory.capacity" -> string!
 const XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.ConfigurationSection = "XiHan:Messaging:InMemory" -> string!
 override XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions.Equals(object? obj) -> bool

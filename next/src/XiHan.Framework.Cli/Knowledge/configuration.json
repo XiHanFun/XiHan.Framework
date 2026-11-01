@@ -642,13 +642,6 @@
           "default": "10000",
           "minimum": 1,
           "summary": "每个主题（含其死信列表）的条目上限"
-        },
-        {
-          "key": "MaxTopics",
-          "type": "integer",
-          "default": "1000",
-          "minimum": 1,
-          "summary": "主题数上限；满后发布到新主题返回 MESSAGING_UNAVAILABLE_003"
         }
       ]
     },

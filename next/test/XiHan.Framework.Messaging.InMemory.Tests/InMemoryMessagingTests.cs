@@ -47,21 +47,16 @@ public sealed class InMemoryMessagingTests
         Assert.Equal(10_000, InMemoryMessagingOptions.FromConfiguration(Build()).MaxQueuedMessages);
         Assert.Equal(3, InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxQueuedMessages", "3"))).MaxQueuedMessages);
         Assert.Throws<ArgumentException>(() => InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxQueuedMessages", "0"))));
-        Assert.Equal(1_000, InMemoryMessagingOptions.FromConfiguration(Build()).MaxTopics);
-        Assert.Equal(5, InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxTopics", "5"))).MaxTopics);
-        Assert.Throws<ArgumentException>(() => InMemoryMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:InMemory:MaxTopics", "0"))));
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new InMemoryMessagingOptions { MaxTopics = 0 });
     }
 
     [Fact]
-    public async Task Publish_ToATopicNobodySubscribes_IsDroppedAndLogged_WithoutTakingATopicSlot()
+    public async Task Publish_ToATopicNobodySubscribes_IsDroppedAndLogged_WithoutCreatingATopic()
     {
         var log = new DeliveryLog();
         var logs = new LogCapture();
         await using var host = await TestHost.StartAsync(
             static b => b.UseFeature<InMemoryMessagingFeature>(),
-            [new("XiHan:Messaging:InMemory:MaxTopics", "1")],
-            services =>
+            services: services =>
             {
                 services.AddSingleton<ILoggerFactory>(logs);
                 services.AddSingleton(log);
@@ -70,7 +65,7 @@ public sealed class InMemoryMessagingTests
         var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
         Assert.Equal(1, broker.TopicCount);
 
-        // 没人订阅：发布成功、消息丢弃，不建主题、不占名额（名额已满也照样成功）
+        // 没人订阅：发布成功、消息丢弃，不建主题；主题数只随订阅表，不随发布增长
         Assert.True((await broker.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
         var batch = await broker.PublishManyAsync("idle", [Envelope("2"), Envelope("3")], CancellationToken.None);
         Assert.Equal(2, batch.Count);
@@ -96,19 +91,20 @@ public sealed class InMemoryMessagingTests
     }
 
     [Fact]
-    public async Task Start_FailsBeforeConsuming_WhenSubscribedTopicsExceedTheLimit()
+    public async Task Start_ConsumesEverySubscribedTopic_WithoutATopicLimit()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
-        var subscriptions = new MessageSubscriptions().Add("a", typeof(RecordingHandler), SubscriptionMode.Competing).Add("b", typeof(RecordingHandler), SubscriptionMode.Competing);
-        using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxTopics = 1 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
+        // 比原来的缺省上限（1000）多一个主题：主题数只由订阅表决定，不再有上限
+        var subscriptions = new MessageSubscriptions();
+        for (var i = 0; i <= 1_000; i++)
+        {
+            subscriptions.Add("topic-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), typeof(RecordingHandler), SubscriptionMode.Competing);
+        }
 
-        var exception = await Assert.ThrowsAsync<FrameworkException>(() => broker.StartAsync([.. subscriptions.All], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None));
+        using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions(), host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
+        await broker.StartAsync([.. subscriptions.All], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
 
-        Assert.Equal(MessagingErrors.TopicLimit, exception.Code);
-        Assert.Contains("MaxTopics", exception.Message, StringComparison.Ordinal);
-        // 没有起任何消费循环：可以按正常方式停止，再按上限内的主题启动
-        await broker.StopAsync(CancellationToken.None);
-        await broker.StartAsync([new MessageSubscription("a", SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+        Assert.Equal(1_001, broker.TopicCount);
         await broker.StopAsync(CancellationToken.None);
     }
 
