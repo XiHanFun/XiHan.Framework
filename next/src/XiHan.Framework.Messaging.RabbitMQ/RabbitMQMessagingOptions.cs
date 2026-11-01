@@ -38,7 +38,7 @@ public sealed record RabbitMQMessagingOptions
     /// 覆盖 <see cref="Configuration"/> 里用户名的用户名。
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 时用 URI 用户信息里的。<see cref="FromConfiguration"/> 从绑定 <c>queue</c> 的属性 <c>username</c> 取；连接时以客户端的用户名设置覆盖，不改写 URI（不必为特殊字符转义）。
+    /// 为 <see langword="null"/> 时用 URI 用户信息里的。<see cref="FromConfiguration"/> 从绑定 <c>queue</c> 的属性 <c>username</c> 取；连接时以客户端的用户名设置覆盖，不改写 URI（不必为特殊字符转义）。是登录凭据的身份那一半，打印选项时与 <see cref="Password"/> 一样遮蔽（ADR-0090）。
     /// </remarks>
     public string? UserName { get; init; }
 
@@ -159,13 +159,13 @@ public sealed record RabbitMQMessagingOptions
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，AMQP URI（用户信息里可能有口令）与口令不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，AMQP URI（用户信息里可能有口令）、用户名与口令不能明文出现（RFC-0014「选项里的凭据」，ADR-0090）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {
         // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
         builder.Append("Configuration = ").Append(Redaction.Redact(Configuration))
-            .Append(", UserName = ").Append(UserName)
+            .Append(", UserName = ").Append(Redaction.Redact(UserName))
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", QueuePrefix = ").Append(QueuePrefix)
             .Append(", Exchange = ").Append(Exchange)

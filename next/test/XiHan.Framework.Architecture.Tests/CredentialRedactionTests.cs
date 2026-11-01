@@ -9,10 +9,10 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 携带凭据的记录在 <c>ToString()</c> 里遮蔽凭据（RFC-0014「机密」，ADR-0086、ADR-0089）。
+/// 携带凭据的记录在 <c>ToString()</c> 里遮蔽凭据。
 /// </summary>
 /// <remarks>
-/// 反射找出全部正式包里的公开记录类型（有 <c>PrintMembers</c>），凡有凭据名的属性（口令、密钥、访问密钥 ID、令牌、API 密钥、连接串）或登记的连接串字段，就绕过构造与校验直接写入后备字段：凭据写入哨兵值，其余字符串写入占位值；断言 <c>ToString()</c> 不含哨兵、凭据打印为 <c>***</c>，且每个公开属性都仍然打印（手写的 <c>PrintMembers</c> 不能漏掉新加的属性）。字典与列表类型的属性按记录的缺省规则只打印类型名，不含内容，不在检查之列。
+/// 出处：RFC-0014「机密」，ADR-0086、ADR-0089、ADR-0090。反射找出全部正式包里的公开记录类型（有 <c>PrintMembers</c>），凡有凭据名的属性（口令、密钥、访问密钥 ID、令牌、API 密钥、连接串）或登记的连接串字段，连同同一记录里的用户名属性（登录凭据的身份那一半，ADR-0090），就绕过构造与校验直接写入后备字段：凭据写入哨兵值，其余字符串写入占位值；断言 <c>ToString()</c> 不含哨兵、凭据打印为 <c>***</c>，且每个公开属性都仍然打印（手写的 <c>PrintMembers</c> 不能漏掉新加的属性）。字典与列表类型的属性按记录的缺省规则只打印类型名，不含内容，不在检查之列。
 /// </remarks>
 public sealed partial class CredentialRedactionTests
 {
@@ -60,6 +60,9 @@ public sealed partial class CredentialRedactionTests
             {
                 continue;
             }
+
+            // 用户名只在与凭据同在一个记录里时算凭据：那是一对登录凭据的身份那一半；不带凭据的记录里的用户名（如进程的系统账户）照常打印
+            credentials.AddRange(properties.Where(static p => UserName().IsMatch(p.Name)));
 
             checkedTypes.Add(type.FullName!);
             var instance = RuntimeHelpers.GetUninitializedObject(type);
@@ -155,8 +158,17 @@ public sealed partial class CredentialRedactionTests
     /// 凭据属性名的正则。
     /// </summary>
     /// <remarks>
-    /// 口令、密钥、访问密钥 ID（<c>AccessKey</c>、<c>AccessKeyId</c>，访问密钥的一半，ADR-0089）、API 密钥、私钥、连接串、凭据，以及访问 / 刷新 / 会话令牌。用户名、分页游标（<c>ContinuationToken</c>）与令牌文件路径（<c>TokenPath</c>）不是凭据。
+    /// 口令、密钥、访问密钥 ID（<c>AccessKey</c>、<c>AccessKeyId</c>，访问密钥的一半，ADR-0089）、API 密钥、私钥、连接串、凭据，以及访问 / 刷新 / 会话令牌。分页游标（<c>ContinuationToken</c>）与令牌文件路径（<c>TokenPath</c>）不是凭据；用户名见 <see cref="UserName"/>。
     /// </remarks>
     [GeneratedRegex("(Password|Passphrase|Secret|SecretKey|AccessKey|AccessKeyId|ApiKey|PrivateKey|ConnectionString|Credentials?)$|^(Access|Refresh|Bearer|Session)?Token$")]
     private static partial Regex CredentialName();
+
+    /// <summary>
+    /// 用户名属性名的正则。
+    /// </summary>
+    /// <remarks>
+    /// <c>User</c>、<c>UserName</c>、<c>Username</c>：与凭据同在一个记录里时是登录凭据的身份那一半，一同遮蔽（RFC-0014 规则 2，ADR-0090）。
+    /// </remarks>
+    [GeneratedRegex("^(User|UserName|Username)$")]
+    private static partial Regex UserName();
 }

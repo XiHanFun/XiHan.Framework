@@ -110,3 +110,5 @@ ADR-0083 把 `OpenAIFeature` 改为宿主特性，只装它时知识库提示词
 > 修订（2026-11-01）：第一节记下的"不认 `If-None-Match` 的兼容服务（Garage、Zenko CloudServer）上不覆盖写入只剩先 HEAD 的检查"由 ADR-0089 第一节处理：S3 Provider 在用之前探测服务是否认条件写入，不认的服务启动失败、命名实例不建出。
 
 > 修订（2026-11-01）：第二节"S3 的访问密钥 ID `AccessKey` 照常打印"由 ADR-0089 修订为也遮蔽，`S3ObjectStorageOptions` 遮蔽 `AccessKey` 与 `SecretKey`，架构测试 `CredentialRedactionTests` 的凭据判定加入 `AccessKey` / `AccessKeyId`。
+
+> 修订（2026-11-01）：第二节"用户名照常打印"由 ADR-0090 第四节修订：与凭据同在一个记录里的登录用户名也遮蔽。

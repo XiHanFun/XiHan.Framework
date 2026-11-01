@@ -76,7 +76,7 @@ public sealed record NacosOptions
     /// 登录用户名。
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="Password"/> 一起给出时先登录取令牌。
+    /// 与 <see cref="Password"/> 一起给出时先登录取令牌。是登录凭据的身份那一半，打印选项时与 <see cref="Password"/> 一样遮蔽（ADR-0090）。
     /// </remarks>
     public string? Username { get; init; }
 
@@ -196,7 +196,7 @@ public sealed record NacosOptions
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，口令不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，用户名与口令不能明文出现（RFC-0014「选项里的凭据」，ADR-0090）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {
@@ -204,7 +204,7 @@ public sealed record NacosOptions
         builder.Append("ServerAddresses = ").Append(ServerAddresses)
             .Append(", Group = ").Append(Group)
             .Append(", Tenant = ").Append(Tenant)
-            .Append(", Username = ").Append(Username)
+            .Append(", Username = ").Append(Redaction.Redact(Username))
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", Format = ").Append(Format)
             .Append(", LongPollTimeout = ").Append(LongPollTimeout)
