@@ -18,7 +18,7 @@ var chunks = (await retriever.RetrieveAsync(new KnowledgeQuery { Text = "How do 
 var prompt = augmenter.Augment("How do I reset my password?", chunks);
 ```
 
-向量集合的维度在创建后不能改：换嵌入模型要换 `Collection` 或删掉旧集合。通过 `AI.Conformance` 的 `KnowledgeStoreConformance`。
+向量集合的维度在创建后不能改：换嵌入模型要换 `Collection` 或删掉旧集合。知识库配置在装配时读一次、不热更新，改了要重启应用（ADR-0074）。通过 `AI.Conformance` 的 `KnowledgeStoreConformance`。
 
 ## 依赖方向
 

@@ -28,6 +28,8 @@ var reply = await chat.CompleteAsync(new AIChatRequest
 
 错误：Provider 未配置或种类无工厂 → `AI_NOTFOUND_001`；提示词不存在 → `AI_NOTFOUND_002`；工具不存在 → `AI_NOTFOUND_003`；护栏拦截 → `AI_DENIED_001`；模型不可达 → `AI_UNAVAILABLE_001`，超时 → `AI_TIMEOUT_001`；没有知识库 Provider → `AI_UNAVAILABLE_002`；嵌入维度不一致 → `AI_VALIDATION_002`。
 
+AI 配置不热更新（ADR-0074）：`XiHan:AI` 的全部配置——Provider、默认 Provider、提示词、护栏、工具名覆盖、知识库——在装配时读一次，改了要重启应用。框架不监听配置变化，`IAIProviderCatalog.Invalidate` 只丢弃缓存的客户端、用同一份选项重建；提示词目录、工具目录、护栏、知识库选项与提示增强器都在创建时取定。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.AI.Abstractions`。被 `AI.OpenAI`、`AI.VectorData`、`AI.Conformance`、`Profiles.Full` 引用。

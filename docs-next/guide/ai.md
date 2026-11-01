@@ -334,6 +334,8 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 
 ## 配置
 
+AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了要重启应用。框架不监听配置变化，`Invalidate` 只丢弃缓存的客户端、按同一份选项重建；提示词目录、工具目录、护栏、知识库选项与提示增强器都在创建时取定。这样做是因为这些配置在启动时校验（工具名、知识库提示词）并被多个单例取用，热更新只会部分生效——例如换了嵌入模型而向量集合的维度没变——AI 配置的改动通常本就伴随部署（ADR-0074）。
+
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:AI:DefaultProvider` | string | 只有一个 Provider 时取它 | 默认聊天 Provider |

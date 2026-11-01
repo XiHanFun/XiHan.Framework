@@ -53,7 +53,7 @@ app.Run();
 
 ## 配置
 
-Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填，不写时启动失败）：
+Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填，不写时启动失败）。配置在装配时读一次、不热更新，改了要重启应用：
 
 ```json
 {

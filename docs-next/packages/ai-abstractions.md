@@ -40,7 +40,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 
 ## 配置
 
-`XiHan:AI` 下的键：
+`XiHan:AI` 下的键（装配时读一次，不热更新，改了要重启应用）：
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
