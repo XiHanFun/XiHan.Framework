@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "Un conflit de concurrence optimiste s'est produit lors de la validation : {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' a enregistré {count} événement(s) de domaine, mais aucun répartiteur d'événements de domaine n'est enregistré.",
   "persistence.unit_of_work.nested": "L'unité de travail de cette portée de services a déjà été démarrée : un appel imbriqué doit s'exécuter dans sa propre portée de services.",
-  "persistence.unit_of_work.read_only": "L'unité de travail est en lecture seule et n'accepte pas les écritures : les opérations en lecture seule (verbe get ou list, ou déclarées ReadOnly) ne doivent pas écrire."
+  "persistence.unit_of_work.read_only": "L'unité de travail est en lecture seule et n'accepte pas les écritures. Il s'agit d'un défaut de l'opération : les opérations en lecture seule (verbe get ou list, ou déclarées ReadOnly) ne doivent pas écrire de données."
 }

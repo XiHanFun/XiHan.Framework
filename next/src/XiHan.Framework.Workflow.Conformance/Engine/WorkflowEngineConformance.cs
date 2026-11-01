@@ -1302,7 +1302,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝。
     /// </summary>
     /// <remarks>
-    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_DENIED_001</c>，活动没有执行、什么也不落库；查询照常。不加入事务的 Provider 不看调用是否只读。
+    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也不落库；查询照常。不加入事务的 Provider 不看调用是否只读。
     /// </remarks>
     [Fact]
     public async Task Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities()
@@ -1322,7 +1322,7 @@ public abstract class WorkflowEngineConformance
         }, readOnly: true).ConfigureAwait(false);
         if (JoinsCallerTransaction)
         {
-            Assert.Equal("PERSISTENCE_DENIED_001", started.Error?.Code);
+            Assert.Equal("PERSISTENCE_UNEXPECTED_001", started.Error?.Code);
             Assert.Equal(executed, log.Executed.Count);
             Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-tx-readonly") }).ConfigureAwait(false));
         }

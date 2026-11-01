@@ -140,7 +140,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `RepositoryConformance` | Stable | `CreateFeature()` 返回提供 `persistence.relational@1` 的特性；可覆写 `Configuration`、`ConfigureServices`、`ConfigureApp` | 读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识，只有一个成功）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义，判空与取反嵌套在与 / 或条件里照常过滤；一次最多取 1000 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_DENIED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、标识生成器 |
+| `RepositoryConformance` | Stable | `CreateFeature()` 返回提供 `persistence.relational@1` 的特性；可覆写 `Configuration`、`ConfigureServices`、`ConfigureApp` | 读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识，只有一个成功）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义，判空与取反嵌套在与 / 或条件里照常过滤；一次最多取 1000 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_UNEXPECTED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、标识生成器 |
 | `IdGeneratorConformance<TKey>` | Preview | `CreateGenerator(TimeProvider clock)` 返回 `IIdGenerator<TKey>`（`TKey : IComparable<TKey>`） | 顺序生成与 8 线程并发生成不重复（真实时钟）、时钟前进后标识更大（`ConformanceClock`） |
 
 `Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例。

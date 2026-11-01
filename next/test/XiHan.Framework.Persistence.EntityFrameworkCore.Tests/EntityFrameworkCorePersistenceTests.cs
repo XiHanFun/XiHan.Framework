@@ -223,7 +223,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
         var id = Guid.CreateVersion7();
         (await RunAsync(host, context => Repository(context).AddAsync(new ConformanceOrder { Id = id, Name = "v1" }, context.CancellationToken))).ThrowIfFailure();
 
-        // 直接用 DbContext 写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_DENIED_001 的异常，写入不会执行
+        // 直接用 DbContext 写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_UNEXPECTED_001 的异常，写入不会执行
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = (EntityFrameworkCoreUnitOfWork)scope.ServiceProvider.GetRequiredService<IUnitOfWork>();

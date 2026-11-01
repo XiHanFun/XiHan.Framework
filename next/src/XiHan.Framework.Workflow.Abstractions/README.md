@@ -2,7 +2,7 @@
 
 工作流契约与引擎（Ring 2，RFC-0021，ADR-0016 / ADR-0020 / ADR-0077）。能力 `workflow.execution@1` 由 Provider 提供三个存储、事务、实例锁与到期书签的轮询驱动；默认实现 `Workflow.InMemory`，多实例换 `Workflow.Database`。
 
-引擎、定义目录、任务服务与外部任务服务在调用里被调用时加入调用方的事务（`IWorkflowTransaction.IsActive`）：存储写入、活动与结果处理器的写入、经发件箱发出的事件随业务提交或回滚，取得的实例锁持有到调用的服务作用域结束才释放；只读调用里的写入在执行活动之前返回 `PERSISTENCE_DENIED_001`。在调用之外（后台任务、轮询器、定时器）被调用时自己开一次经完整管道的调用（来源协议 `workflow`），在那次调用的事务里执行。数据按分区隔离：平台一个分区、每个租户一个分区，调用只读写自己的分区，平台与租户互不可见，没有全局定义。
+引擎、定义目录、任务服务与外部任务服务在调用里被调用时加入调用方的事务（`IWorkflowTransaction.IsActive`）：存储写入、活动与结果处理器的写入、经发件箱发出的事件随业务提交或回滚，取得的实例锁持有到调用的服务作用域结束才释放；只读调用里的写入在执行活动之前返回 `PERSISTENCE_UNEXPECTED_001`。在调用之外（后台任务、轮询器、定时器）被调用时自己开一次经完整管道的调用（来源协议 `workflow`），在那次调用的事务里执行。数据按分区隔离：平台一个分区、每个租户一个分区，调用只读写自己的分区，平台与租户互不可见，没有全局定义。
 
 | 契约 | 用途 |
 | --- | --- |
@@ -49,7 +49,7 @@ await tasks.CompleteAsync(new UserTaskCompletion(todo.ValueOrThrow()[0].Id, "man
 
 节点以结果标签完成时（用户任务的 `approved` / `rejected` / `timeout`、事件网关的信号名、`ContinueOnError` 的 `error`、活动自定的标签），标签写进实例变量 `outcome`，当前节点与后继决策节点的出边条件都按它选边；条件都不成立时才走默认出边。
 
-定义不合法 → `WORKFLOW_VALIDATION_001`；定义未发布或在别的分区 → `WORKFLOW_NOTFOUND_001`（实例、书签在别的分区 → `_002` / `_003`）；状态不允许 → `WORKFLOW_CONFLICT_001` / `_002`；同关联已有未结束实例 → `_005`；操作者不是指派人 → `WORKFLOW_DENIED_001`；工作者没有锁 → `_002`；等锁超时 → `WORKFLOW_TIMEOUT_001`；只读调用里写入 → `PERSISTENCE_DENIED_001`；在调用之外被调用而应用不在服务状态 → `WORKFLOW_UNAVAILABLE_001`。
+定义不合法 → `WORKFLOW_VALIDATION_001`；定义未发布或在别的分区 → `WORKFLOW_NOTFOUND_001`（实例、书签在别的分区 → `_002` / `_003`）；状态不允许 → `WORKFLOW_CONFLICT_001` / `_002`；同关联已有未结束实例 → `_005`；操作者不是指派人 → `WORKFLOW_DENIED_001`；工作者没有锁 → `_002`；等锁超时 → `WORKFLOW_TIMEOUT_001`；只读调用里写入 → `PERSISTENCE_UNEXPECTED_001`；在调用之外被调用而应用不在服务状态 → `WORKFLOW_UNAVAILABLE_001`。
 
 ## 依赖方向
 

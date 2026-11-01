@@ -738,7 +738,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         _ = Client;
         if (_unitOfWork.IsReadOnly)
         {
-            var rejected = Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
+            var rejected = Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
             _unitOfWork.Fail(rejected);
             return rejected;
         }

@@ -96,14 +96,6 @@ public static class PersistenceErrors
     public const string DataSourceInvalid = "PERSISTENCE_VALIDATION_006";
 
     /// <summary>
-    /// 只读工作单元拒绝写入。
-    /// </summary>
-    /// <remarks>
-    /// 只读操作（<c>OperationContract.IsReadOnly</c>）或以 <see cref="UnitOfWork.UnitOfWorkOptions.IsReadOnly"/> 开启的工作单元里新增、更新、删除（含批量）。仓储写入返回结果并把工作单元记为失败，提交返回同一错误；Provider 的直接写入入口（<c>EnsureTransactionAsync</c>）以异常抛出，Transaction 阶段转为同码结果。HTTP 403。
-    /// </remarks>
-    public const string ReadOnly = "PERSISTENCE_DENIED_001";
-
-    /// <summary>
     /// 没有活动的工作单元。
     /// </summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";
@@ -154,4 +146,12 @@ public static class PersistenceErrors
     /// 运行时数据源与库结构读取：EF Core 与内存实现。
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
+
+    /// <summary>
+    /// 只读工作单元拒绝写入：操作实现的缺陷。
+    /// </summary>
+    /// <remarks>
+    /// 只读操作（<c>OperationContract.IsReadOnly</c>）或以 <see cref="UnitOfWork.UnitOfWorkOptions.IsReadOnly"/> 开启的工作单元里新增、更新、删除（含批量）。仓储写入返回结果并把工作单元记为失败，提交返回同一错误；Provider 的直接写入入口（<c>EnsureTransactionAsync</c>）以异常抛出，Transaction 阶段转为同码结果。只读操作写数据是代码缺陷，不是调用方的输入或权限：HTTP 500，按操作计入熔断（ADR-0081）。
+    /// </remarks>
+    public const string ReadOnly = "PERSISTENCE_UNEXPECTED_001";
 }

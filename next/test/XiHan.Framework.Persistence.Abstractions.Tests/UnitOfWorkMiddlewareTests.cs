@@ -168,18 +168,19 @@ public sealed class UnitOfWorkMiddlewareTests
     }
 
     [Fact]
-    public async Task ReadOnlyDirectWrite_RollsBack_AndBecomesDeniedOutcome()
+    public async Task ReadOnlyDirectWrite_RollsBack_AndBecomesUnexpectedOutcome()
     {
         var (context, unitOfWork) = Arrange();
         context.SetOperation(new ContractOnlyDescriptor(new OperationContract("orders.get")));
 
-        // Provider 的直接写入入口在只读工作单元里抛出：不作为未处理异常离开，转为同码结果
+        // Provider 的直接写入入口在只读工作单元里抛出：是操作实现的缺陷（500 类），转为同码结果而不是笼统的 KERNEL_UNEXPECTED_001
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes."));
 
         Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
         var error = context.GetOutcome().ValueOrThrow().Error!;
         Assert.Equal(PersistenceErrors.ReadOnly, error.Code);
-        Assert.Equal("DENIED", error.Kind);
+        Assert.Equal("PERSISTENCE_UNEXPECTED_001", error.Code);
+        Assert.Equal("UNEXPECTED", error.Kind);
         Assert.Equal(PersistenceMessages.ReadOnly, error.MessageKey);
     }
 

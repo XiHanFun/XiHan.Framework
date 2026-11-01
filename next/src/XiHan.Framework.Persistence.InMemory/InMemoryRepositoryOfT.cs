@@ -289,7 +289,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
             return null;
         }
 
-        var error = Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
+        var error = Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly);
         _unitOfWork.Fail(error);
         return error;
     }

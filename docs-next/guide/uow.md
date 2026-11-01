@@ -25,7 +25,7 @@
 1. 从调用的作用域取 `IUnitOfWork`。它已经开始过（同一个服务作用域里再经管道的嵌套调用）时，以 `PERSISTENCE_VALIDATION_002` 结束本次调用，不执行处理器，见下文[嵌套调用](#嵌套调用)。
 2. 以 Tenant 阶段写入安全上下文的租户开始它：本次调用的操作契约只读（`get` / `list`，或 `ReadOnly = true`）时开只读工作单元，其余调用开可写工作单元。
 3. 调用下一步（Handle 阶段的处理器）。
-4. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果；只读工作单元里直接写入入口抛出的 `PERSISTENCE_DENIED_001` 例外，回滚后转为同码的结果。
+4. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果；只读工作单元里直接写入入口抛出的 `PERSISTENCE_UNEXPECTED_001` 例外，回滚后转为同码的结果。
 5. 调用结果是失败：回滚，保留原失败结果。
 6. 有聚合带着未派发的领域事件：没有注册 `IDomainEventDispatcher` 时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发器返回失败时回滚，调用以该失败结束；派发成功清空登记，进入提交。
 7. 提交；提交失败时用它覆盖调用结果，调用方看到真实的持久化错误。
@@ -48,9 +48,9 @@
 | 提交时并发冲突（EF Core 的并发令牌在提交时不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉） | 回滚 | `PERSISTENCE_CONFLICT_001` |
 | 提交时标识重复（内存实现发现新增的标识已被别人提交；关系型 Provider 写入时已撞上主键、处理器却返回了成功） | 回滚 | `PERSISTENCE_CONFLICT_002` |
 | 提交时内存表超出容量 | 回滚 | `PERSISTENCE_UNAVAILABLE_002` |
-| 只读工作单元拒绝过写入（处理器忽略了那次失败而返回成功） | 回滚 | `PERSISTENCE_DENIED_001` |
-| 只读工作单元里直接写入入口 `EnsureTransactionAsync` 抛出 | 回滚 | `PERSISTENCE_DENIED_001` |
-| EF Core 只读工作单元有未保存的跟踪变更 | 回滚 | `PERSISTENCE_DENIED_001` |
+| 只读工作单元拒绝过写入（处理器忽略了那次失败而返回成功） | 回滚 | `PERSISTENCE_UNEXPECTED_001` |
+| 只读工作单元里直接写入入口 `EnsureTransactionAsync` 抛出 | 回滚 | `PERSISTENCE_UNEXPECTED_001` |
+| EF Core 只读工作单元有未保存的跟踪变更 | 回滚 | `PERSISTENCE_UNEXPECTED_001` |
 | 同一服务作用域里再经管道的嵌套调用 | 不动外层的工作单元 | `PERSISTENCE_VALIDATION_002`（只结束内层） |
 
 标识重复在 `AddAsync` / `AddRangeAsync` 时就按项返回 `PERSISTENCE_CONFLICT_002`，不留到提交。两个工作单元并发新增同一标识时，后到者在关系型 Provider 上于写入时得到它，之后提交只回滚并返回同一错误；在内存实现上于提交时得到它（见[持久化的并发新增同一标识](./persistence#并发新增同一标识)）。
@@ -183,12 +183,12 @@ if (pending.Count > 0)
 只读操作——动词是 `get` / `list`，或以 `[Operation(..., ReadOnly = true)]` 声明的查询变体（`departments.tree`、`users.list-online`）——在 Transaction 阶段得到只读工作单元（ADR-0073）。管道外用 `new UnitOfWorkOptions(IsReadOnly: true)` 开启的也一样：
 
 - 不开数据库事务；查找、查询、计数照常。
-- 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_DENIED_001`（批量逐项都是它；空集合不算写入，仍返回空列表）。
+- 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它；空集合不算写入，仍返回空列表）。
 - 拒绝同时把工作单元记为失败。处理器忽略这个失败、照常返回成功时，提交回滚并返回同一错误，调用以它结束——误写不会被悄悄吞掉。
-- 直接用 `DbContext` 或 SqlSugar 客户端写入之前要调用工作单元的 `EnsureTransactionAsync`：只读工作单元里它抛出携带 `PERSISTENCE_DENIED_001` 的 `FrameworkException`，写入不会执行；Transaction 阶段把它转为同码的结果，不变成 500。不经 `EnsureTransactionAsync` 直接执行的写入不在守卫之内，也不在事务里。
-- EF Core 提交时还查变更跟踪器：只读操作里把读出的实体改了却没保存，同样以 `PERSISTENCE_DENIED_001` 回滚。只读操作里不要把读出的实体当草稿修改，要变换就映射成响应对象。
+- 直接用 `DbContext` 或 SqlSugar 客户端写入之前要调用工作单元的 `EnsureTransactionAsync`：只读工作单元里它抛出携带 `PERSISTENCE_UNEXPECTED_001` 的 `FrameworkException`，写入不会执行；Transaction 阶段把它转为同码的结果：仍是 500，但错误码直接指出是只读写入，不是笼统的 `KERNEL_UNEXPECTED_001`。不经 `EnsureTransactionAsync` 直接执行的写入不在守卫之内，也不在事务里。
+- EF Core 提交时还查变更跟踪器：只读操作里把读出的实体改了却没保存，同样以 `PERSISTENCE_UNEXPECTED_001` 回滚。只读操作里不要把读出的实体当草稿修改，要变换就映射成响应对象。
 
-`PERSISTENCE_DENIED_001` 是操作实现的缺陷，不是调用方能改正的输入：HTTP 403、gRPC `PermissionDenied`，熔断不计数。修正的办法是让操作不再写入，或者它本来就要写（记访问次数、补建缺失的行），就去掉只读声明、换一个非只读的动词，或把写入放进新服务作用域里的另一次调用（见下文）。
+`PERSISTENCE_UNEXPECTED_001` 是操作实现的缺陷，不是调用方能改正的输入，也不是权限不足：HTTP 500、gRPC `Internal`，与其他服务端缺陷一起进 5xx 告警，配置了熔断的操作照常计数（ADR-0081）。修正的办法是让操作不再写入，或者它本来就要写（记访问次数、补建缺失的行），就去掉只读声明、换一个非只读的动词，或把写入放进新服务作用域里的另一次调用（见下文）。
 
 | Provider | 仓储写入 | `EnsureTransactionAsync` | 提交 |
 | --- | --- | --- | --- |
@@ -196,7 +196,7 @@ if (pending.Count > 0)
 | EF Core | 写入前拒绝 | 抛出 | 返回写入时的拒绝；有未保存的跟踪变更也拒绝 |
 | SqlSugar | 写入前拒绝 | 抛出 | 返回写入时的拒绝 |
 
-框架读取租户目录与权限授予、审计查询、调度与工作流探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它。框架的发件箱、审计落库、调度存储与工作流的租约写入时开的是可写工作单元（`UnitOfWorkOptions.Default`），不受操作契约影响。工作流引擎在调用里加入调用方的工作单元（ADR-0077），只读调用里的写入在执行活动之前返回 `PERSISTENCE_DENIED_001`。
+框架读取租户目录与权限授予、审计查询、调度与工作流探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它。框架的发件箱、审计落库、调度存储与工作流的租约写入时开的是可写工作单元（`UnitOfWorkOptions.Default`），不受操作契约影响。工作流引擎在调用里加入调用方的工作单元（ADR-0077），只读调用里的写入在执行活动之前返回 `PERSISTENCE_UNEXPECTED_001`。
 
 ## 嵌套调用
 
@@ -221,7 +221,7 @@ AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行，各自一个�
 | 错误码 | 含义 | 形式 |
 | --- | --- | --- |
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许该操作；同一服务作用域里再经管道的嵌套调用 | 状态错误抛 `FrameworkException`；嵌套调用是调用结果 |
-| `PERSISTENCE_DENIED_001` | 只读工作单元拒绝写入（HTTP 403） | 仓储写入返回 `Result`、提交返回同一错误；`EnsureTransactionAsync` 抛 `FrameworkException`，Transaction 阶段转为结果 |
+| `PERSISTENCE_UNEXPECTED_001` | 只读工作单元拒绝写入（操作实现的缺陷，HTTP 500） | 仓储写入返回 `Result`、提交返回同一错误；`EnsureTransactionAsync` 抛 `FrameworkException`，Transaction 阶段转为结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在没有活动工作单元时使用 | `FrameworkException` |
 | `PERSISTENCE_CONFLICT_001` | 提交时乐观并发冲突 | 提交结果 |

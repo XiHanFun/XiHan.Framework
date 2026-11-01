@@ -154,7 +154,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 查询缺省 `Skip` 0、`Take` 1000，`Take` 的上限也是 1000（`EntityQuery.DefaultMaxTake`）；`take` 超过上限抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，在调用里由 Transaction 阶段回滚并转为同码的校验结果（HTTP 400，参数 `take`、`max`），Transaction 之外仍是异常；`skip` 小于 0、`take` 小于 1 是编程错误，抛出 `ArgumentOutOfRangeException`；都不静默截断，要更多行就分页。`Within` 只是分表扫描范围的提示，不过滤行。
 - 批量方法的结果与入参等长、顺序一一对应；空集合不访问后端但仍要求活动的工作单元；批内重复项按入参顺序逐项施加语义。
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
-- `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_DENIED_001`（HTTP 403）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073）。
+- `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
@@ -170,7 +170,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_NOTFOUND_001` | `PersistenceErrors.NotFound` | 实体不存在（含已软删除、不属于当前租户） |
 | `PERSISTENCE_CONFLICT_001` | `PersistenceErrors.Concurrency` | 乐观并发冲突 |
 | `PERSISTENCE_CONFLICT_002` | `PersistenceErrors.Duplicate` | 标识重复 |
-| `PERSISTENCE_DENIED_001` | `PersistenceErrors.ReadOnly` | 只读工作单元拒绝写入（只读操作里的写入；HTTP 403） |
+| `PERSISTENCE_UNEXPECTED_001` | `PersistenceErrors.ReadOnly` | 只读工作单元拒绝写入（只读操作里的写入，是操作实现的缺陷；HTTP 500） |
 | `PERSISTENCE_CONFLICT_003` | `PersistenceErrors.UniqueKeyConflict` | 唯一键重复：写入撞上实体声明的唯一索引（关系型 Provider；之后工作单元只能回滚） |
 | `PERSISTENCE_VALIDATION_001` | `PersistenceErrors.TenantRequired` | 多租户实体缺少当前租户 |
 | `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |

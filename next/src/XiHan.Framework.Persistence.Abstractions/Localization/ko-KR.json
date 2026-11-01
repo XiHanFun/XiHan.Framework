@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "커밋 중 낙관적 동시성 충돌이 발생했습니다: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}'이(가) 도메인 이벤트 {count}개를 기록했지만 도메인 이벤트 디스패처가 등록되어 있지 않습니다.",
   "persistence.unit_of_work.nested": "이 서비스 범위의 작업 단위는 이미 시작되었습니다. 중첩 호출은 자체 서비스 범위에서 실행해야 합니다.",
-  "persistence.unit_of_work.read_only": "작업 단위가 읽기 전용이므로 쓰기를 허용하지 않습니다. 읽기 전용 작업(동사 get / list 또는 ReadOnly로 선언된 작업)은 데이터를 쓸 수 없습니다."
+  "persistence.unit_of_work.read_only": "작업 단위가 읽기 전용이므로 쓰기를 허용하지 않습니다. 이는 작업 구현의 결함입니다. 읽기 전용 작업(동사 get / list 또는 ReadOnly로 선언된 작업)은 데이터를 쓸 수 없습니다."
 }

@@ -16,7 +16,7 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// <remarks>
 /// 用当前租户开启作用域内的 <see cref="IUnitOfWork"/>：调用带操作描述且契约只读（<see cref="OperationContract.IsReadOnly"/>）时开只读工作单元，其余调用开可写工作单元。调用成功时先派发工作单元里聚合的领域事件（经 <see cref="IDomainEventDispatcher"/>，装配了发件箱时随业务写入同一事务），再提交；失败或异常回滚。
 /// <para>
-/// 只读工作单元里 Provider 直接写入入口抛出的 <see cref="PersistenceErrors.ReadOnly"/>、构造查询时取出条数超过上限抛出的 <see cref="PersistenceErrors.TakeExceeded"/>，在这里回滚并转为同码结果（HTTP 403 / 400），不作为未处理异常离开管道；其余异常回滚后原样抛出。同一服务作用域里再经管道发起的嵌套调用遇到已经开始过的工作单元，以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束、不执行处理器：嵌套调用要新建服务作用域，各开自己的工作单元（RFC-0005）。
+/// 只读工作单元里 Provider 直接写入入口抛出的 <see cref="PersistenceErrors.ReadOnly"/>、构造查询时取出条数超过上限抛出的 <see cref="PersistenceErrors.TakeExceeded"/>，在这里回滚并转为同码结果（HTTP 500 / 400），不让 Observe 阶段包成笼统的未处理异常；其余异常回滚后原样抛出。同一服务作用域里再经管道发起的嵌套调用遇到已经开始过的工作单元，以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束、不执行处理器：嵌套调用要新建服务作用域，各开自己的工作单元（RFC-0005）。
 /// </para>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
@@ -51,10 +51,10 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
         }
         catch (FrameworkException exception) when (string.Equals(exception.Code, PersistenceErrors.ReadOnly, StringComparison.Ordinal))
         {
-            // 只读工作单元里 Provider 的直接写入入口（EnsureTransactionAsync）抛出：写入没有执行。它是操作实现的缺陷而不是基础设施故障，
-            // 转为同码结果（HTTP 403），不让 Observe 阶段包成 KERNEL_UNEXPECTED_001；回滚用 None 令牌保证一定执行
+            // 只读工作单元里 Provider 的直接写入入口（EnsureTransactionAsync）抛出：写入没有执行。它是操作实现的缺陷（HTTP 500），
+            // 转为同码结果而不让 Observe 阶段包成 KERNEL_UNEXPECTED_001：错误码直接指出是只读写入，文案按调用方区域本地化；回滚用 None 令牌保证一定执行
             await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            context.SetOutcome(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
+            context.SetOutcome(Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
             return;
         }
         catch (TakeExceededException exception)

@@ -22,7 +22,7 @@
 | 组件 | 做法 |
 | --- | --- |
 | 三个存储（`Storage.DatabaseWorkflowDefinitionStore` 等） | 作用域服务；在所在作用域的工作单元里经仓储读写，不经管道、不自己提交。分区为空读写平台表，否则读写租户表；分区必须等于工作单元的租户 |
-| 事务 `DatabaseWorkflowTransaction` | 在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_DENIED_001` |
+| 事务 `DatabaseWorkflowTransaction` | 在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_UNEXPECTED_001` |
 | 实例锁 `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行。每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道 |
 | 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理 |
 
@@ -133,7 +133,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名与状态，写书签时从实例行取，实例新增或状态变化时同步到它的书签行（同一事务），只取状态为 `Running` 的。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
-- 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_DENIED_001` 原样返回。
+- 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
 - 租约行与业务写入不在同一个事务里：SQLite 这类只有一个写者的数据库上，业务事务写过之后再写租约行要等自己的事务结束（忙等超时）。在 SQLite 上要经 `IEntityConnectionSelector` 把 `WorkflowLockRecord` 放到另一个库文件，调用之外的作用域以那个库为根连接；PostgreSQL 等行锁数据库不需要。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。

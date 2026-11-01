@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "An optimistic concurrency conflict occurred during commit: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' recorded {count} domain event(s), but no domain event dispatcher is registered.",
   "persistence.unit_of_work.nested": "The unit of work of this service scope has already been started: a nested invocation must run in its own service scope.",
-  "persistence.unit_of_work.read_only": "The unit of work is read-only and does not accept writes: read-only operations (verb get or list, or declared ReadOnly) must not write."
+  "persistence.unit_of_work.read_only": "The unit of work is read-only and does not accept writes. This is a defect in the operation: read-only operations (verb get or list, or declared ReadOnly) must not write data."
 }

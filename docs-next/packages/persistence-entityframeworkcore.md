@@ -139,7 +139,7 @@ public sealed class OrderReports(AppDbContext db)
 - 读出后直接改了跟踪实例再更新：同样恢复这几个字段，写入路径也按原值判定可见性，所以读出后改了租户的实例照常更新，不会被当成不存在，也改不了租户。
 - 提交时还有残余变更（绕过仓储直接改了跟踪实体）会先保存再提交，其中的创建时间与租户同样恢复为原值；并发令牌不匹配返回 `PERSISTENCE_CONFLICT_001` 并回滚。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，插入撞上主键约束。`SaveChanges` 在已有事务里会自动建保存点，失败时已回到保存点，事务仍可用。仓储把这次新增的实体移出跟踪，在同一事务里核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚，处理器忽略失败返回成功时，提交回滚并返回同一错误。数据库是 MySQL 的可重复读这类快照隔离时，同一事务看不到对方刚提交的行，异常照常抛出。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_DENIED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用 `DbContext` 写入之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）；绕过仓储改了跟踪实体而未保存的，提交时以它回滚——只读操作里不要把读出的实体当草稿改。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用 `DbContext` 写入之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）；绕过仓储改了跟踪实体而未保存的，提交时以它回滚——只读操作里不要把读出的实体当草稿改。
 - 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
 - 依赖 `Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据）。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。

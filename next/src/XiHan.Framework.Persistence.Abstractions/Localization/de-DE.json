@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "Beim Commit ist ein optimistischer Nebenläufigkeitskonflikt aufgetreten: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' hat {count} Domänenereignis(se) aufgezeichnet, aber es ist kein Domänenereignis-Dispatcher registriert.",
   "persistence.unit_of_work.nested": "Die Arbeitseinheit dieses Dienstbereichs wurde bereits gestartet: Ein verschachtelter Aufruf muss in einem eigenen Dienstbereich ausgeführt werden.",
-  "persistence.unit_of_work.read_only": "Die Arbeitseinheit ist schreibgeschützt und akzeptiert keine Schreibvorgänge: Schreibgeschützte Operationen (Verb get oder list oder als ReadOnly deklariert) dürfen nicht schreiben."
+  "persistence.unit_of_work.read_only": "Die Arbeitseinheit ist schreibgeschützt und akzeptiert keine Schreibvorgänge. Dies ist ein Fehler in der Operation: Schreibgeschützte Operationen (Verb get oder list oder als ReadOnly deklariert) dürfen keine Daten schreiben."
 }

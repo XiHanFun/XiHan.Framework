@@ -305,7 +305,7 @@ public sealed class SqlSugarPersistenceTests : IDisposable
         var unitOfWork = (SqlSugarUnitOfWork)scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
 
-        // 直接用客户端写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_DENIED_001 的异常，调用方的写入不会执行
+        // 直接用客户端写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_UNEXPECTED_001 的异常，调用方的写入不会执行
         var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.EnsureTransactionAsync(CancellationToken.None));
 
         Assert.Equal(PersistenceErrors.ReadOnly, thrown.Code);

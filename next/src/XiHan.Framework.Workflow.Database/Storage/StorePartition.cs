@@ -43,7 +43,7 @@ internal static class StorePartition
     /// 失败归为存储不可达，成功原样返回。
     /// </summary>
     /// <remarks>
-    /// 只读工作单元的拒绝（<see cref="PersistenceErrors.ReadOnly"/>）原样返回：它是调用方的缺陷（HTTP 403），不是存储不可达。
+    /// 只读工作单元的拒绝（<see cref="PersistenceErrors.ReadOnly"/>）原样返回：它是只读操作写了数据的代码缺陷（HTTP 500），不是存储不可达。
     /// </remarks>
     public static Result<T> OrUnavailable<T>(Result<T> result) => result.IsSuccess ? result : Unavailable(result.Error!);
 

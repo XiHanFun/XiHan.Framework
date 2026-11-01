@@ -97,7 +97,7 @@ using XiHan.Framework.Kernel.Operations;
 
 操作依赖隐式的 `Expose.All` 时，生成器诊断 `XHG004` 能报告出来；它缺省关闭，在 `.editorconfig` 里写 `dotnet_diagnostic.XHG004.severity = error` 即强制每个操作写明。
 
-只读由契约推出：动词是 `get` 或 `list`，或以 `ReadOnly = true` 声明的非标准动词，`OperationContract.IsReadOnly` 为真。HTTP 适配器据此让没有嵌套对象的只读自定义动词使用 `GET`，MCP 适配器据此给出只读提示。装配了持久化时，Transaction 阶段为只读操作开只读工作单元：不开数据库事务，处理器里的新增、更新、删除返回 `PERSISTENCE_DENIED_001`（HTTP 403），处理器忽略这个失败也照样以它结束调用。只读操作要写数据（记访问次数、补建缺失的行），就不要声明只读，或把写入放进新服务作用域里的另一次调用，见[工作单元与事务](./uow#只读操作与只读工作单元)。
+只读由契约推出：动词是 `get` 或 `list`，或以 `ReadOnly = true` 声明的非标准动词，`OperationContract.IsReadOnly` 为真。HTTP 适配器据此让没有嵌套对象的只读自定义动词使用 `GET`，MCP 适配器据此给出只读提示。装配了持久化时，Transaction 阶段为只读操作开只读工作单元：不开数据库事务，处理器里的新增、更新、删除返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500），处理器忽略这个失败也照样以它结束调用。只读操作要写数据（记访问次数、补建缺失的行），就不要声明只读，或把写入放进新服务作用域里的另一次调用，见[工作单元与事务](./uow#只读操作与只读工作单元)。
 
 ## 登记序列化类型与 Schema
 

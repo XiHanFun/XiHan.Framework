@@ -112,7 +112,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         // 只读工作单元不开事务：直接写入的调用方拿到异常就不会执行写入；同时记下失败，捕获异常后仍去提交的调用方得到同一错误
         if (IsReadOnly)
         {
-            Fail(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
+            Fail(Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly));
             throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes.");
         }
 

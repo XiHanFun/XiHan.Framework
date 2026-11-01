@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "Se produjo un conflicto de concurrencia optimista durante la confirmación: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' registró {count} evento(s) de dominio, pero no hay ningún despachador de eventos de dominio registrado.",
   "persistence.unit_of_work.nested": "La unidad de trabajo de este ámbito de servicios ya se inició: una invocación anidada debe ejecutarse en su propio ámbito de servicios.",
-  "persistence.unit_of_work.read_only": "La unidad de trabajo es de solo lectura y no acepta escrituras: las operaciones de solo lectura (verbo get o list, o declaradas ReadOnly) no pueden escribir."
+  "persistence.unit_of_work.read_only": "La unidad de trabajo es de solo lectura y no acepta escrituras. Es un defecto de la operación: las operaciones de solo lectura (verbo get o list, o declaradas ReadOnly) no pueden escribir datos."
 }

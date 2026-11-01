@@ -151,7 +151,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - 按名字启动取最新的已发布版本；发布新版本不改变旧版本状态，已在跑的实例留在原版本，用 `MigrateAsync` 迁移（只迁到同一名字空间里的同名版本）。
 - 分区隔离（ADR-0077）：平台一个分区、每个租户一个分区，调用只看得到、改得动自己分区的定义、实例与书签，别的分区的按不存在处理；平台与租户对等，平台也看不到租户的。没有全局定义：名字与版本号在分区里编号，按名字解析只在自己的分区里找。`WorkflowStartRequest` 与 `WorkflowInstanceQuery` 没有租户字段，分区取当前调用。
 - 存储契约每个方法带分区参数，写入的记录必须属于该分区（不等抛 `ArgumentException`）。
-- 事务：在调用里加入调用方的事务，业务回滚时引擎写入一起回滚；只读调用里写入在执行活动之前返回 `PERSISTENCE_DENIED_001`；在调用之外自己开调用，应用不在服务状态时 `WORKFLOW_UNAVAILABLE_001`。事件经作用域的 `IMessagePublisher` 在事务里发出，装配了发件箱才随事务提交。
+- 事务：在调用里加入调用方的事务，业务回滚时引擎写入一起回滚；只读调用里写入在执行活动之前返回 `PERSISTENCE_UNEXPECTED_001`；在调用之外自己开调用，应用不在服务状态时 `WORKFLOW_UNAVAILABLE_001`。事件经作用域的 `IMessagePublisher` 在事务里发出，装配了发件箱才随事务提交。
 - 一个波次最多执行 `MaxNodeExecutionsPerBurst` 个节点；子流程最深 `MaxSubWorkflowDepth` 层；表达式缓存满了整体清空。
 - 活动的取消令牌是调用的令牌，取消即回滚。
 - 未知的根变量是表达式错误（`WORKFLOW_VALIDATION_003`），null 结果是成功的无值（ADR-0059）。

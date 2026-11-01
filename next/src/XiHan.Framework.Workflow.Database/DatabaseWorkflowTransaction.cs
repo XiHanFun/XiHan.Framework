@@ -44,5 +44,5 @@ public sealed class DatabaseWorkflowTransaction : IWorkflowTransaction
 
     /// <inheritdoc />
     public Result EnsureWritable()
-        => _unitOfWork.IsReadOnly ? Result.Failure(Error.Denied(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly)) : Result.Success();
+        => _unitOfWork.IsReadOnly ? Result.Failure(Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly)) : Result.Success();
 }

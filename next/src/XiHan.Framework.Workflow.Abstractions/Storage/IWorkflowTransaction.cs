@@ -23,7 +23,7 @@ public interface IWorkflowTransaction
     /// 核对加入的事务是否允许写入。
     /// </summary>
     /// <remarks>
-    /// 允许时成功，只读事务里返回拒绝写入的错误。写入操作在取锁、执行活动之前调用，只读的调用不会先执行活动的副作用再在写回时失败。数据库实现返回 <c>PERSISTENCE_DENIED_001</c>；内存实现总是成功。
+    /// 允许时成功，只读事务里返回拒绝写入的错误。写入操作在取锁、执行活动之前调用，只读的调用不会先执行活动的副作用再在写回时失败。数据库实现返回 <c>PERSISTENCE_UNEXPECTED_001</c>（只读操作里发起或推进流程是操作实现的缺陷，HTTP 500）；内存实现总是成功。
     /// </remarks>
     Result EnsureWritable();
 }

@@ -416,7 +416,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_NOTFOUND_003` | 要读结构的表不在库里 | 逐项 `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现更新或删除的行已被别人改过或删掉 | `Result`；后者是提交结果 |
 | `PERSISTENCE_CONFLICT_002` | 新增的标识已存在；含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
-| `PERSISTENCE_DENIED_001` | 只读工作单元里新增、更新、删除（只读操作里的写入，HTTP 403） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛异常、Transaction 阶段转为结果 |
+| `PERSISTENCE_UNEXPECTED_001` | 只读工作单元里新增、更新、删除（只读操作里的写入，是操作实现的缺陷，HTTP 500） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛异常、Transaction 阶段转为结果 |
 | `PERSISTENCE_CONFLICT_003` | 写入撞上实体声明的唯一索引（关系型 Provider） | `Result`，工作单元随后只能回滚 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |

@@ -23,10 +23,10 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任�
 
 ## 只读工作单元与嵌套调用
 
-`UnitOfWorkMiddleware` 按本次调用的操作契约开工作单元（ADR-0073）：动词 `get` / `list` 或声明了 `ReadOnly = true` 的操作开只读工作单元，写操作与不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元。
+`UnitOfWorkMiddleware` 按本次调用的操作契约开工作单元（ADR-0073、ADR-0081）：动词 `get` / `list` 或声明了 `ReadOnly = true` 的操作开只读工作单元，写操作与不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元。
 
 - 只读工作单元不开数据库事务，查找、查询、计数照常。
-- 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_DENIED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 403），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
+- 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_UNEXPECTED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 500：只读操作写数据是代码缺陷，不是调用方的输入或权限），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
 - Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
 - 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly)` 决定，`UnitOfWorkOptions.Default` 可写。
@@ -57,54 +57,7 @@ var source = await registry.GetOrAddAsync(definition, ct);       // 同定义复
 await registry.RemoveAsync([definition.Name], ct);               // 记录改了、停用或删了：显式失效（批量）
 ```
 
-- 定义：名字 `^[a-z0-9][a-z0-9-]{0,63}# XiHan.Framework.Persistence.Abstractions
-
-持久化契约（Ring 2）。能力 `persistence.relational@1`、`persistence.document@1` 由 Provider 提供。
-
-| 契约 | 用途 |
-| --- | --- |
-| `IRepository<TEntity, TKey>` | 查找、查询、计数、新增、更新、删除，以及按标识集合查找与批量新增 / 更新 / 删除（`FindManyAsync`、`AddRangeAsync` / `UpdateRangeAsync` / `RemoveRangeAsync`：逐项 `Result` 与入参一一对应、通过校验的项一次写入）；可恢复失败用 `Result` 返回 |
-| `EntityQuery<T>` | 过滤（规约）、排序、分页、是否包含已删除、时间范围提示（`Within`：只影响分表 / 分区 Provider 扫描的表，不过滤行）；`Take` 取 1 到 `EntityQuery.DefaultMaxTake`（1000），不截断：超过上限在构造时抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400，消息键 `persistence.query.take_exceeded`，参数 `take`、`max`）；`Skip` 为负、`Take` 小于 1 是编程错误，抛 `ArgumentOutOfRangeException` |
-| `IUnitOfWork` | 事务边界与当前租户；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启、提交或回滚；`DomainEvents`（`DomainEventTracker`）登记本工作单元写过的聚合；只读操作（`OperationContract.IsReadOnly`）开只读工作单元，见下文 |
-| `IDomainEventDispatcher` | 领域事件的派发端口：处理器成功后、提交前，中间件把带有未派发事件的聚合交给它（Messaging 子系统实现，发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚；有事件却没有派发器返回 `PERSISTENCE_VALIDATION_003`，不静默丢弃 |
-| `IIdGenerator<TKey>`、`GuidV7IdGenerator` | 标识生成端口；Provider 注册 `IIdGenerator<Guid>`（UUID 版本 7，时间有序） |
-| `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId`、`IWorkerIdSource`（`FixedWorkerIdSource` / `LeasedWorkerIdSource`） | 雪花 `long` 标识（ADR-0033）：应用显式装配特性后得到 `IIdGenerator<long>`，41 位毫秒 + 10 位机器位 + 12 位序列；机器位显式配置或经 `IDistributedLock` 租约分配；`SnowflakeId.Parse` 还原时间戳、机器位与序列，见下文 |
-| `PersistenceConventions` | Provider 共用的协议约定：创建时间、修改时间、租户、并发戳、软删除；`ApplyOnUpdate(entity, stored, now)` 让更新沿用存储行的创建时间、租户与删除标记（协议字段只由 Provider 写入） |
-| `LongTextAttribute`、`EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | Provider 中立的建表声明：`[LongText]` 长文本列；`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]` 在实体类上声明索引（可多个、可多列、可唯一，全部升序），`EntityIndexes.Resolve(type, table)` 按统一规则推出名字与列——SqlSugar 与 EF Core 两个 Provider 都经它建出同名索引，见下文「索引声明」 |
-| `IRepositoryRegistrar`、`AddRepository<TEntity, TKey>()` | 应用显式登记实体，Provider 据此注册闭合泛型的仓储；换 Provider 不改业务代码 |
-| `DataSourceRegistry`、`DataSourceDefinition`、`IDataSource`、`IDataSourceProvider`、`DataSourceOptions`、`DatabaseTypes`、`ConnectionStrings` | 运行时数据源（ADR-0078）：按应用记录里的定义（名字、数据库类型、连接串）连外部库，按名缓存、定义变了替换、`RemoveAsync` 显式失效、登记数有上限、每个数据源一条健康项、测试连接不登记；连接串不进日志、错误与健康详情，见下文 |
-
-```csharp
-builder.Services.AddRepository<Order, Guid>();          // 应用登记实体
-builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任一 Provider 的特性
-```
-
-## 只读工作单元与嵌套调用
-
-`UnitOfWorkMiddleware` 按本次调用的操作契约开工作单元（ADR-0073）：动词 `get` / `list` 或声明了 `ReadOnly = true` 的操作开只读工作单元，写操作与不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元。
-
-- 只读工作单元不开数据库事务，查找、查询、计数照常。
-- 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_DENIED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 403），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
-- Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
-- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
-- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly)` 决定，`UnitOfWorkOptions.Default` 可写。
-## 索引声明
-
-框架自己的表（发件箱、审计、授予、翻译、调度、工作流）与应用实体一样，用本包的 `[EntityIndex]` 声明索引，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`：实体只依赖本包，换 Provider 不改实体（RFC-0005「索引声明」，ADR-0072）。
-
-```csharp
-[EntityIndex(nameof(TenantId), nameof(Code), IsUnique = true)]   // UX_Order_TeId_Co
-[EntityIndex(nameof(Status), nameof(CreatedAt))]                 // IX_Order_St_CrAt
-public sealed class Order : IEntity<Guid>, IMultiTenant, ISoftDeletable { … }
-```
-
-- 命名：`IX_`（唯一 `UX_`）+ 表名 + 每列的缩写（属性名每个词取前两个字符：`TenantId → TeId`、`NextFireAt → NeFiAt`），下划线连接；表名里字母、数字、下划线以外的字符换成下划线。全名不超过 `EntityIndexes.MaxNameLength`（63，PostgreSQL 的标识符上限），超过即报错、不截断。
-- 软删除：实现 `ISoftDeletable` 的实体，唯一索引末尾自动加 `IsDeleted`（名字不变）——未删除的行之间唯一、删掉的行不占业务键；代价是同一业务键最多一行已删除，删除、重建、再删除同一个键会撞索引。
-- 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等；EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）；要让"全局"这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。
-- 写入撞上唯一索引：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值、软删除撞上同一键已删除的行同样算），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
-- 声明错误（没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列）在 Provider 建模 / 建表时抛 `InvalidOperationException`。内存实现不建索引、不校验唯一性。
-
-（`default` 保留给缺省连接）；数据库类型不区分大小写，常用名在 `DatabaseTypes`，Provider 认得哪些由 Provider 决定；`Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。
+- 定义：名字 `^[a-z0-9][a-z0-9-]{0,63}$`（`default` 保留给缺省连接）；数据库类型不区分大小写，常用名在 `DatabaseTypes`，Provider 认得哪些由 Provider 决定；`Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。
 - 失效：显式 `RemoveAsync` 加定义比对，不用配置变化令牌（定义来自应用的库）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换；所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`。
 - 容量：`XiHan:Persistence:DataSources:MaxCount`（缺省 64，1–1024），满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的；替换同名的不占名额。
 - 健康：每个数据源一条 `persistence.datasource.<name>`（数据 `databaseType`、`provider`），按 `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds`（缺省 15，也是单次探测超时）在后台打开连接再关闭；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。

@@ -23,5 +23,5 @@
   "persistence.unit_of_work.concurrency_conflict": "Ocorreu um conflito de concorrência otimista durante a confirmação: {reason}",
   "persistence.unit_of_work.events_undispatched": "'{aggregate}' registrou {count} evento(s) de domínio, mas nenhum despachante de eventos de domínio está registrado.",
   "persistence.unit_of_work.nested": "A unidade de trabalho deste escopo de serviços já foi iniciada: uma invocação aninhada deve ser executada em seu próprio escopo de serviços.",
-  "persistence.unit_of_work.read_only": "A unidade de trabalho é somente leitura e não aceita gravações: operações somente leitura (verbo get ou list, ou declaradas ReadOnly) não podem gravar."
+  "persistence.unit_of_work.read_only": "A unidade de trabalho é somente leitura e não aceita gravações. Este é um defeito da operação: operações somente leitura (verbo get ou list, ou declaradas ReadOnly) não podem gravar dados."
 }
