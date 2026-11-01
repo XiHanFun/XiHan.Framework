@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 保存失败后核对是否撞上了实体的唯一索引。
 /// </summary>
 /// <remarks>
-/// 唯一索引取自模型（<c>[EntityIndex(IsUnique = true)]</c> 经约定映射的，以及应用自己 <c>HasIndex(…).IsUnique()</c> 的）。两种冲突：同一次保存里两项的键相同；库里的另一行（标识不同）键相同。SaveChanges 失败后已回到它自动建的保存点，查询在同一事务里进行，本工作单元先前写入的行也看得见。只在保存已经失败的路径上运行。
+/// 唯一索引取自模型（<c>[EntityIndex(IsUnique = true)]</c> 经约定映射的，以及应用自己 <c>HasIndex(…).IsUnique()</c> 的）。两种冲突：同一次保存里两项的键相同；库里的另一行（标识不同）键相同。软删除实体的部分唯一索引（约定加了 <c>HasFilter</c> 的）只约束未删除的行：已删除的写入项与已删除的行都不参与比较；应用自己 <c>HasFilter</c> 的条件是任意 SQL，在内存里求不了值，照没有条件比较。SaveChanges 失败后已回到它自动建的保存点，查询在同一事务里进行，本工作单元先前写入的行也看得见。只在保存已经失败的路径上运行。
 /// </remarks>
 internal static class UniqueKeyConflicts
 {
@@ -40,6 +41,10 @@ internal static class UniqueKeyConflicts
             return null;
         }
 
+        // 约定建的部分唯一索引按名字认出：模型里只有条件 SQL，换回声明才知道条件是“未删除”
+        var partial = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity))
+            ? EntityIndexes.Resolve(typeof(TEntity), entityType.GetTableName() ?? typeof(TEntity).Name).Where(static i => i.ExcludesDeleted).Select(static i => i.Name).ToHashSet(StringComparer.Ordinal)
+            : [];
         foreach (var index in entityType.GetIndexes().Where(static i => i.IsUnique))
         {
             var properties = index.Properties.Select(static p => p.PropertyInfo).OfType<PropertyInfo>().ToList();
@@ -49,7 +54,10 @@ internal static class UniqueKeyConflicts
                 continue;
             }
 
-            if (Collides<TEntity, TKey>(written, properties) || await CollidesWithStoredAsync<TEntity, TKey>(context, written, properties, cancellationToken).ConfigureAwait(false))
+            // 部分唯一索引只约束未删除的行：已删除的写入项不会撞上它
+            var excludesDeleted = index.GetDatabaseName() is { } name && partial.Contains(name);
+            var constrained = excludesDeleted ? [.. written.Where(static e => !IsDeleted(e))] : written;
+            if (Collides<TEntity, TKey>(constrained, properties) || await CollidesWithStoredAsync<TEntity, TKey>(context, constrained, properties, excludesDeleted, cancellationToken).ConfigureAwait(false))
             {
                 return index.GetDatabaseName() ?? index.Name ?? string.Join('_', index.Properties.Select(static p => p.Name));
             }
@@ -86,9 +94,9 @@ internal static class UniqueKeyConflicts
     /// 库里是否有标识不同、键相同的行。
     /// </summary>
     /// <remarks>
-    /// 每列按这批写入项的取值做 <c>IN</c> 取回候选行（笛卡尔积的超集，不跟踪、不经全局过滤器），再在内存里逐列比较；含空值的键不比较。字符串按序数比较：大小写不敏感排序规则的库上只差大小写的冲突核对不到，异常原样抛出。
+    /// 每列按这批写入项的取值做 <c>IN</c> 取回候选行（笛卡尔积的超集，不跟踪、不经全局过滤器），再在内存里逐列比较；含空值的键不比较。<paramref name="excludesDeleted"/> 为真（部分唯一索引）时已删除的行不比较。字符串按序数比较：大小写不敏感排序规则的库上只差大小写的冲突核对不到，异常原样抛出。
     /// </remarks>
-    private static async Task<bool> CollidesWithStoredAsync<TEntity, TKey>(DbContext context, IReadOnlyList<TEntity> written, List<PropertyInfo> properties, CancellationToken cancellationToken)
+    private static async Task<bool> CollidesWithStoredAsync<TEntity, TKey>(DbContext context, IReadOnlyList<TEntity> written, List<PropertyInfo> properties, bool excludesDeleted, CancellationToken cancellationToken)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
@@ -111,7 +119,7 @@ internal static class UniqueKeyConflicts
             }
 
             var rows = await context.Set<TEntity>().AsNoTracking().IgnoreQueryFilters().Where(Expression.Lambda<Func<TEntity, bool>>(conditions.Aggregate(Expression.AndAlso), parameter)).ToListAsync(cancellationToken).ConfigureAwait(false);
-            if (chunk.Any(entity => rows.Exists(row => !row.Id.Equals(entity.Id) && SameKey(entity, row, properties))))
+            if (chunk.Any(entity => rows.Exists(row => !row.Id.Equals(entity.Id) && !(excludesDeleted && IsDeleted(row)) && SameKey(entity, row, properties))))
             {
                 return true;
             }
@@ -119,6 +127,16 @@ internal static class UniqueKeyConflicts
 
         return false;
     }
+
+    /// <summary>
+    /// 实体是否已软删除。
+    /// </summary>
+    /// <remarks>
+    /// 只对软删除实体调用（部分唯一索引只出现在软删除实体上）。
+    /// </remarks>
+    private static bool IsDeleted<TEntity>(TEntity entity)
+        where TEntity : class
+        => entity is ISoftDeletable { IsDeleted: true };
 
     /// <summary>
     /// 两个实体在这些列上的值是否都相等。

@@ -10,7 +10,7 @@ builder.AddXiHan(x => x
 
 // AppDbContext.OnModelCreating：登记实体后应用协议约定，四列唯一索引由实体上的 [EntityIndex] 建出
 modelBuilder.Entity<PermissionGrantRecord>();
-modelBuilder.ApplyPersistenceConventions();
+modelBuilder.ApplyPersistenceConventions(Database);
 
 // 管理操作里（Transaction 阶段内）批量授予 / 撤销，逐项结果；写入后涉及主体的缓存立即失效
 var granted = await store.GrantAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write"), new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", "acme")], ct);
@@ -37,7 +37,7 @@ var rows = await store.ListAsync(GrantSubject.ForUser("alice"), tenantId: null, 
 - `DatabasePermissionGrantStore` 读数据库不经 `App.InvokeAsync`（授予在 Authorize 阶段被查询，嵌套调用会再次经过 Tenant / Authorize 阶段，而且要求应用处于服务状态），而是在根提供者的新作用域里直接开只读工作单元读仓储。数据库故障（开启、读取、提交失败，含连接与命令超时）返回 `SECURITY_UNAVAILABLE_001`（`security.grant_store.unavailable`，不带参数），检查器原样返回，调用以 503 结束——不是空集合，也就不会落到 403 / 不持有（ADR-0071）；底层原因只记警告日志（`FrameworkException` 另作内部错误保留），不进响应，免得把连接串、主机名带给调用方。失败不进缓存，存储恢复后下一次判定立即重新查库。调用方取消照常抛出；容器里缺工作单元或仓储是装配错误，照常抛出。
 - 缓存：每个（主体、租户）一条，`CacheTimeToLive` 后过期；条目数达到 `CacheSize` 时整体清空（不逐条淘汰，容量只防无界增长）；返回的集合是冻结集合，调用方改不了缓存。`PermissionGrantRecordStore` 写入后对涉及的主体调用 `Invalidate`；写入在调用方的事务提交后才对别的调用可见，失效与提交之间的窗口由 TTL 收敛。多实例部署时别的实例靠 TTL 收敛，需要立即生效的改小 `CacheTimeToLiveSeconds`。
 - `GrantAsync`：一次查询取回已有行（主体种类 / ID / 权限码 / 租户各取集合做 `IN`，再内存精确匹配），已存在的返回成功且不重复写，同一批里重复的项同样成功，没有的用 `AddRangeAsync` 一次写入；`RevokeAsync` 同样一次 `RemoveRangeAsync`，不存在（含同一批第二次）→ `SECURITY_NOTFOUND_002`（`security.grant.not_found`，参数 `subject` / `permission` / `tenant`，全局时 `tenant` 为 `*`）；`ListAsync` 按主体种类、主体 ID、权限码、租户排序，`tenantId` 为 `null` 不按租户过滤、否则只列该租户专属的行。
-- 表结构由应用管理（`InitTables` 只用于开发与测试）。索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建：`UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId`，`(SubjectKind, SubjectId, Permission, TenantId)` 唯一，按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；全局授予的租户是空字符串而不是 NULL，唯一索引在各数据库上都约束它。已有的库按此名字补建（表里有重复授予时先去重）。
+- 表结构由应用管理（`InitTables` 只用于开发与测试）。索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建：`UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId`，`(SubjectKind, SubjectId, Permission, TenantId)` 唯一，按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；全局授予的租户是空字符串而不是 NULL，唯一索引在各数据库上都约束它。已有的库按此名字补建（表里有重复授予时先去重）。
 
 ## 依赖方向
 

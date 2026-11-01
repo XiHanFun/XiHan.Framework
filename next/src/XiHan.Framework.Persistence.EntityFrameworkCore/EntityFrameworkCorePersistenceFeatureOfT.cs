@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 持久化的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
 /// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -144,11 +144,17 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
-        if (_options.EnsureCreated)
+        // DbContext 是作用域服务，建模与建表要在独立作用域内完成，不能从根容器直接解析
+        await using (var scope = services.CreateAsyncScope())
         {
-            // DbContext 是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析
-            await using var scope = services.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+            var context = scope.ServiceProvider.GetRequiredService<TContext>();
+            // 取一次模型（EF Core 按上下文类型缓存，之后的作用域直接复用）：OnModelCreating 里的建模错误——[EntityIndex] 声明不合法、
+            // Provider 不支持软删除实体的部分唯一索引——在启动时失败，不等第一次请求才报；生产库不开 EnsureCreated 时同样核对
+            _ = context.Model;
+            if (_options.EnsureCreated)
+            {
+                await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);

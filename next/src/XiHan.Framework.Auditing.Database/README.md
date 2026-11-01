@@ -18,7 +18,7 @@ modelBuilder.Entity<AuditRecord>(static a =>
     a.Property(static x => x.ErrorDetailsJson).HasColumnType("text");
     a.Property(static x => x.ErrorMessage).HasColumnType("text");
 });
-modelBuilder.ApplyPersistenceConventions();
+modelBuilder.ApplyPersistenceConventions(Database);
 
 // 任何地方查询（不要求活动的工作单元）
 var page = await trail.QueryAsync(new AuditQuery { TenantId = "acme", Succeeded = false, PageSize = 50 }, ct);
@@ -59,7 +59,7 @@ await host.Services.GetRequiredService<DatabaseAuditTrail>().FlushAsync(ct);
 - 细节与错误：`Details` 与 `Error.Details` 手写成 JSON 对象（不经反射，AOT 兼容），值只允许 JSON 可表示的——`null`、字符串、布尔、整数与浮点、`DateTimeOffset` / `DateTime` / `Guid`（写成字符串）、`JsonElement` / `JsonNode`、嵌套字典与列表，其余按 `ToString()`；读回时每个值是 `JsonElement`。失败结果按 `ErrorCode` 与 `ErrorMessageKey` 还原（`new Error(code, key, details)`，读取方可再按调用方区域翻译）；没有键的字面错误用写入时按进程默认区域渲染的 `ErrorMessage` 原样还原（`Error.Literal`）。`Error.Inner` 不持久化。
 - 读写不走管道：写入由 Observe 阶段的中间件或后台线程发起，查询不要求调用方有活动的工作单元；每个操作在根提供者的新作用域里直接开一个工作单元（不带租户），返回即提交。不加入调用方的事务：审计在调用结束后才知道结果，失败的调用同样要记。
 - 停止：`StopAsync` 先停循环，再停止接收并把队列里剩余的事件刷完（用宿主给的停止令牌）；之后到达的事件按丢弃计数。
-- 表结构由应用管理（`InitTables` 只用于开发与测试）：`DetailsJson` / `ErrorDetailsJson` / `ErrorMessage` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建：`IX_AuditRecord_Se`（`Sequence`，排序与续页）、`IX_AuditRecord_Ti`（`Timestamp`，时间范围）、`IX_AuditRecord_TrId`（`TraceId`）、`IX_AuditRecord_TeId_Se`（`(TenantId, Sequence)`，按租户分页）。`Sequence` 不建唯一索引：不同节点的序号只按时钟大致有序、可能相同，唯一索引会让撞号的整批写入失败、整批审计丢失。按主体查询多的应用自己再加 `(PrincipalId, Sequence)`。
+- 表结构由应用管理（`InitTables` 只用于开发与测试）：`DetailsJson` / `ErrorDetailsJson` / `ErrorMessage` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建：`IX_AuditRecord_Se`（`Sequence`，排序与续页）、`IX_AuditRecord_Ti`（`Timestamp`，时间范围）、`IX_AuditRecord_TrId`（`TraceId`）、`IX_AuditRecord_TeId_Se`（`(TenantId, Sequence)`，按租户分页）。`Sequence` 不建唯一索引：不同节点的序号只按时钟大致有序、可能相同，唯一索引会让撞号的整批写入失败、整批审计丢失。按主体查询多的应用自己再加 `(PrincipalId, Sequence)`。
 
 ## 依赖方向
 

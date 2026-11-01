@@ -14,7 +14,7 @@ builder.AddXiHan(x => x
 
 // EF Core 应用在自己的 DbContext 里登记五个实体，并给 Data 列用长文本类型；索引由实体上的 [EntityIndex] 经协议约定建出
 modelBuilder.Entity<TriggerEntity>(static t => t.Property(static x => x.Data).HasColumnType("text"));
-modelBuilder.ApplyPersistenceConventions();
+modelBuilder.ApplyPersistenceConventions(Database);
 ```
 
 ```json
@@ -59,7 +59,7 @@ modelBuilder.ApplyPersistenceConventions();
 - 失联恢复由领导者做（`RecoverNodesAsync`）：失联节点运行中的记录改为 `Lost`（结束时刻 = 当时）并清掉作业上指向它的占用，它抢占的触发器改回等待（清掉抢占者，没有下一次时刻的补为当时），作业已无占用的阻塞触发器改回等待，删除节点行；要求恢复的作业由引擎以恢复触发器重新入队。心跳超过 `NodeTimeout` 即失联，本节点自己不算。
 - 领导租约：行不存在就插入（别人先插入 → 被占用），存在且过期就带并发戳接管（戳冲突 → 被占用），存在未过期 → `SCHEDULING_CONFLICT_002`；不可重入。持有与否按本地时钟与本地记录的到期时刻判断；续约比对本次获取的令牌后推后到期时刻，令牌不符（已释放、已被接管）→ `SCHEDULING_CONFLICT_002` 并失效；释放只删自己的行，幂等。存储不可达 → `SCHEDULING_UNAVAILABLE_002`，不改变持有状态。
 - 存储在自己的作用域与事务里执行，不加入调用方的工作单元；SQLite 等库级写锁的数据库下并发写入按忙等串行，生产库按行锁不受影响。
-- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Data` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建：`IX_TriggerEntity_St_Lo_NeFiAt`（`(State, Local, NextFireAt)`，到期抢占的轮询；恢复时按状态找阻塞与被抢占的触发器走它的前缀）、`UX_TriggerEntity_Jo_Na`（`(Job, Name)` 唯一，按作业列出与删除）、`IX_JobRunEntity_St_NoId`（`(State, NodeId)`，各节点轮询取消请求、标记失联节点的运行、列出运行中）、`IX_JobRunEntity_Jo_CoAt`（`(Job, CompletedAt)`，每个作业最近一次结束的运行）、`IX_JobRunEntity_CoAt`（`CompletedAt`，保留期清理）、`IX_JobRunEntity_ScAt`（`ScheduledAt`，运行记录按计划时刻倒序分页）；作业、节点、租约表只按主键读写。
+- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Data` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建：`IX_TriggerEntity_St_Lo_NeFiAt`（`(State, Local, NextFireAt)`，到期抢占的轮询；恢复时按状态找阻塞与被抢占的触发器走它的前缀）、`UX_TriggerEntity_Jo_Na`（`(Job, Name)` 唯一，按作业列出与删除）、`IX_JobRunEntity_St_NoId`（`(State, NodeId)`，各节点轮询取消请求、标记失联节点的运行、列出运行中）、`IX_JobRunEntity_Jo_CoAt`（`(Job, CompletedAt)`，每个作业最近一次结束的运行）、`IX_JobRunEntity_CoAt`（`CompletedAt`，保留期清理）、`IX_JobRunEntity_ScAt`（`ScheduledAt`，运行记录按计划时刻倒序分页）；作业、节点、租约表只按主键读写。
 
 ## 依赖方向
 

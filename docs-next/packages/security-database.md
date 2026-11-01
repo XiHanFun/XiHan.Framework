@@ -75,7 +75,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PermissionGrantRecord>();
-        modelBuilder.ApplyPersistenceConventions();
+        modelBuilder.ApplyPersistenceConventions(Database);
     }
 }
 ```
@@ -148,7 +148,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 - 列表：按主体种类、主体 ID、权限码、租户排序；`subject` 为 `null` 不按主体过滤，`tenantId` 为 `null` 不按租户过滤，否则只列该租户专属的行；每页最多 1000 条。
 - 缓存：条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。`PermissionGrantRecordStore` 写入后对涉及的每个主体调用一次 `Invalidate`；写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
 - 故障：开启、读取、提交只读工作单元时的数据库故障（连接、命令超时、事务失败）返回 `SECURITY_UNAVAILABLE_001`（消息键 `security.grant_store.unavailable`，不带参数），检查器原样返回，调用以 503 结束——不会落到 403。底层原因只记警告日志，不进响应。失败不进缓存，数据库恢复后下一次判定立即重新查库。调用方取消照常抛出；容器里缺工作单元或仓储是装配错误，照常抛出（ADR-0071）。
-- 表结构由应用管理，`InitTables` 只用于开发与测试。唯一索引 `UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId`（`(SubjectKind, SubjectId, Permission, TenantId)`，实体上的 `[EntityIndex]`，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建，ADR-0072），按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功（已存在）；列长度：`SubjectKind` 32、`SubjectId` 256、`Permission` 256、`TenantId` 128。
+- 表结构由应用管理，`InitTables` 只用于开发与测试。唯一索引 `UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId`（`(SubjectKind, SubjectId, Permission, TenantId)`，实体上的 `[EntityIndex]`，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建，ADR-0072），按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功（已存在）；列长度：`SubjectKind` 32、`SubjectId` 256、`Permission` 256、`TenantId` 128。
 - 通过 `Security.Conformance` 的 `PermissionGrantStoreConformance`（含存储不可达用例：连接指向不存在的 SQLite 文件），并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
 
 ## 相关

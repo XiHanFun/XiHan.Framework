@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 按实体协议配置 SqlSugar 的实体映射。
 /// </summary>
 /// <remarks>
-/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
+/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SqlSugarConventions
@@ -60,7 +60,7 @@ public static class SqlSugarConventions
     /// 把实体上的 <see cref="EntityIndexAttribute"/> 登记为 SqlSugar 的索引。
     /// </summary>
     /// <remarks>
-    /// 名字与列由 <see cref="EntityIndexes.Resolve"/> 按表名推出（表名取此刻的映射：<c>[SugarTable]</c> 或此前回调改过的名字），转成 <see cref="SugarIndexAttribute"/> 加进实体信息，<c>CodeFirst.InitTables</c> 建表后按名字查不到才建（已有的索引不改、不删）。实体自己的 <c>[SugarIndex]</c> 与之同名时以实体的为准。分表实体（<c>[SplitTable]</c>）不支持：SqlSugar 按分表改写索引名时会就地改动缓存里的特性，名字随建表次数变化，分表实体直接用 <c>[SugarIndex]</c> 与 <c>{split_table}</c> 占位符。
+    /// 名字与列由 <see cref="EntityIndexes.Resolve"/> 按表名推出（表名取此刻的映射：<c>[SugarTable]</c> 或此前回调改过的名字），转成 <see cref="SugarIndexAttribute"/> 加进实体信息，<c>CodeFirst.InitTables</c> 建表后按名字查不到才建（已有的索引不改、不删）。实体自己的 <c>[SugarIndex]</c> 与之同名时以实体的为准。软删除实体的唯一索引只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>），SqlSugar 的索引写不出条件，不登记在这里，由 <see cref="InitTables"/> 在建表之后补建。分表实体（<c>[SplitTable]</c>）不支持：SqlSugar 按分表改写索引名时会就地改动缓存里的特性，名字随建表次数变化，分表实体直接用 <c>[SugarIndex]</c> 与 <c>{split_table}</c> 占位符。
     /// </remarks>
     /// <exception cref="InvalidOperationException">索引声明不合法（见 <see cref="EntityIndexes"/>）。</exception>
     /// <exception cref="NotSupportedException">分表实体声明了索引。</exception>
@@ -88,6 +88,12 @@ public static class SqlSugarConventions
         entity.Indexs ??= [];
         foreach (var index in indexes)
         {
+            // 部分唯一索引交给 SqlSugar 会被建成没有条件的普通唯一索引（已删除的行也受约束），这里不登记，建表之后另行建出
+            if (index.ExcludesDeleted)
+            {
+                continue;
+            }
+
             if (entity.Indexs.Exists(existing => string.Equals(existing.IndexName, index.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
@@ -95,6 +101,44 @@ public static class SqlSugarConventions
 
             // 列按属性名给出，SqlSugar 建索引时换成列名；全部升序（数据库可以反向扫描索引，单列降序不必单建）
             entity.Indexs.Add(new SugarIndexAttribute(index.Name, [.. index.Properties], [.. index.Properties.Select(static _ => OrderByType.Asc)], index.IsUnique));
+        }
+    }
+
+    /// <summary>
+    /// 按约定为实体建表，并补建软删除实体的部分唯一索引。
+    /// </summary>
+    /// <remarks>
+    /// 普通实体与分表实体各走 SqlSugar 的建表入口，之后补建部分唯一索引。在客户端当前的连接上建；特性开着 <c>InitTables</c> 时按实体的落点逐个连接调用它，应用自己建表（租户独立库、迁移工具）也要经它而不是直接调 <c>CodeFirst.InitTables</c>，否则软删除实体的唯一索引建不出来。部分唯一索引只约束未删除的行（<c>WHERE IsDeleted = false</c>），PostgreSQL、SQLite、SQL Server 支持；连接的数据库类型不支持而实体声明了它时，在建任何表之前抛出，不建出缺了唯一约束的表。已有同名的索引不改、不删（从此前的预览升级、库里已有带 <c>IsDeleted</c> 列的同名唯一索引的，要手动删掉旧索引再建）。
+    /// </remarks>
+    /// <param name="client">要建表的连接。</param>
+    /// <param name="entityTypes">实体类型；带 <c>[SplitTable]</c> 的走分表的建表入口。</param>
+    /// <exception cref="FrameworkException">有实体声明了部分唯一索引而连接的数据库类型不支持（<see cref="PersistenceErrors.NotSupported"/>）。</exception>
+    public static void InitTables(ISqlSugarClient client, params Type[] entityTypes)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(entityTypes);
+        // 先核对再建表：不支持部分索引的库上不建出缺了唯一约束的表
+        var dbType = client.CurrentConnectionConfig.DbType;
+        if (!PartialUniqueIndexes.IsSupported(dbType) && entityTypes.Where(PartialUniqueIndexes.Declares).ToList() is { Count: > 0 } declaring)
+        {
+            throw PartialUniqueIndexes.NotSupported(declaring.Select(type => (type, dbType)));
+        }
+
+        // 分表实体走分表的建表入口（按当前周期建第一张表，之后的分表由写入时按需建出），普通实体走常规建表；分表实体不支持 [EntityIndex]，没有部分唯一索引
+        var split = Array.FindAll(entityTypes, static type => type.IsDefined(typeof(SplitTableAttribute), inherit: false));
+        var plain = Array.FindAll(entityTypes, static type => !type.IsDefined(typeof(SplitTableAttribute), inherit: false));
+        if (plain.Length > 0)
+        {
+            client.CodeFirst.InitTables(plain);
+            foreach (var type in plain)
+            {
+                PartialUniqueIndexes.Create(client, type);
+            }
+        }
+
+        if (split.Length > 0)
+        {
+            client.CodeFirst.SplitTables().InitTables(split);
         }
     }
 

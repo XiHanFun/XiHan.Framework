@@ -20,7 +20,7 @@
 | 生成物 | 位置 | 内容 |
 | --- | --- | --- |
 | `GeneratedEntities.AddGeneratedRepositories(this IServiceCollection)` | 项目 `RootNamespace`（没有时用程序集名） | 为每个实体调用一次 `AddRepository<TEntity, TKey>()` |
-| `GeneratedEntities.ApplyGeneratedEntities(this ModelBuilder)` | 同上；项目引用了 EF Core 时才生成 | 为每个实体 `modelBuilder.Entity<T>()`；项目还引用了 `Persistence.EntityFrameworkCore` 时接着调用 `ApplyPersistenceConventions()` |
+| `GeneratedEntities.ApplyGeneratedEntities(this ModelBuilder)` | 同上；项目引用了 EF Core 时才生成 | 为每个实体 `modelBuilder.Entity<T>()`；项目还引用了 `Persistence.EntityFrameworkCore` 时签名多一个 `DatabaseFacade database`，接着调用 `ApplyPersistenceConventions(database)`（按 Provider 写软删除实体部分唯一索引的条件） |
 | `<实体>Filters` 静态类 | 实体所在命名空间，可访问性与实体相同；实体实现 `ISoftDeletable` 或 `IMultiTenant` 时才生成 | `NotDeleted`（属性）、`ForTenant(tenantId)`、两者都实现时还有 `ActiveFor(tenantId)`，都是 `Specification<T>` |
 
 生成的登记代码与手写的 `AddRepository` 等价，仍是逐个闭合泛型的显式注册，Native AOT 可用。
@@ -63,7 +63,7 @@ namespace SimpleApp;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     // 登记本程序集全部实体，并应用持久化约定
-    protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyGeneratedEntities();
+    protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyGeneratedEntities(Database);
 }
 ```
 
@@ -74,7 +74,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | 生成的成员 | 说明 |
 | --- | --- |
 | `GeneratedEntities.AddGeneratedRepositories(services)` | 登记本程序集全部实体的仓储，返回 `services` |
-| `GeneratedEntities.ApplyGeneratedEntities(modelBuilder)` | 把本程序集全部实体登记进 EF Core 模型，返回 `modelBuilder` |
+| `GeneratedEntities.ApplyGeneratedEntities(modelBuilder[, database])` | 把本程序集全部实体登记进 EF Core 模型，返回 `modelBuilder`；引用了 `Persistence.EntityFrameworkCore` 时带 `database` 并接着应用持久化约定 |
 | `<实体>Filters.NotDeleted` | 未软删除：`!entity.IsDeleted` |
 | `<实体>Filters.ForTenant(tenantId)` | 属于指定租户：`entity.TenantId == tenantId` |
 | `<实体>Filters.ActiveFor(tenantId)` | `NotDeleted.And(ForTenant(tenantId))` |

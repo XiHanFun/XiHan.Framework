@@ -12,11 +12,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 撞上唯一索引时返回唯一键重复（ADR-0072）。
+/// 撞上唯一索引时返回唯一键重复（ADR-0072、ADR-0081）。
 /// </summary>
 /// <remarks>
 /// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让 <see cref="DbUpdateException"/> 逃出（RFC-0005「索引声明」）。
-/// 新增（同一批两项同键、另一行同键）、更新把键改成已有的值、软删除撞上同一键已删除的行；之后工作单元只能回滚，调用以同一错误结束。
+/// 新增（同一批两项同键、另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束。软删除实体的唯一索引只约束未删除的行：同一键删除多次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。
 /// </remarks>
 public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
 {
@@ -89,18 +89,36 @@ public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
     }
 
     [Fact]
-    public async Task SoftDelete_OfASecondRowWithADeletedTwin_ReportsUniqueKeyConflict()
+    public async Task SoftDelete_OfTheSameKeyAgainAndAgain_DoesNotConflict()
     {
         await using var host = await StartAsync();
-        var first = new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" };
-        var second = new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" };
-        // 删掉第一行之后同一编码可以再建一行
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(first, context.CancellationToken)))).ThrowIfFailure();
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(first, context.CancellationToken)))).ThrowIfFailure();
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(second, context.CancellationToken)))).ThrowIfFailure();
 
-        // 再删第二行：唯一索引带删除标记，同一编码已有一行已删除
-        var outcome = await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(second, context.CancellationToken)));
+        // 同一编码建了删、删了建，三轮：部分唯一索引不约束已删除的行，每次删除都成功
+        for (var round = 0; round < 3; round++)
+        {
+            var row = new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" };
+            (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(row, context.CancellationToken)))).ThrowIfFailure();
+            (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(row, context.CancellationToken)))).ThrowIfFailure();
+        }
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var rows = await scope.ServiceProvider.GetRequiredService<IndexedDbContext>().Set<SoftDeletedIndexedRow>().ToListAsync();
+        Assert.Equal(3, rows.Count);
+        Assert.All(rows, static row => Assert.True(row.IsDeleted));
+    }
+
+    [Fact]
+    public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity()
+    {
+        await using var host = await StartAsync();
+        var deleted = new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" };
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(deleted, context.CancellationToken)))).ThrowIfFailure();
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(deleted, context.CancellationToken)))).ThrowIfFailure();
+        // 已删除的行不占编码：同一编码可以再建一行未删除的
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" }, context.CancellationToken)))).ThrowIfFailure();
+
+        // 未删除的行之间唯一：第二行撞上部分唯一索引，按它的名字报告
+        var outcome = await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" }, context.CancellationToken)));
 
         Assert.Equal(PersistenceErrors.UniqueKeyConflict, outcome.Error?.Code);
         Assert.Equal("UX_SoftDeletedIndexedRow_Co", outcome.Error!.Details!["index"]);

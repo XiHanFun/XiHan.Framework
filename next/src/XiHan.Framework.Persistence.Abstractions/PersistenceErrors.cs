@@ -49,7 +49,7 @@ public static class PersistenceErrors
     /// 唯一键重复：写入撞上实体声明的唯一索引。
     /// </summary>
     /// <remarks>
-    /// 关系型 Provider 在写入失败后核对出来（并发写入同一业务键、同一批里两项同键、软删除再删除同一键）；之后工作单元只能回滚。
+    /// 关系型 Provider 在写入失败后核对出来（并发写入同一业务键、同一批里两项同键、更新把键改成已有的值）；之后工作单元只能回滚。软删除实体的唯一索引只约束未删除的行，删除不会撞上。
     /// </remarks>
     public const string UniqueKeyConflict = "PERSISTENCE_CONFLICT_003";
 
@@ -143,7 +143,7 @@ public static class PersistenceErrors
     /// 当前的持久化 Provider 不支持该能力。
     /// </summary>
     /// <remarks>
-    /// 运行时数据源与库结构读取：EF Core 与内存实现。
+    /// 运行时数据源与库结构读取：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 只支持 PostgreSQL、SQLite、SQL Server，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）。
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
 

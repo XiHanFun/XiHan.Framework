@@ -309,7 +309,7 @@ builder.AddXiHan(xihan => xihan
 ```csharp
 // AppDbContext.OnModelCreating：同一个键与区域只能有一行，唯一索引由实体上的 [EntityIndex] 建出
 modelBuilder.Entity<MessageTranslation>();
-modelBuilder.ApplyPersistenceConventions();
+modelBuilder.ApplyPersistenceConventions(Database);
 ```
 
 查找规则：沿回退链的每个区域，先查数据库快照，再查嵌入的目录。数据库里没有的键或区域照常走嵌入目录与回退链。

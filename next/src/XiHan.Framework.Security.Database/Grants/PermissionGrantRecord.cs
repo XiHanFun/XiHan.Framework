@@ -13,7 +13,7 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 一条权限授予的行。
 /// </summary>
 /// <remarks>
-/// 主体种类、主体 ID、权限码与租户共同唯一。平台级数据，不实现 <see cref="IMultiTenant"/>（授予表自带租户列，不受当前调用租户过滤），不软删除。全局授予的 <see cref="TenantId"/> 存 <see cref="GlobalTenantId"/>（空字符串）而不是 NULL：唯一索引对 NULL 的语义各数据库不一致，空字符串在哪里都参与唯一性；契约边界（<see cref="PermissionGrant"/>）仍以 <see langword="null"/> 表示全局，经 <see cref="ToGrant"/> 换算。四列的唯一索引由 <see cref="EntityIndexAttribute"/> 声明，按主体的查询走它的 <c>(SubjectKind, SubjectId)</c> 前缀；EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;PermissionGrantRecord&gt;()</c> 后调用 <c>ApplyPersistenceConventions()</c>。
+/// 主体种类、主体 ID、权限码与租户共同唯一。平台级数据，不实现 <see cref="IMultiTenant"/>（授予表自带租户列，不受当前调用租户过滤），不软删除。全局授予的 <see cref="TenantId"/> 存 <see cref="GlobalTenantId"/>（空字符串）而不是 NULL：唯一索引对 NULL 的语义各数据库不一致，空字符串在哪里都参与唯一性；契约边界（<see cref="PermissionGrant"/>）仍以 <see langword="null"/> 表示全局，经 <see cref="ToGrant"/> 换算。四列的唯一索引由 <see cref="EntityIndexAttribute"/> 声明，按主体的查询走它的 <c>(SubjectKind, SubjectId)</c> 前缀；EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;PermissionGrantRecord&gt;()</c> 后调用 <c>ApplyPersistenceConventions(Database)</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(SubjectKind), nameof(SubjectId), nameof(Permission), nameof(TenantId), IsUnique = true)]

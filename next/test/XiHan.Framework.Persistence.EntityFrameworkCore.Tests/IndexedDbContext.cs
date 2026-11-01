@@ -20,6 +20,6 @@ public sealed class IndexedDbContext(DbContextOptions<IndexedDbContext> options)
     {
         modelBuilder.Entity<IndexedRow>().ToTable("indexed_row");
         modelBuilder.Entity<SoftDeletedIndexedRow>();
-        modelBuilder.ApplyPersistenceConventions();
+        modelBuilder.ApplyPersistenceConventions(Database);
     }
 }

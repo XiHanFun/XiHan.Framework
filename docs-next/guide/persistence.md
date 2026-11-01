@@ -277,9 +277,9 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | `[StringLength(n)]` | EF Core 原生识别为长度 n | 约定映射为长度 n |
 | `[LongText]` | 没有上限的字符串本来就建长文本，不需要额外映射 | 映射为各数据库的长文本类型 |
 | 没有注解的字符串 | EF Core 缺省（长文本） | SqlSugar 缺省（PostgreSQL 为 `varchar(255)`，超长写入整批失败） |
-| `ConcurrencyStamp` | `ApplyPersistenceConventions()` 设为并发令牌、长度 32 | 长度 32 |
-| `TenantId`、`IsDeleted` | `ApplyPersistenceConventions()` 建索引 | — |
-| `[EntityIndex]` | `ApplyPersistenceConventions()` 映射为 `HasIndex`，名字与 SqlSugar 相同 | `InitTables` 建出 |
+| `ConcurrencyStamp` | `ApplyPersistenceConventions(Database)` 设为并发令牌、长度 32 | 长度 32 |
+| `TenantId`、`IsDeleted` | `ApplyPersistenceConventions(Database)` 建索引 | — |
+| `[EntityIndex]` | `ApplyPersistenceConventions(Database)` 映射为 `HasIndex`，名字与 SqlSugar 相同；软删除实体的唯一索引加 `HasFilter` | `InitTables` 建出；软删除实体的部分唯一索引由 `SqlSugarConventions.InitTables` 补建 |
 | `DateTimeOffset` | EF Core 缺省 | 经转换器按 UTC 时刻往返 |
 | 可空类型（`int?`、`string?`） | EF Core 缺省 | 列可空 |
 
@@ -297,7 +297,7 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 
 - 列按声明顺序、全部升序，一个实体可以声明多个；`IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明。
 - 名字由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写（属性名每个词取前两个字符，`TenantId → TeId`），全名不超过 63 个字符，超过即报错。两个 Provider 建出同名的索引。
-- 软删除实体（`ISoftDeletable`）的唯一索引末尾自动带 `IsDeleted`：删掉的行不占业务键；同一业务键最多一行已删除，删除、重建、再删除同一个键时第二次删除返回 `PERSISTENCE_CONFLICT_003`。
+- 软删除实体（`ISoftDeletable`）的唯一索引只约束未删除的行（部分唯一索引：列就是声明的列，条件 `IsDeleted = false`，ADR-0081）——同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库（MySQL、Oracle 等）上有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；在那些数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引由 `SqlSugarConventions.InitTables` 在建表之后补建（应用自己给租户库建表时也要经它），EF Core 由 `ApplyPersistenceConventions(Database)` 加 `HasFilter`。
 - 写入撞上唯一索引（并发写入同一业务键、同一批两项同键、把键改成已有的值）返回 `PERSISTENCE_CONFLICT_003`，这次写入的项统一报告，调用随后回滚；重试时先查到已有的行，按更新处理。内存实现不建索引、不校验唯一性。
 - 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行；要让"全局"这类空值参与唯一性，存成非空的哨兵值。
 - 分表实体（SqlSugar `[SplitTable]`）不用 `[EntityIndex]`，直接用 `[SugarIndex]` 与 `{split_table}` 占位符。
@@ -308,7 +308,7 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | --- | --- | --- |
 | 内存 | — | 不需要 |
 | EF Core | `XiHan:Persistence:EntityFrameworkCore:EnsureCreated` | 为 `true` 时启动即 `EnsureCreated`，只作用于默认连接；只用于开发与测试，生产用 EF Core 迁移 |
-| SqlSugar | `XiHan:Persistence:SqlSugar:InitTables` | 为 `true` 时启动按已登记的实体建缺表、加缺列；删列、改名、改类型不在范围内；只宜在开发与测试开启 |
+| SqlSugar | `XiHan:Persistence:SqlSugar:InitTables` | 为 `true` 时启动按已登记的实体建缺表、加缺列（经 `SqlSugarConventions.InitTables`，软删除实体的部分唯一索引随之建出）；删列、改名、改类型不在范围内；只宜在开发与测试开启 |
 
 ## 连接
 

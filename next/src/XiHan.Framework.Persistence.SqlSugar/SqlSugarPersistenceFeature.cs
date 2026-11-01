@@ -186,6 +186,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     {
         ArgumentNullException.ThrowIfNull(services);
         await ValidatePlacementsAsync(services).ConfigureAwait(false);
+        await ValidatePartialIndexesAsync(services).ConfigureAwait(false);
         if (_options.InitTables && _entityTypes.Count > 0)
         {
             await InitTablesAsync(services).ConfigureAwait(false);
@@ -240,10 +241,37 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     }
 
     /// <summary>
+    /// 启动时核对部分唯一索引的数据库支持。
+    /// </summary>
+    /// <remarks>
+    /// 已登记的软删除实体声明了唯一索引（只约束未删除的行），而它落的连接的数据库类型不支持部分索引（PostgreSQL、SQLite、SQL Server 之外）时，一次列出全部实体、以 <see cref="PersistenceErrors.NotSupported"/> 中断启动——不论是否开着 <c>InitTables</c>：生产库由迁移脚本建表时，唯一约束同样建不出来，不能等到写入时才发现。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时核对，分片库由应用经 <see cref="SqlSugarConventions.InitTables"/> 建表时核对。没有这样的实体时不取客户端。
+    /// </remarks>
+    private async Task ValidatePartialIndexesAsync(IServiceProvider services)
+    {
+        var declaring = _entityTypes.Where(PartialUniqueIndexes.Declares).ToList();
+        if (declaring.Count == 0)
+        {
+            return;
+        }
+
+        // 客户端是作用域服务，在独立作用域里取；与建表、健康探针一样不经管道
+        await using var scope = services.CreateAsyncScope();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
+        var offenders = declaring
+            .Select(type => (EntityType: type, unitOfWork.ConnectionFor(type).CurrentConnectionConfig.DbType))
+            .Where(static entry => !PartialUniqueIndexes.IsSupported(entry.DbType))
+            .ToList();
+        if (offenders.Count > 0)
+        {
+            throw PartialUniqueIndexes.NotSupported(offenders);
+        }
+    }
+
+    /// <summary>
     /// 为已登记的实体建表。
     /// </summary>
     /// <remarks>
-    /// 客户端是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析；CodeFirst 只有同步 API。按落点分组建表：启动时没有调用也就没有分片，方式一的全部实体都落默认连接；方式二带 <c>[Tenant]</c> 的实体在各自的连接上建表。
+    /// 客户端是作用域服务，建表要在独立作用域内完成，不能从根容器直接解析；CodeFirst 只有同步 API。按落点分组建表：启动时没有调用也就没有分片，方式一的全部实体都落默认连接；方式二带 <c>[Tenant]</c> 的实体在各自的连接上建表。每个连接经 <see cref="SqlSugarConventions.InitTables"/> 建表，软删除实体的部分唯一索引随之建出。
     /// </remarks>
     private async Task InitTablesAsync(IServiceProvider services)
     {
@@ -251,18 +279,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
         foreach (var group in _entityTypes.GroupBy(unitOfWork.ConnectionFor))
         {
-            // 分表实体走分表的建表入口（按当前周期建第一张表，之后的分表由写入时按需建出），普通实体走常规建表
-            var split = group.Where(static type => type.IsDefined(typeof(SplitTableAttribute), inherit: false)).ToArray();
-            var plain = group.Where(static type => !type.IsDefined(typeof(SplitTableAttribute), inherit: false)).ToArray();
-            if (plain.Length > 0)
-            {
-                group.Key.CodeFirst.InitTables(plain);
-            }
-
-            if (split.Length > 0)
-            {
-                group.Key.CodeFirst.SplitTables().InitTables(split);
-            }
+            SqlSugarConventions.InitTables(group.Key, [.. group]);
         }
     }
 

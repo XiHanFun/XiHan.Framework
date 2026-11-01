@@ -111,7 +111,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | --- | --- |
 | `SqlSugarPersistenceFeature` | 特性入口；无参构造用应用注册的客户端，带回调的构造由特性创建客户端；`DiffLog` 选出开启差异日志的实体；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.sqlsugar.database`） |
 | `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`DiffLog`；`FromConfiguration(configuration)` |
-| `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引 |
+| `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
 | `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接 |
@@ -263,13 +263,14 @@ public sealed class ChangeBuffer
 | 忽略 | 没有公开 setter 的属性与集合属性（字符串、字节数组除外）不映射 |
 | PostgreSQL 缺省值 | 非可空的数值、枚举、布尔与 `Guid` 列配 CLR 缺省值（`0`、`false`、全零 Guid），`InitTables` 才能给已有行的表加这类列（ADR-0040） |
 | 索引 | 实体上的 `[EntityIndex]` 经表服务回调（`EntityNameService`）转成 `SugarIndexAttribute`，名字按映射出的表名推出（ADR-0072）；`InitTables` 按名字查不到才建，已有的不改不删；分表实体声明它抛 `NotSupportedException` |
+| 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL / SQLite `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0`，SQL Server 筛选索引（键含可空列另加 `IS NOT NULL`）；只支持这三种数据库，其余（MySQL、Oracle、达梦、源自 PostgreSQL 而未验证的国产库等）上启动即失败（`PERSISTENCE_UNAVAILABLE_008`），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
 
 - `InitTables` 建缺表、加缺列，按落点分组：方式一启动时没有调用也就没有分片，全部实体在默认连接建表；方式二带 `[Tenant]` 的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
 - 行锁：更新与删除的读取带 `TranLock`（`FOR UPDATE` / `UPDLOCK`）；SQLite 不支持行锁，由它的数据库级写锁保证；分表实体不加行锁。
 - 游离实例更新：并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；通过后把调用方的实例整行写入，创建时间、租户与删除标记取当前行的值，调用方实例上的这几个值不生效，写入后调用方实例拿到它们。按主键更新影响 0 行（行在加锁前已被删除）也返回 `PERSISTENCE_CONFLICT_001`。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，PostgreSQL 在插入时等对方提交后报主键冲突。PostgreSQL 系语句失败后整个事务进入中止状态，仓储另开一个不在事务里的连接（`CopyNew`，同一份连接配置）核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚：处理器忽略失败返回成功时，提交回滚并返回同一错误，不会对一个已中止的事务执行 `COMMIT`（PostgreSQL 会静默回滚，调用方看到的成功是假的）。
-- 唯一键重复：新增、更新、软删除的写入失败又不是标识重复时，同样另开连接核对实体的唯一索引（这次写入里两项同键，或已提交的另一行同键），撞上返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），这次写入的项统一报告，工作单元随后只能回滚；核对不到的（与本工作单元先前未提交的行冲突、大小写不敏感排序规则下只差大小写、键含空值）异常原样抛出。表里已有重复数据时 `InitTables` 建不出唯一索引、启动失败，先去重。
+- 唯一键重复：新增、更新、软删除的写入失败又不是标识重复时，同样另开连接核对实体的唯一索引（这次写入里两项同键，或已提交的另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），这次写入的项统一报告，工作单元随后只能回滚；核对不到的（与本工作单元先前未提交的行冲突、大小写不敏感排序规则下只差大小写、键含空值）异常原样抛出。表里已有重复数据时 `InitTables` 建不出唯一索引、启动失败，先去重。
 - 软删除：在取回的当前行上打标并整行写回，调用方实例随后拿到删除标记，以及当前行的修改时间与并发戳。
 - 实体类型没有 `new()` 约束，写入经 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject`，语义与泛型构建器相同。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。

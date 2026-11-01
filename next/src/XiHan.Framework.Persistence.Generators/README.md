@@ -2,7 +2,7 @@
 
 Roslyn 源生成器（工具链）。扫描本程序集里实现 `IEntity<TKey>`（含经 `IAggregateRoot<TKey>`）的非抽象顶层类（含 `record` / `record class`），生成：
 
-- `GeneratedEntities` 静态类（命名空间为项目的 `RootNamespace`）：`AddGeneratedRepositories(this IServiceCollection)` 为每个实体调用 `AddRepository<TEntity, TKey>()`；项目引用了 EF Core 时再生成 `ApplyGeneratedEntities(this ModelBuilder)`，把每个实体 `Entity<T>()` 进模型，并在引用了 `Persistence.EntityFrameworkCore` 时接着 `ApplyPersistenceConventions()`。
+- `GeneratedEntities` 静态类（命名空间为项目的 `RootNamespace`）：`AddGeneratedRepositories(this IServiceCollection)` 为每个实体调用 `AddRepository<TEntity, TKey>()`；项目引用了 EF Core 时再生成 `ApplyGeneratedEntities(this ModelBuilder)`，把每个实体 `Entity<T>()` 进模型；引用了 `Persistence.EntityFrameworkCore` 时签名多一个 `DatabaseFacade database`（`ApplyGeneratedEntities(this ModelBuilder, DatabaseFacade)`），接着 `ApplyPersistenceConventions(database)`——约定按 Provider 写软删除实体部分唯一索引的条件。
 - 每个实现 `ISoftDeletable` 或 `IMultiTenant` 的实体一个 `<实体>Filters` 静态类（与实体同命名空间、同可访问性）：`NotDeleted`、`ForTenant(tenantId)`、两者都有时 `ActiveFor(tenantId)`，都是 `Specification<T>`，可直接传给 `EntityQuery<T>.Where(...)`。
 
 ```csharp
@@ -10,7 +10,7 @@ public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, ISoftDeletable {
 
 public void Configure(FeatureContext context) => context.Services.AddGeneratedRepositories();   // 生成的登记代码
 
-protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyGeneratedEntities();   // EF Core 应用
+protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyGeneratedEntities(Database);   // EF Core 应用（引用了 Persistence.EntityFrameworkCore）
 
 var active = await repository.ListAsync(EntityQuery.All<Order>().Where(OrderFilters.ActiveFor(tenantId)), ct);
 ```

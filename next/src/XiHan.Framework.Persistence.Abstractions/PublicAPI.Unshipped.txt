@@ -37,6 +37,7 @@ XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Name.ge
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.ProbeAsync(XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Supports(string! databaseType) -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex
+XiHan.Framework.Persistence.Abstractions.EntityIndex.ExcludesDeleted.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex.IsUnique.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex.Name.get -> string!
 XiHan.Framework.Persistence.Abstractions.EntityIndex.Properties.get -> System.Collections.Generic.IReadOnlyList<string!>!

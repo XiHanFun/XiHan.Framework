@@ -41,9 +41,9 @@ public sealed class Order : IEntity<Guid>, IMultiTenant, ISoftDeletable { … }
 ```
 
 - 命名：`IX_`（唯一 `UX_`）+ 表名 + 每列的缩写（属性名每个词取前两个字符：`TenantId → TeId`、`NextFireAt → NeFiAt`），下划线连接；表名里字母、数字、下划线以外的字符换成下划线。全名不超过 `EntityIndexes.MaxNameLength`（63，PostgreSQL 的标识符上限），超过即报错、不截断。
-- 软删除：实现 `ISoftDeletable` 的实体，唯一索引末尾自动加 `IsDeleted`（名字不变）——未删除的行之间唯一、删掉的行不占业务键；代价是同一业务键最多一行已删除，删除、重建、再删除同一个键会撞索引。
+- 软删除：软删除实体（`ISoftDeletable`）的唯一索引只约束未删除的行（部分唯一索引：列就是声明的列，条件 `IsDeleted = false`，ADR-0081）——同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库（MySQL、Oracle 等）上有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；在那些数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。`EntityIndex.ExcludesDeleted` 标出这类索引。
 - 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等；EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）；要让"全局"这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。
-- 写入撞上唯一索引：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值、软删除撞上同一键已删除的行同样算），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
+- 写入撞上唯一索引：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值同样算；部分唯一索引只比较未删除的行），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
 - 声明错误（没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列）在 Provider 建模 / 建表时抛 `InvalidOperationException`。内存实现不建索引、不校验唯一性。
 
 ## 运行时数据源

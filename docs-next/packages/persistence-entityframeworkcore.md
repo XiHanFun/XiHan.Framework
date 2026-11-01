@@ -37,7 +37,7 @@
 
 5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。
 
-1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions()`。
+1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。
 3. 装配特性，在回调里用绑定 `db` 配置连接。
 
@@ -68,12 +68,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     {
         modelBuilder.Entity<Order>();
         // 在登记全部实体、配置完表名之后调用：并发戳设为并发令牌，租户与软删除标记建索引，[EntityIndex] 映射为 HasIndex
-        modelBuilder.ApplyPersistenceConventions();
+        modelBuilder.ApplyPersistenceConventions(Database);
     }
 }
 ```
 
-引用了 `Persistence.Generators` 时，`OnModelCreating` 里换成生成的 `modelBuilder.ApplyGeneratedEntities()`，它登记本程序集的全部实体并接着调用 `ApplyPersistenceConventions()`，见 [Persistence.Generators](./persistence-generators)。
+引用了 `Persistence.Generators` 时，`OnModelCreating` 里换成生成的 `modelBuilder.ApplyGeneratedEntities(Database)`，它登记本程序集的全部实体并接着调用 `ApplyPersistenceConventions(Database)`，见 [Persistence.Generators](./persistence-generators)。
 
 ## 配置
 
@@ -106,7 +106,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- |
 | `EntityFrameworkCorePersistenceFeature<TContext>` | 特性入口；构造参数是配置回调；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.entityframeworkcore.database`） |
 | `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`；`FromConfiguration(configuration)` |
-| `ModelBuilderExtensions.ApplyPersistenceConventions()` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072） |
+| `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081） |
 | `EntityFrameworkCoreUnitOfWork` | 事务型工作单元；`Context` 是本作用域的 `DbContext` |
 | `EntityFrameworkCoreRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 
@@ -140,8 +140,10 @@ public sealed class OrderReports(AppDbContext db)
 - 提交时还有残余变更（绕过仓储直接改了跟踪实体）会先保存再提交，其中的创建时间与租户同样恢复为原值；并发令牌不匹配返回 `PERSISTENCE_CONFLICT_001` 并回滚。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，插入撞上主键约束。`SaveChanges` 在已有事务里会自动建保存点，失败时已回到保存点，事务仍可用。仓储把这次新增的实体移出跟踪，在同一事务里核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚，处理器忽略失败返回成功时，提交回滚并返回同一错误。数据库是 MySQL 的可重复读这类快照隔离时，同一事务看不到对方刚提交的行，异常照常抛出。
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用 `DbContext` 写入之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）；绕过仓储改了跟踪实体而未保存的，提交时以它回滚——只读操作里不要把读出的实体当草稿改。
-- 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
+- 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
 - 依赖 `Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据）。
+- 软删除实体的唯一索引只约束未删除的行（ADR-0081）：`HasFilter` 的条件 Npgsql `"IsDeleted" = false`、SQLite `"IsDeleted" = 0`、SQL Server `[IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`）；Pomelo MySQL、Oracle 等不支持部分唯一索引的 Provider 建模即失败，要唯一约束就把 `IsDeleted` 显式写进列。
+- 启动时在独立作用域里取一次模型，建模错误（索引声明不合法、Provider 不支持部分唯一索引）在启动时失败，不论是否开着 `EnsureCreated`。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `CanConnect`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。

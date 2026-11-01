@@ -20,6 +20,6 @@ public sealed class ConformanceDbContext(DbContextOptions<ConformanceDbContext> 
         modelBuilder.Entity<ConformanceNote>();
         // 整数标识由用例自行指定，不能交给数据库自增，否则插入 Id = 7 会被覆盖
         modelBuilder.Entity<ConformanceItem>(static item => item.Property(static i => i.Id).ValueGeneratedNever());
-        modelBuilder.ApplyPersistenceConventions();
+        modelBuilder.ApplyPersistenceConventions(Database);
     }
 }

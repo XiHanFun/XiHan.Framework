@@ -33,15 +33,27 @@ public sealed class EntityIndexesTests
     }
 
     [Fact]
-    public void Resolve_AppendsDeletionFlagToUniqueIndexesOfSoftDeletableEntities()
+    public void Resolve_MakesUniqueIndexesOfSoftDeletableEntities_PartialOverUndeletedRows()
     {
         var indexes = EntityIndexes.Resolve(typeof(Article), "Article").ToDictionary(static i => i.Name);
 
-        // 唯一索引末尾加删除标记，名字仍按声明的列；普通索引不加
-        Assert.Equal([nameof(Article.TenantId), nameof(Article.Slug), nameof(ISoftDeletable.IsDeleted)], indexes["UX_Article_TeId_Sl"].Properties);
+        // 唯一索引只约束未删除的行：列就是声明的列，删除标记在条件里
+        Assert.Equal([nameof(Article.TenantId), nameof(Article.Slug)], indexes["UX_Article_TeId_Sl"].Properties);
+        Assert.True(indexes["UX_Article_TeId_Sl"].ExcludesDeleted);
+        // 普通索引不加条件
         Assert.Equal([nameof(Article.Slug)], indexes["IX_Article_Sl"].Properties);
-        // 声明里已经写了删除标记的不重复追加
+        Assert.False(indexes["IX_Article_Sl"].ExcludesDeleted);
+        // 声明里显式写了删除标记的，是应用选择的普通唯一索引
         Assert.Equal([nameof(Article.Code), nameof(ISoftDeletable.IsDeleted)], indexes["UX_Article_Co_IsDe"].Properties);
+        Assert.False(indexes["UX_Article_Co_IsDe"].ExcludesDeleted);
+    }
+
+    [Fact]
+    public void Resolve_KeepsUniqueIndexesOfEntitiesWithoutSoftDelete_Unconditional()
+    {
+        var index = EntityIndexes.Resolve(typeof(Order), "Order").Single(static i => i.IsUnique);
+
+        Assert.False(index.ExcludesDeleted);
     }
 
     [Fact]

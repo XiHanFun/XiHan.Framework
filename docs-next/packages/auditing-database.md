@@ -77,7 +77,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             audit.Property(static x => x.ErrorMessage).HasColumnType("text");
         });
         // 索引由实体上的 [EntityIndex] 建出
-        modelBuilder.ApplyPersistenceConventions();
+        modelBuilder.ApplyPersistenceConventions(Database);
     }
 }
 ```
@@ -186,7 +186,7 @@ public static class AuditTestExtensions
 - 写入顺序：同一节点内续页不会越过尚未落库的事件；跨节点只是时钟序，不引入中心计数器。
 - 细节值按类型写成 JSON：`null`、字符串、布尔、整数与浮点、`DateTimeOffset` / `DateTime` / `Guid`（写成字符串）、`JsonElement` / `JsonNode`、嵌套字典与列表，其余按 `ToString()`；读回时每个值是 `JsonElement`。
 - 错误还原：带消息键的错误还原为 `new Error(code, key, details)`，读取方可再按调用方区域翻译；没有键的字面错误按写入时渲染的 `ErrorMessage` 原样还原。`Error.Inner` 不持久化。
-- 表结构由应用管理：`XiHan:Persistence:SqlSugar:InitTables` 只用于开发与测试。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`IX_AuditRecord_Se`（`Sequence`）、`IX_AuditRecord_Ti`（`Timestamp`）、`IX_AuditRecord_TrId`（`TraceId`）、`IX_AuditRecord_TeId_Se`（`(TenantId, Sequence)`）。`Sequence` 不唯一：不同节点的序号只按时钟大致有序、可能相同，唯一索引会让撞号的整批审计写入失败。按主体查询多的应用自己再加 `(PrincipalId, Sequence)`。
+- 表结构由应用管理：`XiHan:Persistence:SqlSugar:InitTables` 只用于开发与测试。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`IX_AuditRecord_Se`（`Sequence`）、`IX_AuditRecord_Ti`（`Timestamp`）、`IX_AuditRecord_TrId`（`TraceId`）、`IX_AuditRecord_TeId_Se`（`(TenantId, Sequence)`）。`Sequence` 不唯一：不同节点的序号只按时钟大致有序、可能相同，唯一索引会让撞号的整批审计写入失败。按主体查询多的应用自己再加 `(PrincipalId, Sequence)`。
 - 查询的可空字符串列只做相等比较；过滤项为空即不参与。
 
 | 错误码 | 何时出现 |

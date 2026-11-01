@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// 软删除实体的唯一索引。
 /// </summary>
 /// <remarks>
-/// 只声明了编码，删除标记由约定加在末尾：未删除的行之间编码唯一，已删除的行不占编码。
+/// 只声明了编码：约定建成只约束未删除行的部分唯一索引，未删除的行之间编码唯一，已删除的行不受约束。
 /// </remarks>
 [SugarTable("soft_deleted_indexed_record")]
 [EntityIndex(nameof(Code), IsUnique = true)]

@@ -49,7 +49,7 @@ builder.AddXiHan(xihan => xihan
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     modelBuilder.Entity<MessageTranslation>();
-    modelBuilder.ApplyPersistenceConventions();   // 索引由实体上的 [EntityIndex] 建出
+    modelBuilder.ApplyPersistenceConventions(Database);   // 索引由实体上的 [EntityIndex] 建出
 }
 ```
 

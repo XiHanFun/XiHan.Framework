@@ -132,10 +132,10 @@ public sealed class EntityGeneratorTests
 
         Assert.Empty(generator);
         Assert.Empty(compile);
-        Assert.Contains("ApplyGeneratedEntities(this global::Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)", generated, StringComparison.Ordinal);
+        Assert.Contains("ApplyGeneratedEntities(this global::Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, global::Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade database)", generated, StringComparison.Ordinal);
         Assert.Contains("modelBuilder.Entity<global::Demo.App.Order>();", generated, StringComparison.Ordinal);
         Assert.Contains("modelBuilder.Entity<global::Demo.App.Note>();", generated, StringComparison.Ordinal);
-        Assert.Contains("return global::XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(modelBuilder);", generated, StringComparison.Ordinal);
+        Assert.Contains("return global::XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(modelBuilder, database);", generated, StringComparison.Ordinal);
     }
 
     [Fact]

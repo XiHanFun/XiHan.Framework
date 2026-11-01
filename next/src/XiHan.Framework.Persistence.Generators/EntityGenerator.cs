@@ -224,9 +224,12 @@ public sealed class EntityGenerator : IIncrementalGenerator
         {
             builder.AppendLine();
             builder.AppendLine("        /// <summary>");
-            builder.AppendLine(hasConventions ? "        /// 把本程序集全部实体登记进 EF Core 模型，并应用持久化约定（并发戳为并发令牌，租户与软删除建索引）。" : "        /// 把本程序集全部实体登记进 EF Core 模型。");
+            builder.AppendLine(hasConventions ? "        /// 把本程序集全部实体登记进 EF Core 模型，并应用持久化约定（并发戳为并发令牌，租户与软删除建索引，软删除实体的唯一索引按 Provider 加条件）。" : "        /// 把本程序集全部实体登记进 EF Core 模型。");
             builder.AppendLine("        /// </summary>");
-            builder.AppendLine("        public static global::Microsoft.EntityFrameworkCore.ModelBuilder ApplyGeneratedEntities(this global::Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)");
+            // 约定要按 DbContext 的 Provider 写软删除实体部分唯一索引的条件，所以引用了约定包时多收一个 Database
+            builder.AppendLine(hasConventions
+                ? "        public static global::Microsoft.EntityFrameworkCore.ModelBuilder ApplyGeneratedEntities(this global::Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, global::Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade database)"
+                : "        public static global::Microsoft.EntityFrameworkCore.ModelBuilder ApplyGeneratedEntities(this global::Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)");
             builder.AppendLine("        {");
             foreach (var model in models)
             {
@@ -234,7 +237,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
             }
 
             builder.AppendLine(hasConventions
-                ? "            return global::XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(modelBuilder);"
+                ? "            return global::XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.ApplyPersistenceConventions(modelBuilder, database);"
                 : "            return modelBuilder;");
             builder.AppendLine("        }");
         }

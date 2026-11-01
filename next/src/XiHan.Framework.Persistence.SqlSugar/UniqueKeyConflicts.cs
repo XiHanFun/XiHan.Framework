@@ -13,7 +13,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 写入失败后核对是否撞上了实体的唯一索引。
 /// </summary>
 /// <remarks>
-/// 唯一索引取自实体信息（<c>[EntityIndex(IsUnique = true)]</c> 经约定转成的，以及实体自己的唯一 <c>[SugarIndex]</c>）。两种冲突：同一次写入里两项的键相同；库里已提交的另一行（标识不同）键相同。只在写入已经失败的路径上运行，不在正常写入前多查一次。
+/// 唯一索引取自实体信息（<c>[EntityIndex(IsUnique = true)]</c> 经约定转成的，以及实体自己的唯一 <c>[SugarIndex]</c>），加上软删除实体的部分唯一索引（不在实体信息里，由 <see cref="PartialUniqueIndexes"/> 推出）。两种冲突：同一次写入里两项的键相同；库里已提交的另一行（标识不同）键相同。部分唯一索引只约束未删除的行：已删除的写入项与已删除的行都不参与比较。只在写入已经失败的路径上运行，不在正常写入前多查一次。
 /// </remarks>
 internal static class UniqueKeyConflicts
 {
@@ -38,24 +38,24 @@ internal static class UniqueKeyConflicts
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
-        var indexes = client.EntityMaintenance.GetEntityInfo<TEntity>().Indexs;
-        if (indexes is null)
+        var entity = client.EntityMaintenance.GetEntityInfo<TEntity>();
+        var indexes = (entity.Indexs ?? []).Where(static i => i.IsUnique).Select(static i => (Name: i.IndexName, Properties: (IReadOnlyCollection<string>)i.IndexFields.Keys, ExcludesDeleted: false)).ToList();
+        // 部分唯一索引不交给 SqlSugar（它的索引写不出条件），不在实体信息里，按声明另行推出
+        indexes.AddRange(PartialUniqueIndexes.Of(typeof(TEntity), entity.DbTableName).Select(static i => (i.Name, (IReadOnlyCollection<string>)i.Properties, ExcludesDeleted: true)));
+        foreach (var index in indexes)
         {
-            return null;
-        }
-
-        foreach (var index in indexes.Where(static i => i.IsUnique))
-        {
-            var properties = index.IndexFields.Keys.Select(static name => typeof(TEntity).GetProperty(name, BindingFlags.Public | BindingFlags.Instance)).OfType<PropertyInfo>().ToList();
+            var properties = index.Properties.Select(static name => typeof(TEntity).GetProperty(name, BindingFlags.Public | BindingFlags.Instance)).OfType<PropertyInfo>().ToList();
             // 列不是公开属性（只按列名声明的 [SugarIndex]）时取不到值，这个索引核对不了
-            if (properties.Count != index.IndexFields.Count)
+            if (properties.Count != index.Properties.Count)
             {
                 continue;
             }
 
-            if (Collides<TEntity, TKey>(written, properties) || await CollidesWithStoredAsync<TEntity, TKey>(fresh, written, properties).ConfigureAwait(false))
+            // 部分唯一索引只约束未删除的行：已删除的写入项不会撞上它
+            var constrained = index.ExcludesDeleted ? [.. written.Where(static e => !IsDeleted(e))] : written;
+            if (Collides<TEntity, TKey>(constrained, properties) || await CollidesWithStoredAsync<TEntity, TKey>(fresh, constrained, properties, index.ExcludesDeleted).ConfigureAwait(false))
             {
-                return index.IndexName;
+                return index.Name;
             }
         }
 
@@ -90,9 +90,9 @@ internal static class UniqueKeyConflicts
     /// 库里是否有标识不同、键相同的已提交行。
     /// </summary>
     /// <remarks>
-    /// 每列按这批写入项的取值做 <c>IN</c> 取回候选行（笛卡尔积的超集），再在内存里逐列比较；含空值的键不比较——PostgreSQL、SQLite、MySQL 的唯一索引不约束含 NULL 的行。字符串按序数比较：大小写不敏感排序规则的库上只差大小写的冲突核对不到，异常原样抛出。
+    /// 每列按这批写入项的取值做 <c>IN</c> 取回候选行（笛卡尔积的超集），再在内存里逐列比较；含空值的键不比较——PostgreSQL、SQLite、MySQL 的唯一索引不约束含 NULL 的行。<paramref name="excludesDeleted"/> 为真（部分唯一索引）时已删除的行不比较。字符串按序数比较：大小写不敏感排序规则的库上只差大小写的冲突核对不到，异常原样抛出。
     /// </remarks>
-    private static async Task<bool> CollidesWithStoredAsync<TEntity, TKey>(ISqlSugarClient fresh, IReadOnlyList<TEntity> written, List<PropertyInfo> properties)
+    private static async Task<bool> CollidesWithStoredAsync<TEntity, TKey>(ISqlSugarClient fresh, IReadOnlyList<TEntity> written, List<PropertyInfo> properties, bool excludesDeleted)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {
@@ -115,7 +115,7 @@ internal static class UniqueKeyConflicts
             }
 
             var rows = await fresh.Queryable<TEntity>().Where(Expression.Lambda<Func<TEntity, bool>>(conditions.Aggregate(Expression.AndAlso), parameter)).ToListAsync().ConfigureAwait(false);
-            if (chunk.Any(entity => rows.Exists(row => !row.Id.Equals(entity.Id) && SameKey(entity, row, properties))))
+            if (chunk.Any(entity => rows.Exists(row => !row.Id.Equals(entity.Id) && !(excludesDeleted && IsDeleted(row)) && SameKey(entity, row, properties))))
             {
                 return true;
             }
@@ -123,6 +123,16 @@ internal static class UniqueKeyConflicts
 
         return false;
     }
+
+    /// <summary>
+    /// 实体是否已软删除。
+    /// </summary>
+    /// <remarks>
+    /// 只对软删除实体调用（部分唯一索引只出现在软删除实体上）。
+    /// </remarks>
+    private static bool IsDeleted<TEntity>(TEntity entity)
+        where TEntity : class
+        => entity is ISoftDeletable { IsDeleted: true };
 
     /// <summary>
     /// 两个实体在这些列上的值是否都相等。

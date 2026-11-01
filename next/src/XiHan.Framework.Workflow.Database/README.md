@@ -13,7 +13,7 @@ builder.AddXiHan(x => x
 
 // EF Core 应用在自己的 DbContext 里登记九个实体，并给 Document 列用长文本类型；索引由实体上的 [EntityIndex] 经协议约定建出
 modelBuilder.Entity<WorkflowInstanceRecord>(static i => i.Property(static x => x.Document).HasColumnType("text"));
-modelBuilder.ApplyPersistenceConventions();
+modelBuilder.ApplyPersistenceConventions(Database);
 ```
 
 ```json
@@ -53,7 +53,7 @@ modelBuilder.ApplyPersistenceConventions();
 - 实例锁：行不存在就插入（别人先插入 → 重试），存在且过期就带并发戳接管（戳冲突 → 重试），存在未过期就等待（50ms 起每次翻倍、封顶 500ms），超过 `LockTimeout` → `WORKFLOW_TIMEOUT_001`。续约失败只记日志；释放只删自己的行，重复释放无害。每一步都是独立事务，别的节点立刻看得见。
 - 轮询领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。
 - 租约行与业务写入不在同一个事务里：业务事务写过之后再写租约行，SQLite 这类只有一个写者的数据库会等到自己的事务结束（忙等超时）。在 SQLite 上要经 `IEntityConnectionSelector` 把 `WorkflowLockRecord` 放到另一个库文件，调用之外的作用域以那个库为根连接（数据库测试的 `SqliteDatabase` 这样做）；PostgreSQL 等行级锁的数据库不需要。
-- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列由 `IMultiTenant` 写入、不为空）与 `UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——名字空间里按名字与版本查找、取最大版本与最新发布版本，每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`，级联子实例）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`，按关联 ID 启动时查重）、`IX_WorkflowInstanceRecord_TeId_EnAt`（保留期清理）、`IX_WorkflowInstanceRecord_TeId_CrAt`（列表倒序分页）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`，信号、受理人、子流程节点）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（到期书签的轮询）；平台表有同样的索引，时间列不带租户前缀（`IX_PlatformWorkflowInstanceRecord_EnAt` 等）；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合（如按定义与状态）由应用按查询习惯自己加。
+- 表结构由应用管理（`InitTables` 只用于开发与测试）：`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）；索引由实体上的 `[EntityIndex]` 声明（ADR-0072），SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列由 `IMultiTenant` 写入、不为空）与 `UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——名字空间里按名字与版本查找、取最大版本与最新发布版本，每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`，级联子实例）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`，按关联 ID 启动时查重）、`IX_WorkflowInstanceRecord_TeId_EnAt`（保留期清理）、`IX_WorkflowInstanceRecord_TeId_CrAt`（列表倒序分页）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`，信号、受理人、子流程节点）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（到期书签的轮询）；平台表有同样的索引，时间列不带租户前缀（`IX_PlatformWorkflowInstanceRecord_EnAt` 等）；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合（如按定义与状态）由应用按查询习惯自己加。
 
 ## 依赖方向
 

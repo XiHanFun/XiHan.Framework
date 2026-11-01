@@ -603,7 +603,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 保存一次更新或删除。
     /// </summary>
     /// <remarks>
-    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。其余保存失败时核对 <paramref name="written"/> 是否撞上了唯一索引（更新把业务键改成别的行已有的值，软删除撞上同一业务键已删除的那一行）：SaveChanges 已回到它自动建的保存点，在同一事务里查（见 <see cref="UniqueKeyConflicts"/>）；撞上就把这些实体移出跟踪（它们的改动没有写进去，之后的保存不再带上），返回唯一键重复并把工作单元标为失败，提交时返回同一错误；没撞上异常原样抛出。
+    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。其余保存失败时核对 <paramref name="written"/> 是否撞上了唯一索引（更新把业务键改成别的行已有的值；软删除只在唯一索引的列里显式写了删除标记时撞上同一业务键已删除的行，部分唯一索引不约束已删除的行）：SaveChanges 已回到它自动建的保存点，在同一事务里查（见 <see cref="UniqueKeyConflicts"/>）；撞上就把这些实体移出跟踪（它们的改动没有写进去，之后的保存不再带上），返回唯一键重复并把工作单元标为失败，提交时返回同一错误；没撞上异常原样抛出。
     /// </remarks>
     private async Task<Result> SaveAsync(IReadOnlyList<TEntity> written, CancellationToken cancellationToken)
     {

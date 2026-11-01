@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// </summary>
 /// <remarks>
 /// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让数据库异常逃出（RFC-0005「索引声明」）。
-/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值、软删除撞上同一键已删除的行；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）。
+/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。软删除实体的唯一索引只约束未删除的行（ADR-0081）：同一键删除两次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）。
 /// </remarks>
 public sealed class SqlSugarUniqueKeyConflictTests
 {
@@ -82,22 +82,77 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     [Fact]
-    public async Task SoftDelete_OfASecondRowWithADeletedTwin_ReportsUniqueKeyConflict_OnSqlite()
+    public async Task SoftDelete_OfTheSameKeyAgainAndAgain_DoesNotConflict_OnSqlite()
     {
         using var database = new SqliteDatabase();
         await using var host = await StartAsync(SqliteDatabase.CreateFeature(), database.Configuration);
-        var first = new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" };
-        var second = new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" };
-        // 删掉第一行之后同一编码可以再建一行
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(first, context.CancellationToken)))).ThrowIfFailure();
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(first, context.CancellationToken)))).ThrowIfFailure();
-        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(second, context.CancellationToken)))).ThrowIfFailure();
+        await DeletesTheSameKeyRepeatedlyAsync(host);
+    }
 
-        // 再删第二行：唯一索引带删除标记，同一编码已有一行已删除
-        var outcome = await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(second, context.CancellationToken)));
+    [Fact]
+    public async Task SoftDelete_OfTheSameKeyAgainAndAgain_DoesNotConflict_OnPostgreSql()
+    {
+        using var database = PostgresTestServer.CreateDatabase();
+        await using var host = await StartAsync(PostgresDatabase.CreateFeature(), database.Configuration);
+        await DeletesTheSameKeyRepeatedlyAsync(host);
+    }
+
+    [Fact]
+    public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnSqlite()
+    {
+        using var database = new SqliteDatabase();
+        await using var host = await StartAsync(SqliteDatabase.CreateFeature(), database.Configuration);
+        await AddsAnUndeletedTwinAsync(host);
+    }
+
+    [Fact]
+    public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnPostgreSql()
+    {
+        using var database = PostgresTestServer.CreateDatabase();
+        await using var host = await StartAsync(PostgresDatabase.CreateFeature(), database.Configuration);
+        await AddsAnUndeletedTwinAsync(host);
+    }
+
+    /// <summary>
+    /// 同一编码建了删、删了建，三轮。
+    /// </summary>
+    /// <remarks>
+    /// 部分唯一索引不约束已删除的行：每次删除都成功，最后库里三行已删除、没有未删除的。
+    /// </remarks>
+    private static async Task DeletesTheSameKeyRepeatedlyAsync(TestHost host)
+    {
+        for (var round = 0; round < 3; round++)
+        {
+            var record = new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" };
+            (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(record, context.CancellationToken)))).ThrowIfFailure();
+            (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(record, context.CancellationToken)))).ThrowIfFailure();
+        }
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var rows = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().Queryable<SoftDeletedIndexedRecord>().ToList();
+        Assert.Equal(3, rows.Count);
+        Assert.All(rows, static row => Assert.True(row.IsDeleted));
+    }
+
+    /// <summary>
+    /// 删掉的行之外，同一编码再建两行未删除的。
+    /// </summary>
+    /// <remarks>
+    /// 第一行未删除的照常写入（已删除的行不占编码）；第二行撞上部分唯一索引，按它的名字报告唯一键重复，调用回滚。
+    /// </remarks>
+    private static async Task AddsAnUndeletedTwinAsync(TestHost host)
+    {
+        var deleted = new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" };
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(deleted, context.CancellationToken)))).ThrowIfFailure();
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).RemoveAsync(deleted, context.CancellationToken)))).ThrowIfFailure();
+        (await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" }, context.CancellationToken)))).ThrowIfFailure();
+
+        var outcome = await host.InvokeAsync(async context => context.SetOutcome(await Soft(context).AddAsync(new SoftDeletedIndexedRecord { Id = Guid.CreateVersion7(), Code = "A" }, context.CancellationToken)));
 
         Assert.Equal(PersistenceErrors.UniqueKeyConflict, outcome.Error?.Code);
         Assert.Equal("UX_soft_deleted_indexed_record_Co", outcome.Error!.Details!["index"]);
+        await using var scope = host.Services.CreateAsyncScope();
+        Assert.Equal(2, await scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().Queryable<SoftDeletedIndexedRecord>().CountAsync());
     }
 
     /// <summary>

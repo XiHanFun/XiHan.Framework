@@ -24,4 +24,13 @@ internal static class SqliteSchema
                 client.Ado.SqlQuery<string>("SELECT name FROM pragma_index_info(@name) ORDER BY seqno", new { name }).ToArray()))
             .ToList();
     }
+
+    /// <summary>
+    /// 索引的建索引语句（<c>sqlite_master.sql</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 部分索引的语句带 <c>WHERE</c>；没有这个索引为 <see langword="null"/>。
+    /// </remarks>
+    public static string? Sql(ISqlSugarClient client, string index)
+        => client.Ado.SqlQuery<string>("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = @index", new { index }).SingleOrDefault();
 }

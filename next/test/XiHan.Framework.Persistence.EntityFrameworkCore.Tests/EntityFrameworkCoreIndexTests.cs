@@ -3,16 +3,21 @@
 
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// <c>[EntityIndex]</c> 到 EF Core 索引的映射（ADR-0072）。
+/// <c>[EntityIndex]</c> 到 EF Core 索引的映射（ADR-0072、ADR-0081）。
 /// </summary>
 /// <remarks>
-/// 经 <c>ApplyPersistenceConventions()</c> 映射为 <c>HasIndex</c>（RFC-0005「索引声明」）。
-/// 模型里的索引名、列与唯一性与 SqlSugar 建出的一致；<c>EnsureCreated</c> 在 SQLite 上建出，唯一索引真实拒绝重复，软删除实体的唯一索引末尾带删除标记。
+/// 经 <c>ApplyPersistenceConventions(Database)</c> 映射为 <c>HasIndex</c>（RFC-0005「索引声明」）。
+/// 模型里的索引名、列与唯一性与 SqlSugar 建出的一致；<c>EnsureCreated</c> 在 SQLite 上建出，唯一索引真实拒绝重复。软删除实体的唯一索引是只约束未删除行的部分唯一索引（<c>HasFilter</c>，条件按 Provider 写方言）：同一编码可以有任意多行已删除；Provider 不支持部分唯一索引时建模失败、特性启动失败。
 /// </remarks>
 public sealed class EntityFrameworkCoreIndexTests : IDisposable
 {
@@ -34,10 +39,12 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
         Assert.Equal(
             [("IX_indexed_row_Ca_At", false, "Category,At"), ("UX_indexed_row_TeId_Co", true, "TenantId,Code")],
             Indexes(context, typeof(IndexedRow)));
-        // 软删除实体：约定已有的删除标记索引照旧，声明的唯一索引末尾带删除标记
+        // 软删除实体：约定已有的删除标记索引照旧，声明的唯一索引只有编码一列、条件是未删除
         Assert.Equal(
-            [("IX_SoftDeletedIndexedRow_IsDeleted", false, nameof(ISoftDeletable.IsDeleted)), ("UX_SoftDeletedIndexedRow_Co", true, "Code,IsDeleted")],
+            [("IX_SoftDeletedIndexedRow_IsDeleted", false, nameof(ISoftDeletable.IsDeleted)), ("UX_SoftDeletedIndexedRow_Co", true, "Code")],
             Indexes(context, typeof(SoftDeletedIndexedRow)));
+        var partial = context.Model.FindEntityType(typeof(SoftDeletedIndexedRow))!.GetIndexes().Single(static i => i.IsUnique);
+        Assert.Equal("\"IsDeleted\" = 0", partial.GetFilter());
     }
 
     [Fact]
@@ -61,7 +68,8 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
 
         await using (var context = Context())
         {
-            // 删掉的行不占编码
+            // 删掉的行不占编码，同一编码可以有任意多行已删除
+            context.Add(new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A", IsDeleted = true });
             context.Add(new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A", IsDeleted = true });
             context.Add(new SoftDeletedIndexedRow { Id = Guid.CreateVersion7(), Code = "A" });
             await context.SaveChangesAsync();
@@ -75,6 +83,73 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
         }
 
         Assert.Equal(["IX_indexed_row_Ca_At", "UX_indexed_row_TeId_Co"], await IndexNamesAsync("indexed_row"));
+    }
+
+    [Fact]
+    public void PartialUniqueIndex_FilterIsWrittenInEachSupportedProvidersDialect()
+    {
+        // Npgsql 与 SQL Server 的 Provider 没有引用：用带关系型约定的模型构建器，按 Provider 名施加约定
+        Assert.Equal("\"IsDeleted\" = false", PartialFilter(ModelBuilderExtensions.NpgsqlProvider, typeof(SoftDeletedIndexedRow)));
+        Assert.Equal("\"IsDeleted\" = 0", PartialFilter(ModelBuilderExtensions.SqliteProvider, typeof(SoftDeletedIndexedRow)));
+        Assert.Equal("[IsDeleted] = 0", PartialFilter(ModelBuilderExtensions.SqlServerProvider, typeof(SoftDeletedIndexedRow)));
+        // SQL Server 的唯一索引把 NULL 当作相等：键里可空的列另加 IS NOT NULL，与它对唯一索引的缺省一致
+        Assert.Equal("[IsDeleted] = 0 AND [Region] IS NOT NULL", PartialFilter(ModelBuilderExtensions.SqlServerProvider, typeof(SoftDeletedRegionalRow)));
+        Assert.Equal("\"IsDeleted\" = false", PartialFilter(ModelBuilderExtensions.NpgsqlProvider, typeof(SoftDeletedRegionalRow)));
+    }
+
+    [Fact]
+    public void PartialUniqueIndex_OnAnUnsupportedProvider_FailsTheModel()
+    {
+        var modelBuilder = new ModelBuilder(SqliteConventionSetBuilder.Build());
+        modelBuilder.Entity<IndexedRow>();
+        modelBuilder.Entity<SoftDeletedIndexedRow>();
+        modelBuilder.Entity<SoftDeletedRegionalRow>();
+
+        var error = Assert.Throws<FrameworkException>(() => ModelBuilderExtensions.Apply(modelBuilder, "Pomelo.EntityFrameworkCore.MySql", relational: true));
+
+        // 一次列出全部要部分唯一索引的实体，不支持就不建模，不退化成普通唯一索引
+        Assert.Equal(PersistenceErrors.NotSupported, error.Code);
+        Assert.Contains("(UX_SoftDeletedIndexedRow_Co)", error.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(SoftDeletedRegionalRow).FullName!, error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(typeof(IndexedRow).FullName + "'", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PartialUniqueIndex_OnANonRelationalProvider_HasNoFilter()
+    {
+        // 非关系型 Provider 本来不建索引：不加条件、不报错
+        var modelBuilder = new ModelBuilder(SqliteConventionSetBuilder.Build());
+        modelBuilder.Entity<SoftDeletedIndexedRow>();
+
+        ModelBuilderExtensions.Apply(modelBuilder, "Microsoft.EntityFrameworkCore.InMemory", relational: false);
+
+        Assert.Null(modelBuilder.Model.FindEntityType(typeof(SoftDeletedIndexedRow))!.GetIndexes().Single(static i => i.IsUnique).GetFilter());
+    }
+
+    [Fact]
+    public async Task Startup_WithAProviderWithoutPartialIndexes_Fails_EvenWithoutEnsureCreated()
+    {
+        // 启动时建一次模型：生产库不开 EnsureCreated 时，建模错误同样在启动时失败，不等第一次请求
+        var error = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
+            static builder => builder.UseFeature(new EntityFrameworkCorePersistenceFeature<UnsupportedProviderDbContext>(static (binding, options) => options.UseSqlite(binding.ValueOrThrow().Value))),
+            [new("XiHan:Bindings:db", _database.ConnectionString)],
+            static services => services.AddRepository<SoftDeletedIndexedRow, Guid>()));
+
+        // 宿主把特性启动失败包成 FeatureStartFailed，不支持的原因在内部异常里
+        var cause = Assert.IsType<FrameworkException>(error.InnerException);
+        Assert.Equal(PersistenceErrors.NotSupported, cause.Code);
+    }
+
+    /// <summary>
+    /// 按 Provider 名施加约定后，一个实体的部分唯一索引的条件。
+    /// </summary>
+    private static string? PartialFilter(string provider, Type entityType)
+    {
+        // 每次新建模型构建器：条件按这一次的 Provider 写出
+        var modelBuilder = new ModelBuilder(SqliteConventionSetBuilder.Build());
+        modelBuilder.Entity(entityType);
+        ModelBuilderExtensions.Apply(modelBuilder, provider, relational: true);
+        return modelBuilder.Model.FindEntityType(entityType)!.GetIndexes().Single(static i => i.IsUnique).GetFilter();
     }
 
     /// <summary>

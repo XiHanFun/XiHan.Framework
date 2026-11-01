@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.Abstractions;
 /// <remarks>
 /// <para>Provider 共用：SqlSugar 与 EF Core 都经它取得索引，名字与列在两边一致。</para>
 /// <para>命名：<c>IX_</c>（唯一为 <c>UX_</c>）+ 表名 + 每列一段缩写，以下划线连接，如 <c>UX_MessageTranslation_Ke_Lo</c>。缩写取属性名每个词的前两个字符（<c>TenantId → TeId</c>、<c>NextFireAt → NeFiAt</c>）；词从首字符、小写或数字之后的大写字母、连续大写里后跟小写的那个大写字母开始，下划线只分词不计入。表名里字母、数字、下划线以外的字符（如架构名的点）换成下划线。全名不超过 <see cref="MaxNameLength"/>（PostgreSQL 的标识符上限；MySQL 64、SQL Server 128 都容得下），超过不截断、直接报错——PostgreSQL 会静默截断超长的名字，下一次建表按全名查不到已有索引，再建就撞名。</para>
-/// <para>软删除：实体实现 <see cref="ISoftDeletable"/> 时，唯一索引末尾自动加上删除标记列 <c>IsDeleted</c>（名字不变，与 BasicApp 的 <c>UX_</c> 写法相同），未删除的行之间唯一，删掉的行不占业务键。代价是同一业务键最多一行已删除：删除、重建、再删除同一个键会撞唯一索引，需要反复重建同一键的实体不要声明唯一，或删除前改掉业务键。</para>
+/// <para>软删除：实体实现 <see cref="ISoftDeletable"/> 时，唯一索引是只约束未删除行的部分唯一索引（<see cref="EntityIndex.ExcludesDeleted"/>）：列就是声明的列，条件 <c>IsDeleted = false</c> 由 Provider 按数据库方言写出；未删除的行之间唯一，已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。声明的列里显式写了 <c>IsDeleted</c> 时不加条件，是普通唯一索引（同一业务键最多一行已删除）——不支持部分索引的数据库上要唯一约束，只能这样显式选择。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库上 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>）。</para>
 /// <para>写入撞上唯一索引：关系型 Provider 在写入失败后核对，按 <see cref="PersistenceErrors.UniqueKeyConflict"/> 报告，工作单元随后只能回滚。</para>
 /// <para>声明错误在 Provider 建模或建表时以 <see cref="InvalidOperationException"/> 报出：没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列。</para>
 /// </remarks>
@@ -58,22 +58,22 @@ public static class EntityIndexes
                 throw new InvalidOperationException($"Index '{name}' of entity '{entityType.FullName}' is longer than {MaxNameLength} characters; shorten the table name or index fewer columns.");
             }
 
-            // 软删除实体的唯一索引末尾加删除标记：已删除的行不再占业务键（名字仍按声明的列推出）
-            List<string> properties = declaration.IsUnique && softDeletable && !declaration.Properties.Contains(nameof(ISoftDeletable.IsDeleted), StringComparer.Ordinal)
-                ? [.. declaration.Properties, nameof(ISoftDeletable.IsDeleted)]
-                : [.. declaration.Properties];
+            // 软删除实体的唯一索引只约束未删除的行：删除标记放进条件而不是列，已删除的行不占业务键，同一键可以反复删除。
+            // 声明里显式写了删除标记的，是应用选择的普通唯一索引（同一键最多一行已删除），不加条件
+            var excludesDeleted = declaration.IsUnique && softDeletable && !declaration.Properties.Contains(nameof(ISoftDeletable.IsDeleted), StringComparer.Ordinal);
+            List<string> properties = [.. declaration.Properties];
             if (!names.Add(name))
             {
                 throw new InvalidOperationException($"Entity '{entityType.FullName}' declares more than one index named '{name}'.");
             }
 
-            // 同一组列只建一个索引：EF Core 按列合并同列的 HasIndex，SqlSugar 却会建两个，两边会不一致
+            // 同一组列只建一个索引：EF Core 按列合并同列的 HasIndex，SqlSugar 却会建两个，两边会不一致（部分唯一索引与同列的普通索引也算同列）
             if (!columnSets.Add(string.Join('\0', properties)))
             {
                 throw new InvalidOperationException($"Entity '{entityType.FullName}' declares more than one index on ({string.Join(", ", properties.Select(static p => $"'{p}'"))}).");
             }
 
-            resolved.Add(new EntityIndex(name, properties, declaration.IsUnique));
+            resolved.Add(new EntityIndex(name, properties, declaration.IsUnique, excludesDeleted));
         }
 
         resolved.Sort(static (left, right) => string.CompareOrdinal(left.Name, right.Name));
