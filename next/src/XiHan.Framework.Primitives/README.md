@@ -18,6 +18,7 @@
 | `LifecycleState` / `LifecycleStateExtensions` | 九态与合法迁移表 |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
 | `FrameworkException` / `FrameworkInfo` | 带错误码的异常基类；框架身份（版本由构建期常量提供，不经反射） |
+| `Redaction` | 机密遮蔽：`Mask`（`***`）与 `Redact(value)`（null 原样返回，其余一律 `***`）；选项与携带凭据的记录在 `ToString()` 里以它打印口令、密钥、令牌与整串连接串（RFC-0014） |
 | `Manifests.*` | `xihan.manifest.json` 的对象模型与格式校验：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`CapabilityId`、`ManifestId` |
 
 不包含：任何实现、基类、宿主、依赖注入、反射、序列化代码。线上 JSON 编码由协议适配器与生成器实现。语言文件只是嵌入资源，由 `Localization.InMemory` 代为装载。

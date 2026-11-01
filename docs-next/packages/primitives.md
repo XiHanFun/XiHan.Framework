@@ -44,6 +44,7 @@
 | `Stability` / `ApiLevelAttribute` | 稳定性分级 |
 | `FrameworkException` | 带错误码的异常基类，`ToError()` 转成 `Error` |
 | `FrameworkInfo` | 框架名称、版本、规范版本、仓库与文档地址；版本由构建期常量提供 |
+| `Redaction` | 机密遮蔽：`Mask`（`***`）与 `Redact(value)`（null 原样返回，其余一律 `***`）；选项与携带凭据的记录在 `ToString()` 里以它打印凭据 |
 | `MessageTemplate` / `MessageArguments` / `MessageKeyExtensions` | 消息键文法、`{name}` / `{0}` 模板格式化、参数字典、`key.L()` |
 | `IMessageResolver` / `MessageScope` | 消息解析器契约（`TryResolve` 解析，`Negotiate` 把调用方区域协商成启用区域，缺省原样返回）与环境作用域 |
 | `Manifests.*` | 清单对象模型：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`ManifestKind`、`ManifestRole`、`CapabilityId`、`ManifestId` |

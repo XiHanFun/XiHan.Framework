@@ -326,8 +326,28 @@ builder.Configuration.AddXiHanSecrets(
     });
 ```
 
+### 选项打印时遮蔽凭据
+
+框架的选项与携带凭据的记录在 `ToString()` 里把凭据打印成 `***`（`Redaction.Mask`），值为 null 时打印为空，看得出有没有配置、看不到值；用户名、访问密钥 ID、端点与令牌文件路径照常打印，排查连接问题要用到它们。连接串整串遮蔽，与持久化驱动消息的脱敏范围一致（只遮整串连接串与口令类的值）。字典与列表照记录的缺省只打印类型名，不展开内容。
+
+| 记录 | 遮蔽的成员 |
+| --- | --- |
+| `RedisCachingOptions` | `Configuration`（连接字符串）、`Password` |
+| `RabbitMQMessagingOptions` | `Configuration`（AMQP URI）、`Password` |
+| `NacosOptions` | `Password` |
+| `S3ObjectStorageOptions` | `SecretKey`（`AccessKey` 是密钥 ID，照常打印） |
+| `AIProviderOptions` | `ApiKey` |
+| `KubernetesSchedulingOptions` | `Token` |
+| `JwtOptions` | `Secret` |
+| `HostedBlobUrlOptions` | `Secret` |
+| `PrincipalRecord`（`Security.InMemory`） | `ApiKey` |
+| `TenantShard` | `ConnectionString` |
+| `BindingValue` | `Value`（绑定的主值） |
+
+应用自己的选项若是记录且带凭据，照样手写 `PrintMembers` 并用 `Redaction.Redact`，参考上表各类型的写法。
+
 ::: warning 进入 IConfiguration 的密钥是明文
-遮蔽只作用于 `SecretValue` 对象。映射进配置之后，`configuration["XiHan:Bindings:db:value"]` 返回的是原始字符串；不要把整个配置节序列化进日志或诊断端点。
+遮蔽只作用于 `SecretValue` 对象与上表记录的 `ToString()`。映射进配置之后，`configuration["XiHan:Bindings:db:value"]` 返回的是原始字符串；不要把整个配置节序列化进日志或诊断端点。
 :::
 
 ## 失败与错误码

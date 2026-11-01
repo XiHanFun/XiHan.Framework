@@ -106,4 +106,21 @@ public sealed record JwtOptions
 
         return options;
     }
+
+    /// <summary>
+    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
+    /// </summary>
+    /// <remarks>
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，对称签名密钥不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// </remarks>
+    private bool PrintMembers(StringBuilder builder)
+    {
+        // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
+        builder.Append("Secret = ").Append(Redaction.Redact(Secret))
+            .Append(", Issuer = ").Append(Issuer)
+            .Append(", Audience = ").Append(Audience)
+            .Append(", ClockSkew = ").Append(ClockSkew)
+            .Append(", NameClaim = ").Append(NameClaim);
+        return true;
+    }
 }

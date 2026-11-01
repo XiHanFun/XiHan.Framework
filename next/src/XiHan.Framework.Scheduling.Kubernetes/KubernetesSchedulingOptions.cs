@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
@@ -207,4 +208,23 @@ public sealed partial record KubernetesSchedulingOptions
     /// </summary>
     [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")]
     private static partial Regex DnsLabel();
+
+    /// <summary>
+    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
+    /// </summary>
+    /// <remarks>
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，服务账号令牌（令牌文件路径照常打印）不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// </remarks>
+    private bool PrintMembers(StringBuilder builder)
+    {
+        // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
+        builder.Append("Lease = ").Append(Lease)
+            .Append(", Namespace = ").Append(Namespace)
+            .Append(", Holder = ").Append(Holder)
+            .Append(", ApiServer = ").Append(ApiServer)
+            .Append(", Token = ").Append(Redaction.Redact(Token))
+            .Append(", TokenPath = ").Append(TokenPath)
+            .Append(", CertificateAuthorityPath = ").Append(CertificateAuthorityPath);
+        return true;
+    }
 }

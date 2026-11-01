@@ -7,7 +7,7 @@ namespace XiHan.Framework.Primitives.Tests;
 /// 框架级原语的行为。
 /// </summary>
 /// <remarks>
-/// <see cref="FrameworkException"/>、<see cref="FrameworkInfo"/>、<see cref="ApiLevelAttribute"/> 与管道阶段名互转。
+/// <see cref="FrameworkException"/>、<see cref="FrameworkInfo"/>、<see cref="ApiLevelAttribute"/>、<see cref="Redaction"/> 与管道阶段名互转。
 /// </remarks>
 public sealed class FrameworkTests
 {
@@ -22,6 +22,16 @@ public sealed class FrameworkTests
         Assert.Equal("ORDERS_UNEXPECTED_001", error.Code);
         Assert.Equal("PERSISTENCE_UNAVAILABLE_001", error.Inner!.Code);
         Assert.Throws<ArgumentException>(() => new FrameworkException("bad", "message"));
+    }
+
+    [Fact]
+    public void Redaction_MasksEveryValue_ButKeepsNull()
+    {
+        // null 表示没有配置，记录照常打印为空；任何值（含空串）都只露出遮蔽文本，长度与内容都不透露
+        Assert.Equal("***", Redaction.Mask);
+        Assert.Null(Redaction.Redact(null));
+        Assert.Equal(Redaction.Mask, Redaction.Redact(string.Empty));
+        Assert.Equal(Redaction.Mask, Redaction.Redact("p@ssw0rd"));
     }
 
     [Fact]

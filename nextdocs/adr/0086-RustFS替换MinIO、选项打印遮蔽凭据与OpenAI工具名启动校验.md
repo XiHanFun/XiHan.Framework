@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/packaging/app-manifest.md`、`spec/rfcs/0016-packaging.md`、`spec/rfcs/0012-objectstorage.md` 随之修订；修订 ADR-0082 第二节）。
+已采纳（`spec/packaging/app-manifest.md`、`spec/rfcs/0016-packaging.md`、`spec/rfcs/0012-objectstorage.md`、`spec/rfcs/0014-configuration.md`、`spec/rfcs/0001-primitives.md` 随之修订；修订 ADR-0082 第二节）。
 
 ## 日期
 
@@ -58,3 +58,31 @@ RustFS 与 Versity 的凭据都确实生效：用错的密钥跑同一套用例�
 - 实测：上述 39 例对独立容器、挂命名卷的容器、`xihan pack` 生成的 Compose 服务（`docker compose up --wait` 进入 healthy，另以 override 文件映射端口）都是 39 / 39；跑完已删除全部容器与卷。
 
 ADR-0082 第二节「`xihan pack` 给 MinIO 注入 `accessKey` / `secretKey`」中的依赖服务由本节改为 RustFS，属性名与取值不变。
+
+## 选项与携带凭据的记录打印时遮蔽凭据
+
+### 背景
+
+选项都是 `sealed record`，编译器生成的 `ToString()` 列出全部公开属性：`RedisCachingOptions`、`RabbitMQMessagingOptions`、`NacosOptions` 的 `Password`，`S3ObjectStorageOptions` 的 `SecretKey`，`JwtOptions` 的签名密钥，Redis 连接字符串与 AMQP URI 里的口令，都会随 `$"{options}"`、调试器、结构化日志的对象展开原样输出。框架代码没有记录选项对象，但应用与排查时打印选项是常见做法，第三批只给新加的错误消息避开了凭据（ADR-0082 第二节记为待定）。持久化已有 `ConnectionStrings.Redact`（整串连接串与口令类键的值换成 `***`，ADR-0078 定的范围，本批维持），配置有 `SecretValue.ToString()` 固定返回 `***`。
+
+### 决策
+
+- 原语层新增 `Redaction`：`Mask = "***"`（与 `ConnectionStrings.Mask`、`SecretValue.Redacted` 同一文本），`Redact(string?)` 对 `null` 原样返回、其余（含空串）一律 `Mask`。
+- 带凭据的记录手写 `private bool PrintMembers(StringBuilder)`：凭据成员经 `Redaction` 打印，其余成员的名字、顺序与格式同编译器生成的写法，字典与列表照缺省只打印类型名。适用的 11 个记录与遮蔽的成员：`RedisCachingOptions`（`Configuration`、`Password`）、`RabbitMQMessagingOptions`（`Configuration`、`Password`）、`NacosOptions`（`Password`）、`S3ObjectStorageOptions`（`SecretKey`）、`AIProviderOptions`（`ApiKey`）、`KubernetesSchedulingOptions`（`Token`）、`JwtOptions`（`Secret`）、`HostedBlobUrlOptions`（`Secret`）、`Security.InMemory` 的 `PrincipalRecord`（`ApiKey`）、`TenantShard`（`ConnectionString`）、内核的 `BindingValue`（主值 `Value`）。
+- 遮蔽范围与 ADR-0078 的连接串脱敏一致：只遮整串连接串与口令类的值。用户名（`User`、`UserName`、`Username`）、S3 的访问密钥 ID `AccessKey`、端点、令牌文件路径 `TokenPath`、分页游标 `ContinuationToken` 照常打印。
+- 防回归：架构测试 `CredentialRedactionTests` 反射全部正式包的公开记录（有 `PrintMembers` 的类型），凡属性名是凭据词（以 `Password`、`Passphrase`、`Secret`、`SecretKey`、`ApiKey`、`PrivateKey`、`ConnectionString`、`Credential(s)` 结尾，或就是 `Token` / `AccessToken` / `RefreshToken` / `BearerToken` / `SessionToken`）或登记为连接串字段（Redis 与 RabbitMQ 的 `Configuration`、`BindingValue.Value`），就跳过构造与校验把哨兵值写进后备字段，断言 `ToString()` 不含哨兵、凭据打印为 `***`、每个公开属性都仍出现。
+
+### 理由
+
+- 手写 `PrintMembers` 而不是改属性类型（如包成 `SecretValue`）：属性是公开契约，换类型会让每个读选项的地方跟着改，而泄漏只发生在打印这一处；`PrintMembers` 是 C# 记录留给定制打印的正式扩展点，`ToString()`、`with`、相等比较都不受影响。
+- 共用 `Redaction` 而不是各包写 `"***"`：遮蔽文本全框架一处定义，与持久化、配置已有的两处同值；放原语层是因为带凭据的记录分布在内核、抽象包与实现包，只有原语层是它们共同的依赖，且它零行为、零反射。
+- `null` 打印为空而不是 `***`：看得出有没有配置是排查时最常要的信息，`null` 本身不泄露任何东西；空串也遮，避免透露“配了一个空口令”。
+- 访问密钥 ID 不遮：它与用户名同类，AWS 签名里随每个请求明文发送、出现在服务端访问日志里；遮掉反而让排查“用了哪把密钥”变难。连接串整串遮而不是只遮其中的口令：Redis 配置串与 AMQP URI 没有统一的转义规则，局部替换容易漏，与 ADR-0078 的范围一致。
+- 架构测试按名字找凭据，再加登记的连接串字段：名字是最稳定的信号；手写的 `PrintMembers` 最大的风险是以后加属性时漏打，测试同时核对每个公开属性都在。字典与列表不在检查之列，因为记录缺省只打印类型名，不会展开内容（Kafka `Properties` 里的 `sasl.password` 由此不会出现）。
+
+### 影响
+
+- 行为变化：上述记录的 `ToString()` 不再含凭据明文，以 `***` 代替；其余输出不变。依赖 `ToString()` 文本做断言或比较的代码要更新（框架内没有）。
+- 公开 API（Unshipped）：新增 `XiHan.Framework.Primitives.Redaction`（`Mask`、`Redact`）。各记录的 `PrintMembers` 是私有成员，不进 PublicAPI。
+- 新增带凭据的公开记录时必须照此手写 `PrintMembers`，否则架构测试失败；应用自己的选项可以照同样的写法使用 `Redaction`。
+- 没有新的错误码、消息键或配置键。

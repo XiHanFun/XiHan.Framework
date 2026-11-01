@@ -199,6 +199,7 @@ XiHan.Framework.Primitives.PipelineStage.Tenant = 4 -> XiHan.Framework.Primitive
 XiHan.Framework.Primitives.PipelineStage.Transaction = 8 -> XiHan.Framework.Primitives.PipelineStage
 XiHan.Framework.Primitives.PipelineStage.Validate = 6 -> XiHan.Framework.Primitives.PipelineStage
 XiHan.Framework.Primitives.PipelineStageExtensions
+XiHan.Framework.Primitives.Redaction
 XiHan.Framework.Primitives.Result
 XiHan.Framework.Primitives.Result.Bind(System.Func<XiHan.Framework.Primitives.Result>! next) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Primitives.Result.Equals(XiHan.Framework.Primitives.Result other) -> bool
@@ -251,6 +252,7 @@ const XiHan.Framework.Primitives.Manifests.ManifestMessages.IsolationNotAllowed 
 const XiHan.Framework.Primitives.Manifests.ManifestMessages.IsolationRequired = "primitives.manifest.isolation_required" -> string!
 const XiHan.Framework.Primitives.MessageTemplate.MaxKeyLength = 128 -> int
 const XiHan.Framework.Primitives.OperationId.MaxLength = 128 -> int
+const XiHan.Framework.Primitives.Redaction.Mask = "***" -> string!
 const XiHan.Framework.Primitives.ResultMessages.Uninitialized = "primitives.result.uninitialized" -> string!
 override XiHan.Framework.Primitives.Error.Equals(object? obj) -> bool
 override XiHan.Framework.Primitives.Error.GetHashCode() -> int
@@ -361,6 +363,7 @@ static XiHan.Framework.Primitives.OperationId.VerbOf(string! id) -> string!
 static XiHan.Framework.Primitives.PipelineStageExtensions.All.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.PipelineStage>!
 static XiHan.Framework.Primitives.PipelineStageExtensions.ToManifestName(this XiHan.Framework.Primitives.PipelineStage stage) -> string!
 static XiHan.Framework.Primitives.PipelineStageExtensions.TryParse(string? name, out XiHan.Framework.Primitives.PipelineStage stage) -> bool
+static XiHan.Framework.Primitives.Redaction.Redact(string? value) -> string?
 static XiHan.Framework.Primitives.Result.Failure(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Primitives.Result
 static XiHan.Framework.Primitives.Result.Failure<T>(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Primitives.Result<T>
 static XiHan.Framework.Primitives.Result.Success() -> XiHan.Framework.Primitives.Result

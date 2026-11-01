@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -147,4 +148,23 @@ public sealed record RedisCachingOptions
     /// </remarks>
     private static string? BoundText(Maybe<BindingValue> binding, string key)
         => binding.TryGetValue(out var bound) && bound.Property(key).TryGetValue(out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+
+    /// <summary>
+    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
+    /// </summary>
+    /// <remarks>
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，连接字符串（可能含 <c>password=</c>）与口令不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// </remarks>
+    private bool PrintMembers(StringBuilder builder)
+    {
+        // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
+        builder.Append("Configuration = ").Append(Redaction.Redact(Configuration))
+            .Append(", User = ").Append(User)
+            .Append(", Password = ").Append(Redaction.Redact(Password))
+            .Append(", KeyPrefix = ").Append(KeyPrefix)
+            .Append(", PublishChanges = ").Append(PublishChanges)
+            .Append(", DefaultTimeToLive = ").Append(DefaultTimeToLive)
+            .Append(", HealthProbeInterval = ").Append(HealthProbeInterval);
+        return true;
+    }
 }
