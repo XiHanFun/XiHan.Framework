@@ -1411,6 +1411,12 @@
             "Structured"
           ],
           "summary": "出站 Webhook 的内容模式，不区分大小写；Batch 只用于入站，配置它会抛异常"
+        },
+        {
+          "key": "PropagateTraceContext",
+          "type": "boolean",
+          "default": "false",
+          "summary": "出站 Webhook 是否在 HTTP 头里写追踪上下文（traceparent、tracestate、baggage）；缺省不写，只作用于 Webhook 的命名客户端"
         }
       ]
     },

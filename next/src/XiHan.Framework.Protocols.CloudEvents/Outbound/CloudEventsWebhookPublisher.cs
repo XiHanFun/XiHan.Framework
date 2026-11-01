@@ -21,7 +21,7 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
     /// 使用的命名 HttpClient。
     /// </summary>
     /// <remarks>
-    /// 应用可按此名配置超时、重试与基地址。
+    /// 应用可按此名配置超时、重试与基地址。主处理器缺省是不写追踪上下文头的 <see cref="SocketsHttpHandler"/>（<see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）；调连接参数用 <c>UseSocketsHttpHandler</c> 配置同一个处理器，整个替换主处理器则由替换后的处理器决定是否传播。
     /// </remarks>
     public const string HttpClientName = "xihan.protocols.cloudevents";
 

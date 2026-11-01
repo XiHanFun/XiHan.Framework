@@ -14,6 +14,8 @@ XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.get -> 
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.init -> void
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.PropagateTraceContext.get -> bool
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.PropagateTraceContext.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.TopicFor(string! type) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Topics.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Topics.init -> void

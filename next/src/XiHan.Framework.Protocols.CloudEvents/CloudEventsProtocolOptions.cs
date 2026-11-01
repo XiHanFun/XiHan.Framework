@@ -12,7 +12,7 @@ namespace XiHan.Framework.Protocols.CloudEvents;
 /// CloudEvents 协议适配器选项。
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），<c>Topics:&lt;事件类型&gt;</c> = 主题，<c>Webhooks:&lt;主题&gt;</c> = 出站 URL。
+/// 从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），<c>Topics:&lt;事件类型&gt;</c> = 主题，<c>Webhooks:&lt;主题&gt;</c> = 出站 URL，<c>PropagateTraceContext</c>（<c>true</c> / <c>false</c>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record CloudEventsProtocolOptions
@@ -49,6 +49,14 @@ public sealed record CloudEventsProtocolOptions
             field = value;
         }
     } = CloudEventsContentMode.Binary;
+
+    /// <summary>
+    /// 出站 Webhook 是否在 HTTP 头里传播追踪上下文。
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see langword="false"/>：Webhook 的命名客户端不写 <c>traceparent</c>、<c>tracestate</c>、<c>baggage</c> 头——接收方是第三方，内部的追踪 ID 与 Baggage 不外推，与信封不补内部扩展同理。为 <see langword="true"/> 时按 .NET 的全局传播器写。只作用于 Webhook 的命名客户端，不改进程全局的传播。
+    /// </remarks>
+    public bool PropagateTraceContext { get; init; }
 
     /// <summary>
     /// 事件类型 → 主题。
@@ -97,7 +105,7 @@ public sealed record CloudEventsProtocolOptions
     /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// 枚举值不合法时抛出 <see cref="ArgumentException"/>。
+    /// 枚举值或布尔值不合法时抛出 <see cref="ArgumentException"/>。
     /// </remarks>
     public static CloudEventsProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -125,6 +133,7 @@ public sealed record CloudEventsProtocolOptions
         {
             Inbound = ParseEnum<CloudEventsInboundMode>(section["Inbound"], "Inbound"),
             Outbound = ParseEnum<CloudEventsContentMode>(section["Outbound"], "Outbound"),
+            PropagateTraceContext = ParseBoolean(section["PropagateTraceContext"], "PropagateTraceContext"),
             Topics = topics,
             Webhooks = webhooks,
         };
@@ -142,6 +151,24 @@ public sealed record CloudEventsProtocolOptions
         }
 
         return TopicName.IsValid(type) ? type : default(Maybe<string>);
+    }
+
+    /// <summary>
+    /// 读布尔配置值。
+    /// </summary>
+    /// <remarks>
+    /// 缺失为 <see langword="false"/>，不是 <c>true</c> / <c>false</c>（不区分大小写）时抛出。
+    /// </remarks>
+    private static bool ParseBoolean(string? text, string key)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        return bool.TryParse(text, out var value)
+            ? value
+            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be 'true' or 'false', but the value is '{text}'.", key);
     }
 
     /// <summary>

@@ -10,7 +10,7 @@ app.MapXiHanCloudEvents();   // POST /events：binary / structured / batch 事�
 ```
 
 ```json
-{ "XiHan": { "Protocols": { "CloudEvents": { "Topics": { "orders.placed": "orders" }, "Webhooks": { "orders": "https://hooks.example.com/orders" } } } } }
+{ "XiHan": { "Protocols": { "CloudEvents": { "Topics": { "orders.placed": "orders" }, "Webhooks": { "orders": "https://hooks.example.com/orders" }, "PropagateTraceContext": false } } } }
 ```
 
 ## 规则
@@ -20,7 +20,8 @@ app.MapXiHanCloudEvents();   // POST /events：binary / structured / batch 事�
 - `Inbound = Dispatch`（默认）：在请求内经内核管道派发给主题的处理器（`MessageDispatcher`：新作用域，租户 / 关联 / 追踪从扩展属性进入上下文），处理器的结果就是响应，失败按错误 KIND 写 Problem Details，发送方据此重试；本实例里竞争订阅与广播订阅（RFC-0009「订阅方式」）各一次投递、先竞争后广播，派发只发生在接收请求的实例，要让广播订阅到达每个实例用 `Publish`；两种方式都没有处理器 → 404 `PROTOCOLS_NOTFOUND_003`。`Inbound = Publish`：发布到消息代理后立即 202，重试与死信由代理负责。
 - batch：先把每个事件的类型解析成主题，任一事件没有映射整批 400、不处理任何事件；派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应；已处理的事件不回滚，发送方重试整批时处理器按 `id` + `source` 去重。
 - 出站：`CloudEventsWebhookPublisher`（实现 `IMessagePublisher`，按具体类型注入，不替换代理的发布者）把信封原样 POST 到 `Webhooks:<主题>`，`Outbound` 为 `Binary`（默认）或 `Structured`；批量发布多条时用 batch 内容模式（`application/cloudevents-batch+json`）一次 POST，接收方须支持该模式，一个响应对整批生效；没有配置 → NOTFOUND，非 2xx → `PROTOCOLS_UNAVAILABLE_001`，连不上 → `PROTOCOLS_UNAVAILABLE_002`。命名 HttpClient `xihan.protocols.cloudevents` 可配置超时与重试。
-- 出站不外推内部标识（已定，ADR-0074）：Webhook 发布者不像内部发布者那样从当前调用补扩展，`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加到信封上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份并让第三方依赖内部 ID；追踪链是否跨出组织边界由调用方决定。要给接收方的扩展由调用方显式写进信封。启用了追踪时，.NET 的 HttpClient 自己会在 HTTP 头里按 W3C 传播当前 Activity（`traceparent` 头，不是信封扩展）；不想把追踪 ID 发给第三方，在命名客户端上关掉：`AddHttpClient("xihan.protocols.cloudevents").ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { ActivityHeadersPropagator = null })`。
+- 出站不外推内部标识（已定，ADR-0074）：Webhook 发布者不像内部发布者那样从当前调用补扩展，`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加到信封上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份并让第三方依赖内部 ID；追踪链是否跨出组织边界由调用方决定。要给接收方的扩展由调用方显式写进信封。
+- HTTP 追踪头缺省不传播（已定，ADR-0083）：启用了追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），同样会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端 `xihan.protocols.cloudevents` 的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`XiHan:Protocols:CloudEvents:PropagateTraceContext` = `true` 显式打开，按 .NET 的全局传播器写；只影响这个客户端，不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留）；用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时，由替换后的处理器决定是否传播。
 - 入站端点经过 `UseXiHan()`：请求凭据在外层认证，可用端点约定（如 `RequireXiHanAuthentication()`）限制调用方。
 
 ## 依赖方向

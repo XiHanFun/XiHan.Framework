@@ -21,7 +21,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。
 
-出站：`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>`，模式为 `Binary`（缺省）或 `Structured`，批量时用 batch 内容模式一次 POST。它只按具体类型登记，不替换消息代理的发布者。信封按原样发出：它不像 `DirectPublisher`、`OutboxPublisher` 那样从当前调用补齐 `traceparent`、租户、主体、关联与区域扩展，租户 ID、主体 ID 等内部标识不会外推给接收方。这是定下的规则（ADR-0074）：接收方是第三方，内部标识推出去会暴露内部结构与身份、让第三方依赖内部 ID，追踪链是否跨出组织边界也由调用方决定；要让接收方拿到的扩展由调用方显式写进信封。HTTP 层的 W3C `traceparent` 头由 .NET HttpClient 按当前 Activity 传播（启用追踪时），可在命名客户端上以 `SocketsHttpHandler.ActivityHeadersPropagator = null` 关掉。
+出站：`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>`，模式为 `Binary`（缺省）或 `Structured`，批量时用 batch 内容模式一次 POST。它只按具体类型登记，不替换消息代理的发布者。信封按原样发出：它不像 `DirectPublisher`、`OutboxPublisher` 那样从当前调用补齐 `traceparent`、租户、主体、关联与区域扩展，租户 ID、主体 ID 等内部标识不会外推给接收方。这是定下的规则（ADR-0074）：接收方是第三方，内部标识推出去会暴露内部结构与身份、让第三方依赖内部 ID，追踪链是否跨出组织边界也由调用方决定；要让接收方拿到的扩展由调用方显式写进信封。HTTP 层同理（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（与信封扩展无关），Webhook 的命名客户端 `xihan.protocols.cloudevents` 缺省不写这些头；要把追踪链接到接收方，设 `XiHan:Protocols:CloudEvents:PropagateTraceContext` 为 `true`，按 .NET 的全局传播器写。这只作用于 Webhook 的命名客户端（主处理器 `SocketsHttpHandler` 的 `ActivityHeadersPropagator`），不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器，缺省保留；整个替换主处理器（`ConfigurePrimaryHttpMessageHandler`）则由替换后的处理器决定是否传播。
 
 ## 何时使用
 
@@ -57,6 +57,7 @@ app.Run();
 | --- | --- | --- | --- |
 | `XiHan:Protocols:CloudEvents:Inbound` | `Dispatch` / `Publish` | `Dispatch` | 入站事件派发给处理器，或发布到消息代理；不区分大小写 |
 | `XiHan:Protocols:CloudEvents:Outbound` | `Binary` / `Structured` | `Binary` | 出站单条事件的内容模式；不接受 `Batch` |
+| `XiHan:Protocols:CloudEvents:PropagateTraceContext` | bool | `false` | 出站 Webhook 是否在 HTTP 头里写追踪上下文（`traceparent`、`tracestate`、`baggage`）；只作用于 Webhook 的命名客户端 |
 | `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法 |
 | `XiHan:Protocols:CloudEvents:Webhooks:<主题>` | string | — | 出站 Webhook 地址，绝对的 `http` / `https` 地址 |
 

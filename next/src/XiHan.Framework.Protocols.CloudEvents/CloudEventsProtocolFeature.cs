@@ -16,7 +16,7 @@ namespace XiHan.Framework.Protocols.CloudEvents;
 /// CloudEvents 协议适配器的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；注册选项、消息目录、出站 Webhook 的 HttpClient 与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射。
+/// 提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；注册选项、消息目录、出站 Webhook 的 HttpClient（缺省不写追踪上下文头，见 <see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CloudEventsProtocolFeature : IFeature
@@ -46,8 +46,17 @@ public sealed class CloudEventsProtocolFeature : IFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(CloudEventsMessages.Catalog);
-        context.Services.AddSingleton(CloudEventsProtocolOptions.FromConfiguration(context.Configuration));
-        context.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName);
+        var options = CloudEventsProtocolOptions.FromConfiguration(context.Configuration);
+        context.Services.AddSingleton(options);
+        var client = context.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName);
+        if (!options.PropagateTraceContext)
+        {
+            // Webhook 的接收方是第三方：启用追踪时 HttpClient 会按当前 Activity 写 traceparent / tracestate / baggage 头，把内部追踪 ID 与 Baggage 推出去，
+            // 与信封不补内部扩展同理缺省关掉。只改这个命名客户端主处理器的传播器，不动进程全局的 DistributedContextPropagator.Current；
+            // 主处理器换成 SocketsHttpHandler 才有这个开关，应用之后用 UseSocketsHttpHandler 配置的是同一个实例，设置保留
+            client.UseSocketsHttpHandler(static (handler, _) => handler.ActivityHeadersPropagator = null);
+        }
+
         context.Services.AddSingleton<CloudEventsWebhookPublisher>();
     }
 }
