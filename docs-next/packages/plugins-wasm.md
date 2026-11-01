@@ -15,7 +15,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 ## 概述
 
-特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
+特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（ADR-0080），消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走导入 `xihan.log`。
 
@@ -172,7 +172,8 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |
 | 中间件 before 短路却没给失败结果 | 按 `KERNEL_VALIDATION_001` 处理 |
 | 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | `PLUGINS_VALIDATION_005` |
-| 声明的操作与已有操作重名，或 `permission` 不是宿主已登记的权限码 | 配置阶段发现的启动失败（`KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`）；运行期 `LoadAsync` 返回失败，一个代理操作都不留下 |
+| 清单声明的权限码与已登记的重复（宿主特性定义的或另一个插件声明的）、声明的操作与已有操作重名，或 `permission` 既不是宿主已登记的、也不在本插件清单里 | 配置阶段发现的启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`）；运行期 `LoadAsync` 返回失败，一个权限码与代理操作都不留下 |
+| 清单 `contributes.permissions` 不合权限码文法或有重复 | 清单读不出，按发现时被拒（`PLUGINS_VALIDATION_001`） |
 | 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 

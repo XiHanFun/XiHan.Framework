@@ -5,7 +5,7 @@
 ## 内容
 
 - 公开：`PluginEndpoint`（本机端点与握手行）、`PluginProtocol`（版本协商、元数据键、环境变量名）、`PluginErrors` / `PluginMessages`（`PLUGINS_*` 错误码与消息键，文案 10 种区域各一个文件）。
-- internal（经 `InternalsVisibleTo` 给上述三个包）：从 `spec/plugin/plugin.proto` 生成的消息与 gRPC 桩、`HandshakeValidator`（握手响应与清单核对）、`PluginMetadata`（上下文 ↔ `InvocationMetadata`）、`PluginErrorMapper`（`Error` / `Result` ↔ 协议错误与状态，gRPC 状态映射）、`PluginEnvelopeMapper`（消息信封）、`PluginJson`（错误细节与配置节 JSON）、`ProxyOperationDescriptor` + `IPluginInvoker`（代理操作）。
+- internal（经 `InternalsVisibleTo` 给上述三个包）：从 `spec/plugin/plugin.proto` 生成的消息与 gRPC 桩、`HandshakeValidator`（握手响应与清单核对）、`PluginMetadata`（上下文 ↔ `InvocationMetadata`）、`PluginErrorMapper`（`Error` / `Result` ↔ 协议错误与状态，gRPC 状态映射）、`PluginEnvelopeMapper`（消息信封）、`PluginJson`（错误细节与配置节 JSON）、`ProxyOperationDescriptor` + `IPluginInvoker`（代理操作）、`PluginContributions`（把清单 `contributes.permissions` 声明的权限码与代理操作经 `OperationRegistry.AddRange(operations, permissions)` 一次登记，全进或全不进，ADR-0080）。
 
 ## 依赖方向
 

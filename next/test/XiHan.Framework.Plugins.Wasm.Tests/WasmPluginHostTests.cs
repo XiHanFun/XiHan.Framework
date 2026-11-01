@@ -279,6 +279,140 @@ public sealed class WasmPluginHostTests
     }
 
     [Fact]
+    public async Task LoadAsync_AtRuntime_RegistersTheCodesThePluginDeclares()
+    {
+        // 清单声明了 wat.call-permission 与 wat.audit：宿主替插件登记，操作引用自己声明的码照常登记（ADR-0080）
+        using var declaring = WatPlugin.Declaring(["wat.call-permission", "wat.audit"], "wat.call-permission");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.True(loaded.IsSuccess, loaded.ToString());
+        var permissions = host.Services.GetRequiredService<PermissionRegistry>();
+        Assert.Equal("wat.call-permission", permissions.Find("wat.call-permission").ValueOrThrow().DisplayName);
+        Assert.True(permissions.Find("wat.audit").HasValue);
+        Assert.Equal("wat.call-permission", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Permission);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_OnlyRegistersDeclaredCodes_AndRejectsTheRestAsBefore()
+    {
+        // 声明了 wat.audit，操作却要 wat.call-permission：没声明的仍按未登记拒绝，声明的码也撤回
+        using var declaring = WatPlugin.Declaring(["wat.audit"], "wat.call-permission");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(KernelErrors.UnregisteredPermission, loaded.Error?.Code);
+        Assert.Empty(plugins.Plugins);
+        Assert.False(host.Services.GetRequiredService<PermissionRegistry>().Find("wat.audit").HasValue);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_RejectsADeclaredCodeTheHostAlreadyDefines()
+    {
+        // 宿主特性定义了 wat.call-permission，插件又声明它：冲突，插件整体被拒，宿主的定义不变
+        using var declaring = WatPlugin.Declaring(["wat.audit", "wat.call-permission"], "wat.call-permission");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.app.permissions"))
+        {
+            OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("wat.call-permission", "Call the WAT plugin")),
+        }));
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(KernelErrors.DuplicatePermission, loaded.Error?.Code);
+        Assert.Equal("wat.call-permission", loaded.Error?.Details?["code"]);
+        Assert.Empty(plugins.Plugins);
+        var permissions = host.Services.GetRequiredService<PermissionRegistry>();
+        Assert.Equal("Call the WAT plugin", permissions.Find("wat.call-permission").ValueOrThrow().DisplayName);
+        Assert.False(permissions.Find("wat.audit").HasValue);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_RejectsTheSecondPluginDeclaringTheSameCode()
+    {
+        using var first = WatPlugin.Declaring(["wat.shared"], "wat.shared", "xihan.tests.wat-a", "wat-a.call");
+        using var second = WatPlugin.Declaring(["wat.shared"], "wat.shared", "xihan.tests.wat-b", "wat-b.call");
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        Assert.True((await plugins.LoadAsync(new PluginSource(first.Directory, new PermissionGrant([])), CancellationToken.None)).IsSuccess);
+        var loaded = await plugins.LoadAsync(new PluginSource(second.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        // 后登记的那个整体失败；先登记的不受影响
+        Assert.Equal(KernelErrors.DuplicatePermission, loaded.Error?.Code);
+        Assert.Equal("xihan.tests.wat-a", Assert.Single(plugins.Plugins).Manifest.Id);
+        var registry = host.Services.GetRequiredService<OperationRegistry>();
+        Assert.True(registry.Find("wat-a.call").HasValue);
+        Assert.False(registry.Find("wat-b.call").HasValue);
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_DeclaringItsCodes_PassesTheAssemblyCheck()
+    {
+        using var declaring = WatPlugin.Declaring(["wat.call-permission"], "wat.call-permission");
+
+        // 配置阶段发现时就登记了声明的码：装配完成时的核对看得到它
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]);
+
+        Assert.True(host.Services.GetRequiredService<PermissionRegistry>().Find("wat.call-permission").HasValue);
+        Assert.Equal("wat.call-permission", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Permission);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DiscoveredPlugin_DeclaringACodeTheHostDefines_FailsTheAssembly(bool hostFirst)
+    {
+        using var declaring = WatPlugin.Declaring(["wat.call-permission"], null);
+        var permissions = new StubFeature(TestManifests.Create("xihan.app.permissions"))
+        {
+            OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("wat.call-permission", "Call the WAT plugin")),
+        };
+
+        // 不论宿主特性先登记还是插件先登记，同一个码都是冲突，启动失败
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
+            b =>
+            {
+                if (hostFirst)
+                {
+                    b.UseFeature(permissions).UseFeature<WasmPluginsFeature>();
+                }
+                else
+                {
+                    b.UseFeature<WasmPluginsFeature>().UseFeature(permissions);
+                }
+            },
+            [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]));
+
+        Assert.Equal(KernelErrors.DuplicatePermission, exception.Code);
+        Assert.Contains("wat.call-permission", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Wat.Audit")]
+    [InlineData("wat")]
+    [InlineData("wat.audit,wat.audit")]
+    public async Task LoadAsync_AtRuntime_RejectsAManifestWithMalformedOrDuplicateDeclaredCodes(string declared)
+    {
+        // 清单读不出（不合文法、重复）：按发现时被拒，什么都不登记
+        using var declaring = WatPlugin.Declaring(declared.Split(','), null);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
+        Assert.Contains("contributes.permissions", loaded.Error?.ToString(), StringComparison.Ordinal);
+        Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+    }
+
+    [Fact]
     public void Options_FromConfiguration_ParseLimitsMountsAndTimings()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>

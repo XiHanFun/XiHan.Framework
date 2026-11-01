@@ -101,6 +101,24 @@ public sealed class ManifestReaderTests
     }
 
     [Fact]
+    public void Read_DeclaredPermissionCodes_MustBeWellFormedAndUnique()
+    {
+        // 插件宿主按 contributes.permissions 替插件登记权限码（ADR-0080）：不合文法或重复的清单在读取时就拒绝
+        const string Template = """{ "id": "xihan.samples.echo", "version": "1.0.0", "primitives": "1", "stability": "experimental", "kind": "plugin", "isolation": "wasm", "contributes": { "permissions": [ CODES ] } }""";
+        Manifest Read(string codes) => ManifestReader.Read(Template.Replace("CODES", codes, StringComparison.Ordinal)).ValueOrThrow();
+        Error Fail(string codes) => ManifestReader.Read(Template.Replace("CODES", codes, StringComparison.Ordinal)).Error!;
+
+        Assert.Equal(["echoes.read", "sales.echoes.export-all"], Read("\"echoes.read\", \"sales.echoes.export-all\"").Contributes.Permissions);
+        Assert.Empty(Read(string.Empty).Contributes.Permissions);
+        Assert.Equal(KernelErrors.InvalidManifest, Fail("\"Echoes.Read\"").Code);
+        Assert.Equal(KernelErrors.InvalidManifest, Fail("\"echoes\"").Code);
+        Assert.Equal(KernelErrors.InvalidManifest, Fail("\"capability:kernel.pipeline\"").Code);
+        var duplicated = Fail("\"echoes.read\", \"echoes.read\"");
+        Assert.Equal(KernelErrors.InvalidManifest, duplicated.Code);
+        Assert.Contains("more than once", duplicated.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ReadFile_MissingFile_ReturnsError()
     {
         var result = ManifestReader.ReadFile(Path.Combine(Path.GetTempPath(), "missing-" + Guid.NewGuid().ToString("N") + ".json"));

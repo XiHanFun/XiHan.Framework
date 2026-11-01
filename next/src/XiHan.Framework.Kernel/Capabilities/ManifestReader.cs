@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -145,7 +146,7 @@ public static class ManifestReader
                         p.After)).ToList(),
                     Operations = document.Contributes.Operations ?? [],
                     Config = document.Contributes.Config is null ? null : new ConfigContribution(document.Contributes.Config.Section ?? throw Missing("contributes.config.section"), document.Contributes.Config.Schema),
-                    Permissions = document.Contributes.Permissions ?? [],
+                    Permissions = PermissionCodes(document.Contributes.Permissions ?? []),
                     Health = document.Contributes.Health ?? [],
                 },
                 Activation = document.Activation ?? ["onStartup"],
@@ -164,6 +165,31 @@ public static class ManifestReader
         {
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
+    }
+
+    /// <summary>
+    /// 核对 <c>contributes.permissions</c>：每项合权限码文法、不重复（manifest.schema.json）。
+    /// </summary>
+    /// <remarks>
+    /// 插件宿主按这一列表替插件登记权限码（ADR-0080），不合法的清单在读取时就拒绝，而不是登记到一半才失败。不合法抛出 <see cref="ArgumentException"/>。
+    /// </remarks>
+    private static List<string> PermissionCodes(List<string> codes)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var code in codes)
+        {
+            if (!PermissionDefinition.IsValidCode(code))
+            {
+                throw new ArgumentException($"The permission code '{code}' in field 'contributes.permissions' is not well-formed; expected a lowercase dot-separated code such as 'orders.read'.");
+            }
+
+            if (!seen.Add(code))
+            {
+                throw new ArgumentException($"The permission code '{code}' appears more than once in field 'contributes.permissions'.");
+            }
+        }
+
+        return codes;
     }
 
     /// <summary>

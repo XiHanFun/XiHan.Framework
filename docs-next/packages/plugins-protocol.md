@@ -15,7 +15,7 @@
 
 ## 概述
 
-协议消息与 gRPC 桩由规范里的同一份 `spec/plugin/plugin.proto` 在构建期生成，生成的类型是 `internal`，不进公开面。握手核对（`HandshakeValidator`）、上下文与 `InvocationMetadata` 的映射、`Error` / `Result` 与协议状态的映射、消息信封映射、代理操作描述符这些载体无关的部分也在本包，经 `InternalsVisibleTo` 只给 `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 使用。
+协议消息与 gRPC 桩由规范里的同一份 `spec/plugin/plugin.proto` 在构建期生成，生成的类型是 `internal`，不进公开面。握手核对（`HandshakeValidator`）、上下文与 `InvocationMetadata` 的映射、`Error` / `Result` 与协议状态的映射、消息信封映射、代理操作描述符、插件贡献的登记（清单声明的权限码与代理操作一次登记，ADR-0080）这些载体无关的部分也在本包，经 `InternalsVisibleTo` 只给 `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 使用。
 
 公开的只有协议常量与端点类型：写 .NET 宿主扩展、诊断工具或测试时可以用它们解析握手行、协商版本、按错误码判断插件失败。用 .NET 写进程外插件不需要引用本包，插件只要从 `plugin.proto` 生成自己的桩（见 `samples/EchoPlugin`）。
 

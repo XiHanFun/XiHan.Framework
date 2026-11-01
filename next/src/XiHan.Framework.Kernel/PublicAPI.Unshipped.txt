@@ -265,12 +265,12 @@ XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TRes
 XiHan.Framework.Kernel.Operations.OperationInvocationExtensions
 XiHan.Framework.Kernel.Operations.OperationRegistry
 XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Primitives.Result
-XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>! descriptors) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>! descriptors, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Security.PermissionDefinition!>! permissions) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Operations.OperationRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Count.get -> int
 XiHan.Framework.Kernel.Operations.OperationRegistry.ExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Find(string! id) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
-XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(int capacity = 10000) -> void
+XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, int capacity = 10000) -> void
 XiHan.Framework.Kernel.Operations.OperationRequest
 XiHan.Framework.Kernel.Operations.OperationRequest.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationRequest!
 XiHan.Framework.Kernel.Operations.OperationRequest.Equals(XiHan.Framework.Kernel.Operations.OperationRequest? other) -> bool
@@ -458,6 +458,7 @@ XiHan.Framework.Kernel.Security.PermissionDefinition.Equals(XiHan.Framework.Kern
 XiHan.Framework.Kernel.Security.PermissionDefinition.PermissionDefinition(string! code, string! displayName, string? description = null) -> void
 XiHan.Framework.Kernel.Security.PermissionRegistry
 XiHan.Framework.Kernel.Security.PermissionRegistry.Add(XiHan.Framework.Kernel.Security.PermissionDefinition! permission) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Kernel.Security.PermissionRegistry.AddRange(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Security.PermissionDefinition!>! permissions) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Security.PermissionRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Security.PermissionDefinition!>!
 XiHan.Framework.Kernel.Security.PermissionRegistry.Count.get -> int
 XiHan.Framework.Kernel.Security.PermissionRegistry.Find(string! code) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Security.PermissionDefinition!>

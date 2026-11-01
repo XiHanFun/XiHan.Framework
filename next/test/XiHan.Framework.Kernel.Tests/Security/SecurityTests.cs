@@ -119,6 +119,28 @@ public sealed class SecurityTests
     }
 
     [Fact]
+    public void PermissionRegistry_AddRange_RegistersAllOrNothing()
+    {
+        var registry = new PermissionRegistry(capacity: 3);
+        static PermissionDefinition Define(string code) => new(code, code);
+
+        // 同批重复、与已登记的重复、整批超出容量：返回第一项的失败，注册表不变
+        Assert.Equal(KernelErrors.DuplicatePermission, registry.AddRange([Define("orders.read"), Define("orders.read")]).Error?.Code);
+        Assert.Equal(0, registry.Count);
+        Assert.True(registry.AddRange([Define("orders.read"), Define("orders.write")]).IsSuccess);
+        var duplicated = registry.AddRange([Define("orders.delete"), Define("orders.write")]);
+        Assert.Equal(KernelErrors.DuplicatePermission, duplicated.Error?.Code);
+        Assert.Equal("orders.write", duplicated.Error?.Details?["code"]);
+        Assert.False(registry.Find("orders.delete").HasValue);
+        Assert.Equal(KernelErrors.PermissionRegistryFull, registry.AddRange([Define("orders.delete"), Define("orders.export")]).Error?.Code);
+        Assert.Equal(2, registry.Count);
+
+        Assert.True(registry.AddRange([]).IsSuccess);
+        Assert.Throws<ArgumentException>(() => registry.AddRange([Define("orders.delete"), null!]));
+        Assert.Equal(2, registry.Count);
+    }
+
+    [Fact]
     public async Task AuthorizationResult_ConvertsToResult()
     {
         Assert.True(AuthorizationResult.Allow().ToResult().IsSuccess);

@@ -325,7 +325,8 @@ public sealed class HttpProtocolTests
     [Fact]
     public void OpenApi_WritesPermissionAndPolicyExtensions_AndPermissionComponents()
     {
-        var registry = new OperationRegistry();
+        var permissions = new PermissionRegistry();
+        var registry = new OperationRegistry(permissions);
         // 三种契约：按权限码、按策略、无授权要求；orders.export 引用了没登记的权限码；只给 MCP 的与内部的操作不进文档，它们引用的权限码也不算被引用
         registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"))).ThrowIfFailure();
@@ -333,7 +334,6 @@ public sealed class HttpProtocolTests
         registry.Add(Describe(new OperationContract("orders.export", expose: Expose.Http, permission: "orders.export"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.secret", expose: Expose.Mcp, permission: "orders.secret"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.audit", Stability.Internal, Expose.All, permission: "orders.audit"))).ThrowIfFailure();
-        var permissions = new PermissionRegistry();
         permissions.Add(new PermissionDefinition("orders.write", "Place orders", "Create orders for the current tenant.")).ThrowIfFailure();
         // 登记了但没有任何 HTTP 操作引用：授权界面仍需要它
         permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();

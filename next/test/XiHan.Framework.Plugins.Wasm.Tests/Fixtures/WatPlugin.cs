@@ -66,6 +66,19 @@ internal sealed class WatPlugin : IDisposable
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission);
 
     /// <summary>
+    /// 生成一个在清单里声明权限码的插件。
+    /// </summary>
+    /// <remarks>
+    /// 清单 <c>contributes.permissions</c> 是 <paramref name="declared"/>，操作要求权限码 <paramref name="permission"/>。用来核对宿主替插件登记它声明的权限码（ADR-0080）；清单 ID 与操作 ID 可换，两个插件才能同时登记。导出与 <see cref="Invoking"/> 相同。
+    /// </remarks>
+    /// <param name="declared">清单声明的权限码。</param>
+    /// <param name="permission">操作要求的权限码；为空时操作没有权限要求。</param>
+    /// <param name="pluginId">清单 ID。</param>
+    /// <param name="operation">操作 ID。</param>
+    public static WatPlugin Declaring(IReadOnlyList<string> declared, string? permission, string pluginId = PluginId, string operation = Operation)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission, declared, pluginId, operation);
+
+    /// <summary>
     /// 生成一个贡献中间件的插件。
     /// </summary>
     /// <remarks>
@@ -106,17 +119,30 @@ internal sealed class WatPlugin : IDisposable
     /// <summary>
     /// 写清单与模块文本。
     /// </summary>
-    private static WatPlugin Create(string import, JsonObject request, IReadOnlyList<string> permissions, JsonArray? pipeline, string? operationPermission = null)
+    private static WatPlugin Create(
+        string import,
+        JsonObject request,
+        IReadOnlyList<string> permissions,
+        JsonArray? pipeline,
+        string? operationPermission = null,
+        IReadOnlyList<string>? declaredPermissions = null,
+        string pluginId = PluginId,
+        string operation = Operation)
     {
-        var contributes = new JsonObject { ["operations"] = new JsonArray(Operation) };
+        var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
         {
             contributes["pipeline"] = pipeline;
         }
 
+        if (declaredPermissions is not null)
+        {
+            contributes["permissions"] = new JsonArray(declaredPermissions.Select(static p => (JsonNode)p).ToArray());
+        }
+
         var manifest = new JsonObject
         {
-            ["id"] = PluginId,
+            ["id"] = pluginId,
             ["package"] = "WatPlugin",
             ["version"] = "1.0.0",
             ["primitives"] = "1",
@@ -134,8 +160,8 @@ internal sealed class WatPlugin : IDisposable
             ["primitives"] = 1,
             ["manifest"] = manifest,
             ["operations"] = new JsonArray(operationPermission is null
-                ? new JsonObject { ["id"] = Operation, ["stability"] = "experimental" }
-                : new JsonObject { ["id"] = Operation, ["stability"] = "experimental", ["permission"] = operationPermission }),
+                ? new JsonObject { ["id"] = operation, ["stability"] = "experimental" }
+                : new JsonObject { ["id"] = operation, ["stability"] = "experimental", ["permission"] = operationPermission }),
         }.ToJsonString();
 
         var segments = new StringBuilder();

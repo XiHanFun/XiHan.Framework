@@ -58,9 +58,9 @@ public sealed class OrdersFeature : IFeature
 }
 ```
 
-清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。
+特性清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。插件不同：进程外与 Wasm 宿主按插件清单的 `contributes.permissions` 替插件登记（ADR-0080），只登记清单声明了的，与已登记的码重复即冲突（`KERNEL_SECURITY_001`），见[插件](./plugins#插件定义的权限码)。
 
-操作契约的 `Permission` 引用的权限码必须已登记：全部特性配置完、装配完成时一次核对，有未登记的即抛出 `KERNEL_VALIDATION_005`（一次列出全部），应用启动失败（ADR-0071）。核对在装配完成时而不是登记操作时，所以权限码可以由别的特性登记。装配完成之后才登记的操作（进程外 / Wasm 插件握手之后）在登记时核对，引用了未登记的权限码，插件整体登记失败。策略目录只为登记过的权限码创建权限策略；HTTP 协议适配器发布 OpenAPI 时，`components.x-xihan-permissions` 也取登记表里的显示名与说明。
+操作契约的 `Permission` 引用的权限码必须已登记：全部特性配置完、装配完成时一次核对，有未登记的即抛出 `KERNEL_VALIDATION_005`（一次列出全部），应用启动失败（ADR-0071）。核对在装配完成时而不是登记操作时，所以权限码可以由别的特性登记。装配完成之后才登记的操作（进程外 / Wasm 插件握手之后）在登记时核对，引用了未登记的权限码，插件整体登记失败。插件清单声明的码在配置阶段就随它的代理操作登记，装配完成时的核对看得到它们。策略目录只为登记过的权限码创建权限策略；HTTP 协议适配器发布 OpenAPI 时，`components.x-xihan-permissions` 也取登记表里的显示名与说明。
 
 ## 声明授权要求
 

@@ -22,7 +22,7 @@ public sealed partial record PermissionDefinition
     {
         ArgumentNullException.ThrowIfNull(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
-        if (!CodePattern().IsMatch(code))
+        if (!IsValidCode(code))
         {
             throw new ArgumentException($"Permission code '{code}' must be a lowercase dot-separated identifier with at least two segments.", nameof(code));
         }
@@ -46,6 +46,14 @@ public sealed partial record PermissionDefinition
     /// 说明。
     /// </summary>
     public string? Description { get; }
+
+    /// <summary>
+    /// 权限码是否合文法。
+    /// </summary>
+    /// <remarks>
+    /// 插件清单 <c>contributes.permissions</c> 的每一项由清单读取器按它核对（宿主要替插件登记这些码，ADR-0080）。
+    /// </remarks>
+    internal static bool IsValidCode(string? code) => code is not null && CodePattern().IsMatch(code);
 
     /// <summary>
     /// 权限码格式的正则：至少两段、点分隔、每段小写字母开头并允许数字与连字符。

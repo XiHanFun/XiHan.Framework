@@ -232,7 +232,8 @@ public sealed class OpenApiDocumentationTests
     /// </remarks>
     private static OpenApiDocumentSource Source()
     {
-        var registry = new OperationRegistry();
+        var permissions = new PermissionRegistry();
+        var registry = new OperationRegistry(permissions);
         registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http, permission: "orders.read"), "xihan.test.orders")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"), "xihan.test.orders")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"), "xihan.test.orders")).ThrowIfFailure();
@@ -240,7 +241,6 @@ public sealed class OpenApiDocumentationTests
         registry.Add(Describe(new OperationContract("notes.list", expose: Expose.Http), "xihan.test.misc")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("audits.list", expose: Expose.Http), "xihan.test.orders")).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("audits.get", expose: Expose.Http), "xihan.test.billing")).ThrowIfFailure();
-        var permissions = new PermissionRegistry();
         // 定义里是英文显示名（与 BasicApp 相同），中文由区域文案给出
         permissions.Add(new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
         permissions.Add(new PermissionDefinition("billing.view", "View billing")).ThrowIfFailure();

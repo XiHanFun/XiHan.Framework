@@ -13,6 +13,7 @@ using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
@@ -158,7 +159,7 @@ public sealed class OpenApiExtensionsTests
     [Fact]
     public void Build_ProtectedOperationsInheritGlobalSecurity_AndNonBearerSchemesPublishNothing()
     {
-        var registry = new OperationRegistry();
+        var registry = new OperationRegistry(new PermissionRegistry());
         registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"))).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
@@ -310,7 +311,7 @@ public sealed class OpenApiExtensionsTests
     [Fact]
     public void Build_RejectsPlainEndpointJsonTypes_ThatReferenceNoOperation_AndRoutesSharedWithOperations()
     {
-        var registry = new OperationRegistry();
+        var registry = new OperationRegistry(new PermissionRegistry());
         registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
         var options = new HttpProtocolOptions();
 

@@ -9,6 +9,7 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -154,6 +155,37 @@ public sealed class OutOfProcessPluginHostTests
         {
             unreadable.Delete(recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_DeclaredPermissionCodes_AreRegisteredByTheHost()
+    {
+        // 副本清单在 contributes.permissions 里声明两个码：宿主在配置阶段登记代理操作时一并替它登记（ADR-0080）
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        copy.EditManifest(static manifest => manifest.Replace("\"operations\": [ \"echoes.create\"", "\"permissions\": [ \"echoes.audit\", \"echoes.export\" ], \"operations\": [ \"echoes.create\"", StringComparison.Ordinal));
+        await using var host = await EchoPluginHost.StartAsync(directory: copy.Directory);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+
+        var permissions = host.Services.GetRequiredService<PermissionRegistry>();
+        Assert.Equal("echoes.audit", permissions.Find("echoes.audit").ValueOrThrow().DisplayName);
+        Assert.True(permissions.Find("echoes.export").HasValue);
+        Assert.True(host.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_DeclaringACodeTheHostDefines_FailsTheAssembly()
+    {
+        using var copy = new PluginCopy(EchoPluginHost.Directory);
+        copy.EditManifest(static manifest => manifest.Replace("\"operations\": [ \"echoes.create\"", "\"permissions\": [ \"echoes.audit\" ], \"operations\": [ \"echoes.create\"", StringComparison.Ordinal));
+
+        // 宿主特性已定义 echoes.audit：插件再声明是冲突，配置阶段即启动失败
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => EchoPluginHost.StartAsync(static b => b.UseFeature(new StubFeature(TestManifests.Create("xihan.app.audit"))
+        {
+            OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("echoes.audit", "Audit echoes")),
+        }), directory: copy.Directory));
+
+        Assert.Equal(KernelErrors.DuplicatePermission, exception.Code);
+        Assert.Contains("echoes.audit", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

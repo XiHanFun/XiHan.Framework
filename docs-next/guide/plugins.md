@@ -82,6 +82,22 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 }
 ```
 
+### 插件定义的权限码
+
+上面的权限是插件向宿主要的能力；插件自己的操作要求调用方持有的权限码是另一回事。清单 `contributes.permissions` 写插件**定义**的权限码（文法同[授权](./authorization)：小写、点分、至少两段，不重复），进程外与 Wasm 宿主登记插件的代理操作时替它把这些码一并登记进 `PermissionRegistry`（ADR-0080），显示名取码本身，插件可以在握手的消息目录里给 `permissions.<码>.name` / `.description` 的译文：
+
+```json
+"contributes": {
+  "operations": [ "echoes.create", "echoes.export" ],
+  "permissions": [ "echoes.export" ]
+}
+```
+
+- 只登记清单声明了的。操作的 `permission` 既不是宿主特性登记的码、也不在本插件清单里，仍按未登记拒绝（`KERNEL_VALIDATION_005`）；要引用宿主或别的插件定义的码，只在操作里写，不在清单里声明。
+- 声明的码与已登记的重复是冲突（`KERNEL_SECURITY_001`）：两个插件声明同一个码，后登记的那个整体失败；宿主特性定义的码插件又声明，不论谁先登记都失败。配置阶段的冲突是启动失败。
+- 权限码与代理操作一次登记、全进或全不进，任何一项不过都不留下这个插件的权限码。
+- 进程内插件有自己的容器，不向应用的登记表贡献操作，也不登记权限码。
+
 加载之后各宿主对权限的强制方式。回调权限按「清单声明且已被授予」判定：清单是插件权限的唯一事实源，宿主授予了而清单没有声明的权限不生效，不能靠多授予让插件获得清单里没写的回调能力。
 
 | 权限 | 进程外 | Wasm |
@@ -102,7 +118,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 1. 引用宿主包并启用特性：`UseFeature<OutOfProcessPluginsFeature>()` 或 `UseFeature<WasmPluginsFeature>()`。两者都依赖 `kernel.hosting@1`，分别提供 `plugins.out-of-process@1` 与 `plugins.wasm@1`。
 2. 在 `XiHan:Plugins:OutOfProcess:Directories` 或 `XiHan:Plugins:Wasm:Directories` 列出插件目录（一个目录一个插件，相对路径相对当前目录），在 `Grants` 里授予权限。
 3. 特性在配置阶段同步完成发现：读清单、核对权限，进程外插件启动进程、读握手行、调用 `Handshake`，Wasm 插件编译模块、校验导出与导入表、实例化并调用 `xihan_handshake`，然后核对握手声明与清单。
-4. 握手声明的操作登记为代理操作，消息目录接进本地化器，订阅的主题登记事件处理器；Wasm 插件清单里的中间件按 `清单 ID:中间件名` 插进对应阶段。
+4. 握手声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码与它们一次登记，消息目录接进本地化器，订阅的主题登记事件处理器；Wasm 插件清单里的中间件按 `清单 ID:中间件名` 插进对应阶段。
 5. 启动阶段启动 `onStartup` 的插件（`Configure` → `Start` → 健康监视）。懒激活（只写了 `onOperation:` / `onEvent:`）的插件在握手后停下，首次调用或投递时再启动。
 
 ```csharp
@@ -137,7 +153,7 @@ app.Run();
 | --- | --- |
 | 清单不合法、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（错误分别为 `PLUGINS_VALIDATION_001`、`PLUGINS_DENIED_001`、`PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、可 `Describe`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主启动时记错误日志；清单读不出来时没有清单 ID，只有健康条目 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`。进程外插件在应用启动后按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），启动阶段的 `Configure` / `Start` 失败同样重试；首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见），订阅与消息目录要等宿主重启才生效。Wasm 插件的这类失败不重试 |
-| 插件声明的操作与应用已有操作重名，或操作的 `permission` 不是宿主已登记的权限码 | 配置错误，应用启动失败（`KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`）；装配完成之后才登记的（重试成功、运行期 `LoadAsync`）插件整体登记失败、按发现时被拒处理，一个代理操作都不留下。权限码只能由宿主的特性登记，清单 `contributes.permissions` 不会替插件登记 |
+| 插件声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` 既不是宿主已登记的、也不在本插件清单里 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`）；装配完成之后才登记的（重试成功、运行期 `LoadAsync`）插件整体登记失败、按发现时被拒处理，一个权限码与代理操作都不留下（见[插件定义的权限码](#插件定义的权限码)） |
 
 ### 运行期加载与卸载
 
@@ -156,7 +172,7 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载后代理操作仍在登记表里，调用返回 `PLUGINS_UNAVAILABLE_001`。Wasm 宿主拒绝在运行期加载贡献中间件的插件（`PLUGINS_VALIDATION_005`），因为中间件必须在管道构建前登记。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手、`Configure` 或 `Start` 失败时，错误返回给调用方，插件保持 `Failed` 并按重启策略在后台重试，不想再试就 `UnloadAsync`；清单、权限、入口不合格的直接返回、不登记。
+运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。卸载后代理操作与插件声明的权限码仍在登记表里，调用返回 `PLUGINS_UNAVAILABLE_001`；登记过的插件卸载后再 `LoadAsync` 会与自己留下的登记冲突（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001`），换版本要重启宿主。Wasm 宿主拒绝在运行期加载贡献中间件的插件（`PLUGINS_VALIDATION_005`），因为中间件必须在管道构建前登记。同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手、`Configure` 或 `Start` 失败时，错误返回给调用方，插件保持 `Failed` 并按重启策略在后台重试，不想再试就 `UnloadAsync`；清单、权限、入口不合格的直接返回、不登记。
 
 ### 进程内宿主
 

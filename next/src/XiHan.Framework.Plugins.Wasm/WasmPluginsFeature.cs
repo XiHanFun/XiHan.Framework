@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
@@ -74,8 +73,9 @@ public sealed class WasmPluginsFeature : IHostedFeature
                 continue;
             }
 
-            // 与应用自己的操作重名是配置错误，启动失败；引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败
-            context.Operations.AddRange(runtime.Handshake.Operations.Select(operation => (OperationDescriptor)new ProxyOperationDescriptor(operation.Contract, runtime.Manifest.Id, runtime, operation.Schema)).ToList()).ThrowIfFailure();
+            // 清单声明的权限码连同代理操作一次登记（ADR-0080）：声明的码与已登记的重复、操作与应用自己的重名都是配置错误，启动失败；
+            // 引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败（插件声明的码此时已在登记表里）
+            PluginContributions.Register(context.Operations, runtime.Manifest, runtime.Handshake, runtime).ThrowIfFailure();
 
             foreach (var catalog in runtime.Handshake.Catalogs)
             {
