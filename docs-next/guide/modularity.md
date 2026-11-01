@@ -134,7 +134,7 @@ public sealed class OrdersFeature : IFeature
 
 1. 收集清单：内核清单（`xihan.kernel.core`，提供全部 `kernel.*` 能力）加上所有经 `UseFeature` 加入的特性，校验每份清单的格式与 ID 唯一。
 2. 为每条 `Requires` 选出唯一的提供者（规则见下一节）；没有被任何特性依赖的能力也按同一规则选出提供者。
-3. 把选择结果回填到图谱节点：每个节点知道自己被选中提供哪些能力（`ResolvedNode.SelectedCapabilities`）。声明了能力却一个都没被选中的节点标为 shadowed，不装配、不启动。
+3. 把选择结果回填到图谱节点：每个节点知道自己被选中提供哪些能力（`ResolvedNode.SelectedCapabilities`）。声明了能力却一个都没被选中的节点标为 shadowed，不装配、不启动；特性实现了 `IShadowAwareFeature` 时改调它的 `ConfigureShadowed`，只登记与能力选择无关的服务（对象存储的命名实例 Provider 就是这样）。
 4. 拓扑排序：被依赖者在前，`UseFeature` 的顺序只决定同一层次内的次序。
 5. 解析资源绑定，校验每个特性的必需绑定（缺失报 `KERNEL_HOSTING_001`）。
 6. 按拓扑顺序调用各特性的 `Configure`，再把 `App`、内置中间件、权限表、操作登记表与宿主服务注册进容器。

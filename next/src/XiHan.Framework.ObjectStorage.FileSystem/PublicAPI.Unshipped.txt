@@ -23,6 +23,7 @@ XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.Name.get ->
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.FileSystemObjectStorageFeature() -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

@@ -25,10 +25,10 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储的能力包入口。
 /// </summary>
 /// <remarks>
-/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。另登记命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）。
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶）。被选中的能力必须包括 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替时经 <see cref="ConfigureShadowed"/> 只登记它，不建缺省客户端、不探测。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class S3ObjectStorageFeature : IHostedFeature
+public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>
     /// 连接绑定名。
@@ -79,6 +79,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
+        BlobStoreSelection.EnsureSameStore(context.Node);
         var options = S3ObjectStorageOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         // 应用自己注册的客户端优先（自定义凭据链、代理、重试策略）
@@ -104,6 +105,17 @@ public sealed class S3ObjectStorageFeature : IHostedFeature
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集
         context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, ct => ProbeAsync(sp.GetRequiredService<IAmazonS3>(), options.HealthBucket, ct), options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节与连接绑定、不建客户端。
+    /// </remarks>
+    public void ConfigureShadowed(FeatureContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
+        context.Services.AddBlobStoreProvider<S3BlobStoreProvider>(context.Configuration);
     }
 
     /// <inheritdoc />

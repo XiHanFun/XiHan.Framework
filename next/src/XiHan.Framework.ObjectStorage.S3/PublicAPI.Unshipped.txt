@@ -21,6 +21,7 @@ XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProbeAsync(XiHan.Framework.
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.S3BlobStoreProvider(System.TimeProvider! clock) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.S3ObjectStorageFeature() -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!

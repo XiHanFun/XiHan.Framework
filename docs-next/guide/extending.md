@@ -175,7 +175,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 | `Contributes.Config` | `XiHan:<领域>` | 配置节文法 `^XiHan:[A-Z][A-Za-z0-9]*$`，子键由 Provider 自己约定 |
 | `Contributes.Health` | 条目名 `<领域>.<机制>.<对象>` | 声明的条目必须由同一个包以 `IHealthContributor` 实现，反之亦然 |
 
-`context.Node.IsSelectedFor(...)` 是关键：同一能力的多个实现都可能被引用，只有被选中的那个注册服务与中间件，被顶替的特性不装配、不启动（RFC-0002 第 4 条）。
+`context.Node.IsSelectedFor(...)` 是关键：同一能力的多个实现都可能被引用，只有被选中的那个注册服务与中间件，被顶替的特性不装配、不启动（RFC-0002 第 4 条）；有与能力选择无关的服务要登记（如命名实例的 Provider）时实现 `IShadowAwareFeature`，被顶替时内核改调 `ConfigureShadowed`。
 
 ### 3. 消息目录、健康与 AOT
 

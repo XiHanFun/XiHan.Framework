@@ -176,6 +176,8 @@ XiHan.Framework.Kernel.Hosting.IHealthContributor.Check() -> System.Collections.
 XiHan.Framework.Kernel.Hosting.IHostedFeature
 XiHan.Framework.Kernel.Hosting.IHostedFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.Hosting.IHostedFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Kernel.Hosting.IShadowAwareFeature
+XiHan.Framework.Kernel.Hosting.IShadowAwareFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Kernel.Hosting.KernelOptions
 XiHan.Framework.Kernel.Hosting.KernelOptions.<Clone>$() -> XiHan.Framework.Kernel.Hosting.KernelOptions!
 XiHan.Framework.Kernel.Hosting.KernelOptions.Equals(XiHan.Framework.Kernel.Hosting.KernelOptions? other) -> bool

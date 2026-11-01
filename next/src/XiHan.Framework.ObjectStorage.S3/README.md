@@ -22,7 +22,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 - 错误：不存在的键与桶映射为 `OBJECTSTORAGE_NOTFOUND_001`，其余服务端错误、网络错误与 SDK 超时映射为 `OBJECTSTORAGE_UNAVAILABLE_001`；调用方的取消原样抛出。没有配额（由桶策略管理）。
 - 健康项 `objectstorage.s3.connection`：启动时同步探一次，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果；配了 `HealthBucket` 就对它 HEAD（桶不存在、无权限或服务不可达都算失败），没配就列桶；失败或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 是 SDK 的异常消息），应用仍在服务。
 - 范围读取、分片与预签名（ADR-0049，同时提供 `objectstorage.multipart@1` 与 `objectstorage.presign@1`）：范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长，起点越界（416）报 `OBJECTSTORAGE_VALIDATION_001`；分片直接映射 S3 multipart，`ListParts` 分页取全，不覆盖的完成先 HEAD 再带 `If-None-Match: *`，服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）报 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 报 `OBJECTSTORAGE_NOTFOUND_002`；预签名经 SDK 本地签出（签名 V4，端点是 http 时按 http 签），下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号，客户端直连存储。
-- 命名实例（ADR-0050）：特性登记 Provider `S3BlobStoreProvider`（名 `s3`），设置的键同本配置节（不含 `HealthProbeIntervalSeconds`，探测间隔由注册表统一），未知键报错；每个实例按自己的端点、区域与密钥建客户端，不读绑定，实例被替换、移除或应用停止时释放客户端（经公开构造函数建的 `S3BlobStore` 不拥有客户端）；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；探测对实例的 `HealthBucket` HEAD，没配时列桶。
+- 命名实例（ADR-0050）：特性总是登记 Provider `S3BlobStoreProvider`（名 `s3`）——缺省实例另选了文件系统、能力全部被顶替时经 `IShadowAwareFeature.ConfigureShadowed` 只登记它，不读本配置节与绑定、不建缺省客户端、不探测（ADR-0075）；设置的键同本配置节（不含 `HealthProbeIntervalSeconds`，探测间隔由注册表统一），未知键报错；每个实例按自己的端点、区域与密钥建客户端，不读绑定，实例被替换、移除或应用停止时释放客户端（经公开构造函数建的 `S3BlobStore` 不拥有客户端）；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；探测对实例的 `HealthBucket` HEAD，没配时列桶。
+- 缺省实例的一致性（ADR-0075）：缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，存储包被选为分片上传或预签名却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`（`BlobStoreSelection.EnsureSameStore`），应用启动失败。只把 `objectstorage.blob` 指定给文件系统、分片与预签名仍归 S3 就属于这种情况；以文件系统为缺省实例时把三项都指定出去（预签名给 `xihan.hosting.blob-urls`）。
 - 不满足 AOT 分析器（AWS SDK 的请求编组基于运行时反射）。
 
 ## 依赖方向

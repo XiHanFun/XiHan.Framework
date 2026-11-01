@@ -221,9 +221,20 @@ public sealed class AppBuilder
         var runtimes = new List<FeatureRuntime>();
         foreach (var node in graph.Nodes)
         {
-            // 声明了能力却一个都没被选中的节点（被显式 Provider 顶替的 default 等）不装配、不启动
-            if (node.IsShadowed || !featuresById.TryGetValue(node.Manifest.Id, out var feature))
+            if (!featuresById.TryGetValue(node.Manifest.Id, out var feature))
             {
+                continue;
+            }
+
+            // 声明了能力却一个都没被选中的节点（被显式 Provider 顶替的 default 等）不装配、不启动；
+            // 只有声明了与能力选择无关的服务（如命名存储实例的 Provider）的特性在这里登记那一部分，不校验绑定
+            if (node.IsShadowed)
+            {
+                if (feature is IShadowAwareFeature shadowAware)
+                {
+                    shadowAware.ConfigureShadowed(new FeatureContext(node, Services, Configuration, Pipeline, bindings, permissions, operations));
+                }
+
                 continue;
             }
 

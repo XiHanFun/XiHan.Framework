@@ -75,7 +75,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 
 | 类型 | 说明 |
 | --- | --- |
-| `FileSystemObjectStorageFeature` | 特性入口（`IHostedFeature`）；启动时扫描目录；常量 `HealthName` = `objectstorage.filesystem.capacity` |
+| `FileSystemObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`）；启动时扫描目录；被 S3 等存储顶替时只登记命名实例 Provider；常量 `HealthName` = `objectstorage.filesystem.capacity` |
 | `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时先调用 `InitializeAsync` |
 | `FileSystemObjectStorageOptions` | 选项；`FromConfiguration`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `FileSystemBlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `filesystem` |
@@ -104,7 +104,8 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 - 范围读取：打开内容文件后定位到起点，只交出该段。
 - 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
-- 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。
+- 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
+- 与 S3 混装、以本包为缺省实例时，`objectstorage.blob`、`objectstorage.multipart` 指定 `xihan.objectstorage.filesystem`，`objectstorage.presign` 指定 `xihan.hosting.blob-urls`；只指定一部分时 `OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](../guide/storage#命名存储实例)）。
 - 通过 `ObjectStorage.Conformance` 的 `BlobStoreConformance` 与 `BlobStoreProviderConformance`。
 
 | 错误码 | 含义 |

@@ -19,10 +19,10 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// 文件系统对象存储的能力包入口。
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。另有显式 Provider 被选中时只注册具体类型，不绑定契约。另登记命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）。
+/// 默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。被选中的能力必须包括 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）总是登记：能力全部被别的存储顶替时经 <see cref="ConfigureShadowed"/> 只登记它，不建缺省实例、不启动。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class FileSystemObjectStorageFeature : IHostedFeature
+public sealed class FileSystemObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>
     /// 健康项名：总配额是否还有余量。
@@ -63,6 +63,7 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
+        BlobStoreSelection.EnsureSameStore(context.Node);
         context.Services.AddSingleton(FileSystemObjectStorageOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton<FileSystemBlobStore>();
         // 存储自己就是健康项的贡献者：直接看已用量与总配额
@@ -78,6 +79,17 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature
         {
             context.Services.TryAddSingleton<IBlobMultipartStore>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
         }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节、不建根目录。
+    /// </remarks>
+    public void ConfigureShadowed(FeatureContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        context.Services.AddMessageCatalog(ObjectStorageMessages.Catalog);
+        context.Services.AddBlobStoreProvider<FileSystemBlobStoreProvider>(context.Configuration);
     }
 
     /// <inheritdoc />

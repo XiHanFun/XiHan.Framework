@@ -79,6 +79,7 @@ await builder.Build().RunAsync();
 | `AppBuilder` | `UseFeature<T>()`、`UseFeature(instance)`、`UseProvider`、`UseOptions`、`UseServiceBindingRoot`、`ConfigurePipeline`（归属缺省 `app`，按类型登记的中间件构建时补登记为单例）、`Pipeline`；只能构建一次 |
 | `App` | 运行中的应用：`State`、`Graph`、`Features`、`Health()`、`InvokeAsync`、`CreateContext`、`DescribeGraph()`、`DescribePipeline()` |
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
+| `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`、`AddOperation`、`GetBinding` / `TryGetBinding` |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |

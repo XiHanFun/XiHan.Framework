@@ -17,7 +17,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 /// 宿主代收发的预签名地址（能力 <c>objectstorage.presign@1</c>）。
 /// </summary>
 /// <remarks>
-/// 给没有原生签名的对象存储（文件系统）装上 <see cref="HostedBlobUrlSigner"/>，地址由应用在路由阶段 <c>MapXiHanBlobs()</c> 映射的端点收发。存储本身能签名（S3）时不要装：两个 Provider 都提供同一能力，按显式 Provider 的选择规则只有一个生效。
+/// 给没有原生签名的对象存储（文件系统）装上 <see cref="HostedBlobUrlSigner"/>，地址由应用在路由阶段 <c>MapXiHanBlobs()</c> 映射的端点收发。缺省存储本身能签名（S3）时不要装：两个 Provider 都提供同一能力，按显式 Provider 的选择规则只有一个生效。以文件系统为缺省存储、另装 S3 只用它的命名实例时要装，并把 <c>objectstorage.presign</c> 指定给本特性（缺省的三个对象存储契约必须同一存储，ADR-0075）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HostedBlobUrlFeature : IFeature

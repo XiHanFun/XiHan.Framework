@@ -322,7 +322,7 @@ public sealed record CompletedPart(int Number, string ETag);
 
 ## 命名存储实例
 
-一个应用同时用多个存储（按租户或按用途各配一个桶，各有自己的端点与密钥）时，用注册表 `BlobStores` 管理命名实例。装配任一存储包就有这个单例；缺省的 `IBlobStore` 注入方式不变，命名实例与缺省实例互不相干。
+一个应用同时用多个存储（按租户或按用途各配一个桶，各有自己的端点与密钥）时，用注册表 `BlobStores` 管理命名实例。装配任一存储包就有这个单例，装配了的存储包都登记自己的命名实例 Provider，与它是否被选为缺省实例无关；缺省的 `IBlobStore` 注入方式不变，命名实例与缺省实例互不相干。
 
 实例的定义 `BlobStoreDefinition` 是实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名（`filesystem` 或 `s3`，不区分大小写）与设置。设置的键与该 Provider 的配置节相同、不区分大小写，未知的键是错误，拼错的键不会被静默忽略。定义有两个来源：
 
@@ -377,8 +377,22 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 
 每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶）。
 
-::: warning 混装文件系统与 S3 时逐个能力确认提供者
-缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 按能力分别选提供者，S3 是显式 Provider，会顶替文件系统提供的全部能力；某个包的能力全部被顶替时它不装配，它的命名实例 Provider 也不登记。要以文件系统为缺省实例、同时用 S3 的命名实例，用 `XiHan:Providers:objectstorage.blob` 与 `XiHan:Providers:objectstorage.multipart` 指定 `xihan.objectstorage.filesystem`；此时 `objectstorage.presign` 仍由 S3 提供，缺省的 `IBlobUrlSigner` 签的是 S3 缺省客户端的地址。选择规则见[能力包与清单](./modularity)。
+::: warning 混装文件系统与 S3 时三项能力一起指定
+缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。要以文件系统为缺省实例、同时用 S3 的命名实例，三项都要指定，并装配 `HostedBlobUrlFeature` 让宿主代收发预签名：
+
+```json
+{
+  "XiHan": {
+    "Providers": {
+      "objectstorage.blob": "xihan.objectstorage.filesystem",
+      "objectstorage.multipart": "xihan.objectstorage.filesystem",
+      "objectstorage.presign": "xihan.hosting.blob-urls"
+    }
+  }
+}
+```
+
+只指定一部分、让某个存储包被选为分片上传或预签名却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出要改的键。选择规则见[能力包与清单](./modularity)。
 :::
 
 ## 两个实现

@@ -63,4 +63,12 @@ public static class ObjectStorageErrors
     /// 命名存储实例的定义不合法（Provider 未登记或设置不合法）。
     /// </summary>
     public const string StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003";
+
+    /// <summary>
+    /// 缺省存储的能力选择不一致。
+    /// </summary>
+    /// <remarks>
+    /// 存储包被选为分片上传或预签名，却没有被选为对象存储。装配错误，以异常抛出，应用启动失败。
+    /// </remarks>
+    public const string StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004";
 }

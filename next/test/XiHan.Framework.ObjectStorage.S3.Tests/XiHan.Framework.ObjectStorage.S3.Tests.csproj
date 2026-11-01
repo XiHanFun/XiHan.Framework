@@ -5,6 +5,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.S3/XiHan.Framework.ObjectStorage.S3.csproj" />
+    <!-- 混装：文件系统存储与宿主代收发的签名器，验证命名实例登记与缺省存储的一致性 -->
+    <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.FileSystem/XiHan.Framework.ObjectStorage.FileSystem.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.ObjectStorage.Conformance/XiHan.Framework.ObjectStorage.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
   </ItemGroup>

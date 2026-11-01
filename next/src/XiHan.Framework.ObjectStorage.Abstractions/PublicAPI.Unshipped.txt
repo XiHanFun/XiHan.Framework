@@ -175,6 +175,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Equals(XiH
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Name.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Provider.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Settings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> void
@@ -208,6 +209,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.RangeNotSat
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.SignatureInvalid = "OBJECTSTORAGE_DENIED_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreNotFound = "OBJECTSTORAGE_NOTFOUND_003" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreUnavailable = "OBJECTSTORAGE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.UploadNotFound = "OBJECTSTORAGE_NOTFOUND_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobExists = "objectstorage.blob.exists" -> string!
@@ -330,6 +332,7 @@ static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.operato
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.IsValidName(string? name) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
+static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection.EnsureSameStore(XiHan.Framework.Kernel.Capabilities.ResolvedNode! node) -> void
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions.AddBlobStoreProvider<TProvider>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static readonly XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.DefaultExpiresIn -> System.TimeSpan
 static readonly XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.MaxExpiresIn -> System.TimeSpan

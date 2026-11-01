@@ -23,7 +23,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 - 范围读取（ADR-0049）：打开内容文件后定位到起点，只交出该段。
 - 分片上传：每次上传一个目录 `<container>/uploads/<上传标识>/`，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256（同一编号重传先落新文件再删旧的）；完成时按清单拼接成对象同目录的临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额，单片与拼接后的对象受 `MaxBlobBytes` 约束；`MultipartExpiryHours`（默认 168）之前发起、仍未完成的上传在启动扫描时清掉。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity`（存储自己实现，同步计算）：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`，消息键 `objectstorage.quota.reached`），否则 Ready。
-- 命名实例（ADR-0050）：特性登记 Provider `FileSystemBlobStoreProvider`（名 `filesystem`），设置的键同本配置节，`RootPath` 必填（不给就会和缺省实例落到同一目录），未知键报错；建出时即建目录并扫描用量，探测同上面的健康项口径。预签名用宿主签名器的 `ForStore(name)`。
+- 命名实例（ADR-0050）：特性总是登记 Provider `FileSystemBlobStoreProvider`（名 `filesystem`）——能力全部被 S3 等存储顶替时经 `IShadowAwareFeature.ConfigureShadowed` 只登记它，不读本配置节、不建缺省实例、不启动（ADR-0075）；设置的键同本配置节，`RootPath` 必填（不给就会和缺省实例落到同一目录），未知键报错；建出时即建目录并扫描用量，探测同上面的健康项口径。预签名用宿主签名器的 `ForStore(name)`。
+- 缺省实例的一致性（ADR-0075）：缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，存储包被选为分片上传或预签名却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`（`BlobStoreSelection.EnsureSameStore`），应用启动失败。与 S3 混装、以文件系统为缺省实例时三项都要指定：`XiHan:Providers:objectstorage.blob` 与 `objectstorage.multipart` 设为 `xihan.objectstorage.filesystem`，`objectstorage.presign` 设为 `xihan.hosting.blob-urls`（装配 `HostedBlobUrlFeature`）。
 
 ## 依赖方向
 
