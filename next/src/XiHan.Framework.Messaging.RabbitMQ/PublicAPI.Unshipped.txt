@@ -28,6 +28,10 @@ XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.get ->
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.get -> string!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.init -> void
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.get -> string?
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.init -> void
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.UserName.get -> string?
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.UserName.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.RabbitMQMessagingOptions() -> void
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.ConnectionBinding = "queue" -> string!
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.HealthName = "messaging.rabbitmq.connection" -> string!

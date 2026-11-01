@@ -461,7 +461,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Caching:InMemory:MaxEntries` | 整数 | 10000 | 内存实现每张表（字节存储、对象缓存各一张）的条目上限，满时淘汰最久未访问的条目 |
 | `XiHan:Caching:InMemory:DefaultTimeToLiveSeconds` | 数字 | 300 | 内存实现未指定过期时的存活时间 |
-| `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有 `cache` 绑定时被绑定的主值覆盖 |
+| `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有 `cache` 绑定时被绑定的主值覆盖，绑定的属性 `username` / `password` 覆盖其中的 `user` / `password` |
 | `XiHan:Caching:Redis:KeyPrefix` | 字符串 | `xihan:` | Redis 键前缀，也决定变更频道 `<KeyPrefix>__changes` |
 | `XiHan:Caching:Redis:DefaultTimeToLiveSeconds` | 数字 | 300 | Redis 未指定过期时的存活时间 |
 | `XiHan:Caching:Redis:PublishChanges` | 布尔 | `true` | 写入与删除后是否向变更频道发布 |

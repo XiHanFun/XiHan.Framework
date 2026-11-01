@@ -78,6 +78,13 @@ internal static class AspireGenerator
             }
         }
 
+        // MinIO 容器以固定的本地联调凭据启动，应用经 blob 绑定的属性拿到同一对凭据（RFC-0016）；
+        // 其余资源的凭据在 Aspire 集成的连接串里，或服务没有开认证
+        foreach (var binding in manifest.Bindings.Where(static b => b.Value.Type == "blob").Select(static b => b.Key).Order(StringComparer.Ordinal))
+        {
+            builder.Append(CultureInfo.InvariantCulture, $"        {Identifier(binding, lowerFirst: true)}.WithEnvironment(\"MINIO_ROOT_USER\", \"{BindingKind.MinioUser}\").WithEnvironment(\"MINIO_ROOT_PASSWORD\", \"{BindingKind.MinioPassword}\");\n");
+        }
+
         builder.Append(CultureInfo.InvariantCulture, $"        var app = builder.AddProject<{project}>(\"{manifest.Name}\")\n");
         builder.Append(CultureInfo.InvariantCulture, $"            .WithHttpEndpoint(port: {manifest.Ports.Http}, name: \"http\")\n");
         if (manifest.Ports.Grpc is { } grpc)
@@ -105,6 +112,12 @@ internal static class AspireGenerator
                 "configuration:remote" => $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable}.GetEndpoint(\"http\"))\n",
                 _ => $"            .WithEnvironment(\"XiHan__Bindings__{binding}__value\", {variable})\n",
             });
+            if (settings.Type == "blob")
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__accessKey\", \"{BindingKind.MinioUser}\")\n");
+                builder.Append(CultureInfo.InvariantCulture, $"            .WithEnvironment(\"XiHan__Bindings__{binding}__secretKey\", \"{BindingKind.MinioPassword}\")\n");
+            }
+
             if (references.Contains(variable))
             {
                 builder.Append(CultureInfo.InvariantCulture, $"            .WithReference({variable})\n");

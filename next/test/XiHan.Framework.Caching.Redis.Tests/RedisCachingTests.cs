@@ -73,6 +73,38 @@ public sealed class RedisCachingTests
     }
 
     [Fact]
+    public void Options_BindingCredentials_OverrideTheConnectionString_WithoutRewritingIt()
+    {
+        // 用内存键值对构建配置
+        static IConfiguration Build(params (string Key, string Value)[] values)
+            => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
+        var configuration = Build(("XiHan:Caching:Redis:Configuration", "cfg:6379,user=app,password=from-config"));
+
+        // 绑定只给凭据、不给主值：连接仍来自配置节，凭据逐项取绑定的；含逗号的密码不会把连接字符串拆错
+        var credentials = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p,w=1" }));
+        var options = RedisCachingOptions.FromConfiguration(configuration, credentials);
+        Assert.Equal("cfg:6379,user=app,password=from-config", options.Configuration);
+        Assert.Equal("ops", options.User);
+        Assert.Equal("p,w=1", options.Password);
+        var connection = RedisCachingFeature.ConnectionOptions(options);
+        Assert.Equal("ops", connection.User);
+        Assert.Equal("p,w=1", connection.Password);
+        Assert.StartsWith("cfg:6379,", connection.ToString(includePassword: false), StringComparison.Ordinal);
+
+        // 只给密码：用户名照读连接字符串；空白的属性不算给出
+        var passwordOnly = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var partial = RedisCachingFeature.ConnectionOptions(RedisCachingOptions.FromConfiguration(configuration, passwordOnly));
+        Assert.Equal("app", partial.User);
+        Assert.Equal("secret", partial.Password);
+
+        // 没有绑定凭据：连接字符串里的照用
+        var unbound = RedisCachingFeature.ConnectionOptions(RedisCachingOptions.FromConfiguration(configuration, default));
+        Assert.Null(RedisCachingOptions.FromConfiguration(configuration, default).Password);
+        Assert.Equal("app", unbound.User);
+        Assert.Equal("from-config", unbound.Password);
+    }
+
+    [Fact]
     public async Task Feature_TakesOverSharedCache_WhileInMemoryKeepsLocal()
     {
         var configuration = RedisTestServer.RequireConfiguration();

@@ -45,4 +45,20 @@ internal sealed record BindingKind(string Type, string Image, int Port)
         "queue" => $"amqp://guest:guest@{binding}:{Port}",
         _ => $"http://{binding}:{Port}",
     };
+
+    /// <summary>
+    /// 本地联调的 MinIO 根用户名。
+    /// </summary>
+    /// <remarks>
+    /// Compose 与 Aspire 以它启动 MinIO，并作为 <c>blob</c> 绑定的属性 <c>accessKey</c> 注入应用（RFC-0016「资源绑定与配置节」）。只用于本地联调。
+    /// </remarks>
+    public const string MinioUser = "xihan";
+
+    /// <summary>
+    /// 本地联调的 MinIO 根密码。
+    /// </summary>
+    /// <remarks>
+    /// 作为 <c>blob</c> 绑定的属性 <c>secretKey</c> 注入应用；MinIO 要求至少 8 个字符。只用于本地联调。
+    /// </remarks>
+    public const string MinioPassword = "xihanxihan";
 }

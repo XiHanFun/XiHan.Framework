@@ -72,6 +72,18 @@ public sealed class S3ObjectStorageTests
         Assert.Equal("eu-west-1", options.Region);
         Assert.Equal(("bound-ak", "bound-sk"), (options.AccessKey, options.SecretKey));
         Assert.False(options.ForcePathStyle);
+
+        // 空白的属性不算给出，逐项照读配置节；绑定只给凭据时地址照读配置节
+        var blank = new BindingValue(S3ObjectStorageFeature.ConnectionBinding, "blob", null, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["region"] = " ",
+            ["accessKey"] = "",
+            ["secretKey"] = "bound-sk",
+        });
+        var partial = S3ObjectStorageOptions.FromConfiguration(Configuration(("XiHan:ObjectStorage:S3:ServiceUrl", "http://localhost:9000"), ("XiHan:ObjectStorage:S3:Region", "cn-north-1"), ("XiHan:ObjectStorage:S3:AccessKey", "ak"), ("XiHan:ObjectStorage:S3:SecretKey", "sk")), Maybe.Some(blank));
+        Assert.Equal("http://localhost:9000", partial.ServiceUrl);
+        Assert.Equal("cn-north-1", partial.Region);
+        Assert.Equal(("ak", "bound-sk"), (partial.AccessKey, partial.SecretKey));
     }
 
     [Fact]

@@ -12,7 +12,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// RabbitMQ Provider 选项。
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Messaging:RabbitMQ</c> 与绑定 <c>queue</c> 显式读取。
+/// 从配置节 <c>XiHan:Messaging:RabbitMQ</c> 与绑定 <c>queue</c> 显式读取（RFC-0016「资源绑定与配置节」）：绑定的主值覆盖 <c>Configuration</c>，绑定的属性 <c>username</c> / <c>password</c> 覆盖 URI 里的用户信息。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record RabbitMQMessagingOptions
@@ -32,6 +32,22 @@ public sealed record RabbitMQMessagingOptions
             ? value
             : throw new ArgumentException("The RabbitMQ connection must be an 'amqp://' or 'amqps://' URI.", nameof(value));
     }
+
+    /// <summary>
+    /// 覆盖 <see cref="Configuration"/> 里用户名的用户名。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时用 URI 用户信息里的。<see cref="FromConfiguration"/> 从绑定 <c>queue</c> 的属性 <c>username</c> 取；连接时以客户端的用户名设置覆盖，不改写 URI（不必为特殊字符转义）。
+    /// </remarks>
+    public string? UserName { get; init; }
+
+    /// <summary>
+    /// 覆盖 <see cref="Configuration"/> 里密码的密码。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时用 URI 用户信息里的。<see cref="FromConfiguration"/> 从绑定 <c>queue</c> 的属性 <c>password</c> 取。不进日志与错误消息。
+    /// </remarks>
+    public string? Password { get; init; }
 
     /// <summary>
     /// 队列名与路由键的前缀。
@@ -83,18 +99,23 @@ public sealed record RabbitMQMessagingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016）、<c>QueuePrefix</c>、<c>Exchange</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016；绑定的属性 <c>username</c> / <c>password</c> 各自覆盖 URI 里的用户名与密码）、<c>QueuePrefix</c>、<c>Exchange</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </remarks>
     public static RabbitMQMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        // 绑定来自部署环境（Service Binding），给出的连接覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
-        // 主值为空的绑定不算给出了连接
+        // 绑定来自部署环境（Service Binding），给出的连接与凭据逐项覆盖配置节里的同类键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
+        // 空白的主值与属性不算给出。凭据只记在选项里、连接时设置，报错不带 URI 与凭据
         var connection = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
             ?? configuration[$"{ConfigurationSection}:Configuration"]
             ?? throw new ArgumentException($"No RabbitMQ connection is configured: provide the 'queue' binding or set {ConfigurationSection}:Configuration.");
 
-        var options = new RabbitMQMessagingOptions { Configuration = connection };
+        var options = new RabbitMQMessagingOptions
+        {
+            Configuration = connection,
+            UserName = BoundText(binding, "username"),
+            Password = BoundText(binding, "password"),
+        };
         if (configuration[$"{ConfigurationSection}:QueuePrefix"] is { } prefix)
         {
             options = options with { QueuePrefix = prefix };
@@ -123,4 +144,13 @@ public sealed record RabbitMQMessagingOptions
 
         return options;
     }
+
+    /// <summary>
+    /// 读绑定的一个非空属性。
+    /// </summary>
+    /// <remarks>
+    /// 没有绑定、没有该属性或属性空白为 <see langword="null"/>。
+    /// </remarks>
+    private static string? BoundText(Maybe<BindingValue> binding, string key)
+        => binding.TryGetValue(out var bound) && bound.Property(key).TryGetValue(out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
 }

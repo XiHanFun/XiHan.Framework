@@ -129,18 +129,18 @@ kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通�
 
 清单里 `required: true` 的绑定在 `AddXiHan` 构建时校验：缺失，或来源声明了类型而与清单不一致，都抛出 `KERNEL_HOSTING_001`，应用不会启动。来源没有声明类型（空字符串）时不比对类型。可选绑定由特性自己用 `TryGetBinding` 处理。
 
-框架内置包声明的绑定都是可选的。绑定来自部署环境，给出的连接信息覆盖 Provider 配置节里的同类键，没给出的键（前缀、超时、凭据等）照读配置节；绑定的主值为空时不算给出了连接；两者都没有连接时装配失败（RFC-0016「资源绑定与配置节」）：
+框架内置包声明的绑定都是可选的。绑定来自部署环境，给出的连接信息（主值）与凭据（下表的属性）逐项覆盖 Provider 配置节里的同类键：绑定里有这一项就用绑定的，没有就读配置节的；前缀、超时、分组等不是连接与凭据的键照读配置节。绑定的主值或属性为空白时不算给出；凭据属性与主值互不依赖，绑定只给凭据、连接来自配置节也照样覆盖凭据；两者都没有连接时装配失败。属性名区分大小写，按表里的写；凭据不进日志与错误消息（RFC-0016「资源绑定与配置节」）：
 
 | 绑定名 | 类型 | 声明它的包 | 用法 |
 | --- | --- | --- | --- |
 | `db` | `connection:relational` | `Persistence.EntityFrameworkCore`、`Persistence.SqlSugar` | 交给应用传入特性的配置委托，主值是连接字符串 |
-| `cache` | `cache:distributed` | `Caching.Redis` | 主值覆盖 `XiHan:Caching:Redis:Configuration` |
-| `queue` | `queue` | `Messaging.RabbitMQ` | 主值覆盖 `XiHan:Messaging:RabbitMQ:Configuration` |
-| `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers` |
-| `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses` |
+| `cache` | `cache:distributed` | `Caching.Redis` | 主值覆盖 `XiHan:Caching:Redis:Configuration`；属性 `username`、`password` 覆盖连接字符串里的 `user`、`password` |
+| `queue` | `queue` | `Messaging.RabbitMQ` | 主值覆盖 `XiHan:Messaging:RabbitMQ:Configuration`；属性 `username`、`password` 覆盖 AMQP URI 里的用户名与密码 |
+| `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers`；属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 覆盖 `Properties` 里的同名键（只认这四项） |
+| `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses`；属性 `username`、`password` 覆盖 `Username`、`Password` |
 | `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
 
-表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`，Kustomize 产物不在集群里起依赖服务（Kafka、Nacos 也不起），只按 Service Binding 规范挂 Secret（见[部署](./deployment)）。
+表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`（MinIO 另注入 `accessKey`、`secretKey` 两个属性，其余服务的凭据在主值里或没开认证），Kustomize 产物不在集群里起依赖服务（Kafka、Nacos 也不起），只按 Service Binding 规范挂 Secret，示例 Secret 以注释列出各类型可单独给出的凭据键（见[部署](./deployment)）。
 
 应用自己的特性声明绑定的写法：
 

@@ -46,4 +46,21 @@ public sealed class RedisCachingHealthTests
         Assert.Null(status.Error);
         Assert.True(health.Ready);
     }
+
+    [Fact]
+    public async Task Health_IsReady_WhenTheBindingSuppliesThePassword_AgainstARealServer()
+    {
+        // 连接串里的密码换成错的，正确的密码只由绑定 cache 的属性给出：能连上说明绑定凭据覆盖了配置节（RFC-0016）
+        var real = StackExchange.Redis.ConfigurationOptions.Parse(RedisTestServer.RequireConfiguration());
+        var password = real.Password;
+        Assert.SkipWhen(string.IsNullOrEmpty(password), "This test needs a password-protected Redis in XIHAN_TEST_REDIS.");
+        real.Password = "wrong-password";
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryCachingFeature>().UseFeature<RedisCachingFeature>(),
+            [new("XiHan:Caching:Redis:Configuration", real.ToString(includePassword: true)), new("XiHan:Bindings:cache:password", password), new("XiHan:Caching:Redis:KeyPrefix", $"xihan-test:{Guid.NewGuid():N}:")]);
+
+        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == RedisCachingFeature.HealthName);
+        Assert.Equal(LifecycleState.Ready, status.State);
+        Assert.Null(status.Error);
+    }
 }

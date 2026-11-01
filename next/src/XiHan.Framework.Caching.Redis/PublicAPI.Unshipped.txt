@@ -31,6 +31,10 @@ XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.get -> Sys
 XiHan.Framework.Caching.Redis.RedisCachingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.get -> string!
 XiHan.Framework.Caching.Redis.RedisCachingOptions.KeyPrefix.init -> void
+XiHan.Framework.Caching.Redis.RedisCachingOptions.Password.get -> string?
+XiHan.Framework.Caching.Redis.RedisCachingOptions.Password.init -> void
+XiHan.Framework.Caching.Redis.RedisCachingOptions.User.get -> string?
+XiHan.Framework.Caching.Redis.RedisCachingOptions.User.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.PublishChanges.get -> bool
 XiHan.Framework.Caching.Redis.RedisCachingOptions.PublishChanges.init -> void
 XiHan.Framework.Caching.Redis.RedisCachingOptions.RedisCachingOptions() -> void

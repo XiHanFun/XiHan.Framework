@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储选项。
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）覆盖配置。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
+/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -119,7 +119,7 @@ public sealed record S3ObjectStorageOptions
                 : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
         }
 
-        // 绑定来自部署环境（Service Binding），优先于应用配置
+        // 绑定来自部署环境（Service Binding），给出的地址与凭据逐项覆盖应用配置；空白的主值与属性不算给出，照读配置节
         if (binding.TryGetValue(out var value))
         {
             if (!string.IsNullOrWhiteSpace(value.Value))
@@ -127,22 +127,22 @@ public sealed record S3ObjectStorageOptions
                 options = options with { ServiceUrl = value.Value };
             }
 
-            if (value.Property("region").TryGetValue(out var boundRegion))
+            if (BoundText(value, "region") is { } boundRegion)
             {
                 options = options with { Region = boundRegion };
             }
 
-            if (value.Property("accessKey").TryGetValue(out var accessKey))
+            if (BoundText(value, "accessKey") is { } accessKey)
             {
                 options = options with { AccessKey = accessKey };
             }
 
-            if (value.Property("secretKey").TryGetValue(out var secretKey))
+            if (BoundText(value, "secretKey") is { } secretKey)
             {
                 options = options with { SecretKey = secretKey };
             }
 
-            if (value.Property("forcePathStyle").TryGetValue(out var boundPathStyle))
+            if (BoundText(value, "forcePathStyle") is { } boundPathStyle)
             {
                 options = options with { ForcePathStyle = ParseBoolean(boundPathStyle, "The binding property forcePathStyle") };
             }
@@ -150,6 +150,15 @@ public sealed record S3ObjectStorageOptions
 
         return options;
     }
+
+    /// <summary>
+    /// 读绑定的一个非空属性。
+    /// </summary>
+    /// <remarks>
+    /// 没有该属性或属性空白为 <see langword="null"/>。
+    /// </remarks>
+    private static string? BoundText(BindingValue binding, string key)
+        => binding.Property(key).TryGetValue(out var text) && !string.IsNullOrWhiteSpace(text) ? text : null;
 
     /// <summary>
     /// 从命名实例的设置读取。

@@ -12,7 +12,7 @@ namespace XiHan.Framework.Messaging.Kafka;
 /// Kafka Provider 的选项。
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
+/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 覆盖同名键）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
@@ -21,6 +21,14 @@ public sealed record KafkaMessagingOptions
     /// 配置节。
     /// </summary>
     public const string ConfigurationSection = "XiHan:Messaging:Kafka";
+
+    /// <summary>
+    /// 绑定 <c>stream</c> 里覆盖 <see cref="Properties"/> 同名键的属性。
+    /// </summary>
+    /// <remarks>
+    /// 只认 SASL 的凭据与用法（RFC-0016「资源绑定与配置节」）；绑定目录里的其余文件（<c>type</c>、<c>provider</c>、<c>host</c> 等）不是 librdkafka 的配置项，透传会让客户端拒绝启动。
+    /// </remarks>
+    private static readonly string[] _boundProperties = ["security.protocol", "sasl.mechanism", "sasl.username", "sasl.password"];
 
     /// <summary>
     /// 引导地址，逗号分隔的 <c>host:port</c>。
@@ -87,7 +95,7 @@ public sealed record KafkaMessagingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>。
+    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 各自覆盖 <c>Properties</c> 里的同名键，空白的不算给出。
     /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -130,6 +138,18 @@ public sealed record KafkaMessagingOptions
             if (child.Value is { } value)
             {
                 properties[child.Key] = value;
+            }
+        }
+
+        // 绑定给出的 SASL 凭据与用法逐项覆盖配置节的同名键（RFC-0016）：部署环境换成带认证的集群时不必改应用配置
+        if (binding.TryGetValue(out var credentials))
+        {
+            foreach (var key in _boundProperties)
+            {
+                if (credentials.Property(key).TryGetValue(out var value) && !string.IsNullOrWhiteSpace(value))
+                {
+                    properties[key] = value;
+                }
             }
         }
 

@@ -12,7 +12,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// Nacos Provider 的选项。
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔；绑定 <c>nacos</c> 的主值优先）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>Username</c> / <c>Password</c>、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>。
+/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔；绑定 <c>nacos</c> 的主值优先）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>Username</c> / <c>Password</c>（绑定的属性 <c>username</c> / <c>password</c> 优先）、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record NacosOptions
@@ -117,21 +117,24 @@ public sealed record NacosOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 从配置与绑定读取（地址：绑定 <c>nacos</c> 的主值优先于配置，RFC-0016）。
+    /// 从配置与绑定读取（RFC-0016「资源绑定与配置节」）。
     /// </summary>
+    /// <remarks>
+    /// 地址：绑定 <c>nacos</c> 的主值优先于 <c>ServerAddresses</c>；用户名与密码：绑定的属性 <c>username</c> / <c>password</c> 各自优先于 <c>Username</c> / <c>Password</c>。空白的主值与属性不算给出。
+    /// </remarks>
     public static NacosOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        // 绑定来自部署环境（Service Binding），给出的地址覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），
-        // 用户名、密码等其余键照读配置节；主值为空的绑定不算给出了地址
+        // 绑定来自部署环境（Service Binding），给出的地址与凭据逐项覆盖配置节里的同类键（RFC-0016「资源绑定与配置节」），
+        // 分组、格式、超时等其余键照读配置节；空白的主值与属性不算给出
         var addresses = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
             ?? configuration[$"{ConfigurationSection}:ServerAddresses"]
             ?? throw new ArgumentException($"No Nacos server address is configured: provide the 'nacos' binding or set {ConfigurationSection}:ServerAddresses.");
         var options = new NacosOptions
         {
             ServerAddresses = [.. addresses.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
-            Username = Text(configuration, "Username"),
-            Password = Text(configuration, "Password"),
+            Username = BoundText(binding, "username") ?? Text(configuration, "Username"),
+            Password = BoundText(binding, "password") ?? Text(configuration, "Password"),
             Tenant = Text(configuration, "Tenant") ?? string.Empty,
         };
         if (Text(configuration, "Group") is { } group)
@@ -158,6 +161,15 @@ public sealed record NacosOptions
 
         return options;
     }
+
+    /// <summary>
+    /// 读绑定的一个非空属性。
+    /// </summary>
+    /// <remarks>
+    /// 没有绑定、没有该属性或属性空白为 <see langword="null"/>。
+    /// </remarks>
+    private static string? BoundText(Maybe<BindingValue> binding, string key)
+        => binding.TryGetValue(out var bound) && bound.Property(key).TryGetValue(out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
 
     /// <summary>
     /// 读一个非空文本值。

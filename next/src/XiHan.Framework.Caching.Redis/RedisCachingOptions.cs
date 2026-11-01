@@ -12,7 +12,7 @@ namespace XiHan.Framework.Caching.Redis;
 /// Redis Provider 选项。
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Caching:Redis</c> 与绑定 <c>cache</c> 显式读取。
+/// 从配置节 <c>XiHan:Caching:Redis</c> 与绑定 <c>cache</c> 显式读取（RFC-0016「资源绑定与配置节」）：绑定的主值覆盖 <c>Configuration</c>，绑定的属性 <c>username</c> / <c>password</c> 覆盖连接字符串里的 <c>user</c> / <c>password</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record RedisCachingOptions
@@ -30,6 +30,22 @@ public sealed record RedisCachingOptions
         get => field;
         init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The Redis connection string cannot be empty.", nameof(value));
     }
+
+    /// <summary>
+    /// 覆盖 <see cref="Configuration"/> 里 <c>user</c> 的用户名（Redis 6 的 ACL 用户）。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时用连接字符串里的。<see cref="FromConfiguration"/> 从绑定 <c>cache</c> 的属性 <c>username</c> 取；连接时以 StackExchange.Redis 的选项设置覆盖，不改写连接字符串（密码里的逗号等字符不会把字符串拆错）。
+    /// </remarks>
+    public string? User { get; init; }
+
+    /// <summary>
+    /// 覆盖 <see cref="Configuration"/> 里 <c>password</c> 的密码。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时用连接字符串里的。<see cref="FromConfiguration"/> 从绑定 <c>cache</c> 的属性 <c>password</c> 取。不进日志与错误消息。
+    /// </remarks>
+    public string? Password { get; init; }
 
     /// <summary>
     /// 键前缀。
@@ -75,18 +91,23 @@ public sealed record RedisCachingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（绑定 <c>cache</c> 的主值优先于配置，RFC-0016）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>Configuration</c>（绑定 <c>cache</c> 的主值优先于配置，RFC-0016；绑定的属性 <c>username</c> / <c>password</c> 各自覆盖连接字符串里的 <c>user</c> / <c>password</c>）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </remarks>
     public static RedisCachingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        // 绑定来自部署环境（Service Binding），给出的连接覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
-        // 主值为空的绑定不算给出了连接。两者都没有直接报错而不是静默退回
+        // 绑定来自部署环境（Service Binding），给出的连接与凭据逐项覆盖配置节里的同类键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
+        // 空白的主值与属性不算给出。连接两者都没有直接报错而不是静默退回
         var connection = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
             ?? configuration[$"{ConfigurationSection}:Configuration"]
             ?? throw new ArgumentException($"No Redis connection is configured: provide the 'cache' binding or set {ConfigurationSection}:Configuration.");
 
-        var options = new RedisCachingOptions { Configuration = connection };
+        var options = new RedisCachingOptions
+        {
+            Configuration = connection,
+            User = BoundText(binding, "username"),
+            Password = BoundText(binding, "password"),
+        };
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)
         {
             options = options with { KeyPrefix = prefix };
@@ -117,4 +138,13 @@ public sealed record RedisCachingOptions
 
         return options;
     }
+
+    /// <summary>
+    /// 读绑定的一个非空属性。
+    /// </summary>
+    /// <remarks>
+    /// 没有绑定、没有该属性或属性空白为 <see langword="null"/>。
+    /// </remarks>
+    private static string? BoundText(Maybe<BindingValue> binding, string key)
+        => binding.TryGetValue(out var bound) && bound.Property(key).TryGetValue(out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
 }

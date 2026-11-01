@@ -382,8 +382,11 @@ internal static class KustomizeGenerator
             .ToString();
 
     /// <summary>
-    /// 绑定 Secret 的示例（Service Binding 规范的 type 与 uri），不进 kustomization。
+    /// 绑定 Secret 的示例，不进 kustomization。
     /// </summary>
+    /// <remarks>
+    /// 按 Service Binding 规范写 <c>type</c> 与 <c>uri</c>，另以注释列出该类型可单独给出的凭据键。
+    /// </remarks>
     private static string BindingSecrets(AppManifest manifest)
     {
         var yaml = new YamlText().Line(0, "# 示例：按 Service Binding 规范为每个绑定创建 Secret，再挂到 " + BindingRoot + "/<绑定名>；真实值不要提交到仓库。");
@@ -403,10 +406,29 @@ internal static class KustomizeGenerator
                 .Line(0, "stringData:")
                 .Pair(2, "type", settings.Type)
                 .Pair(2, "uri", "<" + binding + " connection string>");
+            // 凭据也可以单独成键：Provider 以绑定的这些属性覆盖配置节里的同类键（RFC-0016「资源绑定与配置节」），按需取消注释
+            foreach (var key in CredentialKeys(settings.Type))
+            {
+                yaml.Line(2, "# " + key + ": <" + binding + " " + key + ">");
+            }
         }
 
         return yaml.ToString();
     }
+
+    /// <summary>
+    /// 绑定类型可单独给出的凭据属性。
+    /// </summary>
+    /// <remarks>
+    /// 与各 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键。
+    /// </remarks>
+    private static string[] CredentialKeys(string type) => type switch
+    {
+        "cache:distributed" or "queue" or "configuration:remote" => ["username", "password"],
+        "blob" => ["accessKey", "secretKey"],
+        "stream" => ["security.protocol", "sasl.mechanism", "sasl.username", "sasl.password"],
+        _ => [],
+    };
 
     /// <summary>
     /// kustomization。

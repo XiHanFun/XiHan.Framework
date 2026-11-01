@@ -6,7 +6,7 @@
 builder.AddXiHan(x => x.UseFeature<InMemoryCachingFeature>().UseFeature<RedisCachingFeature>());
 ```
 
-连接来自绑定 `cache`（`cache:distributed`）的主值，没有绑定时取 `XiHan:Caching:Redis:Configuration`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。
+连接来自绑定 `cache`（`cache:distributed`）的主值，没有绑定时取 `XiHan:Caching:Redis:Configuration`：两者都给时绑定优先；绑定的属性 `username` / `password` 各自覆盖连接字符串里的 `user` / `password`（选项 `User` / `Password`，连接时按 StackExchange.Redis 的选项设置，不改写字符串）；其余键照读配置节，空白的主值与属性不算给出（RFC-0016「资源绑定与配置节」）；连接两者都没有时装配失败。凭据不进日志与错误消息。
 值的序列化按顺序取：已注册的 `ICacheSerializer` → 已注册的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`（本包不支持 AOT，允许反射）。
 
 ## 语义

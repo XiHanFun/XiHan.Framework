@@ -45,7 +45,7 @@ public sealed class NacosConfigurationTests
             ("XiHan:Configuration:Nacos:Format", "properties"),
             ("XiHan:Configuration:Nacos:LongPollTimeoutSeconds", "5"),
             ("XiHan:Configuration:Nacos:RequestTimeoutSeconds", "2.5")), binding);
-        // 两者都给时取绑定的地址，用户名、密码等其余键照读配置节
+        // 两者都给时取绑定的地址；绑定没给凭据属性，用户名、密码等其余键照读配置节
         Assert.Equal(["http://bound:8848"], configured.ServerAddresses);
         Assert.Equal(["http://a:8848", "http://b:8848", "http://c:8848"], NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848, http://b:8848;http://c:8848"))).ServerAddresses);
         Assert.Equal(("orders", "dev", "nacos", "secret"), (configured.Group, configured.Tenant, configured.Username, configured.Password));
@@ -57,6 +57,30 @@ public sealed class NacosConfigurationTests
         Assert.Throws<ArgumentException>(static () => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "nacos:8848"))));
         Assert.Throws<ArgumentException>(static () => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848"), ("XiHan:Configuration:Nacos:Format", "yaml"))));
         Assert.Throws<ArgumentException>(static () => new NacosOptions { ServerAddresses = [] });
+    }
+
+    [Fact]
+    public void Options_BindingCredentials_OverrideUsernameAndPassword_ItemByItem()
+    {
+        var configuration = Build(
+            ("XiHan:Configuration:Nacos:ServerAddresses", "http://cfg:8848"),
+            ("XiHan:Configuration:Nacos:Username", "nacos"),
+            ("XiHan:Configuration:Nacos:Password", "from-config"));
+
+        // 绑定只给凭据：地址仍来自配置节，用户名与密码取绑定的
+        var credentials = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "secret" }));
+        var options = NacosOptions.FromConfiguration(configuration, credentials);
+        Assert.Equal(["http://cfg:8848"], options.ServerAddresses);
+        Assert.Equal(("ops", "secret"), (options.Username, options.Password));
+
+        // 逐项：只给密码、用户名空白时用户名照读配置节
+        var passwordOnly = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var partial = NacosOptions.FromConfiguration(configuration, passwordOnly);
+        Assert.Equal(("nacos", "secret"), (partial.Username, partial.Password));
+
+        // 配置节没有凭据时，绑定的凭据照样生效
+        var bindingOnly = NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://cfg:8848")), credentials);
+        Assert.Equal(("ops", "secret"), (bindingOnly.Username, bindingOnly.Password));
     }
 
     [Fact]

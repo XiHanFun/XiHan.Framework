@@ -39,6 +39,40 @@ public sealed class RabbitMQMessagingOptionsTests
     }
 
     [Fact]
+    public void BindingCredentials_OverrideTheUriUserInfo_WithoutRewritingIt()
+    {
+        var configuration = Build(("XiHan:Messaging:RabbitMQ:Configuration", "amqp://app:from-config@cfg:5672/orders"));
+
+        // 绑定只给凭据：连接仍来自配置节，用户名与密码取绑定的；含 @ 与 : 的密码不必转义
+        var credentials = Maybe.Some(new BindingValue("queue", "queue", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p@ss:w/rd" }));
+        var options = RabbitMQMessagingOptions.FromConfiguration(configuration, credentials);
+        Assert.Equal("amqp://app:from-config@cfg:5672/orders", options.Configuration);
+        Assert.Equal("ops", options.UserName);
+        Assert.Equal("p@ss:w/rd", options.Password);
+        var factory = RabbitMQMessageBroker.CreateFactory(options);
+        Assert.Equal("ops", factory.UserName);
+        Assert.Equal("p@ss:w/rd", factory.Password);
+        Assert.Equal("cfg", factory.HostName);
+        Assert.Equal("orders", factory.VirtualHost);
+
+        // 只给密码、用户名空白：用户名照读 URI
+        var passwordOnly = Maybe.Some(new BindingValue("queue", "queue", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var partial = RabbitMQMessageBroker.CreateFactory(RabbitMQMessagingOptions.FromConfiguration(configuration, passwordOnly));
+        Assert.Equal("app", partial.UserName);
+        Assert.Equal("secret", partial.Password);
+
+        // 没有绑定凭据：URI 里的照用
+        var unbound = RabbitMQMessageBroker.CreateFactory(RabbitMQMessagingOptions.FromConfiguration(configuration, default));
+        Assert.Equal("app", unbound.UserName);
+        Assert.Equal("from-config", unbound.Password);
+
+        // 连接不合法时报错不带凭据
+        var invalid = Assert.Throws<ArgumentException>(() => RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Configuration", "redis://app:leaked@cfg")), credentials));
+        Assert.DoesNotContain("leaked", invalid.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("p@ss", invalid.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Exchange_DefaultsToXihan_IsReadFromConfiguration_AndRejectsEmptyOrReservedNames()
     {
         var binding = Maybe.Some(new BindingValue("queue", "queue", "amqp://guest:guest@bound:5672", new Dictionary<string, string>()));

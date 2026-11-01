@@ -70,7 +70,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 }
 ```
 
-绑定 `objectstorage` 存在时覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
+绑定 `objectstorage` 存在时逐项覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`；空白的主值与属性不算给出，照读配置节。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
 
 ```text
 /bindings/objectstorage/type          blob

@@ -53,4 +53,41 @@ public sealed class KafkaMessagingOptionsTests
         Assert.Throws<ArgumentException>(() => KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:RedeliveryDelaySeconds", "soon")), binding));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new KafkaMessagingOptions { BootstrapServers = "x:1", RedeliveryDelay = TimeSpan.Zero });
     }
+
+    [Fact]
+    public void BindingSaslProperties_OverrideTheSameNamedProperties_AndNothingElseIsPassedThrough()
+    {
+        var configuration = Build(
+            ("XiHan:Messaging:Kafka:BootstrapServers", "cfg:9092"),
+            ("XiHan:Messaging:Kafka:Properties:security.protocol", "SASL_PLAINTEXT"),
+            ("XiHan:Messaging:Kafka:Properties:sasl.mechanism", "PLAIN"),
+            ("XiHan:Messaging:Kafka:Properties:sasl.username", "app"),
+            ("XiHan:Messaging:Kafka:Properties:sasl.password", "from-config"),
+            ("XiHan:Messaging:Kafka:Properties:ssl.ca.location", "/certs/ca.pem"));
+
+        // 绑定只给凭据：引导地址仍来自配置节，四项 SASL 属性逐项取绑定的，空白的不算给出；
+        // 绑定目录里的其余文件（provider、host）不是 librdkafka 的配置项，不透传
+        var binding = Maybe.Some(new BindingValue("stream", "stream", null, new Dictionary<string, string>
+        {
+            ["security.protocol"] = "SASL_SSL",
+            ["sasl.mechanism"] = " ",
+            ["sasl.username"] = "ops",
+            ["sasl.password"] = "secret",
+            ["provider"] = "confluent",
+            ["host"] = "bound",
+        }));
+        var options = KafkaMessagingOptions.FromConfiguration(configuration, binding);
+
+        Assert.Equal("cfg:9092", options.BootstrapServers);
+        Assert.Equal("SASL_SSL", options.Properties["security.protocol"]);
+        Assert.Equal("PLAIN", options.Properties["sasl.mechanism"]);
+        Assert.Equal("ops", options.Properties["sasl.username"]);
+        Assert.Equal("secret", options.Properties["sasl.password"]);
+        Assert.Equal("/certs/ca.pem", options.Properties["ssl.ca.location"]);
+        Assert.False(options.Properties.ContainsKey("provider"));
+        Assert.False(options.Properties.ContainsKey("host"));
+
+        // 没有绑定属性：配置节的照用
+        Assert.Equal("from-config", KafkaMessagingOptions.FromConfiguration(configuration, default).Properties["sasl.password"]);
+    }
 }

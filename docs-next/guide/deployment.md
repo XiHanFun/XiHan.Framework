@@ -121,7 +121,7 @@ Kustomize 产物只包含应用自己，不在集群里起依赖服务：六种�
 
 ### Compose 与 Aspire
 
-Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。
+Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。`blob` 的凭据不在主值里：两者都以 `MINIO_ROOT_USER=xihan`、`MINIO_ROOT_PASSWORD=xihanxihan` 启动 MinIO，并把同一对值作为绑定属性 `XiHan__Bindings__<绑定名>__accessKey` / `__secretKey` 注入，覆盖 S3 配置节里的同名键（[配置](./configuration)「资源绑定」）；其余类型的凭据已在主值里（PostgreSQL 连接串、AMQP URI，Aspire 集成资源的连接串自带口令），或依赖服务没开认证（Redis、Kafka、Nacos）。
 
 | 绑定类型 | Compose 镜像 | 注入的 `value` | Aspire |
 | --- | --- | --- | --- |
@@ -150,7 +150,7 @@ Compose 里的账号口令是本地联调用的固定开发值。应用服务的
 
 ## 资源绑定
 
-`bindings` 在 Kubernetes 里按 Service Binding 规范落地：每个绑定一个 Secret（键 `type` 与 `uri`）挂到 `/bindings/<绑定名>`，并设 `SERVICE_BINDING_ROOT=/bindings`。内核的 `BindingResolver` 先读 `SERVICE_BINDING_ROOT` 下的目录，再读配置节 `XiHan:Bindings:<绑定名>`（子键 `value` / `type`，或节本身的标量值），同名时配置整体覆盖目录来源。所以同一个应用在 k8s 里读 Secret、在 Compose 里读环境变量，代码不变。`bindings.example.yaml` 只是 Secret 的样板，真实连接串由部署方另行创建，不进仓库。
+`bindings` 在 Kubernetes 里按 Service Binding 规范落地：每个绑定一个 Secret（键 `type` 与 `uri`）挂到 `/bindings/<绑定名>`，并设 `SERVICE_BINDING_ROOT=/bindings`。内核的 `BindingResolver` 先读 `SERVICE_BINDING_ROOT` 下的目录，再读配置节 `XiHan:Bindings:<绑定名>`（子键 `value` / `type`，或节本身的标量值），同名时配置整体覆盖目录来源。所以同一个应用在 k8s 里读 Secret、在 Compose 里读环境变量，代码不变。`bindings.example.yaml` 只是 Secret 的样板，真实连接串由部署方另行创建，不进仓库；样板以注释列出各类型可单独给出的凭据键（`cache`、`queue`、`nacos` 的 `username` / `password`，`blob` 的 `accessKey` / `secretKey`，`stream` 的 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password`），写进 Secret 就覆盖应用配置节里的同类键，凭据可以不放进连接串。
 
 ## 探针与停机宽限
 

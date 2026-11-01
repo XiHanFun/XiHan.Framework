@@ -84,7 +84,7 @@ public sealed class RedisCachingFeature : IHostedFeature
         context.Services.AddSingleton(options);
         context.Services.AddSingleton(IdempotencyOptions.FromConfiguration(context.Configuration));
         // 连接推迟到首次解析时建立，由 StartAsync 触发并核对；装配阶段不触网
-        context.Services.AddSingleton<IConnectionMultiplexer>(sp => Connect(sp.GetRequiredService<RedisCachingOptions>().Configuration));
+        context.Services.AddSingleton<IConnectionMultiplexer>(static sp => Connect(sp.GetRequiredService<RedisCachingOptions>()));
         context.Services.AddSingleton<RedisCacheStore>();
         if (!CacheSerializerRegistration.TryAddJsonSerializer(context.Services))
         {
@@ -135,21 +135,44 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 按连接字符串建立连接。
+    /// 按选项建立连接。
     /// </summary>
     /// <remarks>
     /// 连接或超时失败包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常。
     /// </remarks>
-    private static ConnectionMultiplexer Connect(string configuration)
+    private static ConnectionMultiplexer Connect(RedisCachingOptions options)
     {
         try
         {
-            return ConnectionMultiplexer.Connect(configuration);
+            return ConnectionMultiplexer.Connect(ConnectionOptions(options));
         }
         catch (Exception exception) when (exception is RedisException or TimeoutException)
         {
             throw new FrameworkException(CachingErrors.StoreUnavailable, $"Failed to connect to Redis: {exception.Message}", exception);
         }
+    }
+
+    /// <summary>
+    /// 把选项换成客户端的连接选项。
+    /// </summary>
+    /// <remarks>
+    /// 连接字符串给出地址与缺省凭据；选项里的用户名与密码（来自绑定的属性，RFC-0016）以属性设置覆盖，不改写字符串。
+    /// </remarks>
+    internal static ConfigurationOptions ConnectionOptions(RedisCachingOptions options)
+    {
+        // 直接往字符串里拼 password= 遇到含逗号的密码会把字符串拆错，所以解析后按属性覆盖
+        var parsed = ConfigurationOptions.Parse(options.Configuration);
+        if (options.User is { } user)
+        {
+            parsed.User = user;
+        }
+
+        if (options.Password is { } password)
+        {
+            parsed.Password = password;
+        }
+
+        return parsed;
     }
 
     /// <summary>

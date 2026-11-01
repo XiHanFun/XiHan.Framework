@@ -68,7 +68,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 建立连接。
     /// </summary>
     /// <remarks>
-    /// 缺省按 <see cref="RabbitMQMessagingOptions.Configuration"/> 用 <see cref="ConnectionFactory"/> 连接；测试换成打桩的连接。
+    /// 缺省按 <see cref="CreateFactory"/> 建的 <see cref="ConnectionFactory"/> 连接；测试换成打桩的连接。
     /// </remarks>
     private readonly Func<CancellationToken, Task<IConnection>> _connect;
 
@@ -145,7 +145,30 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
         _instance = instance ?? throw new ArgumentNullException(nameof(instance));
         _app = app ?? throw new ArgumentNullException(nameof(app));
         _logger = loggerFactory.CreateLogger<RabbitMQMessageBroker>();
-        _connect = connect ?? (cancellationToken => new ConnectionFactory { Uri = new Uri(_options.Configuration), ConsumerDispatchConcurrency = 1 }.CreateConnectionAsync(cancellationToken));
+        _connect = connect ?? (cancellationToken => CreateFactory(_options).CreateConnectionAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// 按选项建连接工厂。
+    /// </summary>
+    /// <remarks>
+    /// AMQP URI 给出地址、虚拟主机与缺省凭据；选项里的用户名与密码（来自绑定的属性，RFC-0016）覆盖 URI 里的。
+    /// </remarks>
+    internal static ConnectionFactory CreateFactory(RabbitMQMessagingOptions options)
+    {
+        // 先设 Uri（它按用户信息设用户名与密码），再以绑定给出的凭据覆盖：不改写 URI，密码里的特殊字符不必转义
+        var factory = new ConnectionFactory { Uri = new Uri(options.Configuration), ConsumerDispatchConcurrency = 1 };
+        if (options.UserName is { } userName)
+        {
+            factory.UserName = userName;
+        }
+
+        if (options.Password is { } password)
+        {
+            factory.Password = password;
+        }
+
+        return factory;
     }
 
     /// <summary>

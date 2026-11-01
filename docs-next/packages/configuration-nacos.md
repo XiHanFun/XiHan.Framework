@@ -83,10 +83,10 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 }
 ```
 
-服务地址也可以用绑定提供，绑定的主值覆盖配置里的 `ServerAddresses`，用户名、密码等其余键照读配置节：
+服务地址与凭据也可以用绑定提供：绑定的主值覆盖配置里的 `ServerAddresses`，属性 `username` / `password` 各自覆盖 `Username` / `Password`（空白不算给出），分组、格式等其余键照读配置节：
 
 ```json
-{ "XiHan": { "Bindings": { "nacos": { "type": "configuration:remote", "value": "http://localhost:8848" } } } }
+{ "XiHan": { "Bindings": { "nacos": { "type": "configuration:remote", "value": "http://localhost:8848", "username": "nacos", "password": "<来自密钥源>" } } } }
 ```
 
 ## 主要类型

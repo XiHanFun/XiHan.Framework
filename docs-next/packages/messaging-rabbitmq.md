@@ -59,7 +59,7 @@ builder.AddXiHan(xihan => xihan
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Messaging:RabbitMQ:Configuration` | 字符串 | — | AMQP URI（`amqp://` 或 `amqps://`）；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败 |
+| `XiHan:Messaging:RabbitMQ:Configuration` | 字符串 | — | AMQP URI（`amqp://` 或 `amqps://`）；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖 URI 里的用户名与密码（连接时设置，不改写 URI，特殊字符不必转义） |
 | `XiHan:Messaging:RabbitMQ:QueuePrefix` | 字符串 | `xihan.` | 队列名与路由键的前缀 |
 | `XiHan:Messaging:RabbitMQ:Exchange` | 字符串 | `xihan` | 发布用的 direct 交换机，不能为空、不能以 `amq.` 开头；发布方与订阅方要一致 |
 | `XiHan:Messaging:RabbitMQ:PrefetchCount` | 1–65535 | 16 | 每个消费者的预取数 |

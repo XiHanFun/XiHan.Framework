@@ -319,7 +319,7 @@
           "type": "string",
           "required": true,
           "sample": "localhost:6379",
-          "summary": "StackExchange.Redis 连接字符串，不能为空白；绑定 cache 的值优先，没有绑定或其值为空时读本键"
+          "summary": "StackExchange.Redis 连接字符串，不能为空白；绑定 cache 的值优先，没有绑定或其值为空时读本键；绑定的属性 username / password 覆盖其中的 user / password"
         },
         {
           "key": "KeyPrefix",
@@ -380,13 +380,13 @@
           "key": "Username",
           "type": "string",
           "sample": "nacos",
-          "summary": "登录用户名；与 Password 都给出时先登录取令牌；空白视为没有"
+          "summary": "登录用户名；与 Password 都给出时先登录取令牌；空白视为没有；绑定 nacos 的属性 username 优先"
         },
         {
           "key": "Password",
           "type": "string",
           "sample": "nacos",
-          "summary": "登录密码；与 Username 一起给出时生效"
+          "summary": "登录密码；与 Username 一起给出时生效；绑定 nacos 的属性 password 优先"
         },
         {
           "key": "Tenant",
@@ -695,7 +695,7 @@
           "key": "Properties:{key}",
           "type": "string",
           "sample": "SASL_SSL",
-          "summary": "原样透传给 librdkafka 的配置（生产者与消费者共用），如 security.protocol"
+          "summary": "原样透传给 librdkafka 的配置（生产者与消费者共用），如 security.protocol；绑定 stream 的属性 security.protocol、sasl.mechanism、sasl.username、sasl.password 覆盖同名键"
         }
       ]
     },
@@ -760,7 +760,7 @@
           "type": "string",
           "required": true,
           "sample": "amqp://localhost:5672",
-          "summary": "AMQP URI（amqp:// 或 amqps://）；绑定 queue 的值优先，没有绑定或其值为空时读本键"
+          "summary": "AMQP URI（amqp:// 或 amqps://）；绑定 queue 的值优先，没有绑定或其值为空时读本键；绑定的属性 username / password 覆盖其中的用户名与密码"
         },
         {
           "key": "QueuePrefix",
@@ -942,13 +942,13 @@
           "key": "AccessKey",
           "type": "string",
           "sample": "minioadmin",
-          "summary": "访问密钥 ID；与 SecretKey 都没有时用 AWS SDK 默认凭据链；绑定属性 accessKey 优先"
+          "summary": "访问密钥 ID；与 SecretKey 都没有时用 AWS SDK 默认凭据链；绑定属性 accessKey 优先（空白不算）"
         },
         {
           "key": "SecretKey",
           "type": "string",
           "sample": "minioadmin",
-          "summary": "访问密钥；绑定属性 secretKey 优先"
+          "summary": "访问密钥；绑定属性 secretKey 优先（空白不算）"
         },
         {
           "key": "HealthBucket",

@@ -41,4 +41,29 @@ public sealed class RabbitMQMessagingHealthTests
         Assert.Null(status.Error);
         Assert.True(health.Ready);
     }
+
+    [Fact]
+    public async Task Health_IsReady_WhenTheBindingSuppliesTheCredentials_AgainstARealBroker()
+    {
+        var uri = Environment.GetEnvironmentVariable(RabbitMQMessageBrokerConformanceTests.EnvironmentVariable);
+        Assert.SkipWhen(string.IsNullOrWhiteSpace(uri), $"Set the environment variable {RabbitMQMessageBrokerConformanceTests.EnvironmentVariable} to a RabbitMQ URI to run this test.");
+        var real = new Uri(uri!);
+        var userInfo = real.UserInfo.Split(':', 2);
+        Assert.SkipWhen(userInfo.Length != 2, "This test needs credentials in the RabbitMQ URI.");
+
+        // URI 里的凭据换成错的，正确的用户名与密码只由绑定 queue 的属性给出：能连上说明绑定凭据覆盖了配置节（RFC-0016）
+        var wrong = new UriBuilder(real) { UserName = "nobody", Password = "wrong" }.Uri.AbsoluteUri;
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<RabbitMQMessagingFeature>(),
+            [
+                new("XiHan:Messaging:RabbitMQ:Configuration", wrong),
+                new("XiHan:Bindings:queue:username", Uri.UnescapeDataString(userInfo[0])),
+                new("XiHan:Bindings:queue:password", Uri.UnescapeDataString(userInfo[1])),
+                new("XiHan:Messaging:RabbitMQ:QueuePrefix", $"xihan-test.{Guid.NewGuid():N}."),
+            ]);
+
+        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == RabbitMQMessagingFeature.HealthName);
+        Assert.Equal(LifecycleState.Ready, status.State);
+        Assert.Null(status.Error);
+    }
 }

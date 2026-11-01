@@ -47,6 +47,12 @@ internal static class ComposeGenerator
         {
             yaml.Pair(6, "XiHan__Bindings__" + binding + "__type", settings.Type)
                 .Pair(6, "XiHan__Bindings__" + binding + "__value", BindingKind.Find(settings.Type)!.ComposeValue(binding, manifest.Name));
+            // MinIO 的凭据不在主值里：以绑定的属性注入，覆盖 S3 Provider 配置节里的同名键（RFC-0016）；其余类型的凭据在主值里或服务未开认证
+            if (settings.Type == "blob")
+            {
+                yaml.Pair(6, "XiHan__Bindings__" + binding + "__accessKey", BindingKind.MinioUser)
+                    .Pair(6, "XiHan__Bindings__" + binding + "__secretKey", BindingKind.MinioPassword);
+            }
         }
 
         foreach (var (key, value) in manifest.Environment.OrderBy(static e => e.Key, StringComparer.Ordinal))
@@ -127,8 +133,8 @@ internal static class ComposeGenerator
                 default:
                     yaml.Line(4, "command: [\"server\", \"/data\"]")
                         .Line(4, "environment:")
-                        .Pair(6, "MINIO_ROOT_USER", "xihan")
-                        .Pair(6, "MINIO_ROOT_PASSWORD", "xihanxihan")
+                        .Pair(6, "MINIO_ROOT_USER", BindingKind.MinioUser)
+                        .Pair(6, "MINIO_ROOT_PASSWORD", BindingKind.MinioPassword)
                         .Line(4, "healthcheck:")
                         .Line(6, "test: [\"CMD\", \"mc\", \"ready\", \"local\"]")
                         .Pair(6, "interval", "5s")

@@ -10,7 +10,7 @@ builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
 { "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "GroupId": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "…", "sasl.password": "…" } } } } }
 ```
 
-引导地址来自绑定 `stream`（`stream`）的主值，没有绑定时取 `XiHan:Messaging:Kafka:BootstrapServers`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。`Properties:<key>` 原样透传给 librdkafka（生产者与消费者共用）。
+引导地址来自绑定 `stream`（`stream`）的主值，没有绑定时取 `XiHan:Messaging:Kafka:BootstrapServers`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。`Properties:<key>` 原样透传给 librdkafka（生产者与消费者共用）；绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖其中的同名键（空白不算给出），其余绑定属性不透传。
 
 ## 语义
 

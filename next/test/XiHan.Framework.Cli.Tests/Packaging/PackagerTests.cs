@@ -137,6 +137,12 @@ public sealed class PackagerTests
         Assert.Contains("resourceNames: [orders-scheduler]", files["kustomize/rbac.yaml"], StringComparison.Ordinal);
         Assert.Contains("kind: RoleBinding", files["kustomize/rbac.yaml"], StringComparison.Ordinal);
         Assert.Contains("type: connection:relational", files["kustomize/bindings.example.yaml"], StringComparison.Ordinal);
+        // 凭据属性以注释列出，与 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键
+        var secrets = files["kustomize/bindings.example.yaml"];
+        Assert.Contains("uri: \"<cache connection string>\"\n  # username: <cache username>\n  # password: <cache password>\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("uri: \"<queue connection string>\"\n  # username: <queue username>\n  # password: <queue password>\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("uri: \"<blob connection string>\"\n  # accessKey: <blob accessKey>\n  # secretKey: <blob secretKey>\n", secrets, StringComparison.Ordinal);
+        Assert.DoesNotContain("<db username>", secrets, StringComparison.Ordinal);
         var kustomization = files["kustomize/kustomization.yaml"];
         Assert.Contains("resources:\n  - deployment.yaml\n  - service.yaml\n  - configmap.yaml\n  - hpa.yaml\n  - pdb.yaml\n  - rbac.yaml\n", kustomization, StringComparison.Ordinal);
         Assert.DoesNotContain("bindings.example.yaml", kustomization, StringComparison.Ordinal);
@@ -173,7 +179,9 @@ public sealed class PackagerTests
         Assert.Contains("XiHan__Bindings__db__type: connection:relational\n      XiHan__Bindings__db__value: \"Host=db;Port=5432;Database=orders;Username=xihan;Password=xihan\"", compose, StringComparison.Ordinal);
         Assert.Contains("XiHan__Bindings__cache__value: cache:6379", compose, StringComparison.Ordinal);
         Assert.Contains("XiHan__Bindings__queue__value: amqp://guest:guest@queue:5672", compose, StringComparison.Ordinal);
-        Assert.Contains("XiHan__Bindings__blob__value: http://blob:9000", compose, StringComparison.Ordinal);
+        Assert.Contains("XiHan__Bindings__blob__value: http://blob:9000\n      XiHan__Bindings__blob__accessKey: xihan\n      XiHan__Bindings__blob__secretKey: xihanxihan\n", compose, StringComparison.Ordinal);
+        Assert.Contains("MINIO_ROOT_USER: xihan\n      MINIO_ROOT_PASSWORD: xihanxihan\n", compose, StringComparison.Ordinal);
+        Assert.DoesNotContain("XiHan__Bindings__queue__password", compose, StringComparison.Ordinal);
         Assert.Contains("depends_on:\n      blob:\n        condition: service_healthy", compose, StringComparison.Ordinal);
         Assert.Contains("  db:\n    image: postgres:17-alpine", compose, StringComparison.Ordinal);
         Assert.Contains("  cache:\n    image: redis:7-alpine", compose, StringComparison.Ordinal);
@@ -201,7 +209,8 @@ public sealed class PackagerTests
         Assert.Contains(".WithReplicas(2)", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"XiHan__Bindings__db__type\", \"connection:relational\")", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"XiHan__Bindings__db__value\", db)\n            .WithReference(db)", aspire, StringComparison.Ordinal);
-        Assert.Contains(".WithEnvironment(\"XiHan__Bindings__blob__value\", blob.GetEndpoint(\"api\"))", aspire, StringComparison.Ordinal);
+        Assert.Contains(".WithEnvironment(\"XiHan__Bindings__blob__value\", blob.GetEndpoint(\"api\"))\n            .WithEnvironment(\"XiHan__Bindings__blob__accessKey\", \"xihan\")\n            .WithEnvironment(\"XiHan__Bindings__blob__secretKey\", \"xihanxihan\")\n", aspire, StringComparison.Ordinal);
+        Assert.Contains("        blob.WithEnvironment(\"MINIO_ROOT_USER\", \"xihan\").WithEnvironment(\"MINIO_ROOT_PASSWORD\", \"xihanxihan\");\n        var app = builder.AddProject", aspire, StringComparison.Ordinal);
         Assert.Contains(".WithEnvironment(\"OTEL_SERVICE_NAME\", \"orders\")", aspire, StringComparison.Ordinal);
     }
 
@@ -317,6 +326,8 @@ public sealed class PackagerTests
         var secrets = files["kustomize/bindings.example.yaml"];
         Assert.Contains("name: events-nacos\nstringData:\n  type: configuration:remote\n", secrets, StringComparison.Ordinal);
         Assert.Contains("name: events-stream\nstringData:\n  type: stream\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("  # username: <nacos username>\n  # password: <nacos password>\n", secrets, StringComparison.Ordinal);
+        Assert.Contains("  # security.protocol: <stream security.protocol>\n  # sasl.mechanism: <stream sasl.mechanism>\n  # sasl.username: <stream sasl.username>\n  # sasl.password: <stream sasl.password>\n", secrets, StringComparison.Ordinal);
     }
 
     [Fact]
