@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/packaging/app-manifest.md`、`spec/rfcs/0016-packaging.md`、`spec/rfcs/0012-objectstorage.md`、`spec/rfcs/0014-configuration.md`、`spec/rfcs/0001-primitives.md` 随之修订；修订 ADR-0082 第二节）。
+已采纳（`spec/packaging/app-manifest.md`、`spec/rfcs/0016-packaging.md`、`spec/rfcs/0012-objectstorage.md`、`spec/rfcs/0014-configuration.md`、`spec/rfcs/0001-primitives.md`、`spec/rfcs/0022-ai.md` 随之修订；修订 ADR-0082 第二节，扩展 ADR-0083）。
 
 ## 日期
 
@@ -86,3 +86,23 @@ ADR-0082 第二节「`xihan pack` 给 MinIO 注入 `accessKey` / `secretKey`」�
 - 公开 API（Unshipped）：新增 `XiHan.Framework.Primitives.Redaction`（`Mask`、`Redact`）。各记录的 `PrintMembers` 是私有成员，不进 PublicAPI。
 - 新增带凭据的公开记录时必须照此手写 `PrintMembers`，否则架构测试失败；应用自己的选项可以照同样的写法使用 `Redaction`。
 - 没有新的错误码、消息键或配置键。
+
+## 只装 OpenAIFeature 时工具名也在启动时校验
+
+### 背景
+
+ADR-0083 把 `OpenAIFeature` 改为宿主特性，只装它时知识库提示词在启动时校验。工具目录（`IAIToolCatalog`）仍只在 `AIToolsFeature` 的启动钩子里构建：只装 `OpenAIFeature`（不装 `AIToolsFeature`）的应用，操作派生或 `XiHan:AI:Tools:<操作 ID>` 覆盖的工具名不合法、与显式登记的工具重名，都要等第一次聊天解析 `IAIChat` 时才抛出；ADR-0083 只处理了提示词，这一处留给本批拍板。
+
+### 决策
+
+`OpenAIFeature.StartAsync` 先解析 `IAIToolCatalog`（构建目录），再解析提示增强器。工具名不合法或重复以 `AI_VALIDATION_001` 启动失败，与装了 `AIToolsFeature` 时相同；名字合法时目录照常建出，聊天时直接取用。
+
+### 理由
+
+- 聊天入口 `AIChat` 构造时就依赖工具目录，装了聊天 Provider 就一定会用到它；在启动钩子里构建只是把同一个失败提前，不多建任何东西（目录是单例，启动时建好的就是聊天时用的那个）。
+- 与 ADR-0083 的提示词同一条规则：配置错误在启动时暴露，不等到第一次请求，也不因少装一个特性而改变失败时机。
+
+### 影响
+
+- 启动期新增失败：只装 `OpenAIFeature` 时，工具名不合法或重名即启动失败（以前第一次聊天时 `AI_VALIDATION_001`）。装了 `AIToolsFeature` 的应用没有变化。
+- 公开 API、错误码、消息键、配置键都不变。

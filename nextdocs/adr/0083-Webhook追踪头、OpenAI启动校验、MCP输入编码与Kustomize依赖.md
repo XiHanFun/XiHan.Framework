@@ -107,3 +107,5 @@ ADR-0076 让 `xihan pack` 支持 Kafka（`stream`）与 Nacos（`configuration:r
 ### 影响
 
 无代码与行为变化。
+
+> 2026-11-01：「只装 OpenAIFeature 时提示词也在启动时校验」一节没有涉及的工具名校验由 ADR-0086 第三节补上：`OpenAIFeature.StartAsync` 也构建工具目录，只装它时工具名不合法或重名同样启动失败。

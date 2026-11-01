@@ -220,7 +220,7 @@ public sealed class ListOrders : IOperation<ListOrdersRequest, OrderList>
 | 项 | 规则 |
 | --- | --- |
 | 名字 | `<resource>_<verb>`，`-` 与 `.` 换成 `_`；超过 64 个字符时取前 55 个字符加 `_` 与 SHA-256 的前 8 位十六进制；`XiHan:AI:Tools:<操作 ID>` 覆盖 |
-| 名字校验 | 必须匹配 `^[A-Za-z0-9_-]{1,64}$`，不合法或重名时 `AIToolsFeature` 启动失败（`AI_VALIDATION_001`） |
+| 名字校验 | 必须匹配 `^[A-Za-z0-9_-]{1,64}$`，不合法或重名时启动失败（`AI_VALIDATION_001`）：`AIToolsFeature` 与 `OpenAIFeature` 启动时都构建工具目录，只装其中任何一个也一样 |
 | 描述 | 消息目录里的 `<操作 ID>.description`（ID 里的 `-` 换成 `_`），按调用方区域翻译；没有时为空 |
 | 输入 Schema | 操作的请求 Schema，没有时 `{"type":"object"}` |
 | 输出 Schema | 操作的响应 Schema |

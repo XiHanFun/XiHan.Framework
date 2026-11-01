@@ -20,7 +20,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 - `OpenAIChatClientFactory`：`OpenAIClient` → `GetChatClient(ChatModel).AsIChatClient()`，再套上 Microsoft.Extensions.AI 的函数调用循环（`UseFunctionInvocation`），模型发起的工具调用在客户端里自动执行。
 - `OpenAIEmbeddingGeneratorFactory`：`GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)`。
 
-`OpenAIClient` 的网络超时只取 Provider 的 `TimeoutSeconds`（缺省 100 秒）；`Endpoint` 为空时连官方端点；`ApiKey` 为空时用占位凭据，供不校验密钥的本地端点使用。装配与启动不访问网络，客户端在第一次解析时创建并按 Provider 名缓存。启动时解析提示增强器：`XiHan:AI:Knowledge:PromptName` 指向的模板不存在（`AI_NOTFOUND_002`）或用了 `{context}`、`{question}` 以外的占位符（`AI_VALIDATION_001`）即启动失败，只装本特性（不装 `AIToolsFeature` 与知识库 Provider）时也一样。
+`OpenAIClient` 的网络超时只取 Provider 的 `TimeoutSeconds`（缺省 100 秒）；`Endpoint` 为空时连官方端点；`ApiKey` 为空时用占位凭据，供不校验密钥的本地端点使用。装配与启动不访问网络，客户端在第一次解析时创建并按 Provider 名缓存。启动时构建工具目录：操作派生或 `XiHan:AI:Tools:<操作 ID>` 覆盖的工具名不合法、与别的工具重名（`AI_VALIDATION_001`）即启动失败。再解析提示增强器：`XiHan:AI:Knowledge:PromptName` 指向的模板不存在（`AI_NOTFOUND_002`）或用了 `{context}`、`{question}` 以外的占位符（`AI_VALIDATION_001`）即启动失败，只装本特性（不装 `AIToolsFeature` 与知识库 Provider）时也一样。
 
 ## 何时使用
 

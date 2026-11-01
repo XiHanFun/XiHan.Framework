@@ -24,7 +24,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 - 工具目录 `IAIToolCatalog`：`AddAITool` 的工具加上 `Expose.Ai` 的操作，后者在新作用域经完整管道执行。
 - 知识库流水线：`IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy`，以及 Provider 契约 `IKnowledgeStore`。
 
-`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](../guide/ai)。
+`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 与 `OpenAIFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败（只装 `OpenAIFeature` 也一样）；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](../guide/ai)。
 
 ## 何时使用
 
@@ -171,7 +171,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 目录按名字缓存实例；`Invalidate(name)` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
 - `IAIChat` 是作用域服务；没有当前调用时工具绑定到本作用域新建的调用上下文。
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。
-- 工具目录在 `AIToolsFeature` 启动时构建；稳定性为 `Internal` 的操作不进目录。
+- 工具目录在 `AIToolsFeature` 或 `OpenAIFeature` 启动时构建；稳定性为 `Internal` 的操作不进目录。
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。

@@ -8,6 +8,7 @@ using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Chat;
 using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.AI.Abstractions.Tools;
 using XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -95,11 +96,43 @@ public sealed class OpenAIFeatureTests
         Assert.StartsWith("CTX:", host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", [new RetrievedChunk { Id = "d1#0", DocumentId = "d1", ChunkIndex = 0, Text = "because", Score = 1 }]), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task OnlyTheOpenAIFeature_ValidatesToolNamesAtStartup()
+    {
+        // 只装 OpenAI Provider（不装工具目录特性）：工具名不合法或重名同样在启动时失败，而不是第一次聊天构建工具目录时
+        var invalid = await Assert.ThrowsAsync<FrameworkException>(() => StartOpenAIWithToolsAsync(null, ("XiHan:AI:Tools:echoes.create", "bad name!")));
+        Assert.Contains(AIErrors.RequestInvalid, CodesOf(invalid));
+        var duplicate = await Assert.ThrowsAsync<FrameworkException>(() => StartOpenAIWithToolsAsync(AIFunctionFactory.Create(static () => "manual", "echoes_create", "Clashes with the derived tool name.")));
+        Assert.Contains(AIErrors.RequestInvalid, CodesOf(duplicate));
+
+        // 名字合法且不重复时照常启动，目录里是操作派生的工具与显式登记的工具
+        await using var host = await StartOpenAIWithToolsAsync(AIFunctionFactory.Create(static () => "manual", "manual_tool", "A distinct tool."), ("XiHan:AI:Tools:echoes.create", "echo_text"));
+        Assert.Equal(["echo_text", "manual_tool"], host.Services.GetRequiredService<IAIToolCatalog>().All().Select(static t => t.Name));
+    }
+
     /// <summary>
     /// 只装 OpenAI Provider 启动，请求不触网。
     /// </summary>
     private static Task<TestHost> StartOnlyOpenAIAsync(params (string Key, string Value)[] configuration)
         => TestHost.StartAsync(static b => b.UseFeature<OpenAIFeature>(), configuration.Select(static pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)));
+
+    /// <summary>
+    /// 只装 OpenAI Provider 与回显操作启动，可再登记一个工具。
+    /// </summary>
+    /// <remarks>
+    /// 回显操作暴露给 AI；请求不触网。
+    /// </remarks>
+    private static Task<TestHost> StartOpenAIWithToolsAsync(AITool? tool, params (string Key, string Value)[] configuration)
+        => TestHost.StartAsync(
+            static b => b.UseFeature<OpenAIFeature>().UseFeature<EchoFeature>(),
+            configuration.Select(static pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)),
+            services =>
+            {
+                if (tool is not null)
+                {
+                    services.AddAITool(tool);
+                }
+            });
 
     /// <summary>
     /// 异常链上全部框架错误码（启动失败由内核包一层）。
