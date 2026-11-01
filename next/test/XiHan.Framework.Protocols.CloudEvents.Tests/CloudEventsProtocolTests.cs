@@ -13,6 +13,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.InMemory;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
@@ -114,6 +115,24 @@ public sealed class CloudEventsProtocolTests
         var batch = $"[{Encoding.UTF8.GetString(CloudEventsFormat.Encode(envelope with { Id = "evt-4" }))},{Encoding.UTF8.GetString(CloudEventsFormat.Encode(envelope with { Id = "evt-5" }))}]";
         Assert.Equal(HttpStatusCode.Accepted, (await PostAsync(client, CloudEventsHttpBinding.BatchContentType, batch)).StatusCode);
         Assert.Equal(["evt-1", "evt-2", "evt-3", "evt-4", "evt-5"], log.Records.Select(static r => r.Delivery.Envelope.Id));
+    }
+
+    [Fact]
+    public async Task Inbound_Dispatch_DeliversToBothSubscriptionModesInThisInstance()
+    {
+        var (app, client, log, _) = await StartAsync();
+        await using var host = app;
+
+        // 两种方式都订阅：本实例里竞争与广播各一次投递，先竞争后广播
+        Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, EventsFeature.NoticesTopic, "evt-n")).StatusCode);
+        Assert.Equal([SubscriptionMode.Competing, SubscriptionMode.Broadcast], log.Records.Select(static r => r.Delivery.Mode));
+        Assert.All(log.Records, static r => Assert.Equal(("notices", "evt-n", 1), (r.Delivery.Topic, r.Delivery.Envelope.Id, r.Delivery.Attempt)));
+
+        // 只有广播订阅的主题照样派发，不是「没有订阅者」
+        Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, EventsFeature.CachesTopic, "evt-c")).StatusCode);
+        var cached = log.Records[2];
+        Assert.Equal(("caches", SubscriptionMode.Broadcast), (cached.Delivery.Topic, cached.Delivery.Mode));
+        Assert.Equal(3, log.Records.Count);
     }
 
     [Fact]

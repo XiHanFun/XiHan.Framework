@@ -17,11 +17,12 @@
 
 `InMemoryMessageBroker` 实现 `IMessageBroker`，并且自己就是健康项的贡献者：
 
-- 每个被订阅的主题（本进程用 `AddMessageHandler` 登记了处理器）在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`），创建后不回收。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
+- 每个被订阅的主题（本进程用 `AddMessageHandler` 以任一订阅方式登记了处理器）在首次发布或消费时创建一条有界通道（容量 `MaxQueuedMessages`），创建后不回收。发布不等待：通道满时立即返回 `MESSAGING_UNAVAILABLE_002`。批量发布先按剩余容量整批判定，装不下就一条都不写。
 - 发布到没人订阅的主题：消息直接丢弃，发布照常成功（批量逐项成功），不建通道、不占主题名额，每次发布记一条 Debug 日志（`Dropped {Count} message(s) published to topic ...`）。调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态，所以不按 Warning 记；主题名写错时打开 `XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker` 类别的 Debug 日志排查。
 - 被订阅的主题数有上限 `MaxTopics`：超出时启动失败（`FrameworkException`，`MESSAGING_UNAVAILABLE_003`，一个消费循环也不起）。
 - 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布到被订阅主题的消息留在通道里，启动后投递。
-- 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾；达到上限、或重新入队时通道已满，进入该主题的死信列表。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。
+- 订阅方式：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道的一个位置），竞争订阅与广播订阅各收到一次、各自重试；没有跨进程的语义（[订阅方式](../guide/messaging#订阅方式)）。
+- 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾（只给失败的那种方式）；达到上限、或重新入队时通道已满，竞争投递进入该主题的死信列表，广播投递丢弃并记 Warning 日志。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。`DeliveredCount` 每种方式各算一次。
 - 停止时取消消费循环，把正在处理的那条放回通道，并等待循环结束。
 
 特性注册 `InMemoryMessageBroker` 与 `IMessageBroker`，再经 `MessagingRegistration.Configure` 注册派发器、运行时与缺省的 `DirectPublisher`；启动时开始消费，停止时结束。

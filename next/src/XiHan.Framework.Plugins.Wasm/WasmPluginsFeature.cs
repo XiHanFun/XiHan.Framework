@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Wasm.Runtime;
@@ -64,7 +65,7 @@ public sealed class WasmPluginsFeature : IHostedFeature
         host.UseRegistry(context.Operations);
         _host = host;
 
-        var topics = new HashSet<string>(StringComparer.Ordinal);
+        var subscribed = new HashSet<MessageSubscription>();
         foreach (var directory in options.Directories)
         {
             // 发现失败的插件留在宿主里以 Failed 上报，不阻止应用启动
@@ -81,11 +82,12 @@ public sealed class WasmPluginsFeature : IHostedFeature
                 context.Services.AddMessageCatalog(catalog);
             }
 
+            // 每个（主题，方式）登记一次转交处理器，实际投给哪个插件由宿主按握手声明决定
             foreach (var subscription in runtime.Handshake.Subscriptions)
             {
-                if (topics.Add(subscription.Topic))
+                if (subscribed.Add(new MessageSubscription(subscription.Topic, subscription.Mode)))
                 {
-                    context.Services.AddMessageHandler<WasmPluginEventHandler>(subscription.Topic);
+                    context.Services.AddMessageHandler<WasmPluginEventHandler>(subscription.Topic, subscription.Mode);
                 }
             }
 

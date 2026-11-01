@@ -11,7 +11,7 @@ namespace XiHan.Framework.Messaging.Abstractions;
 /// 消息运行时。
 /// </summary>
 /// <remarks>
-/// 启动时让代理消费全部订阅主题并把投递交给 <see cref="MessageDispatcher"/>，停止时等待进行中的投递结束。
+/// 启动时让代理消费全部订阅（主题加方式）并把投递交给 <see cref="MessageDispatcher"/>，停止时等待进行中的投递结束。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessagingRuntime(IMessageBroker broker, MessageDispatcher dispatcher, MessageSubscriptions subscriptions)
@@ -55,7 +55,7 @@ public sealed class MessagingRuntime(IMessageBroker broker, MessageDispatcher di
             return;
         }
 
-        await _broker.StartAsync(_subscriptions.Topics.ToList(), _dispatcher.DispatchAsync, cancellationToken).ConfigureAwait(false);
+        await _broker.StartAsync(_subscriptions.All.ToList(), _dispatcher.DispatchAsync, cancellationToken).ConfigureAwait(false);
         IsRunning = true;
     }
 

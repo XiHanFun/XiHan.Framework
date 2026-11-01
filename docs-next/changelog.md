@@ -28,7 +28,7 @@
 - **新增** 缓存：字节存储、类型化缓存、分布式锁、Idempotency 阶段、`IDistributedCache` 适配、键管理；`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`、`Caching.Remote`（Experimental）
 - **新增** 多租户：租户解析与 Tenant 阶段、租户分片与管道外的 `TenantShardScope`；`MultiTenancy.InMemory`、`MultiTenancy.Database`
 - **新增** 安全：认证处理器与 Authenticate 阶段、权限与策略、RBAC 授予、权限收窄过滤器、授予来源、条件引擎、IP 归属地；`Security.InMemory`、`Security.Database`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Ip2Region`
-- **新增** 消息：CloudEvents 信封、发布与订阅、经管道的派发、重试与死信、事务性发件箱、领域事件到消息的登记；`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka`（流与按时刻重放）
+- **新增** 消息：CloudEvents 信封、发布与订阅（竞争消费与每个实例都收到的广播订阅）、经管道的派发、重试与死信、事务性发件箱、领域事件到消息的登记；`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka`（流与按时刻重放）
 - **新增** 对象存储：批量写入与删除、按前缀列举、范围读取、分片上传、预签名、命名存储实例；`ObjectStorage.FileSystem`、`ObjectStorage.S3`
 - **新增** 调度：作业与触发器、间隔 / cron / 一次 / 手动计划、日历、misfire、集群分发与失联恢复、领导选举、重试与执行时限；`Scheduling.InMemory`、`Scheduling.Database`、`Scheduling.Kubernetes`
 - **新增** 远程配置与密钥：`Configuration.Abstractions` 的配置源（轮询重载、失败保留最后一份）与 `Configuration.Nacos`

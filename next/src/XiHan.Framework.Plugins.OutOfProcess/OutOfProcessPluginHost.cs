@@ -330,7 +330,8 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// </remarks>
     internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
-        foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type)))
+        // 只投给以投递的方式订阅了该主题的插件：同一主题的竞争投递与广播投递各找各的插件
+        foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type, delivery.Mode)))
         {
             var delivered = await runtime.DeliverAsync(delivery, context).ConfigureAwait(false);
             if (delivered.IsFailure)

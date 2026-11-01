@@ -32,7 +32,7 @@
 | [Caching](#caching) | `CacheStoreConformance` | 15 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
-| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance` | 11 + 2 |
+| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance` | 14 + 2 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance` | 4 + 3 |
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 10 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 30 + 3 |
@@ -96,10 +96,10 @@ public sealed class InMemoryCacheStoreConformanceTests : CacheStoreConformance
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功 |
+| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒）、`SupportsMultipleInstances`（缺省真；两个宿主不能共用代理的 Provider 覆写为假，多实例用例跳过） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争与广播订阅各收到一次、各自重试；两个宿主时广播每个实例都收到、竞争每条只有一个实例收到 |
 | `MessageStreamConformance` | Preview | 继承 `MessageBrokerConformance`，同样实现 `CreateFeature()` | 在队列用例之上再验证 `messaging.stream@1`：同一分区键按发布顺序投递、按时刻重放 |
 
-用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
+用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
 
 ```csharp
 using XiHan.Framework.Kernel.Hosting;

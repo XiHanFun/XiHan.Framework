@@ -21,7 +21,7 @@ namespace XiHan.Framework.Messaging.Kafka;
 /// Kafka 消息代理。
 /// </summary>
 /// <remarks>
-/// 主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。生产者幂等且 <c>acks=all</c>；每个订阅主题一个消费者（同一消费组），单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/> 后发布到死信主题，投递完成后提交位点；死信发布没有得到确认（或投递因异常没有完成）时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，消费循环只在停止时退出。重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍。
+/// 主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。生产者幂等且 <c>acks=all</c>；每个订阅（主题加方式）一个消费者，单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/>。竞争订阅在消费组 <see cref="KafkaMessagingOptions.GroupId"/> 里分摊，重试耗尽后发布到死信主题，投递完成后提交位点；广播订阅用本实例独占的消费组 <c>&lt;GroupId&gt;@&lt;InstanceId&gt;</c>，从最新位点开始、不提交位点，重试耗尽或无法解码时丢弃并记日志（RFC-0009「订阅方式」）；死信发布没有得到确认（或投递因异常没有完成）时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，消费循环只在停止时退出。重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplayer, IAsyncDisposable
@@ -52,6 +52,14 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private readonly MessagingOptions _messaging;
 
     /// <summary>
+    /// 本实例的标识。
+    /// </summary>
+    /// <remarks>
+    /// 广播订阅的消费组名里带它。
+    /// </remarks>
+    private readonly MessagingInstance _instance;
+
+    /// <summary>
     /// 应用：进入服务状态前不派发。
     /// </summary>
     private readonly App _app;
@@ -78,15 +86,15 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private readonly Func<IProducer<string?, byte[]>> _connect;
 
     /// <summary>
-    /// 按消费组创建消费者。
+    /// 按消费者配置创建消费者。
     /// </summary>
     /// <remarks>
-    /// 缺省按选项用 Confluent 的构建器创建；测试换成打桩的消费者。
+    /// 配置里带消费组与没有已提交位点时从哪里开始；缺省用 Confluent 的构建器创建，测试换成打桩的消费者。
     /// </remarks>
-    private readonly Func<string, IConsumer<string?, byte[]>> _createConsumer;
+    private readonly Func<ConsumerConfig, IConsumer<string?, byte[]>> _createConsumer;
 
     /// <summary>
-    /// 每个订阅主题的消费者与它的消费循环。
+    /// 每个订阅的消费者与它的消费循环。
     /// </summary>
     private readonly List<(IConsumer<string?, byte[]> Consumer, Task Loop)> _consumers = [];
 
@@ -114,8 +122,8 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <summary>
     /// 创建。
     /// </summary>
-    public KafkaMessageBroker(KafkaMessagingOptions options, MessagingOptions messaging, App app, TimeProvider timeProvider, ILoggerFactory loggerFactory)
-        : this(options, messaging, app, timeProvider, loggerFactory, null, null)
+    public KafkaMessageBroker(KafkaMessagingOptions options, MessagingOptions messaging, MessagingInstance instance, App app, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+        : this(options, messaging, instance, app, timeProvider, loggerFactory, null, null)
     {
     }
 
@@ -125,16 +133,17 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <remarks>
     /// 委托为 <see langword="null"/> 时按选项连接与创建。
     /// </remarks>
-    internal KafkaMessageBroker(KafkaMessagingOptions options, MessagingOptions messaging, App app, TimeProvider timeProvider, ILoggerFactory loggerFactory, Func<IProducer<string?, byte[]>>? connect, Func<string, IConsumer<string?, byte[]>>? createConsumer)
+    internal KafkaMessageBroker(KafkaMessagingOptions options, MessagingOptions messaging, MessagingInstance instance, App app, TimeProvider timeProvider, ILoggerFactory loggerFactory, Func<IProducer<string?, byte[]>>? connect, Func<ConsumerConfig, IConsumer<string?, byte[]>>? createConsumer)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _messaging = messaging ?? throw new ArgumentNullException(nameof(messaging));
+        _instance = instance ?? throw new ArgumentNullException(nameof(instance));
         _app = app ?? throw new ArgumentNullException(nameof(app));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _logger = loggerFactory.CreateLogger<KafkaMessageBroker>();
         _connect = connect ?? ConnectProducer;
-        _createConsumer = createConsumer ?? (groupId => new ConsumerBuilder<string?, byte[]>(ConsumerConfig(groupId)).Build());
+        _createConsumer = createConsumer ?? (static config => new ConsumerBuilder<string?, byte[]>(config).Build());
     }
 
     /// <summary>
@@ -248,27 +257,34 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <inheritdoc />
-    public async Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 竞争订阅的消费者在消费组 <see cref="KafkaMessagingOptions.GroupId"/> 里，没有已提交位点时从最早位点开始；广播订阅的消费者在本实例独占的消费组 <c>&lt;GroupId&gt;@&lt;InstanceId&gt;</c> 里，从最新位点开始。分区分配是异步的：广播订阅要等消费组分到分区（通常几秒）才开始收。
+    /// </remarks>
+    public async Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(topics);
+        ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dispatch);
         await ConnectAsync(cancellationToken).ConfigureAwait(false);
         _dispatch = dispatch;
         _stopping = new CancellationTokenSource();
-        foreach (var topic in topics)
+        foreach (var subscription in subscriptions)
         {
             try
             {
-                var consumer = _createConsumer(_options.GroupId);
-                consumer.Subscribe(TopicOf(topic));
-                // 每个主题一条专用线程：Consume 是阻塞调用，不占线程池
+                // 广播：组内只有本实例，分到全部分区，每个实例各读一份；从最新位点开始、不提交位点（见消费循环），
+                // 消费组空了不留位点，重启的实例标识不同、是新的消费组，不回放历史。竞争：全部实例共用一个消费组分摊分区
+                var consumer = _createConsumer(subscription.Mode == SubscriptionMode.Broadcast
+                    ? ConsumerConfig($"{_options.GroupId}@{_instance.Id}", AutoOffsetReset.Latest)
+                    : ConsumerConfig(_options.GroupId, AutoOffsetReset.Earliest));
+                consumer.Subscribe(TopicOf(subscription.Topic));
+                // 每个订阅一条专用线程：Consume 是阻塞调用，不占线程池
                 var stopping = _stopping.Token;
-                var loop = Task.Factory.StartNew(() => ConsumeLoopAsync(consumer, topic, dispatch, stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+                var loop = Task.Factory.StartNew(() => ConsumeLoopAsync(consumer, subscription, dispatch, stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
                 _consumers.Add((consumer, loop));
             }
             catch (KafkaException exception)
             {
-                throw Unavailable($"Failed to subscribe to topic '{topic}'", exception);
+                throw Unavailable($"Failed to subscribe to topic '{subscription.Topic}' ({subscription.Mode})", exception);
             }
         }
     }
@@ -337,7 +353,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
             }
 
             // 独立消费组：不提交位点，不影响正常消费
-            using var consumer = _createConsumer($"{_options.GroupId}.replay.{Guid.NewGuid():N}");
+            using var consumer = _createConsumer(ConsumerConfig($"{_options.GroupId}.replay.{Guid.NewGuid():N}", AutoOffsetReset.Earliest));
             var ends = partitions.ToDictionary(static p => p, p => consumer.QueryWatermarkOffsets(p, _operationTimeout).High);
             var starts = consumer.OffsetsForTimes(partitions.Select(p => new TopicPartitionTimestamp(p, new Timestamp(since.UtcDateTime))), _operationTimeout);
             // 该时刻之后没有消息的分区（Offset.End）与高水位之前没有消息的分区都不用读
@@ -359,7 +375,8 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
                     continue;
                 }
 
-                await DeliverAsync(topic, consumed, _dispatch, cancellationToken).ConfigureAwait(false);
+                // 重放只投给竞争订阅：广播订阅是尽力而为的实时通知，不回放历史
+                await DeliverAsync(new MessageSubscription(topic, SubscriptionMode.Competing), consumed, _dispatch, cancellationToken).ConfigureAwait(false);
                 // 读到调用时的高水位就不再读该分区：重放期间新到的消息由正常消费投递
                 if (consumed.Offset.Value + 1 >= pending[consumed.TopicPartition])
                 {
@@ -402,13 +419,14 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     }
 
     /// <summary>
-    /// 一个主题的消费循环。
+    /// 一个订阅的消费循环。
     /// </summary>
     /// <remarks>
-    /// 取消息、投递、提交；投递没有完成时不提交、回退到这条消息，等待后重新投递；只有停止信号让它退出。
+    /// 取消息、投递、提交（广播订阅不提交）；投递没有完成时不提交、回退到这条消息，等待后重新投递；只有停止信号让它退出。
     /// </remarks>
-    private async Task ConsumeLoopAsync(IConsumer<string?, byte[]> consumer, string topic, MessageDispatch dispatch, CancellationToken stopping)
+    private async Task ConsumeLoopAsync(IConsumer<string?, byte[]> consumer, MessageSubscription subscription, MessageDispatch dispatch, CancellationToken stopping)
     {
+        var topic = subscription.Topic;
         while (!stopping.IsCancellationRequested)
         {
             ConsumeResult<string?, byte[]> consumed;
@@ -445,7 +463,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
 
             try
             {
-                await DeliverAsync(topic, consumed, dispatch, stopping).ConfigureAwait(false);
+                await DeliverAsync(subscription, consumed, dispatch, stopping).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {
@@ -462,6 +480,13 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
                     break;
                 }
 
+                continue;
+            }
+
+            if (subscription.Mode == SubscriptionMode.Broadcast)
+            {
+                // 广播不提交位点：消费组是本实例独占的，重启后标识变了、位点也用不上；不提交就不在集群里留下位点，
+                // 空了的消费组随之消失。组内再均衡同样从最新位点续上，尽力而为
                 continue;
             }
 
@@ -516,13 +541,21 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// 投递一条消息。
     /// </summary>
     /// <remarks>
-    /// 解码失败进死信；否则在原位重试到上限，仍失败进死信。
+    /// 解码失败进死信；否则在原位重试到上限，仍失败进死信。广播订阅没有死信：两种情况都丢弃并记日志。
     /// </remarks>
-    private async Task DeliverAsync(string topic, ConsumeResult<string?, byte[]> consumed, MessageDispatch dispatch, CancellationToken cancellationToken)
+    private async Task DeliverAsync(MessageSubscription subscription, ConsumeResult<string?, byte[]> consumed, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
+        var topic = subscription.Topic;
+        var broadcast = subscription.Mode == SubscriptionMode.Broadcast;
         var decoded = CloudEventsFormat.Decode(consumed.Message.Value);
         if (!decoded.TryGetValue(out var envelope))
         {
+            if (broadcast)
+            {
+                LogBroadcastUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
+                return;
+            }
+
             LogUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
             await ProduceAsync(TopicOf(topic) + _messaging.DeadLetterSuffix, new Message<string?, byte[]> { Key = consumed.Message.Key, Value = consumed.Message.Value, Headers = consumed.Message.Headers }, cancellationToken).ConfigureAwait(false);
             return;
@@ -540,7 +573,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
             Result result;
             try
             {
-                result = await dispatch(new MessageDelivery(topic, envelope, attempt), cancellationToken).ConfigureAwait(false);
+                result = await dispatch(new MessageDelivery(topic, envelope, attempt, subscription.Mode), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -553,6 +586,13 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
 
             if (result.IsSuccess)
             {
+                return;
+            }
+
+            if (attempt >= _messaging.MaxAttempts && broadcast)
+            {
+                // 广播是尽力而为、没有死信：每个实例各自的一份失败没有可以重放的共享位置
+                LogBroadcastDropped(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
                 return;
             }
 
@@ -633,13 +673,13 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// 消费者配置。
     /// </summary>
     /// <remarks>
-    /// 手动提交、从最早位点开始（订阅前发布的消息也要收到）、允许自动建主题。
+    /// 手动提交、允许自动建主题；没有已提交位点时从 <paramref name="reset"/> 开始：竞争订阅与重放从最早位点（订阅前发布的消息也要收到），广播订阅从最新位点（不回放历史）。
     /// </remarks>
-    private ConsumerConfig ConsumerConfig(string groupId) => new(ClientConfig())
+    private ConsumerConfig ConsumerConfig(string groupId, AutoOffsetReset reset) => new(ClientConfig())
     {
         GroupId = groupId,
         EnableAutoCommit = false,
-        AutoOffsetReset = AutoOffsetReset.Earliest,
+        AutoOffsetReset = reset,
         AllowAutoCreateTopics = true,
         EnablePartitionEof = false,
     };
@@ -660,6 +700,18 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was moved to the dead-letter topic: {Reason}")]
     private static partial void LogUndecodable(ILogger logger, string topic, string reason);
+
+    /// <summary>
+    /// 记录一条广播投递重试到上限后被丢弃。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
+    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
+
+    /// <summary>
+    /// 记录一条无法解码的广播消息被丢弃。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
+    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Consuming topic {Topic} failed; the consumer keeps running.")]
     private static partial void LogConsumeFailed(ILogger logger, string topic, Exception exception);

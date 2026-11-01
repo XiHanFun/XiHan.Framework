@@ -4,6 +4,7 @@
 using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
@@ -81,8 +82,23 @@ internal static class HandshakeValidator
                 return Mismatch(manifest.Id, $"subscription topic '{subscription.Topic}' is not valid");
             }
 
-            var item = new PluginSubscription(subscription.Topic, string.IsNullOrEmpty(subscription.MessageType) ? null : subscription.MessageType);
-            if (subscriptions.Contains(item))
+            // 订阅方式：空即竞争消费（协议 v1 加这个字段之前的插件照旧），其他值是声明错误
+            SubscriptionMode mode;
+            switch (subscription.Mode)
+            {
+                case "" or "competing":
+                    mode = SubscriptionMode.Competing;
+                    break;
+                case "broadcast":
+                    mode = SubscriptionMode.Broadcast;
+                    break;
+                default:
+                    return Mismatch(manifest.Id, $"subscription '{subscription.Topic}' has an unknown mode '{subscription.Mode}'");
+            }
+
+            var item = new PluginSubscription(subscription.Topic, string.IsNullOrEmpty(subscription.MessageType) ? null : subscription.MessageType, mode);
+            // 同一（主题，类型）只能声明一次，两种方式各声明一次同样算重复：插件收到事件时分不出来自哪种订阅
+            if (subscriptions.Any(s => s.Topic == item.Topic && s.MessageType == item.MessageType))
             {
                 return Mismatch(manifest.Id, $"subscription '{subscription.Topic}' is declared more than once");
             }

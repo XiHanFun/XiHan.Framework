@@ -16,8 +16,8 @@ builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
 
 - 主题映射为 `<TopicPrefix><topic>`（前缀默认 `xihan.`）；消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数；消息键取信封扩展属性 `xihankey`（分区键），没有时由 Kafka 分配分区——主题只有一个分区时全局有序，多分区的主题靠分区键换取同键有序。
 - 生产者幂等且 `acks=all`；批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅主题一个消费者（同一消费组 `GroupId`，默认 `xihan`），从最早位点开始（订阅前发布的消息也收到），单线程按分区顺序派发；处理失败在原位重试到 `MaxAttempts`（不重新入队，顺序不变），仍失败发布到死信主题 `<topic><DeadLetterSuffix>`；无法解码的消息直接进死信。投递完成后才提交位点，停止时未完成的消息重启后重新投递（至少一次）。死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，回退到这条消息，等 `XiHan:Messaging:Kafka:RedeliveryDelaySeconds`（默认 5）后重新投递；消费者本身出错同样等一会儿再取，消费循环只在停止时退出（ADR-0064）。打桩的生产者与消费者覆盖这条路径（`KafkaRedeliveryTests`），不需要 Kafka。
-- 重放 `IMessageReplayer.ReplayAsync(topic, since)`：用独立消费组从该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍，不提交位点、不影响正常消费；主题不存在或该时刻之后没有消息时成功返回；死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
+- 每个订阅（主题加方式）一个消费者。竞争订阅在同一消费组 `GroupId`（默认 `xihan`）里分摊分区，从最早位点开始（订阅前发布的消息也收到）。广播订阅（RFC-0009「订阅方式」）用本实例独占的消费组 `<GroupId>@<InstanceId>`（`MessagingInstance.Id`，组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启的实例标识不同、是新的消费组，不回放历史；分区分配是异步的，启动后要等几秒才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。以 `GroupId` 为前缀的消费组 ACL 同样覆盖广播消费组。两种订阅都，单线程按分区顺序派发；处理失败在原位重试到 `MaxAttempts`（不重新入队，顺序不变），仍失败发布到死信主题 `<topic><DeadLetterSuffix>`；无法解码的消息直接进死信。投递完成后才提交位点，停止时未完成的消息重启后重新投递（至少一次）。死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，回退到这条消息，等 `XiHan:Messaging:Kafka:RedeliveryDelaySeconds`（默认 5）后重新投递；消费者本身出错同样等一会儿再取，消费循环只在停止时退出（ADR-0064）。打桩的生产者与消费者覆盖这条路径（`KafkaRedeliveryTests`），不需要 Kafka。
+- 重放 `IMessageReplayer.ReplayAsync(topic, since)`（只投给竞争订阅）：用独立消费组从该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍，不提交位点、不影响正常消费；主题不存在或该时刻之后没有消息时成功返回；死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 启动时向集群取一次元数据，连不上即启动失败（`MESSAGING_UNAVAILABLE_001`）。
 - 没人订阅的主题（ADR-0079）：发布到不存在的主题时由 broker 按 `auto.create.topics.enable`（缺省开启）自动建主题，消息只留到保留期（`retention.ms`，缺省 7 天），没有消费组就没有积压；broker 关闭自动建主题时发布到不存在的主题失败（`MESSAGING_UNAVAILABLE_001`，客户端在 `topic.metadata.propagation.max.ms` 后判定主题不存在），要预先建好应用与框架事件用到的主题。
 - 健康项 `messaging.kafka.connection`：启动后按 `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds`（默认 15）在后台以生产者的连接描述集群（从属管理客户端，不另开连接）并缓存结果；集群不可达或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
@@ -25,7 +25,7 @@ builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
 
 ## 测试
 
-一致性套件需要真实 Kafka：设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，`MessageStreamConformance` 含队列套件全部用例与流的两个用例；未设置时跳过。本地 `docker run -d -p 9092:9092 apache/kafka` 即可（单节点 KRaft，自动建主题）。
+一致性套件需要真实 Kafka：设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，`MessageStreamConformance` 含队列套件全部用例（含两个实例的广播与竞争用例）与流的两个用例；广播的打桩用例在 `KafkaBroadcastTests`；未设置时跳过。本地 `docker run -d -p 9092:9092 apache/kafka` 即可（单节点 KRaft，自动建主题）。
 
 ## 依赖方向
 

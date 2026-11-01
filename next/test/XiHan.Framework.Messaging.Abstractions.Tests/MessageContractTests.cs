@@ -65,7 +65,7 @@ public sealed class MessageContractTests
         }
 
         /// <inheritdoc />
-        public Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
 
         /// <inheritdoc />
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
@@ -103,8 +103,10 @@ public sealed class MessageContractTests
         Assert.Throws<ArgumentException>(static () => new MessageEnvelope { Id = "1", Source = "", Type = "t" });
         Assert.Throws<ArgumentException>(() => envelope.WithExtension("Region", "cn"));
         Assert.Throws<ArgumentException>(() => envelope.WithExtension("waytoolongextensionname", "cn"));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery("orders", envelope, 0));
-        Assert.Throws<ArgumentException>(() => new MessageDelivery("Bad Topic", envelope, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery("orders", envelope, 0, SubscriptionMode.Competing));
+        Assert.Throws<ArgumentException>(() => new MessageDelivery("Bad Topic", envelope, 1, SubscriptionMode.Competing));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery("orders", envelope, 1, (SubscriptionMode)7));
+        Assert.Equal(SubscriptionMode.Broadcast, new MessageDelivery("orders", envelope, 1, SubscriptionMode.Broadcast).Mode);
     }
 
     [Fact]
@@ -165,11 +167,54 @@ public sealed class MessageContractTests
 
         var subscriptions = services.GetMessageSubscriptions();
         Assert.Equal(["orders", "shipments"], subscriptions.Topics.OrderBy(static t => t, StringComparer.Ordinal));
-        Assert.Equal([typeof(NoopHandler)], subscriptions.HandlersFor("orders"));
-        Assert.Empty(subscriptions.HandlersFor("nothing"));
+        // 不写方式即竞争消费
+        Assert.Equal([typeof(NoopHandler)], subscriptions.HandlersFor("orders", SubscriptionMode.Competing));
+        Assert.Empty(subscriptions.HandlersFor("orders", SubscriptionMode.Broadcast));
+        Assert.Empty(subscriptions.HandlersFor("nothing", SubscriptionMode.Competing));
+        Assert.Empty(subscriptions.HandlersFor("Not A Topic", SubscriptionMode.Competing));
         Assert.Contains(services, static d => d.ServiceType == typeof(NoopHandler) && d.Lifetime == ServiceLifetime.Scoped);
         Assert.Same(subscriptions, services.GetMessageSubscriptions());
-        Assert.Throws<ArgumentException>(() => subscriptions.Add("Bad Topic", typeof(NoopHandler)));
+        Assert.Throws<ArgumentException>(() => subscriptions.Add("Bad Topic", typeof(NoopHandler), SubscriptionMode.Competing));
+        Assert.Throws<ArgumentOutOfRangeException>(() => subscriptions.Add("orders", typeof(NoopHandler), (SubscriptionMode)7));
+    }
+
+    [Fact]
+    public void Subscriptions_GroupHandlersByTopicAndMode()
+    {
+        var services = new ServiceCollection();
+
+        services
+            .AddMessageHandler<NoopHandler>("sessions.revoked", SubscriptionMode.Broadcast)
+            .AddMessageHandler<NoopHandler>("sessions.revoked")
+            .AddMessageHandler<NoopHandler>("sessions.revoked", SubscriptionMode.Broadcast)
+            .AddMessageHandler<NoopHandler>("cache.cleared", SubscriptionMode.Broadcast);
+
+        var subscriptions = services.GetMessageSubscriptions();
+        // 同一主题的两种方式是两个订阅，按首次登记的顺序；同一处理器以同一方式重复订阅只记一次
+        Assert.Equal(
+            [
+                new MessageSubscription("sessions.revoked", SubscriptionMode.Broadcast),
+                new MessageSubscription("sessions.revoked", SubscriptionMode.Competing),
+                new MessageSubscription("cache.cleared", SubscriptionMode.Broadcast),
+            ],
+            subscriptions.All);
+        Assert.Equal(["sessions.revoked", "cache.cleared"], subscriptions.Topics);
+        Assert.Equal([typeof(NoopHandler)], subscriptions.HandlersFor("sessions.revoked", SubscriptionMode.Broadcast));
+        Assert.Equal([typeof(NoopHandler)], subscriptions.HandlersFor("sessions.revoked", SubscriptionMode.Competing));
+        Assert.Empty(subscriptions.HandlersFor("cache.cleared", SubscriptionMode.Competing));
+        Assert.Throws<ArgumentException>(static () => new MessageSubscription("Bad Topic", SubscriptionMode.Broadcast));
+    }
+
+    [Fact]
+    public void Instance_IsGeneratedPerHost_AndSafeForQueueAndGroupNames()
+    {
+        var first = new MessagingInstance();
+        var second = new MessagingInstance();
+
+        // 每个宿主一个：同一进程里的两个宿主（测试）也不同
+        Assert.NotEqual(first.Id, second.Id);
+        Assert.Matches("^[a-z0-9-]{1,32}-[0-9]+-[0-9a-f]{8}$", first.Id);
+        Assert.EndsWith(FormattableString.Invariant($"-{Environment.ProcessId}-{first.Id[^8..]}"), first.Id, StringComparison.Ordinal);
     }
 
     [Fact]

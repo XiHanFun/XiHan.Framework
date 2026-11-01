@@ -262,10 +262,10 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     public WasmPluginStatus Describe() => new(Status, _instance?.AbiVersion, _handshake?.ProtocolVersion, _restarts, IsLazy);
 
     /// <summary>
-    /// 是否订阅了该主题与类型。
+    /// 是否以该方式订阅了该主题与类型。
     /// </summary>
-    public bool IsSubscribedTo(string topic, string messageType)
-        => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType)) == true;
+    public bool IsSubscribedTo(string topic, string messageType, SubscriptionMode mode)
+        => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType, mode)) == true;
 
     /// <summary>
     /// 以发现时被拒登记：进入 Failed，之后不启动也不重建。

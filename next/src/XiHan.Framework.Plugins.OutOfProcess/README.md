@@ -34,6 +34,10 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<OutOfProcessPluginsFeatu
 
 不负责：流式操作在 .NET 侧的契约（协议已定义 `InvokeStream` 帧，宿主暂不发布流式操作）、操作系统沙箱（`net.outbound:` / `fs.*:` 权限）、Wasm。
 
+## 事件订阅
+
+握手的每个 `Subscription` 按它的 `mode` 订阅主题（`spec/plugin/invocation.md` §4）：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件进程，尽力而为、不进死信，RFC-0009「订阅方式」）。宿主每个（主题，方式）登记一次转交处理器，只把投递交给以同一方式订阅了主题的插件；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
+
 ## 依赖方向
 
 依赖 `Plugins.Protocol`（协议类型、握手核对、映射与代理操作）、`Kernel`、`Messaging.Abstractions`、`Localization.Abstractions`，以及 `Grpc.AspNetCore.Server`、`Grpc.Net.Client`。非 AOT。

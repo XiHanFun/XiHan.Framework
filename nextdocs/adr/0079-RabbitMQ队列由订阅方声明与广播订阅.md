@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0009-messaging.md` 随之修订）。
+已采纳（`spec/rfcs/0009-messaging.md`、`spec/plugin/plugin.proto`、`spec/plugin/handshake.md`、`spec/plugin/invocation.md` 与 `spec/protocol/cloudevents.md` 随之修订）。
 
 ## 日期
 
@@ -51,3 +51,42 @@ BasicApp 6.0 接上 RabbitMQ 之后发现两处与消息有关的问题，用户
   - 只发布、希望在订阅方上线前就留存消息的部署，可以由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机。
 - 交换机被外部删除时发布通道以通道错误关闭，健康项 `messaging.rabbitmq.connection` 转为 Degraded，需要重启实例重新声明。
 - 测试：打桩的连接与通道覆盖「只声明交换机、经它按路由键发布、退回丢弃并成功、订阅方声明并绑定队列、重试与死信定向发布、死信队列由订阅方声明并绑定」；真实 RabbitMQ（`XIHAN_TEST_RABBITMQ`）上覆盖「没人订阅的主题没有队列、订阅方的队列在它离线期间留存消息」；一致性套件新增「发布到没人订阅的主题成功」，内存、RabbitMQ、Kafka 都通过。
+
+## 消息的广播订阅
+
+### 背景
+
+有些事要在每个实例上各做一次：吊销会话后断开连在各个实例上的连接、清掉各实例进程内的缓存。BasicApp 的 Realtime 跨实例强制断开就卡在这里（BasicApp 方案 9.5 N1）。现有订阅都是竞争消费：RabbitMQ 每个主题一个持久队列，多个实例在同一队列上竞争；Kafka 所有主题共用一个 `GroupId`，把每个实例配成不同的 `GroupId` 能变相广播，但会让全部主题都变成广播，破坏工作队列语义。全仓没有广播的概念。
+
+### 决策
+
+- 订阅方式：`Messaging.Abstractions` 新增 `SubscriptionMode`（`Competing` 缺省、`Broadcast`）与 `MessageSubscription(Topic, Mode)`。`AddMessageHandler<THandler>(topic, mode = SubscriptionMode.Competing)`；`MessageSubscriptions` 按（主题，方式）分组：`Add(topic, handlerType, mode)`、`HandlersFor(topic, mode)`、`All`（订阅，按首次登记的顺序）、`Topics`（任一方式）；`MessageDelivery` 加 `Mode`（构造多一个参数）；`IMessageBroker.StartAsync(subscriptions, dispatch, ct)` 接收订阅而不是主题；`MessageDispatcher` 只执行与投递同一方式的处理器。同一主题可以同时以两种方式订阅，两种方式是两次独立的投递，各自计尝试、各自重试。
+- 广播的语义边界：尽力而为——只有订阅时在线、与代理连着的实例收到，不在线、重启、断开期间的消息收不到，不回放历史；在本实例内按 `MaxAttempts` 重试，到上限丢弃并记 Warning 日志，不进死信，无法解码同样丢弃；不共享去重，派发照旧不写幂等键；Kafka 的重放只投给竞争订阅。
+- 实例标识 `MessagingInstance.Id`：`MessagingRegistration.Configure` 登记的单例，每个宿主一个，构造时生成，机器名（小写，非 `[a-z0-9-]` 换成 `-`，最多 32 个字符）、进程 ID、8 位随机十六进制以 `-` 连接；不从配置读取。不放进 `MessagingOptions`：选项是配置的函数，同样的配置读出同样的选项（CLI 知识库的配置索引测试按此核对缺省值），随机的标识放进去就破坏了这一点。RabbitMQ 与 Kafka 代理的构造函数多一个 `MessagingInstance` 参数。
+- 内存代理：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道一个位置，容量判定按份数整批），每个主题仍是一个消费循环；广播投递到上限丢弃，不进死信列表；`DeliveredCount` 每种方式各算一次。交给 `StartAsync` 的订阅方式并入主题的投递方式。
+- RabbitMQ：广播订阅为每个实例声明独占、非持久、`autoDelete` 的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键 `<QueuePrefix><topic>` 绑定到交换机（上一节的交换机给竞争队列与每个广播队列各一份）。重试经默认交换机定向发回本实例的广播队列；到上限、无法解码时确认掉并记 Warning 日志。
+- Kafka：广播订阅用本实例独占的消费组 `<GroupId>@<InstanceId>`，`auto.offset.reset=latest`，投递完成后不提交位点；竞争订阅照旧在 `GroupId` 里、从最早位点开始、投递完成后提交。消费者工厂改为按 `ConsumerConfig` 创建（内部测试接缝）。
+- 插件：`plugin.proto` 的 `Subscription` 加 `mode`（`competing` / `broadcast`，空同 `competing`），`PluginSubscription` 带 `Mode`，`Matches` 按主题、类型与方式；握手里 `mode` 不合法、同一（主题，类型）以两种方式各声明一次都是 `PLUGINS_VALIDATION_004`；宿主每个（主题，方式）登记一次转交处理器，只投给以同一方式订阅了主题的插件。进程外与 Wasm 宿主同样处理。
+- CloudEvents 入站的派发模式：在接收请求的实例里对竞争与广播订阅各投递一次（先竞争后广播），两种方式都没有处理器才 404；要让广播订阅到达每个实例用发布模式。
+- 一致性：`MessageBrokerConformance` 新增三个用例——同一主题的竞争与广播各收到一次、各自重试；两个宿主时广播每个实例都收到；两个宿主时竞争每条只有一个实例收到。新增可覆写的 `SupportsMultipleInstances`（缺省真，内存代理覆写为假、跳过两个多实例用例）、`StartWithSubscriptionsAsync`、`WarmUpBroadcastAsync`（发预热消息直到每个实例的广播订阅都收到一条，Kafka 的消费组分区分配是异步的）。
+
+### 理由
+
+- 订阅方式放在订阅登记上，而不是放在主题或 Provider 配置上：同一主题既可能要「只处理一次」（发通知邮件），也可能要「每个实例都做」（断开连接），由订阅方决定；Provider 配置一个广播开关会把全部主题都变成广播（Kafka 改 `GroupId` 的老办法）。
+- 两种方式是两次投递：重试计数、死信与否各不相同，混在一次投递里，一种方式的失败会让另一种方式的处理器重跑。
+- 广播不进死信：死信是竞争订阅的共享留存，可以修好后重投；广播的每份失败只属于某个实例，那个实例可能已经不在，没有可以重放的共享位置。广播的典型用途（断连接、清缓存）错过一次的后果可以接受：实例重启时本来就没有这些连接和缓存。
+- 实例标识不可配置、每次启动重新生成：标识重复会让 Kafka 的广播退化成同一消费组里的竞争，而且没有任何报错；机器名与进程 ID 让运维在代理的管理界面里认出是谁，随机后缀保证同一进程里的多个宿主（测试）与重启后不重复。
+- RabbitMQ 的广播队列独占、非持久、随连接删除：实例下线不留下没人消费的队列（与上一节同一个目标），名字里的 `@` 不在主题文法里，不会与竞争队列或死信队列重名。
+- Kafka 的广播从最新位点开始、不提交：不回放历史，消费组空了以后集群里不留位点，频繁发版不会攒下一堆孤儿消费组的位点。代价是组内再均衡（会话超时、处理超过 `max.poll.interval.ms`）后从最新位点续上，期间的消息收不到，属于尽力而为的范围。
+- 一致性用预热而不是让 `StartAsync` 等分区分配：等待分配要在客户端回调里另做定位与超时处理，生产语义也只是「启动后几秒开始收」；用例以「每个实例都收到一条预热消息」作为接上的判据，对各 Provider 都成立。
+
+### 影响
+
+- 公开 API（Unshipped，直接改、不留旧签名）：
+  - 新增 `SubscriptionMode`、`MessageSubscription`、`MessageSubscriptions.All`、`MessageDelivery.Mode`、`MessagingInstance`（`Id`）。
+  - 改签名：`MessageSubscriptions.Add(topic, handlerType)` → `Add(topic, handlerType, mode)`；`HandlersFor(topic)` → `HandlersFor(topic, mode)`；`new MessageDelivery(topic, envelope, attempt)` → `new MessageDelivery(topic, envelope, attempt, mode)`；`IMessageBroker.StartAsync(IReadOnlyCollection<string> topics, …)` → `StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, …)`（三个 Provider 同步）；`AddMessageHandler<THandler>(topic)` 多一个缺省为 `Competing` 的参数，源码兼容；`RabbitMQMessageBroker`、`KafkaMessageBroker` 的公开构造函数在 `MessagingOptions` 之后多一个 `MessagingInstance`（经容器创建不受影响）。
+  - 一致性包：新增 `NoticesTopic`、`SupportsMultipleInstances`、`StartWithSubscriptionsAsync`、`WarmUpBroadcastAsync` 与三个用例。
+- 自己实现 `IMessageBroker` 或直接构造 `MessageDelivery`、调用 `HandlersFor` 的代码要跟着改；只用 `AddMessageHandler` 的应用不用改，行为不变（全是竞争消费）。
+- 插件协议向后兼容：旧插件不填 `mode` 即竞争消费；Go SDK（framework-sdk-go）要让插件声明广播时需要跟进生成代码与选项，不在本仓库。规范仓库里的黑盒运行器 Go 代码已重新生成。
+- 运维：RabbitMQ 管理界面里每个在线实例每个广播主题多一个 `…@<实例标识>` 的独占队列，实例下线即删除；Kafka 每个在线实例每个广播订阅多一个 `<GroupId>@<实例标识>` 的消费组，不提交位点。
+- 测试：内存（单宿主用例 + 广播不进死信、两种方式各占一个位置）；RabbitMQ 打桩（独占队列与绑定、广播重试定向发回、到上限与无法解码不进死信）与真实 RabbitMQ（广播队列只属于本实例、实例下线即删除；两个实例的广播与竞争）；Kafka 打桩（消费组与起始位点、不提交、不发死信）与真实 Kafka（两个实例的广播与竞争）；插件握手（`mode` 解析、非法与两种方式重复声明被拒）；CloudEvents 派发模式（两种方式各一次、只有广播订阅也派发）。

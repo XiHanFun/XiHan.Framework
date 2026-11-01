@@ -46,22 +46,37 @@ XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler.HandleAsync(XiHa
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Attempt.get -> int
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Deconstruct(out string! Topic, out XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, out int Attempt) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Deconstruct(out string! Topic, out XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, out int Attempt, out XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Envelope.get -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Equals(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? other) -> bool
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.MessageDelivery(string! Topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, int Attempt) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.MessageDelivery(string! Topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, int Attempt, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Mode.get -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Topic.get -> string!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.DispatchAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.MessageDispatcher(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions! subscriptions) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Deconstruct(out string! Topic, out XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Equals(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? other) -> bool
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.MessageSubscription(string! Topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Mode.get -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Topic.get -> string!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.Add(string! topic, System.Type! handlerType) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions!
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.HandlersFor(string! topic) -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.Add(string! topic, System.Type! handlerType, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode mode) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.All.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!>!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.HandlersFor(string! topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode mode) -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.MessageSubscriptions() -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions.Topics.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
+XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode.Broadcast = 1 -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
+XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode.Competing = 0 -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
 XiHan.Framework.Messaging.Abstractions.MessagingCapabilities
 XiHan.Framework.Messaging.Abstractions.MessagingErrors
+XiHan.Framework.Messaging.Abstractions.MessagingInstance
+XiHan.Framework.Messaging.Abstractions.MessagingInstance.Id.get -> string!
+XiHan.Framework.Messaging.Abstractions.MessagingInstance.MessagingInstance() -> void
 XiHan.Framework.Messaging.Abstractions.MessagingMessages
 XiHan.Framework.Messaging.Abstractions.MessagingOptions
 XiHan.Framework.Messaging.Abstractions.MessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
@@ -137,7 +152,7 @@ XiHan.Framework.Messaging.Abstractions.Publishing.DirectPublisher.PublishManyAsy
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
-XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<string!>! topics, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!>! subscriptions, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher
 XiHan.Framework.Messaging.Abstractions.Publishing.IMessagePublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
@@ -186,6 +201,9 @@ override XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.ToStri
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.GetHashCode() -> int
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.ToString() -> string!
+override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Equals(object? obj) -> bool
+override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.GetHashCode() -> int
+override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.ToString() -> string!
 override XiHan.Framework.Messaging.Abstractions.MessagingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Abstractions.MessagingOptions.GetHashCode() -> int
 override XiHan.Framework.Messaging.Abstractions.MessagingOptions.ToString() -> string!
@@ -203,13 +221,15 @@ static XiHan.Framework.Messaging.Abstractions.Envelopes.TopicName.Validate(strin
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.operator !=(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.operator ==(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.GetDelivery(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!>
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.operator !=(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? right) -> bool
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.operator ==(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator !=(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingOptions.operator ==(XiHan.Framework.Messaging.Abstractions.MessagingOptions? left, XiHan.Framework.Messaging.Abstractions.MessagingOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.MessagingRegistration.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> XiHan.Framework.Messaging.Abstractions.MessagingOptions!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddDomainEvent<TEvent>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, string! type, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TEvent>! info, System.Func<TEvent, string?>? subject = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.AddMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode mode = XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode.Competing) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.GetDomainEventRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Messaging.Abstractions.DomainEvents.DomainEventRegistry!
 static XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions.GetMessageSubscriptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions!
 static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions!

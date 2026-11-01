@@ -16,7 +16,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 /// 把投递变成一次内核调用。
 /// </summary>
 /// <remarks>
-/// 新作用域、从扩展属性构造 Baggage（租户、主体、关联、区域，见 <see cref="EnvelopeExtensions.BaggageMappings"/>）与追踪（<c>traceparent</c>），经完整管道执行该主题的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
+/// 新作用域、从扩展属性构造 Baggage（租户、主体、关联、区域，见 <see cref="EnvelopeExtensions.BaggageMappings"/>）与追踪（<c>traceparent</c>），经完整管道执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class MessageDispatcher(IServiceProvider services, App app, MessageSubscriptions subscriptions)
@@ -63,12 +63,12 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     /// 派发。
     /// </summary>
     /// <remarks>
-    /// 没有处理器的主题直接成功。
+    /// 只执行以 <see cref="MessageDelivery.Mode"/> 订阅了该主题的处理器：同一条消息到达竞争订阅与广播订阅是两次投递，各执行各的。没有处理器的订阅直接成功。
     /// </remarks>
     public async ValueTask<Result> DispatchAsync(MessageDelivery delivery, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(delivery);
-        var handlers = _subscriptions.HandlersFor(delivery.Topic);
+        var handlers = _subscriptions.HandlersFor(delivery.Topic, delivery.Mode);
         if (handlers.Count == 0)
         {
             return Result.Success();

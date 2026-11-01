@@ -14,7 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions;
 /// Provider 共用的装配。
 /// </summary>
 /// <remarks>
-/// 选项、派发器、直接发布者与运行时。Provider 的特性先注册 <see cref="IMessageBroker"/> 再调用。
+/// 选项、实例标识、派发器、直接发布者与运行时。Provider 的特性先注册 <see cref="IMessageBroker"/> 再调用。
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MessagingRegistration
@@ -27,6 +27,7 @@ public static class MessagingRegistration
         ArgumentNullException.ThrowIfNull(context);
         var options = MessagingOptions.FromConfiguration(context.Configuration);
         context.Services.AddSingleton(options);
+        context.Services.TryAddSingleton<MessagingInstance>();
         context.Services.GetMessageSubscriptions();
         context.Services.TryAddSingleton<MessageDispatcher>();
         context.Services.TryAddSingleton<MessagingRuntime>();

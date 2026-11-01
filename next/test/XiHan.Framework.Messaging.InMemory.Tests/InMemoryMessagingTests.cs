@@ -99,16 +99,16 @@ public sealed class InMemoryMessagingTests
     public async Task Start_FailsBeforeConsuming_WhenSubscribedTopicsExceedTheLimit()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
-        var subscriptions = new MessageSubscriptions().Add("a", typeof(RecordingHandler)).Add("b", typeof(RecordingHandler));
+        var subscriptions = new MessageSubscriptions().Add("a", typeof(RecordingHandler), SubscriptionMode.Competing).Add("b", typeof(RecordingHandler), SubscriptionMode.Competing);
         using var broker = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxTopics = 1 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
 
-        var exception = await Assert.ThrowsAsync<FrameworkException>(() => broker.StartAsync(["a", "b"], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => broker.StartAsync([.. subscriptions.All], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None));
 
         Assert.Equal(MessagingErrors.TopicLimit, exception.Code);
         Assert.Contains("MaxTopics", exception.Message, StringComparison.Ordinal);
         // 没有起任何消费循环：可以按正常方式停止，再按上限内的主题启动
         await broker.StopAsync(CancellationToken.None);
-        await broker.StartAsync(["a"], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription("a", SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
         await broker.StopAsync(CancellationToken.None);
     }
 
@@ -128,7 +128,7 @@ public sealed class InMemoryMessagingTests
         var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
 
         // 订阅了、还没开始消费的代理：消息留在通道里，用它验证容量
-        var subscriptions = new MessageSubscriptions().Add("idle", typeof(RecordingHandler));
+        var subscriptions = new MessageSubscriptions().Add("idle", typeof(RecordingHandler), SubscriptionMode.Competing);
         using var idle = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxQueuedMessages = 2 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
         Assert.True((await idle.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
         // 批量发布容量不足时整批 QueueFull，不写入半批
@@ -151,6 +151,43 @@ public sealed class InMemoryMessagingTests
         Assert.Equal(2, dead.Attempt);
         Assert.Equal(1, broker.DeliveredCount(Topic));
         Assert.Equal(0, broker.QueuedCount(Topic));
+    }
+
+    [Fact]
+    public async Task BroadcastDelivery_IsDroppedInsteadOfDeadLettered_AndEachModeTakesASlot()
+    {
+        var log = new DeliveryLog();
+        log.FailingIds["bad"] = 0;
+        await using var host = await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryMessagingFeature>(),
+            [new("XiHan:Messaging:MaxAttempts", "2")],
+            services =>
+            {
+                services.AddSingleton(log);
+                services.AddMessageHandler<RecordingHandler>(Topic);
+                services.AddMessageHandler<RecordingHandler>(Topic, SubscriptionMode.Broadcast);
+            });
+        var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
+
+        Assert.True((await broker.PublishAsync(Topic, Envelope("good"), CancellationToken.None)).IsSuccess);
+        Assert.True((await broker.PublishAsync(Topic, Envelope("bad"), CancellationToken.None)).IsSuccess);
+        await log.WaitAsync(static r => r.Delivery.Envelope.Id == "good", 2, TimeSpan.FromSeconds(10));
+        await log.WaitAsync(static r => r.Delivery.Envelope.Id == "bad", 4, TimeSpan.FromSeconds(10));
+        await Task.Delay(100);
+
+        // 两种方式各一次投递、各算一次成功；失败的广播投递到上限丢弃，只有竞争投递进死信
+        Assert.Equal(2, broker.DeliveredCount(Topic));
+        var dead = Assert.Single(broker.DeadLetters(Topic));
+        Assert.Equal(("bad", SubscriptionMode.Competing, 2), (dead.Envelope.Id, dead.Mode, dead.Attempt));
+
+        // 一条消息给每种方式各占一个位置：容量 2 的队列放下一条就满
+        var subscriptions = new MessageSubscriptions().Add("idle", typeof(RecordingHandler), SubscriptionMode.Competing).Add("idle", typeof(RecordingHandler), SubscriptionMode.Broadcast);
+        using var idle = new InMemoryMessageBroker(new InMemoryMessagingOptions { MaxQueuedMessages = 2 }, host.Services.GetRequiredService<MessagingOptions>(), subscriptions, host.App, NullLoggerFactory.Instance);
+        Assert.True((await idle.PublishAsync("idle", Envelope("1"), CancellationToken.None)).IsSuccess);
+        Assert.Equal(2, idle.QueuedCount("idle"));
+        Assert.Equal(MessagingErrors.QueueFull, (await idle.PublishAsync("idle", Envelope("2"), CancellationToken.None)).Error?.Code);
+        Assert.All(await idle.PublishManyAsync("idle", [Envelope("3")], CancellationToken.None), static r => Assert.Equal(MessagingErrors.QueueFull, r.Error?.Code));
+        Assert.Equal(2, idle.QueuedCount("idle"));
     }
 
     [Fact]

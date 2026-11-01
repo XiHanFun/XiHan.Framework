@@ -6,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Messaging.Conformance;
 using XiHan.Framework.Testing;
@@ -120,6 +121,27 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
         Assert.Single(await second.WaitAsync(static r => r.Delivery.Envelope.Id == "while-offline", 1, TimeSpan.FromSeconds(10)));
     }
 
+    [Fact]
+    public async Task TheBroadcastQueue_IsOwnedByTheInstance_AndGoesAwayWhenItStops()
+    {
+        SkipWithoutBroker();
+        var host = await StartAsync(new DeliveryLog(), SubscriptionMode.Broadcast);
+        var queue = _prefix + SubscribedTopic + "@" + host.Services.GetRequiredService<MessagingInstance>().Id;
+        try
+        {
+            // 独占队列：别的连接被动声明它得到 405（被本实例的连接占用），说明它在、且只属于这个实例；没有建竞争队列
+            Assert.Equal(405, await QueueStateAsync(queue));
+            Assert.Equal(404, await QueueStateAsync(_prefix + SubscribedTopic));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        // 实例下线：队列随连接删除，不留下没人消费的队列
+        Assert.Equal(404, await QueueStateAsync(queue));
+    }
+
     /// <summary>
     /// 没有测试代理时跳过。
     /// </summary>
@@ -127,9 +149,9 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
         => Assert.SkipWhen(string.IsNullOrWhiteSpace(Uri), $"Set the environment variable {RabbitMQMessageBrokerConformanceTests.EnvironmentVariable} to a RabbitMQ URI to run this test.");
 
     /// <summary>
-    /// 启动一个宿主，<paramref name="log"/> 不为空时订阅 <see cref="SubscribedTopic"/>。
+    /// 启动一个宿主，<paramref name="log"/> 不为空时以 <paramref name="mode"/> 订阅 <see cref="SubscribedTopic"/>。
     /// </summary>
-    private Task<TestHost> StartAsync(DeliveryLog? log)
+    private Task<TestHost> StartAsync(DeliveryLog? log, SubscriptionMode mode = SubscriptionMode.Competing)
         => TestHost.StartAsync(
             static builder => builder.UseFeature(new RabbitMQMessagingFeature()),
             [
@@ -142,7 +164,7 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
                 if (log is not null)
                 {
                     services.AddSingleton(log);
-                    services.AddMessageHandler<RecordingHandler>(SubscribedTopic);
+                    services.AddMessageHandler<RecordingHandler>(SubscribedTopic, mode);
                 }
             });
 
@@ -161,17 +183,25 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
     /// <remarks>
     /// 被动声明失败会关闭通道，每次用新通道。
     /// </remarks>
-    private async Task<bool> QueueExistsAsync(string queue)
+    private async Task<bool> QueueExistsAsync(string queue) => await QueueStateAsync(queue) == 200;
+
+    /// <summary>
+    /// 被动声明的结果：200 为存在，404 为不存在，405 为被别的连接独占。
+    /// </summary>
+    /// <remarks>
+    /// 被动声明失败会关闭通道，每次用新通道。
+    /// </remarks>
+    private async Task<int> QueueStateAsync(string queue)
     {
         await using var channel = await _connection!.CreateChannelAsync();
         try
         {
             await channel.QueueDeclarePassiveAsync(queue);
-            return true;
+            return 200;
         }
-        catch (OperationInterruptedException exception) when (exception.ShutdownReason?.ReplyCode == 404)
+        catch (OperationInterruptedException exception) when (exception.ShutdownReason?.ReplyCode is 404 or 405)
         {
-            return false;
+            return exception.ShutdownReason.ReplyCode;
         }
     }
 }

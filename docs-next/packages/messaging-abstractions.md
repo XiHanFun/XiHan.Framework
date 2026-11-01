@@ -18,8 +18,8 @@
 本包把消息定义成跨进程的调用：
 
 - 信封 `MessageEnvelope` 是 CloudEvents 1.0，`CloudEventsFormat` 做结构化 JSON 编解码（`application/cloudevents+json`）。
-- 应用经 `IMessagePublisher` 发布，Provider 实现 `IMessageBroker`（发布、按主题消费、至少一次、重试、死信）；流 Provider 另实现 `IMessageReplayer`。
-- 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行处理器。
+- 应用经 `IMessagePublisher` 发布，Provider 实现 `IMessageBroker`（发布、按订阅消费、至少一次、重试、死信）；流 Provider 另实现 `IMessageReplayer`。
+- 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic, mode)` 订阅；订阅方式 `SubscriptionMode` 缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信，[订阅方式](../guide/messaging#订阅方式)）。`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行与投递同一方式的处理器。
 - Provider 的特性先注册自己的 `IMessageBroker`，再调用 `MessagingRegistration.Configure(context)` 注册选项、派发器、`MessagingRuntime` 与缺省的 `DirectPublisher`，启停时调用 `MessagingRuntime.StartAsync` / `StopAsync`。
 - 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`，`DomainEventDispatcher` 实现持久化抽象的 `IDomainEventDispatcher`，在 Transaction 阶段提交前把聚合的事件发成信封。
 - 发件箱：`OutboxFeature` 把发布者换成 `OutboxPublisher`，有活动工作单元时写发件箱表，由 `OutboxDispatcher` 在提交后投递。
@@ -78,12 +78,13 @@ builder.AddXiHan(xihan => xihan
 | `TopicName` | 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；`IsValid`、`Validate`、`MaxLength`（128） |
 | `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType` |
 | `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
-| `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(topics, dispatch, ct)`、`StopAsync` |
+| `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(subscriptions, dispatch, ct)`（每个订阅一份消费）、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
-| `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封与尝试号；代理调用的派发委托 |
-| `MessageSubscriptions`、`MessageDispatcher` | 主题到处理器类型的订阅表；把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
-| `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
-| `MessagingOptions`、`MessagingRegistration`、`MessagingRuntime` | 公共选项、Provider 共用的装配、启停消费 |
+| `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
+| `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
+| `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
+| `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
+| `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项；本实例标识（`Id`，单例，每个宿主构造时生成、不从配置读取，广播订阅的队列名与消费组名里带它）；Provider 共用的装配；启停消费 |
 | `DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件登记表（容量 `DefaultCapacity` 10000）、一种事件的映射（`ToEnvelope`）、派发器 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |
@@ -116,7 +117,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 
 ## 行为与限制
 
-- 处理器返回失败或抛出异常都算投递失败；同一主题的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型重复订阅同一主题只记一次。没有处理器的主题直接成功。
+- 处理器返回失败或抛出异常都算投递失败；同一主题、同一方式的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型以同一方式重复订阅同一主题只记一次。没有处理器的订阅直接成功。竞争订阅失败到上限进死信，广播订阅丢弃。
 - 派发不写幂等键，重试必须重新执行处理器；去重由处理器按 `Id` + `Source` 自理。
 - 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID、父跨度与采样标志（上游「不采样」原样保留）；幂等键不进入消息。
 - `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪与采样标志（与调用同一 trace 的当前 Activity 优先），租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。

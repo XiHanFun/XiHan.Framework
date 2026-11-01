@@ -1,6 +1,6 @@
 # 消息与事件
 
-本章讲消息子系统：CloudEvents 信封、发布与订阅、重试与死信、领域事件、事务性发件箱，以及队列与流两个能力，适用于在特性之间或服务之间传递事件的开发者。完整 API 见 [Messaging.Abstractions 包](../packages/messaging-abstractions)。
+本章讲消息子系统：CloudEvents 信封、发布与订阅（竞争与广播）、重试与死信、领域事件、事务性发件箱，以及队列与流两个能力，适用于在特性之间或服务之间传递事件的开发者。完整 API 见 [Messaging.Abstractions 包](../packages/messaging-abstractions)。
 
 ## 能力与 Provider
 
@@ -170,18 +170,57 @@ public sealed class OrderPlacedHandler(ILogger<OrderPlacedHandler> logger) : IMe
 context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
 ```
 
-`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）与第几次尝试（`Attempt`，从 1 起）。派发器 `MessageDispatcher` 为每条消息：
+`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`，见[订阅方式](#订阅方式)）。派发器 `MessageDispatcher` 为每条消息：
 
 1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志（不合法视为缺失，与 HTTP 入站一致），调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
-2. 经完整管道执行（`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`），按订阅顺序依次执行该主题的处理器，第一个失败即为调用结果。
+2. 经完整管道执行（`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`），按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
 
 所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入随它提交或回滚；装配了发件箱时处理器发布的消息也先写进发件箱，随它一起提交。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。
 
 消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
 
+## 订阅方式
+
+订阅登记带订阅方式 `SubscriptionMode`（RFC-0009「订阅方式」，ADR-0079）：
+
+| 方式 | 谁收到 | 失败到上限 | 适合 |
+| --- | --- | --- | --- |
+| `Competing`（缺省） | 订阅了这个主题的实例里只有一个收到 | 进死信 | 业务事件、领域事件、只该处理一次的工作 |
+| `Broadcast` | 每个在线实例各收到一份 | 丢弃并记 Warning 日志 | 断开本实例上的连接、清本地缓存这类每个节点都要做的事 |
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+
+// 竞争：多实例部署时每条消息只有一个实例的处理器执行（不写方式即竞争）
+context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
+
+// 广播：每个实例都执行，各自断开连在自己身上的会话连接
+context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", SubscriptionMode.Broadcast);
+```
+
+同一主题可以两种方式都订阅：订阅表按（主题，方式）分组，代理各消费一份，一条消息到达一个实例的竞争订阅与广播订阅是两次独立的投递，各自计尝试次数、各自重试，派发器只执行与投递同一方式的处理器。插件在握手的 `Subscription.mode` 里声明（[插件](./plugins#事件投递)）。
+
+广播的语义边界：
+
+- 尽力而为：只有订阅时在线、与代理连着的实例收到；实例不在线、重启中、与代理断开期间发布的消息收不到，上线后也不回放历史。要不丢就用竞争订阅。
+- 没有死信：在本实例内按 `MaxAttempts` 重试，到上限后丢弃并记 Warning 日志；无法解码的消息同样丢弃。
+- 不共享去重：每个实例各自执行处理器，派发不写幂等键；代理重投时同一实例可能收到重复的投递。
+- Kafka 的重放（`IMessageReplayer`）只投给竞争订阅。
+
+各 Provider 怎么实现：
+
+| Provider | 广播订阅 |
+| --- | --- |
+| `Messaging.InMemory` | 单进程就是一个实例：竞争与广播各收到一次（各一次投递），没有跨进程的语义 |
+| `Messaging.RabbitMQ` | 每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机 |
+| `Messaging.Kafka` | 本实例独占的消费组 `<GroupId>@<InstanceId>`，从最新位点开始、不提交位点；启动后要等消费组分到分区（通常几秒）才开始收 |
+
+实例标识是 `MessagingInstance.Id`（消息装配登记的单例，每个宿主一个）：构造时生成（机器名、进程 ID 与 8 位随机十六进制），不从配置读取——两个实例用同一个标识会让 Kafka 的广播退化成竞争，每次启动重新生成保证唯一。
+
 ## 重试与死信
 
-处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），仍失败就进死信；重试之间不等待。
+处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。
 
 | Provider | 重试 | 死信 |
 | --- | --- | --- |
@@ -275,7 +314,7 @@ builder.AddXiHan(xihan => xihan
 
 1. 分区键：信封扩展 `xihankey`（`EnvelopeExtensions.PartitionKey`）决定分区，同一主题内同键的消息按发布顺序投递；没有键的消息由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 2. 消费位点：按消费组（`GroupId`，缺省 `xihan`）保存，投递完成（成功、重试耗尽进死信、无法解码进死信）后才提交；重启续接，仍是至少一次。死信发布没有得到确认时投递未完成：不提交，回退到这条消息，`RedeliveryDelaySeconds`（缺省 5）后重新投递，期间这个分区不往后读，消费循环只在停止时退出。
-3. 重放：`IMessageReplayer.ReplayAsync(topic, since, ct)` 用独立的消费位点把该时刻起的消息重新投递给当前订阅的处理器，经完整管道、按同样的重试与死信规则，不影响正常消费的位点。
+3. 重放：`IMessageReplayer.ReplayAsync(topic, since, ct)` 用独立的消费位点把该时刻起的消息重新投递给当前竞争订阅的处理器（广播订阅不回放），经完整管道、按同样的重试与死信规则，不影响正常消费的位点。
 
 ```csharp
 using XiHan.Framework.Messaging.Abstractions.Envelopes;

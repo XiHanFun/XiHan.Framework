@@ -9,7 +9,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 }
 ```
 
-套件覆盖：信封属性、扩展与数据完整到达处理器；同一主题按发布顺序投递；主题互不串扰；处理器失败或抛异常时重试到上限后停止且不阻塞后续消息；租户与关联扩展进入 Baggage；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功。用例以 `Testing.TestHost` 走完整管道，等待投递有超时（`DeliveryTimeout`）。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
+套件覆盖：信封属性、扩展与数据完整到达处理器；同一主题按发布顺序投递；主题互不串扰；处理器失败或抛异常时重试到上限后停止且不阻塞后续消息；租户与关联扩展进入 Baggage；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争订阅与广播订阅各收到一次、各自重试；两个宿主连同一个代理时广播每个实例都收到、竞争每条只有一个实例收到（多实例用例要 `SupportsMultipleInstances`，默认为真；内存代理每个宿主一个进程内代理，覆写为假跳过）。广播在有的代理上异步接上，套件用 `WarmUpBroadcastAsync` 发预热消息等每个实例都收到后再断言；`StartWithSubscriptionsAsync(log, subscriptions)` 按给定订阅启动宿主。用例以 `Testing.TestHost` 走完整管道，等待投递有超时（`DeliveryTimeout`）。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。
 
 ## 依赖方向
 

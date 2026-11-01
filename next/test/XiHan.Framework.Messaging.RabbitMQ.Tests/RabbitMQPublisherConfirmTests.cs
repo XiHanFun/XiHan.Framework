@@ -7,6 +7,7 @@ using RabbitMQ.Client.Exceptions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
@@ -49,7 +50,7 @@ public sealed class RabbitMQPublisherConfirmTests
     /// 用打桩连接创建代理。
     /// </summary>
     private static RabbitMQMessageBroker Broker(TestHost host, IConnection connection, int maxAttempts = 3)
-        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = maxAttempts }, host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
+        => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = maxAttempts }, new MessagingInstance(), host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
 
     [Fact]
     public async Task Connect_OpensThePublishChannelWithTrackedPublisherConfirmations()
@@ -145,7 +146,7 @@ public sealed class RabbitMQPublisherConfirmTests
         var (connection, fake) = FakeRabbitConnection.Create();
         await using var broker = Broker(host, connection);
 
-        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
 
         // 队列只由订阅方声明：持久、非独占、不自动删除，以同名路由键绑定到交换机
         var consumer = fake.Channels[1];
@@ -203,7 +204,7 @@ public sealed class RabbitMQPublisherConfirmTests
         await using var host = await TestHost.StartAsync(static _ => { });
         var (connection, fake) = FakeRabbitConnection.Create();
         await using var broker = Broker(host, connection);
-        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
         var publish = fake.Channels[0];
         var consumer = fake.Channels[1];
 
@@ -226,7 +227,7 @@ public sealed class RabbitMQPublisherConfirmTests
         var (connection, fake) = FakeRabbitConnection.Create();
         fake.OnChannel = static channel => channel.Confirm = static (_, _) => new PublishException(1, isReturn: false);
         await using var broker = Broker(host, connection);
-        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
         var consumer = fake.Channels[1];
 
         await DeliverAsync(consumer, deliveryTag: 8, attempt: 1, CloudEventsFormat.Encode(Envelope("retry")));
@@ -244,7 +245,7 @@ public sealed class RabbitMQPublisherConfirmTests
         var (connection, fake) = FakeRabbitConnection.Create();
         fake.OnChannel = static channel => channel.Confirm = static (_, routingKey) => routingKey.EndsWith(".dlq", StringComparison.Ordinal) ? new PublishException(1, isReturn: false) : null;
         await using var broker = Broker(host, connection, maxAttempts: 2);
-        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult<Result>(Error.Literal("ORDERS_VALIDATION_001", "Rejected.")), CancellationToken.None);
         var consumer = fake.Channels[1];
 
         // 第 2 次尝试失败即到上限：转入死信队列，死信发布未被确认时原消息退回
@@ -270,7 +271,7 @@ public sealed class RabbitMQPublisherConfirmTests
         await using var host = await TestHost.StartAsync(static _ => { });
         var (connection, fake) = FakeRabbitConnection.Create();
         await using var broker = Broker(host, connection);
-        await broker.StartAsync([Topic], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
         var consumer = fake.Channels[1];
 
         await DeliverAsync(consumer, deliveryTag: 11, attempt: 1, CloudEventsFormat.Encode(Envelope("ok")));

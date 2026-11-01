@@ -20,9 +20,10 @@
 - 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`）。消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数。
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅主题一个消费者，属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到），单线程按分区顺序派发。
-- 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
-- 投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
+- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
+- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启的实例标识不同、是新的消费组，不回放历史。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
+- 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
 
 启动时向集群取一次元数据，连不上即启动失败（`MESSAGING_UNAVAILABLE_001`）；停止时先停消费，再释放生产者。
@@ -120,7 +121,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 
 ## 行为与限制
 
-- 重放：`ReplayAsync(topic, since)` 用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
+- 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
 - 没人订阅的主题（ADR-0079）：发布到不存在的主题时由 broker 按 `auto.create.topics.enable`（Kafka 缺省开启）自动建出主题，消息只留到保留期（`retention.ms`，缺省 7 天）为止；没有消费组就没有积压，不会像队列那样越堆越多。broker 关闭了自动建主题时，发布到不存在的主题在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒），这类部署要预先建好应用与框架事件（如 `<TopicPrefix>scheduling.job.started`）用到的主题。

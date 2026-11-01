@@ -19,7 +19,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 `CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents` 与 `CloudEventsWebhookPublisher`。
 
-入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给主题的处理器，处理器的结果就是响应；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。
+入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。
 
 出站：`CloudEventsWebhookPublisher` 实现 `IMessagePublisher`，把信封 POST 到 `Webhooks:<主题>`，模式为 `Binary`（缺省）或 `Structured`，批量时用 batch 内容模式一次 POST。它只按具体类型登记，不替换消息代理的发布者。信封按原样发出：它不像 `DirectPublisher`、`OutboxPublisher` 那样从当前调用补齐 `traceparent`、租户、主体、关联与区域扩展，租户 ID、主体 ID 等内部标识不会外推给接收方。这是定下的规则（ADR-0074）：接收方是第三方，内部标识推出去会暴露内部结构与身份、让第三方依赖内部 ID，追踪链是否跨出组织边界也由调用方决定；要让接收方拿到的扩展由调用方显式写进信封。HTTP 层的 W3C `traceparent` 头由 .NET HttpClient 按当前 Activity 传播（启用追踪时），可在命名客户端上以 `SocketsHttpHandler.ActivityHeadersPropagator = null` 关掉。
 
@@ -128,7 +128,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 | `PROTOCOLS_VALIDATION_008` | 请求不是 CloudEvent（400） |
 | `MESSAGING_VALIDATION_002` | 信封不合法（400） |
 | `PROTOCOLS_VALIDATION_009` | 事件类型没有映射到主题，类型本身也不是合法主题（400） |
-| `PROTOCOLS_NOTFOUND_003` | 派发模式下主题没有处理器（404） |
+| `PROTOCOLS_NOTFOUND_003` | 派发模式下主题在本实例两种订阅方式都没有处理器（404） |
 | `PROTOCOLS_NOTFOUND_004` | 主题没有配置出站 Webhook |
 | `PROTOCOLS_UNAVAILABLE_001` | Webhook 返回非 2xx，`status` 在错误细节里 |
 | `PROTOCOLS_UNAVAILABLE_002` | Webhook 无法连接 |

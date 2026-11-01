@@ -20,7 +20,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// 基于 RabbitMQ.Client 的代理。
 /// </summary>
 /// <remarks>
-/// 发布方只声明交换机：消息发到持久的 direct 交换机 <see cref="RabbitMQMessagingOptions.Exchange"/>，路由键是前缀加主题；队列只由订阅方声明并绑定（ADR-0079）。发布到没有队列绑定的路由（mandatory 退回，即没有订阅者）丢弃并记 Debug 日志，发布照常成功。每主题一个持久队列，手动确认，失败经默认交换机重新发布到队尾或死信队列。发布通道开启发布确认，每次发布（含重试与死信的重新发布）都等代理确认，代理拒绝（nack）按失败处理。批量发布在同一通道上连续发布、一次持锁，再一次等待全部确认。
+/// 发布方只声明交换机：消息发到持久的 direct 交换机 <see cref="RabbitMQMessagingOptions.Exchange"/>，路由键是前缀加主题；队列只由订阅方声明并绑定（ADR-0079）。发布到没有队列绑定的路由（mandatory 退回，即没有订阅者）丢弃并记 Debug 日志，发布照常成功。竞争订阅每主题一个持久队列，广播订阅每个实例一个独占、随连接删除的队列（<c>&lt;QueuePrefix&gt;&lt;topic&gt;@&lt;InstanceId&gt;</c>），都以主题的路由键绑定；手动确认，失败经默认交换机重新发布到所消费队列的队尾，竞争订阅到上限进死信队列，广播订阅到上限丢弃。发布通道开启发布确认，每次发布（含重试与死信的重新发布）都等代理确认，代理拒绝（nack）按失败处理。批量发布在同一通道上连续发布、一次持锁，再一次等待全部确认。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDisposable
@@ -42,6 +42,14 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 消息选项：最多投递次数与死信后缀。
     /// </summary>
     private readonly MessagingOptions _messaging;
+
+    /// <summary>
+    /// 本实例的标识。
+    /// </summary>
+    /// <remarks>
+    /// 广播订阅的队列名里带它。
+    /// </remarks>
+    private readonly MessagingInstance _instance;
 
     /// <summary>
     /// 应用。
@@ -81,7 +89,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 每个被消费主题的通道与消费者标签。
+    /// 每个被消费订阅的通道与消费者标签。
     /// </summary>
     /// <remarks>
     /// 停止时逐个取消并关闭。
@@ -118,8 +126,8 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <remarks>
     /// 连接在 <see cref="ConnectAsync"/> 时建立。
     /// </remarks>
-    public RabbitMQMessageBroker(RabbitMQMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory)
-        : this(options, messaging, app, loggerFactory, null)
+    public RabbitMQMessageBroker(RabbitMQMessagingOptions options, MessagingOptions messaging, MessagingInstance instance, App app, ILoggerFactory loggerFactory)
+        : this(options, messaging, instance, app, loggerFactory, null)
     {
     }
 
@@ -129,11 +137,12 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <remarks>
     /// 委托为 <see langword="null"/> 时按选项连接。
     /// </remarks>
-    internal RabbitMQMessageBroker(RabbitMQMessagingOptions options, MessagingOptions messaging, App app, ILoggerFactory loggerFactory, Func<CancellationToken, Task<IConnection>>? connect)
+    internal RabbitMQMessageBroker(RabbitMQMessagingOptions options, MessagingOptions messaging, MessagingInstance instance, App app, ILoggerFactory loggerFactory, Func<CancellationToken, Task<IConnection>>? connect)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _messaging = messaging ?? throw new ArgumentNullException(nameof(messaging));
+        _instance = instance ?? throw new ArgumentNullException(nameof(instance));
         _app = app ?? throw new ArgumentNullException(nameof(app));
         _logger = loggerFactory.CreateLogger<RabbitMQMessageBroker>();
         _connect = connect ?? (cancellationToken => new ConnectionFactory { Uri = new Uri(_options.Configuration), ConsumerDispatchConcurrency = 1 }.CreateConnectionAsync(cancellationToken));
@@ -298,31 +307,45 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     }
 
     /// <inheritdoc />
-    public async Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 竞争订阅声明持久队列 <c>&lt;QueuePrefix&gt;&lt;topic&gt;</c>，广播订阅声明本实例独占、非持久、随连接删除的队列 <c>&lt;QueuePrefix&gt;&lt;topic&gt;@&lt;InstanceId&gt;</c>，都以主题的路由键绑定到交换机；每个订阅一个通道与一个消费者。
+    /// </remarks>
+    public async Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(topics);
+        ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dispatch);
         await ConnectAsync(cancellationToken).ConfigureAwait(false);
         _stopping = new CancellationTokenSource();
 
-        foreach (var topic in topics)
+        foreach (var subscription in subscriptions)
         {
-            var queue = QueueOf(topic);
+            var queue = QueueOf(subscription);
             try
             {
                 var channel = await _connection!.CreateChannelAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-                // 队列只由订阅方声明并绑定：持久、非独占，订阅方离线期间的消息留在队列里
-                await DeclareDurableAsync(channel, queue, cancellationToken).ConfigureAwait(false);
+                if (subscription.Mode == SubscriptionMode.Broadcast)
+                {
+                    // 广播：每个实例一个自己的队列，交换机按路由键给每个绑定的队列各一份。独占且非持久：
+                    // 随本连接删除（自动恢复连接时客户端重新声明），实例下线后不留下没人消费的队列；断开期间的消息不进它，尽力而为
+                    await channel.QueueDeclareAsync(queue, durable: false, exclusive: true, autoDelete: true, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await channel.QueueBindAsync(queue, _options.Exchange, QueueOf(subscription.Topic), arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    // 队列只由订阅方声明并绑定：持久、非独占，订阅方离线期间的消息留在队列里
+                    await DeclareDurableAsync(channel, queue, cancellationToken).ConfigureAwait(false);
+                }
+
                 await channel.BasicQosAsync(0, _options.PrefetchCount, global: false, cancellationToken).ConfigureAwait(false);
 
                 var consumer = new AsyncEventingBasicConsumer(channel);
-                consumer.ReceivedAsync += (_, received) => OnReceivedAsync(channel, topic, received, dispatch, _stopping.Token);
+                consumer.ReceivedAsync += (_, received) => OnReceivedAsync(channel, subscription, queue, received, dispatch, _stopping.Token);
                 var tag = await channel.BasicConsumeAsync(queue, autoAck: false, consumer, cancellationToken).ConfigureAwait(false);
                 _consumers.Add((channel, tag));
             }
             catch (Exception exception) when (exception is RabbitMQClientException or IOException)
             {
-                throw Unavailable($"Failed to subscribe to topic '{topic}'", exception);
+                throw Unavailable($"Failed to subscribe to topic '{subscription.Topic}' ({subscription.Mode})", exception);
             }
         }
     }
@@ -378,19 +401,29 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 处理一条到达的消息。
     /// </summary>
     /// <remarks>
-    /// 解码、等待宿主就绪、派发，失败重新发布到队尾或死信队列，重新发布得到确认后才确认原消息。
+    /// 解码、等待宿主就绪、派发，失败重新发布到所消费队列的队尾，到了上限竞争订阅进死信队列、广播订阅丢弃；重新发布得到确认后才确认原消息。
     /// </remarks>
-    private async Task OnReceivedAsync(IChannel channel, string topic, BasicDeliverEventArgs received, MessageDispatch dispatch, CancellationToken stopping)
+    private async Task OnReceivedAsync(IChannel channel, MessageSubscription subscription, string queue, BasicDeliverEventArgs received, MessageDispatch dispatch, CancellationToken stopping)
     {
+        var topic = subscription.Topic;
+        var broadcast = subscription.Mode == SubscriptionMode.Broadcast;
         // 尝试次数随消息头携带，重新发布时加一；缺失或非法按首次处理
         var attempt = received.BasicProperties.Headers?.TryGetValue(AttemptHeader, out var raw) == true && raw is int parsed && parsed >= 1 ? parsed : 1;
         var decoded = CloudEventsFormat.Decode(received.Body);
-        // 无法解码的消息不重试：原样转入死信队列，确认后再确认原消息，不让坏消息阻塞队列
+        // 无法解码的消息不重试，不让坏消息阻塞队列：竞争订阅原样转入死信队列，确认后再确认原消息；
+        // 广播订阅没有死信，记日志后确认掉
         if (!decoded.TryGetValue(out var envelope))
         {
+            if (broadcast)
+            {
+                LogBroadcastUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
+                await SettleAsync(channel, received.DeliveryTag, topic, "?", republish: null, stopping).ConfigureAwait(false);
+                return;
+            }
+
             LogUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
             var body = received.Body.ToArray();
-            await SettleAsync(channel, received.DeliveryTag, topic, "?", () => DeadLetterAsync(QueueOf(topic), body, attempt, null, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, "?", () => DeadLetterAsync(queue, body, attempt, null, stopping), stopping).ConfigureAwait(false);
             return;
         }
 
@@ -400,7 +433,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             await Task.Delay(10, stopping).ConfigureAwait(false);
         }
 
-        var delivery = new MessageDelivery(topic, envelope, attempt);
+        var delivery = new MessageDelivery(topic, envelope, attempt, subscription.Mode);
         Result result;
         try
         {
@@ -422,15 +455,22 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             return;
         }
 
-        // 失败时先重新发布（队尾或死信）并等确认，再确认原消息：顺序保证不丢消息，代价是极端情况下可能重复投递
+        // 失败时先重新发布（所消费队列的队尾或死信）并等确认，再确认原消息：顺序保证不丢消息，代价是极端情况下可能重复投递；
+        // 重试只回到所消费的队列，同一路由键上的其他订阅（别的实例的广播队列）不再收一遍
         if (attempt < _messaging.MaxAttempts)
         {
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishToQueueAsync(QueueOf(topic), CloudEventsFormat.Encode(envelope), attempt + 1, envelope.Id, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishToQueueAsync(queue, CloudEventsFormat.Encode(envelope), attempt + 1, envelope.Id, stopping), stopping).ConfigureAwait(false);
+        }
+        else if (broadcast)
+        {
+            // 广播是尽力而为、没有死信：每个实例各自的一份失败没有可以重放的共享位置
+            LogBroadcastDropped(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
+            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, republish: null, stopping).ConfigureAwait(false);
         }
         else
         {
             LogDeadLettered(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => DeadLetterAsync(QueueOf(topic), CloudEventsFormat.Encode(envelope), attempt, envelope.Id, stopping), stopping).ConfigureAwait(false);
+            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => DeadLetterAsync(queue, CloudEventsFormat.Encode(envelope), attempt, envelope.Id, stopping), stopping).ConfigureAwait(false);
         }
     }
 
@@ -617,7 +657,19 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <summary>
     /// 主题对应的队列名与路由键：前缀加主题。
     /// </summary>
+    /// <remarks>
+    /// 也是主题的竞争订阅的队列名。
+    /// </remarks>
     private string QueueOf(string topic) => _options.QueuePrefix + topic;
+
+    /// <summary>
+    /// 订阅消费的队列名。
+    /// </summary>
+    /// <remarks>
+    /// 竞争订阅是前缀加主题；广播订阅再加 <c>@</c> 与实例标识，<c>@</c> 不在主题文法里，不会与竞争队列或死信队列重名。
+    /// </remarks>
+    private string QueueOf(MessageSubscription subscription)
+        => subscription.Mode == SubscriptionMode.Broadcast ? QueueOf(subscription.Topic) + "@" + _instance.Id : QueueOf(subscription.Topic);
 
     /// <summary>
     /// 把客户端或网络异常包装成携带 <see cref="MessagingErrors.BrokerUnavailable"/> 的框架异常。
@@ -639,6 +691,18 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
     private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
+
+    /// <summary>
+    /// 记录一条广播投递重试到上限后被丢弃。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
+    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
+
+    /// <summary>
+    /// 记录一条无法解码的广播消息被丢弃。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
+    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
 
     /// <summary>
     /// 记录一条无法解码的消息被转入死信队列。

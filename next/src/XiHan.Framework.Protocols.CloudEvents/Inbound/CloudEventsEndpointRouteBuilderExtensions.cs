@@ -25,6 +25,11 @@ namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 public static class CloudEventsEndpointRouteBuilderExtensions
 {
     /// <summary>
+    /// 两种订阅方式，按派发模式的投递顺序。
+    /// </summary>
+    private static readonly SubscriptionMode[] _modes = [SubscriptionMode.Competing, SubscriptionMode.Broadcast];
+
+    /// <summary>
     /// 映射入站端点。
     /// </summary>
     /// <remarks>
@@ -122,24 +127,31 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 派发模式：逐个在请求内经管道交给主题的处理器，第一个失败即停止。
+    /// 派发模式：逐个在请求内经管道交给本实例里主题的处理器，第一个失败即停止。
     /// </summary>
+    /// <remarks>
+    /// 竞争订阅与广播订阅各一次投递，先竞争后广播（<c>spec/protocol/cloudevents.md</c>）。派发只发生在接收请求的这个实例，要让广播订阅到达每个实例用发布模式。
+    /// </remarks>
     private static async Task<Result> DispatchAsync(IServiceProvider services, string[] topics, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
     {
         var subscriptions = services.GetRequiredService<MessageSubscriptions>();
         var dispatcher = services.GetRequiredService<MessageDispatcher>();
         for (var index = 0; index < envelopes.Count; index++)
         {
-            // 派发模式下没有处理器的主题是配置错误：404 让发送方停止重试，而不是静默吞掉事件
-            if (subscriptions.HandlersFor(topics[index]).Count == 0)
+            var modes = _modes.Where(mode => subscriptions.HandlersFor(topics[index], mode).Count > 0).ToList();
+            // 派发模式下两种方式都没有处理器的主题是配置错误：404 让发送方停止重试，而不是静默吞掉事件
+            if (modes.Count == 0)
             {
                 return Error.NotFound(CloudEventsErrors.NoSubscriber, CloudEventsMessages.NoSubscriber, MessageArguments.Of(("topic", topics[index])));
             }
 
-            var outcome = await dispatcher.DispatchAsync(new MessageDelivery(topics[index], envelopes[index], 1), cancellationToken).ConfigureAwait(false);
-            if (outcome.IsFailure)
+            foreach (var mode in modes)
             {
-                return outcome;
+                var outcome = await dispatcher.DispatchAsync(new MessageDelivery(topics[index], envelopes[index], 1, mode), cancellationToken).ConfigureAwait(false);
+                if (outcome.IsFailure)
+                {
+                    return outcome;
+                }
             }
         }
 

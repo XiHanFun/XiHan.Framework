@@ -18,7 +18,8 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// 每主题一条有界通道、单消费者顺序投递的内存代理。
 /// </summary>
 /// <remarks>
-/// 只有被订阅的主题（本进程登记了处理器，或交给 <see cref="StartAsync"/> 消费）才有通道；发布到没人订阅的主题直接丢弃并记一条 Debug 日志，发布照常成功，不建通道、不占主题名额。
+/// 只有被订阅的主题（本进程以任一订阅方式登记了处理器，或交给 <see cref="StartAsync"/> 消费）才有通道；发布到没人订阅的主题直接丢弃并记一条 Debug 日志，发布照常成功，不建通道、不占主题名额。
+/// 单进程就是一个实例（RFC-0009「订阅方式」）：一条消息给主题的每种订阅方式各入队一份投递，竞争订阅与广播订阅各收到一次、各自重试；广播投递到上限后丢弃并记日志，不进死信列表。
 /// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。被订阅的主题数有上限（<see cref="InMemoryMessagingOptions.MaxTopics"/>），超出时启动失败（<see cref="MessagingErrors.TopicLimit"/>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -49,6 +50,11 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 只在其进入服务状态后才投递。
     /// </remarks>
     private readonly App _app = app ?? throw new ArgumentNullException(nameof(app));
+
+    /// <summary>
+    /// 两种订阅方式，按投递入队的顺序。
+    /// </summary>
+    private static readonly SubscriptionMode[] _modes = [SubscriptionMode.Competing, SubscriptionMode.Broadcast];
 
     /// <summary>
     /// 日志。
@@ -89,12 +95,22 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
 
         // TryWrite 不等待：队列满立即返回 QueueFull，由发布方决定如何处理，不让发布者被消费速度拖住；
         // 与批量发布共用队列的发布锁，批量的容量判定与写入之间不会被单条插队
+        var modes = queue.Modes;
         lock (queue.PublishGate)
         {
-            return ValueTask.FromResult(queue.Channel.Writer.TryWrite(new MessageDelivery(topic, envelope, 1))
-                ? Result.Success()
-                : QueueFull(topic));
+            // 每种订阅方式各一份投递：先按份数判定容量，装不下就一份都不写，不会只有一种方式收到
+            if (_options.MaxQueuedMessages - queue.Channel.Reader.Count < modes.Length)
+            {
+                return ValueTask.FromResult<Result>(QueueFull(topic));
+            }
+
+            foreach (var mode in modes)
+            {
+                queue.Channel.Writer.TryWrite(new MessageDelivery(topic, envelope, 1, mode));
+            }
         }
+
+        return ValueTask.FromResult(Result.Success());
     }
 
     /// <inheritdoc />
@@ -107,20 +123,29 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             return ValueTask.FromResult<IReadOnlyList<Result>>([]);
         }
 
-        var deliveries = new MessageDelivery[envelopes.Count];
-        for (var index = 0; index < envelopes.Count; index++)
+        foreach (var envelope in envelopes)
         {
-            ArgumentNullException.ThrowIfNull(envelopes[index]);
-            deliveries[index] = new MessageDelivery(topic, envelopes[index], 1);
+            ArgumentNullException.ThrowIfNull(envelope);
         }
 
         var results = new Result[envelopes.Count];
         if (!TryQueue(topic, out var queue))
         {
             // 没人订阅：整批丢弃、逐项成功，不建队列
-            LogDropped(_logger, deliveries.Length, topic);
+            LogDropped(_logger, envelopes.Count, topic);
             Array.Fill(results, Result.Success());
             return ValueTask.FromResult<IReadOnlyList<Result>>(results);
+        }
+
+        // 每条消息给每种订阅方式各一份投递；同一方式内保持入参顺序
+        var modes = queue.Modes;
+        var deliveries = new MessageDelivery[envelopes.Count * modes.Length];
+        for (var index = 0; index < envelopes.Count; index++)
+        {
+            for (var slot = 0; slot < modes.Length; slot++)
+            {
+                deliveries[(index * modes.Length) + slot] = new MessageDelivery(topic, envelopes[index], 1, modes[slot]);
+            }
         }
 
         lock (queue.PublishGate)
@@ -143,9 +168,12 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     }
 
     /// <inheritdoc />
-    public Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 每个主题一个消费循环，主题的各订阅方式共用它：投递带方式，派发器只执行该方式的处理器。
+    /// </remarks>
+    public Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(topics);
+        ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dispatch);
         if (_stopping is not null)
         {
@@ -153,14 +181,22 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         }
 
         // 先按上限判定再建队列、起消费循环：被订阅的主题（已有队列的与这次要消费的）超限时启动失败，不留下只消费了一部分主题的代理
+        var topics = subscriptions.GroupBy(static s => s.Topic, StringComparer.Ordinal).ToList();
         var subscribed = new HashSet<string>(_topics.Keys, StringComparer.Ordinal);
-        subscribed.UnionWith(topics);
+        subscribed.UnionWith(topics.Select(static t => t.Key));
         if (subscribed.Count > _options.MaxTopics)
         {
             throw new FrameworkException(MessagingErrors.TopicLimit, $"The in-memory broker allows at most {_options.MaxTopics} subscribed topics, but {subscribed.Count} are subscribed. Raise {InMemoryMessagingOptions.ConfigurationSection}:MaxTopics.");
         }
 
-        var queues = topics.Select(QueueOf).ToList();
+        var queues = new List<TopicQueue>(topics.Count);
+        foreach (var topic in topics)
+        {
+            // 交给消费的订阅方式并进主题的投递方式：之后的发布给它们各入队一份
+            var queue = QueueOf(topic.Key);
+            queue.Include(topic.Select(static s => s.Mode));
+            queues.Add(queue);
+        }
 
         _stopping = new CancellationTokenSource();
         foreach (var queue in queues)
@@ -213,7 +249,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 主题累计成功投递条数。
     /// </summary>
     /// <remarks>
-    /// 主题不存在为 0，不创建主题。
+    /// 每种订阅方式各算一次。主题不存在为 0，不创建主题。
     /// </remarks>
     public long DeliveredCount(string topic) => _topics.TryGetValue(topic, out var queue) ? Interlocked.Read(ref queue.Delivered) : 0;
 
@@ -221,7 +257,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// 主题的死信（投递失败超过上限的消息），按进入顺序。
     /// </summary>
     /// <remarks>
-    /// 主题不存在为空，不创建主题。
+    /// 只有竞争订阅的投递进死信。主题不存在为空，不创建主题。
     /// </remarks>
     public IReadOnlyList<MessageDelivery> DeadLetters(string topic) => _topics.TryGetValue(topic, out var queue) ? [.. queue.DeadLetters] : [];
 
@@ -257,7 +293,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         }
 
         // 没人订阅的主题不建队列：没有消费者，缓冲只会占着内存与主题名额，直到队列排满
-        if (_subscriptions.HandlersFor(topic).Count == 0)
+        if (SubscribedModes(topic).Length == 0)
         {
             return false;
         }
@@ -267,12 +303,17 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     }
 
     /// <summary>
+    /// 订阅表里主题有处理器的订阅方式。
+    /// </summary>
+    private SubscriptionMode[] SubscribedModes(string topic) => [.. _modes.Where(mode => _subscriptions.HandlersFor(topic, mode).Count > 0)];
+
+    /// <summary>
     /// 取（必要时创建）主题的队列，不判定订阅与上限。
     /// </summary>
     /// <remarks>
-    /// 并发创建同一主题时只有一个队列胜出，其余的丢弃（通道没有需要释放的资源）。
+    /// 新队列的投递方式取订阅表里主题有处理器的方式。并发创建同一主题时只有一个队列胜出，其余的丢弃（通道没有需要释放的资源）。
     /// </remarks>
-    private TopicQueue QueueOf(string topic) => _topics.GetOrAdd(topic, static (_, capacity) => new TopicQueue(capacity), _options.MaxQueuedMessages);
+    private TopicQueue QueueOf(string topic) => _topics.GetOrAdd(topic, static (name, broker) => new TopicQueue(broker._options.MaxQueuedMessages, broker.SubscribedModes(name)), this);
 
     /// <summary>
     /// 构造队列已满的错误。
@@ -314,9 +355,16 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
                 continue;
             }
 
-            // 未达上限则以下一次尝试号重新入队（队尾）；入队失败（队列已满）同样直接死信
-            if (delivery.Attempt < _messaging.MaxAttempts && queue.Channel.Writer.TryWrite(new MessageDelivery(delivery.Topic, delivery.Envelope, delivery.Attempt + 1)))
+            // 未达上限则以下一次尝试号重新入队（队尾），只给这一种订阅方式；入队失败（队列已满）同样到此为止
+            if (delivery.Attempt < _messaging.MaxAttempts && queue.Channel.Writer.TryWrite(new MessageDelivery(delivery.Topic, delivery.Envelope, delivery.Attempt + 1, delivery.Mode)))
             {
+                continue;
+            }
+
+            // 广播投递不进死信：死信是竞争订阅的留存，广播是尽力而为
+            if (delivery.Mode == SubscriptionMode.Broadcast)
+            {
+                LogBroadcastDropped(_logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt, result.Error?.Code ?? "?");
                 continue;
             }
 
@@ -339,16 +387,49 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     private static partial void LogDropped(ILogger logger, int count, string topic);
 
     /// <summary>
+    /// 记录一条广播投递重试到上限后被丢弃。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
+    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
+
+    /// <summary>
     /// 记录一条消息重试到上限后进入死信。
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
     private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
 
     /// <summary>
-    /// 一个主题的状态：有界通道、死信列表与投递计数。
+    /// 一个主题的状态：有界通道、投递方式、死信列表与投递计数。
     /// </summary>
-    private sealed class TopicQueue(int capacity)
+    private sealed class TopicQueue(int capacity, SubscriptionMode[] modes)
     {
+        /// <summary>
+        /// 一条消息要入队的订阅方式，按入队顺序。
+        /// </summary>
+        /// <remarks>
+        /// 写时复制：发布读一份快照，<see cref="Include"/> 换成新数组。
+        /// </remarks>
+        private SubscriptionMode[] _modes = modes;
+
+        /// <summary>
+        /// 一条消息要入队的订阅方式，按入队顺序。
+        /// </summary>
+        public SubscriptionMode[] Modes => Volatile.Read(ref _modes);
+
+        /// <summary>
+        /// 并入要消费的订阅方式。
+        /// </summary>
+        /// <remarks>
+        /// 只在启动消费时调用；与发布并发时，发布读到的要么是旧数组、要么是新数组。
+        /// </remarks>
+        public void Include(IEnumerable<SubscriptionMode> added)
+        {
+            lock (PublishGate)
+            {
+                Volatile.Write(ref _modes, [.. _modes.Union(added).Order()]);
+            }
+        }
+
         /// <summary>
         /// 有界、单消费者的投递通道。
         /// </summary>

@@ -62,7 +62,7 @@ public sealed class KafkaRedeliveryTests
         var dispatched = new ConcurrentQueue<string>();
         await using var broker = Broker(host, clock, producer, consumer);
 
-        await broker.StartAsync([Topic], Dispatch(dispatched), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], Dispatch(dispatched), CancellationToken.None);
 
         // 处理器两次都失败、死信发布失败：不提交，回退到这条消息，循环在等时钟
         Assert.True(SpinWait.SpinUntil(() => consumerFake.Read(static c => c.Seeks.Count) == 1, _patience));
@@ -91,7 +91,7 @@ public sealed class KafkaRedeliveryTests
         var (consumer, consumerFake) = FakeKafkaConsumer.Create(Encode("poison"));
         await using var broker = Broker(host, clock, producer, consumer);
 
-        await broker.StartAsync([Topic], Dispatch(new ConcurrentQueue<string>()), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], Dispatch(new ConcurrentQueue<string>()), CancellationToken.None);
         Assert.True(SpinWait.SpinUntil(() => consumerFake.Read(static c => c.Seeks.Count) == 1, _patience));
 
         // 停止信号打断等待：循环退出，没有提交，消费者照常关闭
@@ -112,7 +112,7 @@ public sealed class KafkaRedeliveryTests
         var dispatched = new ConcurrentQueue<string>();
         await using var broker = Broker(host, clock, producer, consumer);
 
-        await broker.StartAsync([Topic], Dispatch(dispatched), CancellationToken.None);
+        await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Competing)], Dispatch(dispatched), CancellationToken.None);
 
         Assert.True(SpinWait.SpinUntil(() => { clock.Advance(_delay); return consumerFake.Read(static c => c.Committed.Count) == 1; }, _patience));
         Assert.Equal(["ok"], dispatched);
@@ -126,6 +126,7 @@ public sealed class KafkaRedeliveryTests
         => new(
             new KafkaMessagingOptions { BootstrapServers = "unused:9092", RedeliveryDelay = _delay },
             new MessagingOptions { MaxAttempts = 2 },
+            new MessagingInstance(),
             host.App,
             clock,
             NullLoggerFactory.Instance,

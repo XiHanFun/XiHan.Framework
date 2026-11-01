@@ -8,6 +8,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -40,6 +41,11 @@ public abstract class MessageBrokerConformance
     public const string UnsubscribedTopic = "conformance.unsubscribed";
 
     /// <summary>
+    /// 订阅方式用例的主题。
+    /// </summary>
+    public const string NoticesTopic = "conformance.notices";
+
+    /// <summary>
     /// 套件配置的最多投递次数。
     /// </summary>
     public const int MaxAttempts = 2;
@@ -48,6 +54,14 @@ public abstract class MessageBrokerConformance
     /// 等待投递的超时。
     /// </summary>
     protected virtual TimeSpan DeliveryTimeout => TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// 被测 Provider 能否让两个宿主连到同一个代理。
+    /// </summary>
+    /// <remarks>
+    /// 默认能。多实例用例（广播每个实例都收到、竞争只有一个实例收到）要两个宿主共用一个代理；内存代理每个宿主各有一个进程内代理，覆写为 <see langword="false"/>，这些用例跳过。
+    /// </remarks>
+    protected virtual bool SupportsMultipleInstances => true;
 
     /// <summary>
     /// 宿主配置。
@@ -339,11 +353,106 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
+    /// 用例 12：同一主题的竞争订阅与广播订阅各收到一次，各自重试。
+    /// </summary>
+    /// <remarks>
+    /// 一个实例里两种方式是两次独立的投递（RFC-0009「订阅方式」）：成功的消息每种方式各一次；失败的消息每种方式各自重试到上限（竞争进死信、广播丢弃），互不影响。
+    /// </remarks>
+    [Fact]
+    public async Task CompetingAndBroadcast_OnTheSameTopic_EachReceiveTheMessageOnce_AndRetrySeparately()
+    {
+        var log = new DeliveryLog();
+        log.FailingIds["both-bad"] = 0;
+        await using var host = await StartWithSubscriptionsAsync(log, [new(NoticesTopic, SubscriptionMode.Competing), new(NoticesTopic, SubscriptionMode.Broadcast)]).ConfigureAwait(false);
+        await WarmUpBroadcastAsync(host, [log]).ConfigureAwait(false);
+
+        (await PublishAsync(host, NoticesTopic, Envelope("both-1", "notices.both")).ConfigureAwait(false)).ThrowIfFailure();
+        (await PublishAsync(host, NoticesTopic, Envelope("both-bad", "notices.both")).ConfigureAwait(false)).ThrowIfFailure();
+
+        var received = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "both-1", 2, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal([SubscriptionMode.Competing, SubscriptionMode.Broadcast], received.Select(static r => r.Delivery.Mode).Order());
+        var failed = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "both-bad", 2 * MaxAttempts, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal(Enumerable.Range(1, MaxAttempts), failed.Where(static r => r.Delivery.Mode == SubscriptionMode.Competing).Select(static r => r.Delivery.Attempt));
+        Assert.Equal(Enumerable.Range(1, MaxAttempts), failed.Where(static r => r.Delivery.Mode == SubscriptionMode.Broadcast).Select(static r => r.Delivery.Attempt));
+
+        await Task.Delay(300).ConfigureAwait(false);
+        Assert.Equal(2, log.All.Count(static r => r.Delivery.Envelope.Id == "both-1"));
+        Assert.Equal(2 * MaxAttempts, log.All.Count(static r => r.Delivery.Envelope.Id == "both-bad"));
+    }
+
+    /// <summary>
+    /// 用例 13：两个实例的广播订阅都收到同一条消息。
+    /// </summary>
+    /// <remarks>
+    /// 两个宿主连同一个代理，各自以广播方式订阅同一主题，只发布一次；每个实例各收到一份。需要 <see cref="SupportsMultipleInstances"/>。
+    /// </remarks>
+    [Fact]
+    public async Task Broadcast_ReachesEveryInstance()
+    {
+        Assert.SkipUnless(SupportsMultipleInstances, "This provider cannot share a broker between two hosts.");
+        var first = new DeliveryLog();
+        var second = new DeliveryLog();
+        await using var one = await StartWithSubscriptionsAsync(first, [new(NoticesTopic, SubscriptionMode.Broadcast)]).ConfigureAwait(false);
+        await using var two = await StartWithSubscriptionsAsync(second, [new(NoticesTopic, SubscriptionMode.Broadcast)]).ConfigureAwait(false);
+        await WarmUpBroadcastAsync(one, [first, second]).ConfigureAwait(false);
+
+        (await PublishAsync(one, NoticesTopic, Envelope("everyone-1", "notices.broadcast")).ConfigureAwait(false)).ThrowIfFailure();
+
+        foreach (var log in new[] { first, second })
+        {
+            var received = Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "everyone-1", 1, DeliveryTimeout).ConfigureAwait(false));
+            Assert.Equal(SubscriptionMode.Broadcast, received.Delivery.Mode);
+            Assert.Equal(1, received.Delivery.Attempt);
+        }
+    }
+
+    /// <summary>
+    /// 用例 14：两个实例的竞争订阅每条消息只有一个收到。
+    /// </summary>
+    /// <remarks>
+    /// 两个宿主连同一个代理，各自以竞争方式订阅同一主题；一批消息每条恰好被其中一个实例收到一次。需要 <see cref="SupportsMultipleInstances"/>。
+    /// </remarks>
+    [Fact]
+    public async Task Competing_ReachesOnlyOneInstance()
+    {
+        Assert.SkipUnless(SupportsMultipleInstances, "This provider cannot share a broker between two hosts.");
+        var first = new DeliveryLog();
+        var second = new DeliveryLog();
+        await using var one = await StartWithSubscriptionsAsync(first, [new(NoticesTopic, SubscriptionMode.Competing)]).ConfigureAwait(false);
+        await using var two = await StartWithSubscriptionsAsync(second, [new(NoticesTopic, SubscriptionMode.Competing)]).ConfigureAwait(false);
+        var ids = Enumerable.Range(0, 10).Select(static i => $"one-of-{i:D2}").ToList();
+
+        var results = await PublishManyAsync(one, NoticesTopic, [.. ids.Select(static id => Envelope(id, "notices.competing"))]).ConfigureAwait(false);
+        Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
+
+        // 两个实例合起来收齐，再多等一会儿，确认没有哪条被两个实例都收到
+        var stopwatch = Stopwatch.StartNew();
+        while (Received(first, second).Count < ids.Count && stopwatch.Elapsed < DeliveryTimeout)
+        {
+            await Task.Delay(50).ConfigureAwait(false);
+        }
+
+        await Task.Delay(300).ConfigureAwait(false);
+        Assert.Equal(ids, Received(first, second).Order(StringComparer.Ordinal));
+
+        // 两个实例收到的本套件消息
+        static List<string> Received(DeliveryLog first, DeliveryLog second)
+            => [.. first.All.Concat(second.All).Where(static r => r.Delivery.Envelope.Id.StartsWith("one-of-", StringComparison.Ordinal)).Select(static r => r.Delivery.Envelope.Id)];
+    }
+
+    /// <summary>
     /// 装配并启动宿主：被测特性、两个主题的记录处理器、套件配置（最多投递 2 次）。
     /// </summary>
     protected Task<TestHost> StartAsync(DeliveryLog log)
+        => StartWithSubscriptionsAsync(log, [new(OrdersTopic, SubscriptionMode.Competing), new(ShipmentsTopic, SubscriptionMode.Competing)]);
+
+    /// <summary>
+    /// 装配并启动宿主：被测特性、给定订阅的记录处理器、套件配置（最多投递 2 次）。
+    /// </summary>
+    protected Task<TestHost> StartWithSubscriptionsAsync(DeliveryLog log, IReadOnlyList<MessageSubscription> subscriptions)
     {
         ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(subscriptions);
         var configuration = new List<KeyValuePair<string, string?>> { new($"{MessagingOptions.ConfigurationSection}:MaxAttempts", MaxAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)) };
         configuration.AddRange(Configuration);
         return TestHost.StartAsync(
@@ -352,9 +461,41 @@ public abstract class MessageBrokerConformance
             services =>
             {
                 services.AddSingleton(log);
-                services.AddMessageHandler<RecordingHandler>(OrdersTopic);
-                services.AddMessageHandler<RecordingHandler>(ShipmentsTopic);
+                foreach (var subscription in subscriptions)
+                {
+                    services.AddMessageHandler<RecordingHandler>(subscription.Topic, subscription.Mode);
+                }
             });
+    }
+
+    /// <summary>
+    /// 等到每个宿主的广播订阅都开始收消息。
+    /// </summary>
+    /// <remarks>
+    /// 广播只投给在线、已经接上代理的实例；有的代理在启动之后才异步接上（Kafka 的消费组要等分到分区）。反复向 <see cref="NoticesTopic"/> 发预热消息（ID 以 <c>warmup-</c> 开头），直到每个记录器都以广播方式收到一条，超过 <see cref="DeliveryTimeout"/> 抛出 <see cref="TimeoutException"/>。用例断言时按 ID 排除预热消息。
+    /// </remarks>
+    protected async Task WarmUpBroadcastAsync(TestHost publisher, IReadOnlyList<DeliveryLog> logs)
+    {
+        ArgumentNullException.ThrowIfNull(publisher);
+        ArgumentNullException.ThrowIfNull(logs);
+        var stopwatch = Stopwatch.StartNew();
+        for (var round = 0; ; round++)
+        {
+            (await PublishAsync(publisher, NoticesTopic, Envelope($"warmup-{round}", "notices.warmup")).ConfigureAwait(false)).ThrowIfFailure();
+            try
+            {
+                foreach (var log in logs)
+                {
+                    await log.WaitAsync(static r => r.Delivery.Mode == SubscriptionMode.Broadcast && r.Delivery.Envelope.Id.StartsWith("warmup-", StringComparison.Ordinal), 1, TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
+                }
+
+                return;
+            }
+            catch (TimeoutException) when (stopwatch.Elapsed < DeliveryTimeout)
+            {
+                // 还有实例没接上：再发一条
+            }
+        }
     }
 
     /// <summary>

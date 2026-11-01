@@ -36,7 +36,7 @@ internal sealed class FailingTopicBroker : IMessageBroker
     }
 
     /// <inheritdoc />
-    public Task StartAsync(IReadOnlyCollection<string> topics, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

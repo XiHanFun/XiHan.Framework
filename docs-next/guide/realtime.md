@@ -119,7 +119,7 @@ public sealed class OrdersHub(IOperationInvoker operations, IServiceProvider ser
 `IHubContext<THub>` 只能推给连在本实例上的连接。多实例部署时：
 
 - 推到其他实例上的连接要靠 SignalR 自己的横向扩展，如 Redis 背板或托管的 SignalR 服务；5.0 不提供背板。
-- 业务事件借消息子系统跨进程送达。`messaging.queue@1` 是工作队列，每条消息只交给一个实例的处理器（至少一次），这个实例经 `IHubContext<THub>` 推送，背板再转给其他实例上的连接。事件随业务数据在同一事务里写出时，用发件箱。
+- 业务事件借消息子系统跨进程送达。缺省的竞争订阅是工作队列，每条消息只交给一个实例的处理器（至少一次），这个实例经 `IHubContext<THub>` 推送，背板再转给其他实例上的连接。事件随业务数据在同一事务里写出时，用发件箱。
 
 ```csharp
 using Microsoft.AspNetCore.SignalR;
@@ -143,6 +143,36 @@ builder.Services.AddMessageHandler<OrderPushHandler>("orders");
 ```
 
 消息处理器经完整管道执行，信封扩展属性里的租户在这里已经进入调用上下文，按租户分组推送时从 `context` 取。主题、处理器与发件箱见[消息与事件](./messaging)。
+
+有些事要在每个实例上各做一次，例如吊销会话后断开连在各个实例上的连接、清掉各实例的本地缓存：背板只转发推送，断不了别的实例上的连接。用广播订阅（`SubscriptionMode.Broadcast`，[订阅方式](./messaging#订阅方式)）：发起的实例发布一条消息，每个在线实例的处理器各收到一份，各自处理连在自己身上的连接。
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Primitives;
+
+// 应用自己的连接登记：断开本实例上属于这些会话的连接
+public interface ILocalConnections
+{
+    ValueTask DisconnectAsync(IReadOnlyCollection<string> sessionIds, CancellationToken cancellationToken);
+}
+
+public sealed class SessionsRevokedHandler(ILocalConnections connections) : IMessageHandler
+{
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    {
+        // 数据是被吊销的会话 ID；每个实例只断自己的连接，没有连接时什么也不做
+        var sessionIds = System.Text.Json.JsonSerializer.Deserialize(delivery.Envelope.Data.Span, RealtimeJsonContext.Default.StringArray) ?? [];
+        await connections.DisconnectAsync(sessionIds, cancellationToken);
+        return Result.Success();
+    }
+}
+```
+
+```csharp
+builder.Services.AddMessageHandler<SessionsRevokedHandler>("sessions.revoked", SubscriptionMode.Broadcast);
+```
+
+`RealtimeJsonContext` 是应用的源生成序列化上下文。广播是尽力而为：发布时不在线的实例收不到（它上线时本来也没有这些连接），失败到上限丢弃不进死信；只装了内存代理的单实例部署里，广播就是本进程收到一次。
 
 ## 相关
 

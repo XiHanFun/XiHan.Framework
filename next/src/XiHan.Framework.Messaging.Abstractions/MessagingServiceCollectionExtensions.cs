@@ -22,12 +22,15 @@ public static class MessagingServiceCollectionExtensions
     /// <summary>
     /// 订阅主题：处理器注册为作用域服务，每条消息在新作用域内解析。
     /// </summary>
-    public static IServiceCollection AddMessageHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services, string topic)
+    /// <remarks>
+    /// <paramref name="mode"/> 缺省为竞争消费：订阅了主题的实例里只有一个收到；<see cref="SubscriptionMode.Broadcast"/> 时每个在线实例各收到一份，尽力而为、不进死信（RFC-0009「订阅方式」）。同一主题可以同时以两种方式订阅。
+    /// </remarks>
+    public static IServiceCollection AddMessageHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services, string topic, SubscriptionMode mode = SubscriptionMode.Competing)
         where THandler : class, IMessageHandler
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddScoped<THandler>();
-        services.GetMessageSubscriptions().Add(topic, typeof(THandler));
+        services.GetMessageSubscriptions().Add(topic, typeof(THandler), mode);
         return services;
     }
 

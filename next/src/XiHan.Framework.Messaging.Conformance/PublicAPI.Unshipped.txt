@@ -7,6 +7,9 @@ XiHan.Framework.Messaging.Conformance.DeliveryLog.Record(XiHan.Framework.Messagi
 XiHan.Framework.Messaging.Conformance.DeliveryLog.ThrowingIds.get -> System.Collections.Concurrent.ConcurrentDictionary<string!, byte>!
 XiHan.Framework.Messaging.Conformance.DeliveryLog.WaitAsync(System.Func<XiHan.Framework.Messaging.Conformance.ReceivedMessage!, bool>! predicate, int count, System.TimeSpan timeout) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Conformance.ReceivedMessage!>!>!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Broadcast_ReachesEveryInstance() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.CompetingAndBroadcast_OnTheSameTopic_EachReceiveTheMessageOnce_AndRetrySeparately() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Competing_ReachesOnlyOneInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.FailingHandler_IsRetriedUpToMaxAttempts_ThenStops() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.MessageBrokerConformance() -> void
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll() -> System.Threading.Tasks.Task!
@@ -17,9 +20,11 @@ XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publish_Preserves
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publish_ToATopicNobodySubscribes_Succeeds() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Publisher_RejectsInvalidTopic() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.StartAsync(XiHan.Framework.Messaging.Conformance.DeliveryLog! log) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.StartWithSubscriptionsAsync(XiHan.Framework.Messaging.Conformance.DeliveryLog! log, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!>! subscriptions) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.TenantCorrelationAndTrace_FlowIntoInvocationContext() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.ThrowingHandler_IsTreatedAsFailure_AndRetried() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Topics_AreIsolated() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.WarmUpBroadcastAsync(XiHan.Framework.Testing.TestHost! publisher, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Conformance.DeliveryLog!>! logs) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.MessageStreamConformance() -> void
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.PartitionKey_PreservesOrder_PerKey() -> System.Threading.Tasks.Task!
@@ -44,6 +49,7 @@ XiHan.Framework.Messaging.Conformance.RecordingHandler.HandleAsync(XiHan.Framewo
 XiHan.Framework.Messaging.Conformance.RecordingHandler.RecordingHandler(XiHan.Framework.Messaging.Conformance.DeliveryLog! log) -> void
 abstract XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.MaxAttempts = 2 -> int
+const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.NoticesTopic = "conformance.notices" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.OrdersTopic = "conformance.orders" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.ShipmentsTopic = "conformance.shipments" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.UnsubscribedTopic = "conformance.unsubscribed" -> string!
@@ -57,3 +63,4 @@ static XiHan.Framework.Messaging.Conformance.ReceivedMessage.operator !=(XiHan.F
 static XiHan.Framework.Messaging.Conformance.ReceivedMessage.operator ==(XiHan.Framework.Messaging.Conformance.ReceivedMessage? left, XiHan.Framework.Messaging.Conformance.ReceivedMessage? right) -> bool
 virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
 virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.DeliveryTimeout.get -> System.TimeSpan
+virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.SupportsMultipleInstances.get -> bool

@@ -43,6 +43,10 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<WasmPluginsFeature>());
 
 不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
 
+## 事件订阅
+
+与进程外插件相同：握手的 `Subscription.mode` 为空或 `competing` 是竞争消费，`broadcast` 是广播（每个宿主实例都交给自己的插件实例，RFC-0009「订阅方式」）；宿主只把投递交给以同一方式订阅了主题的插件，`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
+
 ## 依赖方向
 
 依赖 `Plugins.Protocol`、`Kernel`、`Messaging.Abstractions`、`Localization.Abstractions` 与 NuGet `Wasmtime`（含各平台原生库）。非 AOT。
