@@ -13,7 +13,7 @@
 | `IJobScheduler`、`JobStatus`、`JobTriggerStatus`、`JobRunRecord`、`JobRunQuery` | 全批量：登记 / 删除 / 暂停 / 恢复（作业与触发器两级）、本地触发并等待、入队给集群、取消运行、状态、运行历史（按作业、状态、时间、触发器、节点、有无错误筛选，`CountRunsAsync` 给总数）、`RestoreAsync` 把运行时改过的代码作业恢复为代码定义 |
 | `IJobStore`、`JobRecord`、`TriggerRecord`、`SchedulerNodeRecord` | Provider 契约：原子抢占到期触发器、独占开始运行、完成释放并解除阻塞、与释放互斥的阻塞写入、历史与节点、失联恢复 |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（Provider 装配并启停）：轮询周期、节点 ID、并发上限、misfire 阈值、租约、节点失联、维护周期、历史保留；`PollOnceAsync` 供测试与一致性套件执行一个周期，并等本周期起的运行连同收尾结束 |
-| `ILeaderElection`、`LeaderLease` | 租约式领导选举：获取、续约、释放、过期 |
+| `ILeaderElection`、`LeaderLease` | 租约式领导选举：获取、续约、释放、过期。引擎只在应用处于服务状态时拿或续租约；启动中、排空中的周期什么也不做、持有就立即释放，停止时同样释放（ADR-0091），所以 Provider 的释放在应用不在服务状态时也要生效 |
 | `SchedulingTopics`、`SchedulingEventData` | 装配了消息能力时发布 `scheduling.job.*` / `scheduling.run.*` 事件 |
 
 ```csharp

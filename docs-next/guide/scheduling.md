@@ -329,7 +329,7 @@ public sealed class ReportJobMonitor(IJobScheduler scheduler)
 
 `JobSchedulerEngine` 由 Provider 特性装配，在应用进入服务状态后开始轮询，每个 `PollInterval`（缺省 1 秒）执行一个周期：
 
-1. 应用不在服务状态时什么都不做。
+1. 应用不在服务状态（启动中、排空中）时什么都不做，只释放持有的领导租约：排空要等依赖调度的特性逐个停完，这期间不再续着租约挡住别人，在服务的另一个实例下一个周期就接手，不等租约到期（ADR-0091）。
 2. 首个周期把代码登记的作业写入存储；失败时记日志，下个周期重试。
 3. 存储共享时写节点心跳。
 4. 续约领导租约，没有时尝试获取（资源 `LeaseResource`，缺省 `scheduling.jobs`；存活 `LeaseTimeToLive`，缺省 30 秒）。
@@ -351,7 +351,7 @@ public sealed class ReportJobMonitor(IJobScheduler scheduler)
 | `Complete` | 没有下一次（一次性已运行、次数用尽、超过 `EndAt`） |
 | `Error` | 无法运行（作业类型未登记），原因在 `TriggerRecord.Error` |
 
-停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，再给它们收尾的时间，最后释放领导租约。引擎随 Provider 特性启动；启动之前与开始停止之后，本实例的 `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`（HTTP 503）、不起新的运行——这两段时间没有轮询照看运行，停止也只等已经开始的运行，起了就无人等待。`EnqueueAsync` 只写存储，不受影响。
+停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，再给它们收尾的时间，最后释放领导租约（排空中的周期已经释放过的，这里什么也不做）。引擎随 Provider 特性启动；启动之前与开始停止之后，本实例的 `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`（HTTP 503）、不起新的运行——这两段时间没有轮询照看运行，停止也只等已经开始的运行，起了就无人等待。`EnqueueAsync` 只写存储，不受影响。
 
 ## 领导选举
 

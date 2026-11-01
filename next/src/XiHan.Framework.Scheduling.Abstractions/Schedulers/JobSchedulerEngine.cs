@@ -327,10 +327,16 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             await Task.WhenAll(running).ConfigureAwait(false);
         }
 
-        if (_lease is not null)
+        // 循环已退出，只剩手动调用的周期可能在跑：与它互斥（周期在应用不在服务状态时也会释放租约）。
+        // 不用停止令牌等：宿主不再等待时令牌已取消，等待会直接抛出，租约就留到到期
+        await _polling.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
         {
-            await _lease.ReleaseAsync().ConfigureAwait(false);
-            _lease = null;
+            await ReleaseLeadershipAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _polling.Release();
         }
 
         lock (_lock)
@@ -677,9 +683,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// </summary>
     private async ValueTask TickAsync(CancellationToken cancellationToken)
     {
-        // 宿主未进入服务状态前不按计划运行：此时特性可能尚未就绪，数据库存储也无法经管道访问
+        // 宿主未进入服务状态前不按计划运行：此时特性可能尚未就绪，数据库存储也无法经管道访问。
+        // 领导租约同样不拿不续，持有就立即释放：排空要等依赖调度的特性逐个停完（在途调用、各自的停止超时），
+        // 这期间续着租约，在服务的另一个实例就一直拿不到，失联恢复与历史清理停在原地；释放后它下一个周期就接手（ADR-0091）
         if (!_app.State.IsServing())
         {
+            await ReleaseLeadershipAsync().ConfigureAwait(false);
             return;
         }
 
@@ -761,6 +770,26 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             _lease = lease;
             LogLeadershipAcquired(_logger, _options.LeaseResource.Value);
         }
+    }
+
+    /// <summary>
+    /// 释放持有的领导租约。
+    /// </summary>
+    /// <remarks>
+    /// 没持有时什么也不做。调用方持有轮询互斥：周期与停止都会调用，两边不能同时改 <c>_lease</c>。租约的释放幂等、不受取消约束（Provider 自己保证在应用不在服务状态时也能放掉）。
+    /// </remarks>
+    private async ValueTask ReleaseLeadershipAsync()
+    {
+        if (_lease is null)
+        {
+            return;
+        }
+
+        // 先摘下再释放：释放失败由 Provider 记日志、租约到期后自然可被接管，本节点都不再当自己是领导者
+        var lease = _lease;
+        _lease = null;
+        await lease.ReleaseAsync().ConfigureAwait(false);
+        LogLeadershipReleased(_logger, _options.LeaseResource.Value);
     }
 
     /// <summary>
@@ -2224,6 +2253,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Lost the leader lease for '{Resource}'.")]
     private static partial void LogLeadershipLost(ILogger logger, string resource);
+
+    /// <summary>
+    /// 释放领导租约（应用不在服务状态或调度器停止）。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Information, Message = "Released the leader lease for '{Resource}'.")]
+    private static partial void LogLeadershipReleased(ILogger logger, string resource);
 
     /// <summary>
     /// 运行失败。

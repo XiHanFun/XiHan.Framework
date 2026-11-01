@@ -20,7 +20,7 @@
 引擎仍是抽象包的 `JobSchedulerEngine`，本包实现它的两个契约：
 
 - `DatabaseJobStore`（`IJobStore`，`IsShared` 为真）。每个存储操作在根提供者的新作用域里经 `App.InvokeAsync` 走一遍完整管道，仓储在 Transaction 阶段内使用，返回即提交。存储不加入调用方的工作单元，跨节点的互斥因此成立：一个节点提交的抢占与占用，别的节点下一次读立刻看得见。
-- `DatabaseLeaderElection`（`ILeaderElection`）。租约是同一个库里的一行，获取、续约、释放各是一次独立的管道调用。
+- `DatabaseLeaderElection`（`ILeaderElection`）。租约是同一个库里的一行，获取与续约各是一次独立的管道调用；释放不经管道（在新作用域里开可写工作单元删行后提交）：它发生在排空中的周期与引擎停止时，那时管道已拒绝调用，经管道就删不掉行、别的节点要等租约到期（ADR-0091）。
 
 集群分发靠并发戳做的比较并交换：
 
@@ -121,7 +121,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 | 类型 | 说明 |
 | --- | --- |
-| `DatabaseSchedulingFeature` | 特性：登记五个实体的仓储，装配存储、选举、引擎与健康项；应用进入服务状态后引擎开始轮询，停止时等进行中的运行结束并释放租约 |
+| `DatabaseSchedulingFeature` | 特性：登记五个实体的仓储，装配存储、选举、引擎与健康项；应用进入服务状态后引擎开始轮询；应用开始排空后的周期与停止时释放租约（删行），另一个节点随即接手 |
 | `DatabaseSchedulingOptions` | `HealthProbeInterval` |
 | `Storage.DatabaseJobStore` | `IJobStore` 实现（单例） |
 | `Leadership.DatabaseLeaderElection` | `ILeaderElection` 实现（单例），持有者是节点 ID |

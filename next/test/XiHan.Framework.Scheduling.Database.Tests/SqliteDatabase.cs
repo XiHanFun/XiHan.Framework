@@ -4,6 +4,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Testing;
@@ -60,9 +61,9 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// 启动装配了本数据库与 <see cref="DatabaseSchedulingFeature"/> 的宿主。
     /// </summary>
     /// <remarks>
-    /// 后给的配置覆盖默认配置。
+    /// 后给的配置覆盖默认配置；<paramref name="configure"/> 在两个特性之后再装配别的特性（如依赖调度的探针）。
     /// </remarks>
-    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null)
+    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null, Action<AppBuilder>? configure = null)
     {
         EnsureWriteAheadLog();
         // 内存配置不接受重复键：后给的覆盖默认的
@@ -73,7 +74,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
         }
 
         var host = await TestHost.StartAsync(
-            static b => b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseSchedulingFeature>(),
+            b =>
+            {
+                b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseSchedulingFeature>();
+                configure?.Invoke(b);
+            },
             settings,
             collection =>
             {

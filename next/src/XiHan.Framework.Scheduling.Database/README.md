@@ -40,14 +40,14 @@ modelBuilder.ApplyPersistenceConventions(Database);
 
 | 类型 | 用途 |
 | --- | --- |
-| `DatabaseSchedulingFeature` | 登记五个实体的仓储，装配存储、选举与引擎；应用进入服务状态后引擎开始轮询，停止时等进行中的运行结束并释放租约。健康项 `scheduling.database.leader`：启动时同步读一次租约行，之后按 `XiHan:Scheduling:Database:HealthProbeIntervalSeconds`（默认 15，`DatabaseSchedulingOptions`）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
+| `DatabaseSchedulingFeature` | 登记五个实体的仓储，装配存储、选举与引擎；应用进入服务状态后引擎开始轮询；应用开始排空后的周期与停止时释放租约（删行），另一个节点随即接手、不等租约到期。健康项 `scheduling.database.leader`：启动时同步读一次租约行，之后按 `XiHan:Scheduling:Database:HealthProbeIntervalSeconds`（默认 15，`DatabaseSchedulingOptions`）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
 | `Entities.JobEntity` | 作业行：主键是作业名，`Data` 是 JSON 文本，`Source` 存枚举整数值；`ActiveRunId` 的占用与释放靠并发戳；重试策略与执行时限是五个可空列（次数、等待与上限按毫秒、退避方式整数值，ADR-0060），触发器行与运行行另有可空的 `Attempt`（空按 1）与 `RetryOf` |
 | `Entities.TriggerEntity` | 触发器行：主键是 `作业名/触发器名`，`Schedule` 是 `JobSchedule.ToString()` 的文本，`State` / `MisfirePolicy` / `RunAs` 存枚举整数值；抢占靠并发戳 |
 | `Entities.JobRunEntity` | 运行记录行：`State` / `Trigger` 存枚举整数值，`Sequence` 是首次写入分配的写入序号（替换保留），同刻排序的次关键字——UUID v7 只到毫秒单调 |
 | `Entities.SchedulerNodeEntity` | 节点心跳行 |
 | `Entities.SchedulerLeaseEntity` | 租约行：主键是资源名，`Holder` 是节点 ID，`Token` 是本次获取的随机令牌，`ExpiresAt`，并发戳 |
 | `Storage.DatabaseJobStore` | `IJobStore`（单例，`IsShared` 为真）：每个操作在根提供者的新作用域里经 `App.InvokeAsync` 走完整管道，仓储在 Transaction 阶段内使用，返回即提交 |
-| `Leadership.DatabaseLeaderElection` | `ILeaderElection`（单例）：租约行的获取 / 续约 / 释放各是一次独立的管道调用 |
+| `Leadership.DatabaseLeaderElection` | `ILeaderElection`（单例）：租约行的获取 / 续约各是一次独立的管道调用；释放不经管道，在根提供者的新作用域里开可写工作单元删行后提交——它发生在应用不在服务状态的时候（排空中的周期、引擎停止），管道这时拒绝调用（ADR-0091） |
 
 ## 规则
 

@@ -185,7 +185,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 - 名字、计划、策略的取值在构造时校验，越界抛 `ArgumentException` / `ArgumentOutOfRangeException`：作业名最长 128；`Every` 的间隔为正、`repeatCount` 至少 1；`MaxRetries` 1–100；`Delay`、`MaxDelay`、`Timeout` 大于零且不超过 30 天。运行历史查询的分页例外：`JobRunQuery` 的 `Skip` 与 `Limit` 不在构造时校验，越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），因为它常由请求绑定而来。
 - cron 向前最多搜索 5 年；排除日历连续排除 10000 个候选时刻即视为没有下一次。
 - 本包不做持久化：运行时登记的作业、历史、节点放在哪里由 `IJobStore` 决定。`IJobStore.IsShared` 为假时，集群唯一的作业只在持有领导租约的实例上按计划运行。
-- 引擎在应用进入服务状态之前不按计划运行；停止时等待进行中的运行，宿主停止令牌触发后取消它们并再等它们收尾，最后释放租约。
+- 引擎在应用不在服务状态时（进入服务状态之前、开始排空之后）不按计划运行，领导租约也不拿不续，持有就立即释放，另一个实例下一个周期接手（ADR-0091）；停止时等待进行中的运行，宿主停止令牌触发后取消它们并再等它们收尾，最后释放租约。`ILeaderElection` 的 Provider 要保证应用不在服务状态时 `LeaderLease.ReleaseAsync` 照样生效。
 - 执行时限靠取消令牌实现，不响应取消的作业要等它返回才结束。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
 
