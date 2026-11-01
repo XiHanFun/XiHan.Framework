@@ -156,3 +156,5 @@ ADR-0080 让授权能力的 Provider 在 `IHostedFeature.StartAsync` 里调用 `
 ## 六、framework-sdk-go 校验 `contributes.permissions`（第 15 条）
 
 Go SDK 的 `manifest.Read` 原先不核对 `contributes.permissions`，不合文法或重复的码要到 .NET 宿主发现时才被拒（ADR-0080 给 Schema 加了 `pattern` 与 `uniqueItems`）。`Contributions.validate` 现按同一文法 `^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$` 与唯一性核对，错误消息指出是哪个码；新增测试接受空列表、多段与带数字连字符的码，拒绝单段、大写、空段、首尾点、数字开头、下划线、冒号与重复。在 framework-sdk-go 本地提交，`spec/` 子模块指针不动。
+
+第三节「Wasm 插件贡献的中间件不随卸载撤回，卸载后失败即关闭，运行期又不能加载这类插件，换版本要重启宿主」由 ADR-0088 第二节修订：中间件随卸载按归属撤出管道、随再加载（含运行期加载）成组回到管道，撤回之后开始的调用不再经过它。第五节对 `DeadlineMiddleware` 的归因由 ADR-0088 第一节保留，并补写为行为变化（背景、新旧行为、状态码与错误码、重试判断）。
