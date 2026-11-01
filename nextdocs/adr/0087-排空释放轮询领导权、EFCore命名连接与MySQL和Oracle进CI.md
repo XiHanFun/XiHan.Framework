@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0005-persistence.md`、`spec/rfcs/0021-workflow.md`、`spec/conventions/error-codes.md` 随之修订；修订 ADR-0084 第一节（EF Core 的命名连接）、第二节（排空期间的领导权、周期中途进入排空）、第四节（Oracle 11g 与兼容库改为已定））。
+已采纳（`spec/rfcs/0005-persistence.md`、`spec/rfcs/0021-workflow.md`、`spec/conventions/error-codes.md` 随之修订；修订 ADR-0084 第一节（EF Core 的命名连接）、第二节（排空期间的领导权、周期中途进入排空）、第四节（Oracle 11g 与兼容库改为已定）、第五节（MySQL 与 Oracle 进 CI））。
 
 ## 日期
 
@@ -123,3 +123,36 @@ ADR-0084 第四节把 Oracle 的读列改为查数据字典：判自增要 `USER
 ### 影响
 
 无代码与行为变化；错误码 `PERSISTENCE_UNAVAILABLE_006` 的说明补上 11g。需要的应用另起一项、带验证环境再做。
+
+## 五、MySQL 与 Oracle 的门控用例进框架 CI
+
+### 背景
+
+`Persistence.SqlSugar.Tests` 有 MySQL 与 Oracle 的门控用例（库结构读取各一例、库结构一致性套件各五例；`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`），ADR-0084 第五节只给 CI 加了 SQL Server，这两个库的用例在 CI 里一直跳过。用户拍板：进 CI，做法同 SQL Server；Oracle 镜像大、起得慢，尽量控制 CI 时长。
+
+### 备选
+
+1. 两个都加到主作业的服务容器：主作业要等最慢的服务健康才开始，Oracle 镜像的拉取与启动全压在主作业上。
+2. Oracle 用每周或手动触发的单独工作流：时长不受影响，但推送与 PR 上看不到 Oracle 的失败。
+3. MySQL 加到主作业；Oracle 单独一个作业，与主作业并行，只还原、构建、测试 `Persistence.SqlSugar.Tests` 一个项目，镜像选 `slim-faststart` 变体。
+4. 缓存 Oracle 镜像（`docker save` 进 Actions 缓存）：镜像解压后约 6.5 GB，存取缓存本身就要几分钟，还占缓存配额，不比直接拉快。
+
+### 决策
+
+选 3。
+
+- 主作业的 `services` 加 `mysql`：`mysql:9.7`（LTS），`MYSQL_ROOT_PASSWORD`（只给 CI 一次性容器用的固定口令，同 SQL Server），端口 `3306:3306`；健康检查 `mysqladmin ping -h 127.0.0.1 -uroot -p… --silent`，每 5 秒、最多 30 次——走 TCP：镜像初始化期间的临时服务器不开网络，正式服务器起来之后才报健康。测试步骤加 `XIHAN_TEST_MYSQL: Server=localhost;Port=3306;User Id=root;Password=…`。
+- 新作业 `oracle`（`timeout-minutes: 30`）：服务 `gvenzl/oracle-free:23-slim-faststart`（库在镜像里已建好，启动只打开实例），`ORACLE_PASSWORD`，端口 `1521:1521`；健康检查用镜像自带的 `healthcheck.sh`（可插拔库 `FREEPDB1` 打开后才成功），每 10 秒、启动宽限 20 秒、最多 30 次。步骤只还原、构建（Release）、测试 `Persistence.SqlSugar.Tests`，测试步骤只设 `XIHAN_TEST_ORACLE: User Id=system;Password=…;Data Source=localhost:1521/FREEPDB1`（`SYSTEM` 能建删用户，每个用例建删一个用户），其余门控用例在主作业里跑、这里跳过；测试结果另传一个产物。
+- 主作业测试步骤的注释改为「Oracle 在单独的作业里跑」，不再写「不在 CI 跑」。
+
+### 理由
+
+- MySQL 镜像小（压缩后约数百 MB）、十几秒健康，与其余服务容器并行拉取，放主作业几乎不加时长，做法与 SQL Server 一致。
+- Oracle 单独并行：主作业不等它；作业只构建一个测试项目，几分钟内完成，总时长取决于主作业。`slim-faststart` 省掉建库，本机冷启动到健康约 30 秒。
+- 整个测试项目跑一遍而不按名字筛 Oracle 的用例：SQLite 的用例几秒钟，不必维护筛选条件，新增的 Oracle 用例自动纳入。
+
+### 影响
+
+- CI：主作业多拉一个 MySQL 镜像；多一个并行作业。两组用例在 CI 里失败就是真失败。
+- 本机按同样的镜像、环境变量、健康检查与连接串（端口换成 13306、11521）验证：MySQL（本机镜像 9.7.1）第二次检查即健康、Oracle 约 30 秒健康；照 `oracle` 作业的步骤单独还原、构建、测试 `Persistence.SqlSugar.Tests`：176 例 112 通过、64 跳过，Oracle 的 6 例全部真跑通过；设 `XIHAN_TEST_MYSQL`：MySQL 的 6 例全部真跑通过；用例建的库与用户都已删除。工作流 YAML 没有解析器可用，按现有服务的写法人工核对，并用一段只认映射、列表与块标量的小脚本按缩进解析出两个作业、六个服务容器与各步骤的环境变量核对。
+- 修订 ADR-0084 第五节「MySQL 与 Oracle 的门控用例不进 CI」。

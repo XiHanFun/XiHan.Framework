@@ -58,6 +58,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 20
+      mysql:
+        # Persistence.SqlSugar 的 MySQL 用例（库结构读取与一致性套件，每个用例建删一个库）；9.7 是 LTS，镜像小、起得快，放在主作业里
+        image: mysql:9.7
+        env:
+          MYSQL_ROOT_PASSWORD: XiHan_Test_2026
+        ports:
+          - 3306:3306
+        # 走 TCP（-h 127.0.0.1）：镜像初始化期间的临时服务器不开网络，初始化完、正式服务器起来之后才报健康
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pXiHan_Test_2026 --silent"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 30
       rabbitmq:
         image: rabbitmq:4-alpine
         ports:
@@ -98,11 +111,13 @@ jobs:
 
       - name: 测试（MTP 模式，采集覆盖率）
         env:
-          # Caching.Redis、Messaging.RabbitMQ 与 Persistence.SqlSugar（PostgreSQL、SQL Server）的一致性套件只在设置了这些变量时运行；MySQL、Oracle 的门控用例（XIHAN_TEST_MYSQL、XIHAN_TEST_ORACLE）不在 CI 里跑
+          # Caching.Redis、Messaging.RabbitMQ 与 Persistence.SqlSugar（PostgreSQL、SQL Server、MySQL）的门控用例只在设置了这些变量时运行；
+          # Oracle 的门控用例（XIHAN_TEST_ORACLE）在下面单独的 oracle 作业里跑，这里不设、跳过
           XIHAN_TEST_REDIS: localhost:6379
           XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
           XIHAN_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
           XIHAN_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=XiHan_Test_2026;TrustServerCertificate=True
+          XIHAN_TEST_MYSQL: Server=localhost;Port=3306;User Id=root;Password=XiHan_Test_2026
         # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
         run: >
           dotnet test --solution next/XiHan.Framework.Next.slnx
@@ -133,4 +148,60 @@ jobs:
           path: |
             next/test/**/TestResults/
             next/artifacts/packages/
+          if-no-files-found: ignore
+
+  oracle:
+    # Persistence.SqlSugar 的 Oracle 门控用例（库结构读取与一致性套件，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
+    # 单独一个作业与主作业并行：只还原、构建、测试这一个测试项目，拉镜像与启动的时间不压在主作业上
+    name: Oracle 门控用例
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      oracle:
+        # slim-faststart：裁掉了不用的组件、库在镜像里已经建好，启动只要打开实例，不用现建库；与本机验证所用相同
+        image: gvenzl/oracle-free:23-slim-faststart
+        env:
+          ORACLE_PASSWORD: XiHan_Test_2026
+        ports:
+          - 1521:1521
+        # healthcheck.sh 是镜像自带的就绪检查（可插拔库 FREEPDB1 打开后才成功）
+        options: >-
+          --health-cmd healthcheck.sh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-start-period 20s
+          --health-retries 30
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        run: dotnet restore next/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj
+
+      - name: 构建
+        run: dotnet build next/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj --configuration Release --no-restore
+
+      - name: 测试（Oracle）
+        env:
+          # SYSTEM 能建删用户；只设这一个变量，其余数据库的门控用例在主作业里跑，这里跳过
+          XIHAN_TEST_ORACLE: User Id=system;Password=XiHan_Test_2026;Data Source=localhost:1521/FREEPDB1
+        run: >
+          dotnet test --project next/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj
+          --configuration Release
+          --no-build
+
+      - name: 上传测试结果
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: next-oracle-artifacts
+          path: next/test/XiHan.Framework.Persistence.SqlSugar.Tests/TestResults/
           if-no-files-found: ignore
