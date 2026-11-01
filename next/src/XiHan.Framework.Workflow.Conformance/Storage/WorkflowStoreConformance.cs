@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Conformance.Storage;
 /// 存储与实例锁的一致性套件（RFC-0021 §存储契约）。
 /// </summary>
 /// <remarks>
-/// 查询、排序、批量、级联、快照语义与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>；锁等待上限应配置在 1 秒以内。
+/// 查询、排序、批量、级联、快照语义、分区隔离与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>（返回装配了被测 Provider 的已启动宿主）；锁等待上限应配置在 1 秒以内。存储在 <see cref="WorkflowStoreHost.InPartitionAsync{T}"/> 开的调用里使用。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowStoreConformance
@@ -38,27 +38,31 @@ public abstract class WorkflowStoreConformance
         var v1 = Definition("conf-def", 1, WorkflowDefinitionStatus.Published);
         var v2 = Definition("conf-def", 2, WorkflowDefinitionStatus.Draft);
         var other = Definition("conf-other", 1, WorkflowDefinitionStatus.Published);
-        Assert.True((await host.Definitions.SaveAsync([v1, v2, other], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [v1, v2, other], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
-        var found = (await host.Definitions.FindAsync(v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
-        Assert.Equal((v2.Name, 2, WorkflowDefinitionStatus.Draft), (found.Name, found.Version, found.Status));
-        Assert.Equal(1, (await host.Definitions.FindAsync(new WorkflowName("conf-def"), 1, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Version);
-        Assert.Equal(v1.Id, (await host.Definitions.FindLatestPublishedAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.Equal(2, (await host.Definitions.MaxVersionAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(0, (await host.Definitions.MaxVersionAsync("conf-none", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.False((await host.Definitions.FindAsync("missing", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        await host.InPartitionAsync(null, async s =>
+        {
+            var found = (await s.Definitions.FindAsync(null, v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
+            Assert.Equal((v2.Name, 2, WorkflowDefinitionStatus.Draft), (found.Name, found.Version, found.Status));
+            Assert.Equal(1, (await s.Definitions.FindAsync(null, new WorkflowName("conf-def"), 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Version);
+            Assert.Equal(v1.Id, (await s.Definitions.FindLatestPublishedAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+            Assert.Equal(2, (await s.Definitions.MaxVersionAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(0, (await s.Definitions.MaxVersionAsync(null, "conf-none", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.False((await s.Definitions.FindAsync(null, "missing", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
 
-        var listed = (await host.Definitions.ListAsync(null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Equal([(v2.Id, 2), (v1.Id, 1), (other.Id, 1)], listed.Select(static definition => (definition.Id, definition.Version)));
-        Assert.Equal([v1.Id, other.Id], (await host.Definitions.ListAsync(null, WorkflowDefinitionStatus.Published, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
-        Assert.Equal([v2.Id, v1.Id], (await host.Definitions.ListAsync(new WorkflowName("conf-def"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
+            var listed = (await s.Definitions.ListAsync(null, null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal([(v2.Id, 2), (v1.Id, 1), (other.Id, 1)], listed.Select(static definition => (definition.Id, definition.Version)));
+            Assert.Equal([v1.Id, other.Id], (await s.Definitions.ListAsync(null, null, WorkflowDefinitionStatus.Published, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
+            Assert.Equal([v2.Id, v1.Id], (await s.Definitions.ListAsync(null, new WorkflowName("conf-def"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
+            Assert.Equal(2, (await s.Definitions.FindManyAsync(null, [v1.Id, "missing", other.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+            Assert.True((await s.Definitions.DeleteAsync(null, [v2.Id, "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
 
-        var many = (await host.Definitions.FindManyAsync([v1.Id, "missing", other.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Equal(2, many.Count);
-
-        Assert.True((await host.Definitions.DeleteAsync([v2.Id, "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.False((await host.Definitions.FindAsync(v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.Equal(1, (await host.Definitions.MaxVersionAsync("conf-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.False((await s.Definitions.FindAsync(null, v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal(1, (await s.Definitions.MaxVersionAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -73,21 +77,26 @@ public abstract class WorkflowStoreConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var instance = Instance("conf-snap", "inst-snap");
         instance.Variables["x"] = 1;
-        Assert.True((await host.Instances.SaveAsync([instance], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        instance.Variables["x"] = 2;
-        instance.Status = WorkflowInstanceStatus.Completed;
-
-        var stored = (await host.Instances.FindAsync("inst-snap", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
-        Assert.Equal(1, stored.Variables["x"]!.GetValue<int>());
-        Assert.Equal(WorkflowInstanceStatus.Running, stored.Status);
-        stored.Variables["x"] = 3;
-        Assert.Equal(1, (await host.Instances.FindAsync("inst-snap", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Variables["x"]!.GetValue<int>());
-
         var bookmark = Bookmark("inst-snap", "node-inst", BookmarkKinds.Signal, "sig", null);
         bookmark.Payload["p"] = "a";
-        Assert.True((await host.Bookmarks.SaveAsync([bookmark], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.True((await s.Instances.SaveAsync(null, [instance], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Bookmarks.SaveAsync(null, [bookmark], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+        instance.Variables["x"] = 2;
+        instance.Status = WorkflowInstanceStatus.Completed;
         bookmark.Payload["p"] = "b";
-        Assert.Equal("a", (await host.Bookmarks.FindAsync(bookmark.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Payload["p"]!.GetValue<string>());
+
+        await host.InPartitionAsync(null, async s =>
+        {
+            var stored = (await s.Instances.FindAsync(null, "inst-snap", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
+            Assert.Equal(1, stored.Variables["x"]!.GetValue<int>());
+            Assert.Equal(WorkflowInstanceStatus.Running, stored.Status);
+            stored.Variables["x"] = 3;
+            Assert.Equal(1, (await s.Instances.FindAsync(null, "inst-snap", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Variables["x"]!.GetValue<int>());
+            Assert.Equal("a", (await s.Bookmarks.FindAsync(null, bookmark.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Payload["p"]!.GetValue<string>());
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -108,46 +117,53 @@ public abstract class WorkflowStoreConformance
         b.EndedAt = now.AddSeconds(-30);
         var c = Instance("conf-list-2", "inst-c", now);
         c.ParentInstanceId = "inst-a";
-        c.TenantId = "t1";
         c.StarterId = "starter-c";
-        Assert.True((await host.Instances.SaveAsync([a, b, c], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-
-        Assert.Equal(["inst-c", "inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-c", "inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Limit = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-list") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { CorrelationId = "doc-1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { ParentInstanceId = "inst-a" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        // 分页、多状态、发起人、时间范围、结束时间与计数
-        Assert.Equal(["inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Skip = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-c", "inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Running], Skip = 0, Limit = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-c"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { StarterId = "starter-c" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-b", "inst-a"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { CreatedFrom = now.AddMinutes(-2), CreatedTo = now }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(["inst-b"], (await host.Instances.ListAsync(new WorkflowInstanceQuery { EndedBefore = now }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-        Assert.Equal(3, (await host.Instances.CountAsync(new WorkflowInstanceQuery { Skip = 2, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(1, (await host.Instances.CountAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(2, (await host.Instances.FindManyAsync(["inst-a", "inst-c", "missing"], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
-
         var n1 = NodeInstance("inst-a", "n1", now.AddSeconds(1));
         var n2 = NodeInstance("inst-a", "n2", now);
         var n3 = NodeInstance("inst-a", "n3", now);
         var other = NodeInstance("inst-b", "n4", now);
-        Assert.True((await host.Instances.SaveNodeInstancesAsync([n1, n2, n3, other], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.Equal([n2.Id, n3.Id, n1.Id], (await host.Instances.NodeInstancesAsync("inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static node => node.Id));
-        Assert.Equal("n1", (await host.Instances.FindNodeInstanceAsync(n1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().NodeId);
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Instances.SaveAsync(null, [a, b, c], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
-        // 整体替换：状态变了，顺序不变
-        n2.Status = WorkflowNodeInstanceStatus.Completed;
-        Assert.True((await host.Instances.SaveNodeInstancesAsync([n2], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.Equal(WorkflowNodeInstanceStatus.Completed, (await host.Instances.FindNodeInstanceAsync(n2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Status);
-        Assert.Equal([n2.Id, n3.Id, n1.Id], (await host.Instances.NodeInstancesAsync("inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static node => node.Id));
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal(["inst-c", "inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery()).ConfigureAwait(false));
+            Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Limit = 2 }).ConfigureAwait(false));
+            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }).ConfigureAwait(false));
+            Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-list") }).ConfigureAwait(false));
+            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { CorrelationId = "doc-1" }).ConfigureAwait(false));
+            Assert.Equal(["inst-c"], await IdsAsync(s, new WorkflowInstanceQuery { ParentInstanceId = "inst-a" }).ConfigureAwait(false));
+            // 分页、多状态、发起人、时间范围、结束时间与计数
+            Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { Skip = 1 }).ConfigureAwait(false));
+            Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Running], Skip = 0, Limit = 2 }).ConfigureAwait(false));
+            Assert.Equal(["inst-c"], await IdsAsync(s, new WorkflowInstanceQuery { StarterId = "starter-c" }).ConfigureAwait(false));
+            Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { CreatedFrom = now.AddMinutes(-2), CreatedTo = now }).ConfigureAwait(false));
+            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { EndedBefore = now }).ConfigureAwait(false));
+            Assert.Equal(3, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { Skip = 2, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(1, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(2, (await s.Instances.FindManyAsync(null, ["inst-a", "inst-c", "missing"], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+            Assert.True((await s.Instances.SaveNodeInstancesAsync(null, [n1, n2, n3, other], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
 
-        Assert.True((await host.Instances.DeleteAsync(["inst-a"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.False((await host.Instances.FindAsync("inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.Empty((await host.Instances.NodeInstancesAsync("inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.False((await host.Instances.FindNodeInstanceAsync(n1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.Single((await host.Instances.NodeInstancesAsync("inst-b", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([n2.Id, n3.Id, n1.Id], (await s.Instances.NodeInstancesAsync(null, "inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static node => node.Id));
+            Assert.Equal("n1", (await s.Instances.FindNodeInstanceAsync(null, n1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().NodeId);
+
+            // 整体替换：状态变了，顺序不变
+            n2.Status = WorkflowNodeInstanceStatus.Completed;
+            Assert.True((await s.Instances.SaveNodeInstancesAsync(null, [n2], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.Equal(WorkflowNodeInstanceStatus.Completed, (await s.Instances.FindNodeInstanceAsync(null, n2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Status);
+            Assert.Equal([n2.Id, n3.Id, n1.Id], (await s.Instances.NodeInstancesAsync(null, "inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static node => node.Id));
+            Assert.True((await s.Instances.DeleteAsync(null, ["inst-a"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.False((await s.Instances.FindAsync(null, "inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Empty((await s.Instances.NodeInstancesAsync(null, "inst-a", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.False((await s.Instances.FindNodeInstanceAsync(null, n1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Single((await s.Instances.NodeInstancesAsync(null, "inst-b", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -171,22 +187,32 @@ public abstract class WorkflowStoreConformance
         signalDoc.CorrelationId = "doc-1";
         var signalOther = Bookmark("inst-5", "ni-8", BookmarkKinds.Signal, "go", null, now);
         signalOther.CorrelationId = "doc-2";
-        Assert.True((await host.Bookmarks.SaveAsync([task1, task2, timerLate, timerDue, retryDue, signalAny, signalDoc, signalOther], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Bookmarks.SaveAsync(null, [task1, task2, timerLate, timerDue, retryDue, signalAny, signalDoc, signalOther], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
-        Assert.Equal([task1.Id, timerLate.Id, retryDue.Id], (await host.Bookmarks.ByInstanceAsync("inst-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal([timerDue.Id, retryDue.Id], (await host.Bookmarks.DueAsync(now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal([timerDue.Id], (await host.Bookmarks.DueAsync(now, 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal([task1.Id, task2.Id], (await host.Bookmarks.ByKindAndKeyAsync(BookmarkKinds.UserTask, "alice", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal([signalAny.Id, signalDoc.Id, signalOther.Id], (await host.Bookmarks.BySignalAsync("go", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal([signalAny.Id, signalDoc.Id], (await host.Bookmarks.BySignalAsync("go", "doc-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
-        Assert.Equal(2, (await host.Bookmarks.FindManyAsync([task1.Id, "missing", task2.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([task1.Id, timerLate.Id, retryDue.Id], (await s.Bookmarks.ByInstanceAsync(null, "inst-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal([timerDue.Id, retryDue.Id], (await s.Bookmarks.DueAsync(null, now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal([timerDue.Id], (await s.Bookmarks.DueAsync(null, now, 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal([task1.Id, task2.Id], (await s.Bookmarks.ByKindAndKeyAsync(null, BookmarkKinds.UserTask, "alice", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal([signalAny.Id, signalDoc.Id, signalOther.Id], (await s.Bookmarks.BySignalAsync(null, "go", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal([signalAny.Id, signalDoc.Id], (await s.Bookmarks.BySignalAsync(null, "go", "doc-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+            Assert.Equal(2, (await s.Bookmarks.FindManyAsync(null, [task1.Id, "missing", task2.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+            Assert.True((await s.Bookmarks.DeleteAsync(null, [task1.Id, "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
 
-        Assert.True((await host.Bookmarks.DeleteAsync([task1.Id, "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.False((await host.Bookmarks.FindAsync(task1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.True((await host.Bookmarks.DeleteByInstanceAsync(["inst-1", "inst-2"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.Empty((await host.Bookmarks.ByInstanceAsync("inst-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Empty((await host.Bookmarks.DueAsync(now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(3, (await host.Bookmarks.BySignalAsync("go", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.False((await s.Bookmarks.FindAsync(null, task1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.True((await s.Bookmarks.DeleteByInstanceAsync(null, ["inst-1", "inst-2"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Empty((await s.Bookmarks.ByInstanceAsync(null, "inst-1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Empty((await s.Bookmarks.DueAsync(null, now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(3, (await s.Bookmarks.BySignalAsync(null, "go", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -214,13 +240,13 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 6：可领取的书签按租户与到期时刻限量查询。
+    /// 用例 6：可领取的书签按到期时刻限量查询。
     /// </summary>
     /// <remarks>
-    /// 按种类、键、租户与到期时刻过滤，创建时间升序，条数受上限约束。到期时刻为空或不晚于此刻才可领取（恰好等于此刻也算）；租户按相等比较，空只匹配无租户的书签。
+    /// 按种类、键与到期时刻过滤，创建时间升序，条数受上限约束。到期时刻为空或不晚于此刻才可领取（恰好等于此刻也算）。
     /// </remarks>
     [Fact]
-    public async Task Bookmarks_Available_FilterByKindKeyTenantAndDue_WithLimit()
+    public async Task Bookmarks_Available_FilterByKindKeyAndDue_WithLimit()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
         // 取整到秒：恰好等于此刻的到期时刻要原样存取，不受各存储时间精度的影响
@@ -230,55 +256,162 @@ public abstract class WorkflowStoreConformance
         var expired = Bookmark("inst-2", "ni-2", BookmarkKinds.External, "pay", now.AddSeconds(-1), now.AddSeconds(-2));
         var boundary = Bookmark("inst-3", "ni-3", BookmarkKinds.External, "pay", now, now.AddSeconds(-1));
         var locked = Bookmark("inst-4", "ni-4", BookmarkKinds.External, "pay", now.AddMinutes(5), now.AddSeconds(-4));
-        var tenant = Bookmark("inst-5", "ni-5", BookmarkKinds.External, "pay", null, now.AddSeconds(-5));
-        tenant.TenantId = "t1";
         var otherTopic = Bookmark("inst-6", "ni-6", BookmarkKinds.External, "ship", null, now.AddSeconds(-6));
         var otherKind = Bookmark("inst-7", "ni-7", BookmarkKinds.UserTask, "pay", null, now.AddSeconds(-7));
-        Assert.True((await host.Bookmarks.SaveAsync([fresh, expired, boundary, locked, tenant, otherTopic, otherKind], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Bookmarks.SaveAsync(null, [fresh, expired, boundary, locked, otherTopic, otherKind], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
-        Assert.Equal([fresh.Id, expired.Id, boundary.Id], await AvailableAsync(host, null, now, 10).ConfigureAwait(false));
-        Assert.Equal([fresh.Id, expired.Id], await AvailableAsync(host, null, now, 2).ConfigureAwait(false));
-        Assert.Equal([tenant.Id], await AvailableAsync(host, "t1", now, 10).ConfigureAwait(false));
-        Assert.Empty(await AvailableAsync(host, "t2", now, 10).ConfigureAwait(false));
-        Assert.Equal([locked.Id, fresh.Id, expired.Id, boundary.Id], await AvailableAsync(host, null, now.AddMinutes(10), 10).ConfigureAwait(false));
-        Assert.Empty(await AvailableAsync(host, null, now, 0).ConfigureAwait(false));
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([fresh.Id, expired.Id, boundary.Id], await AvailableAsync(s, now, 10).ConfigureAwait(false));
+            Assert.Equal([fresh.Id, expired.Id], await AvailableAsync(s, now, 2).ConfigureAwait(false));
+            Assert.Equal([locked.Id, fresh.Id, expired.Id, boundary.Id], await AvailableAsync(s, now.AddMinutes(10), 10).ConfigureAwait(false));
+            Assert.Empty(await AvailableAsync(s, now, 0).ConfigureAwait(false));
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 用例 7：按名字的查询以租户为名字空间。
+    /// 用例 7：按名字的查询以分区为名字空间。
     /// </summary>
     /// <remarks>
-    /// 版本号、按名字与版本找、最新已发布都只看租户相等的定义，空租户只匹配全局定义。
+    /// 版本号、按名字与版本找、最新已发布都只看本分区的定义：平台与各租户各自从版本 1 编号，互不可见。
     /// </remarks>
     [Fact]
-    public async Task Definitions_NameQueries_AreScopedToTheTenantNamespace()
+    public async Task Definitions_NameQueries_AreScopedToThePartition()
     {
         await using var host = await StartAsync().ConfigureAwait(false);
-        var global = Definition("conf-ns", 1, WorkflowDefinitionStatus.Published);
+        var platform = Definition("conf-ns", 1, WorkflowDefinitionStatus.Published);
         var t1First = Definition("conf-ns", 1, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
         var t1Second = Definition("conf-ns", 2, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
         var t1Draft = Definition("conf-ns", 3, WorkflowDefinitionStatus.Draft) with { TenantId = "t1" };
-        Assert.True((await host.Definitions.SaveAsync([global, t1First, t1Second, t1Draft], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         var name = new WorkflowName("conf-ns");
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [platform], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync("t1", async s => Assert.True((await s.Definitions.SaveAsync("t1", [t1First, t1Second, t1Draft], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
-        Assert.Equal((1, 3, 0), ((await host.Definitions.MaxVersionAsync(name, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), (await host.Definitions.MaxVersionAsync(name, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), (await host.Definitions.MaxVersionAsync(name, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
-        Assert.Equal(global.Id, (await host.Definitions.FindAsync(name, 1, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.Equal(t1First.Id, (await host.Definitions.FindAsync(name, 1, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.False((await host.Definitions.FindAsync(name, 2, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.False((await host.Definitions.FindAsync(name, 1, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-        Assert.Equal(global.Id, (await host.Definitions.FindLatestPublishedAsync(name, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.Equal(t1Second.Id, (await host.Definitions.FindLatestPublishedAsync(name, "t1", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-        Assert.False((await host.Definitions.FindLatestPublishedAsync(name, "t2", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal(1, (await s.Definitions.MaxVersionAsync(null, name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(platform.Id, (await s.Definitions.FindAsync(null, name, 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+            Assert.False((await s.Definitions.FindAsync(null, name, 2, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal(platform.Id, (await s.Definitions.FindLatestPublishedAsync(null, name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        }).ConfigureAwait(false);
+        await host.InPartitionAsync("t1", async s =>
+        {
+            Assert.Equal(3, (await s.Definitions.MaxVersionAsync("t1", name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(t1First.Id, (await s.Definitions.FindAsync("t1", name, 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+            Assert.Equal(t1Second.Id, (await s.Definitions.FindLatestPublishedAsync("t1", name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+        }).ConfigureAwait(false);
+        await host.InPartitionAsync("t2", async s =>
+        {
+            Assert.Equal(0, (await s.Definitions.MaxVersionAsync("t2", name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.False((await s.Definitions.FindAsync("t2", name, 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.False((await s.Definitions.FindLatestPublishedAsync("t2", name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        }).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 用例 8：分区互不可见。
+    /// </summary>
+    /// <remarks>
+    /// 租户 t1 写下的定义、实例、节点实例与书签，平台与租户 t2 按 ID、列表、计数、到期、种类与键、信号、可领取都查不到，删除也碰不到；t1 自己照常查得到。
+    /// </remarks>
+    [Fact]
+    public async Task Partitions_AreIsolated()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var now = DateTimeOffset.UtcNow;
+        var definition = Definition("conf-part", 1, WorkflowDefinitionStatus.Published) with { TenantId = "t1" };
+        var instance = Instance("conf-part", "inst-part");
+        instance.TenantId = "t1";
+        instance.CorrelationId = "doc-part";
+        var node = NodeInstance("inst-part", "n1", now);
+        var task = Bookmark("inst-part", node.Id, BookmarkKinds.UserTask, "alice", null, now);
+        var timer = Bookmark("inst-part", node.Id, BookmarkKinds.Timer, null, now.AddSeconds(-1), now);
+        var signal = Bookmark("inst-part", node.Id, BookmarkKinds.Signal, "go", null, now);
+        var external = Bookmark("inst-part", node.Id, BookmarkKinds.External, "pay", null, now);
+        foreach (var bookmark in new[] { task, timer, signal, external })
+        {
+            bookmark.TenantId = "t1";
+        }
+
+        await host.InPartitionAsync("t1", async s =>
+        {
+            Assert.True((await s.Definitions.SaveAsync("t1", [definition], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Instances.SaveAsync("t1", [instance], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Instances.SaveNodeInstancesAsync("t1", [node], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            Assert.True((await s.Bookmarks.SaveAsync("t1", [task, timer, signal, external], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        }).ConfigureAwait(false);
+
+        foreach (var outsider in new[] { null, "t2" })
+        {
+            await host.InPartitionAsync(outsider, async s =>
+            {
+                Assert.False((await s.Definitions.FindAsync(outsider, definition.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.Empty((await s.Definitions.ListAsync(outsider, null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Definitions.FindManyAsync(outsider, [definition.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.False((await s.Instances.FindAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.Empty((await s.Instances.FindManyAsync(outsider, [instance.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Instances.ListAsync(outsider, new WorkflowInstanceQuery { CorrelationId = "doc-part" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Equal(0, (await s.Instances.CountAsync(outsider, new WorkflowInstanceQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Instances.NodeInstancesAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.False((await s.Instances.FindNodeInstanceAsync(outsider, node.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.False((await s.Bookmarks.FindAsync(outsider, task.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.Empty((await s.Bookmarks.ByInstanceAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Bookmarks.DueAsync(outsider, now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Bookmarks.ByKindAndKeyAsync(outsider, BookmarkKinds.UserTask, "alice", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Bookmarks.BySignalAsync(outsider, "go", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Bookmarks.AvailableAsync(outsider, BookmarkKinds.External, "pay", now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                // 删除碰不到别的分区的记录
+                Assert.True((await s.Definitions.DeleteAsync(outsider, [definition.Id], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+                Assert.True((await s.Instances.DeleteAsync(outsider, [instance.Id], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+                Assert.True((await s.Bookmarks.DeleteByInstanceAsync(outsider, [instance.Id], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+            }).ConfigureAwait(false);
+        }
+
+        await host.InPartitionAsync("t1", async s =>
+        {
+            Assert.True((await s.Definitions.FindAsync("t1", definition.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal("t1", (await s.Instances.FindAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().TenantId);
+            Assert.Single((await s.Instances.NodeInstancesAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(4, (await s.Bookmarks.ByInstanceAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
+            Assert.Equal([timer.Id], (await s.Bookmarks.DueAsync("t1", now, 10, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id));
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 用例 9：写入的记录属于别的租户是编程错误。
+    /// </summary>
+    /// <remarks>
+    /// 记录的 <c>TenantId</c> 与写入的分区不同时抛出 <see cref="ArgumentException"/>，不替调用方改写、不落库。
+    /// </remarks>
+    [Fact]
+    public async Task Writes_RejectRecordsOfAnotherPartition()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var instance = Instance("conf-owner", "inst-owner");
+        instance.TenantId = "t2";
+        await host.InPartitionAsync("t1", async s =>
+        {
+            await Assert.ThrowsAsync<ArgumentException>(async () => await s.Instances.SaveAsync("t1", [instance], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+            await Assert.ThrowsAsync<ArgumentException>(async () => await s.Definitions.SaveAsync("t1", [Definition("conf-owner", 1, WorkflowDefinitionStatus.Draft)], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+            await Assert.ThrowsAsync<ArgumentException>(async () => await s.Bookmarks.SaveAsync("t1", [Bookmark("inst-owner", "ni", BookmarkKinds.Timer, null, null)], CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        await host.InPartitionAsync("t2", async s => Assert.False((await s.Instances.FindAsync("t2", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 实例列表的 ID。
+    /// </summary>
+    private static async Task<List<string>> IdsAsync(WorkflowStores stores, WorkflowInstanceQuery query)
+        => (await stores.Instances.ListAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id).ToList();
 
     /// <summary>
     /// 主题 <c>pay</c> 的外部任务书签里可领取的 ID。
     /// </summary>
-    private static async Task<List<string>> AvailableAsync(WorkflowStoreHost host, string? tenantId, DateTimeOffset now, int limit)
-        => (await host.Bookmarks.AvailableAsync(BookmarkKinds.External, "pay", tenantId, now, limit, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
+    private static async Task<List<string>> AvailableAsync(WorkflowStores stores, DateTimeOffset now, int limit)
+        => (await stores.Bookmarks.AvailableAsync(stores.TenantId, BookmarkKinds.External, "pay", now, limit, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
 
     /// <summary>
-    /// 一个最小的定义。
+    /// 一个最小的定义（平台分区）。
     /// </summary>
     protected static WorkflowDefinition Definition(string name, int version, WorkflowDefinitionStatus status) => new()
     {
@@ -292,7 +425,7 @@ public abstract class WorkflowStoreConformance
     };
 
     /// <summary>
-    /// 一个运行中的实例。
+    /// 一个运行中的实例（平台分区）。
     /// </summary>
     protected static WorkflowInstance Instance(string definitionName, string id, DateTimeOffset? createdAt = null) => new()
     {
@@ -316,7 +449,7 @@ public abstract class WorkflowStoreConformance
     };
 
     /// <summary>
-    /// 一个书签。
+    /// 一个书签（平台分区）。
     /// </summary>
     protected static WorkflowBookmark Bookmark(string instanceId, string nodeInstanceId, string kind, string? key, DateTimeOffset? dueAt, DateTimeOffset? createdAt = null) => new()
     {

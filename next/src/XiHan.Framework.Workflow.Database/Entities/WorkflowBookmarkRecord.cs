@@ -9,78 +9,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 书签的存储行。
+/// 租户分区的书签行。
 /// </summary>
 /// <remarks>
-/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。索引：<c>(InstanceId)</c> 供按实例读取与级联删除；<c>(Kind, Key)</c> 供按信号、用户任务受理人、子流程节点找书签；<c>(DueAt)</c> 供到期书签的轮询。
+/// 实现 <see cref="IMultiTenant"/>：按当前租户写入与过滤，随租户分库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除；<c>(Kind, Key)</c> 供按信号、用户任务受理人、子流程节点找书签；<c>(TenantId, DueAt)</c> 供逐个租户轮询到期书签。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(InstanceId))]
 [EntityIndex(nameof(Kind), nameof(Key))]
-[EntityIndex(nameof(DueAt))]
-public sealed class WorkflowBookmarkRecord : IEntity<string>
+[EntityIndex(nameof(TenantId), nameof(DueAt))]
+public sealed class WorkflowBookmarkRecord : WorkflowBookmarkRow, IMultiTenant
 {
     /// <inheritdoc />
     [StringLength(128)]
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 所属实例 ID。
-    /// </summary>
-    [StringLength(128)]
-    public string InstanceId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 节点实例 ID。
-    /// </summary>
-    [StringLength(128)]
-    public string NodeInstanceId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 种类（<c>BookmarkKinds</c>）。
-    /// </summary>
-    [StringLength(64)]
-    public string Kind { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 键：用户任务是指派人，信号是信号名，子流程是父节点实例 ID。
-    /// </summary>
-    [StringLength(256)]
-    public string? Key { get; set; }
-
-    /// <summary>
-    /// 关联 ID。
-    /// </summary>
-    [StringLength(256)]
-    public string? CorrelationId { get; set; }
-
-    /// <summary>
-    /// 到期时间。
-    /// </summary>
-    public DateTimeOffset? DueAt { get; set; }
-
-    /// <summary>
-    /// 创建时间。
-    /// </summary>
-    public DateTimeOffset CreatedAt { get; set; }
-
-    /// <summary>
-    /// 租户。
-    /// </summary>
-    [StringLength(128)]
-    public string? TenantId { get; set; }
-
-    /// <summary>
-    /// 写入序号：同刻排序的次关键字，首次写入时由存储分配，整体替换保留。
-    /// </summary>
-    public long Sequence { get; set; }
-
-    /// <summary>
-    /// 整份书签的 JSON。
-    /// </summary>
-    /// <remarks>
-    /// 长文本列。
-    /// </remarks>
-    [LongText]
-    public string Document { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
 }

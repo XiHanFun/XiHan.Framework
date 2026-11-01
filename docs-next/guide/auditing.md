@@ -120,7 +120,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | `InvocationOrigin` 成员 | 含义 |
 | --- | --- |
 | `Protocol` | `InvocationProtocols` 的值：`http`、`grpc`、`mcp`、`cli`、`messaging`、`job`、`workflow` |
-| `Target` | HTTP 为方法与路径（不含查询串），gRPC 为方法全名，MCP 为工具名，命令行为操作 ID，消息为主题，作业为作业名，工作流为活动类型 |
+| `Target` | HTTP 为方法与路径（不含查询串），gRPC 为方法全名，MCP 为工具名，命令行为操作 ID，消息为主题，作业为作业名，工作流为操作名（如 `workflow.start`；引擎在调用之外自己开调用时） |
 | `RemoteAddress` | 客户端 IP，不含端口；经反向代理时取宿主转发头中间件改写后的值，没有网络对端时为空 |
 | `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
 | `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |

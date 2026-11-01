@@ -370,7 +370,6 @@ internal sealed class WorkflowSession
                 ParentInstanceId = Instance.Id,
                 ParentNodeInstanceId = nodeInstance.Id,
                 Depth = Instance.Depth + 1,
-                TenantId = child.TenantId ?? Instance.TenantId,
                 CorrelationId = child.CorrelationId ?? Instance.CorrelationId,
                 StarterId = child.StarterId ?? Instance.StarterId,
             };

@@ -1,13 +1,12 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Runtime.ExceptionServices;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel.Hosting;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -17,7 +16,6 @@ using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Events;
 using XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 using XiHan.Framework.Workflow.Abstractions.Instances;
-using XiHan.Framework.Workflow.Abstractions.Storage;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
 using Xunit;
 
@@ -44,6 +42,14 @@ public abstract class WorkflowEngineConformance
     /// 延时与超时用例等待的上限。
     /// </summary>
     protected virtual TimeSpan WaitTimeout => TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// 被测 Provider 的写入是否随调用方提交或回滚。
+    /// </summary>
+    /// <remarks>
+    /// 数据库实现是（加入 Transaction 阶段开启的工作单元）；内存实现没有事务、写入立即生效，覆盖为 <see langword="false"/>，事务相关的用例按它断言。
+    /// </remarks>
+    protected virtual bool JoinsCallerTransaction => true;
 
     /// <summary>
     /// 用例 1：顺序流：输出合并进变量、表达式求值、节点实例与事件按顺序记录、实例完成。
@@ -81,7 +87,8 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(["start", "a", "b", "end"], nodes.Select(static node => node.NodeId));
         Assert.All(nodes, node => Assert.Equal(WorkflowNodeInstanceStatus.Completed, node.Status));
         Assert.Equal([(started.Id, "a", 1)], log.Executed);
-        Assert.Equal([new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = RecordActivity.TypeName }], log.Origins);
+        // 活动在引擎这次操作的调用里执行：调用方没有调用时引擎自己开的那一次，来源是工作流协议、目标是操作名
+        Assert.Equal([new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = "workflow.start" }], log.Origins);
         Assert.Empty(await host.BookmarksAsync(started.Id).ConfigureAwait(false));
 
         var topics = log.Events.Where(pending => pending.Data.InstanceId == started.Id).Select(static pending => pending.Topic).ToList();
@@ -402,9 +409,9 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(42, done.Variables["child"]!["result"]!.GetValue<decimal>());
         Assert.Equal([2m, 4m, 6m], ((JsonArray)done.Variables["results"]!).Select(static item => item!["result"]!.GetValue<decimal>()));
 
-        var children = await Services(host).ListAsync(new WorkflowInstanceQuery { ParentInstanceId = instance.Id }, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal(4, children.ValueOrThrow().Count);
-        Assert.All(children.ValueOrThrow(), child => Assert.Equal((WorkflowInstanceStatus.Completed, "doc-9", 1), (child.Status, child.CorrelationId, child.Depth)));
+        var children = await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = instance.Id }).ConfigureAwait(false);
+        Assert.Equal(4, children.Count);
+        Assert.All(children, child => Assert.Equal((WorkflowInstanceStatus.Completed, "doc-9", 1), (child.Status, child.CorrelationId, child.Depth)));
     }
 
     /// <summary>
@@ -591,23 +598,36 @@ public abstract class WorkflowEngineConformance
     /// 用例 14：租户隔离。
     /// </summary>
     /// <remarks>
-    /// 带租户启动的实例，没有租户的调用方查不到它的任务、发不到它的信号。
+    /// 租户启动的实例，平台的调用查不到它的任务、发不到它的信号；租户自己的待办只有自己的。
     /// </remarks>
     [Fact]
     public async Task Tenant_IsolatesTasksAndSignals()
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        await host.PublishAsync(Approval("conf-tenant", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
+        var waiting = WorkflowDefinitionBuilder.Create("conf-tenant-signal")
+            .AddStart().AddNode("wait", ActivityTypes.WaitSignal, configure: node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf.tenant.go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true)).AddEnd()
+            .AddTransition("start", "wait").AddTransition("wait", "end")
+            .Build();
+        await host.PublishManyAsync(null, Approval("conf-tenant", UserTaskCompletionPolicy.Any, "alice"), waiting).ConfigureAwait(false);
+        await host.PublishManyAsync("t1", Approval("conf-tenant", UserTaskCompletionPolicy.Any, "alice"), waiting).ConfigureAwait(false);
+
         var tenantInstance = (await host.StartAsync("conf-tenant", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
         var plainInstance = (await host.StartAsync("conf-tenant").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("t1", tenantInstance.TenantId);
-        Assert.Equal("t1", Assert.Single(await host.BookmarksAsync(tenantInstance.Id).ConfigureAwait(false)).TenantId);
+        Assert.Equal("t1", Assert.Single(await host.BookmarksAsync(tenantInstance.Id, "t1").ConfigureAwait(false)).TenantId);
 
-        var pending = await host.PendingAsync("alice").ConfigureAwait(false);
-        Assert.Equal([plainInstance.Id], pending.Select(static task => task.InstanceId));
-        var tenantTask = Assert.Single(await host.BookmarksAsync(tenantInstance.Id).ConfigureAwait(false));
+        Assert.Equal([plainInstance.Id], (await host.PendingAsync("alice").ConfigureAwait(false)).Select(static task => task.InstanceId));
+        Assert.Equal([tenantInstance.Id], (await host.PendingAsync("alice", "t1").ConfigureAwait(false)).Select(static task => task.InstanceId));
+        var tenantTask = Assert.Single(await host.BookmarksAsync(tenantInstance.Id, "t1").ConfigureAwait(false));
         Assert.Equal(WorkflowErrors.BookmarkNotFound, (await host.CompleteAsync(tenantTask.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).Error?.Code);
+
+        // 信号只到调用方分区：平台的信号恢复平台的实例，t1 的不动
+        var tenantWaiting = (await host.StartAsync("conf-tenant-signal", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+        var plainWaiting = (await host.StartAsync("conf-tenant-signal").ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(1, (await host.SignalAsync("conf.tenant.go").ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(WorkflowInstanceStatus.Completed, (await host.InstanceAsync(plainWaiting.Id).ConfigureAwait(false)).Status);
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(tenantWaiting.Id, "t1").ConfigureAwait(false)).Status);
     }
 
     /// <summary>
@@ -949,9 +969,12 @@ public abstract class WorkflowEngineConformance
         var running = (await host.StartAsync("conf-purge-wait").ConfigureAwait(false)).ValueOrThrow();
         var purged = (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-purge" }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(3, purged);
-        var store = Services(host);
-        Assert.All(ended, async id => Assert.False((await store.FindAsync(id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue));
-        Assert.True((await store.FindAsync(running.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        foreach (var id in ended)
+        {
+            Assert.False(await host.InstanceExistsAsync(id).ConfigureAwait(false));
+        }
+
+        Assert.True(await host.InstanceExistsAsync(running.Id).ConfigureAwait(false));
         Assert.Equal(0, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
         var until = WorkflowDefinitionBuilder.Create("conf-delay-until")
             .AddStart().AddNode("wait", ActivityTypes.Delay, configure: node => node.WithProperty(DelayActivity.UntilProperty, "'2000-01-01T00:00:00Z'")).AddNode("a", RecordActivity.TypeName).AddEnd()
@@ -1011,18 +1034,18 @@ public abstract class WorkflowEngineConformance
 
         Assert.Single(results, static result => result.IsSuccess);
         Assert.Single(results, static result => result.Error?.Code == WorkflowErrors.ActiveInstanceExists);
-        var instances = (await host.Services.GetRequiredService<IWorkflowInstanceStore>().ListAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationId = "race-1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var instances = await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationId = "race-1" }).ConfigureAwait(false);
         Assert.Equal(results.Single(static result => result.IsSuccess).ValueOrThrow().Id, Assert.Single(instances).Id);
     }
 
     /// <summary>
-    /// 用例 25：定义的名字与版本按租户隔离。
+    /// 用例 25：定义按分区隔离。
     /// </summary>
     /// <remarks>
-    /// 两个租户的同名定义各自从版本 1 编号；按名字或 ID 启动、目录的查找、列表、按 ID 的改动与新版本都看不到别的租户的定义；全局定义各租户都能启动，本租户有同名已发布定义时优先用它；无租户的调用看得到全部。
+    /// 平台与各租户各是一个分区：同名定义各自从版本 1 编号；按名字或 ID 启动、目录的查找、列表、按 ID 的改动与新版本都看不到别的分区的定义；平台的定义对租户不可见（没有全局定义），租户的定义对平台也不可见；迁移只在同一分区里；重用策略只在同一分区里查重。
     /// </remarks>
     [Fact]
-    public async Task Definitions_AreIsolatedPerTenant()
+    public async Task Definitions_AreIsolatedPerPartition()
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
@@ -1033,14 +1056,13 @@ public abstract class WorkflowEngineConformance
         Assert.Equal((1, "t1"), (t1.Version, t1.TenantId));
         Assert.Equal((1, "t2"), (t2.Version, t2.TenantId));
 
-        // t2 启动不到 t1 的定义：按名字（当前租户或请求带的租户）、按 ID 都是不存在
+        // t2 启动不到 t1 的定义：按名字、按 ID 都是不存在
         Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-def")).ConfigureAwait(false)).Error?.Code);
-        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.StartAsync("conf-tenant-def", tenantId: "t2").ConfigureAwait(false)).Error?.Code);
         Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = t1.Id }, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
         var started = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, "conf-tenant-def")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((t1.Id, "t1"), (started.DefinitionId, started.TenantId));
 
-        // t2 的目录看不到、改不动 t1 的定义；新版本以 t2 自己的最新版本为底
+        // t2 的目录看不到、改不动 t1 的定义；新版本以 t2 自己的最新版本为底；不能把定义建到别的租户名下
         await AsTenantAsync(host, "t2", async sp =>
         {
             var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
@@ -1051,118 +1073,308 @@ public abstract class WorkflowEngineConformance
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.DisableAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.ArchiveAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.UpdateAsync(t1 with { DisplayName = "taken" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.CreateAsync(Labeled("conf-tenant-def", "forged") with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             var next = (await catalog.NewVersionAsync("conf-tenant-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal((2, "t2", "t2"), (next.Version, next.TenantId, next.Nodes.Single(static node => node.Id == "a").Properties[RecordActivity.LabelProperty]!.GetValue<string>()));
             return true;
         }).ConfigureAwait(false);
         Assert.Equal(WorkflowDefinitionStatus.Published, (await AsTenantAsync(host, "t1", async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().FindAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow()).ConfigureAwait(false)).Status);
 
-        // 全局定义：各租户都能按名字启动，实例属于调用方租户；本租户发布了同名定义后优先用本租户的
-        var shared = await AsTenantAsync(host, null, sp => PublishAsync(sp, Labeled("conf-tenant-shared", "global"))).ConfigureAwait(false);
-        Assert.Null(shared.TenantId);
-        var fromShared = (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Equal((shared.Id, "t2"), (fromShared.DefinitionId, fromShared.TenantId));
+        // 平台的定义对租户不可见：租户按名字、按 ID 都启动不到；租户发布同名定义从版本 1 编号，与平台的互不相干
+        var platform = await AsTenantAsync(host, null, sp => PublishAsync(sp, Labeled("conf-tenant-shared", "platform"))).ConfigureAwait(false);
+        Assert.Equal((1, (string?)null), (platform.Version, platform.TenantId));
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = platform.Id }, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
         var own = await AsTenantAsync(host, "t2", sp => PublishAsync(sp, Labeled("conf-tenant-shared", "t2"))).ConfigureAwait(false);
         Assert.Equal((1, "t2"), (own.Version, own.TenantId));
         Assert.Equal(own.Id, (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow().DefinitionId);
-        Assert.Equal(shared.Id, (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow().DefinitionId);
+        var platformStarted = (await AsTenantAsync(host, null, sp => StartByNameAsync(sp, "conf-tenant-shared")).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((platform.Id, (string?)null), (platformStarted.DefinitionId, platformStarted.TenantId));
 
-        // 迁移只迁到同一名字空间里的同名版本：全局定义的实例不能迁到租户的同名定义上
-        var waitingGlobal = await AsTenantAsync(host, null, sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
+        // 平台同样看不到、改不动租户的定义，也不能把定义建到租户名下
+        await AsTenantAsync(host, null, async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            Assert.Empty((await catalog.ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.False((await catalog.FindAsync(own.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.DisableAsync(own.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.CreateAsync(Labeled("conf-tenant-def", "forged") with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = t1.Id }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            return true;
+        }).ConfigureAwait(false);
+
+        // 迁移只在同一分区里：t1 的实例不能迁到平台的同名定义上
+        var waitingPlatform = await AsTenantAsync(host, null, sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
         var waitingOwn = await AsTenantAsync(host, "t1", sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
-        var running = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = waitingGlobal.Id }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var running = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { DefinitionId = waitingOwn.Id }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Running, "t1"), (running.Status, running.TenantId));
-        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.EngineAsync(engine => engine.MigrateAsync(new WorkflowMigration(running.Id, waitingOwn.Id), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().MigrateAsync(new WorkflowMigration(running.Id, waitingPlatform.Id), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
 
-        // 重用策略只在同一租户里查重：别的租户同一关联 ID 的实例既不挡住启动，也不会被当成已有实例返回
-        var reuse = new WorkflowStartRequest { DefinitionId = waitingGlobal.Id, CorrelationId = "conf-doc", ReusePolicy = WorkflowReusePolicy.RejectActive };
+        // 重用策略只在同一分区里查重：别的租户同一关联 ID 的实例既不挡住启动，也不会被当成已有实例返回
+        var waitingT2 = await AsTenantAsync(host, "t2", sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
+        var reuse = new WorkflowStartRequest { Name = "conf-tenant-migrate", CorrelationId = "conf-doc", ReusePolicy = WorkflowReusePolicy.RejectActive };
         var inT1 = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         var inT2 = (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse with { ReusePolicy = WorkflowReusePolicy.ReturnActive }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.NotEqual(inT1.Id, inT2.Id);
-        Assert.Equal(("t1", "t2"), (inT1.TenantId, inT2.TenantId));
+        Assert.Equal(("t1", "t2", waitingT2.Id), (inT1.TenantId, inT2.TenantId, inT2.DefinitionId));
         Assert.Equal(WorkflowErrors.ActiveInstanceExists, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
-
-        // 无租户的调用看得到全部租户的定义
-        var all = await AsTenantAsync(host, null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
-        Assert.Equal(["t1", "t2", "t2"], all.Select(static definition => definition.TenantId).Order(StringComparer.Ordinal));
     }
 
     /// <summary>
-    /// 用例 26：有租户的调用看不到、操作不了别的租户的实例与书签。
+    /// 用例 26：调用只看得到、操作得了自己分区的实例与书签。
     /// </summary>
     /// <remarks>
-    /// 按实例 ID 的控制、按书签 ID 的恢复、用户任务与外部任务的操作、启动到别的租户都按不存在处理，清理只清本租户；本租户照常操作，无租户的调用照旧操作全部。
+    /// 租户 t2 与平台对 t1 的实例：按实例 ID 的控制、按书签 ID 的恢复、用户任务与外部任务的操作都按不存在处理，查询只给自己分区的，清理只清自己分区的；t1 照常操作自己的实例。平台不再看得到、操作得了租户的实例。
     /// </remarks>
     [Fact]
-    public async Task Instances_AreIsolatedPerTenant()
+    public async Task Instances_AreIsolatedPerPartition()
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var approval = await AsTenantAsync(host, null, sp => PublishAsync(sp, Approval("conf-tenant-instance", UserTaskCompletionPolicy.Any, "alice"))).ConfigureAwait(false);
-        var external = await AsTenantAsync(host, null, sp => PublishAsync(sp, WorkflowDefinitionBuilder.Create("conf-tenant-external")
+        var approvalDefinition = Approval("conf-tenant-instance", UserTaskCompletionPolicy.Any, "alice");
+        var externalDefinition = WorkflowDefinitionBuilder.Create("conf-tenant-external")
             .AddStart().AddExternalTask("pay", "conf.tenant.pay").AddEnd()
             .AddTransition("start", "pay").AddTransition("pay", "end")
-            .Build())).ConfigureAwait(false);
-        var t1 = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, approval.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
-        var t2 = (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, approval.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
-        var t1Task = Assert.Single(await host.BookmarksAsync(t1.Id).ConfigureAwait(false));
-        var t1External = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, external.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
+            .Build();
+        foreach (var tenant in new[] { null, "t1", "t2" })
+        {
+            await AsTenantAsync(host, tenant, sp => PublishAsync(sp, approvalDefinition)).ConfigureAwait(false);
+            await AsTenantAsync(host, tenant, sp => PublishAsync(sp, externalDefinition)).ConfigureAwait(false);
+        }
+
+        var t1 = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, approvalDefinition.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
+        var t2 = (await AsTenantAsync(host, "t2", sp => StartByNameAsync(sp, approvalDefinition.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
+        var platform = (await AsTenantAsync(host, null, sp => StartByNameAsync(sp, approvalDefinition.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
+        var t1Task = Assert.Single(await host.BookmarksAsync(t1.Id, "t1").ConfigureAwait(false));
+        var t1External = (await AsTenantAsync(host, "t1", sp => StartByNameAsync(sp, externalDefinition.Name.Value)).ConfigureAwait(false)).ValueOrThrow();
         var fetched = Assert.Single((await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowExternalTaskService>().FetchAsync("conf.tenant.pay", "w1", TimeSpan.FromMinutes(5), 10, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
 
-        // t2 对 t1 的实例：按实例 ID 的控制一律不存在
-        await AsTenantAsync(host, "t2", async sp =>
+        // t2 与平台对 t1 的实例：按实例 ID 的控制一律不存在
+        foreach (var outsider in new[] { "t2", null })
         {
-            var engine = sp.GetRequiredService<IWorkflowEngine>();
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SuspendAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.ResumeInstanceAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.CancelAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.TerminateAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.RetryAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SetVariablesAsync(new WorkflowVariableUpdate(t1.Id, new JsonObject { ["x"] = 1 }), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.JumpAsync(new WorkflowJump(t1.Id, "end"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.MigrateAsync(new WorkflowMigration(t1.Id, approval.Id), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            var mine = outsider is null ? platform : t2;
+            await AsTenantAsync(host, outsider, async sp =>
+            {
+                var engine = sp.GetRequiredService<IWorkflowEngine>();
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SuspendAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.ResumeInstanceAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.CancelAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.TerminateAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.RetryAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SetVariablesAsync(new WorkflowVariableUpdate(t1.Id, new JsonObject { ["x"] = 1 }), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.JumpAsync(new WorkflowJump(t1.Id, "end"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.MigrateAsync(new WorkflowMigration(t1.Id, mine.DefinitionId), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
 
-            // 按书签 ID 恢复、用户任务与外部任务的操作都看不到 t1 的书签
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await engine.ResumeAsync(t1Task.Id, null, null, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            var tasks = sp.GetRequiredService<IWorkflowTaskService>();
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.CompleteAsync(new UserTaskCompletion(t1Task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.TransferAsync(new UserTaskTransfer(t1Task.Id, "alice", "bob"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.AddAssigneesAsync(new UserTaskAddition(t1Task.Id, "alice", ["bob"]), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            var externals = sp.GetRequiredService<IWorkflowExternalTaskService>();
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.CompleteAsync(new ExternalTaskCompletion(fetched.Id, "w1", null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.FailAsync(new ExternalTaskFailure(fetched.Id, "w1", "boom"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                // 按书签 ID 恢复、用户任务与外部任务的操作都看不到 t1 的书签
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await engine.ResumeAsync(t1Task.Id, null, null, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                var tasks = sp.GetRequiredService<IWorkflowTaskService>();
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.CompleteAsync(new UserTaskCompletion(t1Task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.TransferAsync(new UserTaskTransfer(t1Task.Id, "alice", "bob"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.AddAssigneesAsync(new UserTaskAddition(t1Task.Id, "alice", ["bob"]), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal([mine.Id], (await tasks.PendingAsync("alice", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static task => task.InstanceId));
+                var externals = sp.GetRequiredService<IWorkflowExternalTaskService>();
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.CompleteAsync(new ExternalTaskCompletion(fetched.Id, "w1", null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.FailAsync(new ExternalTaskFailure(fetched.Id, "w1", "boom"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
 
-            // 实例查询只给本租户的：按 ID 无值，列表与计数限定本租户，点名别的租户得空，节点实例不存在
-            var byName = new WorkflowInstanceQuery { DefinitionName = approval.Name };
-            Assert.False((await engine.FindInstanceAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            Assert.True((await engine.FindInstanceAsync(t2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            Assert.Equal([t2.Id], (await engine.ListInstancesAsync(byName, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
-            Assert.Empty((await engine.ListInstancesAsync(byName with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-            Assert.Equal((1L, 0L), ((await engine.CountInstancesAsync(byName, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), (await engine.CountInstancesAsync(byName with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
-            Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.NodeInstancesAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            Assert.NotEmpty((await engine.NodeInstancesAsync(t2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                // 实例查询只给自己分区的：按 ID 无值，列表与计数只有自己的，节点实例不存在
+                var byName = new WorkflowInstanceQuery { DefinitionName = approvalDefinition.Name };
+                Assert.False((await engine.FindInstanceAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.True((await engine.FindInstanceAsync(mine.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+                Assert.Equal([mine.Id], (await engine.ListInstancesAsync(byName, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id));
+                Assert.Equal(1L, (await engine.CountInstancesAsync(byName, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.NodeInstancesAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.NotEmpty((await engine.NodeInstancesAsync(mine.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                return true;
+            }).ConfigureAwait(false);
+        }
 
-            // 不能在别的租户名下启动实例
-            Assert.Equal(WorkflowErrors.DefinitionNotFound, (await engine.StartAsync(new WorkflowStartRequest { DefinitionId = approval.Id, TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            return true;
-        }).ConfigureAwait(false);
-        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(t1.Id).ConfigureAwait(false)).Status);
-        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(t1External.Id).ConfigureAwait(false)).Status);
-        Assert.False((await host.InstanceAsync(t1.Id).ConfigureAwait(false)).Variables.ContainsKey("x"));
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(t1.Id, "t1").ConfigureAwait(false)).Status);
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(t1External.Id, "t1").ConfigureAwait(false)).Status);
+        Assert.False((await host.InstanceAsync(t1.Id, "t1").ConfigureAwait(false)).Variables.ContainsKey("x"));
 
         // 本租户照常操作：t1 挂起、终止自己的实例
         Assert.Equal(WorkflowInstanceStatus.Suspended, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().SuspendAsync(t1.Id, "pause", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(WorkflowInstanceStatus.Terminated, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().TerminateAsync(t1.Id, "done", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
 
-        // 清理只清本租户：t2 清不到 t1 已结束的实例，无租户的调用清得到
-        var purgeAll = new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddMinutes(1), DefinitionName = approval.Name };
+        // 清理只清自己分区的：t2 与平台清不到 t1 已结束的实例，t1 自己清得到
+        var purgeAll = new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddMinutes(1), DefinitionName = approvalDefinition.Name };
         Assert.Equal(0, (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().PurgeAsync(purgeAll, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(WorkflowInstanceStatus.Terminated, (await host.InstanceAsync(t1.Id).ConfigureAwait(false)).Status);
+        Assert.Equal(0, (await AsTenantAsync(host, null, sp => sp.GetRequiredService<IWorkflowEngine>().PurgeAsync(purgeAll, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(WorkflowInstanceStatus.Terminated, (await host.InstanceAsync(t1.Id, "t1").ConfigureAwait(false)).Status);
+        Assert.Equal(1, (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().PurgeAsync(purgeAll, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.False(await host.InstanceExistsAsync(t1.Id, "t1").ConfigureAwait(false));
+    }
 
-        // 无租户的调用照旧看得到、操作得了全部
-        Assert.Equal(2L, (await AsTenantAsync(host, null, sp => sp.GetRequiredService<IWorkflowEngine>().CountInstancesAsync(new WorkflowInstanceQuery { DefinitionName = approval.Name }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(WorkflowInstanceStatus.Suspended, (await AsTenantAsync(host, null, sp => sp.GetRequiredService<IWorkflowEngine>().SuspendAsync(t2.Id, "platform", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
-        Assert.Equal(1, (await AsTenantAsync(host, null, sp => sp.GetRequiredService<IWorkflowEngine>().PurgeAsync(purgeAll, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+    /// <summary>
+    /// 用例 27：业务回滚时引擎的写入一起回滚。
+    /// </summary>
+    /// <remarks>
+    /// 在调用方的调用里发起流程，之后业务失败、调用回滚：实例、节点实例与书签都不留（<see cref="JoinsCallerTransaction"/> 的 Provider）；调用提交时都在。不加入事务的 Provider（内存实现）写入立即生效，回滚不撤销，套件照实断言这一点。
+    /// </remarks>
+    [Fact]
+    public async Task Transaction_BusinessRollback_DiscardsTheWorkflowWrites()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(Approval("conf-tx-start", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
+
+        string? rolledBack = null;
+        await host.AsTenantAsync(null, async sp =>
+        {
+            rolledBack = (await StartByNameAsync(sp, "conf-tx-start").ConfigureAwait(false)).ValueOrThrow().Id;
+            // 调用里读得到自己刚写的（读己之写）
+            Assert.True((await sp.GetRequiredService<IWorkflowEngine>().FindInstanceAsync(rolledBack, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            return true;
+        }, rollback: true).ConfigureAwait(false);
+        Assert.Equal(!JoinsCallerTransaction, await host.InstanceExistsAsync(rolledBack!).ConfigureAwait(false));
+        Assert.Equal(JoinsCallerTransaction ? 0 : 1, (await host.BookmarksAsync(rolledBack!).ConfigureAwait(false)).Count);
+        Assert.Equal(JoinsCallerTransaction ? 0 : 1, (await host.NodeInstancesAsync(rolledBack!).ConfigureAwait(false)).Count(static node => node.Status == WorkflowNodeInstanceStatus.Suspended));
+
+        var committed = await host.AsTenantAsync(null, async sp => (await StartByNameAsync(sp, "conf-tx-start").ConfigureAwait(false)).ValueOrThrow().Id).ConfigureAwait(false);
+        Assert.True(await host.InstanceExistsAsync(committed).ConfigureAwait(false));
+        Assert.Single(await host.BookmarksAsync(committed).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 28：办理任务随业务提交或回滚。
+    /// </summary>
+    /// <remarks>
+    /// 在调用里办理最后一个任务，流程走到结果结束节点完成；业务随后失败、调用回滚：实例仍在运行、任务仍在待办（加入事务的 Provider）。调用提交时实例完成、结果处理器收到结论。
+    /// </remarks>
+    [Fact]
+    public async Task Transaction_TaskCompletion_CommitsOrRollsBackWithTheBusiness()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(Approval("conf-tx-complete", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
+        var instance = (await host.StartAsync("conf-tx-complete").ConfigureAwait(false)).ValueOrThrow();
+        var task = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false));
+
+        await host.AsTenantAsync(null, async sp =>
+        {
+            var completed = (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal(WorkflowInstanceStatus.Completed, completed.Status);
+            return true;
+        }, rollback: true).ConfigureAwait(false);
+        if (JoinsCallerTransaction)
+        {
+            Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(instance.Id).ConfigureAwait(false)).Status);
+            Assert.Equal([task.Id], (await host.PendingAsync("alice").ConfigureAwait(false)).Select(static pending => pending.Id));
+            var outcome = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+            Assert.Equal(WorkflowInstanceStatus.Completed, outcome.Status);
+        }
+
+        var done = await host.InstanceAsync(instance.Id).ConfigureAwait(false);
+        Assert.Equal((WorkflowInstanceStatus.Completed, UserTaskOutcomes.Approved), (done.Status, done.Outcome));
+        Assert.Empty(await host.PendingAsync("alice").ConfigureAwait(false));
+        Assert.Contains(UserTaskOutcomes.Approved, log.Outcomes);
+    }
+
+    /// <summary>
+    /// 用例 29：实例锁持有到调用结束，回滚后立即释放、不泄漏。
+    /// </summary>
+    /// <remarks>
+    /// 调用里挂起一个实例后，别的调用在它结束之前改这个实例拿不到锁（<c>WORKFLOW_TIMEOUT_001</c>），不会读到提交之前的旧状态再改写；调用回滚后锁立即释放，别的调用照常操作。
+    /// </remarks>
+    [Fact]
+    public async Task Transaction_InstanceLock_IsHeldUntilTheInvocationEnds_AndReleasedOnRollback()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(Waiting("conf-tx-lock")).ConfigureAwait(false);
+        var instance = (await host.StartAsync("conf-tx-lock").ConfigureAwait(false)).ValueOrThrow();
+
+        await host.AsTenantAsync(null, async sp =>
+        {
+            Assert.Equal(WorkflowInstanceStatus.Suspended, (await sp.GetRequiredService<IWorkflowEngine>().SuspendAsync(instance.Id, "hold", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Status);
+            // 同一调用里再操作同一实例：本作用域持有的锁空闲，复用它
+            Assert.Equal(WorkflowInstanceStatus.Running, (await sp.GetRequiredService<IWorkflowEngine>().ResumeInstanceAsync(instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Status);
+            // 别的调用（自己的作用域）等不到锁
+            Assert.Equal(WorkflowErrors.LockTimeout, (await host.EngineAsync(engine => engine.TerminateAsync(instance.Id, "intruder", CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+            return true;
+        }, rollback: true).ConfigureAwait(false);
+
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(instance.Id).ConfigureAwait(false)).Status);
+        Assert.Equal(WorkflowInstanceStatus.Terminated, (await host.EngineAsync(engine => engine.TerminateAsync(instance.Id, "after", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+    }
+
+    /// <summary>
+    /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝。
+    /// </summary>
+    /// <remarks>
+    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_DENIED_001</c>，活动没有执行、什么也不落库；查询照常。不加入事务的 Provider 不看调用是否只读。
+    /// </remarks>
+    [Fact]
+    public async Task Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-tx-readonly").AddStart().AddNode("a", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+            .AddTransition("start", "a").AddTransition("a", "wait").AddTransition("wait", "end").Build()).ConfigureAwait(false);
+        var existing = (await host.StartAsync("conf-tx-readonly").ConfigureAwait(false)).ValueOrThrow();
+        var executed = log.Executed.Count;
+
+        var started = await host.AsTenantAsync(null, async sp =>
+        {
+            var engine = sp.GetRequiredService<IWorkflowEngine>();
+            Assert.True((await engine.FindInstanceAsync(existing.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            return await StartByNameAsync(sp, "conf-tx-readonly").ConfigureAwait(false);
+        }, readOnly: true).ConfigureAwait(false);
+        if (JoinsCallerTransaction)
+        {
+            Assert.Equal("PERSISTENCE_DENIED_001", started.Error?.Code);
+            Assert.Equal(executed, log.Executed.Count);
+            Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-tx-readonly") }).ConfigureAwait(false));
+        }
+        else
+        {
+            Assert.True(started.IsSuccess);
+        }
+    }
+
+    /// <summary>
+    /// 用例 31：到期书签轮询覆盖平台与每个启用的租户分区。
+    /// </summary>
+    /// <remarks>
+    /// 平台、<c>t1</c>、<c>t2</c> 各有一个到期的延时：一次次轮询把它们都恢复到完成，每个都在自己的分区里；停用的租户 <c>t-off</c> 不轮询，它的延时等租户重新启用再接续。
+    /// </remarks>
+    [Fact]
+    public async Task Poller_CoversThePlatformAndEveryEnabledTenant()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var definition = WorkflowDefinitionBuilder.Create("conf-poll-tenants").AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(50)).AddEnd()
+            .AddTransition("start", "wait").AddTransition("wait", "end").Build();
+        var tenants = new[] { null, "t1", "t2", ConformanceTenants.Disabled };
+        var started = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var tenant in tenants)
+        {
+            // 每个分区各发布一次：定义按分区隔离，跨分区没有批量
+            await host.PublishManyAsync(tenant, definition).ConfigureAwait(false);
+            started[tenant ?? string.Empty] = (await host.StartAsync("conf-poll-tenants", tenantId: tenant).ConfigureAwait(false)).ValueOrThrow().Id;
+        }
+
+        await WaitUntilAsync(async () =>
+        {
+            await host.PollAsync().ConfigureAwait(false);
+            foreach (var tenant in new[] { null, "t1", "t2" })
+            {
+                if (!(await host.InstanceAsync(started[tenant ?? string.Empty], tenant).ConfigureAwait(false)).IsFinal)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }).ConfigureAwait(false);
+        foreach (var tenant in new[] { null, "t1", "t2" })
+        {
+            var done = await host.InstanceAsync(started[tenant ?? string.Empty], tenant).ConfigureAwait(false);
+            Assert.Equal((WorkflowInstanceStatus.Completed, tenant), (done.Status, done.TenantId));
+        }
+
+        await host.PollAsync().ConfigureAwait(false);
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(started[ConformanceTenants.Disabled], ConformanceTenants.Disabled).ConfigureAwait(false)).Status);
     }
 
     /// <summary>
@@ -1198,38 +1410,10 @@ public abstract class WorkflowEngineConformance
         => services.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = name }, CancellationToken.None);
 
     /// <summary>
-    /// 以给定租户（空为无租户）在一次经管道的调用里执行。
+    /// 以给定租户（空为平台）在一次经管道的调用里执行。
     /// </summary>
-    /// <remarks>
-    /// 租户写进调用的安全上下文，目录与引擎经调用上下文访问器读到它。
-    /// </remarks>
-    private static async ValueTask<T> AsTenantAsync<T>(WorkflowEngineHost host, string? tenantId, Func<IServiceProvider, ValueTask<T>> action)
-    {
-        await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
-        var outcome = default(T);
-        ExceptionDispatchInfo? failure = null;
-        var invoked = await host.Services.GetRequiredService<App>().InvokeAsync(context, async invocation =>
-        {
-            if (tenantId is not null)
-            {
-                invocation.SetTenant(new TenantContext(tenantId));
-            }
-
-            // 断言失败不交给管道翻译成意外错误：记下来在调用之外原样抛出
-            try
-            {
-                outcome = await action(invocation.Services).ConfigureAwait(false);
-            }
-            catch (Exception exception)
-            {
-                failure = ExceptionDispatchInfo.Capture(exception);
-            }
-        }).ConfigureAwait(false);
-        failure?.Throw();
-        Assert.True(invoked.IsSuccess);
-        return outcome!;
-    }
+    private static ValueTask<T> AsTenantAsync<T>(WorkflowEngineHost host, string? tenantId, Func<IServiceProvider, ValueTask<T>> action)
+        => host.AsTenantAsync(tenantId, action);
 
     /// <summary>
     /// 带实例级超时的定义：开始 → 记录 → 等一小时。
@@ -1273,6 +1457,8 @@ public abstract class WorkflowEngineConformance
         ArgumentNullException.ThrowIfNull(log);
         services.AddSingleton(log);
         services.AddSingleton<IMessagePublisher>(log);
+        // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
+        services.TryAddSingleton<ITenantStore, ConformanceTenants>();
         services.AddActivity<RecordActivity>(RecordActivity.TypeName);
         services.AddWorkflowOutcomeHandler<RecordingOutcomeHandler>();
     }
@@ -1293,11 +1479,6 @@ public abstract class WorkflowEngineConformance
             .AddTransition("start", "approve").AddTransition("approve", "check")
             .AddTransition("check", "approved", "outcome == 'approved'").AddDefaultTransition("check", "rejected")
             .Build();
-
-    /// <summary>
-    /// 实例存储。
-    /// </summary>
-    private static IWorkflowInstanceStore Services(WorkflowEngineHost host) => host.Services.GetRequiredService<IWorkflowInstanceStore>();
 
     /// <summary>
     /// 轮询直到条件成立或超时。

@@ -4,8 +4,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -22,7 +20,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// 用户任务服务。
 /// </summary>
 /// <remarks>
-/// 待办按书签查、完成经引擎消费书签、转办、加签、认领与释放在实例锁内改书签与节点状态、退回经引擎跳转、催办只发事件。作用域服务：当前租户取自本次调用。
+/// 待办按书签查、完成经引擎消费书签、转办、加签、认领与释放在实例锁内改书签与节点状态、退回经引擎跳转、催办只发事件。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowTaskService : IWorkflowTaskService
@@ -52,10 +50,6 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
-    /// <summary>
-    /// 实例锁。
-    /// </summary>
-    private readonly IWorkflowInstanceLock _lock;
 
     /// <summary>
     /// 时钟。
@@ -68,14 +62,14 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     private readonly WorkflowEventPublisher _events;
 
     /// <summary>
-    /// 本次调用的上下文访问器。
+    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有。
     /// </summary>
-    private readonly IInvocationAccessor? _invocation;
+    private readonly WorkflowScope _scope;
 
     /// <summary>
     /// 创建（作用域服务）。
     /// </summary>
-    public WorkflowTaskService(IWorkflowEngine engine, IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, IWorkflowInstanceLock instanceLock, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
+    public WorkflowTaskService(IWorkflowEngine engine, IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -83,34 +77,52 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
         _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _bookmarks = bookmarks ?? throw new ArgumentNullException(nameof(bookmarks));
-        _lock = instanceLock ?? throw new ArgumentNullException(nameof(instanceLock));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _events = new WorkflowEventPublisher(services.GetService<IMessagePublisher>(), loggerFactory.CreateLogger<WorkflowTaskService>());
-        _invocation = services.GetService<IInvocationAccessor>();
+        _scope = services.GetRequiredService<WorkflowScope>();
     }
 
+    /// <summary>
+    /// 调用方的分区：调用的租户，空为平台。
+    /// </summary>
+    private string? Tenant => _scope.TenantId;
+
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<UserTask>>> PendingAsync(string assigneeId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<UserTask>>> PendingAsync(string assigneeId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(assigneeId);
-        var found = await _bookmarks.ByKindAndKeyAsync(BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false);
-        return found.TryGetValue(out var bookmarks) ? await ToTasksAsync(bookmarks, cancellationToken).ConfigureAwait(false) : found.Error!;
+        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.pending", async () =>
+        {
+            var found = await _bookmarks.ByKindAndKeyAsync(Tenant, BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false);
+            return found.TryGetValue(out var bookmarks) ? await ToTasksAsync(bookmarks, cancellationToken).ConfigureAwait(false) : found.Error!;
+        }, service => service.PendingAsync(assigneeId, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<UserTask>>> PendingByInstanceAsync(string instanceId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<UserTask>>> PendingByInstanceAsync(string instanceId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
-        var found = await _bookmarks.ByInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
-        return found.TryGetValue(out var bookmarks)
-            ? await ToTasksAsync(bookmarks.Where(static bookmark => string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)).ToList(), cancellationToken).ConfigureAwait(false)
-            : found.Error!;
+        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.pending-by-instance", async () =>
+        {
+            var found = await _bookmarks.ByInstanceAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
+            return found.TryGetValue(out var bookmarks)
+                ? await ToTasksAsync(bookmarks.Where(static bookmark => string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)).ToList(), cancellationToken).ConfigureAwait(false)
+                : found.Error!;
+        }, service => service.PendingByInstanceAsync(instanceId, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<UserTask>>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<UserTask>>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.query", () => QueryCoreAsync(query, cancellationToken), service => service.QueryAsync(query, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 按条件查询待办（在事务里）。
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyList<UserTask>>> QueryCoreAsync(UserTaskQuery query, CancellationToken cancellationToken)
+    {
         var assigneeId = query.AssigneeId?.Trim();
         var instanceId = query.InstanceId?.Trim();
         if (string.IsNullOrEmpty(assigneeId) && string.IsNullOrEmpty(instanceId))
@@ -120,8 +132,8 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
 
         // 候选集按索引最窄的一边取：有指派人按种类与键，否则按实例；其余条件在内存里过滤
         var found = !string.IsNullOrEmpty(assigneeId)
-            ? await _bookmarks.ByKindAndKeyAsync(BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false)
-            : await _bookmarks.ByInstanceAsync(instanceId!, cancellationToken).ConfigureAwait(false);
+            ? await _bookmarks.ByKindAndKeyAsync(Tenant, BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false)
+            : await _bookmarks.ByInstanceAsync(Tenant, instanceId!, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var bookmarks))
         {
             return found.Error!;
@@ -151,91 +163,64 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> CompleteAsync(IReadOnlyList<UserTaskCompletion> completions, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> CompleteAsync(IReadOnlyList<UserTaskCompletion> completions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(completions);
-        var results = new List<Result<WorkflowInstance>>(completions.Count);
-        foreach (var completion in completions)
-        {
-            results.Add(await CompleteOneAsync(completion, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService, WorkflowInstance>(completions.Count, "workflow.task.complete", () => EachAsync(completions, CompleteOneAsync, cancellationToken), service => service.CompleteAsync(completions, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> TransferAsync(IReadOnlyList<UserTaskTransfer> transfers, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> TransferAsync(IReadOnlyList<UserTaskTransfer> transfers, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transfers);
-        var results = new List<Result>(transfers.Count);
-        foreach (var transfer in transfers)
-        {
-            results.Add(await TransferOneAsync(transfer, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService>(transfers.Count, "workflow.task.transfer", () => EachAsync(transfers, TransferOneAsync, cancellationToken), service => service.TransferAsync(transfers, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> AddAssigneesAsync(IReadOnlyList<UserTaskAddition> additions, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> AddAssigneesAsync(IReadOnlyList<UserTaskAddition> additions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(additions);
-        var results = new List<Result>(additions.Count);
-        foreach (var addition in additions)
-        {
-            results.Add(await AddOneAsync(addition, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService>(additions.Count, "workflow.task.add-assignees", () => EachAsync(additions, AddOneAsync, cancellationToken), service => service.AddAssigneesAsync(additions, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> ClaimAsync(IReadOnlyList<UserTaskClaim> claims, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> ClaimAsync(IReadOnlyList<UserTaskClaim> claims, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(claims);
-        var results = new List<Result>(claims.Count);
-        foreach (var claim in claims)
-        {
-            results.Add(await ClaimOneAsync(claim, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService>(claims.Count, "workflow.task.claim", () => EachAsync(claims, ClaimOneAsync, cancellationToken), service => service.ClaimAsync(claims, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> ReleaseAsync(IReadOnlyList<UserTaskRelease> releases, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> ReleaseAsync(IReadOnlyList<UserTaskRelease> releases, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(releases);
-        var results = new List<Result>(releases.Count);
-        foreach (var release in releases)
-        {
-            results.Add(await ReleaseOneAsync(release, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService>(releases.Count, "workflow.task.release", () => EachAsync(releases, ReleaseOneAsync, cancellationToken), service => service.ReleaseAsync(releases, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ReturnAsync(IReadOnlyList<UserTaskReturn> returns, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ReturnAsync(IReadOnlyList<UserTaskReturn> returns, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(returns);
-        var results = new List<Result<WorkflowInstance>>(returns.Count);
-        foreach (var request in returns)
-        {
-            results.Add(await ReturnOneAsync(request, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return _scope.RunBatchAsync<IWorkflowTaskService, WorkflowInstance>(returns.Count, "workflow.task.return", () => EachAsync(returns, ReturnOneAsync, cancellationToken), service => service.ReturnAsync(returns, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> UrgeAsync(IReadOnlyList<UserTaskUrge> urges, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> UrgeAsync(IReadOnlyList<UserTaskUrge> urges, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(urges);
-        var results = new List<Result>(urges.Count);
-        foreach (var urge in urges)
+        return _scope.RunBatchAsync<IWorkflowTaskService>(urges.Count, "workflow.task.urge", () => EachAsync(urges, UrgeOneAsync, cancellationToken), service => service.UrgeAsync(urges, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 按入参顺序逐项执行，逐项结果。
+    /// </summary>
+    private static async ValueTask<IReadOnlyList<TResult>> EachAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<TItem, CancellationToken, ValueTask<TResult>> action, CancellationToken cancellationToken)
+    {
+        var results = new List<TResult>(items.Count);
+        foreach (var item in items)
         {
-            results.Add(await UrgeOneAsync(urge, cancellationToken).ConfigureAwait(false));
+            cancellationToken.ThrowIfCancellationRequested();
+            results.Add(await action(item, cancellationToken).ConfigureAwait(false));
         }
 
         return results;
@@ -323,13 +308,13 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
             }
 
             bookmark.Key = target;
-            var saved = await _bookmarks.SaveAsync([bookmark], cancellationToken).ConfigureAwait(false);
+            var saved = await _bookmarks.SaveAsync(Tenant, [bookmark], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
             }
 
-            saved = await _instances.SaveNodeInstancesAsync([nodeInstance], cancellationToken).ConfigureAwait(false);
+            saved = await _instances.SaveNodeInstancesAsync(Tenant, [nodeInstance], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -371,7 +356,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
             List<WorkflowBookmark> created = policy != UserTaskCompletionPolicy.Sequential
                 ? added.Select(assignee => CloneBookmark(bookmark, assignee)).ToList()
                 : [];
-            var saved = await _instances.SaveNodeInstancesAsync([nodeInstance], cancellationToken).ConfigureAwait(false);
+            var saved = await _instances.SaveNodeInstancesAsync(Tenant, [nodeInstance], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -379,7 +364,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
 
             if (created.Count > 0)
             {
-                saved = await _bookmarks.SaveAsync(created, cancellationToken).ConfigureAwait(false);
+                saved = await _bookmarks.SaveAsync(Tenant, created, cancellationToken).ConfigureAwait(false);
                 if (saved.IsFailure)
                 {
                     return saved;
@@ -430,13 +415,13 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
 
             nodeInstance.State[UserTaskPayloadKeys.ClaimedBy] = claim.ActorId;
             bookmark.Payload[UserTaskPayloadKeys.ClaimedBy] = claim.ActorId;
-            var saved = await _instances.SaveNodeInstancesAsync([nodeInstance], cancellationToken).ConfigureAwait(false);
+            var saved = await _instances.SaveNodeInstancesAsync(Tenant, [nodeInstance], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
             }
 
-            saved = await _bookmarks.SaveAsync([bookmark], cancellationToken).ConfigureAwait(false);
+            saved = await _bookmarks.SaveAsync(Tenant, [bookmark], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -444,7 +429,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
 
             if (siblings.Count > 0)
             {
-                saved = await _bookmarks.DeleteAsync(siblings.Select(static sibling => sibling.Id).ToList(), cancellationToken).ConfigureAwait(false);
+                saved = await _bookmarks.DeleteAsync(Tenant, siblings.Select(static sibling => sibling.Id).ToList(), cancellationToken).ConfigureAwait(false);
                 if (saved.IsFailure)
                 {
                     return saved;
@@ -491,13 +476,13 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
                 .Where(assignee => !string.Equals(assignee, release.ActorId, StringComparison.Ordinal) && !existing.Contains(assignee))
                 .Select(assignee => CloneBookmark(bookmark, assignee))
                 .ToList();
-            var saved = await _instances.SaveNodeInstancesAsync([nodeInstance], cancellationToken).ConfigureAwait(false);
+            var saved = await _instances.SaveNodeInstancesAsync(Tenant, [nodeInstance], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
             }
 
-            saved = await _bookmarks.SaveAsync([bookmark, .. created], cancellationToken).ConfigureAwait(false);
+            saved = await _bookmarks.SaveAsync(Tenant, [bookmark, .. created], cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -544,14 +529,14 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
                 ["at"] = _clock.GetUtcNow(),
             });
             nodeInstance.State[UserTaskPayloadKeys.History] = history;
-            return await _instances.SaveNodeInstancesAsync([nodeInstance], cancellationToken).ConfigureAwait(false);
+            return await _instances.SaveNodeInstancesAsync(Tenant, [nodeInstance], cancellationToken).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
         if (prepared.IsFailure)
         {
             return prepared.Error!;
         }
 
-        // 实例锁不可重入：跳转由引擎自己加锁执行，跳转会取消本节点实例与它的书签
+        // 跳转由引擎自己加锁执行：上一步交还的锁在本作用域里空闲，引擎复用它；跳转会取消本节点实例与它的书签
         var jumped = (await _engine.JumpAsync([new WorkflowJump(peek.InstanceId, target!, request.Comment, null, request.ActorId)], cancellationToken).ConfigureAwait(false))[0];
         if (!jumped.TryGetValue(out var result))
         {
@@ -595,7 +580,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </remarks>
     private async ValueTask<Result<string>> ReturnTargetAsync(UserTaskReturn request, WorkflowBookmark bookmark, WorkflowNodeInstance current, WorkflowInstance instance, CancellationToken cancellationToken)
     {
-        var definitionFound = await _definitions.FindAsync(instance.DefinitionId, cancellationToken).ConfigureAwait(false);
+        var definitionFound = await _definitions.FindAsync(Tenant, instance.DefinitionId, cancellationToken).ConfigureAwait(false);
         if (!definitionFound.TryGetValue(out var definitionMaybe))
         {
             return definitionFound.Error!;
@@ -611,7 +596,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
                 : Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.NodeNotFound, MessageArguments.Of(("id", instance.Id), ("node", target)));
         }
 
-        var nodesFound = await _instances.NodeInstancesAsync(instance.Id, cancellationToken).ConfigureAwait(false);
+        var nodesFound = await _instances.NodeInstancesAsync(Tenant, instance.Id, cancellationToken).ConfigureAwait(false);
         if (!nodesFound.TryGetValue(out var nodeInstances))
         {
             return nodesFound.Error!;
@@ -652,7 +637,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </summary>
     private async ValueTask<Result> WithLockedTaskAsync(WorkflowBookmark peek, string actorId, Func<WorkflowBookmark, WorkflowNodeInstance, WorkflowInstance, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
-        var acquired = await _lock.AcquireAsync(peek.InstanceId, cancellationToken).ConfigureAwait(false);
+        var acquired = await _scope.LockAsync(peek.InstanceId, cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -673,7 +658,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
                 return instanceFound.Error!;
             }
 
-            var nodeFound = await _instances.FindNodeInstanceAsync(bookmark.NodeInstanceId, cancellationToken).ConfigureAwait(false);
+            var nodeFound = await _instances.FindNodeInstanceAsync(Tenant, bookmark.NodeInstanceId, cancellationToken).ConfigureAwait(false);
             if (!nodeFound.TryGetValue(out var nodeMaybe))
             {
                 return nodeFound.Error!;
@@ -693,7 +678,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> FindRunningInstanceAsync(string instanceId, CancellationToken cancellationToken)
     {
-        var instanceFound = await _instances.FindAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        var instanceFound = await _instances.FindAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
         if (!instanceFound.TryGetValue(out var instanceMaybe))
         {
             return instanceFound.Error!;
@@ -733,10 +718,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 找本租户的用户任务书签。
+    /// 找调用方分区的用户任务书签。
     /// </summary>
     /// <remarks>
-    /// 不存在、种类不对或不是本租户的都按不存在处理（不泄露别的租户的任务）。
+    /// 不存在、种类不对或在别的分区的都按不存在处理（不泄露别的租户的任务）。
     /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> FindTenantTaskBookmarkAsync(string taskId, CancellationToken cancellationToken)
     {
@@ -745,13 +730,13 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
             return Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", taskId ?? string.Empty)));
         }
 
-        var found = await _bookmarks.FindAsync(taskId, cancellationToken).ConfigureAwait(false);
+        var found = await _bookmarks.FindAsync(Tenant, taskId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var maybe))
         {
             return found.Error!;
         }
 
-        if (!maybe.TryGetValue(out var bookmark) || !string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal) || !string.Equals(bookmark.TenantId, CurrentTenantId(), StringComparison.Ordinal))
+        if (!maybe.TryGetValue(out var bookmark) || !string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal))
         {
             return Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", taskId)));
         }
@@ -764,7 +749,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> OtherTaskBookmarksAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
-        var found = await _bookmarks.ByInstanceAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+        var found = await _bookmarks.ByInstanceAsync(Tenant, bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var bookmarks))
         {
             return found.Error!;
@@ -785,7 +770,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     /// </remarks>
     private async ValueTask<Result<IReadOnlyList<string>>> AllowedOutcomesAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
-        var instanceFound = await _instances.FindAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+        var instanceFound = await _instances.FindAsync(Tenant, bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
         if (!instanceFound.TryGetValue(out var instanceMaybe))
         {
             return instanceFound.Error!;
@@ -796,7 +781,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
             return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", bookmark.InstanceId)));
         }
 
-        var definitionFound = await _definitions.FindAsync(instance.DefinitionId, cancellationToken).ConfigureAwait(false);
+        var definitionFound = await _definitions.FindAsync(Tenant, instance.DefinitionId, cancellationToken).ConfigureAwait(false);
         if (!definitionFound.TryGetValue(out var definitionMaybe))
         {
             return definitionFound.Error!;
@@ -812,18 +797,17 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 书签 → 任务视图：只保留当前租户、实例运行中的。
+    /// 书签 → 任务视图：只保留实例运行中的（书签本来就只来自调用方的分区）。
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<UserTask>>> ToTasksAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
-        var tenant = CurrentTenantId();
-        var mine = bookmarks.Where(bookmark => string.Equals(bookmark.TenantId, tenant, StringComparison.Ordinal)).ToList();
+        var mine = bookmarks;
         if (mine.Count == 0)
         {
             return Result.Success<IReadOnlyList<UserTask>>([]);
         }
 
-        var found = await _instances.FindManyAsync(mine.Select(static bookmark => bookmark.InstanceId).Distinct(StringComparer.Ordinal).ToList(), cancellationToken).ConfigureAwait(false);
+        var found = await _instances.FindManyAsync(Tenant, mine.Select(static bookmark => bookmark.InstanceId).Distinct(StringComparer.Ordinal).ToList(), cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var instances))
         {
             return found.Error!;
@@ -886,12 +870,6 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
         CcUserIds = WorkflowValues.ToStringList(bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.CcUserIds, out var cc) ? cc : null),
         At = _clock.GetUtcNow(),
     };
-
-    /// <summary>
-    /// 当前调用的租户。
-    /// </summary>
-    private string? CurrentTenantId()
-        => _invocation is not null && _invocation.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant?.Id : null;
 
     /// <summary>
     /// 节点状态里的认领人。

@@ -18,6 +18,12 @@ namespace XiHan.Framework.Workflow.InMemory.Tests;
 public sealed class InMemoryWorkflowEngineConformanceTests : WorkflowEngineConformance
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// 内存实现没有事务：写入立即生效，调用方回滚不撤销。
+    /// </remarks>
+    protected override bool JoinsCallerTransaction => false;
+
+    /// <inheritdoc />
     protected override async Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null)
     {
         var settings = new List<KeyValuePair<string, string?>>

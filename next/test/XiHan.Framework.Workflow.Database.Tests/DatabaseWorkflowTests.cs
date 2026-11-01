@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.InMemory;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
@@ -163,16 +164,24 @@ public sealed class DatabaseWorkflowTests
             new($"{DatabaseWorkflowOptions.ConfigurationSection}:LockLeaseSeconds", "1"),
         ]);
         Assert.Equal(["workflow.execution"], host.App.Graph["xihan.workflow.database"].SelectedCapabilities);
-        Assert.Same(host.Services.GetRequiredService<DatabaseWorkflowDefinitionStore>(), host.Services.GetRequiredService<IWorkflowDefinitionStore>());
-        Assert.Same(host.Services.GetRequiredService<DatabaseWorkflowInstanceStore>(), host.Services.GetRequiredService<IWorkflowInstanceStore>());
-        Assert.Same(host.Services.GetRequiredService<DatabaseWorkflowBookmarkStore>(), host.Services.GetRequiredService<IWorkflowBookmarkStore>());
+        Assert.Contains(feature.Manifest.Requires, static requirement => requirement.Id == "multitenancy.context" && requirement.Optional);
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            // 存储与事务关系按作用域：在调用方的工作单元里读写
+            Assert.Same(scope.ServiceProvider.GetRequiredService<DatabaseWorkflowDefinitionStore>(), scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionStore>());
+            Assert.Same(scope.ServiceProvider.GetRequiredService<DatabaseWorkflowInstanceStore>(), scope.ServiceProvider.GetRequiredService<IWorkflowInstanceStore>());
+            Assert.Same(scope.ServiceProvider.GetRequiredService<DatabaseWorkflowBookmarkStore>(), scope.ServiceProvider.GetRequiredService<IWorkflowBookmarkStore>());
+            Assert.Same(scope.ServiceProvider.GetRequiredService<DatabaseWorkflowTransaction>(), scope.ServiceProvider.GetRequiredService<IWorkflowTransaction>());
+            Assert.False(scope.ServiceProvider.GetRequiredService<IWorkflowTransaction>().IsActive);
+        }
+
         var loop = host.Services.GetRequiredService<DueBookmarkPollingLoop>();
         Assert.True(loop.IsRunning);
         await WaitUntilAsync(() => ValueTask.FromResult(loop.IsLeader));
         Assert.Equal(host.Services.GetRequiredService<DatabaseWorkflowOptions>().HolderId, (await HolderAsync(host, PollerLeadership.Resource))!.Split(':')[..^1].Aggregate(static (a, b) => $"{a}:{b}"));
 
         // 第二个节点同一张表拿不到领导权；本节点停止轮询并释放后才拿得到
-        var other = new PollerLeadership(host.Services, host.App, new DatabaseWorkflowOptions { HolderId = "node-2", LockLease = TimeSpan.FromSeconds(1) }, TimeProvider.System, host.Services.GetRequiredService<ILoggerFactory>());
+        var other = new PollerLeadership(host.Services, new DatabaseWorkflowOptions { HolderId = "node-2", LockLease = TimeSpan.FromSeconds(1) }, TimeProvider.System, host.Services.GetRequiredService<ILoggerFactory>());
         Assert.False(await other.TryHoldAsync(CancellationToken.None));
 
         // 到期的延时由持有领导权的后台轮询恢复，不用手工 Poll
@@ -189,8 +198,7 @@ public sealed class DatabaseWorkflowTests
             instanceId = (await scope.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "poll-delay" }, CancellationToken.None)).ValueOrThrow().Id;
         }
 
-        var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
-        await WaitUntilAsync(async () => (await store.FindAsync(instanceId, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Status == WorkflowInstanceStatus.Completed);
+        await WaitUntilAsync(async () => await Partitions.InAsync(host, null, async s => (await s.Instances.FindAsync(null, instanceId, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Status == WorkflowInstanceStatus.Completed));
 
         await loop.StopAsync(CancellationToken.None);
         Assert.False(loop.IsRunning);
@@ -207,7 +215,6 @@ public sealed class DatabaseWorkflowTests
     {
         await using var database = new SqliteDatabase();
         var host = await database.StartHostAsync();
-        var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
         var now = DateTimeOffset.UtcNow;
         var instances = new List<WorkflowInstance>();
         for (var index = 0; index < 25; index++)
@@ -218,7 +225,6 @@ public sealed class DatabaseWorkflowTests
                 DefinitionId = "def",
                 DefinitionName = new WorkflowName(index % 2 == 0 ? "even" : "odd"),
                 Status = index % 5 == 0 ? WorkflowInstanceStatus.Completed : index % 5 == 1 ? WorkflowInstanceStatus.Faulted : WorkflowInstanceStatus.Running,
-                TenantId = index < 10 ? "t1" : "t2",
                 StarterId = $"user-{index % 3}",
                 CreatedAt = now.AddMinutes(-index),
                 EndedAt = index % 5 == 0 ? now.AddMinutes(-index).AddSeconds(30) : null,
@@ -226,22 +232,26 @@ public sealed class DatabaseWorkflowTests
             instances.Add(instance);
         }
 
-        Assert.True((await store.SaveAsync(instances, CancellationToken.None)).IsSuccess);
-        Assert.Equal(25, (await store.CountAsync(new WorkflowInstanceQuery(), CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(10, (await store.CountAsync(new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Faulted] }, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(10, (await store.CountAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed, Statuses = [WorkflowInstanceStatus.Faulted], Skip = 100, Limit = 1 }, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(5, (await store.CountAsync(new WorkflowInstanceQuery { TenantId = "t1", DefinitionName = new WorkflowName("even") }, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(9, (await store.CountAsync(new WorkflowInstanceQuery { StarterId = "user-0" }, CancellationToken.None)).ValueOrThrow());
-        // 创建时间在 [now-10min, now-5min) 的是 index 6..10；已结束且结束早于 now-9min 的是 index 10、15、20
-        Assert.Equal(5, (await store.CountAsync(new WorkflowInstanceQuery { CreatedFrom = now.AddMinutes(-10), CreatedTo = now.AddMinutes(-5) }, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(3, (await store.CountAsync(new WorkflowInstanceQuery { EndedBefore = now.AddMinutes(-9) }, CancellationToken.None)).ValueOrThrow());
+        await Partitions.InAsync(host, null, async s => Assert.True((await s.Instances.SaveAsync(null, instances, CancellationToken.None)).IsSuccess));
+        await Partitions.InAsync(host, null, async s =>
+        {
+            var store = s.Instances;
+            Assert.Equal(25, (await store.CountAsync(null, new WorkflowInstanceQuery(), CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(10, (await store.CountAsync(null, new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Faulted] }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(10, (await store.CountAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed, Statuses = [WorkflowInstanceStatus.Faulted], Skip = 100, Limit = 1 }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(13, (await store.CountAsync(null, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("even") }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(9, (await store.CountAsync(null, new WorkflowInstanceQuery { StarterId = "user-0" }, CancellationToken.None)).ValueOrThrow());
+            // 创建时间在 [now-10min, now-5min) 的是 index 6..10；已结束且结束早于 now-9min 的是 index 10、15、20
+            Assert.Equal(5, (await store.CountAsync(null, new WorkflowInstanceQuery { CreatedFrom = now.AddMinutes(-10), CreatedTo = now.AddMinutes(-5) }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(3, (await store.CountAsync(null, new WorkflowInstanceQuery { EndedBefore = now.AddMinutes(-9) }, CancellationToken.None)).ValueOrThrow());
 
-        // 分页按创建时间降序：第 2 页（每页 10）是 index 10..19
-        var page = (await store.ListAsync(new WorkflowInstanceQuery { Skip = 10, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(instances.Skip(10).Take(10).Select(static instance => instance.Id), page.Select(static instance => instance.Id));
-        var running = (await store.ListAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Running, Skip = 12, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(instances.Where(static instance => instance.Status == WorkflowInstanceStatus.Running).Skip(12).Select(static instance => instance.Id), running.Select(static instance => instance.Id));
-        Assert.Empty((await store.ListAsync(new WorkflowInstanceQuery { Skip = 25 }, CancellationToken.None)).ValueOrThrow());
+            // 分页按创建时间降序：第 2 页（每页 10）是 index 10..19
+            var page = (await store.ListAsync(null, new WorkflowInstanceQuery { Skip = 10, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
+            Assert.Equal(instances.Skip(10).Take(10).Select(static instance => instance.Id), page.Select(static instance => instance.Id));
+            var running = (await store.ListAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Running, Skip = 12, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
+            Assert.Equal(instances.Where(static instance => instance.Status == WorkflowInstanceStatus.Running).Skip(12).Select(static instance => instance.Id), running.Select(static instance => instance.Id));
+            Assert.Empty((await store.ListAsync(null, new WorkflowInstanceQuery { Skip = 25 }, CancellationToken.None)).ValueOrThrow());
+        });
     }
 
     [Fact]
@@ -249,35 +259,38 @@ public sealed class DatabaseWorkflowTests
     {
         await using var database = new SqliteDatabase();
         var host = await database.StartHostAsync();
-        var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
-        var bookmarks = host.Services.GetRequiredService<IWorkflowBookmarkStore>();
         var instances = Enumerable.Range(0, 1005).Select(static index => new WorkflowInstance { Id = WorkflowIdentifiers.NewId(), DefinitionId = "def", DefinitionName = new WorkflowName("bulk"), CreatedAt = DateTimeOffset.UtcNow }).ToList();
         var ids = instances.Select(static instance => instance.Id).ToList();
 
-        Assert.True((await store.SaveAsync(instances, CancellationToken.None)).IsSuccess);
-        Assert.True((await store.SaveNodeInstancesAsync(instances.Select(static instance => new WorkflowNodeInstance { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", ActivityType = ActivityTypes.Log, StartedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
-        Assert.True((await bookmarks.SaveAsync(instances.Select(static instance => new WorkflowBookmark { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", NodeInstanceId = "ni", Kind = BookmarkKinds.Signal, Key = "go", CreatedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
-
-        Assert.Equal(1005, (await store.FindManyAsync([.. ids, "missing"], CancellationToken.None)).ValueOrThrow().Count);
-        Assert.Equal(1005, (await store.CountAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("bulk") }, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(1000, (await store.ListAsync(new WorkflowInstanceQuery { Limit = 1000 }, CancellationToken.None)).ValueOrThrow().Count);
-        Assert.Equal(1005, (await bookmarks.BySignalAsync("go", null, CancellationToken.None)).ValueOrThrow().Count);
-
-        // 整体替换 1005 条：状态变了、条数不变
-        foreach (var instance in instances)
+        await Partitions.InAsync(host, null, async s =>
         {
-            instance.Status = WorkflowInstanceStatus.Completed;
-        }
+            var store = s.Instances;
+            var bookmarks = s.Bookmarks;
+            Assert.True((await store.SaveAsync(null, instances, CancellationToken.None)).IsSuccess);
+            Assert.True((await store.SaveNodeInstancesAsync(null, instances.Select(static instance => new WorkflowNodeInstance { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", ActivityType = ActivityTypes.Log, StartedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
+            Assert.True((await bookmarks.SaveAsync(null, instances.Select(static instance => new WorkflowBookmark { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", NodeInstanceId = "ni", Kind = BookmarkKinds.Signal, Key = "go", CreatedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
 
-        Assert.True((await store.SaveAsync(instances, CancellationToken.None)).IsSuccess);
-        Assert.Equal(1005, (await store.CountAsync(new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(1005, (await store.FindManyAsync(null, [.. ids, "missing"], CancellationToken.None)).ValueOrThrow().Count);
+            Assert.Equal(1005, (await store.CountAsync(null, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("bulk") }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(1000, (await store.ListAsync(null, new WorkflowInstanceQuery { Limit = 1000 }, CancellationToken.None)).ValueOrThrow().Count);
+            Assert.Equal(1005, (await bookmarks.BySignalAsync(null, "go", null, CancellationToken.None)).ValueOrThrow().Count);
 
-        Assert.True((await bookmarks.DeleteByInstanceAsync(ids, CancellationToken.None)).IsSuccess);
-        Assert.Empty((await bookmarks.BySignalAsync("go", null, CancellationToken.None)).ValueOrThrow());
-        Assert.True((await store.DeleteAsync(ids, CancellationToken.None)).IsSuccess);
-        Assert.Equal(0, (await store.CountAsync(new WorkflowInstanceQuery(), CancellationToken.None)).ValueOrThrow());
-        Assert.Empty((await store.NodeInstancesAsync(ids[0], CancellationToken.None)).ValueOrThrow());
-        Assert.Empty((await store.NodeInstancesAsync(ids[^1], CancellationToken.None)).ValueOrThrow());
+            // 整体替换 1005 条：状态变了、条数不变
+            foreach (var instance in instances)
+            {
+                instance.Status = WorkflowInstanceStatus.Completed;
+            }
+
+            Assert.True((await store.SaveAsync(null, instances, CancellationToken.None)).IsSuccess);
+            Assert.Equal(1005, (await store.CountAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }, CancellationToken.None)).ValueOrThrow());
+
+            Assert.True((await bookmarks.DeleteByInstanceAsync(null, ids, CancellationToken.None)).IsSuccess);
+            Assert.Empty((await bookmarks.BySignalAsync(null, "go", null, CancellationToken.None)).ValueOrThrow());
+            Assert.True((await store.DeleteAsync(null, ids, CancellationToken.None)).IsSuccess);
+            Assert.Equal(0, (await store.CountAsync(null, new WorkflowInstanceQuery(), CancellationToken.None)).ValueOrThrow());
+            Assert.Empty((await store.NodeInstancesAsync(null, ids[0], CancellationToken.None)).ValueOrThrow());
+            Assert.Empty((await store.NodeInstancesAsync(null, ids[^1], CancellationToken.None)).ValueOrThrow());
+        });
     }
 
     [Fact]
@@ -285,8 +298,6 @@ public sealed class DatabaseWorkflowTests
     {
         await using var database = new SqliteDatabase();
         var host = await database.StartHostAsync();
-        var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
-        var definitions = host.Services.GetRequiredService<IWorkflowDefinitionStore>();
         var text = new string('x', 12_000) + "中文";
         var instance = new WorkflowInstance { Id = WorkflowIdentifiers.NewId(), DefinitionId = "def", DefinitionName = new WorkflowName("big"), CreatedAt = DateTimeOffset.UtcNow };
         instance.Variables["blob"] = text;
@@ -300,18 +311,25 @@ public sealed class DatabaseWorkflowTests
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        Assert.True((await store.SaveAsync([instance], CancellationToken.None)).IsSuccess);
-        Assert.True((await definitions.SaveAsync([definition], CancellationToken.None)).IsSuccess);
-        var stored = (await store.FindAsync(instance.Id, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
-        Assert.Equal(text, stored.Variables["blob"]!.GetValue<string>());
-        Assert.Equal(instance.CreatedAt, stored.CreatedAt);
-        Assert.Equal(text, (await definitions.FindAsync(definition.Id, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Description);
+        await Partitions.InAsync(host, null, async s =>
+        {
+            Assert.True((await s.Instances.SaveAsync(null, [instance], CancellationToken.None)).IsSuccess);
+            Assert.True((await s.Definitions.SaveAsync(null, [definition], CancellationToken.None)).IsSuccess);
+        });
+        await Partitions.InAsync(host, null, async s =>
+        {
+            var stored = (await s.Instances.FindAsync(null, instance.Id, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+            Assert.Equal(text, stored.Variables["blob"]!.GetValue<string>());
+            Assert.Equal(instance.CreatedAt, stored.CreatedAt);
+            Assert.Equal(text, (await s.Definitions.FindAsync(null, definition.Id, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Description);
+        });
 
+        // 宿主停止后管道不接受调用：引擎在调用之外使用时自己开调用，开不了即存储不可达；租约锁走自己的工作单元，不受应用状态影响
         await host.App.StopAsync(CancellationToken.None);
-        var unavailable = await store.FindAsync(instance.Id, CancellationToken.None);
-        Assert.Equal(WorkflowErrors.StoreUnavailable, unavailable.Error?.Code);
-        Assert.Equal(WorkflowErrors.StoreUnavailable, (await definitions.SaveAsync([definition], CancellationToken.None)).Error?.Code);
-        Assert.Equal(WorkflowErrors.StoreUnavailable, (await host.Services.GetRequiredService<IWorkflowInstanceLock>().AcquireAsync("x", CancellationToken.None)).Error?.Code);
+        await using var scope = host.Services.CreateAsyncScope();
+        var engine = scope.ServiceProvider.GetRequiredService<IWorkflowEngine>();
+        Assert.Equal(WorkflowErrors.StoreUnavailable, (await engine.FindInstanceAsync(instance.Id, CancellationToken.None)).Error?.Code);
+        Assert.Equal(WorkflowErrors.StoreUnavailable, (await scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionCatalog>().CreateAsync(definition, CancellationToken.None)).Error?.Code);
     }
 
     /// <summary>
@@ -319,12 +337,7 @@ public sealed class DatabaseWorkflowTests
     /// </summary>
     private static async Task SeedLockAsync(TestHost host, string id, string holder, DateTimeOffset expiresAt)
     {
-        var seeded = await host.InvokeAsync(async context =>
-        {
-            var repository = context.Services.GetRequiredService<IRepository<WorkflowLockRecord, string>>();
-            (await repository.AddAsync(new WorkflowLockRecord { Id = id, Holder = holder, ExpiresAt = expiresAt }, context.CancellationToken)).ThrowIfFailure();
-        });
-        seeded.ThrowIfFailure();
+        await InLeaseScopeAsync(host, async repository => (await repository.AddAsync(new WorkflowLockRecord { Id = id, Holder = holder, ExpiresAt = expiresAt }, CancellationToken.None)).ThrowIfFailure());
     }
 
     /// <summary>
@@ -334,7 +347,7 @@ public sealed class DatabaseWorkflowTests
     /// 选项与宿主里登记的相同，只有时钟换掉。
     /// </remarks>
     private static DatabaseWorkflowInstanceLock CreateLock(TestHost host, TimeProvider clock)
-        => new(host.Services, host.App, host.Services.GetRequiredService<WorkflowOptions>(), host.Services.GetRequiredService<DatabaseWorkflowOptions>(), clock, host.Services.GetRequiredService<ILoggerFactory>());
+        => new(host.Services, host.Services.GetRequiredService<WorkflowOptions>(), host.Services.GetRequiredService<DatabaseWorkflowOptions>(), clock, host.Services.GetRequiredService<ILoggerFactory>());
 
     /// <summary>
     /// 读租约行的到期时刻。
@@ -342,11 +355,7 @@ public sealed class DatabaseWorkflowTests
     private static async Task<DateTimeOffset> ExpiresAtAsync(TestHost host, string id)
     {
         DateTimeOffset expiresAt = default;
-        (await host.InvokeAsync(async context =>
-        {
-            var found = await context.Services.GetRequiredService<IRepository<WorkflowLockRecord, string>>().FindAsync(id, context.CancellationToken);
-            expiresAt = found.ValueOrThrow().ExpiresAt;
-        })).ThrowIfFailure();
+        await InLeaseScopeAsync(host, async repository => expiresAt = (await repository.FindAsync(id, CancellationToken.None)).ValueOrThrow().ExpiresAt);
         return expiresAt;
     }
 
@@ -359,12 +368,20 @@ public sealed class DatabaseWorkflowTests
     private static async Task<string?> HolderAsync(TestHost host, string id)
     {
         string? holder = null;
-        (await host.InvokeAsync(async context =>
-        {
-            var found = await context.Services.GetRequiredService<IRepository<WorkflowLockRecord, string>>().FindAsync(id, context.CancellationToken);
-            holder = found.TryGetValue(out var row) ? row.Holder : null;
-        })).ThrowIfFailure();
+        await InLeaseScopeAsync(host, async repository => holder = (await repository.FindAsync(id, CancellationToken.None)).TryGetValue(out var row) ? row.Holder : null);
         return holder;
+    }
+
+    /// <summary>
+    /// 与租约步骤一样，在调用之外的新作用域里开可写工作单元读写租约表，执行完提交。
+    /// </summary>
+    private static async Task InLeaseScopeAsync(TestHost host, Func<IRepository<WorkflowLockRecord, string>, Task> action)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        await action(scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>());
+        (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
     }
 
     /// <summary>

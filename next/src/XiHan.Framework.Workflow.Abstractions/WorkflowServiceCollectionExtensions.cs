@@ -92,7 +92,7 @@ public static class WorkflowServiceCollectionExtensions
     /// 装配引擎。
     /// </summary>
     /// <remarks>
-    /// 选项、内置活动与指派规则、求值器、校验、引擎、定义目录、任务服务与轮询器。Provider 特性在登记存储与锁后调用；重复调用无害。
+    /// 选项、内置活动与指派规则、求值器、校验、执行范围、引擎、定义目录、任务服务与轮询器。Provider 特性在登记存储、锁与 <see cref="Storage.IWorkflowTransaction"/> 后调用；重复调用无害。
     /// </remarks>
     public static IServiceCollection AddWorkflowEngine(this IServiceCollection services, WorkflowOptions options)
     {
@@ -125,6 +125,8 @@ public static class WorkflowServiceCollectionExtensions
         services.TryAddSingleton<IWorkflowExpressionEvaluator, WorkflowExpressionEvaluator>();
         services.TryAddScoped<AssigneeResolver>();
         services.TryAddScoped<WorkflowDefinitionValidator>();
+        // 执行范围按作用域：引擎、目录、任务服务与外部任务服务共用它决定事务的加入或自开，并把实例锁持有到作用域结束
+        services.TryAddScoped<WorkflowScope>();
         services.TryAddScoped<IWorkflowEngine, WorkflowEngine>();
         services.TryAddScoped<IWorkflowDefinitionCatalog, WorkflowDefinitionCatalog>();
         services.TryAddScoped<IWorkflowTaskService, WorkflowTaskService>();

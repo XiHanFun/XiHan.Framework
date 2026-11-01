@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表查询。
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowInstanceQuery
@@ -54,11 +54,6 @@ public sealed record WorkflowInstanceQuery
     /// 发起人。
     /// </summary>
     public string? StarterId { get; init; }
-
-    /// <summary>
-    /// 租户。
-    /// </summary>
-    public string? TenantId { get; init; }
 
     /// <summary>
     /// 创建时间下界（含）。
@@ -121,7 +116,6 @@ public sealed record WorkflowInstanceQuery
             && (CorrelationId is null || string.Equals(instance.CorrelationId, CorrelationId, StringComparison.Ordinal))
             && (ParentInstanceId is null || string.Equals(instance.ParentInstanceId, ParentInstanceId, StringComparison.Ordinal))
             && (StarterId is null || string.Equals(instance.StarterId, StarterId, StringComparison.Ordinal))
-            && (TenantId is null || string.Equals(instance.TenantId, TenantId, StringComparison.Ordinal))
             && (CreatedFrom is null || instance.CreatedAt >= CreatedFrom.Value)
             && (CreatedTo is null || instance.CreatedAt < CreatedTo.Value)
             && (EndedBefore is null || (instance.EndedAt is { } ended && ended < EndedBefore.Value));

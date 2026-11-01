@@ -11,7 +11,7 @@ namespace XiHan.Framework.Workflow.Database.Polling;
 /// 到期书签的轮询循环（单例）。
 /// </summary>
 /// <remarks>
-/// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.PollOnceAsync"/>。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前。
+/// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>（覆盖平台与每个启用的租户分区，到了维护周期再按保留期清理）。领导权是全局一份：平台库里的租约行 <see cref="PollerLeadership.Resource"/>，领导节点逐个分区轮询。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPollingLoop : IDisposable
@@ -146,7 +146,7 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
                         continue;
                     }
 
-                    await _poller.PollOnceAsync(_options.BatchSize, stopping).ConfigureAwait(false);
+                    await _poller.RunCycleAsync(_options.BatchSize, stopping).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (stopping.IsCancellationRequested)
                 {

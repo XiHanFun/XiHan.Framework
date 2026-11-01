@@ -9,11 +9,11 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 工作流表的索引（ADR-0072）。
+/// 工作流表的索引（ADR-0072，ADR-0077 修订）。
 /// </summary>
 /// <remarks>
-/// <c>InitTables</c> 在 SQLite 上建出定义、实例、节点实例与书签的索引，租约表只有主键。
-/// 定义的名字 + 租户 + 版本唯一；全局定义的租户列是 NULL，SQLite（与 PostgreSQL、MySQL 一样）的唯一索引不约束含 NULL 的行。
+/// <c>InitTables</c> 在 SQLite 上建出租户分区与平台分区的定义、实例、节点实例与书签的索引，租约表只有主键。
+/// 租户定义的名字 + 租户 + 版本唯一（租户列不为空，每一行都受约束）；平台定义在自己的表里，名字 + 版本唯一，没有可为空的列。
 /// </remarks>
 public sealed class WorkflowIndexTests : IDisposable
 {
@@ -44,34 +44,51 @@ public sealed class WorkflowIndexTests : IDisposable
     }
 
     [Fact]
-    public void InitTables_CreatesTheQueryIndexes_AndTheDefinitionKeyIsUniqueWithinATenant()
+    public void InitTables_CreatesTheQueryIndexes_AndTheDefinitionKeysAreUniqueInEveryPartition()
     {
         using var client = new SqlSugarClient(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={_path}", IsAutoCloseConnection = true }));
-        client.CodeFirst.InitTables(typeof(WorkflowDefinitionRecord), typeof(WorkflowInstanceRecord), typeof(WorkflowNodeInstanceRecord), typeof(WorkflowBookmarkRecord), typeof(WorkflowLockRecord));
-
-        Assert.Equal(
-            ["UX_WorkflowDefinitionRecord_Na_TeId_Ve unique Name,TenantId,Version"],
-            Indexes(client, nameof(WorkflowDefinitionRecord)));
+        client.CodeFirst.InitTables(
+            typeof(WorkflowDefinitionRecord), typeof(WorkflowInstanceRecord), typeof(WorkflowNodeInstanceRecord), typeof(WorkflowBookmarkRecord),
+            typeof(PlatformWorkflowDefinitionRecord), typeof(PlatformWorkflowInstanceRecord), typeof(PlatformWorkflowNodeInstanceRecord), typeof(PlatformWorkflowBookmarkRecord),
+            typeof(WorkflowLockRecord));
+        Assert.Equal(["UX_WorkflowDefinitionRecord_Na_TeId_Ve unique Name,TenantId,Version"], Indexes(client, nameof(WorkflowDefinitionRecord)));
+        Assert.Equal(["UX_PlatformWorkflowDefinitionRecord_Na_Ve unique Name,Version"], Indexes(client, nameof(PlatformWorkflowDefinitionRecord)));
         Assert.Equal(
             [
                 "IX_WorkflowInstanceRecord_CoId CorrelationId",
-                "IX_WorkflowInstanceRecord_CrAt CreatedAt",
-                "IX_WorkflowInstanceRecord_EnAt EndedAt",
                 "IX_WorkflowInstanceRecord_PaInId ParentInstanceId",
+                "IX_WorkflowInstanceRecord_TeId_CrAt TenantId,CreatedAt",
+                "IX_WorkflowInstanceRecord_TeId_EnAt TenantId,EndedAt",
             ],
             Indexes(client, nameof(WorkflowInstanceRecord)));
-        Assert.Equal(["IX_WorkflowNodeInstanceRecord_InId InstanceId"], Indexes(client, nameof(WorkflowNodeInstanceRecord)));
         Assert.Equal(
-            ["IX_WorkflowBookmarkRecord_DuAt DueAt", "IX_WorkflowBookmarkRecord_InId InstanceId", "IX_WorkflowBookmarkRecord_Ki_Ke Kind,Key"],
+            [
+                "IX_PlatformWorkflowInstanceRecord_CoId CorrelationId",
+                "IX_PlatformWorkflowInstanceRecord_CrAt CreatedAt",
+                "IX_PlatformWorkflowInstanceRecord_EnAt EndedAt",
+                "IX_PlatformWorkflowInstanceRecord_PaInId ParentInstanceId",
+            ],
+            Indexes(client, nameof(PlatformWorkflowInstanceRecord)));
+        Assert.Equal(["IX_WorkflowNodeInstanceRecord_InId InstanceId"], Indexes(client, nameof(WorkflowNodeInstanceRecord)));
+        Assert.Equal(["IX_PlatformWorkflowNodeInstanceRecord_InId InstanceId"], Indexes(client, nameof(PlatformWorkflowNodeInstanceRecord)));
+        Assert.Equal(
+            ["IX_WorkflowBookmarkRecord_InId InstanceId", "IX_WorkflowBookmarkRecord_Ki_Ke Kind,Key", "IX_WorkflowBookmarkRecord_TeId_DuAt TenantId,DueAt"],
             Indexes(client, nameof(WorkflowBookmarkRecord)));
+        Assert.Equal(
+            ["IX_PlatformWorkflowBookmarkRecord_DuAt DueAt", "IX_PlatformWorkflowBookmarkRecord_InId InstanceId", "IX_PlatformWorkflowBookmarkRecord_Ki_Ke Kind,Key"],
+            Indexes(client, nameof(PlatformWorkflowBookmarkRecord)));
         Assert.Empty(Indexes(client, nameof(WorkflowLockRecord)));
 
-        client.Insertable(Definition("t1")).ExecuteCommand();
-        Assert.ThrowsAny<Exception>(() => client.Insertable(Definition("t1")).ExecuteCommand());
-        // 全局定义（租户为 NULL）不受唯一索引约束：版本号只靠目录按最大版本加一分配
-        client.Insertable(Definition(null)).ExecuteCommand();
-        client.Insertable(Definition(null)).ExecuteCommand();
-        Assert.Equal(3, client.Queryable<WorkflowDefinitionRecord>().Count());
+        // 租户定义：同一租户的名字 + 版本只能有一行，别的租户同名同版本不冲突
+        client.Insertable(TenantDefinition("t1")).ExecuteCommand();
+        Assert.ThrowsAny<Exception>(() => client.Insertable(TenantDefinition("t1")).ExecuteCommand());
+        client.Insertable(TenantDefinition("t2")).ExecuteCommand();
+
+        // 平台定义：没有可为空的租户列，名字 + 版本照样受唯一索引约束（ADR-0072 里全局定义不受约束的缺口随之关闭）
+        client.Insertable(PlatformDefinition()).ExecuteCommand();
+        Assert.ThrowsAny<Exception>(() => client.Insertable(PlatformDefinition()).ExecuteCommand());
+        Assert.Equal(2, client.Queryable<WorkflowDefinitionRecord>().Count());
+        Assert.Equal(1, client.Queryable<PlatformWorkflowDefinitionRecord>().Count());
     }
 
     /// <summary>
@@ -80,8 +97,14 @@ public sealed class WorkflowIndexTests : IDisposable
     private static List<string> Indexes(SqlSugarClient client, string table) => client.Ado.SqlQuery<string>(IndexQuery, new { table });
 
     /// <summary>
-    /// 名字 approval 的第 1 版定义，标识每次新取。
+    /// 某个租户里名字 approval 的第 1 版定义，标识每次新取。
     /// </summary>
-    private static WorkflowDefinitionRecord Definition(string? tenantId)
+    private static WorkflowDefinitionRecord TenantDefinition(string tenantId)
         => new() { Id = Guid.CreateVersion7().ToString("N"), Name = "approval", Version = 1, Status = "Draft", TenantId = tenantId, Document = "{}" };
+
+    /// <summary>
+    /// 平台里名字 approval 的第 1 版定义，标识每次新取。
+    /// </summary>
+    private static PlatformWorkflowDefinitionRecord PlatformDefinition()
+        => new() { Id = Guid.CreateVersion7().ToString("N"), Name = "approval", Version = 1, Status = "Draft", Document = "{}" };
 }

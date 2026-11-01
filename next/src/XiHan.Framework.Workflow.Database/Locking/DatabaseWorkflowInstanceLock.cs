@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
@@ -64,12 +63,12 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     /// <summary>
     /// 创建。
     /// </summary>
-    public DatabaseWorkflowInstanceLock(IServiceProvider services, App app, WorkflowOptions options, DatabaseWorkflowOptions databaseOptions, TimeProvider clock, ILoggerFactory loggerFactory)
+    public DatabaseWorkflowInstanceLock(IServiceProvider services, WorkflowOptions options, DatabaseWorkflowOptions databaseOptions, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(databaseOptions);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _leases = new LeaseTable(services, app, clock);
+        _leases = new LeaseTable(services, clock);
         _timeout = options.LockTimeout;
         _lease = databaseOptions.LockLease;
         _holderId = databaseOptions.HolderId;
@@ -98,7 +97,7 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
             }
             else if (!IsRetryable(attempt.Error!))
             {
-                return StoreInvocation.Unavailable(attempt.Error!);
+                return StorePartition.Unavailable(attempt.Error!);
             }
             else
             {
@@ -122,13 +121,13 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 持久化层的冲突与管道里的意外当作争用重试。
+    /// 持久化层的冲突、管道里的意外与租约表暂时不可达当作争用重试。
     /// </summary>
     /// <remarks>
-    /// 跨节点同时插入同一行时唯一约束以异常出现，内核把它转成 Unexpected。直到等待超时。其余失败是存储不可达。
+    /// 跨节点同时插入同一行时唯一约束可能以异常出现，租约步骤把异常归为存储不可达；连接的短暂中断同样。直到等待超时（超时错误带上最后一次的失败）。其余失败是存储不可达。
     /// </remarks>
     private static bool IsRetryable(Error error)
-        => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.Duplicate or PersistenceErrors.NotFound or KernelErrors.Unexpected;
+        => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.Duplicate or PersistenceErrors.NotFound or KernelErrors.Unexpected or WorkflowErrors.StoreUnavailable;
 
     /// <summary>
     /// 续约循环。

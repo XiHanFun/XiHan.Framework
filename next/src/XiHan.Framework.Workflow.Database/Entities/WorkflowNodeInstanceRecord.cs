@@ -9,41 +9,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 节点实例的存储行。
+/// 租户分区的节点实例行。
 /// </summary>
 /// <remarks>
-/// 按实例查询与按开始时间排序用的列，整份节点实例在 JSON 文档里；删实例时级联删除。索引：<c>(InstanceId)</c> 供按实例读取与级联删除。
+/// 实现 <see cref="IMultiTenant"/>：与所属实例同一租户、同一个库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(InstanceId))]
-public sealed class WorkflowNodeInstanceRecord : IEntity<string>
+public sealed class WorkflowNodeInstanceRecord : WorkflowNodeInstanceRow, IMultiTenant
 {
     /// <inheritdoc />
     [StringLength(128)]
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 所属实例 ID。
-    /// </summary>
-    [StringLength(128)]
-    public string InstanceId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 开始时间。
-    /// </summary>
-    public DateTimeOffset StartedAt { get; set; }
-
-    /// <summary>
-    /// 写入序号：同刻排序的次关键字，首次写入时由存储分配，整体替换保留。
-    /// </summary>
-    public long Sequence { get; set; }
-
-    /// <summary>
-    /// 整份节点实例的 JSON。
-    /// </summary>
-    /// <remarks>
-    /// 长文本列。
-    /// </remarks>
-    [LongText]
-    public string Document { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
 }

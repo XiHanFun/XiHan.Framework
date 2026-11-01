@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Database.Locking;
 
@@ -55,11 +54,11 @@ public sealed partial class PollerLeadership
     /// <summary>
     /// 创建。
     /// </summary>
-    public PollerLeadership(IServiceProvider services, App app, DatabaseWorkflowOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
+    public PollerLeadership(IServiceProvider services, DatabaseWorkflowOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _leases = new LeaseTable(services, app, clock);
+        _leases = new LeaseTable(services, clock);
         _holder = $"{options.HolderId}:{Guid.NewGuid():N}";
         _lease = options.LockLease;
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));

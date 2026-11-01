@@ -1,234 +1,119 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Domain.Specifications;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Persistence.Abstractions.Queries;
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
-using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
 using XiHan.Framework.Workflow.Database.Entities;
 
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库定义存储（单例）。
+/// 数据库定义存储（作用域服务）。
 /// </summary>
 /// <remarks>
-/// 每个操作在新作用域里经完整管道执行；定义以 JSON 文档存储，读出来的对象天然是快照。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowDefinitionRecord"/>（平台库），否则读写 <see cref="WorkflowDefinitionRecord"/>（实现 <c>IMultiTenant</c>，随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
     /// <summary>
-    /// 管道执行。
+    /// 调用方的工作单元。
     /// </summary>
-    private readonly StoreInvocation _invocation;
+    private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
-    /// 创建。
+    /// 平台分区的表。
     /// </summary>
-    public DatabaseWorkflowDefinitionStore(IServiceProvider services, App app)
+    private readonly DefinitionRows<PlatformWorkflowDefinitionRecord> _platform;
+
+    /// <summary>
+    /// 租户分区的表。
+    /// </summary>
+    private readonly DefinitionRows<WorkflowDefinitionRecord> _tenant;
+
+    /// <summary>
+    /// 创建（作用域服务）。
+    /// </summary>
+    public DatabaseWorkflowDefinitionStore(IServiceProvider services)
     {
-        _invocation = new StoreInvocation(services, app);
+        ArgumentNullException.ThrowIfNull(services);
+        _unitOfWork = services.GetRequiredService<IUnitOfWork>();
+        _platform = new DefinitionRows<PlatformWorkflowDefinitionRecord>(services.GetRequiredService<IRepository<PlatformWorkflowDefinitionRecord, string>>());
+        _tenant = new DefinitionRows<WorkflowDefinitionRecord>(services.GetRequiredService<IRepository<WorkflowDefinitionRecord, string>>());
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken)
+    public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var found = await StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx).FindAsync(id, ctx.CancellationToken).ConfigureAwait(false);
-            return found.TryGetValue(out var record) ? ToDefinition(record).Map(static definition => Maybe.Some(definition)) : Result.Success(Maybe.None<WorkflowDefinition>());
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindAsync(id, cancellationToken).ConfigureAwait(false) : await _tenant.FindAsync(id, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var records = await RecordQueries.FindManyAsync(StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx), ids, ctx.CancellationToken).ConfigureAwait(false);
-            return ToDefinitions(records);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindManyAsync(ids, cancellationToken).ConfigureAwait(false) : await _tenant.FindManyAsync(ids, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, WorkflowName name, int version, CancellationToken cancellationToken)
     {
-        var value = name.Value;
-        return FirstAsync(EntityQuery.All<WorkflowDefinitionRecord>().Where(InNamespace(value, tenantId)).Where(new Specification<WorkflowDefinitionRecord>(record => record.Version == version)), cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindAsync(name, version, cancellationToken).ConfigureAwait(false) : await _tenant.FindAsync(name, version, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken)
     {
-        var value = name.Value;
-        var published = nameof(WorkflowDefinitionStatus.Published);
-        return FirstAsync(
-            EntityQuery.All<WorkflowDefinitionRecord>()
-                .Where(InNamespace(value, tenantId))
-                .Where(new Specification<WorkflowDefinitionRecord>(record => record.Status == published))
-                .OrderBy(static record => record.Version, descending: true),
-            cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindLatestPublishedAsync(name, cancellationToken).ConfigureAwait(false) : await _tenant.FindLatestPublishedAsync(name, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<int>> MaxVersionAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken)
     {
-        var value = name.Value;
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var query = EntityQuery.All<WorkflowDefinitionRecord>()
-                .Where(InNamespace(value, tenantId))
-                .OrderBy(static record => record.Version, descending: true)
-                .Page(0, 1);
-            var top = await StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx).ListAsync(query, ctx.CancellationToken).ConfigureAwait(false);
-            return Result.Success(top.Count == 0 ? 0 : top[0].Version);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.MaxVersionAsync(name, cancellationToken).ConfigureAwait(false) : await _tenant.MaxVersionAsync(name, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(string? tenantId, WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
     {
-        var query = EntityQuery.All<WorkflowDefinitionRecord>();
-        if (name is { } wanted)
-        {
-            var value = wanted.Value;
-            query = query.Where(new Specification<WorkflowDefinitionRecord>(record => record.Name == value));
-        }
-
-        if (status is { } state)
-        {
-            var statusName = state.ToString();
-            query = query.Where(new Specification<WorkflowDefinitionRecord>(record => record.Status == statusName));
-        }
-
-        // 名字升序、版本降序；再按 ID 把排序补成全序，分页才稳定
-        query = query.OrderBy(static record => record.Name).OrderBy(static record => record.Version, descending: true).OrderBy(static record => record.Id);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var records = await RecordQueries.ListAllAsync(StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx), query, null, ctx.CancellationToken).ConfigureAwait(false);
-            return ToDefinitions(records);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListAsync(name, status, cancellationToken).ConfigureAwait(false) : await _tenant.ListAsync(name, status, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
+    public async ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);
-        var rows = definitions.Select(ToRecord).ToList();
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(
-            ctx => RecordQueries.UpsertAsync(StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx), rows, Copy, ctx.CancellationToken),
-            cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        foreach (var definition in definitions)
+        {
+            StorePartition.EnsureOwned(tenantId, definition.TenantId, "definition", definition.Id);
+        }
+
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.SaveAsync(definitions, cancellationToken).ConfigureAwait(false) : await _tenant.SaveAsync(definitions, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public async ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var repository = StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx);
-            var rows = await RecordQueries.FindManyAsync(repository, ids, ctx.CancellationToken).ConfigureAwait(false);
-            return await RecordQueries.RemoveManyAsync(repository, rows, ctx.CancellationToken).ConfigureAwait(false);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.DeleteAsync(ids, cancellationToken).ConfigureAwait(false) : await _tenant.DeleteAsync(ids, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
-    /// 一个名字空间里的该名字：租户按相等比较。
+    /// 核对分区与工作单元的租户一致。
     /// </summary>
-    /// <remarks>
-    /// 无租户写成字面量 null：与值为 null 的变量比较会被翻译成 <c>= @参数(NULL)</c>，永远不匹配。
-    /// </remarks>
-    private static Specification<WorkflowDefinitionRecord> InNamespace(string name, string? tenantId)
-        => tenantId is null
-            ? new Specification<WorkflowDefinitionRecord>(record => record.Name == name && record.TenantId == null)
-            : new Specification<WorkflowDefinitionRecord>(record => record.Name == name && record.TenantId == tenantId);
-
-    /// <summary>
-    /// 取查询的第一条。
-    /// </summary>
-    private async ValueTask<Result<Maybe<WorkflowDefinition>>> FirstAsync(EntityQuery<WorkflowDefinitionRecord> query, CancellationToken cancellationToken)
-    {
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var top = await StoreInvocation.Repository<WorkflowDefinitionRecord>(ctx).ListAsync(query.Page(0, 1), ctx.CancellationToken).ConfigureAwait(false);
-            return top.Count == 0 ? Result.Success(Maybe.None<WorkflowDefinition>()) : ToDefinition(top[0]).Map(static definition => Maybe.Some(definition));
-        }, cancellationToken).ConfigureAwait(false));
-    }
-
-    /// <summary>
-    /// 定义 → 行。
-    /// </summary>
-    private static WorkflowDefinitionRecord ToRecord(WorkflowDefinition definition)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-        var record = new WorkflowDefinitionRecord { Id = definition.Id };
-        Fill(definition, record);
-        return record;
-    }
-
-    /// <summary>
-    /// 把定义的列与文档写进行。
-    /// </summary>
-    private static void Fill(WorkflowDefinition definition, WorkflowDefinitionRecord record)
-    {
-        record.Name = definition.Name.Value;
-        record.Version = definition.Version;
-        record.Status = definition.Status.ToString();
-        record.TenantId = definition.TenantId;
-        record.CreatedAt = definition.CreatedAt;
-        record.PublishedAt = definition.PublishedAt;
-        record.Document = WorkflowJson.Serialize(definition);
-    }
-
-    /// <summary>
-    /// 把新行的内容复制到已有行上。
-    /// </summary>
-    private static void Copy(WorkflowDefinitionRecord source, WorkflowDefinitionRecord target)
-    {
-        target.Name = source.Name;
-        target.Version = source.Version;
-        target.Status = source.Status;
-        target.TenantId = source.TenantId;
-        target.CreatedAt = source.CreatedAt;
-        target.PublishedAt = source.PublishedAt;
-        target.Document = source.Document;
-    }
-
-    /// <summary>
-    /// 行 → 定义。
-    /// </summary>
-    /// <remarks>
-    /// 文档不合法视为存储损坏。
-    /// </remarks>
-    private static Result<WorkflowDefinition> ToDefinition(WorkflowDefinitionRecord record) => WorkflowJson.DeserializeDefinition(record.Document);
-
-    /// <summary>
-    /// 多行 → 定义。
-    /// </summary>
-    /// <remarks>
-    /// 任一行不合法即失败。
-    /// </remarks>
-    private static Result<IReadOnlyList<WorkflowDefinition>> ToDefinitions(List<WorkflowDefinitionRecord> records)
-    {
-        var definitions = new List<WorkflowDefinition>(records.Count);
-        foreach (var record in records)
-        {
-            var definition = ToDefinition(record);
-            if (!definition.TryGetValue(out var value))
-            {
-                return definition.Error!;
-            }
-
-            definitions.Add(value);
-        }
-
-        return definitions;
-    }
+    private void Enter(string? tenantId) => StorePartition.Ensure(_unitOfWork, tenantId);
 }

@@ -30,20 +30,20 @@ public sealed class InMemoryWorkflowTests
         var d3 = Definition("cap-c");
 
         // 整批超限一条不写；替换已有的不占新容量
-        var rejected = await definitions.SaveAsync([d1, d2, d3], CancellationToken.None);
+        var rejected = await definitions.SaveAsync(null, [d1, d2, d3], CancellationToken.None);
         Assert.Equal(WorkflowErrors.StoreCapacity, rejected.Error?.Code);
         Assert.Equal(0, definitions.Count);
-        Assert.True((await definitions.SaveAsync([d1, d2], CancellationToken.None)).IsSuccess);
-        Assert.True((await definitions.SaveAsync([d1 with { DisplayName = "again" }], CancellationToken.None)).IsSuccess);
-        Assert.Equal(WorkflowErrors.StoreCapacity, (await definitions.SaveAsync([d3], CancellationToken.None)).Error?.Code);
+        Assert.True((await definitions.SaveAsync(null, [d1, d2], CancellationToken.None)).IsSuccess);
+        Assert.True((await definitions.SaveAsync(null, [d1 with { DisplayName = "again" }], CancellationToken.None)).IsSuccess);
+        Assert.Equal(WorkflowErrors.StoreCapacity, (await definitions.SaveAsync(null, [d3], CancellationToken.None)).Error?.Code);
 
         var instances = new InMemoryWorkflowInstanceStore(options);
-        Assert.True((await instances.SaveAsync([Instance("i1")], CancellationToken.None)).IsSuccess);
-        Assert.Equal(WorkflowErrors.StoreCapacity, (await instances.SaveAsync([Instance("i2")], CancellationToken.None)).Error?.Code);
+        Assert.True((await instances.SaveAsync(null, [Instance("i1")], CancellationToken.None)).IsSuccess);
+        Assert.Equal(WorkflowErrors.StoreCapacity, (await instances.SaveAsync(null, [Instance("i2")], CancellationToken.None)).Error?.Code);
 
         var bookmarks = new InMemoryWorkflowBookmarkStore(options);
-        Assert.True((await bookmarks.SaveAsync([Bookmark("i1")], CancellationToken.None)).IsSuccess);
-        Assert.Equal(WorkflowErrors.StoreCapacity, (await bookmarks.SaveAsync([Bookmark("i1")], CancellationToken.None)).Error?.Code);
+        Assert.True((await bookmarks.SaveAsync(null, [Bookmark("i1")], CancellationToken.None)).IsSuccess);
+        Assert.Equal(WorkflowErrors.StoreCapacity, (await bookmarks.SaveAsync(null, [Bookmark("i1")], CancellationToken.None)).Error?.Code);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public sealed class InMemoryWorkflowTests
 
         var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
         var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
-        while ((await store.FindAsync(instanceId, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Status != WorkflowInstanceStatus.Completed)
+        while ((await store.FindAsync(null, instanceId, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Status != WorkflowInstanceStatus.Completed)
         {
             Assert.True(DateTimeOffset.UtcNow < deadline, "The poller did not resume the timer bookmark.");
             await Task.Delay(25);

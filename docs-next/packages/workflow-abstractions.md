@@ -9,21 +9,21 @@
 | 能力 | 定义 `workflow.execution@1`（`WorkflowCapabilities.Execution`）的契约，本包不提供能力 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Workflow`（`WorkflowOptions`，由 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
 ## 概述
 
-引擎、校验器、表达式求值器、活动登记表、指派解析、任务服务、外部任务服务、轮询器与全部内置活动都在本包里（ADR-0016）。Provider 只实现三个存储（定义、实例、书签）与实例锁，再调用 `AddWorkflowEngine(options)` 装配引擎、在特性的生命周期里驱动 `DueBookmarkPoller`。内存实现与数据库实现因此语义一致，由 `Workflow.Conformance` 的存储套件、引擎套件与任务套件约束。
+引擎、校验器、表达式求值器、活动登记表、指派解析、任务服务、外部任务服务、轮询器与全部内置活动都在本包里（ADR-0016）。Provider 只实现三个存储（定义、实例、书签）、事务与实例锁，再调用 `AddWorkflowEngine(options)` 装配引擎、在特性的生命周期里驱动 `DueBookmarkPoller`。内存实现与数据库实现因此语义一致，由 `Workflow.Conformance` 的存储套件、引擎套件与任务套件约束。
 
-值模型是 JSON：变量、属性、输入输出、节点状态与书签载荷都是 `JsonObject`，`WorkflowJson` 用源生成的上下文做序列化与深拷贝，不靠反射。引擎在实例锁内以波次推进实例，一个波次结束时把实例、节点实例与书签一次写回，事件在波次之后发布。每个节点的活动在新作用域、新调用上下文里经完整管道执行（关联 ID 是实例 ID，租户是实例租户，调用来源 `InvocationProtocols.Workflow`）。
+值模型是 JSON：变量、属性、输入输出、节点状态与书签载荷都是 `JsonObject`，`WorkflowJson` 用源生成的上下文做序列化与深拷贝，不靠反射。引擎在实例锁内以波次推进实例，一个波次结束时把实例、节点实例与书签一次写回。在调用里被调用时加入调用方的事务（ADR-0077）：存储写入、活动与结果处理器的写入、事件随业务提交或回滚，实例锁持有到调用的服务作用域结束；在调用之外被调用时自己经完整管道开一次调用（来源协议 `InvocationProtocols.Workflow`，目标是操作名）。活动在这次操作的调用里执行。数据按分区（平台、每个租户一个）隔离。
 
 ## 何时使用
 
 - 定义流程、启动实例、处理待办：引用本包，再装配一个提供 `workflow.execution` 的 Provider（[Workflow.InMemory](./workflow-inmemory) 或 [Workflow.Database](./workflow-database)）。
 - 编写自定义活动、指派规则或结果处理器：实现本包的 `IActivity`、`IAssigneeProvider`、`IWorkflowOutcomeHandler`。
-- 实现新的存储 Provider：实现四个存储契约并继承 `Workflow.Conformance` 的套件。
+- 实现新的存储 Provider：实现三个存储、事务与实例锁契约并继承 `Workflow.Conformance` 的套件。
 
 ## 安装与启用
 
@@ -92,7 +92,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与按租户的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`）；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`）；单条写法是扩展方法 |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
@@ -104,7 +104,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
 | `WorkflowVariables` | `JsonObject` 变量的视图与类型化读取（`Get<T>`、`TryGet<T>`） |
-| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowInstanceLock` | Provider 契约；书签存储的 `AvailableAsync` 按种类、键、租户与可领取时刻限量查询，供外部任务领取下推条数 |
+| `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约；存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台）；书签存储的 `AvailableAsync` 按分区、种类、键与可领取时刻限量查询，供外部任务领取下推条数；`IWorkflowTransaction` 回答能不能加入调用方事务（`IsActive`）、能不能写（`EnsureWritable`） |
 | `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理；引擎选项 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`）、能力 ID |
@@ -149,10 +149,11 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 
 - 校验失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题；创建草稿不校验，发布与启动时校验。
 - 按名字启动取最新的已发布版本；发布新版本不改变旧版本状态，已在跑的实例留在原版本，用 `MigrateAsync` 迁移（只迁到同一名字空间里的同名版本）。
-- 定义按租户隔离：名字与版本号在租户（全局定义为空）的名字空间里编号；有租户的调用看得到本租户与全局定义、只改得动本租户的，别的租户的定义按不存在处理；按名字先找本租户再找全局定义。
-- 存储契约不按租户过滤，按租户的过滤由调用方负责；定义存储按名字的查询以租户为名字空间（相等比较）。引擎、任务服务、外部任务服务与信号都按当前调用的租户过滤：有租户的调用看不到、操作不了别的租户的实例与书签（按不存在处理），无租户的调用（平台、轮询器）引擎操作全部。
+- 分区隔离（ADR-0077）：平台一个分区、每个租户一个分区，调用只看得到、改得动自己分区的定义、实例与书签，别的分区的按不存在处理；平台与租户对等，平台也看不到租户的。没有全局定义：名字与版本号在分区里编号，按名字解析只在自己的分区里找。`WorkflowStartRequest` 与 `WorkflowInstanceQuery` 没有租户字段，分区取当前调用。
+- 存储契约每个方法带分区参数，写入的记录必须属于该分区（不等抛 `ArgumentException`）。
+- 事务：在调用里加入调用方的事务，业务回滚时引擎写入一起回滚；只读调用里写入在执行活动之前返回 `PERSISTENCE_DENIED_001`；在调用之外自己开调用，应用不在服务状态时 `WORKFLOW_UNAVAILABLE_001`。事件经作用域的 `IMessagePublisher` 在事务里发出，装配了发件箱才随事务提交。
 - 一个波次最多执行 `MaxNodeExecutionsPerBurst` 个节点；子流程最深 `MaxSubWorkflowDepth` 层；表达式缓存满了整体清空。
-- 活动的取消令牌是宿主停止令牌，调用方的令牌只约束等锁与首次写入。
+- 活动的取消令牌是调用的令牌，取消即回滚。
 - 未知的根变量是表达式错误（`WORKFLOW_VALIDATION_003`），null 结果是成功的无值（ADR-0059）。
 - 不提供 `Script` 活动与 BPMN XML 导入。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
@@ -162,9 +163,9 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | `WORKFLOW_VALIDATION_001` | 定义不合法 |
 | `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
-| `WORKFLOW_NOTFOUND_001` | 定义不存在或没有已发布版本 |
-| `WORKFLOW_NOTFOUND_002` | 实例不存在 |
-| `WORKFLOW_NOTFOUND_003` | 书签（用户任务）不存在 |
+| `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
+| `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |
+| `WORKFLOW_NOTFOUND_003` | 书签（用户任务、外部任务）不存在或在别的分区 |
 | `WORKFLOW_NOTFOUND_004` | 活动类型或指派规则类型未登记 |
 | `WORKFLOW_CONFLICT_001` | 实例状态不允许该操作 |
 | `WORKFLOW_CONFLICT_002` | 定义状态不允许该操作 |
@@ -174,7 +175,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |
 | `WORKFLOW_DENIED_002` | 工作者没有持有外部任务的锁 |
 | `WORKFLOW_TIMEOUT_001` | 等实例锁超时 |
-| `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达 |
+| `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达；或在调用之外被调用时应用不在服务状态 |
 | `WORKFLOW_UNAVAILABLE_002` | 工作流存储容量已满 |
 | `WORKFLOW_UNEXPECTED_001` | 活动抛出未处理异常或引擎内部故障 |
 
@@ -185,4 +186,4 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - [Workflow.Database](./workflow-database)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Conformance 一致性套件](./conformance)
-- 规范：RFC-0021《工作流：持久化执行》；ADR-0016、ADR-0020、ADR-0059
+- 规范：RFC-0021《工作流：持久化执行》；ADR-0016、ADR-0020、ADR-0059、ADR-0077

@@ -2,8 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -17,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义目录的默认实现。
 /// </summary>
 /// <remarks>
-/// 生命周期规则在这里，存储只管读写。作用域服务。
+/// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
@@ -33,12 +31,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     private readonly WorkflowDefinitionValidator _validator;
 
     /// <summary>
-    /// 书签存储：定时启动的书签。
+    /// 书签存储（定时启动书签）。
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
     /// <summary>
-    /// 活动登记表：描述符。
+    /// 活动登记表。
     /// </summary>
     private readonly ActivityRegistry _registry;
 
@@ -48,12 +46,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 本次调用的上下文访问器。
+    /// 执行范围：事务的加入或自开、调用方租户。
     /// </summary>
-    private readonly IInvocationAccessor? _invocation;
+    private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 创建。
+    /// 创建（作用域服务）。
     /// </summary>
     public WorkflowDefinitionCatalog(IWorkflowDefinitionStore store, IWorkflowBookmarkStore bookmarks, ActivityRegistry registry, WorkflowDefinitionValidator validator, TimeProvider clock, IServiceProvider services)
     {
@@ -63,267 +61,287 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _invocation = services.GetService<IInvocationAccessor>();
+        _scope = services.GetRequiredService<WorkflowScope>();
     }
 
+    /// <summary>
+    /// 调用方的分区：调用的租户，空为平台。
+    /// </summary>
+    private string? Tenant => _scope.TenantId;
+
     /// <inheritdoc />
-    public async ValueTask<Result<WorkflowDefinition>> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken)
+    public ValueTask<Result<WorkflowDefinition>> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        // 版本号在定义所属租户的名字空间里编号：别的租户的同名定义不占号
-        var tenantId = definition.TenantId ?? CurrentTenantId();
-        var max = await _store.MaxVersionAsync(definition.Name, tenantId, cancellationToken).ConfigureAwait(false);
-        if (!max.TryGetValue(out var version))
+        return _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(true, "workflow.definition.create", async () =>
         {
-            return max.Error!;
-        }
+            // 定义只能建在调用方自己的分区里：写了别的租户（平台写租户、租户写平台或别的租户）按不存在处理，不替调用方改写
+            var tenantId = Tenant;
+            if (definition.TenantId is not null && !string.Equals(definition.TenantId, tenantId, StringComparison.Ordinal))
+            {
+                return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", definition.Name.Value)));
+            }
 
-        var created = definition with
-        {
-            Id = WorkflowIdentifiers.NewId(),
-            Version = version + 1,
-            Status = WorkflowDefinitionStatus.Draft,
-            CreatedAt = _clock.GetUtcNow(),
-            PublishedAt = null,
-            TenantId = tenantId,
-        };
-        var saved = await _store.SaveAsync([created], cancellationToken).ConfigureAwait(false);
-        return saved.IsSuccess ? created : saved.Error!;
+            // 版本号在分区里编号：别的分区的同名定义不占号
+            var max = await _store.MaxVersionAsync(tenantId, definition.Name, cancellationToken).ConfigureAwait(false);
+            if (!max.TryGetValue(out var version))
+            {
+                return max.Error!;
+            }
+
+            var created = definition with
+            {
+                Id = WorkflowIdentifiers.NewId(),
+                Version = version + 1,
+                Status = WorkflowDefinitionStatus.Draft,
+                CreatedAt = _clock.GetUtcNow(),
+                PublishedAt = null,
+                TenantId = tenantId,
+            };
+            var saved = await _store.SaveAsync(tenantId, [created], cancellationToken).ConfigureAwait(false);
+            return saved.IsSuccess ? created : saved.Error!;
+        }, catalog => catalog.CreateAsync(definition, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<WorkflowDefinition>> UpdateAsync(WorkflowDefinition definition, CancellationToken cancellationToken)
+    public ValueTask<Result<WorkflowDefinition>> UpdateAsync(WorkflowDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        var found = await _store.FindAsync(definition.Id, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var maybe))
+        return _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(true, "workflow.definition.update", async () =>
         {
-            return found.Error!;
-        }
-
-        if (!maybe.TryGetValue(out var stored) || !WorkflowDefinitionNamespace.IsWritable(stored, CurrentTenantId()))
-        {
-            return NotFound(definition.Id);
-        }
-
-        if (stored.Status != WorkflowDefinitionStatus.Draft)
-        {
-            return StatusConflict(stored);
-        }
-
-        var updated = definition with
-        {
-            Name = stored.Name,
-            Version = stored.Version,
-            Status = WorkflowDefinitionStatus.Draft,
-            CreatedAt = stored.CreatedAt,
-            PublishedAt = null,
-            TenantId = stored.TenantId,
-        };
-        var saved = await _store.SaveAsync([updated], cancellationToken).ConfigureAwait(false);
-        return saved.IsSuccess ? updated : saved.Error!;
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> PublishAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
-    {
-        var results = await TransitionAsync(ids, definition =>
-        {
-            if (definition.Status != WorkflowDefinitionStatus.Draft)
+            var found = await _store.FindAsync(Tenant, definition.Id, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var maybe))
             {
-                return StatusConflict(definition);
+                return found.Error!;
             }
 
-            var validated = _validator.Validate(definition);
-            return validated.IsSuccess
-                ? definition with { Status = WorkflowDefinitionStatus.Published, PublishedAt = _clock.GetUtcNow() }
-                : validated.Error!;
-        }, cancellationToken).ConfigureAwait(false);
-        // 定时启动：发布成功的定义各排一个定义级定时书签（没有 Start.Cron 的没有）
-        var timers = new List<WorkflowBookmark>();
-        foreach (var result in results)
-        {
-            if (result.TryGetValue(out var published) && WorkflowEngine.DefinitionTimerBookmark(published, _clock.GetUtcNow()) is { } timer)
+            if (!maybe.TryGetValue(out var stored))
             {
-                timers.Add(timer);
+                return NotFound(definition.Id);
             }
-        }
 
-        if (timers.Count > 0)
-        {
-            var saved = await _bookmarks.SaveAsync(timers, cancellationToken).ConfigureAwait(false);
-            if (saved.IsFailure)
+            if (stored.Status != WorkflowDefinitionStatus.Draft)
             {
-                return results.Select(result => result.IsSuccess ? Result.Failure<WorkflowDefinition>(saved.Error!) : result).ToList();
+                return StatusConflict(stored);
             }
-        }
 
-        return results;
+            var updated = definition with
+            {
+                Name = stored.Name,
+                Version = stored.Version,
+                Status = WorkflowDefinitionStatus.Draft,
+                CreatedAt = stored.CreatedAt,
+                PublishedAt = null,
+                TenantId = stored.TenantId,
+            };
+            var saved = await _store.SaveAsync(Tenant, [updated], cancellationToken).ConfigureAwait(false);
+            return saved.IsSuccess ? updated : saved.Error!;
+        }, catalog => catalog.UpdateAsync(definition, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<WorkflowDefinition>> NewVersionAsync(WorkflowName name, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> PublishAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
-        // 只在当前租户的名字空间里找最新版本，新草稿留在同一名字空间：不拿别的租户的定义为底
-        var tenantId = CurrentTenantId();
-        var max = await _store.MaxVersionAsync(name, tenantId, cancellationToken).ConfigureAwait(false);
-        if (!max.TryGetValue(out var version))
+        ArgumentNullException.ThrowIfNull(ids);
+        return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.publish", async () =>
         {
-            return max.Error!;
-        }
+            var results = await TransitionAsync(ids, definition =>
+            {
+                if (definition.Status != WorkflowDefinitionStatus.Draft)
+                {
+                    return StatusConflict(definition);
+                }
 
-        var found = version == 0 ? Result.Success(Maybe.None<WorkflowDefinition>()) : await _store.FindAsync(name, version, tenantId, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var maybe))
-        {
-            return found.Error!;
-        }
+                var validated = _validator.Validate(definition);
+                return validated.IsSuccess
+                    ? definition with { Status = WorkflowDefinitionStatus.Published, PublishedAt = _clock.GetUtcNow() }
+                    : validated.Error!;
+            }, cancellationToken).ConfigureAwait(false);
 
-        if (!maybe.TryGetValue(out var stored))
-        {
-            return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", name.Value)));
-        }
+            // 定时启动：发布成功的定义各排一个定义级定时书签（没有 Start.Cron 的没有）
+            var timers = new List<WorkflowBookmark>();
+            foreach (var result in results)
+            {
+                if (result.TryGetValue(out var published) && WorkflowEngine.DefinitionTimerBookmark(published, _clock.GetUtcNow()) is { } timer)
+                {
+                    timers.Add(timer);
+                }
+            }
 
-        var latest = WorkflowJson.Clone(stored);
-        var draft = latest with
-        {
-            Id = WorkflowIdentifiers.NewId(),
-            Version = version + 1,
-            Status = WorkflowDefinitionStatus.Draft,
-            CreatedAt = _clock.GetUtcNow(),
-            PublishedAt = null,
-        };
-        var saved = await _store.SaveAsync([draft], cancellationToken).ConfigureAwait(false);
-        return saved.IsSuccess ? draft : saved.Error!;
+            if (timers.Count > 0)
+            {
+                var saved = await _bookmarks.SaveAsync(Tenant, timers, cancellationToken).ConfigureAwait(false);
+                if (saved.IsFailure)
+                {
+                    return results.Select(result => result.IsSuccess ? Result.Failure<WorkflowDefinition>(saved.Error!) : result).ToList();
+                }
+            }
+
+            return results;
+        }, catalog => catalog.PublishAsync(ids, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> DisableAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result<WorkflowDefinition>> NewVersionAsync(WorkflowName name, CancellationToken cancellationToken)
+        => _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(true, "workflow.definition.new-version", async () =>
+        {
+            // 只在调用方的分区里找最新版本，新草稿留在同一分区：不拿别的分区的定义为底
+            var tenantId = Tenant;
+            var max = await _store.MaxVersionAsync(tenantId, name, cancellationToken).ConfigureAwait(false);
+            if (!max.TryGetValue(out var version))
+            {
+                return max.Error!;
+            }
+
+            var found = version == 0 ? Result.Success(Maybe.None<WorkflowDefinition>()) : await _store.FindAsync(tenantId, name, version, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var maybe))
+            {
+                return found.Error!;
+            }
+
+            if (!maybe.TryGetValue(out var stored))
+            {
+                return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", name.Value)));
+            }
+
+            var latest = WorkflowJson.Clone(stored);
+            var draft = latest with
+            {
+                Id = WorkflowIdentifiers.NewId(),
+                Version = version + 1,
+                Status = WorkflowDefinitionStatus.Draft,
+                CreatedAt = _clock.GetUtcNow(),
+                PublishedAt = null,
+            };
+            var saved = await _store.SaveAsync(tenantId, [draft], cancellationToken).ConfigureAwait(false);
+            return saved.IsSuccess ? draft : saved.Error!;
+        }, catalog => catalog.NewVersionAsync(name, cancellationToken), cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> DisableAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
-        var results = await TransitionAsync(ids, static definition => definition.Status == WorkflowDefinitionStatus.Published
-            ? definition with { Status = WorkflowDefinitionStatus.Disabled }
-            : StatusConflict(definition), cancellationToken).ConfigureAwait(false);
-        await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
-        return results;
+        ArgumentNullException.ThrowIfNull(ids);
+        return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.disable", async () =>
+        {
+            var results = await TransitionAsync(ids, static definition => definition.Status == WorkflowDefinitionStatus.Published
+                ? definition with { Status = WorkflowDefinitionStatus.Disabled }
+                : StatusConflict(definition), cancellationToken).ConfigureAwait(false);
+            return await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
+        }, catalog => catalog.DisableAsync(ids, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> ArchiveAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> ArchiveAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
-        var results = await TransitionAsync(ids, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken).ConfigureAwait(false);
-        await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
-        return results;
+        ArgumentNullException.ThrowIfNull(ids);
+        return _scope.RunBatchAsync<IWorkflowDefinitionCatalog, WorkflowDefinition>(ids.Count, "workflow.definition.archive", async () =>
+        {
+            var results = await TransitionAsync(ids, static definition => definition with { Status = WorkflowDefinitionStatus.Archived }, cancellationToken).ConfigureAwait(false);
+            return await RemoveTimersAsync(results, cancellationToken).ConfigureAwait(false);
+        }, catalog => catalog.ArchiveAsync(ids, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
     public IReadOnlyList<ActivityDescriptor> ActivityTypes() => _registry.Activities.Select(static activity => activity.Descriptor).OrderBy(static descriptor => descriptor.Type, StringComparer.Ordinal).ToList();
 
-    /// <summary>
-    /// 不再发布的定义不再定时启动：删除它们的定义级书签（书签的实例 ID = 定义 ID）。
-    /// </summary>
-    private async ValueTask RemoveTimersAsync(IReadOnlyList<Result<WorkflowDefinition>> results, CancellationToken cancellationToken)
-    {
-        var ids = results.Where(static result => result.IsSuccess).Select(static result => result.ValueOrThrow().Id).ToList();
-        if (ids.Count > 0)
-        {
-            await _bookmarks.DeleteByInstanceAsync(ids, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        var found = await _store.FindManyAsync(ids, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var definitions))
+        return _scope.RunBatchAsync<IWorkflowDefinitionCatalog>(ids.Count, "workflow.definition.delete", async () =>
         {
-            return ids.Select(_ => Result.Failure(found.Error!)).ToList();
-        }
+            var found = await _store.FindManyAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var definitions))
+            {
+                return ids.Select(_ => Result.Failure(found.Error!)).ToList();
+            }
 
-        var tenantId = CurrentTenantId();
-        var byId = definitions.Where(definition => WorkflowDefinitionNamespace.IsWritable(definition, tenantId)).ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
-        var results = new Result[ids.Count];
-        var deletable = new List<string>();
-        for (var index = 0; index < ids.Count; index++)
-        {
-            if (!byId.TryGetValue(ids[index], out var definition))
+            var byId = definitions.ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
+            var results = new Result[ids.Count];
+            var deletable = new List<string>();
+            for (var index = 0; index < ids.Count; index++)
             {
-                results[index] = NotFound(ids[index]);
-            }
-            else if (definition.Status != WorkflowDefinitionStatus.Draft)
-            {
-                results[index] = StatusConflict(definition);
-            }
-            else
-            {
-                deletable.Add(definition.Id);
-                results[index] = Result.Success();
-            }
-        }
-
-        if (deletable.Count > 0)
-        {
-            await _bookmarks.DeleteByInstanceAsync(deletable, cancellationToken).ConfigureAwait(false);
-            var deleted = await _store.DeleteAsync(deletable, cancellationToken).ConfigureAwait(false);
-            if (deleted.IsFailure)
-            {
-                for (var index = 0; index < ids.Count; index++)
+                if (!byId.TryGetValue(ids[index], out var definition))
                 {
-                    if (results[index].IsSuccess)
+                    results[index] = NotFound(ids[index]);
+                }
+                else if (definition.Status != WorkflowDefinitionStatus.Draft)
+                {
+                    results[index] = StatusConflict(definition);
+                }
+                else
+                {
+                    deletable.Add(definition.Id);
+                    results[index] = Result.Success();
+                }
+            }
+
+            if (deletable.Count > 0)
+            {
+                var timers = await _bookmarks.DeleteByInstanceAsync(Tenant, deletable, cancellationToken).ConfigureAwait(false);
+                var deleted = timers.IsSuccess ? await _store.DeleteAsync(Tenant, deletable, cancellationToken).ConfigureAwait(false) : timers;
+                if (deleted.IsFailure)
+                {
+                    for (var index = 0; index < ids.Count; index++)
                     {
-                        results[index] = deleted;
+                        if (results[index].IsSuccess)
+                        {
+                            results[index] = deleted;
+                        }
                     }
                 }
             }
-        }
 
-        return results;
+            return (IReadOnlyList<Result>)results;
+        }, catalog => catalog.DeleteAsync(ids, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken)
     {
-        var found = await _store.FindAsync(id, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var maybe))
-        {
-            return found.Error!;
-        }
-
-        // 别的租户的定义按不存在处理
-        return maybe.TryGetValue(out var definition) && WorkflowDefinitionNamespace.IsVisible(definition, CurrentTenantId()) ? Maybe.Some(definition) : Maybe.None<WorkflowDefinition>();
+        ArgumentNullException.ThrowIfNull(id);
+        return _scope.RunAsync<IWorkflowDefinitionCatalog, Maybe<WorkflowDefinition>>(false, "workflow.definition.find", () => _store.FindAsync(Tenant, id, cancellationToken), catalog => catalog.FindAsync(id, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
     public ValueTask<Result<Maybe<WorkflowDefinition>>> FindPublishedAsync(WorkflowName name, int? version, CancellationToken cancellationToken)
-        => WorkflowDefinitionNamespace.FindPublishedAsync(_store, name, version, CurrentTenantId(), cancellationToken);
+        => _scope.RunAsync<IWorkflowDefinitionCatalog, Maybe<WorkflowDefinition>>(false, "workflow.definition.find-published", () => WorkflowDefinitionNamespace.FindPublishedAsync(_store, Tenant, name, version, cancellationToken), catalog => catalog.FindPublishedAsync(name, version, cancellationToken), cancellationToken);
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
+        => _scope.RunAsync<IWorkflowDefinitionCatalog, IReadOnlyList<WorkflowDefinition>>(false, "workflow.definition.list", () => _store.ListAsync(Tenant, name, status, cancellationToken), catalog => catalog.ListAsync(name, status, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// 删掉停用或归档成功的定义的定时启动书签。
+    /// </summary>
+    /// <remarks>
+    /// 删除失败时成功的项都改报那个错误：调用方据此回滚，定义不会停了用却还在按时启动。
+    /// </remarks>
+    private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> RemoveTimersAsync(IReadOnlyList<Result<WorkflowDefinition>> results, CancellationToken cancellationToken)
     {
-        var listed = await _store.ListAsync(name, status, cancellationToken).ConfigureAwait(false);
-        if (!listed.TryGetValue(out var definitions))
+        var ids = results.Where(static result => result.IsSuccess).Select(static result => result.ValueOrThrow().Id).ToList();
+        if (ids.Count == 0)
         {
-            return listed.Error!;
+            return results;
         }
 
-        var tenantId = CurrentTenantId();
-        return tenantId is null ? Result.Success(definitions) : definitions.Where(definition => WorkflowDefinitionNamespace.IsVisible(definition, tenantId)).ToList();
+        var removed = await _bookmarks.DeleteByInstanceAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
+        return removed.IsSuccess ? results : results.Select(result => result.IsSuccess ? Result.Failure<WorkflowDefinition>(removed.Error!) : result).ToList();
     }
 
     /// <summary>
-    /// 批量状态迁移：逐项算出新定义，成功的一次保存。
+    /// 批量状态迁移：逐项读当前状态，<paramref name="transition"/> 给出新状态或错误，成功的一次写回。
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> TransitionAsync(IReadOnlyList<string> ids, Func<WorkflowDefinition, Result<WorkflowDefinition>> transition, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(ids);
-        var found = await _store.FindManyAsync(ids, cancellationToken).ConfigureAwait(false);
+        // 存储只返回调用方分区的定义：别的分区的按不存在处理
+        var found = await _store.FindManyAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var definitions))
         {
             return ids.Select(_ => Result.Failure<WorkflowDefinition>(found.Error!)).ToList();
         }
 
-        // 改不动的（别的租户的、有租户调用方眼里的全局定义）按不存在处理
-        var tenantId = CurrentTenantId();
-        var byId = definitions.Where(definition => WorkflowDefinitionNamespace.IsWritable(definition, tenantId)).ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
+        var byId = definitions.ToDictionary(static definition => definition.Id, StringComparer.Ordinal);
         var results = new Result<WorkflowDefinition>[ids.Count];
         var changed = new List<WorkflowDefinition>();
         for (var index = 0; index < ids.Count; index++)
@@ -343,7 +361,7 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 
         if (changed.Count > 0)
         {
-            var saved = await _store.SaveAsync(changed, cancellationToken).ConfigureAwait(false);
+            var saved = await _store.SaveAsync(Tenant, changed, cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 for (var index = 0; index < ids.Count; index++)
@@ -360,18 +378,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 当前调用的租户。
-    /// </summary>
-    private string? CurrentTenantId()
-        => _invocation is not null && _invocation.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant?.Id : null;
-
-    /// <summary>
-    /// 定义不存在。
+    /// 定义不存在（或不在调用方的分区里）。
     /// </summary>
     private static Error NotFound(string id) => Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", id)));
 
     /// <summary>
-    /// 定义状态不允许。
+    /// 定义的状态不允许该操作。
     /// </summary>
     private static Error StatusConflict(WorkflowDefinition definition)
         => Error.Conflict(WorkflowErrors.DefinitionStatus, WorkflowMessages.DefinitionStatus, MessageArguments.Of(("id", definition.Id), ("status", definition.Status.ToString())));

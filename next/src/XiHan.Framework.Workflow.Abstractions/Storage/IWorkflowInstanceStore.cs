@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Storage;
 /// 实例与节点实例存储。
 /// </summary>
 /// <remarks>
-/// 不按租户过滤，不做乐观并发（实例锁串行化写入），写入按批量。
+/// 按分区读写：每个方法的第一个参数 <c>tenantId</c> 是分区（空为平台，否则是该租户），只返回这个分区的实例与节点实例，写入的实例 <see cref="WorkflowInstance.TenantId"/> 必须等于它；节点实例随所属实例的分区。不做乐观并发（实例锁串行化写入），写入按批量。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowInstanceStore
@@ -18,51 +18,51 @@ public interface IWorkflowInstanceStore
     /// <summary>
     /// 按 ID 找实例。
     /// </summary>
-    ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string id, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按 ID 批量找实例。
     /// </summary>
     /// <remarks>
-    /// 不存在的不在结果里。
+    /// 不存在或在别的分区的不在结果里。
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
     /// 列表：按创建时间降序，最多 <see cref="WorkflowInstanceQuery.Limit"/> 条。
     /// </summary>
-    ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 新增或整体替换实例。
     /// </summary>
-    ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken);
+    ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除实例（级联节点实例）。
     /// </summary>
     /// <remarks>
-    /// 不存在的忽略。
+    /// 不存在或在别的分区的忽略。
     /// </remarks>
-    ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
+    ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按 ID 找节点实例。
     /// </summary>
-    ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string id, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string? tenantId, string id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 匹配查询过滤项的实例总数（不受 <see cref="WorkflowInstanceQuery.Skip"/> 与 <see cref="WorkflowInstanceQuery.Limit"/> 影响）。
     /// </summary>
-    ValueTask<Result<long>> CountAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 实例的全部节点实例：开始时间升序，同刻按创建顺序（补偿按它逆序）。
     /// </summary>
-    ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string? tenantId, string instanceId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 新增或整体替换节点实例。
     /// </summary>
-    ValueTask<Result> SaveNodeInstancesAsync(IReadOnlyList<WorkflowNodeInstance> nodeInstances, CancellationToken cancellationToken);
+    ValueTask<Result> SaveNodeInstancesAsync(string? tenantId, IReadOnlyList<WorkflowNodeInstance> nodeInstances, CancellationToken cancellationToken);
 }

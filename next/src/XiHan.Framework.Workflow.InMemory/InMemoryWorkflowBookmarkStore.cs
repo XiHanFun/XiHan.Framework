@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 有界内存的书签存储。
 /// </summary>
 /// <remarks>
-/// 保存与返回都是深拷贝；按实例建索引。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
@@ -24,14 +24,14 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 书签 ID → (书签, 写入序号)。
+    /// 分区与书签 ID → (书签, 写入序号)。
     /// </summary>
-    private readonly Dictionary<string, (WorkflowBookmark Bookmark, long Sequence)> _bookmarks = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, (WorkflowBookmark Bookmark, long Sequence)> _bookmarks = [];
 
     /// <summary>
-    /// 实例 ID → 它的书签 ID。
+    /// 分区与实例 ID → 它的书签 ID。
     /// </summary>
-    private readonly Dictionary<string, HashSet<string>> _byInstance = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, HashSet<string>> _byInstance = [];
 
     /// <summary>
     /// 容量。
@@ -53,7 +53,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <summary>
-    /// 当前条数。
+    /// 当前条数（全部分区）。
     /// </summary>
     public int Count
     {
@@ -67,42 +67,46 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string id, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success(_bookmarks.TryGetValue(id, out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.Bookmark)) : Maybe.None<WorkflowBookmark>()));
+            return ValueTask.FromResult(Result.Success(_bookmarks.TryGetValue(PartitionKey.In(tenantId, id), out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.Bookmark)) : Maybe.None<WorkflowBookmark>()));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowBookmark> found = ids.Distinct(StringComparer.Ordinal).Where(_bookmarks.ContainsKey).Select(id => WorkflowJson.Clone(_bookmarks[id].Bookmark)).ToList();
+            IReadOnlyList<WorkflowBookmark> found = ids.Distinct(StringComparer.Ordinal)
+                .Select(id => _bookmarks.TryGetValue(PartitionKey.In(tenantId, id), out var entry) ? entry.Bookmark : null)
+                .OfType<WorkflowBookmark>()
+                .Select(WorkflowJson.Clone)
+                .ToList();
             return ValueTask.FromResult(Result.Success(found));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByInstanceAsync(string instanceId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByInstanceAsync(string? tenantId, string instanceId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instanceId);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(_byInstance.TryGetValue(instanceId, out var ids) ? ids.Select(id => _bookmarks[id]) : [])));
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(_byInstance.TryGetValue(PartitionKey.In(tenantId, instanceId), out var ids) ? ids.Select(id => _bookmarks[PartitionKey.In(tenantId, id)]) : [])));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> DueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> DueAsync(string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            IReadOnlyList<WorkflowBookmark> due = _bookmarks.Values
+            IReadOnlyList<WorkflowBookmark> due = InPartition(tenantId)
                 .Where(entry => entry.Bookmark.DueAt is { } dueAt && dueAt <= now)
                 .OrderBy(static entry => entry.Bookmark.DueAt)
                 .ThenBy(static entry => entry.Sequence)
@@ -114,39 +118,38 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string kind, string key, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string? tenantId, string kind, string key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(key);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(_bookmarks.Values.Where(entry => string.Equals(entry.Bookmark.Kind, kind, StringComparison.Ordinal) && string.Equals(entry.Bookmark.Key, key, StringComparison.Ordinal)))));
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(InPartition(tenantId).Where(entry => string.Equals(entry.Bookmark.Kind, kind, StringComparison.Ordinal) && string.Equals(entry.Bookmark.Key, key, StringComparison.Ordinal)))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string? tenantId, string kind, string key, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(key);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowBookmark> available = Ordered(_bookmarks.Values.Where(entry =>
+            IReadOnlyList<WorkflowBookmark> available = Ordered(InPartition(tenantId).Where(entry =>
                     string.Equals(entry.Bookmark.Kind, kind, StringComparison.Ordinal)
                     && string.Equals(entry.Bookmark.Key, key, StringComparison.Ordinal)
-                    && string.Equals(entry.Bookmark.TenantId, tenantId, StringComparison.Ordinal)
                     && (entry.Bookmark.DueAt is not { } dueAt || dueAt <= now)), Math.Max(0, limit));
             return ValueTask.FromResult(Result.Success(available));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string? tenantId, string signalName, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(signalName);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(_bookmarks.Values.Where(entry =>
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>(Ordered(InPartition(tenantId).Where(entry =>
                 string.Equals(entry.Bookmark.Kind, BookmarkKinds.Signal, StringComparison.Ordinal)
                 && string.Equals(entry.Bookmark.Key, signalName, StringComparison.Ordinal)
                 && (correlationId is null || entry.Bookmark.CorrelationId is null || string.Equals(entry.Bookmark.CorrelationId, correlationId, StringComparison.Ordinal))))));
@@ -154,12 +157,17 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
+    public ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(bookmarks);
+        foreach (var bookmark in bookmarks)
+        {
+            PartitionKey.EnsureOwned(tenantId, bookmark.TenantId, "bookmark", bookmark.Id);
+        }
+
         lock (_lock)
         {
-            var added = bookmarks.Select(static bookmark => bookmark.Id).Distinct(StringComparer.Ordinal).Count(id => !_bookmarks.ContainsKey(id));
+            var added = bookmarks.Select(bookmark => PartitionKey.In(tenantId, bookmark.Id)).Distinct().Count(key => !_bookmarks.ContainsKey(key));
             if (_bookmarks.Count + added > _capacity)
             {
                 return ValueTask.FromResult(Result.Failure(Error.Unavailable(WorkflowErrors.StoreCapacity, WorkflowMessages.StoreCapacity, MessageArguments.Of(("store", "bookmarks"), ("limit", _capacity)))));
@@ -167,12 +175,14 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
 
             foreach (var bookmark in bookmarks)
             {
-                var sequence = _bookmarks.TryGetValue(bookmark.Id, out var existing) ? existing.Sequence : ++_sequence;
-                _bookmarks[bookmark.Id] = (WorkflowJson.Clone(bookmark), sequence);
-                if (!_byInstance.TryGetValue(bookmark.InstanceId, out var ids))
+                var key = PartitionKey.In(tenantId, bookmark.Id);
+                var sequence = _bookmarks.TryGetValue(key, out var existing) ? existing.Sequence : ++_sequence;
+                _bookmarks[key] = (WorkflowJson.Clone(bookmark), sequence);
+                var owner = PartitionKey.In(tenantId, bookmark.InstanceId);
+                if (!_byInstance.TryGetValue(owner, out var ids))
                 {
                     ids = new HashSet<string>(StringComparer.Ordinal);
-                    _byInstance[bookmark.InstanceId] = ids;
+                    _byInstance[owner] = ids;
                 }
 
                 ids.Add(bookmark.Id);
@@ -183,19 +193,23 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
             foreach (var id in ids)
             {
-                if (_bookmarks.Remove(id, out var entry) && _byInstance.TryGetValue(entry.Bookmark.InstanceId, out var set))
+                if (_bookmarks.Remove(PartitionKey.In(tenantId, id), out var entry))
                 {
-                    set.Remove(id);
-                    if (set.Count == 0)
+                    var owner = PartitionKey.In(tenantId, entry.Bookmark.InstanceId);
+                    if (_byInstance.TryGetValue(owner, out var set))
                     {
-                        _byInstance.Remove(entry.Bookmark.InstanceId);
+                        set.Remove(id);
+                        if (set.Count == 0)
+                        {
+                            _byInstance.Remove(owner);
+                        }
                     }
                 }
             }
@@ -205,24 +219,33 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> DeleteByInstanceAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
+    public ValueTask<Result> DeleteByInstanceAsync(string? tenantId, IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instanceIds);
         lock (_lock)
         {
             foreach (var instanceId in instanceIds)
             {
-                if (_byInstance.Remove(instanceId, out var ids))
+                if (_byInstance.Remove(PartitionKey.In(tenantId, instanceId), out var ids))
                 {
                     foreach (var id in ids)
                     {
-                        _bookmarks.Remove(id);
+                        _bookmarks.Remove(PartitionKey.In(tenantId, id));
                     }
                 }
             }
 
             return ValueTask.FromResult(Result.Success());
         }
+    }
+
+    /// <summary>
+    /// 一个分区里的书签（调用方持锁）。
+    /// </summary>
+    private IEnumerable<(WorkflowBookmark Bookmark, long Sequence)> InPartition(string? tenantId)
+    {
+        var partition = PartitionKey.Of(tenantId);
+        return _bookmarks.Where(entry => string.Equals(entry.Key.Tenant, partition, StringComparison.Ordinal)).Select(static entry => entry.Value);
     }
 
     /// <summary>

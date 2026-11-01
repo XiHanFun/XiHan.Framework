@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 有界内存的定义存储。
 /// </summary>
 /// <remarks>
-/// 保存与返回都是深拷贝（读己之写，不泄漏引用）；容量满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝（读己之写，不泄漏引用）；容量按全部分区合计，满 → <see cref="WorkflowErrors.StoreCapacity"/>。没有事务：写入立即生效。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
@@ -24,9 +24,9 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// ID → 定义。
+    /// 分区与 ID → 定义。
     /// </summary>
-    private readonly Dictionary<string, WorkflowDefinition> _definitions = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, WorkflowDefinition> _definitions = [];
 
     /// <summary>
     /// 容量。
@@ -43,7 +43,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 当前条数。
+    /// 当前条数（全部分区）。
     /// </summary>
     public int Count
     {
@@ -57,62 +57,66 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success(_definitions.TryGetValue(id, out var definition) ? Maybe.Some(WorkflowJson.Clone(definition)) : Maybe.None<WorkflowDefinition>()));
+            return ValueTask.FromResult(Result.Success(_definitions.TryGetValue(PartitionKey.In(tenantId, id), out var definition) ? Maybe.Some(WorkflowJson.Clone(definition)) : Maybe.None<WorkflowDefinition>()));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowDefinition> found = ids.Distinct(StringComparer.Ordinal).Where(_definitions.ContainsKey).Select(id => WorkflowJson.Clone(_definitions[id])).ToList();
+            IReadOnlyList<WorkflowDefinition> found = ids.Distinct(StringComparer.Ordinal)
+                .Select(id => _definitions.TryGetValue(PartitionKey.In(tenantId, id), out var definition) ? definition : null)
+                .OfType<WorkflowDefinition>()
+                .Select(WorkflowJson.Clone)
+                .ToList();
             return ValueTask.FromResult(Result.Success(found));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, WorkflowName name, int version, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var definition = _definitions.Values.FirstOrDefault(candidate => candidate.Name == name && candidate.Version == version && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal));
+            var definition = InPartition(tenantId).FirstOrDefault(candidate => candidate.Name == name && candidate.Version == version);
             return ValueTask.FromResult(Result.Success(definition is null ? Maybe.None<WorkflowDefinition>() : Maybe.Some(WorkflowJson.Clone(definition))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var definition = _definitions.Values.Where(candidate => candidate.Name == name && candidate.Status == WorkflowDefinitionStatus.Published && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal)).OrderByDescending(static candidate => candidate.Version).FirstOrDefault();
+            var definition = InPartition(tenantId).Where(candidate => candidate.Name == name && candidate.Status == WorkflowDefinitionStatus.Published).OrderByDescending(static candidate => candidate.Version).FirstOrDefault();
             return ValueTask.FromResult(Result.Success(definition is null ? Maybe.None<WorkflowDefinition>() : Maybe.Some(WorkflowJson.Clone(definition))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<int>> MaxVersionAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            var max = _definitions.Values.Where(candidate => candidate.Name == name && string.Equals(candidate.TenantId, tenantId, StringComparison.Ordinal)).Select(static candidate => candidate.Version).DefaultIfEmpty(0).Max();
+            var max = InPartition(tenantId).Where(candidate => candidate.Name == name).Select(static candidate => candidate.Version).DefaultIfEmpty(0).Max();
             return ValueTask.FromResult(Result.Success(max));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(string? tenantId, WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
-            IReadOnlyList<WorkflowDefinition> listed = _definitions.Values
+            IReadOnlyList<WorkflowDefinition> listed = InPartition(tenantId)
                 .Where(candidate => (name is null || candidate.Name == name.Value) && (status is null || candidate.Status == status.Value))
                 .OrderBy(static candidate => candidate.Name.Value, StringComparer.Ordinal)
                 .ThenByDescending(static candidate => candidate.Version)
@@ -123,13 +127,18 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
+    public ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);
+        foreach (var definition in definitions)
+        {
+            PartitionKey.EnsureOwned(tenantId, definition.TenantId, "definition", definition.Id);
+        }
+
         lock (_lock)
         {
             // 容量按整批判定：要么全部写入，要么一条不写
-            var added = definitions.Select(static definition => definition.Id).Distinct(StringComparer.Ordinal).Count(id => !_definitions.ContainsKey(id));
+            var added = definitions.Select(definition => PartitionKey.In(tenantId, definition.Id)).Distinct().Count(key => !_definitions.ContainsKey(key));
             if (_definitions.Count + added > _capacity)
             {
                 return ValueTask.FromResult(Result.Failure(Error.Unavailable(WorkflowErrors.StoreCapacity, WorkflowMessages.StoreCapacity, MessageArguments.Of(("store", "definitions"), ("limit", _capacity)))));
@@ -137,7 +146,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
 
             foreach (var definition in definitions)
             {
-                _definitions[definition.Id] = WorkflowJson.Clone(definition);
+                _definitions[PartitionKey.In(tenantId, definition.Id)] = WorkflowJson.Clone(definition);
             }
 
             return ValueTask.FromResult(Result.Success());
@@ -145,17 +154,26 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
             foreach (var id in ids)
             {
-                _definitions.Remove(id);
+                _definitions.Remove(PartitionKey.In(tenantId, id));
             }
 
             return ValueTask.FromResult(Result.Success());
         }
+    }
+
+    /// <summary>
+    /// 一个分区里的定义（调用方持锁）。
+    /// </summary>
+    private IEnumerable<WorkflowDefinition> InPartition(string? tenantId)
+    {
+        var partition = PartitionKey.Of(tenantId);
+        return _definitions.Where(entry => string.Equals(entry.Key.Tenant, partition, StringComparison.Ordinal)).Select(static entry => entry.Value);
     }
 }

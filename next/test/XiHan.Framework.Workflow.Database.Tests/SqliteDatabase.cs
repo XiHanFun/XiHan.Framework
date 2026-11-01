@@ -4,21 +4,31 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.SqlSugar;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
+using XiHan.Framework.Workflow.Database.Entities;
 
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 每个测试一个临时 SQLite 文件，宿主装配 SqlSugar 持久化与数据库工作流特性。
+/// 每个测试一组临时 SQLite 文件，宿主装配 SqlSugar 持久化与数据库工作流特性。
 /// </summary>
 /// <remarks>
-/// 释放时停止宿主并删除文件。
+/// SQLite 只有一个写者（库级锁，Microsoft.Data.Sqlite 的事务是 IMMEDIATE）：引擎在调用方事务里写过之后再取实例锁，租约行若与业务在同一个库文件、或租约步骤的事务也开在业务库上，就要等调用方事务结束——等的正是自己。所以租约表（<see cref="WorkflowLockRecord"/>）经 <see cref="IEntityConnectionSelector"/> 放到另一个库文件（连接 <see cref="LeaseConnection"/>），并且调用之外的作用域以租约库为根连接；PostgreSQL 等行级锁的数据库不需要这样做。带租户分片的调用另加 <c>shard</c> 连接（租户属性里的连接串）。释放时停止宿主并删除全部文件。
 /// </remarks>
 internal sealed class SqliteDatabase : IAsyncDisposable
 {
+    /// <summary>
+    /// 租约表所在连接的 <c>ConfigId</c>。
+    /// </summary>
+    public const string LeaseConnection = "leases";
+
     /// <summary>
     /// 已启动的宿主。
     /// </summary>
@@ -28,7 +38,7 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     private TestHost? _host;
 
     /// <summary>
-    /// 数据库文件的完整路径。
+    /// 业务库文件的完整路径。
     /// </summary>
     /// <remarks>
     /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
@@ -36,44 +46,54 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-workflow-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 指向该文件的 SQLite 连接串。
+    /// 租约库文件的完整路径。
     /// </summary>
-    public string ConnectionString => $"Data Source={Path}";
+    public string LeasePath => Path + ".leases.db";
+
+    /// <summary>
+    /// 指向业务库的 SQLite 连接串。
+    /// </summary>
+    /// <remarks>
+    /// 忙等上限 5 秒：误把两个写者放进同一个库时尽快失败，而不是挂 30 秒。
+    /// </remarks>
+    public string ConnectionString => Connection(Path);
+
+    /// <summary>
+    /// 本测试另建的库文件（租户独立库），释放时一并删除。
+    /// </summary>
+    public List<string> ExtraFiles { get; } = [];
 
     /// <summary>
     /// 宿主配置。
     /// </summary>
     /// <remarks>
-    /// 连接绑定 <c>db</c>、开启 <c>InitTables</c> 建表、关掉后台轮询（周期 1 小时）、实例锁等待上限 0.2 秒。
+    /// 开启 <c>InitTables</c> 建表（按落点分组，租约表建在租约库上）、关掉后台轮询（周期 1 小时）、实例锁等待上限 0.2 秒。
     /// </remarks>
-    public IEnumerable<KeyValuePair<string, string?>> Configuration =>
+    public static IEnumerable<KeyValuePair<string, string?>> Configuration =>
     [
-        new("XiHan:Bindings:db", ConnectionString),
         new("XiHan:Persistence:SqlSugar:InitTables", "true"),
         new($"{DatabaseWorkflowOptions.ConfigurationSection}:PollIntervalSeconds", "3600"),
         new($"{WorkflowOptions.ConfigurationSection}:LockTimeoutSeconds", "0.2"),
     ];
 
     /// <summary>
-    /// 创建以 SQLite 装配的 SqlSugar 特性。
+    /// 指向某个库文件的连接串。
     /// </summary>
-    /// <remarks>
-    /// 连接串来自宿主解析的绑定。
-    /// </remarks>
-    public static IFeature CreateFeature()
-        => new SqlSugarPersistenceFeature(static (binding, config) =>
-        {
-            config.DbType = DbType.Sqlite;
-            config.ConnectionString = binding.ValueOrThrow().Value;
-        });
+    public static string Connection(string path) => $"Data Source={path};Default Timeout=5";
+
+    /// <summary>
+    /// 一个连接配置：SQLite，施加持久化约定。
+    /// </summary>
+    public static ConnectionConfig Config(string configId, string connectionString)
+        => SqlSugarConventions.Apply(new ConnectionConfig { ConfigId = configId, DbType = DbType.Sqlite, ConnectionString = connectionString, IsAutoCloseConnection = true });
 
     /// <summary>
     /// 启动装配了本数据库与 <see cref="DatabaseWorkflowFeature"/> 的宿主。
     /// </summary>
     /// <remarks>
-    /// 后给的配置覆盖默认配置。
+    /// 后给的配置覆盖默认配置；<paramref name="configure"/> 可以再加特性（多租户等）。
     /// </remarks>
-    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null)
+    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null, Action<AppBuilder>? configure = null)
     {
         // 内存配置不接受重复键：后给的覆盖默认的
         var settings = Configuration.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.OrdinalIgnoreCase);
@@ -82,12 +102,38 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             settings[pair.Key] = pair.Value;
         }
 
-        _host = await TestHost.StartAsync(static b => b.UseFeature(CreateFeature()).UseFeature<DatabaseWorkflowFeature>(), settings, services);
+        var main = Config(SqlSugarConnections.Default, ConnectionString);
+        var leases = Config(LeaseConnection, Connection(LeasePath));
+        _host = await TestHost.StartAsync(b =>
+        {
+            b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseWorkflowFeature>();
+            configure?.Invoke(b);
+        }, settings, collection =>
+        {
+            // 应用自己注册客户端。SqlSugar 的工作单元在客户端的全部连接上开事务（SQLite 上是库级的写锁）：
+            // 调用里的作用域只连业务库（带分片的调用再加分片库），服务期间调用之外的作用域（租约步骤、探针）只连租约库，
+            // 两边的事务互不碰对方的库；启动期建表要两个库都在
+            collection.AddScoped<ISqlSugarClient>(sp =>
+            {
+                var inInvocation = sp.GetService<IInvocationAccessor>()?.Current.HasValue == true;
+                var serving = sp.GetRequiredService<App>().State.IsServing();
+                var shard = TenantShardBinding.Resolve(sp, "db", "connection", Maybe.None<BindingValue>());
+                List<ConnectionConfig> configs = inInvocation ? [main] : serving ? [leases] : [main, leases];
+                if (shard.TryGetValue(out var value))
+                {
+                    configs.Add(Config(SqlSugarConnections.Shard, value.Value ?? throw new InvalidOperationException("The tenant shard has no connection string.")));
+                }
+
+                return new SqlSugarClient(configs);
+            });
+            collection.AddSingleton<IEntityConnectionSelector, LeaseConnectionSelector>();
+            services?.Invoke(collection);
+        });
         return _host;
     }
 
     /// <summary>
-    /// 停止宿主，清空连接池并删除数据库文件及其日志、WAL 与共享内存文件。
+    /// 停止宿主，清空连接池并删除全部库文件及其日志、WAL 与共享内存文件。
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -97,6 +143,17 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             _host = null;
         }
 
+        foreach (var file in new[] { Path, LeasePath }.Concat(ExtraFiles))
+        {
+            await DeleteAsync(file);
+        }
+    }
+
+    /// <summary>
+    /// 删除一个库文件及其附属文件。
+    /// </summary>
+    private static async Task DeleteAsync(string path)
+    {
         // SQLite 连接会被池化并持有文件句柄，先清空连接池，Windows 上才能删除文件；
         // 宿主停止时还在收尾的连接（释放锁、后台续约的最后一次写）可能仍占着文件，等它们结束再删
         for (var attempt = 0; ; attempt++)
@@ -104,7 +161,7 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             SqliteConnection.ClearAllPools();
             try
             {
-                File.Delete(Path);
+                File.Delete(path);
                 break;
             }
             catch (IOException) when (attempt < 50)
@@ -113,8 +170,37 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             }
         }
 
-        File.Delete(Path + "-journal");
-        File.Delete(Path + "-wal");
-        File.Delete(Path + "-shm");
+        File.Delete(path + "-journal");
+        File.Delete(path + "-wal");
+        File.Delete(path + "-shm");
+    }
+
+    /// <summary>
+    /// 租约表落租约库，租户表在带分片的调用里落分片库，其余落业务库。
+    /// </summary>
+    /// <remarks>
+    /// 按 <c>ConfigId</c> 取连接而不是取根连接：两种作用域的根连接不同。
+    /// </remarks>
+    private sealed class LeaseConnectionSelector : IEntityConnectionSelector
+    {
+        /// <inheritdoc />
+        public ISqlSugarClient ConnectionFor(Type entityType, ISqlSugarClient client)
+        {
+            var tenant = client.AsTenant();
+            if (entityType == typeof(WorkflowLockRecord))
+            {
+                return tenant.GetConnection(LeaseConnection);
+            }
+
+            // 只连租约库的作用域没有业务库：这里不会读写业务表
+            if (!tenant.IsAnyConnection(SqlSugarConnections.Default))
+            {
+                return client;
+            }
+
+            return typeof(IMultiTenant).IsAssignableFrom(entityType) && tenant.IsAnyConnection(SqlSugarConnections.Shard)
+                ? tenant.GetConnection(SqlSugarConnections.Shard)
+                : tenant.GetConnection(SqlSugarConnections.Default);
+        }
     }
 }

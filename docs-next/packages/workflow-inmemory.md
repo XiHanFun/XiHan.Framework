@@ -77,6 +77,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
 | `InMemoryWorkflowDefinitionStore` | `IWorkflowDefinitionStore` 实现 |
 | `InMemoryWorkflowInstanceStore` | `IWorkflowInstanceStore` 实现 |
 | `InMemoryWorkflowBookmarkStore` | `IWorkflowBookmarkStore` 实现 |
+| `InMemoryWorkflowTransaction` | `IWorkflowTransaction` 实现：在调用里即可加入，没有事务 |
 | `InMemoryWorkflowInstanceLock` | `IWorkflowInstanceLock` 实现 |
 | `InMemoryWorkflowOptions` | 容量、轮询周期与批量 |
 
@@ -99,6 +100,8 @@ public sealed class WorkflowClock(DueBookmarkPoller poller)
 - 进程重启后，定义、实例、书签全部丢失；代码里创建并发布定义的应用每次启动要重新发布。
 - 容量满时写入失败（`WORKFLOW_UNAVAILABLE_002`），不会淘汰旧实例；长期运行的应用配置 `XiHan:Workflow:RetentionDays` 自动清理已结束的实例。
 - 实例锁只在本进程内互斥，多个实例各用一份本包时彼此看不到对方的数据。
+- 没有事务：引擎的写入立即生效，调用方回滚不撤销（实例锁照样持有到调用结束）；要求"写申请并发起流程"原子的应用用 [Workflow.Database](./workflow-database)。
+- 按分区（平台、每个租户一个）存放，平台与租户互不可见，与数据库实现语义一致。
 - 本包不注册健康项。
 - 通过 `Workflow.Conformance` 的存储、引擎与任务套件。
 
@@ -108,4 +111,4 @@ public sealed class WorkflowClock(DueBookmarkPoller poller)
 - [Workflow.Abstractions](./workflow-abstractions)
 - [Workflow.Database](./workflow-database)
 - [Profiles.Full](./profiles-full)
-- 规范：RFC-0021《工作流：持久化执行》；ADR-0016
+- 规范：RFC-0021《工作流：持久化执行》；ADR-0016、ADR-0077

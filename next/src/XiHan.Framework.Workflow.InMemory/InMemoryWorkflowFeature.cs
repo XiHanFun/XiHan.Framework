@@ -18,7 +18,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 内存工作流特性（<c>role: default</c>）。
 /// </summary>
 /// <remarks>
-/// 提供 <c>workflow.execution@1</c>——有界内存存储、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。
+/// 提供 <c>workflow.execution@1</c>——有界内存存储（按平台与租户分区）、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。没有事务：写入立即生效，不随调用方提交或回滚（<see cref="InMemoryWorkflowTransaction"/>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowFeature : IHostedFeature
@@ -71,6 +71,7 @@ public sealed class InMemoryWorkflowFeature : IHostedFeature
         context.Services.TryAddSingleton<IWorkflowInstanceStore>(static sp => sp.GetRequiredService<InMemoryWorkflowInstanceStore>());
         context.Services.TryAddSingleton<IWorkflowBookmarkStore>(static sp => sp.GetRequiredService<InMemoryWorkflowBookmarkStore>());
         context.Services.TryAddSingleton<IWorkflowInstanceLock>(static sp => sp.GetRequiredService<InMemoryWorkflowInstanceLock>());
+        context.Services.TryAddScoped<IWorkflowTransaction, InMemoryWorkflowTransaction>();
         context.Services.AddWorkflowEngine(engineOptions);
     }
 

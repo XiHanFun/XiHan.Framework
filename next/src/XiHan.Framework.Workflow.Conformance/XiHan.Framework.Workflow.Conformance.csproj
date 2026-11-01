@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

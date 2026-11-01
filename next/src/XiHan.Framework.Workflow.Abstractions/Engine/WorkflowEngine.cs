@@ -6,9 +6,6 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
@@ -28,7 +25,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// 引擎（RFC-0021）。
 /// </summary>
 /// <remarks>
-/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：当前租户取自本次调用。
+/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区，实例锁持有到作用域结束。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class WorkflowEngine : IWorkflowEngine
@@ -94,11 +91,6 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     private readonly IWorkflowBookmarkStore _bookmarks;
 
     /// <summary>
-    /// 实例锁。
-    /// </summary>
-    private readonly IWorkflowInstanceLock _lock;
-
-    /// <summary>
     /// 活动登记表。
     /// </summary>
     private readonly ActivityRegistry _registry;
@@ -129,9 +121,9 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     private readonly WorkflowEventPublisher _events;
 
     /// <summary>
-    /// 本次调用的上下文访问器（取当前租户）。
+    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有。
     /// </summary>
-    private readonly IInvocationAccessor? _invocation;
+    private readonly WorkflowScope _scope;
 
     /// <summary>
     /// 日志。
@@ -141,30 +133,37 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// <summary>
     /// 创建（作用域服务）。
     /// </summary>
-    public WorkflowEngine(IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, IWorkflowInstanceLock instanceLock, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, WorkflowOptions options, TimeProvider clock, App app, IServiceProvider services, ILoggerFactory loggerFactory)
+    public WorkflowEngine(IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, WorkflowOptions options, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
-        ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _bookmarks = bookmarks ?? throw new ArgumentNullException(nameof(bookmarks));
-        _lock = instanceLock ?? throw new ArgumentNullException(nameof(instanceLock));
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _evaluator = evaluator ?? throw new ArgumentNullException(nameof(evaluator));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _logger = loggerFactory.CreateLogger<WorkflowEngine>();
-        // 活动在根提供者的新作用域里执行，与本引擎所在的作用域无关
-        _executor = new ActivityExecutor(RootOf(services), app, registry, evaluator, clock);
+        _scope = services.GetRequiredService<WorkflowScope>();
+        // 活动在本引擎所在的作用域与调用里执行：与引擎的写入同一事务
+        _executor = new ActivityExecutor(_scope, services, registry, evaluator, clock);
+        // 发布者取本作用域的：装配了发件箱时事件写进调用方事务里的发件箱，随事务提交或回滚
         _events = new WorkflowEventPublisher(services.GetService<IMessagePublisher>(), _logger);
-        _invocation = services.GetService<IInvocationAccessor>();
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<WorkflowInstance>> StartAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
+    public ValueTask<Result<WorkflowInstance>> StartAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        return _scope.RunAsync<IWorkflowEngine, WorkflowInstance>(true, "workflow.start", () => StartCoreAsync(request, cancellationToken), engine => engine.StartAsync(request, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 启动（在事务里）。
+    /// </summary>
+    private async ValueTask<Result<WorkflowInstance>> StartCoreAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
+    {
         if (request.Depth > _options.MaxSubWorkflowDepth)
         {
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceDepth, MessageArguments.Of(("depth", request.Depth), ("max", _options.MaxSubWorkflowDepth)));
@@ -219,17 +218,25 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<WorkflowInstance>> ResumeAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
+    public ValueTask<Result<WorkflowInstance>> ResumeAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bookmarkId);
-        var peek = await _bookmarks.FindAsync(bookmarkId, cancellationToken).ConfigureAwait(false);
+        return _scope.RunAsync<IWorkflowEngine, WorkflowInstance>(true, "workflow.resume", () => ResumeCoreAsync(bookmarkId, inputs, expectedKey, cancellationToken), engine => engine.ResumeAsync(bookmarkId, inputs, expectedKey, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 恢复书签（在事务里）。
+    /// </summary>
+    private async ValueTask<Result<WorkflowInstance>> ResumeCoreAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
+    {
+        // 存储只返回调用方分区的书签：别的租户（含平台与租户之间）的书签按不存在处理
+        var peek = await _bookmarks.FindAsync(Tenant, bookmarkId, cancellationToken).ConfigureAwait(false);
         if (!peek.TryGetValue(out var maybe))
         {
             return peek.Error!;
         }
 
-        // 有租户的调用看不到别的租户的书签（含定义级定时书签）：按不存在处理
-        if (!maybe.TryGetValue(out var found) || !IsVisibleToCaller(found.TenantId))
+        if (!maybe.TryGetValue(out var found))
         {
             return BookmarkNotFound(bookmarkId);
         }
@@ -296,24 +303,26 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<int>> SignalAsync(string signalName, JsonObject? payload, string? correlationId, CancellationToken cancellationToken)
+    public ValueTask<Result<int>> SignalAsync(string signalName, JsonObject? payload, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(signalName);
-        var found = await _bookmarks.BySignalAsync(signalName, correlationId, cancellationToken).ConfigureAwait(false);
+        return _scope.RunAsync<IWorkflowEngine, int>(true, "workflow.signal", () => SignalCoreAsync(signalName, payload, correlationId, cancellationToken), engine => engine.SignalAsync(signalName, payload, correlationId, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 发信号（在事务里）：只消费调用方分区的信号书签、只启动调用方分区的定义。
+    /// </summary>
+    private async ValueTask<Result<int>> SignalCoreAsync(string signalName, JsonObject? payload, string? correlationId, CancellationToken cancellationToken)
+    {
+        var found = await _bookmarks.BySignalAsync(Tenant, signalName, correlationId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var bookmarks))
         {
             return found.Error!;
         }
 
-        var tenant = CurrentTenantId();
         var consumed = 0;
         foreach (var bookmark in bookmarks)
         {
-            if (!string.Equals(bookmark.TenantId, tenant, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
             var resumed = await ResumeAsync(bookmark.Id, payload, null, cancellationToken).ConfigureAwait(false);
             if (resumed.IsSuccess)
             {
@@ -326,7 +335,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         // 信号启动：Start 节点声明了该信号名的已发布定义各启动一个实例
-        var published = await _definitions.ListAsync(null, WorkflowDefinitionStatus.Published, cancellationToken).ConfigureAwait(false);
+        var published = await _definitions.ListAsync(Tenant, null, WorkflowDefinitionStatus.Published, cancellationToken).ConfigureAwait(false);
         if (!published.TryGetValue(out var definitions))
         {
             return published.Error!;
@@ -334,11 +343,6 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         foreach (var definition in definitions)
         {
-            if (definition.TenantId is not null && !string.Equals(definition.TenantId, tenant, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
             var start = definition.Nodes.FirstOrDefault(static node => string.Equals(node.ActivityType.Value, ActivityTypes.Start, StringComparison.Ordinal));
             var listens = start?.Properties.TryGetPropertyValue(StartActivity.SignalNameProperty, out var name) == true && name is JsonValue value && string.Equals(WorkflowValues.AsString(value), signalName, StringComparison.Ordinal);
             if (!listens)
@@ -351,7 +355,6 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 DefinitionId = definition.Id,
                 Variables = new JsonObject { [SignalVariable] = payload?.DeepClone() },
                 CorrelationId = correlationId,
-                TenantId = tenant,
             }, cancellationToken).ConfigureAwait(false);
             if (started.IsSuccess)
             {
@@ -368,7 +371,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SuspendAsync(IReadOnlyList<string> instanceIds, string? reason, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, session =>
+        => Batch(instanceIds, "workflow.suspend", engine => engine.SuspendAsync(instanceIds, reason, cancellationToken), session =>
         {
             if (session.Instance.Status != WorkflowInstanceStatus.Running)
             {
@@ -383,7 +386,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ResumeInstancesAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, session =>
+        => Batch(instanceIds, "workflow.resume-instances", engine => engine.ResumeInstancesAsync(instanceIds, cancellationToken), session =>
         {
             if (session.Instance.Status != WorkflowInstanceStatus.Suspended)
             {
@@ -398,15 +401,15 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> CancelAsync(IReadOnlyList<string> instanceIds, string? reason, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, session => FinishForciblyAsync(session, WorkflowInstanceStatus.Canceled, reason), cancellationToken);
+        => Batch(instanceIds, "workflow.cancel", engine => engine.CancelAsync(instanceIds, reason, cancellationToken), session => FinishForciblyAsync(session, WorkflowInstanceStatus.Canceled, reason), cancellationToken);
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> TerminateAsync(IReadOnlyList<string> instanceIds, string? reason, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, session => FinishForciblyAsync(session, WorkflowInstanceStatus.Terminated, reason), cancellationToken);
+        => Batch(instanceIds, "workflow.terminate", engine => engine.TerminateAsync(instanceIds, reason, cancellationToken), session => FinishForciblyAsync(session, WorkflowInstanceStatus.Terminated, reason), cancellationToken);
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> RetryAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, async session =>
+        => Batch(instanceIds, "workflow.retry", engine => engine.RetryAsync(instanceIds, cancellationToken), async session =>
         {
             var instance = session.Instance;
             if (instance.Status != WorkflowInstanceStatus.Faulted || instance.FaultNodeInstanceId is null)
@@ -433,9 +436,17 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }, cancellationToken);
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(updates);
+        return _scope.RunBatchAsync<IWorkflowEngine, WorkflowInstance>(updates.Count, "workflow.set-variables", () => SetVariablesCoreAsync(updates, cancellationToken), engine => engine.SetVariablesAsync(updates, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 改变量（在事务里）。
+    /// </summary>
+    private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesCoreAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken)
+    {
         var results = new List<Result<WorkflowInstance>>(updates.Count);
         foreach (var update in updates)
         {
@@ -461,9 +472,17 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(jumps);
+        return _scope.RunBatchAsync<IWorkflowEngine, WorkflowInstance>(jumps.Count, "workflow.jump", () => JumpCoreAsync(jumps, cancellationToken), engine => engine.JumpAsync(jumps, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 跳转（在事务里）。
+    /// </summary>
+    private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpCoreAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken)
+    {
         var results = new List<Result<WorkflowInstance>>(jumps.Count);
         foreach (var jump in jumps)
         {
@@ -510,14 +529,22 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(migrations);
+        return _scope.RunBatchAsync<IWorkflowEngine, WorkflowInstance>(migrations.Count, "workflow.migrate", () => MigrateCoreAsync(migrations, cancellationToken), engine => engine.MigrateAsync(migrations, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 迁移（在事务里）。
+    /// </summary>
+    private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateCoreAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken)
+    {
         var results = new List<Result<WorkflowInstance>>(migrations.Count);
         foreach (var migration in migrations)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var targetFound = await _definitions.FindAsync(migration.TargetDefinitionId, cancellationToken).ConfigureAwait(false);
+            var targetFound = await _definitions.FindAsync(Tenant, migration.TargetDefinitionId, cancellationToken).ConfigureAwait(false);
             if (!targetFound.TryGetValue(out var targetMaybe))
             {
                 results.Add(targetFound.Error!);
@@ -538,8 +565,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                     return ValueTask.FromResult<Result>(StatusConflict(instance));
                 }
 
-                // 迁到同一名字空间里同名的另一个版本：别的租户的同名定义是另一条流程
-                if (target.Name != instance.DefinitionName || !string.Equals(target.TenantId, session.Definition.TenantId, StringComparison.Ordinal))
+                // 迁到同一分区里同名的另一个版本（存储只返回调用方分区的定义）
+                if (target.Name != instance.DefinitionName)
                 {
                     return ValueTask.FromResult<Result>(Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", migration.TargetDefinitionId))));
                 }
@@ -569,19 +596,28 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
+    public ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        // 有租户的调用只清本租户的实例；无租户的调用（平台、轮询器的保留期清理）清全部
+        return _scope.RunAsync<IWorkflowEngine, int>(true, "workflow.purge", () => PurgeCoreAsync(request, cancellationToken), engine => engine.PurgeAsync(request, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 在事务里清理调用方分区的已结束实例。
+    /// </summary>
+    /// <remarks>
+    /// 只清调用方的分区；轮询器的保留期清理逐个分区调用。
+    /// </remarks>
+    private async ValueTask<Result<int>> PurgeCoreAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
+    {
         var query = new WorkflowInstanceQuery
         {
             EndedBefore = request.EndedBefore,
             Statuses = request.Statuses is { Count: > 0 } ? request.Statuses : [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Canceled, WorkflowInstanceStatus.Faulted, WorkflowInstanceStatus.Terminated],
             DefinitionName = request.DefinitionName,
-            TenantId = CurrentTenantId(),
             Limit = request.Limit,
         };
-        var listed = await _instances.ListAsync(query, cancellationToken).ConfigureAwait(false);
+        var listed = await _instances.ListAsync(Tenant, query, cancellationToken).ConfigureAwait(false);
         if (!listed.TryGetValue(out var instances))
         {
             return listed.Error!;
@@ -593,13 +629,13 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         var ids = instances.Select(static instance => instance.Id).ToList();
-        var deletedBookmarks = await _bookmarks.DeleteByInstanceAsync(ids, cancellationToken).ConfigureAwait(false);
+        var deletedBookmarks = await _bookmarks.DeleteByInstanceAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
         if (deletedBookmarks.IsFailure)
         {
             return deletedBookmarks.Error!;
         }
 
-        var deleted = await _instances.DeleteAsync(ids, cancellationToken).ConfigureAwait(false);
+        var deleted = await _instances.DeleteAsync(Tenant, ids, cancellationToken).ConfigureAwait(false);
         return deleted.IsSuccess ? ids.Count : deleted.Error!;
     }
 
@@ -608,7 +644,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> ResumeDefinitionTimerAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
-        var acquired = await _lock.AcquireAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+        var acquired = await _scope.LockAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -618,7 +654,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         await using (handle.ConfigureAwait(false))
         {
             // 锁内重读：别的节点可能已消费
-            var current = await _bookmarks.FindAsync(bookmark.Id, cancellationToken).ConfigureAwait(false);
+            var current = await _bookmarks.FindAsync(Tenant, bookmark.Id, cancellationToken).ConfigureAwait(false);
             if (!current.TryGetValue(out var maybe))
             {
                 return current.Error!;
@@ -629,13 +665,13 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 return BookmarkNotFound(bookmark.Id);
             }
 
-            var deleted = await _bookmarks.DeleteAsync([bookmark.Id], cancellationToken).ConfigureAwait(false);
+            var deleted = await _bookmarks.DeleteAsync(Tenant, [bookmark.Id], cancellationToken).ConfigureAwait(false);
             if (deleted.IsFailure)
             {
                 return deleted.Error!;
             }
 
-            var found = await _definitions.FindAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+            var found = await _definitions.FindAsync(Tenant, bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
             if (!found.TryGetValue(out var definitionMaybe))
             {
                 return found.Error!;
@@ -649,7 +685,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
             if (DefinitionTimerBookmark(definition, _clock.GetUtcNow()) is { } next)
             {
-                var saved = await _bookmarks.SaveAsync([next], cancellationToken).ConfigureAwait(false);
+                var saved = await _bookmarks.SaveAsync(Tenant, [next], cancellationToken).ConfigureAwait(false);
                 if (saved.IsFailure)
                 {
                     return saved.Error!;
@@ -657,7 +693,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             }
         }
 
-        return await StartAsync(new WorkflowStartRequest { DefinitionId = definition.Id, TenantId = definition.TenantId }, cancellationToken).ConfigureAwait(false);
+        return await StartAsync(new WorkflowStartRequest { DefinitionId = definition.Id }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -759,10 +795,19 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 在实例锁内对一组实例逐个执行 <paramref name="action"/>（同步版）。
+    /// 按实例 ID 的批量控制（同步版）：在调用方事务里，或自己开一次调用。
     /// </summary>
-    private ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ForEachAsync(IReadOnlyList<string> instanceIds, Func<WorkflowSession, Result> action, CancellationToken cancellationToken)
-        => ForEachAsync(instanceIds, session => ValueTask.FromResult(action(session)), cancellationToken);
+    private ValueTask<IReadOnlyList<Result<WorkflowInstance>>> Batch(IReadOnlyList<string> instanceIds, string target, Func<IWorkflowEngine, ValueTask<IReadOnlyList<Result<WorkflowInstance>>>> nested, Func<WorkflowSession, Result> action, CancellationToken cancellationToken)
+        => Batch(instanceIds, target, nested, session => ValueTask.FromResult(action(session)), cancellationToken);
+
+    /// <summary>
+    /// 按实例 ID 的批量控制：在调用方事务里，或自己开一次调用。
+    /// </summary>
+    private ValueTask<IReadOnlyList<Result<WorkflowInstance>>> Batch(IReadOnlyList<string> instanceIds, string target, Func<IWorkflowEngine, ValueTask<IReadOnlyList<Result<WorkflowInstance>>>> nested, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(instanceIds);
+        return _scope.RunBatchAsync(instanceIds.Count, target, () => ForEachAsync(instanceIds, action, cancellationToken), nested, cancellationToken);
+    }
 
     /// <summary>
     /// 在实例锁内对一组实例逐个执行 <paramref name="action"/>，逐项结果。
@@ -781,14 +826,14 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 解锁 → 锁外动作。
+    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 交还锁 → 锁外动作。
     /// </summary>
     /// <remarks>
-    /// 返回写回后的实例。
+    /// 返回写回后的实例。写回与事件都在调用方的事务里；交还锁只把它标为空闲，作用域结束（事务提交或回滚之后）才真正释放。
     /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> RunLockedAsync(string instanceId, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
-        var acquired = await _lock.AcquireAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        var acquired = await _scope.LockAsync(instanceId, cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -828,19 +873,19 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private async ValueTask<Result<WorkflowSession>> LoadAsync(string instanceId, CancellationToken cancellationToken)
     {
-        var found = await _instances.FindAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        var found = await _instances.FindAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var maybe))
         {
             return found.Error!;
         }
 
-        // 按实例 ID 的控制都经这里：有租户的调用看不到别的租户的实例，按不存在处理
-        if (!maybe.TryGetValue(out var instance) || !IsVisibleToCaller(instance.TenantId))
+        // 按实例 ID 的控制都经这里：存储只返回调用方分区的实例，别的分区的按不存在处理
+        if (!maybe.TryGetValue(out var instance))
         {
             return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
         }
 
-        var definitionFound = await _definitions.FindAsync(instance.DefinitionId, cancellationToken).ConfigureAwait(false);
+        var definitionFound = await _definitions.FindAsync(Tenant, instance.DefinitionId, cancellationToken).ConfigureAwait(false);
         if (!definitionFound.TryGetValue(out var definitionMaybe))
         {
             return definitionFound.Error!;
@@ -851,13 +896,13 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", instance.DefinitionName.Value)));
         }
 
-        var nodeInstances = await _instances.NodeInstancesAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        var nodeInstances = await _instances.NodeInstancesAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
         if (!nodeInstances.TryGetValue(out var nodes))
         {
             return nodeInstances.Error!;
         }
 
-        var bookmarks = await _bookmarks.ByInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        var bookmarks = await _bookmarks.ByInstanceAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
         if (!bookmarks.TryGetValue(out var marks))
         {
             return bookmarks.Error!;
@@ -871,7 +916,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private async ValueTask<Result> FlushAsync(WorkflowSession session, CancellationToken cancellationToken)
     {
-        var saved = await _instances.SaveAsync([session.Instance], cancellationToken).ConfigureAwait(false);
+        var saved = await _instances.SaveAsync(Tenant, [session.Instance], cancellationToken).ConfigureAwait(false);
         if (saved.IsFailure)
         {
             return saved;
@@ -880,7 +925,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         var dirtyNodes = session.DirtyNodeInstances();
         if (dirtyNodes.Count > 0)
         {
-            saved = await _instances.SaveNodeInstancesAsync(dirtyNodes, cancellationToken).ConfigureAwait(false);
+            saved = await _instances.SaveNodeInstancesAsync(Tenant, dirtyNodes, cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -890,7 +935,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         var deleted = session.DeletedBookmarkIds();
         if (deleted.Count > 0)
         {
-            saved = await _bookmarks.DeleteAsync(deleted, cancellationToken).ConfigureAwait(false);
+            saved = await _bookmarks.DeleteAsync(Tenant, deleted, cancellationToken).ConfigureAwait(false);
             if (saved.IsFailure)
             {
                 return saved;
@@ -900,7 +945,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         var dirtyBookmarks = session.DirtyBookmarks();
         if (dirtyBookmarks.Count > 0)
         {
-            saved = await _bookmarks.SaveAsync(dirtyBookmarks, cancellationToken).ConfigureAwait(false);
+            saved = await _bookmarks.SaveAsync(Tenant, dirtyBookmarks, cancellationToken).ConfigureAwait(false);
         }
 
         return saved;
@@ -942,7 +987,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         if (session.CascadeToChildren is { } cascade)
         {
-            var children = await _instances.ListAsync(new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Limit = WorkflowInstanceQuery.MaxLimit }, cancellationToken).ConfigureAwait(false);
+            var children = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Limit = WorkflowInstanceQuery.MaxLimit }, cancellationToken).ConfigureAwait(false);
             if (children.TryGetValue(out var list))
             {
                 var open = list.Where(static child => !child.IsFinal).Select(static child => child.Id).ToList();
@@ -964,7 +1009,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </remarks>
     private async ValueTask NotifyParentAsync(string parentInstanceId, string parentNodeInstanceId, JsonObject inputs, CancellationToken cancellationToken)
     {
-        var found = await _bookmarks.ByKindAndKeyAsync(BookmarkKinds.SubWorkflow, parentNodeInstanceId, cancellationToken).ConfigureAwait(false);
+        var found = await _bookmarks.ByKindAndKeyAsync(Tenant, BookmarkKinds.SubWorkflow, parentNodeInstanceId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var bookmarks))
         {
             return;
@@ -1062,7 +1107,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             session.Touch(nodeInstance);
         }
 
-        var result = await _executor.RunAsync(session, node, nodeInstance, item.Bookmark, item.Inputs, CancellationToken.None).ConfigureAwait(false);
+        var result = await _executor.RunAsync(session, node, nodeInstance, item.Bookmark, item.Inputs).ConfigureAwait(false);
         if (!result.TryGetValue(out var outcome))
         {
             HandleFault(session, node, nodeInstance, result.Error!);
@@ -1501,7 +1546,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 continue;
             }
 
-            var result = await _executor.CompensateAsync(session, node, nodeInstance, CancellationToken.None).ConfigureAwait(false);
+            var result = await _executor.CompensateAsync(session, node, nodeInstance).ConfigureAwait(false);
             if (result.IsFailure)
             {
                 LogCompensationFailed(_logger, session.Instance.Id, nodeInstance.Id, result.Error!.Code);
@@ -1521,7 +1566,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// 按重用策略查重并写入新实例。
     /// </summary>
     /// <remarks>
-    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由实例租户、定义名与关联 ID 推出：并发的同键启动串行化，后到者一定看得到先到者写入的实例。查重只看同一租户的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
+    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由分区、定义名与关联 ID 推出：并发的同键启动串行化；锁持有到调用方的事务结束，后到者一定看得到先到者提交的实例。查重只看同一分区的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
     /// </remarks>
     private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> CreateInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
     {
@@ -1530,8 +1575,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return await SaveNewInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
         }
 
-        var tenantId = InstanceTenantId(request, definition);
-        var acquired = await _lock.AcquireAsync(ReuseLockKey(tenantId, definition.Name, correlation), cancellationToken).ConfigureAwait(false);
+        var acquired = await _scope.LockAsync(ReuseLockKey(Tenant, definition.Name, correlation), cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -1539,14 +1583,14 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
 
         await using (handle.ConfigureAwait(false))
         {
-            // 重用策略：同一租户里同名定义在同一关联 ID 下已有未结束的实例。查询的租户为空时不限定租户，所以租户在结果上再按相等比较一次
-            var active = await _instances.ListAsync(new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], TenantId = tenantId, Limit = WorkflowInstanceQuery.MaxLimit }, cancellationToken).ConfigureAwait(false);
+            // 重用策略：同一分区里同名定义在同一关联 ID 下已有未结束的实例
+            var active = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
             if (!active.TryGetValue(out var activeList))
             {
                 return active.Error!;
             }
 
-            var existing = activeList.FirstOrDefault(instance => string.Equals(instance.TenantId, tenantId, StringComparison.Ordinal));
+            var existing = activeList.Count > 0 ? activeList[0] : null;
             if (existing is not null)
             {
                 if (request.ReusePolicy == WorkflowReusePolicy.ReturnActive)
@@ -1557,7 +1601,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 return Error.Conflict(WorkflowErrors.ActiveInstanceExists, WorkflowMessages.ActiveInstanceExists, MessageArguments.Of(("name", definition.Name.Value), ("correlation", correlation)));
             }
 
-            // 写入完成才释放锁：下一个同键启动查重时这个实例已在存储里
+            // 锁持有到事务结束：下一个同键启动查重时这个实例已提交
             return await SaveNewInstanceAsync(request, definition, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -1604,12 +1648,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             ParentInstanceId = request.ParentInstanceId,
             ParentNodeInstanceId = request.ParentNodeInstanceId,
             Depth = request.Depth,
-            TenantId = InstanceTenantId(request, definition),
+            TenantId = Tenant,
             CreatedAt = now,
             StartedAt = now,
         };
         // 先写入再加锁执行：实例从此可被查到、可被锁住
-        var saved = await _instances.SaveAsync([instance], cancellationToken).ConfigureAwait(false);
+        var saved = await _instances.SaveAsync(Tenant, [instance], cancellationToken).ConfigureAwait(false);
         if (saved.IsFailure)
         {
             return saved.Error!;
@@ -1619,18 +1663,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 新实例属于的租户。
-    /// </summary>
-    /// <remarks>
-    /// 请求给的，缺省当前调用的，都没有时取定义的（无租户的调用按 ID 启动租户的定义）。
-    /// </remarks>
-    private string? InstanceTenantId(WorkflowStartRequest request, WorkflowDefinition definition) => request.TenantId ?? CurrentTenantId() ?? definition.TenantId;
-
-    /// <summary>
     /// 重用策略查重时的锁键。
     /// </summary>
     /// <remarks>
-    /// <c>start.</c> 加上租户、定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。租户与定义名都不含换行、合法租户不为空串，以换行拼接不会有歧义。
+    /// <c>start.</c> 加上分区（租户）、定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。租户与定义名都不含换行、合法租户不为空串，以换行拼接不会有歧义。
     /// </remarks>
     private static string ReuseLockKey(string? tenantId, WorkflowName name, string correlation)
         => "start." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(tenantId, "\n", name.Value, "\n", correlation))));
@@ -1638,28 +1674,22 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// <summary>
     /// 找请求指向的已发布定义。
     /// </summary>
+    /// <remarks>
+    /// 只在调用方的分区里找：按 ID 指向别的分区的定义、按名字只有别的分区有的定义，都按不存在处理（<c>WORKFLOW_NOTFOUND_001</c>），不暴露别的分区有什么定义。
+    /// </remarks>
     private async ValueTask<Result<WorkflowDefinition>> FindPublishedDefinitionAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
-        // 有租户的调用不能为别的租户启动实例：按不存在处理，不暴露那个租户有什么定义
-        var callerTenantId = CurrentTenantId();
-        if (callerTenantId is not null && request.TenantId is not null && !string.Equals(request.TenantId, callerTenantId, StringComparison.Ordinal))
-        {
-            return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", request.DefinitionId ?? request.Name?.Value ?? string.Empty)));
-        }
-
-        // 名字解析与可见性都按实例将属于的租户：请求给的，缺省当前调用的；都没有时是全局名字空间
-        var tenantId = request.TenantId ?? callerTenantId;
         Result<Maybe<WorkflowDefinition>> found;
         string name;
         if (!string.IsNullOrWhiteSpace(request.DefinitionId))
         {
             name = request.DefinitionId;
-            found = await _definitions.FindAsync(request.DefinitionId, cancellationToken).ConfigureAwait(false);
+            found = await _definitions.FindAsync(Tenant, request.DefinitionId, cancellationToken).ConfigureAwait(false);
         }
         else if (request.Name is { } workflowName)
         {
             name = workflowName.Value;
-            found = await WorkflowDefinitionNamespace.FindPublishedAsync(_definitions, workflowName, request.Version, tenantId, cancellationToken).ConfigureAwait(false);
+            found = await WorkflowDefinitionNamespace.FindPublishedAsync(_definitions, Tenant, workflowName, request.Version, cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -1671,8 +1701,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return found.Error!;
         }
 
-        // 别的租户的定义按不存在处理：不能拿另一个租户的流程跑出本租户的实例
-        if (!maybe.TryGetValue(out var definition) || definition.Status != WorkflowDefinitionStatus.Published || !WorkflowDefinitionNamespace.IsVisible(definition, tenantId))
+        if (!maybe.TryGetValue(out var definition) || definition.Status != WorkflowDefinitionStatus.Published)
         {
             return Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", name)));
         }
@@ -1681,89 +1710,51 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<Maybe<WorkflowInstance>>> FindInstanceAsync(string instanceId, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowInstance>>> FindInstanceAsync(string instanceId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
-        var found = await _instances.FindAsync(instanceId, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var maybe))
-        {
-            return found.Error!;
-        }
-
-        return maybe.TryGetValue(out var instance) && IsVisibleToCaller(instance.TenantId) ? Maybe.Some(instance) : Maybe.None<WorkflowInstance>();
+        return _scope.RunAsync<IWorkflowEngine, Maybe<WorkflowInstance>>(false, "workflow.find-instance", () => _instances.FindAsync(Tenant, instanceId, cancellationToken), engine => engine.FindInstanceAsync(instanceId, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (!ScopeToCaller(query).TryGetValue(out var scoped))
-        {
-            return Result.Success<IReadOnlyList<WorkflowInstance>>([]);
-        }
-
-        return await _instances.ListAsync(scoped, cancellationToken).ConfigureAwait(false);
+        return _scope.RunAsync<IWorkflowEngine, IReadOnlyList<WorkflowInstance>>(false, "workflow.list-instances", () => _instances.ListAsync(Tenant, query, cancellationToken), engine => engine.ListInstancesAsync(query, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<long>> CountInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<long>> CountInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (!ScopeToCaller(query).TryGetValue(out var scoped))
-        {
-            return 0L;
-        }
-
-        return await _instances.CountAsync(scoped, cancellationToken).ConfigureAwait(false);
+        return _scope.RunAsync<IWorkflowEngine, long>(false, "workflow.count-instances", () => _instances.CountAsync(Tenant, query, cancellationToken), engine => engine.CountInstancesAsync(query, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)
     {
-        var found = await FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var maybe))
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
+        return _scope.RunAsync<IWorkflowEngine, IReadOnlyList<WorkflowNodeInstance>>(false, "workflow.node-instances", async () =>
         {
-            return found.Error!;
-        }
+            var found = await _instances.FindAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var maybe))
+            {
+                return found.Error!;
+            }
 
-        if (!maybe.HasValue)
-        {
-            return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
-        }
+            if (!maybe.HasValue)
+            {
+                return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
+            }
 
-        return await _instances.NodeInstancesAsync(instanceId, cancellationToken).ConfigureAwait(false);
+            return await _instances.NodeInstancesAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
+        }, engine => engine.NodeInstancesAsync(instanceId, cancellationToken), cancellationToken);
     }
 
     /// <summary>
-    /// 把实例查询限定到调用方租户。
+    /// 调用方的分区：调用的租户，空为平台。
     /// </summary>
-    /// <remarks>
-    /// 无租户的调用原样返回；有租户的调用把租户限定为本租户，查询给了别的租户时无值（结果为空）。
-    /// </remarks>
-    private Maybe<WorkflowInstanceQuery> ScopeToCaller(WorkflowInstanceQuery query)
-    {
-        if (CurrentTenantId() is not { } tenant)
-        {
-            return Maybe.Some(query);
-        }
-
-        return query.TenantId is null || string.Equals(query.TenantId, tenant, StringComparison.Ordinal) ? Maybe.Some(query with { TenantId = tenant }) : Maybe.None<WorkflowInstanceQuery>();
-    }
-
-    /// <summary>
-    /// 调用方看得到属于这个租户的实例或书签。
-    /// </summary>
-    /// <remarks>
-    /// 无租户的调用看得到全部；有租户的调用只看得到同一租户的，无租户的实例与书签也看不到。
-    /// </remarks>
-    private bool IsVisibleToCaller(string? ownerTenantId)
-        => CurrentTenantId() is not { } tenant || string.Equals(ownerTenantId, tenant, StringComparison.Ordinal);
-
-    /// <summary>
-    /// 当前调用的租户。
-    /// </summary>
-    private string? CurrentTenantId()
-        => _invocation is not null && _invocation.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant?.Id : null;
+    private string? Tenant => _scope.TenantId;
 
     /// <summary>
     /// 实例状态不允许该操作。
@@ -1776,21 +1767,6 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private static Error BookmarkNotFound(string id)
         => Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", id)));
-
-    /// <summary>
-    /// 根服务提供者：作用域提供者解析不到根，退回自身（测试里的裸容器）。
-    /// </summary>
-    private static IServiceProvider RootOf(IServiceProvider services)
-        => services.GetService<IServiceScopeFactory>() is { } factory ? new ScopeFactoryProvider(factory) : services;
-
-    /// <summary>
-    /// 只提供 <see cref="IServiceScopeFactory"/> 的提供者：活动执行器只需要开新作用域。
-    /// </summary>
-    private sealed class ScopeFactoryProvider(IServiceScopeFactory factory) : IServiceProvider
-    {
-        /// <inheritdoc />
-        public object? GetService(Type serviceType) => serviceType == typeof(IServiceScopeFactory) ? factory : null;
-    }
 
     /// <summary>
     /// 信号恢复失败。

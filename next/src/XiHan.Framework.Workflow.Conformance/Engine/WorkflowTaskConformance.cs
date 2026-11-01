@@ -3,7 +3,9 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -446,12 +448,14 @@ public abstract class WorkflowTaskConformance
             Register(services, log);
             services.AddSingleton<TimeProvider>(clock);
         }).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-external-batch")
+        var batch = WorkflowDefinitionBuilder.Create("conf-external-batch")
             .AddStart()
             .AddExternalTask("pay", PaymentTopic)
             .AddEnd()
             .AddTransition("start", "pay").AddTransition("pay", "end")
-            .Build()).ConfigureAwait(false);
+            .Build();
+        await host.PublishAsync(batch).ConfigureAwait(false);
+        await host.PublishAsync(batch, "t-other").ConfigureAwait(false);
         var started = new List<string>();
         for (var index = 0; index < 3; index++)
         {
@@ -477,6 +481,8 @@ public abstract class WorkflowTaskConformance
         ArgumentNullException.ThrowIfNull(log);
         services.AddSingleton(log);
         services.AddSingleton<IMessagePublisher>(log);
+        // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
+        services.TryAddSingleton<ITenantStore, ConformanceTenants>();
         services.AddActivity<RecordActivity>(RecordActivity.TypeName);
         services.AddWorkflowOutcomeHandler<RecordingOutcomeHandler>();
     }

@@ -35,7 +35,7 @@ next/
 | `XiHan.Framework.Configuration.Abstractions` | 2 | 远程配置客户端与密钥库契约，以及接进 `IConfigurationBuilder` 的配置源（轮询重载、失败保留最后一份） |
 | `XiHan.Framework.Auditing.Abstractions` | 2 | Observe 阶段审计中间件、调用上下文的动作 / 资源 / 细节扩展、审计查询契约 |
 | `XiHan.Framework.AI.Abstractions` | 2 | AI 契约：基于 `Microsoft.Extensions.AI` 的 Provider 目录、带提示词 / 护栏 / 工具的 `IAIChat`、`Expose.Ai` 操作桥接成模型工具的目录（`AIToolsFeature` 默认提供 `ai.tools@1`）、知识库流水线与 `IKnowledgeStore` 契约 |
-| `XiHan.Framework.Workflow.Abstractions` | 2 | 工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储与实例锁契约 |
+| `XiHan.Framework.Workflow.Abstractions` | 2 | 工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储 / 事务 / 实例锁契约；引擎随调用方事务提交或回滚，数据按平台 / 租户分区隔离 |
 | `XiHan.Framework.Localization.InMemory` | 3 | 内存本地化默认实现：汇集各包目录，精确区域 → 同语言 → 默认区域 → `en-US` 回退，设进程默认消息作用域 |
 | `XiHan.Framework.Persistence.InMemory` | 3 | 内存持久化默认实现（`role: default`）：有界、读己之写、软删除与租户隔离 |
 | `XiHan.Framework.Persistence.EntityFrameworkCore` | 3 | EF Core Provider：应用自有 DbContext、事务型工作单元、协议约定（非 AOT） |
@@ -64,8 +64,8 @@ next/
 | `XiHan.Framework.Auditing.Database` | 3 | 数据库 Provider：审计事件经有界队列后台批量落库（满了丢弃并计数、失败只记日志不重试），`AuditRecord` 经仓储读写，按进程写入序号分页查询、续页令牌是序号 |
 | `XiHan.Framework.AI.OpenAI` | 3 | OpenAI 兼容端点的 `ai.chat@1` / `ai.embedding@1` Provider：按配置创建客户端，工具调用在客户端循环里自动执行 |
 | `XiHan.Framework.AI.VectorData` | 3 | `ai.knowledge@1` Provider：把 `IKnowledgeStore` 映射到应用注册的 `Microsoft.Extensions.VectorData` 向量存储 |
-| `XiHan.Framework.Workflow.InMemory` | 3 | 内存工作流默认实现：有界内存的定义 / 实例 / 书签存储、进程内实例锁、单进程到期书签轮询 |
-| `XiHan.Framework.Workflow.Database` | 3 | 数据库 Provider：定义 / 实例 / 节点实例 / 书签以 JSON 文档加查询列经仓储读写，每个存储操作一个事务，租约行实例锁（续约、CAS 接管），轮询只在持有租约的节点上进行 |
+| `XiHan.Framework.Workflow.InMemory` | 3 | 内存工作流默认实现：按分区的有界内存定义 / 实例 / 书签存储（非事务）、进程内实例锁、单进程到期书签轮询 |
+| `XiHan.Framework.Workflow.Database` | 3 | 数据库 Provider：定义 / 实例 / 节点实例 / 书签以 JSON 文档加查询列在调用方的工作单元里经仓储读写（随业务提交或回滚），租户的记录随租户分库，租约行实例锁（续约、CAS 接管），轮询只在持有租约的节点上逐个分区进行 |
 | `XiHan.Framework.Observability.OpenTelemetry` | 3 | OpenTelemetry 导出：内核与运行时的追踪、指标、日志，OTLP 与控制台导出器 |
 | `XiHan.Framework.Hosting.AspNetCore` | 4 | HTTP 请求桥接、`Accept-Language` 协商、探针端点、本地化的 Problem Details |
 | `XiHan.Framework.Hosting.CommandLine` | 4 | 命令行宿主：`help` / `graph` / `pipeline` / `operations` / `invoke`，按错误 KIND 的退出码，Problem 写 stderr |

@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 有界内存的实例与节点实例存储。
 /// </summary>
 /// <remarks>
-/// 保存与返回都是深拷贝；实例与节点实例分别计容量；删实例级联节点实例。
+/// 按分区（平台或租户）隔离：键是分区加 ID，节点实例随所属实例的分区。保存与返回都是深拷贝；实例与节点实例分别计容量（全部分区合计）；删实例级联节点实例。没有事务：写入立即生效。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
@@ -24,19 +24,19 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 实例 ID → (实例, 写入序号)。
+    /// 分区与实例 ID → (实例, 写入序号)。
     /// </summary>
-    private readonly Dictionary<string, (WorkflowInstance Instance, long Sequence)> _instances = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, (WorkflowInstance Instance, long Sequence)> _instances = [];
 
     /// <summary>
-    /// 节点实例 ID → (节点实例, 写入序号)。
+    /// 分区与节点实例 ID → (节点实例, 写入序号)。
     /// </summary>
-    private readonly Dictionary<string, (WorkflowNodeInstance NodeInstance, long Sequence)> _nodeInstances = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, (WorkflowNodeInstance NodeInstance, long Sequence)> _nodeInstances = [];
 
     /// <summary>
-    /// 实例 ID → 它的节点实例 ID。
+    /// 分区与实例 ID → 它的节点实例 ID。
     /// </summary>
-    private readonly Dictionary<string, HashSet<string>> _nodesByInstance = new(StringComparer.Ordinal);
+    private readonly Dictionary<PartitionKey, HashSet<string>> _nodesByInstance = [];
 
     /// <summary>
     /// 实例容量。
@@ -64,7 +64,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 当前实例数。
+    /// 当前实例数（全部分区）。
     /// </summary>
     public int Count
     {
@@ -78,33 +78,37 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string id, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success(_instances.TryGetValue(id, out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.Instance)) : Maybe.None<WorkflowInstance>()));
+            return ValueTask.FromResult(Result.Success(_instances.TryGetValue(PartitionKey.In(tenantId, id), out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.Instance)) : Maybe.None<WorkflowInstance>()));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowInstance> found = ids.Distinct(StringComparer.Ordinal).Where(_instances.ContainsKey).Select(id => WorkflowJson.Clone(_instances[id].Instance)).ToList();
+            IReadOnlyList<WorkflowInstance> found = ids.Distinct(StringComparer.Ordinal)
+                .Select(id => _instances.TryGetValue(PartitionKey.In(tenantId, id), out var entry) ? entry.Instance : null)
+                .OfType<WorkflowInstance>()
+                .Select(WorkflowJson.Clone)
+                .ToList();
             return ValueTask.FromResult(Result.Success(found));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowInstance> listed = _instances.Values
+            IReadOnlyList<WorkflowInstance> listed = InPartition(tenantId)
                 .Where(entry => query.Matches(entry.Instance))
                 .OrderByDescending(static entry => entry.Instance.CreatedAt)
                 .ThenByDescending(static entry => entry.Sequence)
@@ -117,22 +121,27 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<long>> CountAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success(_instances.Values.LongCount(entry => query.Matches(entry.Instance))));
+            return ValueTask.FromResult(Result.Success(InPartition(tenantId).LongCount(entry => query.Matches(entry.Instance))));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken)
+    public ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instances);
+        foreach (var instance in instances)
+        {
+            PartitionKey.EnsureOwned(tenantId, instance.TenantId, "instance", instance.Id);
+        }
+
         lock (_lock)
         {
-            var added = instances.Select(static instance => instance.Id).Distinct(StringComparer.Ordinal).Count(id => !_instances.ContainsKey(id));
+            var added = instances.Select(instance => PartitionKey.In(tenantId, instance.Id)).Distinct().Count(key => !_instances.ContainsKey(key));
             if (_instances.Count + added > _instanceCapacity)
             {
                 return ValueTask.FromResult(Result.Failure(Capacity("instances", _instanceCapacity)));
@@ -140,8 +149,9 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
 
             foreach (var instance in instances)
             {
-                var sequence = _instances.TryGetValue(instance.Id, out var existing) ? existing.Sequence : ++_sequence;
-                _instances[instance.Id] = (WorkflowJson.Clone(instance), sequence);
+                var key = PartitionKey.In(tenantId, instance.Id);
+                var sequence = _instances.TryGetValue(key, out var existing) ? existing.Sequence : ++_sequence;
+                _instances[key] = (WorkflowJson.Clone(instance), sequence);
             }
 
             return ValueTask.FromResult(Result.Success());
@@ -149,19 +159,20 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
         lock (_lock)
         {
             foreach (var id in ids)
             {
-                _instances.Remove(id);
-                if (_nodesByInstance.Remove(id, out var nodes))
+                var key = PartitionKey.In(tenantId, id);
+                _instances.Remove(key);
+                if (_nodesByInstance.Remove(key, out var nodes))
                 {
                     foreach (var node in nodes)
                     {
-                        _nodeInstances.Remove(node);
+                        _nodeInstances.Remove(PartitionKey.In(tenantId, node));
                     }
                 }
             }
@@ -171,35 +182,35 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string id, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
         lock (_lock)
         {
-            return ValueTask.FromResult(Result.Success(_nodeInstances.TryGetValue(id, out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.NodeInstance)) : Maybe.None<WorkflowNodeInstance>()));
+            return ValueTask.FromResult(Result.Success(_nodeInstances.TryGetValue(PartitionKey.In(tenantId, id), out var entry) ? Maybe.Some(WorkflowJson.Clone(entry.NodeInstance)) : Maybe.None<WorkflowNodeInstance>()));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string? tenantId, string instanceId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instanceId);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowNodeInstance> listed = _nodesByInstance.TryGetValue(instanceId, out var nodes)
-                ? nodes.Select(id => _nodeInstances[id]).OrderBy(static entry => entry.NodeInstance.StartedAt).ThenBy(static entry => entry.Sequence).Select(static entry => WorkflowJson.Clone(entry.NodeInstance)).ToList()
+            IReadOnlyList<WorkflowNodeInstance> listed = _nodesByInstance.TryGetValue(PartitionKey.In(tenantId, instanceId), out var nodes)
+                ? nodes.Select(id => _nodeInstances[PartitionKey.In(tenantId, id)]).OrderBy(static entry => entry.NodeInstance.StartedAt).ThenBy(static entry => entry.Sequence).Select(static entry => WorkflowJson.Clone(entry.NodeInstance)).ToList()
                 : [];
             return ValueTask.FromResult(Result.Success(listed));
         }
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> SaveNodeInstancesAsync(IReadOnlyList<WorkflowNodeInstance> nodeInstances, CancellationToken cancellationToken)
+    public ValueTask<Result> SaveNodeInstancesAsync(string? tenantId, IReadOnlyList<WorkflowNodeInstance> nodeInstances, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(nodeInstances);
         lock (_lock)
         {
-            var added = nodeInstances.Select(static node => node.Id).Distinct(StringComparer.Ordinal).Count(id => !_nodeInstances.ContainsKey(id));
+            var added = nodeInstances.Select(node => PartitionKey.In(tenantId, node.Id)).Distinct().Count(key => !_nodeInstances.ContainsKey(key));
             if (_nodeInstances.Count + added > _nodeCapacity)
             {
                 return ValueTask.FromResult(Result.Failure(Capacity("node-instances", _nodeCapacity)));
@@ -207,12 +218,14 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
 
             foreach (var nodeInstance in nodeInstances)
             {
-                var sequence = _nodeInstances.TryGetValue(nodeInstance.Id, out var existing) ? existing.Sequence : ++_sequence;
-                _nodeInstances[nodeInstance.Id] = (WorkflowJson.Clone(nodeInstance), sequence);
-                if (!_nodesByInstance.TryGetValue(nodeInstance.InstanceId, out var nodes))
+                var key = PartitionKey.In(tenantId, nodeInstance.Id);
+                var sequence = _nodeInstances.TryGetValue(key, out var existing) ? existing.Sequence : ++_sequence;
+                _nodeInstances[key] = (WorkflowJson.Clone(nodeInstance), sequence);
+                var owner = PartitionKey.In(tenantId, nodeInstance.InstanceId);
+                if (!_nodesByInstance.TryGetValue(owner, out var nodes))
                 {
                     nodes = new HashSet<string>(StringComparer.Ordinal);
-                    _nodesByInstance[nodeInstance.InstanceId] = nodes;
+                    _nodesByInstance[owner] = nodes;
                 }
 
                 nodes.Add(nodeInstance.Id);
@@ -220,6 +233,15 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
 
             return ValueTask.FromResult(Result.Success());
         }
+    }
+
+    /// <summary>
+    /// 一个分区里的实例（调用方持锁）。
+    /// </summary>
+    private IEnumerable<(WorkflowInstance Instance, long Sequence)> InPartition(string? tenantId)
+    {
+        var partition = PartitionKey.Of(tenantId);
+        return _instances.Where(entry => string.Equals(entry.Key.Tenant, partition, StringComparison.Ordinal)).Select(static entry => entry.Value);
     }
 
     /// <summary>

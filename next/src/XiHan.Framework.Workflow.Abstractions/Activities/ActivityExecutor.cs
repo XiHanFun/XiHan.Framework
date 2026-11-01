@@ -3,8 +3,6 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -15,22 +13,22 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 在新作用域、新调用上下文里经完整内核管道执行一个活动（执行、恢复或补偿）。
+/// 在引擎所在的调用里执行一个活动（执行、恢复或补偿）。
 /// </summary>
 /// <remarks>
-/// 关联 ID = 实例 ID，租户 = 实例租户；异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>。
+/// 活动与引擎同一服务作用域、同一调用上下文、同一事务：活动与结果处理器的写入随引擎的写入一起提交或回滚。抛出的异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>；取消以调用的取消令牌为准，原样抛出。
 /// </remarks>
 internal sealed class ActivityExecutor
 {
     /// <summary>
-    /// 根服务提供者。
+    /// 执行范围：取当前调用。
     /// </summary>
-    private readonly IServiceProvider _services;
+    private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 应用。
+    /// 引擎所在的服务作用域：活动从这里解析。
     /// </summary>
-    private readonly App _app;
+    private readonly IServiceProvider _services;
 
     /// <summary>
     /// 活动登记表。
@@ -50,10 +48,10 @@ internal sealed class ActivityExecutor
     /// <summary>
     /// 创建。
     /// </summary>
-    public ActivityExecutor(IServiceProvider services, App app, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, TimeProvider clock)
+    public ActivityExecutor(WorkflowScope scope, IServiceProvider services, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, TimeProvider clock)
     {
+        _scope = scope;
         _services = services;
-        _app = app;
         _registry = registry;
         _evaluator = evaluator;
         _clock = clock;
@@ -65,7 +63,7 @@ internal sealed class ActivityExecutor
     /// <remarks>
     /// 不实现 <see cref="IResumableActivity"/> 的活动：超时书签即故障，其他书签以输入作输出完成。
     /// </remarks>
-    public ValueTask<Result<ActivityOutcome>> RunAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, WorkflowBookmark? bookmark, JsonObject? inputs, CancellationToken cancellationToken)
+    public ValueTask<Result<ActivityOutcome>> RunAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, WorkflowBookmark? bookmark, JsonObject? inputs)
         => InvokeAsync(session, node, nodeInstance, async (activity, context) =>
         {
             if (bookmark is null)
@@ -85,7 +83,7 @@ internal sealed class ActivityExecutor
             }
 
             return ActivityOutcome.Complete(WorkflowJson.CloneObject(resume.Inputs));
-        }, cancellationToken);
+        });
 
     /// <summary>
     /// 补偿。
@@ -93,7 +91,7 @@ internal sealed class ActivityExecutor
     /// <remarks>
     /// 活动不可补偿时返回成功（不做事）。
     /// </remarks>
-    public async ValueTask<Result> CompensateAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, CancellationToken cancellationToken)
+    public async ValueTask<Result> CompensateAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance)
     {
         var result = await InvokeAsync(session, node, nodeInstance, async (activity, context) =>
         {
@@ -104,62 +102,40 @@ internal sealed class ActivityExecutor
             }
 
             return ActivityOutcome.Complete();
-        }, cancellationToken).ConfigureAwait(false);
+        }).ConfigureAwait(false);
         return result.ToResult();
     }
 
     /// <summary>
-    /// 开作用域、建上下文、经管道调用 <paramref name="body"/>。
+    /// 解析活动、建上下文、调用 <paramref name="body"/>。
     /// </summary>
-    private async ValueTask<Result<ActivityOutcome>> InvokeAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, Func<IActivity, ActivityContext, ValueTask<Result<ActivityOutcome>>> body, CancellationToken cancellationToken)
+    private async ValueTask<Result<ActivityOutcome>> InvokeAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, Func<IActivity, ActivityContext, ValueTask<Result<ActivityOutcome>>> body)
     {
         if (!_registry.Find(node.ActivityType).TryGetValue(out var definition))
         {
             return Error.NotFound(WorkflowErrors.TypeNotRegistered, WorkflowMessages.ActivityNotRegistered, MessageArguments.Of(("type", node.ActivityType.Value)));
         }
 
-        var instance = session.Instance;
-        var baggage = new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Correlation] = instance.Id };
-        if (instance.TenantId is { Length: > 0 } tenant)
+        // 引擎的每个操作都在一次调用里执行（调用方的，或引擎自己开的），活动沿用它：同一作用域、同一事务、同一租户
+        if (!_scope.Invocation.TryGetValue(out var invocation))
         {
-            baggage[BaggageKeys.Tenant] = tenant;
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", "The activity has no invocation to run in.")));
         }
 
-        Result<ActivityOutcome>? outcome = null;
         try
         {
-            await using var scope = _services.CreateAsyncScope();
-            var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
-            context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = node.ActivityType.Value });
-            var invoked = await _app.InvokeAsync(context, async ctx =>
-            {
-                var activity = (IActivity)ctx.Services.GetRequiredService(definition.ActivityClass);
-                var activityContext = new ActivityContext(session.Definition, instance, node, nodeInstance, session.Variables, ctx.Services, ctx, _evaluator, _clock);
-                try
-                {
-                    outcome = await body(activity, activityContext).ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is not OperationCanceledException || !ctx.CancellationToken.IsCancellationRequested)
-                {
-                    // 活动抛出即节点故障；管道的 outcome 也记失败，审计与追踪据此记录
-                    outcome = Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", exception.Message)));
-                }
-
-                if (outcome is { IsFailure: true } failed)
-                {
-                    ctx.SetOutcome(Result.Failure(failed.Error!));
-                }
-            }).ConfigureAwait(false);
-
-            // 管道在到达活动之前失败（如租户校验）时没有活动结果，以管道结果为故障
-            return outcome ?? (invoked.IsFailure ? invoked.Error! : Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", "The pipeline did not reach the activity."))));
+            var activity = (IActivity)_services.GetRequiredService(definition.ActivityClass);
+            var context = new ActivityContext(session.Definition, session.Instance, node, nodeInstance, session.Variables, _services, invocation, _evaluator, _clock);
+            return await body(activity, context).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (invocation.CancellationToken.IsCancellationRequested)
         {
+            // 调用被取消：整个操作随调用回滚，不把取消记成节点故障
             throw;
         }
         catch (Exception exception)
         {
+            // 活动抛出即节点故障；它在抛出之前做的写入留在同一事务里，不单独回滚
             return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", exception.Message)));
         }
     }

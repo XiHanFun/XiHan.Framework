@@ -5,8 +5,6 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -22,7 +20,7 @@ namespace XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 /// 外部任务服务（RFC-0021）。
 /// </summary>
 /// <remarks>
-/// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，释放锁后经引擎消费书签（引擎自己加锁，实例锁不可重入）；带重试的失败与延长锁只改书签。作用域服务：当前租户取自本次调用。
+/// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，交还锁后经引擎消费书签（引擎复用本作用域空闲的锁）；带重试的失败与延长锁只改书签。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
@@ -42,10 +40,6 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
-    /// <summary>
-    /// 实例锁。
-    /// </summary>
-    private readonly IWorkflowInstanceLock _lock;
 
     /// <summary>
     /// 时钟。
@@ -60,29 +54,41 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     /// <summary>
     /// 本次调用的上下文访问器。
     /// </summary>
-    private readonly IInvocationAccessor? _invocation;
+    private readonly WorkflowScope _scope;
 
     /// <summary>
     /// 创建（作用域服务）。
     /// </summary>
-    public WorkflowExternalTaskService(IWorkflowEngine engine, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, IWorkflowInstanceLock instanceLock, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
+    public WorkflowExternalTaskService(IWorkflowEngine engine, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _bookmarks = bookmarks ?? throw new ArgumentNullException(nameof(bookmarks));
-        _lock = instanceLock ?? throw new ArgumentNullException(nameof(instanceLock));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _events = new WorkflowEventPublisher(services.GetService<IMessagePublisher>(), loggerFactory.CreateLogger<WorkflowExternalTaskService>());
-        _invocation = services.GetService<IInvocationAccessor>();
+        _scope = services.GetRequiredService<WorkflowScope>();
     }
 
+    /// <summary>
+    /// 调用方的分区：调用的租户，空为平台。
+    /// </summary>
+    private string? Tenant => _scope.TenantId;
+
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchAsync(string topic, string workerId, TimeSpan lockDuration, int maxTasks, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchAsync(string topic, string workerId, TimeSpan lockDuration, int maxTasks, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topic);
         ArgumentException.ThrowIfNullOrWhiteSpace(workerId);
+        return _scope.RunAsync<IWorkflowExternalTaskService, IReadOnlyList<ExternalTask>>(true, "workflow.external.fetch", () => FetchCoreAsync(topic, workerId, lockDuration, maxTasks, cancellationToken), service => service.FetchAsync(topic, workerId, lockDuration, maxTasks, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 领取（在事务里）。
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchCoreAsync(string topic, string workerId, TimeSpan lockDuration, int maxTasks, CancellationToken cancellationToken)
+    {
         if (lockDuration <= TimeSpan.Zero)
         {
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "lockDuration must be positive")));
@@ -93,10 +99,10 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", $"maxTasks must be between 1 and {IWorkflowExternalTaskService.MaxTasksPerFetch}")));
         }
 
-        // 本租户、此刻可领取（书签到期时刻为空或已过：未锁定、锁已过期或已到 notBefore）与条数都下推到存储查询，不读回该主题的全部书签；
+        // 调用方分区、此刻可领取（书签到期时刻为空或已过：未锁定、锁已过期或已到 notBefore）与条数都下推到存储查询，不读回该主题的全部书签；
         // 实例是否运行中、锁与 notBefore 的精确判定在锁内重读后再确认
         var now = _clock.GetUtcNow();
-        var found = await _bookmarks.AvailableAsync(BookmarkKinds.External, topic, CurrentTenantId(), now, maxTasks, cancellationToken).ConfigureAwait(false);
+        var found = await _bookmarks.AvailableAsync(Tenant, BookmarkKinds.External, topic, now, maxTasks, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var candidates))
         {
             return found.Error!;
@@ -121,7 +127,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
                 bookmark.Payload[ExternalTaskPayloadKeys.LockedUntil] = Stamp(until);
                 bookmark.Payload.Remove(ExternalTaskPayloadKeys.NotBefore);
                 bookmark.DueAt = until;
-                var saved = await _bookmarks.SaveAsync([bookmark], cancellationToken).ConfigureAwait(false);
+                var saved = await _bookmarks.SaveAsync(Tenant, [bookmark], cancellationToken).ConfigureAwait(false);
                 if (saved.IsFailure)
                 {
                     return saved;
@@ -151,42 +157,51 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> CompleteAsync(IReadOnlyList<ExternalTaskCompletion> completions, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<WorkflowInstance>>> CompleteAsync(IReadOnlyList<ExternalTaskCompletion> completions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(completions);
-        var results = new List<Result<WorkflowInstance>>(completions.Count);
-        foreach (var completion in completions)
+        return _scope.RunBatchAsync<IWorkflowExternalTaskService, WorkflowInstance>(completions.Count, "workflow.external.complete", async () =>
         {
-            results.Add(await CompleteOneAsync(completion, cancellationToken).ConfigureAwait(false));
-        }
+            var results = new List<Result<WorkflowInstance>>(completions.Count);
+            foreach (var completion in completions)
+            {
+                results.Add(await CompleteOneAsync(completion, cancellationToken).ConfigureAwait(false));
+            }
 
-        return results;
+            return results;
+        }, service => service.CompleteAsync(completions, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> FailAsync(IReadOnlyList<ExternalTaskFailure> failures, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> FailAsync(IReadOnlyList<ExternalTaskFailure> failures, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(failures);
-        var results = new List<Result>(failures.Count);
-        foreach (var failure in failures)
+        return _scope.RunBatchAsync<IWorkflowExternalTaskService>(failures.Count, "workflow.external.fail", async () =>
         {
-            results.Add(await FailOneAsync(failure, cancellationToken).ConfigureAwait(false));
-        }
+            var results = new List<Result>(failures.Count);
+            foreach (var failure in failures)
+            {
+                results.Add(await FailOneAsync(failure, cancellationToken).ConfigureAwait(false));
+            }
 
-        return results;
+            return results;
+        }, service => service.FailAsync(failures, cancellationToken), cancellationToken);
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<Result>> ExtendLockAsync(IReadOnlyList<ExternalTaskLockExtension> extensions, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> ExtendLockAsync(IReadOnlyList<ExternalTaskLockExtension> extensions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(extensions);
-        var results = new List<Result>(extensions.Count);
-        foreach (var extension in extensions)
+        return _scope.RunBatchAsync<IWorkflowExternalTaskService>(extensions.Count, "workflow.external.extend-lock", async () =>
         {
-            results.Add(await ExtendOneAsync(extension, cancellationToken).ConfigureAwait(false));
-        }
+            var results = new List<Result>(extensions.Count);
+            foreach (var extension in extensions)
+            {
+                results.Add(await ExtendOneAsync(extension, cancellationToken).ConfigureAwait(false));
+            }
 
-        return results;
+            return results;
+        }, service => service.ExtendLockAsync(extensions, cancellationToken), cancellationToken);
     }
 
     /// <summary>
@@ -256,7 +271,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
                 bookmark.Payload.Remove(ExternalTaskPayloadKeys.LockedUntil);
                 bookmark.Payload[ExternalTaskPayloadKeys.NotBefore] = Stamp(notBefore);
                 bookmark.DueAt = notBefore;
-                var saved = await _bookmarks.SaveAsync([bookmark], cancellationToken).ConfigureAwait(false);
+                var saved = await _bookmarks.SaveAsync(Tenant, [bookmark], cancellationToken).ConfigureAwait(false);
                 if (saved.IsFailure)
                 {
                     return saved;
@@ -316,7 +331,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             var until = now + extension.LockDuration;
             bookmark.Payload[ExternalTaskPayloadKeys.LockedUntil] = Stamp(until);
             bookmark.DueAt = until;
-            return await _bookmarks.SaveAsync([bookmark], cancellationToken).ConfigureAwait(false);
+            return await _bookmarks.SaveAsync(Tenant, [bookmark], cancellationToken).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -358,7 +373,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     /// </summary>
     private async ValueTask<Result> WithLockedBookmarkAsync(WorkflowBookmark peek, Func<WorkflowBookmark, WorkflowInstance, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
-        var acquired = await _lock.AcquireAsync(peek.InstanceId, cancellationToken).ConfigureAwait(false);
+        var acquired = await _scope.LockAsync(peek.InstanceId, cancellationToken).ConfigureAwait(false);
         if (!acquired.TryGetValue(out var handle))
         {
             return acquired.Error!;
@@ -373,7 +388,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
                 return refreshed.Error!;
             }
 
-            var instanceFound = await _instances.FindAsync(bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
+            var instanceFound = await _instances.FindAsync(Tenant, bookmark.InstanceId, cancellationToken).ConfigureAwait(false);
             if (!instanceFound.TryGetValue(out var instanceMaybe))
             {
                 return instanceFound.Error!;
@@ -406,13 +421,13 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             return Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", taskId ?? string.Empty)));
         }
 
-        var found = await _bookmarks.FindAsync(taskId, cancellationToken).ConfigureAwait(false);
+        var found = await _bookmarks.FindAsync(Tenant, taskId, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var maybe))
         {
             return found.Error!;
         }
 
-        if (!maybe.TryGetValue(out var bookmark) || !string.Equals(bookmark.Kind, BookmarkKinds.External, StringComparison.Ordinal) || !string.Equals(bookmark.TenantId, CurrentTenantId(), StringComparison.Ordinal))
+        if (!maybe.TryGetValue(out var bookmark) || !string.Equals(bookmark.Kind, BookmarkKinds.External, StringComparison.Ordinal))
         {
             return Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", taskId)));
         }
@@ -511,9 +526,4 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
         At = _clock.GetUtcNow(),
     };
 
-    /// <summary>
-    /// 当前调用的租户。
-    /// </summary>
-    private string? CurrentTenantId()
-        => _invocation is not null && _invocation.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant?.Id : null;
 }

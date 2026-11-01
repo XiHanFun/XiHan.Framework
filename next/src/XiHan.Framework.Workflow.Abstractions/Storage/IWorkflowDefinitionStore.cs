@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Storage;
 /// 定义存储。
 /// </summary>
 /// <remarks>
-/// 不按租户过滤，写入按批量。按名字的查询以租户为名字空间：<c>tenantId</c> 按相等比较，<see langword="null"/> 只匹配全局定义（无租户）。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
+/// 按分区读写：每个方法的第一个参数 <c>tenantId</c> 是分区（空为平台，否则是该租户），只返回这个分区的定义，写入的定义 <see cref="WorkflowDefinition.TenantId"/> 必须等于它；名字与版本号在分区里唯一。写入按批量。不可达 → <see cref="WorkflowErrors.StoreUnavailable"/>，容量已满 → <see cref="WorkflowErrors.StoreCapacity"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionStore
@@ -18,55 +18,52 @@ public interface IWorkflowDefinitionStore
     /// <summary>
     /// 按 ID 找。
     /// </summary>
-    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 别的分区的定义不返回。
+    /// </remarks>
+    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按 ID 批量找。
     /// </summary>
     /// <remarks>
-    /// 不存在的不在结果里，顺序不保证。
+    /// 不存在或在别的分区的不在结果里，顺序不保证。
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 在一个名字空间里按名字与版本找。
+    /// 按名字与版本找。
     /// </summary>
-    /// <remarks>
-    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）。
-    /// </remarks>
-    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, string? tenantId, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string? tenantId, WorkflowName name, int version, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 一个名字空间里该名字下版本号最大的已发布定义。
+    /// 该名字下版本号最大的已发布定义。
     /// </summary>
-    /// <remarks>
-    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）。
-    /// </remarks>
-    ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 一个名字空间里该名字下的最大版本号。
+    /// 该名字下的最大版本号。
     /// </summary>
     /// <remarks>
-    /// 名字空间是 <paramref name="tenantId"/>（空为全局定义）；没有为 0。
+    /// 没有为 0。
     /// </remarks>
-    ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, string? tenantId, CancellationToken cancellationToken);
+    ValueTask<Result<int>> MaxVersionAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
     /// 列表：名字升序、版本降序。
     /// </summary>
-    ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(string? tenantId, WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken);
 
     /// <summary>
     /// 新增或整体替换。
     /// </summary>
-    ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken);
+    ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除。
     /// </summary>
     /// <remarks>
-    /// 不存在的忽略。
+    /// 不存在或在别的分区的忽略。
     /// </remarks>
-    ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken);
+    ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken);
 }

@@ -1,6 +1,6 @@
 # XiHan.Framework.Workflow.Database
 
-工作流的数据库 Provider，提供 `workflow.execution@1`。定义、实例、节点实例与书签存放在应用的关系库里，经 `persistence.relational@1` 的仓储读写；实例锁与到期书签轮询的领导权都是同一张表里的租约行，多个节点共用一个库。
+工作流的数据库 Provider，提供 `workflow.execution@1`。定义、实例、节点实例与书签存放在应用的关系库里，在调用方的工作单元里经 `persistence.relational@1` 的仓储读写，随业务提交或回滚；租户的记录随租户分库。实例锁与到期书签轮询的领导权都是平台库同一张表里的租约行，多个节点共用。
 
 适用于多实例部署，以及实例需要跨进程重启保留的场景。
 
@@ -8,26 +8,27 @@
 | --- | --- |
 | 包 ID | `XiHan.Framework.Workflow.Database` |
 | 环层 | Ring 3（实现） |
-| 能力 | 提供 `workflow.execution@1`（`role: provider`）；依赖 `kernel.hosting@1`、`persistence.relational@1` |
+| 能力 | 提供 `workflow.execution@1`（`role: provider`）；依赖 `kernel.hosting@1`、`persistence.relational@1`；可选依赖 `multitenancy.context@1` |
 | 特性入口 | `DatabaseWorkflowFeature`（清单 ID `xihan.workflow.database`） |
 | 配置节 | `XiHan:Workflow`（引擎选项）、`XiHan:Workflow:Database` |
-| 依赖 | `XiHan.Framework.Workflow.Abstractions`、`XiHan.Framework.Persistence.Abstractions`；不引用数据库驱动 |
+| 依赖 | `XiHan.Framework.Workflow.Abstractions`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`；不引用数据库驱动 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
 ## 概述
 
-引擎仍是抽象包的 `WorkflowEngine`，本包实现四个存储契约并驱动轮询：
+引擎仍是抽象包的 `WorkflowEngine`，本包实现三个存储、事务与实例锁契约并驱动轮询：
 
 | 组件 | 做法 |
 | --- | --- |
-| 三个存储（`Storage.DatabaseWorkflowDefinitionStore` 等） | 单例；每个操作在根提供者的新作用域里经 `App.InvokeAsync` 走完整管道，仓储在 Transaction 阶段内使用，返回即提交 |
-| 实例锁 `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行 |
-| 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约，持有时才轮询到期书签 |
+| 三个存储（`Storage.DatabaseWorkflowDefinitionStore` 等） | 作用域服务；在所在作用域的工作单元里经仓储读写，不经管道、不自己提交。分区为空读写平台表，否则读写租户表；分区必须等于工作单元的租户 |
+| 事务 `DatabaseWorkflowTransaction` | 在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_DENIED_001` |
+| 实例锁 `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行。每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道 |
+| 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理 |
 
-存储不加入调用方的工作单元，这是实例锁成立的前提：锁释放之前，实例的写入已经提交，别的节点拿到锁时读到的就是最新状态（ADR-0020）。轮询的领导权只为节省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由实例锁串行化。
+存储加入调用方的工作单元，租约行不加入（ADR-0077）：引擎把取得的实例锁持有到调用的服务作用域结束（事务提交或回滚之后）才释放，别的节点拿到锁时读到的一定是提交后的状态；租约行自己提交，别的节点立刻看得见、不随业务回滚。轮询的领导权只为节省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由实例锁串行化。
 
-每张表是过滤与排序用的列加一列整份模型的 JSON 文档（`Document`）。实例、节点实例与书签另有写入序号 `Sequence`，首次写入时分配、替换时保留，作同一时刻排序的次关键字（UUID v7 只到毫秒单调，不能当写入顺序用）。租户只是普通列，实体不实现 `IMultiTenant`，存储不按租户过滤。
+每张表是过滤与排序用的列加一列整份模型的 JSON 文档（`Document`）。实例、节点实例与书签另有写入序号 `Sequence`，首次写入时分配、替换时保留，作同一时刻排序的次关键字（UUID v7 只到毫秒单调，不能当写入顺序用）。数据按分区落表：租户分区的四张表实现 `IMultiTenant`，持久化按工作单元的租户写入与过滤，租户有独立库时落它的分片连接；平台分区是四张 `Platform*` 表，没有租户列，落平台库。平台与租户互不可见。
 
 ## 何时使用
 
@@ -60,7 +61,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<DatabaseWorkflowFeature>());
 ```
 
-用 EF Core 的应用在自己的 `DbContext` 里登记五个实体，并给 `Document` 列用长文本类型：
+用 EF Core 的应用在自己的 `DbContext` 里登记九个实体（四张租户表、四张平台表、租约表），并给 `Document` 列用长文本类型（平台表同样）：
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -110,14 +111,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 | 类型 | 说明 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 特性：登记五个实体的仓储，装配存储、实例锁、引擎与健康项；应用进入服务状态后启动轮询，停止时等进行中的轮询结束并释放领导权 |
+| `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；应用进入服务状态后启动轮询，停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
-| `Entities.WorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`TenantId`、`CreatedAt`、`PublishedAt`、`Document` |
-| `Entities.WorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、`TenantId`、时间列、`Sequence`、`Document` |
-| `Entities.WorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document` |
-| `Entities.WorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`TenantId`、`Sequence`、`Document` |
+| `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
+| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`） |
+| `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
+| `Entities.WorkflowNodeInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
+| `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 三个存储实现 |
+| `DatabaseWorkflowTransaction` | 与调用方事务的关系 |
 | `Locking.DatabaseWorkflowInstanceLock` | 实例锁实现 |
 | `Polling.PollerLeadership`、`Polling.DueBookmarkPollingLoop` | 轮询领导权（资源 `PollerLeadership.Resource` = `workflow.poller`）与轮询循环 |
 
@@ -127,14 +130,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 行为与限制
 
-- 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；一次保存一个事务，任一项失败整批回滚。删实例级联删节点实例。
+- 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
-- 管道失败（应用不在服务状态、仓储异常、提交失败）→ `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`。
+- 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_DENIED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
-- 在一个持有写锁的事务里调用引擎时，SQLite 这类库级写锁的数据库会等到忙等超时；行锁数据库不受影响。
-- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一；全局定义的租户是 NULL，PostgreSQL、SQLite、MySQL 不约束这些行）、`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_EnAt`（`EndedAt`）、`IX_WorkflowInstanceRecord_CrAt`（`CreatedAt`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_DuAt`（`DueAt`）；租约表只按主键读写。实例列表的其他过滤组合由应用按查询习惯自己加。
+- 租约行与业务写入不在同一个事务里：SQLite 这类只有一个写者的数据库上，业务事务写过之后再写租约行要等自己的事务结束（忙等超时）。在 SQLite 上要经 `IEntityConnectionSelector` 把 `WorkflowLockRecord` 放到另一个库文件，调用之外的作用域以那个库为根连接；PostgreSQL 等行锁数据库不需要。
+- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions()` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例。
+
+## 从上一版升级
+
+表结构与数据要迁移（ADR-0077）：
+
+- 新建四张 `Platform*` 表；`WorkflowNodeInstanceRecord` 新增非空 `TenantId` 列（取所属实例的租户回填）。
+- `TenantId` 为 NULL 的定义、实例、书签与这些实例的节点实例搬到对应的 `Platform*` 表（同列复制，不带 `TenantId`）。平台定义搬过去之前先查 `(Name, Version)` 重复：旧索引不约束 NULL 行，可能已有重复。
+- 有独立库的租户，把它的行从平台库搬到它自己的库。
+- 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。
 
 ## 相关
 
@@ -143,4 +155,4 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - [Workflow.InMemory](./workflow-inmemory)
 - [Scheduling.Database](./scheduling-database)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
-- 规范：RFC-0021《工作流：持久化执行》；ADR-0020
+- 规范：RFC-0021《工作流：持久化执行》；ADR-0020、ADR-0077

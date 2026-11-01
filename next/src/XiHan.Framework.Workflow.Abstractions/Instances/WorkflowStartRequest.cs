@@ -57,14 +57,6 @@ public sealed record WorkflowStartRequest
     public string? StarterId { get; init; }
 
     /// <summary>
-    /// 租户。
-    /// </summary>
-    /// <remarks>
-    /// 空取当前调用的租户。
-    /// </remarks>
-    public string? TenantId { get; init; }
-
-    /// <summary>
     /// 指定实例 ID（子流程用）。
     /// </summary>
     /// <remarks>

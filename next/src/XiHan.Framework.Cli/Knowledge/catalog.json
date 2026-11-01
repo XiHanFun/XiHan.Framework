@@ -1320,12 +1320,13 @@
     {
       "id": "XiHan.Framework.Workflow.Abstractions",
       "ring": "2",
-      "summary": "工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储与实例锁契约",
+      "summary": "工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储 / 事务 / 实例锁契约；引擎随调用方事务提交或回滚，数据按平台 / 租户分区隔离",
       "description": "XiHan Framework 工作流契约与引擎（Ring 2，RFC-0021）：定义、活动、实例、书签、用户任务、表达式、存储契约，以及经内核管道执行活动的引擎与到期书签轮询器。",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions",
         "XiHan.Framework.Messaging.Abstractions",
+        "XiHan.Framework.MultiTenancy.Abstractions",
         "XiHan.Framework.Scheduling.Abstractions"
       ],
       "dependencies": [
@@ -1350,7 +1351,8 @@
       "summary": "工作流存储 / 实例锁与引擎装配必须通过的 xUnit 套件",
       "description": "XiHan Framework 工作流一致性套件：任何工作流存储、实例锁与引擎装配都必须通过的 xUnit 抽象测试类。",
       "references": [
-        "XiHan.Framework.Workflow.Abstractions"
+        "XiHan.Framework.Workflow.Abstractions",
+        "XiHan.Framework.MultiTenancy.Abstractions"
       ],
       "dependencies": [
         {
@@ -1371,11 +1373,12 @@
     {
       "id": "XiHan.Framework.Workflow.Database",
       "ring": "3",
-      "summary": "数据库 Provider：定义 / 实例 / 节点实例 / 书签以 JSON 文档加查询列经仓储读写，每个存储操作一个事务，租约行实例锁（续约、CAS 接管），轮询只在持有租约的节点上进行",
+      "summary": "数据库 Provider：定义 / 实例 / 节点实例 / 书签以 JSON 文档加查询列在调用方的工作单元里经仓储读写（随业务提交或回滚），租户的记录随租户分库，租约行实例锁（续约、CAS 接管），轮询只在持有租约的节点上逐个分区进行",
       "description": "XiHan Framework 数据库工作流 Provider：定义、实例、节点实例与书签以实体经 persistence.relational@1 的仓储读写（过滤列加 JSON 文档），实例锁与到期书签轮询的领导权以租约行实现，多节点共用一个数据库。",
       "references": [
         "XiHan.Framework.Workflow.Abstractions",
-        "XiHan.Framework.Persistence.Abstractions"
+        "XiHan.Framework.Persistence.Abstractions",
+        "XiHan.Framework.MultiTenancy.Abstractions"
       ],
       "dependencies": [],
       "frameworkReferences": []
@@ -1383,7 +1386,7 @@
     {
       "id": "XiHan.Framework.Workflow.InMemory",
       "ring": "3",
-      "summary": "内存工作流默认实现：有界内存的定义 / 实例 / 书签存储、进程内实例锁、单进程到期书签轮询",
+      "summary": "内存工作流默认实现：按分区的有界内存定义 / 实例 / 书签存储（非事务）、进程内实例锁、单进程到期书签轮询",
       "description": "XiHan Framework 内存工作流（默认实现）：有界内存的定义、实例与书签存储，进程内实例锁，单进程到期书签轮询。",
       "references": [
         "XiHan.Framework.Workflow.Abstractions"
@@ -2692,6 +2695,11 @@
           "id": "persistence.relational",
           "version": 1,
           "optional": false
+        },
+        {
+          "id": "multitenancy.context",
+          "version": 1,
+          "optional": true
         }
       ],
       "bindings": [],

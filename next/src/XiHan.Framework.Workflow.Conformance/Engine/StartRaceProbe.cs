@@ -77,8 +77,8 @@ internal sealed class StartRaceProbe
     public void Install(IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        // 工厂在解析时才执行，那时 Provider 已登记完具体类型；先登记的接口让 Provider 的 TryAdd 让位
-        services.AddSingleton<IWorkflowInstanceStore>(sp => new GatedInstanceStore((IWorkflowInstanceStore)sp.GetRequiredService(ProviderType<IWorkflowInstanceStore>(services)), this));
+        // 工厂在解析时才执行，那时 Provider 已登记完具体类型；先登记的接口让 Provider 的 TryAdd 让位。存储按作用域（数据库实现在调用方的工作单元里读写），装饰器跟着按作用域
+        services.AddScoped<IWorkflowInstanceStore>(sp => new GatedInstanceStore((IWorkflowInstanceStore)sp.GetRequiredService(ProviderType<IWorkflowInstanceStore>(services)), this));
         services.AddSingleton<IWorkflowInstanceLock>(sp => new ObservedInstanceLock((IWorkflowInstanceLock)sp.GetRequiredService(ProviderType<IWorkflowInstanceLock>(services)), this));
     }
 

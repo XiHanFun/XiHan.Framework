@@ -1,238 +1,141 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using XiHan.Framework.Domain.Specifications;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Persistence.Abstractions.Queries;
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
-using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
 using XiHan.Framework.Workflow.Database.Entities;
 
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库书签存储（单例）。
+/// 数据库书签存储（作用域服务）。
 /// </summary>
 /// <remarks>
-/// 每个操作在新作用域里经完整管道执行；到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。管道失败 → <see cref="WorkflowErrors.StoreUnavailable"/>。
+/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowBookmarkRecord"/>，否则读写 <see cref="WorkflowBookmarkRecord"/>（随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
 {
     /// <summary>
-    /// 管道执行。
+    /// 调用方的工作单元。
     /// </summary>
-    private readonly StoreInvocation _invocation;
+    private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
-    /// 写入序号。
+    /// 平台分区的表。
     /// </summary>
-    private readonly WriteSequence _sequence;
+    private readonly BookmarkRows<PlatformWorkflowBookmarkRecord> _platform;
 
     /// <summary>
-    /// 创建。
+    /// 租户分区的表。
     /// </summary>
-    public DatabaseWorkflowBookmarkStore(IServiceProvider services, App app, TimeProvider clock)
+    private readonly BookmarkRows<WorkflowBookmarkRecord> _tenant;
+
+    /// <summary>
+    /// 创建（作用域服务）。
+    /// </summary>
+    public DatabaseWorkflowBookmarkStore(IServiceProvider services)
     {
-        _invocation = new StoreInvocation(services, app);
-        _sequence = new WriteSequence(clock);
+        ArgumentNullException.ThrowIfNull(services);
+        _unitOfWork = services.GetRequiredService<IUnitOfWork>();
+        var sequence = services.GetRequiredService<WriteSequence>();
+        _platform = new BookmarkRows<PlatformWorkflowBookmarkRecord>(services.GetRequiredService<IRepository<PlatformWorkflowBookmarkRecord, string>>(), sequence);
+        _tenant = new BookmarkRows<WorkflowBookmarkRecord>(services.GetRequiredService<IRepository<WorkflowBookmarkRecord, string>>(), sequence);
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string id, CancellationToken cancellationToken)
+    public async ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string? tenantId, string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var found = await StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx).FindAsync(id, ctx.CancellationToken).ConfigureAwait(false);
-            return Result.Success(found.TryGetValue(out var record) ? Maybe.Some(WorkflowJson.DeserializeBookmark(record.Document)) : Maybe.None<WorkflowBookmark>());
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindAsync(id, cancellationToken).ConfigureAwait(false) : await _tenant.FindAsync(id, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var records = await RecordQueries.FindManyAsync(StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx), ids, ctx.CancellationToken).ConfigureAwait(false);
-            return ToBookmarks(records);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.FindManyAsync(ids, cancellationToken).ConfigureAwait(false) : await _tenant.FindManyAsync(ids, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByInstanceAsync(string instanceId, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByInstanceAsync(string? tenantId, string instanceId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instanceId);
-        return ListAsync(ByCreation(new Specification<WorkflowBookmarkRecord>(record => record.InstanceId == instanceId)), null, cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.ByInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) : await _tenant.ByInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> DueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> DueAsync(string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
-        if (limit <= 0)
-        {
-            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>([]));
-        }
-
-        // 到期时间升序，同刻按写入序号升序。不写 DueAt != null：SQL 里 NULL <= 值 本来就不成立，而 SqlSugar 会把该比较翻译成 `<> @参数(NULL)`，永远不匹配
-        var query = EntityQuery.All<WorkflowBookmarkRecord>()
-            .Where(new Specification<WorkflowBookmarkRecord>(record => record.DueAt <= now))
-            .OrderBy(static record => record.DueAt)
-            .OrderBy(static record => record.Sequence)
-            .OrderBy(static record => record.Id);
-        return ListAsync(query, limit, cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.DueAsync(now, limit, cancellationToken).ConfigureAwait(false) : await _tenant.DueAsync(now, limit, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string kind, string key, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string? tenantId, string kind, string key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(key);
-        return ListAsync(ByCreation(new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == key)), null, cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.ByKindAndKeyAsync(kind, key, cancellationToken).ConfigureAwait(false) : await _tenant.ByKindAndKeyAsync(kind, key, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, string? tenantId, DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string? tenantId, string kind, string key, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(key);
-        if (limit <= 0)
-        {
-            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowBookmark>>([]));
-        }
-
-        // 无租户写成字面量 null：与值为 null 的变量比较会被翻译成 = @参数(NULL)，永远不匹配
-        // 到期条件先写比较再写判空：SqlSugar 把可空 DateTimeOffset 的 `== null || <= 参数` 这一写法翻译失败（KERNEL_UNEXPECTED_001），反过来写正常
-        var filter = tenantId is null
-            ? new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == key && record.TenantId == null && (record.DueAt <= now || record.DueAt == null))
-            : new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == key && record.TenantId == tenantId && (record.DueAt <= now || record.DueAt == null));
-        return ListAsync(ByCreation(filter), limit, cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.AvailableAsync(kind, key, now, limit, cancellationToken).ConfigureAwait(false) : await _tenant.AvailableAsync(kind, key, now, limit, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string? tenantId, string signalName, string? correlationId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(signalName);
-        var kind = BookmarkKinds.Signal;
-        // 给了关联 ID 时取关联为空或相等的；没给时取该信号的全部
-        var filter = correlationId is null
-            ? new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == signalName)
-            : new Specification<WorkflowBookmarkRecord>(record => record.Kind == kind && record.Key == signalName && (record.CorrelationId == null || record.CorrelationId == correlationId));
-        return ListAsync(ByCreation(filter), null, cancellationToken);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.BySignalAsync(signalName, correlationId, cancellationToken).ConfigureAwait(false) : await _tenant.BySignalAsync(signalName, correlationId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
+    public async ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(bookmarks);
-        var rows = bookmarks.Select(ToRecord).ToList();
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(
-            ctx => RecordQueries.UpsertAsync(StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx), rows, Copy, ctx.CancellationToken),
-            cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        foreach (var bookmark in bookmarks)
+        {
+            StorePartition.EnsureOwned(tenantId, bookmark.TenantId, "bookmark", bookmark.Id);
+        }
+
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.SaveAsync(bookmarks, cancellationToken).ConfigureAwait(false) : await _tenant.SaveAsync(bookmarks, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    public async ValueTask<Result> DeleteAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var repository = StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx);
-            var rows = await RecordQueries.FindManyAsync(repository, ids, ctx.CancellationToken).ConfigureAwait(false);
-            return await RecordQueries.RemoveManyAsync(repository, rows, ctx.CancellationToken).ConfigureAwait(false);
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.DeleteAsync(ids, cancellationToken).ConfigureAwait(false) : await _tenant.DeleteAsync(ids, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> DeleteByInstanceAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
+    public async ValueTask<Result> DeleteByInstanceAsync(string? tenantId, IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(instanceIds);
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var repository = StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx);
-            foreach (var batch in RecordQueries.Batches(instanceIds))
-            {
-                var query = EntityQuery.All<WorkflowBookmarkRecord>()
-                    .Where(new Specification<WorkflowBookmarkRecord>(record => batch.Contains(record.InstanceId)))
-                    .OrderBy(static record => record.Id);
-                var owned = await RecordQueries.ListAllAsync(repository, query, null, ctx.CancellationToken).ConfigureAwait(false);
-                var removed = await RecordQueries.RemoveManyAsync(repository, owned, ctx.CancellationToken).ConfigureAwait(false);
-                if (removed.IsFailure)
-                {
-                    return removed;
-                }
-            }
-
-            return Result.Success();
-        }, cancellationToken).ConfigureAwait(false));
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.DeleteByInstanceAsync(instanceIds, cancellationToken).ConfigureAwait(false) : await _tenant.DeleteByInstanceAsync(instanceIds, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
-    /// 创建时间升序、同刻按写入序号升序、再按 ID 补成全序的查询。
+    /// 核对分区与工作单元的租户一致。
     /// </summary>
-    private static EntityQuery<WorkflowBookmarkRecord> ByCreation(Specification<WorkflowBookmarkRecord> filter)
-        => EntityQuery.All<WorkflowBookmarkRecord>().Where(filter).OrderBy(static record => record.CreatedAt).OrderBy(static record => record.Sequence).OrderBy(static record => record.Id);
-
-    /// <summary>
-    /// 按查询读完（或读到上限）并反序列化。
-    /// </summary>
-    private async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListAsync(EntityQuery<WorkflowBookmarkRecord> query, int? limit, CancellationToken cancellationToken)
-    {
-        return StoreInvocation.OrUnavailable(await _invocation.RunAsync(async ctx =>
-        {
-            var records = await RecordQueries.ListAllAsync(StoreInvocation.Repository<WorkflowBookmarkRecord>(ctx), query, limit, ctx.CancellationToken).ConfigureAwait(false);
-            return ToBookmarks(records);
-        }, cancellationToken).ConfigureAwait(false));
-    }
-
-    /// <summary>
-    /// 多行 → 书签。
-    /// </summary>
-    private static Result<IReadOnlyList<WorkflowBookmark>> ToBookmarks(List<WorkflowBookmarkRecord> records)
-        => Result.Success<IReadOnlyList<WorkflowBookmark>>(records.Select(static record => WorkflowJson.DeserializeBookmark(record.Document)).ToList());
-
-    /// <summary>
-    /// 书签 → 行。
-    /// </summary>
-    /// <remarks>
-    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它。
-    /// </remarks>
-    private WorkflowBookmarkRecord ToRecord(WorkflowBookmark bookmark)
-    {
-        ArgumentNullException.ThrowIfNull(bookmark);
-        return new WorkflowBookmarkRecord
-        {
-            Id = bookmark.Id,
-            Sequence = _sequence.Next(),
-            InstanceId = bookmark.InstanceId,
-            NodeInstanceId = bookmark.NodeInstanceId,
-            Kind = bookmark.Kind,
-            Key = bookmark.Key,
-            CorrelationId = bookmark.CorrelationId,
-            DueAt = bookmark.DueAt,
-            CreatedAt = bookmark.CreatedAt,
-            TenantId = bookmark.TenantId,
-            Document = WorkflowJson.Serialize(bookmark),
-        };
-    }
-
-    /// <summary>
-    /// 把新行的内容复制到已有行上。
-    /// </summary>
-    private static void Copy(WorkflowBookmarkRecord source, WorkflowBookmarkRecord target)
-    {
-        target.InstanceId = source.InstanceId;
-        target.NodeInstanceId = source.NodeInstanceId;
-        target.Kind = source.Kind;
-        target.Key = source.Key;
-        target.CorrelationId = source.CorrelationId;
-        target.DueAt = source.DueAt;
-        target.CreatedAt = source.CreatedAt;
-        target.TenantId = source.TenantId;
-        target.Document = source.Document;
-    }
+    private void Enter(string? tenantId) => StorePartition.Ensure(_unitOfWork, tenantId);
 }
