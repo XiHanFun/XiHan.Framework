@@ -59,12 +59,15 @@ internal static class GeneratorRules
     /// <summary>
     /// XHP004：值类型实现了 <c>IEntity&lt;TKey&gt;</c>，不能作仓储的实体。
     /// </summary>
+    /// <remarks>
+    /// 错误：仓储与工作单元按引用跟踪实体（<c>where TEntity : class</c>），值类型的实体写不进仓储，警告会让它在编译通过后一直没有登记（ADR-0072）。
+    /// </remarks>
     public static readonly DiagnosticDescriptor ValueTypeEntity = new(
         "XHP004",
-        "Value type implementing IEntity<TKey> is not registered",
-        "'{0}' implements IEntity<TKey> but is a value type; repositories require a class (or record class), so no registration is generated",
+        "Entity must be a class, not a value type",
+        "'{0}' implements IEntity<TKey> but is a value type; repositories require a class or record class",
         Category,
-        DiagnosticSeverity.Warning,
+        DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         helpLinkUri: HelpLink);
 }

@@ -190,9 +190,9 @@ public sealed class EntityGeneratorTests
         Assert.Contains("modelBuilder.Entity<global::Demo.App.Invoice>();", generated, StringComparison.Ordinal);
         Assert.Contains("public static class PaymentFilters", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("DraftRecord", generated, StringComparison.Ordinal);
-        // 值类型不能作仓储的实体：逐个报 XHP004，不登记
+        // 值类型不能作仓储的实体：逐个报 XHP004 错误，不登记
         Assert.Equal(["Cell", "Point"], generator.Where(static d => d.Id == "XHP004").Select(static d => d.GetMessage(System.Globalization.CultureInfo.InvariantCulture).Split('\'')[1]).OrderBy(static name => name, StringComparer.Ordinal));
-        Assert.All(generator, static d => Assert.Equal(DiagnosticSeverity.Warning, d.Severity));
+        Assert.All(generator, static d => Assert.Equal(("XHP004", DiagnosticSeverity.Error), (d.Id, d.Severity)));
         Assert.DoesNotContain("Point", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("Cell", generated, StringComparison.Ordinal);
     }

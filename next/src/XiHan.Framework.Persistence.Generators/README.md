@@ -20,7 +20,7 @@ var active = await repository.ListAsync(EntityQuery.All<Order>().Where(OrderFilt
 | `XHP001` | 实体类通过多个 `IEntity<TKey>` 声明了不同的键类型 |
 | `XHP002` | 实体类是嵌套类型或不是 public / internal |
 | `XHP003` | 要生成的 `<实体>Filters` 与已有类型同名，跳过该实体的过滤规约（警告） |
-| `XHP004` | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>`：仓储要求实体是类，不生成登记（警告） |
+| `XHP004` | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>`：仓储要求实体是类，编译失败（错误，ADR-0072） |
 
 引用方式：`<ProjectReference Include="…/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />`，或 NuGet 包（分析器形式，不进入运行时依赖）。
 

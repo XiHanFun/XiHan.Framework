@@ -98,7 +98,7 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 
 ## 行为与限制
 
-- 扫描当前项目里的 `class` 与 `record`（`record class`）声明：抽象的、静态的不生成；分部类型的多个声明只登记一次。值类型（`struct`、`record struct`）实现 `IEntity<TKey>` 时报 `XHP004` 警告、不生成登记：仓储要求实体是类。
+- 扫描当前项目里的 `class` 与 `record`（`record class`）声明：抽象的、静态的不生成；分部类型的多个声明只登记一次。值类型（`struct`、`record struct`）实现 `IEntity<TKey>` 时报 `XHP004` 错误、编译失败：仓储要求实体是类。
 - 实体按完整类型名排序后输出，生成结果稳定。
 - 没有实体时不生成任何文件，引用生成器的项目也就没有 `GeneratedEntities`。
 - `RootNamespace` 中的非法字符会被整理成合法的命名空间名。
@@ -108,7 +108,7 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 | `XHP001` | Error | 实体类经多个 `IEntity<TKey>` 声明了不同的键类型 | 只实现一个 `IEntity<TKey>`；该实体不生成 |
 | `XHP002` | Error | 实体类是嵌套类型，或不是 `public` / `internal` | 改为顶层的 `public` 或 `internal` 类；该实体不生成 |
 | `XHP003` | Warning | 要生成的 `<实体>Filters` 与已有类型同名 | 该实体的过滤规约不生成，仓储登记照常生成 |
-| `XHP004` | Warning | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>` | 改成 `class` 或 `record class`；该类型不生成登记 |
+| `XHP004` | Error | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>` | 改成 `class` 或 `record class`；该类型不生成登记 |
 
 ## 相关
 
