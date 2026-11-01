@@ -274,6 +274,50 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(deadline.UtcTicks, received.UtcTicks);
     }
 
+    [Theory]
+    [InlineData(true, false, KernelErrors.DeadlineExceeded)]
+    [InlineData(false, true, KernelErrors.Cancelled)]
+    [InlineData(true, true, KernelErrors.DeadlineExceeded)]
+    public async Task CancellationDuringAPluginCall_IsAttributedByTheDeadlineToken(bool deadlineReached, bool callerCancels, string expected)
+    {
+        // 插件调用进行中（echoes.relay 回调一直等待的宿主操作）时到截止时间、调用方取消或两者都发生：运行时把 gRPC 的 Cancelled
+        // 原样写成取消、不按时钟判断，DeadlineMiddleware 按截止令牌归因——截止时间到了即超时，调用方同时取消也一样（RFC-0004）。
+        // 时钟从当前时刻起步、截止时间在一小时后：gRPC 按墙钟换算的截止时间不会先到，超时只来自宿主按注入时钟落下的定时取消
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        var probe = new CancellationProbe();
+        await using var host = await EchoPluginHost.StartAsync(b => b.UseFeature(new StubFeature(TestManifests.Create("xihan.app.waits"))
+        {
+            OnConfigure = ctx =>
+            {
+                ctx.Services.AddSingleton(probe);
+                ctx.AddOperation<WaitOperation, PingRequest, PingResponse>(new OperationContract("waits.create"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
+            },
+        }), services: s => s.AddSingleton<TimeProvider>(clock));
+        using var caller = new CancellationTokenSource();
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, caller.Token, deadline: clock.GetUtcNow().AddHours(1));
+        var call = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest("echoes.relay", Encoding.UTF8.GetBytes("""{"operation":"waits.create","payload":{"name":"wait"}}"""))).AsTask();
+        if (await Task.WhenAny(probe.Entered, call).WaitAsync(TimeSpan.FromSeconds(30)) != probe.Entered)
+        {
+            Assert.Fail($"The plugin call ended before its callback reached the host: {(await call).Outcome}.");
+        }
+
+        // 先到截止时间（定时取消在 Advance 里同步触发），再取消调用方的令牌
+        if (deadlineReached)
+        {
+            clock.Advance(TimeSpan.FromHours(1));
+        }
+
+        if (callerCancels)
+        {
+            await caller.CancelAsync();
+        }
+
+        var response = await call.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(expected, response.Outcome.Error?.Code);
+    }
+
     [Fact]
     public async Task Events_AreDeliveredToSubscribedPlugins()
     {

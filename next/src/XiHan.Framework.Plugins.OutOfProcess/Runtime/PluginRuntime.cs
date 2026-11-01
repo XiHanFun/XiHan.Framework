@@ -373,7 +373,9 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, context.IsExpired(_host.Clock.GetUtcNow()), process.HasExited);
+            // gRPC 的 Cancelled 原样写成取消，不按时钟判断是不是超时：定时器可能早于时钟读数到达截止时间，按时钟判断会把超时报成取消，
+            // 晚于时也会在调用方取消时报成超时；截止令牌是谁触发的只有 Resilience 阶段的 DeadlineMiddleware 知道，由它统一归因（RFC-0004）
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, processExited: process.HasExited);
         }
     }
 
@@ -401,7 +403,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, context.IsExpired(_host.Clock.GetUtcNow()), process.HasExited);
+            // 同上：取消交给 DeadlineMiddleware 归因
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, processExited: process.HasExited);
         }
     }
 

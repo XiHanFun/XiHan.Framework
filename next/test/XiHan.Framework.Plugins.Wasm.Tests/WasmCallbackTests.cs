@@ -98,6 +98,39 @@ public sealed class WasmCallbackTests
         Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "the host operation behind xihan.invoke must be cancelled at the outer deadline");
     }
 
+    [Theory]
+    [InlineData(false, KernelErrors.Cancelled)]
+    [InlineData(true, KernelErrors.DeadlineExceeded)]
+    public async Task Invoke_CancelledByTheCallerWhileTheCallbackWaits_IsATimeoutOnlyOnceTheDeadlineIsReached(bool deadlineReached, string expected)
+    {
+        // 调用方在插件的回调等待期间取消：截止时间没到是取消；截止时间先到、调用方随后也取消，仍是超时（RFC-0004，ADR-0092）。
+        // 运行时原样返回插件写下的结果、不按时钟改写，回调交给插件的结果与外层由截止时间中间件按截止令牌归因
+        var clock = new FakeTimeProvider(_clockStart);
+        var probe = new CancellationProbe();
+        using var plugin = WatPlugin.Invoking("waits.create", [WasmHostFunctions.PipelinePermission]);
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.PipelinePermission], ctx =>
+        {
+            ctx.Services.AddSingleton(probe);
+            ctx.AddOperation<WaitOperation, PingRequest, PingResponse>(new OperationContract("waits.create"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
+        }, s => s.AddSingleton<TimeProvider>(clock));
+        using var caller = new CancellationTokenSource();
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, caller.Token, deadline: clock.GetUtcNow() + _deadlineAfter);
+        var call = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(WatPlugin.Operation, Encoding.UTF8.GetBytes("{}"))).AsTask();
+
+        await WaitUntilEnteredAsync(probe, call);
+        if (deadlineReached)
+        {
+            clock.Advance(_deadlineAfter);
+        }
+
+        await caller.CancelAsync();
+        var response = await call.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(expected, response.Outcome.Error?.Code);
+        Assert.True(await probe.Observed.WaitAsync(TimeSpan.FromSeconds(30)), "the host operation behind xihan.invoke must be cancelled with the outer call");
+    }
+
     [Fact]
     public async Task Publish_IsBoundByTheOuterDeadline()
     {

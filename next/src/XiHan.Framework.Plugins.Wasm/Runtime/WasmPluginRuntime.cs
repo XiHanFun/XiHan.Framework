@@ -386,12 +386,14 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
             if (!response.TryGetValue(out var invoked))
             {
-                return Expired(response.Error!, context);
+                return response.Error!;
             }
 
+            // 插件写下的取消原样返回，不按时钟判断是不是超时：截止令牌是谁触发的只有 Resilience 阶段的 DeadlineMiddleware 知道，
+            // 由它统一归因（RFC-0004）；按时钟判断时，定时器早于时钟读数到达截止时间会报成取消，晚于时会在调用方取消时报成超时
             return invoked.Status is { Ok: true }
                 ? Result.Success<object>(new PluginPayload(invoked.Payload.Memory))
-                : Expired(PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!, context);
+                : PluginErrorMapper.FromStatus(invoked.Status, Manifest.Id, operation).Error!;
         }
         finally
         {
@@ -419,8 +421,8 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
 
             var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
             var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
-            var delivered = response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
-            return delivered.IsSuccess ? delivered : Expired(delivered.Error!, context);
+            // 同上：取消交给 DeadlineMiddleware 归因
+            return response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
         }
         finally
         {
@@ -1145,15 +1147,6 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     private TimeSpan Timeout(InvocationContext context)
         => context.RemainingTime(_host.Clock.GetUtcNow()) is { } remaining && remaining > TimeSpan.Zero && remaining < _host.Options.CallTimeout ? remaining : _host.Options.CallTimeout;
-
-    /// <summary>
-    /// 截止时间已过时把取消报告为超时。
-    /// </summary>
-    /// <remarks>
-    /// 回调随外层调用的截止时间取消时，插件可能把取消原样返回：调用方的截止时间到了，应当得到超时（与进程外映射一致）。
-    /// </remarks>
-    private Error Expired(Error error, InvocationContext context)
-        => error.Code == KernelErrors.Cancelled && context.IsExpired(_host.Clock.GetUtcNow()) ? new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded) : error;
 
     /// <summary>
     /// 丢弃当前实例并停止它的健康轮询。

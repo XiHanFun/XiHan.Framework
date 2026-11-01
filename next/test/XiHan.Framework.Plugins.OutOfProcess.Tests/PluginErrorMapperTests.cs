@@ -53,11 +53,14 @@ public sealed class PluginErrorMapperTests
         Assert.Equal(PluginErrors.Unavailable, error.Code);
     }
 
-    [Fact]
-    public void FromRpc_ReportsATimeout_ForACancellationAfterTheDeadline()
+    [Theory]
+    [InlineData(StatusCode.Cancelled, KernelErrors.Cancelled)]
+    [InlineData(StatusCode.DeadlineExceeded, KernelErrors.DeadlineExceeded)]
+    public void FromRpc_KeepsCancellationAndDeadline_EvenWhenTheProcessHasExited(StatusCode status, string expected)
     {
-        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.Cancelled, "cancelled")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready, deadlineExpired: true, processExited: true);
+        // 取消原样是取消：映射不按时钟判断是不是超时，截止时间到了的由 DeadlineMiddleware 按截止令牌改报超时（RFC-0004）
+        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(status, "cancelled")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready, processExited: true);
 
-        Assert.Equal(KernelErrors.DeadlineExceeded, error.Code);
+        Assert.Equal(expected, error.Code);
     }
 }

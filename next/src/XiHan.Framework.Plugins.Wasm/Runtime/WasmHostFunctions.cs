@@ -203,8 +203,8 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
             context.SetSecurity(new SecurityContext(new Principal(manifest.Id, PluginScheme), null));
             pending = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(request.Operation, request.Payload.Memory)).AsTask();
             var result = Pump.Wait(pending, linked.Token);
-            // 外层调用的令牌也带着它的截止时间：截止时间已过时新调用报出的取消按超时交给插件
-            var outcome = result.Outcome.Error?.Code == KernelErrors.Cancelled && host.Clock.GetUtcNow() >= deadline
+            // 外层调用的令牌也带着它的截止时间：截止时间已到时新调用报出的取消按超时交给插件，与不再等待那条路径同一判断
+            var outcome = result.Outcome.Error?.Code == KernelErrors.Cancelled && DeadlineReached(timer, deadline)
                 ? Result.Failure(new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded))
                 : result.Outcome;
             return new InvokeResponse
@@ -298,11 +298,18 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// <summary>
     /// 不再等待的回调对应的错误：截止时间到了为超时，否则为外层取消。
     /// </summary>
-    /// <remarks>
-    /// 外层调用的令牌在它的截止时间也会取消，可能先于本地计时器触发：截止时间已过一律按超时报告。
-    /// </remarks>
     private Error Abandoned(CancellationTokenSource timer, DateTimeOffset deadline)
-        => timer.IsCancellationRequested || host.Clock.GetUtcNow() >= deadline ? new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded) : new Error(KernelErrors.Cancelled, KernelMessages.Cancelled);
+        => DeadlineReached(timer, deadline) ? new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded) : new Error(KernelErrors.Cancelled, KernelMessages.Cancelled);
+
+    /// <summary>
+    /// 回调的截止时间是否已到：回调的计时器已触发，或时钟已过截止时间。
+    /// </summary>
+    /// <remarks>
+    /// 不再等待与回调已返回两条路径都用它，外层调用同时被取消也按超时报告（RFC-0004、<c>plugin/wasm.md</c> §4，ADR-0092）。计时器已触发时不再看时钟：定时器可能早于时钟读数到达截止时间。
+    /// 外层调用的令牌在它的截止时间也会取消，可能先于本地计时器触发：那一刻宿主分不出是外层的截止时间还是外层调用方取消，只能看时钟；回调交给插件的结果不再经过任何中间件归因，这是宿主唯一能判断的地方。
+    /// </remarks>
+    private bool DeadlineReached(CancellationTokenSource timer, DateTimeOffset deadline)
+        => timer.IsCancellationRequested || host.Clock.GetUtcNow() >= deadline;
 
     /// <summary>
     /// 回调用到的作用域与令牌源在它的任务结束后释放。
