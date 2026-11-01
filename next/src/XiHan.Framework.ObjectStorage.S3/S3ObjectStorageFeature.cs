@@ -25,7 +25,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储的能力包入口。
 /// </summary>
 /// <remarks>
-/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时先探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，ADR-0089、ADR-0090）：只有探明不认才启动失败；连不上、被拒绝或探测桶不存在照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；尚未确认 Degraded，不认 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测。
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090）：只有探明不认才启动失败；连不上、被拒绝或探测桶不存在照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；尚未确认 Degraded，不认 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
@@ -159,12 +159,21 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
             return;
         }
 
-        // 先探条件写入再起健康探针：探明不认即启动失败（Overwrite = false 的写入可能静默覆盖）；
-        // 连不上、被拒绝或桶不存在只是尚未确认，照常启动、后台重试，探明之前不覆盖写入由状态拒绝
+        // 条件写入探测与健康项首探并行：S3 连不上时两者都要等到超时（SDK 内部还会重试），串行就是两倍的启动耗时
         _conditionalWrites = services.GetRequiredService<S3ConditionalWriteGate>();
-        (await _conditionalWrites.StartAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
+        var probing = _conditionalWrites.StartAsync(cancellationToken).AsTask();
         await _health.StartAsync(cancellationToken).ConfigureAwait(false);
+        var probed = await probing.ConfigureAwait(false);
+
+        // 探明不认即启动失败（Overwrite = false 的写入可能静默覆盖）：已起的健康循环先停掉，不留给失败的特性；
+        // 连不上、被拒绝或桶不存在只是尚未确认，照常启动、后台重试，探明之前不覆盖写入由状态拒绝
+        if (probed.IsFailure)
+        {
+            await _health.StopAsync(CancellationToken.None).ConfigureAwait(false);
+            _health = null;
+            probed.ThrowIfFailure();
+        }
     }
 
     /// <inheritdoc />

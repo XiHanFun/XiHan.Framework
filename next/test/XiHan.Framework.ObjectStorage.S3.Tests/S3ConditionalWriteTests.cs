@@ -196,16 +196,17 @@ public sealed class S3ConditionalWriteTests
         var failed = await Assert.ThrowsAsync<FrameworkException>(() => StartAsync(fake));
         Assert.Equal(KernelErrors.FeatureStartFailed, failed.Code);
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, Assert.IsType<FrameworkException>(failed.InnerException).Code);
-        Assert.DoesNotContain("HeadBucket", fake.Requests);
     }
 
     [Fact]
-    public async Task Startup_ProbesBeforeTheHealthCheck()
+    public async Task Startup_ProbesAlongsideTheFirstHealthCheck()
     {
         var fake = FakeS3Client.Create(Bucket);
 
+        // 条件写入探测与健康项首探并行（S3 连不上时启动只等一个超时）：探测的请求按序，HEAD 只有一次、先后不定
         await using var host = await StartAsync(fake);
-        Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload", "UploadPart", "CompleteMultipartUpload", "AbortMultipartUpload", "HeadBucket"], fake.Requests);
+        Assert.Equal(["PutObject", "PutObject", "InitiateMultipartUpload", "UploadPart", "CompleteMultipartUpload", "AbortMultipartUpload"], fake.Requests.Where(static r => r != "HeadBucket"));
+        Assert.Single(fake.Requests, static r => r == "HeadBucket");
         var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
         Assert.Equal(LifecycleState.Ready, status.State);
         Assert.Equal("confirmed", status.Data["conditionalWrites"]);
