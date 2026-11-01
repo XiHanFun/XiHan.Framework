@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "Объект '{key}' уже существует в контейнере '{container}'.",
   "objectstorage.blob.not_found": "Объект '{key}' не существует в контейнере '{container}'.",
+  "objectstorage.list.page_size_invalid": "Размер страницы списка {pageSize} должен быть от 1 до {max}.",
   "objectstorage.multipart.part_too_small": "Часть {part} имеет размер {length} байт; каждая часть, кроме последней, должна быть не меньше {minimum} байт.",
   "objectstorage.multipart.part_unknown": "Часть {part} не загружена или её ETag не совпадает.",
   "objectstorage.multipart.parts_empty": "Список частей не может быть пустым.",

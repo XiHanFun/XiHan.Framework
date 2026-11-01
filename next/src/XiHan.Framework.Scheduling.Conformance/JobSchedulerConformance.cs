@@ -423,6 +423,32 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
+    /// 运行历史的分页越界以校验错误返回。
+    /// </summary>
+    /// <remarks>
+    /// 错误码 <see cref="SchedulingErrors.RunQueryInvalid"/>，不在构造时抛出、不进存储；上下边界照常查询，计数不看分页。
+    /// </remarks>
+    [Fact]
+    public async Task History_OutOfRangePaging_IsAValidationError()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        Assert.True((await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        foreach (var (skip, limit) in new[] { (0, 0), (0, JobRunQuery.MaxLimit + 1), (-1, 10) })
+        {
+            var rejected = await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = skip, Limit = limit }, CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(SchedulingErrors.RunQueryInvalid, rejected.Error?.Code);
+            Assert.Equal<object?>(limit, rejected.Error!.Details!["limit"]);
+            Assert.Equal<object?>(JobRunQuery.MaxLimit, rejected.Error!.Details!["max"]);
+        }
+
+        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Limit = JobRunQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = ManualJob, Skip = -1, Limit = 0 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
     /// 本地作业在每个实例上运行。
     /// </summary>
     /// <remarks>

@@ -1378,6 +1378,44 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 32：实例查询的分页与清理的条数越界以校验错误返回。
+    /// </summary>
+    /// <remarks>
+    /// 错误码 <see cref="WorkflowErrors.InputInvalid"/>，不在构造时抛出、不进存储也不开事务；上下边界照常执行，计数不看分页，被拒绝的清理什么都不删。
+    /// </remarks>
+    [Fact]
+    public async Task InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(Labeled("conf-paging", "a")).ConfigureAwait(false);
+        var instance = (await host.StartAsync("conf-paging").ConfigureAwait(false)).ValueOrThrow();
+        var byName = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-paging") };
+
+        foreach (var (skip, limit) in new[] { (0, 0), (0, WorkflowInstanceQuery.MaxLimit + 1), (-1, 10) })
+        {
+            var rejected = await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Skip = skip, Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
+            Assert.Equal(WorkflowMessages.InstanceQueryPageInvalid, rejected.Error?.MessageKey);
+        }
+
+        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
+        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Limit = WorkflowInstanceQuery.MaxLimit }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
+        Assert.Equal(1, (await host.EngineAsync(engine => engine.CountInstancesAsync(byName with { Skip = -1, Limit = 0 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+
+        foreach (var limit in new[] { 0, WorkflowInstanceQuery.MaxLimit + 1 })
+        {
+            var rejected = await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-paging", Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
+            Assert.Equal(WorkflowMessages.PurgeLimitInvalid, rejected.Error?.MessageKey);
+        }
+
+        // 被拒绝的清理什么都没删
+        Assert.True(await host.InstanceExistsAsync(instance.Id).ConfigureAwait(false));
+        Assert.Equal(1, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-paging", Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束。
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)

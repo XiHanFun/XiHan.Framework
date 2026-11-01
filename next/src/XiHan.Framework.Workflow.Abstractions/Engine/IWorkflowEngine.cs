@@ -96,7 +96,7 @@ public interface IWorkflowEngine
     /// 删除早于给定时刻结束的实例（含节点实例与书签）。
     /// </summary>
     /// <remarks>
-    /// 返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。
+    /// 返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。<see cref="WorkflowPurgeRequest.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400），不开事务。
     /// </remarks>
     ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken);
 
@@ -112,7 +112,7 @@ public interface IWorkflowEngine
     /// 按条件列实例。
     /// </summary>
     /// <remarks>
-    /// 有租户的调用只列本租户的实例：查询的租户限定为本租户，给了别的租户得空列表。排序与上限同存储查询。
+    /// 有租户的调用只列本租户的实例：查询的租户限定为本租户，给了别的租户得空列表。排序与上限同存储查询。<see cref="WorkflowInstanceQuery.Skip"/> 为负或 <see cref="WorkflowInstanceQuery.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400），不进存储。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
 

@@ -34,12 +34,12 @@
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance` | 14 + 2 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance` | 4 + 3 |
-| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 10 + 4 |
+| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 11 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 30 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
-| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 15 + 5 + 2 |
+| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 2 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 4 |
-| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 7 + 26 + 8 |
+| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 10 + 32 + 8 |
 
 ## AI
 
@@ -129,7 +129,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStore()` 返回 `IBlobStore`；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、大对象流式读写 |
+| `BlobStoreConformance` | `CreateStore()` 返回 `IBlobStore`；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
 | `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键被拒绝、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。
@@ -194,7 +194,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复 |
+| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页） |
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
 | `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期 |
 
@@ -231,7 +231,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
 | `WorkflowStoreConformance` | `StartAsync()` 返回 `WorkflowStoreHost(services, host)`；存储是作用域服务，用例在 `InPartitionAsync(tenantId, …)` 开的调用里使用它们 | 定义按 ID / 名字 / 版本 / 最新已发布查找、列表排序与过滤、批量写与删、级联、快照语义、书签按到期 / 种类与键 / 信号查询、可领取书签按到期时刻限量查询、待办查询的过滤 / 升降序 / 分页 / 计数且随实例状态进出、按分区的名字空间、分区互不可见、写入别的分区的记录即抛出、实例锁的互斥与超时（锁等待上限配置在 1 秒以内） |
-| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、分区隔离（平台与租户对等：任务、信号、定义的名字空间与实例的控制和查询）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型）、业务回滚丢弃引擎写入、办理任务随业务提交或回滚、实例锁持有到调用结束、只读调用在执行活动之前拒绝写入、轮询覆盖平台与每个启用的租户；不加入调用方事务的 Provider 覆写 `JoinsCallerTransaction => false` |
+| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、分区隔离（平台与租户对等：任务、信号、定义的名字空间与实例的控制和查询）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型）、业务回滚丢弃引擎写入、办理任务随业务提交或回滚、实例锁持有到调用结束、只读调用在执行活动之前拒绝写入、轮询覆盖平台与每个启用的租户、实例查询的分页与清理的条数越界是校验错误（`WORKFLOW_VALIDATION_002`）；不加入调用方事务的 Provider 覆写 `JoinsCallerTransaction => false` |
 | `WorkflowTaskConformance` | 同 `WorkflowEngineConformance` 的 `StartAsync` | 会签阈值（按人数或百分比）、认领与释放、退回与历史、催办事件、条件查询的分页结果与总数（越界是校验错误、挂起的实例的任务不出现）、任务元数据（优先级、到期、表单键）与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、按创建先后限量领取与条数上限 |
 
 `ConformanceLog`（兼消息发布者）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例。

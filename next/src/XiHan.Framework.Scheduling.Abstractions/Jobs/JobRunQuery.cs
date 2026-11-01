@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 运行历史查询。
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。
+/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Schedulers.IJobScheduler.RunsAsync"/> 返回 <c>SCHEDULING_VALIDATION_002</c>（HTTP 400）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JobRunQuery
@@ -67,13 +67,9 @@ public sealed record JobRunQuery
     /// 跳过条数。
     /// </summary>
     /// <remarks>
-    /// 默认 0。
+    /// 默认 0，不能为负。
     /// </remarks>
-    public int Skip
-    {
-        get => field;
-        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The skip must not be negative.");
-    }
+    public int Skip { get; init; }
 
     /// <summary>
     /// 最多返回条数，1 到 <see cref="MaxLimit"/>。
@@ -81,11 +77,7 @@ public sealed record JobRunQuery
     /// <remarks>
     /// 默认 100。
     /// </remarks>
-    public int Limit
-    {
-        get => field;
-        init => field = value is >= 1 and <= MaxLimit ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"The limit must be between 1 and {MaxLimit}.");
-    } = 100;
+    public int Limit { get; init; } = 100;
 
     /// <summary>
     /// 记录是否匹配全部过滤项（不含分页）。

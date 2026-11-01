@@ -112,6 +112,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.ContinuationToken.i
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Equals(XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.get -> int
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.init -> void
+XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart
@@ -210,6 +211,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.SignatureIn
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreNotFound = "OBJECTSTORAGE_NOTFOUND_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreUnavailable = "OBJECTSTORAGE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.UploadNotFound = "OBJECTSTORAGE_NOTFOUND_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobExists = "objectstorage.blob.exists" -> string!
@@ -226,6 +228,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.RangeNotS
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlExpired = "objectstorage.signed_url.expired" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlInvalid = "objectstorage.signed_url.invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreDefinitionInvalid = "objectstorage.store.definition_invalid" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PageSizeInvalid = "objectstorage.list.page_size_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreNotFound = "objectstorage.store.not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreProviderUnknown = "objectstorage.store.provider_unknown" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreUnavailable = "objectstorage.store.unavailable" -> string!

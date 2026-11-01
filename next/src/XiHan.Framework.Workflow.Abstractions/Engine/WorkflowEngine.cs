@@ -599,6 +599,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     public ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // 条数越界是调用方可以改正的输入（请求常由绑定而来）：以校验错误返回而不是抛出，也不开事务
+        if (request.Limit is < 1 or > WorkflowInstanceQuery.MaxLimit)
+        {
+            return ValueTask.FromResult<Result<int>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.PurgeLimitInvalid, MessageArguments.Of(("limit", request.Limit), ("max", WorkflowInstanceQuery.MaxLimit))));
+        }
+
         return _scope.RunAsync<IWorkflowEngine, int>(true, "workflow.purge", () => PurgeCoreAsync(request, cancellationToken), engine => engine.PurgeAsync(request, cancellationToken), cancellationToken);
     }
 
@@ -1720,6 +1726,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     public ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
+        if (query.Skip < 0 || query.Limit is < 1 or > WorkflowInstanceQuery.MaxLimit)
+        {
+            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowInstanceQuery.MaxLimit))));
+        }
+
         return _scope.RunAsync<IWorkflowEngine, IReadOnlyList<WorkflowInstance>>(false, "workflow.list-instances", () => _instances.ListAsync(Tenant, query, cancellationToken), engine => engine.ListInstancesAsync(query, cancellationToken), cancellationToken);
     }
 

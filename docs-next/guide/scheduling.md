@@ -253,7 +253,7 @@ public sealed class CleanupJob : IJob
 | `EnqueueAsync(requests)` | 插入一个立即到期的一次性触发器（`manual-` 前缀），由集群任一节点运行，不等待；返回触发器名 | `SCHEDULING_NOTFOUND_001` |
 | `CancelRunsAsync(runIds)` | 本实例的运行立即取消令牌，其他节点的在下一个轮询周期取消 | `SCHEDULING_NOTFOUND_004` |
 | `StatusAsync(name)` / `StatusesAsync()` | 作业状态：记录、是否暂停、各触发器的状态与上一次 / 下一次时刻与次数、运行中数量、最近一次完成的结果 | — |
-| `RunsAsync(query)` / `CountRunsAsync(query)` | 运行历史与同一组过滤条件下的总数 | — |
+| `RunsAsync(query)` / `CountRunsAsync(query)` | 运行历史与同一组过滤条件下的总数 | `SCHEDULING_VALIDATION_002`（`RunsAsync` 分页越界） |
 | `RestoreAsync(names)` | 把运行时改过的代码作业恢复为代码定义 | `SCHEDULING_NOTFOUND_005` |
 
 `JobTriggerRequest(Name, Data)` 能从 `JobName` 隐式转换，手动触发带的数据覆盖作业数据的同名键。
@@ -313,7 +313,7 @@ public sealed class ReportJobMonitor(IJobScheduler scheduler)
 }
 ```
 
-`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名、执行节点、有无错误码过滤，`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`JobRunQuery.MaxLimit`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项，不看分页（ADR-0053）。
+`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名、执行节点、有无错误码过滤，`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`JobRunQuery.MaxLimit`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项，不看分页（ADR-0053）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），不进存储——查询常由请求绑定而来，越界是调用方可以改正的输入（ADR-0082）。
 
 ### 代码作业的运行时修改
 
@@ -477,6 +477,7 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 | `SCHEDULING_NOTFOUND_004` | 运行不存在或已结束 |
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
 | `SCHEDULING_VALIDATION_001` | 作业定义不合法：触发器名重复、日历未登记 |
+| `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界：`Skip` 为负或 `Limit` 不在 1～1000（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |

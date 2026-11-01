@@ -618,6 +618,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
+        if (query.Skip < 0 || query.Limit is < 1 or > JobRunQuery.MaxLimit)
+        {
+            return ValueTask.FromResult<Result<IReadOnlyList<JobRunRecord>>>(Error.Validation(SchedulingErrors.RunQueryInvalid, SchedulingMessages.RunQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", JobRunQuery.MaxLimit))));
+        }
+
         return _store.RunsAsync(query, cancellationToken);
     }
 

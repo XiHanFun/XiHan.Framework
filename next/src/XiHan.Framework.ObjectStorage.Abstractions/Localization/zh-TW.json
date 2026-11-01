@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "容器 '{container}' 裡已存在物件 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 裡不存在物件 '{key}'。",
+  "objectstorage.list.page_size_invalid": "列舉的頁大小 {pageSize} 必須在 1 到 {max} 之間。",
   "objectstorage.multipart.part_too_small": "分段 {part} 只有 {length} 位元組；除最後一段外每段至少 {minimum} 位元組。",
   "objectstorage.multipart.part_unknown": "分段 {part} 未上傳或 ETag 不符。",
   "objectstorage.multipart.parts_empty": "分段清單不可為空。",

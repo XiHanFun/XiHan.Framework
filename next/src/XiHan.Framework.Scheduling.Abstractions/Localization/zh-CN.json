@@ -9,6 +9,7 @@
   "scheduling.lease.unavailable": "'{resource}' 的领导租约存储不可用：{reason}",
   "scheduling.run.canceled": "运行 '{id}' 已被取消。",
   "scheduling.run.not_found": "运行 '{id}' 不存在或已结束。",
+  "scheduling.run.query_page_invalid": "运行历史查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
   "scheduling.run.timed_out": "运行 '{id}' 超过了执行时限 {timeout}。",
   "scheduling.scheduler.unavailable": "作业调度器未运行。",
   "scheduling.store.capacity": "作业存储 '{store}' 已满（上限 {limit}）。",

@@ -37,6 +37,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Linear_Run
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.OutputMappings_WriteVariables_AndFailLoudly() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Poller_CoversThePlatformAndEveryEnabledTenant() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Purge_AndDelayVariants() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!

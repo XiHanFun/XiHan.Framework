@@ -48,6 +48,14 @@ public static class SchedulingErrors
     public const string DefinitionInvalid = "SCHEDULING_VALIDATION_001";
 
     /// <summary>
+    /// 运行历史查询的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Jobs.JobRunQuery.Skip"/> 为负或 <see cref="Jobs.JobRunQuery.Limit"/> 不在 1 到 <see cref="Jobs.JobRunQuery.MaxLimit"/> 之间；<c>RunsAsync</c> 以结果返回（HTTP 400），不进存储。
+    /// </remarks>
+    public const string RunQueryInvalid = "SCHEDULING_VALIDATION_002";
+
+    /// <summary>
     /// 作业正在运行且不允许并发。
     /// </summary>
     public const string JobRunning = "SCHEDULING_CONFLICT_001";

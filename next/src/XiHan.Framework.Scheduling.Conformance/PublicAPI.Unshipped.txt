@@ -4,6 +4,7 @@ XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.CancelRun_StopsTh
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentTrigger_ConflictsUnlessAllowed() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Enqueue_RunsOnceWithoutWaiting() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.History_IsQueryable_WithPagingAndStates() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.History_OutOfRangePaging_IsAValidationError() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalSchedule_RunsRepeatedly() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.JobSchedulerConformance() -> void
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.LocalJob_RunsOnEveryInstance_AndCalendarExcludes() -> System.Threading.Tasks.Task!

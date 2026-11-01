@@ -4,6 +4,7 @@
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
+using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
@@ -55,8 +56,10 @@ public sealed class WorkflowModelTests
     {
         Assert.Equal(100, new WorkflowInstanceQuery().Limit);
         Assert.Equal(WorkflowInstanceQuery.MaxLimit, new WorkflowInstanceQuery { Limit = WorkflowInstanceQuery.MaxLimit }.Limit);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new WorkflowInstanceQuery { Limit = 0 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new WorkflowInstanceQuery { Limit = WorkflowInstanceQuery.MaxLimit + 1 });
+        // 越界不在构造时抛出：查询常由请求绑定，由引擎以校验错误返回（一致性套件用例 32）
+        Assert.Equal(0, new WorkflowInstanceQuery { Limit = 0 }.Limit);
+        Assert.Equal(-1, new WorkflowInstanceQuery { Skip = -1 }.Skip);
+        Assert.Equal(0, new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UnixEpoch, Limit = 0 }.Limit);
 
         var options = new WorkflowOptions();
         Assert.Equal((1000, 16, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), 10_000), (options.MaxNodeExecutionsPerBurst, options.MaxSubWorkflowDepth, options.LockTimeout, options.NotResumableBackoff, options.ExpressionCacheSize));

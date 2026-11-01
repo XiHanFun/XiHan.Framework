@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "コンテナー '{container}' には Blob '{key}' が既に存在します。",
   "objectstorage.blob.not_found": "コンテナー '{container}' に Blob '{key}' は存在しません。",
+  "objectstorage.list.page_size_invalid": "一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",
   "objectstorage.multipart.part_too_small": "パート {part} は {length} バイトです。最後のパート以外は {minimum} バイト以上である必要があります。",
   "objectstorage.multipart.part_unknown": "パート {part} はアップロードされていないか、ETag が一致しません。",
   "objectstorage.multipart.parts_empty": "パートの一覧を空にすることはできません。",

@@ -162,7 +162,7 @@ var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
 
 ### 列举
 
-`ListAsync` 按键前缀列举，键的序数顺序，`PageSize` 为 1 到 1000（缺省 1000）。续页标记 `ContinuationToken` 不透明，原样带回下一次查询：
+`ListAsync` 按键前缀列举，键的序数顺序，`PageSize` 为 1 到 1000（缺省 1000）；越界不在构造 `BlobQuery` 时抛出，列举返回 `OBJECTSTORAGE_VALIDATION_005`（HTTP 400），不访问存储——页大小常由请求绑定而来，越界是调用方可以改正的输入（ADR-0082）。续页标记 `ContinuationToken` 不透明，原样带回下一次查询：
 
 ```csharp
 var query = new BlobQuery { Prefix = "2026/10/", PageSize = 100 };
@@ -422,6 +422,8 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 | `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点不在对象内 |
 | `OBJECTSTORAGE_VALIDATION_002` | 完成分片上传时的分片清单不合法 |
 | `OBJECTSTORAGE_VALIDATION_003` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
+| `OBJECTSTORAGE_VALIDATION_004` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
+| `OBJECTSTORAGE_VALIDATION_005` | 列举的页大小不在 1 到 1000 之间（HTTP 400） |
 | `OBJECTSTORAGE_DENIED_001` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败 |

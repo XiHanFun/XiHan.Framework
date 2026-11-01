@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "容器 '{container}' 里已存在对象 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 里不存在对象 '{key}'。",
+  "objectstorage.list.page_size_invalid": "列举的页大小 {pageSize} 必须在 1 到 {max} 之间。",
   "objectstorage.multipart.part_too_small": "分片 {part} 只有 {length} 字节；除最后一片外每片至少 {minimum} 字节。",
   "objectstorage.multipart.part_unknown": "分片 {part} 未上传或 ETag 不符。",
   "objectstorage.multipart.parts_empty": "分片清单不能为空。",

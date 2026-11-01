@@ -151,6 +151,14 @@ public static class ObjectStorageMessages
     public const string StoreDefinitionInvalid = "objectstorage.store.definition_invalid";
 
     /// <summary>
+    /// 列举的页大小越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>pageSize</c>、<c>max</c>。
+    /// </remarks>
+    public const string PageSizeInvalid = "objectstorage.list.page_size_invalid";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

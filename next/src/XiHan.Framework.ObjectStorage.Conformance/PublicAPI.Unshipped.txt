@@ -6,6 +6,7 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.GetRange_ReturnsT
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.InvalidIdentifiers_AreRejectedEarly() -> void
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.LargeContent_StreamsThrough() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.List_FiltersByPrefix_OrdersByKey_AndPaginates() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.List_RejectsOutOfRangePageSize_AsValidationError() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Multipart_RejectsInvalidPartLists_AndHonoursOverwriteAndAbort() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Multipart_UploadsPartsInAnyOrder_AndCompletesAtomically() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PutMany_ReturnsOneResultPerUpload_InOrder() -> System.Threading.Tasks.Task!

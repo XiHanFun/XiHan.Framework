@@ -108,6 +108,9 @@ public interface IJobStore
     /// <summary>
     /// 运行历史查询。
     /// </summary>
+    /// <remarks>
+    /// 调度器先校验分页（<see cref="SchedulingErrors.RunQueryInvalid"/>），存储收到的查询分页在范围内。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>

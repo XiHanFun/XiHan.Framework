@@ -9,6 +9,9 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// <summary>
 /// 清理请求：删除在 <see cref="EndedBefore"/> 之前结束的实例及其节点实例与书签。
 /// </summary>
+/// <remarks>
+/// <see cref="Limit"/> 越界不在构造时抛出，由 <see cref="IWorkflowEngine.PurgeAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowPurgeRequest
 {
@@ -39,9 +42,5 @@ public sealed record WorkflowPurgeRequest
     /// <remarks>
     /// 默认 1000。
     /// </remarks>
-    public int Limit
-    {
-        get => field;
-        init => field = value is >= 1 and <= WorkflowInstanceQuery.MaxLimit ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"The limit must be between 1 and {WorkflowInstanceQuery.MaxLimit}.");
-    } = WorkflowInstanceQuery.MaxLimit;
+    public int Limit { get; init; } = WorkflowInstanceQuery.MaxLimit;
 }

@@ -71,4 +71,12 @@ public static class ObjectStorageErrors
     /// 存储包被选为分片上传或预签名，却没有被选为对象存储。装配错误，以异常抛出，应用启动失败。
     /// </remarks>
     public const string StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004";
+
+    /// <summary>
+    /// 列举的页大小越界。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Listing.BlobQuery.PageSize"/> 不在 1 到 <see cref="Listing.BlobQuery.MaxPageSize"/> 之间；各 Provider 列举时以结果返回（HTTP 400），不访问存储。
+    /// </remarks>
+    public const string PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005";
 }

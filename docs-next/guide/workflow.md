@@ -487,7 +487,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID、父实例、发起人、创建时间范围、结束时间上界过滤，按创建时间降序；`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID、父实例、发起人、创建时间范围、结束时间上界过滤，按创建时间降序；`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
 
 ## 控制实例
 
@@ -501,7 +501,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 | `SetVariablesAsync(updates)` | `Running`、`Suspended` | 合并变量、删除指定键 |
 | `JumpAsync(jumps)` | `Running`、`Suspended`、`Faulted` | 取消全部未结束节点与书签，从目标节点重新执行 |
 | `MigrateAsync(migrations)` | `Running`、`Suspended` | 迁到同名的另一个已发布版本；未结束节点在目标版本里必须存在且活动类型相同 |
-| `PurgeAsync(request)` | 已结束 | 删除早于给定时刻结束的实例及其节点实例与书签，可按状态与定义名过滤，一次最多 1000 条 |
+| `PurgeAsync(request)` | 已结束 | 删除早于给定时刻结束的实例及其节点实例与书签，可按状态与定义名过滤，一次最多 `Limit` 条（1～1000，缺省 1000；越界返回 `WORKFLOW_VALIDATION_002`，不开事务） |
 
 调用只操作得了自己分区的实例：别的分区的实例按不存在处理，返回 `WORKFLOW_NOTFOUND_002`，`PurgeAsync` 只清自己的分区；按书签 ID 的 `ResumeAsync` 遇到别的分区的书签返回 `WORKFLOW_NOTFOUND_003`。用户任务、外部任务与信号同样只在自己的分区里匹配。状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 逐个分区自动清理一次。
 
@@ -685,7 +685,7 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 | 错误码 | 含义 |
 | --- | --- |
 | `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
-| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界 |
+| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页或清理的条数越界 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |

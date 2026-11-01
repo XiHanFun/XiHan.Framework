@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "Das Blob '{key}' existiert bereits im Container '{container}'.",
   "objectstorage.blob.not_found": "Das Blob '{key}' existiert nicht im Container '{container}'.",
+  "objectstorage.list.page_size_invalid": "Die Seitengröße {pageSize} der Auflistung muss zwischen 1 und {max} liegen.",
   "objectstorage.multipart.part_too_small": "Teil {part} ist {length} Bytes groß; jeder Teil außer dem letzten muss mindestens {minimum} Bytes groß sein.",
   "objectstorage.multipart.part_unknown": "Teil {part} wurde nicht hochgeladen oder sein ETag stimmt nicht überein.",
   "objectstorage.multipart.parts_empty": "Die Liste der Teile darf nicht leer sein.",

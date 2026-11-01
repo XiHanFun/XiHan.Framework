@@ -36,7 +36,7 @@ var failed = await scheduler.CountRunsAsync(new JobRunQuery { Job = "report", Ha
 
 代码登记的作业被运行时 `ScheduleAsync` 改过后来源是 `Overridden`：启动同步时代码定义没变（指纹 `CodeFingerprint` 相同）就保留运行时的修改，代码改了以代码为准并记警告；`RestoreAsync` 随时恢复为代码定义（ADR-0053）。
 
-未登记 → `SCHEDULING_NOTFOUND_001`；类型未登记 → `_002`；触发器不存在 → `_003`；运行不存在 → `_004`；没有代码定义（不能恢复）→ `_005`；定义不合法 → `SCHEDULING_VALIDATION_001`；运行中且不允许并发 → `SCHEDULING_CONFLICT_001`；租约被占用 → `_002`；运行被取消 → `_003`；存储不可达 → `SCHEDULING_UNAVAILABLE_003`。
+未登记 → `SCHEDULING_NOTFOUND_001`；类型未登记 → `_002`；触发器不存在 → `_003`；运行不存在 → `_004`；没有代码定义（不能恢复）→ `_005`；定义不合法 → `SCHEDULING_VALIDATION_001`；运行历史查询的分页越界（`Skip` 为负、`Limit` 不在 1～1000，不在构造时抛出）→ `_002`（HTTP 400）；运行中且不允许并发 → `SCHEDULING_CONFLICT_001`；租约被占用 → `_002`；运行被取消 → `_003`；存储不可达 → `SCHEDULING_UNAVAILABLE_003`。
 
 ## 依赖方向
 

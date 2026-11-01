@@ -138,6 +138,14 @@ public static class SchedulingMessages
     public const string StoreCapacity = "scheduling.store.capacity";
 
     /// <summary>
+    /// 运行历史查询的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>。
+    /// </remarks>
+    public const string RunQueryPageInvalid = "scheduling.run.query_page_invalid";
+
+    /// <summary>
     /// 本包的消息目录。
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(SchedulingMessages));

@@ -68,7 +68,7 @@
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
-| `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix`、`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果 |
+| `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix`、`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
 | `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync` |
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
 | `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB |
@@ -150,6 +150,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_002` | `PartsInvalid` | 分片清单不合法 |
 | `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名实例的定义不合法 |
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
+| `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小越界（HTTP 400，不在构造时抛出） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败 |

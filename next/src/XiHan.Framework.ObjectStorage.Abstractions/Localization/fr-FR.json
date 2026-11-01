@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "Le blob '{key}' existe déjà dans le conteneur '{container}'.",
   "objectstorage.blob.not_found": "Le blob '{key}' n'existe pas dans le conteneur '{container}'.",
+  "objectstorage.list.page_size_invalid": "La taille de page {pageSize} de la liste doit être comprise entre 1 et {max}.",
   "objectstorage.multipart.part_too_small": "La partie {part} fait {length} octets ; chaque partie sauf la dernière doit faire au moins {minimum} octets.",
   "objectstorage.multipart.part_unknown": "La partie {part} n'a pas été téléversée ou son ETag ne correspond pas.",
   "objectstorage.multipart.parts_empty": "La liste des parties ne doit pas être vide.",

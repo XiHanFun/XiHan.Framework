@@ -103,6 +103,9 @@ public interface IJobScheduler
     /// <summary>
     /// 运行历史。
     /// </summary>
+    /// <remarks>
+    /// <see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Limit"/> 不在 1 到 <see cref="JobRunQuery.MaxLimit"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>

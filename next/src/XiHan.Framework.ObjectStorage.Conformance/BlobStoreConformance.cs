@@ -223,8 +223,11 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 7：不合法的容器名、键、元数据名与查询在构造时拒绝。
+    /// 用例 7：不合法的容器名、键、元数据名与查询前缀在构造时拒绝。
     /// </summary>
+    /// <remarks>
+    /// 页大小越界不在构造时拒绝，而是在列举时返回校验错误，见用例 11。
+    /// </remarks>
     [Fact]
     public void InvalidIdentifiers_AreRejectedEarly()
     {
@@ -240,7 +243,6 @@ public abstract class BlobStoreConformance
         Assert.Throws<ArgumentException>(static () => new BlobKey("a b"));
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { Metadata = new Dictionary<string, string> { ["Bad Name"] = "x" } });
         Assert.Throws<ArgumentException>(static () => new BlobPutOptions { ContentType = " " });
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new BlobQuery { PageSize = 0 });
         Assert.Throws<ArgumentException>(static () => new BlobQuery { Prefix = "a b" });
         Assert.True(BlobKey.IsValid("a/b.c-d_e"));
         Assert.True(BlobKey.IsValidPrefix(string.Empty));
@@ -350,6 +352,35 @@ public abstract class BlobStoreConformance
         Assert.True((await multipart.AbortAsync(raced, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(ObjectStorageErrors.UploadNotFound, (await multipart.ListPartsAsync(raced, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.True((await multipart.AbortAsync(raced, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+    }
+
+    /// <summary>
+    /// 用例 11：列举的页大小越界返回校验错误。
+    /// </summary>
+    /// <remarks>
+    /// 错误码 <see cref="ObjectStorageErrors.PageSizeInvalid"/>，不在构造时抛出、不访问存储；1 与上限两个边界照常列举。
+    /// </remarks>
+    [Fact]
+    public async Task List_RejectsOutOfRangePageSize_AsValidationError()
+    {
+        var store = CreateStore();
+        var root = Guid.NewGuid().ToString("N")[..8];
+        Assert.True((await store.PutAsync(Container, new BlobKey(root + "/page/a"), Bytes("a"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await store.PutAsync(Container, new BlobKey(root + "/page/b"), Bytes("b"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        foreach (var pageSize in new[] { 0, -1, BlobQuery.MaxPageSize + 1 })
+        {
+            var rejected = await store.ListAsync(Container, new BlobQuery { Prefix = root + "/page/", PageSize = pageSize }, CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(ObjectStorageErrors.PageSizeInvalid, rejected.Error?.Code);
+            Assert.Equal<object?>(pageSize, rejected.Error!.Details!["pageSize"]);
+            Assert.Equal<object?>(BlobQuery.MaxPageSize, rejected.Error!.Details!["max"]);
+        }
+
+        var smallest = (await store.ListAsync(Container, new BlobQuery { Prefix = root + "/page/", PageSize = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([root + "/page/a"], smallest.Items.Select(static m => m.Key.Value));
+        Assert.NotNull(smallest.ContinuationToken);
+        var largest = (await store.ListAsync(Container, new BlobQuery { Prefix = root + "/page/", PageSize = BlobQuery.MaxPageSize }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([root + "/page/a", root + "/page/b"], largest.Items.Select(static m => m.Key.Value));
     }
 
     /// <summary>

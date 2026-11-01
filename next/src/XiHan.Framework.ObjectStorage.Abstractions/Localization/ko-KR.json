@@ -1,6 +1,7 @@
 {
   "objectstorage.blob.exists": "컨테이너 '{container}'에 Blob '{key}'이(가) 이미 있습니다.",
   "objectstorage.blob.not_found": "컨테이너 '{container}'에 Blob '{key}'이(가) 없습니다.",
+  "objectstorage.list.page_size_invalid": "목록 페이지 크기 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
   "objectstorage.multipart.part_too_small": "파트 {part}은(는) {length}바이트입니다. 마지막 파트를 제외한 각 파트는 최소 {minimum}바이트여야 합니다.",
   "objectstorage.multipart.part_unknown": "파트 {part}이(가) 업로드되지 않았거나 ETag가 일치하지 않습니다.",
   "objectstorage.multipart.parts_empty": "파트 목록은 비워 둘 수 없습니다.",

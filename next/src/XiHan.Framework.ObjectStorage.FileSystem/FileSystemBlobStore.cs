@@ -310,6 +310,12 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     public ValueTask<Result<BlobPage>> ListAsync(ContainerName container, BlobQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 页大小越界是调用方可以改正的输入（RFC-0012）：以校验错误返回，不碰磁盘
+        if (query.Validate() is { IsFailure: true } invalid)
+        {
+            return ValueTask.FromResult<Result<BlobPage>>(invalid.Error!);
+        }
+
         EnsureInitialized();
         try
         {

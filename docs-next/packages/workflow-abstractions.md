@@ -92,7 +92,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`）；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
@@ -161,7 +161,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | 错误码 | 含义 |
 | --- | --- |
 | `WORKFLOW_VALIDATION_001` | 定义不合法 |
-| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法 |
+| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法（含待办 / 实例查询的分页与清理的条数越界，HTTP 400） |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |
