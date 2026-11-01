@@ -235,7 +235,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 }
 ```
 
-各套件的基类、工厂方法与用例覆盖面见 [Conformance 一致性套件](../packages/conformance)。依赖真实服务的套件（Redis、RabbitMQ、Kafka、PostgreSQL、S3、Nacos 等）只在设置了对应环境变量（`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS` 等）时运行，没有就跳过；CI 以服务容器提供 Redis、PostgreSQL 与 RabbitMQ。
+各套件的基类、工厂方法与用例覆盖面见 [Conformance 一致性套件](../packages/conformance)。依赖真实服务的套件（Redis、RabbitMQ、Kafka、PostgreSQL、S3、Nacos 等）只在设置了对应环境变量（`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS` 等）时运行，没有就跳过；CI 以服务容器提供 Redis、PostgreSQL、SQL Server 与 RabbitMQ（`.github/workflows/next-ci.yml`），MySQL 与 Oracle 的用例只在本机设了变量时跑。
 
 ## Plugins.Conformance 与 xihan-conformance
 

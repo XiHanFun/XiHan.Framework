@@ -45,6 +45,19 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
+      sqlserver:
+        # Persistence.SqlSugar 的 SQL Server 用例（筛选索引、库结构读取与一致性套件）；口令只给 CI 的一次性容器用
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: XiHan_Test_2026
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P XiHan_Test_2026 -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
       rabbitmq:
         image: rabbitmq:4-alpine
         ports:
@@ -85,10 +98,11 @@ jobs:
 
       - name: 测试（MTP 模式，采集覆盖率）
         env:
-          # Caching.Redis、Messaging.RabbitMQ 与 Persistence.SqlSugar（PostgreSQL）的一致性套件只在设置了这些变量时运行
+          # Caching.Redis、Messaging.RabbitMQ 与 Persistence.SqlSugar（PostgreSQL、SQL Server）的一致性套件只在设置了这些变量时运行；MySQL、Oracle 的门控用例（XIHAN_TEST_MYSQL、XIHAN_TEST_ORACLE）不在 CI 里跑
           XIHAN_TEST_REDIS: localhost:6379
           XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
           XIHAN_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
+          XIHAN_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=XiHan_Test_2026;TrustServerCertificate=True
         # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
         run: >
           dotnet test --solution next/XiHan.Framework.Next.slnx
