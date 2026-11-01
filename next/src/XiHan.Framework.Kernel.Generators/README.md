@@ -30,4 +30,4 @@ public void Configure(FeatureContext context) => context.AddGeneratedOperations(
 
 ## 状态
 
-P3：操作登记与 JSON Schema 可用，`Protocols.Http` 的 OpenAPI、`Protocols.Mcp` 的 tool 描述与 `Protocols.Grpc` 的 protobuf 描述及 `.proto` 都从这份 Schema 产出；`[Capability]` 清单生成顺延。
+P3：操作登记与 JSON Schema 可用，`Protocols.Http` 的 OpenAPI、`Protocols.Mcp` 的 tool 描述与 `Protocols.Grpc` 的 protobuf 描述及 `.proto` 都从这份 Schema 产出；`[Capability]` 清单生成顺延（ADR-0075）：5.0 每个特性在 `Manifest` 属性里手写清单，RFC-0002 写明了现状。

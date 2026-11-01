@@ -41,7 +41,7 @@ app.Run();
 
 ## 清单
 
-清单是装配的事实源，特性以 `Manifest` 属性给出，内核在构建期校验格式（`Manifest.Validate()`）。字段与 XiHan Spec 的 `manifest.schema.json` 一一对应：
+清单是装配的事实源，特性以 `Manifest` 属性给出，内核在构建期校验格式（`Manifest.Validate()`）。5.0 的清单都是手写的：RFC-0002 设想的 `[Capability]` 清单生成器顺延，内核里的 `CapabilityAttribute` 运行期不读。字段与 XiHan Spec 的 `manifest.schema.json` 一一对应：
 
 | 字段 | 必填 | 含义 |
 | --- | --- | --- |

@@ -10,7 +10,7 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// 标注特性入口类型的能力声明。
 /// </summary>
 /// <remarks>
-/// 源生成器据此生成 <see cref="Manifest"/> 并实现入口类型的 <c>Manifest</c> 属性；内核运行期不读取本特性（零反射）。
+/// 预留给源生成器：据此生成 <see cref="Manifest"/> 并实现入口类型的 <c>Manifest</c> 属性。生成器顺延，5.0 的清单在入口类型的 <c>Manifest</c> 属性里手写（RFC-0002）；内核运行期不读取本特性（零反射）。
 /// </remarks>
 /// <param name="id">清单 ID，<c>xihan.&lt;领域&gt;.&lt;名称&gt;</c>。</param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

@@ -154,7 +154,7 @@ public sealed class NotesFeature : IFeature
 - `ReadOnly = true` 原样生成为契约的只读标记，协议据此推导（MCP 的 `readOnlyHint`、HTTP 的 `GET`）；`get` / `list` 本来就是只读。
 - 落定的 `Expose` 值写进生成的 `OperationContract`，运行期不再读特性。
 - 生成器只处理当前项目里的操作与序列化上下文，引用的其他程序集里的 `JsonSerializerContext` 不参与解析（XHG002）。
-- 清单的源生成（`[Capability]` → `xihan.manifest.json`）5.0 未提供：清单在特性的 `Manifest` 属性里手写（[能力包与清单](../guide/modularity)）。
+- 清单的源生成（`[Capability]` → `Manifest` 属性与嵌入的 `xihan.manifest.json`）顺延，5.0 未提供：每个特性在 `Manifest` 属性里手写清单（[能力包与清单](../guide/modularity)，ADR-0075）。
 
 ## 相关
 
