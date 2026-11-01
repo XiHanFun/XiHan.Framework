@@ -75,7 +75,7 @@ app.MapXiHanOperations();
 app.Run();
 ```
 
-`OrdersFeature` 登记订单操作，写法见[审计](./auditing#记录调用来源)一章；`AssistantsFeature` 与两个特性用到的操作在本章后面定义。`OpenAIFeature` 的装配与启动不访问网络，配置错误在第一次解析客户端或调用模型时才暴露。
+`OrdersFeature` 登记订单操作，写法见[审计](./auditing#记录调用来源)一章；`AssistantsFeature` 与两个特性用到的操作在本章后面定义。`OpenAIFeature` 的装配与启动不访问网络，Provider 配置错误在第一次解析客户端或调用模型时才暴露；知识库配置引用的提示词则在启动时校验（见下文「知识库」）。
 
 ## Provider 目录
 
@@ -327,7 +327,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
-- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：AI 的宿主特性（`AIToolsFeature`、`VectorDataKnowledgeFeature`）启动时解析增强器，模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。校验之后增强只用这份模板、只给这两个参数，不会再失败，所以返回 `string`。只装了不带启动钩子的 AI 特性（如单独的 `OpenAIFeature`）时，校验发生在第一次解析增强器时，同样抛出。
+- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：`AIToolsFeature`、`VectorDataKnowledgeFeature` 与 `OpenAIFeature` 启动时都解析增强器（只装其中任何一个也一样），模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。校验之后增强只用这份模板、只给这两个参数，不会再失败，所以返回 `string`。
 - 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
 
 `AI.VectorData` 把 `IKnowledgeStore` 映射到应用登记的 `Microsoft.Extensions.VectorData` 的 `VectorStore`，任何连接器都行；容器里没有 `VectorStore` 时启动失败。集合定义、距离函数与过滤的下推方式见 [AI.VectorData 包](../packages/ai-vectordata)。

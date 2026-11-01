@@ -24,7 +24,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 - 工具目录 `IAIToolCatalog`：`AddAITool` 的工具加上 `Expose.Ai` 的操作，后者在新作用域经完整管道执行。
 - 知识库流水线：`IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy`，以及 Provider 契约 `IKnowledgeStore`。
 
-`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败。用法见 [AI](../guide/ai)。
+`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](../guide/ai)。
 
 ## 何时使用
 

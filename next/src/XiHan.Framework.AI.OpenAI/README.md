@@ -4,7 +4,7 @@ AI 的 OpenAI 兼容 Provider（Ring 3，RFC-0022）：提供 `ai.chat@1` 与 `a
 
 | 类型 | 用途 |
 | --- | --- |
-| `OpenAIFeature` | 登记两个工厂并装配 AI 核心服务；装配与启动不触网 |
+| `OpenAIFeature` | 登记两个工厂并装配 AI 核心服务；装配与启动不触网；启动时解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败（只装本特性时也一样） |
 | `OpenAIChatClientFactory` | `GetChatClient(ChatModel).AsIChatClient()` + 函数调用循环（`UseFunctionInvocation`），工具调用自动执行 |
 | `OpenAIEmbeddingGeneratorFactory` | `GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)` |
 

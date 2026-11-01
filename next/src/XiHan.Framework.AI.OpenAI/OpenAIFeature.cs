@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -13,10 +15,10 @@ namespace XiHan.Framework.AI.OpenAI;
 /// OpenAI 兼容端点的 Provider。
 /// </summary>
 /// <remarks>
-/// 提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。
+/// 提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。启动时解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败——只装本特性（不装工具目录与知识库 Provider）时也一样。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class OpenAIFeature : IFeature
+public sealed class OpenAIFeature : IHostedFeature
 {
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
@@ -46,4 +48,16 @@ public sealed class OpenAIFeature : IFeature
         context.Services.AddAIChatClientFactory<OpenAIChatClientFactory>();
         context.Services.AddAIEmbeddingGeneratorFactory<OpenAIEmbeddingGeneratorFactory>();
     }
+
+    /// <inheritdoc />
+    public Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        // 提示增强器创建时校验知识库配置引用的提示词：只装本特性时没有别的 AI 特性在启动时解析它，不解析就要推迟到第一次检索增强才失败
+        services.GetRequiredService<IRagPromptAugmenter>();
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

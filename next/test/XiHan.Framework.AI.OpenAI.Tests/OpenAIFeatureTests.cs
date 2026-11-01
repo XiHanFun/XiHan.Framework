@@ -6,9 +6,12 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.AI.OpenAI.Tests.Fixtures;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.OpenAI.Tests;
 
@@ -76,5 +79,42 @@ public sealed class OpenAIFeatureTests
         Assert.Equal(AIErrors.RequestInvalid, catalog.ResolveChatClient("bare").Error?.Code);
         Assert.Equal(AIErrors.RequestInvalid, catalog.ResolveEmbeddingGenerator("bare").Error?.Code);
         Assert.True(catalog.ResolveChatClient(OpenAITestHost.ProviderName).IsSuccess);
+    }
+
+    [Fact]
+    public async Task OnlyTheOpenAIFeature_ValidatesTheKnowledgePromptAtStartup()
+    {
+        // 只装 OpenAI Provider（不装工具目录与知识库 Provider）：知识库配置引用的提示词同样在启动时校验，而不是第一次解析增强器时
+        var missing = await Assert.ThrowsAsync<FrameworkException>(() => StartOnlyOpenAIAsync(("XiHan:AI:Knowledge:PromptName", "rag")));
+        Assert.Contains(AIErrors.PromptNotFound, CodesOf(missing));
+        var unknownPlaceholder = await Assert.ThrowsAsync<FrameworkException>(() => StartOnlyOpenAIAsync(("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "Answer in {language}: {question} {context}")));
+        Assert.Contains(AIErrors.RequestInvalid, CodesOf(unknownPlaceholder));
+
+        // 配置正确时照常启动，增强只用配置的模板
+        await using var host = await StartOnlyOpenAIAsync(("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "CTX:{context}|Q:{question}"));
+        Assert.StartsWith("CTX:", host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", [new RetrievedChunk { Id = "d1#0", DocumentId = "d1", ChunkIndex = 0, Text = "because", Score = 1 }]), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 只装 OpenAI Provider 启动，请求不触网。
+    /// </summary>
+    private static Task<TestHost> StartOnlyOpenAIAsync(params (string Key, string Value)[] configuration)
+        => TestHost.StartAsync(static b => b.UseFeature<OpenAIFeature>(), configuration.Select(static pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)));
+
+    /// <summary>
+    /// 异常链上全部框架错误码（启动失败由内核包一层）。
+    /// </summary>
+    private static List<string> CodesOf(Exception exception)
+    {
+        var codes = new List<string>();
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is FrameworkException framework)
+            {
+                codes.Add(framework.Code);
+            }
+        }
+
+        return codes;
     }
 }

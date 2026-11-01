@@ -1,8 +1,8 @@
-# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播
+# ADR-0083 Webhook 的 HTTP 追踪头缺省不传播、只装 OpenAIFeature 时提示词启动校验
 
 ## 状态
 
-已采纳（`spec/protocol/cloudevents.md` 随之修订；修订 ADR-0074）。
+已采纳（`spec/protocol/cloudevents.md`、`spec/rfcs/0022-ai.md` 随之修订；修订 ADR-0074）。
 
 ## 日期
 
@@ -39,3 +39,26 @@ ADR-0074 定下 Webhook 发布者不往信封补内部扩展（含 `traceparent`
 - 命名客户端的缺省主处理器从 `HttpClientHandler` 变为 `SocketsHttpHandler`（未打开传播时）。应用若用 `ConfigurePrimaryHttpMessageHandler` 设置代理、证书等，要保持不传播就改用 `UseSocketsHttpHandler`，或在自己的 `SocketsHttpHandler` 上设 `ActivityHeadersPropagator = null`。
 - 启动期新增失败：`XiHan:Protocols:CloudEvents:PropagateTraceContext` 不是 `true` / `false`。
 - 测试：用本机回环上的真实 Kestrel 接收方断言实际收到的请求头——缺省没有五种追踪头、应用用 `UseSocketsHttpHandler` 调连接参数之后仍然没有、打开后 `traceparent` 带当前追踪 ID 且 `tracestate` 原样；改动之前缺省的两个用例失败（收到三个头）。
+
+## 只装 OpenAIFeature 时提示词也在启动时校验
+
+### 背景
+
+ADR-0074 让提示增强器在创建时取定并试渲染知识库配置引用的模板（`XiHan:AI:Knowledge:PromptName`），由 AI 的宿主特性（`AIToolsFeature`、`VectorDataKnowledgeFeature`）在 `StartAsync` 里解析它，配置错误即启动失败。`OpenAIFeature` 不是宿主特性：只装它（例如只用聊天、知识库增强由应用自己调用）时没有谁在启动时解析增强器，配置错误推迟到第一次解析增强器才抛出。
+
+### 决策
+
+`OpenAIFeature` 改为宿主特性（实现 `IHostedFeature`）：`StartAsync` 解析 `IRagPromptAugmenter`，模板不存在抛 `FrameworkException(AI_NOTFOUND_002)`、引用了 `{context}` / `{question}` 以外的占位符抛 `FrameworkException(AI_VALIDATION_001)`，启动失败；`StopAsync` 无事可做。装配与启动仍不触网，Provider 配置（缺模型名等）仍在第一次解析客户端时才校验，不在本项范围。
+
+### 理由
+
+- 正式包的 AI 特性都调用 `AddAI`、都可能是应用唯一装的 AI 特性；只要其中一个不在启动时解析增强器，「配置错误让应用起不来」就取决于装了哪几个特性。三个特性各自解析一次，单例只建一次，没有额外代价。
+- 不另造「AI 启动校验」的通用机制：内核的启动钩子就是 `IHostedFeature`，另两个 AI 特性也是这样做的。
+- 一致性包里只供测试的 `HashingEmbeddingFeature` 不改：它不是正式 Provider，测试用例自己决定是否解析增强器。
+
+### 影响
+
+- 公开 API（Unshipped）：`OpenAIFeature` 从 `IFeature` 改为 `IHostedFeature`，新增 `StartAsync`、`StopAsync`。
+- 启动期新增失败条件：只装 `OpenAIFeature`（不装 `AIToolsFeature` 与 `VectorDataKnowledgeFeature`）的应用，`XiHan:AI:Knowledge:PromptName` 指向不存在的模板或模板用了别的占位符时启动失败；以前在第一次解析增强器时抛出。
+- `OpenAIFeature` 按拓扑顺序参与启动与停止；它的清单（能力、依赖、配置节）不变。
+- 测试：只装 `OpenAIFeature` 时缺模板、多占位符都在启动时失败，配置正确时照常启动、增强只用配置的模板；改动之前该用例失败（启动没有抛出）。
