@@ -12,6 +12,7 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Multipart_Uploads
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PutMany_ReturnsOneResultPerUpload_InOrder() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_OverwritesOrConflicts_AndKeysAreCaseSensitive() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_ThenGet_RoundTripsContentAndMetadata() -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.BlobStoreProviderConformance() -> void
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_RejectsUnknownSettings() -> System.Threading.Tasks.Task!

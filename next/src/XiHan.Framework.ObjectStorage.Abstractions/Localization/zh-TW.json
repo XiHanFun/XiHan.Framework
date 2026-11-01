@@ -1,6 +1,10 @@
 {
   "objectstorage.blob.exists": "容器 '{container}' 裡已存在物件 '{key}'。",
   "objectstorage.blob.not_found": "容器 '{container}' 裡不存在物件 '{key}'。",
+  "objectstorage.conditional_write.disabled": "無法以不覆寫方式寫入容器 '{container}' 中的物件 '{key}'：此儲存體已關閉條件寫入（ConditionalWrites = false）。",
+  "objectstorage.conditional_write.probe_bucket_missing": "條件寫入探測的貯體 '{bucket}' 不存在。請先建立貯體、啟用 EnsureBuckets，或將 HealthBucket 設為既有的貯體。",
+  "objectstorage.conditional_write.probe_denied": "物件儲存拒絕了條件寫入探測（貯體 '{bucket}' 中 '{key}' 的 {operation}）：{reason}。請允許認證寫入該索引鍵；應用程式從不以 Overwrite = false 寫入時，可將 ConditionalWrites 設為 false。",
+  "objectstorage.conditional_write.unsupported": "物件儲存不支援條件寫入（貯體 '{bucket}' 上 {operation} 的 'If-None-Match: *'），Overwrite = false 的寫入可能無聲覆寫既有物件。請改用支援條件寫入的服務；應用程式從不以 Overwrite = false 寫入時，可將 ConditionalWrites 設為 false。",
   "objectstorage.list.page_size_invalid": "列舉的頁大小 {pageSize} 必須在 1 到 {max} 之間。",
   "objectstorage.multipart.part_too_small": "分段 {part} 只有 {length} 位元組；除最後一段外每段至少 {minimum} 位元組。",
   "objectstorage.multipart.part_unknown": "分段 {part} 未上傳或 ETag 不符。",

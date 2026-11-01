@@ -48,7 +48,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         {
             if (!putOptions.Overwrite && store.ReadMetadata(container, key).HasValue)
             {
-                return Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
+                return FileSystemBlobStore.Exists(container, key);
             }
 
             var uploadId = Guid.NewGuid().ToString("N");
@@ -227,7 +227,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             var existing = store.ReadMetadata(upload.Container, key);
             if (existing.HasValue && !manifest.Overwrite)
             {
-                return Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", upload.Container.Value), ("key", key.Value)));
+                return FileSystemBlobStore.Exists(upload.Container, key);
             }
 
             var previousLength = existing.TryGetValue(out var previous) ? previous.Length : 0;
@@ -264,9 +264,15 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
                 etag = Convert.ToHexStringLower(hash.GetHashAndReset());
             }
 
-            var metadata = await store.CommitAsync(upload.Container, key, temporary, total, etag, manifest.ContentType, manifest.Metadata, previousLength, cancellationToken).ConfigureAwait(false);
+            var committed = await store.CommitAsync(upload.Container, key, temporary, total, etag, manifest.ContentType, manifest.Metadata, previousLength, manifest.Overwrite, cancellationToken).ConfigureAwait(false);
+            if (committed.IsFailure)
+            {
+                // 不覆盖的完成被并发写入方抢先：上传保留（与先查到已存在时相同），调用方可以放弃或改为覆盖重传
+                return committed;
+            }
+
             Directory.Delete(directory, recursive: true);
-            return Result.Success(metadata);
+            return committed;
         }
         catch (DirectoryNotFoundException)
         {

@@ -106,3 +106,5 @@ ADR-0083 把 `OpenAIFeature` 改为宿主特性，只装它时知识库提示词
 
 - 启动期新增失败：只装 `OpenAIFeature` 时，工具名不合法或重名即启动失败（以前第一次聊天时 `AI_VALIDATION_001`）。装了 `AIToolsFeature` 的应用没有变化。
 - 公开 API、错误码、消息键、配置键都不变。
+
+> 修订（2026-11-01）：第一节记下的"不认 `If-None-Match` 的兼容服务（Garage、Zenko CloudServer）上不覆盖写入只剩先 HEAD 的检查"由 ADR-0089 第一节处理：S3 Provider 在用之前探测服务是否认条件写入，不认的服务启动失败、命名实例不建出。

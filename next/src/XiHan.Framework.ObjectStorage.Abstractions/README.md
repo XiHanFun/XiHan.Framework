@@ -20,7 +20,7 @@ var page = await store.ListAsync("invoices", new BlobQuery { Prefix = "2026/10/"
 var deleted = await store.DeleteAsync("invoices", [key1, key2], ct);   // 逐项结果：存在过 / 不存在 / 失败
 ```
 
-实例不存在 → `OBJECTSTORAGE_NOTFOUND_003`；实例定义不合法 → `OBJECTSTORAGE_VALIDATION_003`；缺省存储的能力选择不一致（装配时）→ `OBJECTSTORAGE_VALIDATION_004`；不存在 → `OBJECTSTORAGE_NOTFOUND_001`；已存在且不覆盖 → `OBJECTSTORAGE_CONFLICT_001`；IO 失败 → `OBJECTSTORAGE_UNAVAILABLE_001`；配额 → `OBJECTSTORAGE_UNAVAILABLE_002`；范围不可满足 → `OBJECTSTORAGE_VALIDATION_001`；分片清单不合法 → `OBJECTSTORAGE_VALIDATION_002`；列举的页大小不在 1～1000（不在构造 `BlobQuery` 时抛出，Provider 经 `BlobQuery.Validate()` 返回）→ `OBJECTSTORAGE_VALIDATION_005`；上传不存在 → `OBJECTSTORAGE_NOTFOUND_002`；签名无效或过期 → `OBJECTSTORAGE_DENIED_001`。
+实例不存在 → `OBJECTSTORAGE_NOTFOUND_003`；实例定义不合法 → `OBJECTSTORAGE_VALIDATION_003`；缺省存储的能力选择不一致（装配时）→ `OBJECTSTORAGE_VALIDATION_004`；不存在 → `OBJECTSTORAGE_NOTFOUND_001`；已存在且不覆盖 → `OBJECTSTORAGE_CONFLICT_001`；IO 失败 → `OBJECTSTORAGE_UNAVAILABLE_001`；配额 → `OBJECTSTORAGE_UNAVAILABLE_002`；范围不可满足 → `OBJECTSTORAGE_VALIDATION_001`；分片清单不合法 → `OBJECTSTORAGE_VALIDATION_002`；列举的页大小不在 1～1000（不在构造 `BlobQuery` 时抛出，Provider 经 `BlobQuery.Validate()` 返回）→ `OBJECTSTORAGE_VALIDATION_005`；上传不存在 → `OBJECTSTORAGE_NOTFOUND_002`；签名无效或过期 → `OBJECTSTORAGE_DENIED_001`；不覆盖写入在本存储上无法保证（S3 服务不认条件写入，或存储关闭了条件写入）→ `OBJECTSTORAGE_UNAVAILABLE_003`；条件写入探测被拒绝 → `OBJECTSTORAGE_DENIED_002`（ADR-0089）。不覆盖写入必须原子：并发的不覆盖写入同一个新键只有一个成功。Provider 建命名实例前的探测不通过时抛出携带错误码的 `FrameworkException`，注册表转成同码的失败结果、不登记实例。
 
 ```csharp
 // 断点续传：服务端发起，客户端按片直传，服务端完成

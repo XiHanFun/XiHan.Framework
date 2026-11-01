@@ -172,6 +172,7 @@ public sealed class MixedObjectStorageTests : IDisposable
             new("XiHan:ObjectStorage:S3:ServiceUrl", "http://localhost:9000"),
             new("XiHan:ObjectStorage:S3:AccessKey", "ak"),
             new("XiHan:ObjectStorage:S3:SecretKey", "sk"),
+            new("XiHan:ObjectStorage:S3:HealthBucket", "probe"),
             new("XiHan:ObjectStorage:FileSystem:RootPath", Path.Combine(_root, "default")),
             new("XiHan:ObjectStorage:SignedUrls:Secret", "unit-test-signing-secret-with-32-bytes!"),
             .. values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value)),

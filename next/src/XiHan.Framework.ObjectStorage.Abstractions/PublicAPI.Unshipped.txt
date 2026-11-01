@@ -112,9 +112,9 @@ XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.ContinuationToken.i
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Equals(XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.get -> int
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.init -> void
-XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.init -> void
+XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload!
@@ -204,19 +204,26 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageCapabilities.Presi
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageCapabilities.Version = 1 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.BlobExists = "OBJECTSTORAGE_CONFLICT_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.BlobNotFound = "OBJECTSTORAGE_NOTFOUND_001" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ConditionalWriteUnavailable = "OBJECTSTORAGE_UNAVAILABLE_003" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PartsInvalid = "OBJECTSTORAGE_VALIDATION_002" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ProbeDenied = "OBJECTSTORAGE_DENIED_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.QuotaExceeded = "OBJECTSTORAGE_UNAVAILABLE_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.RangeNotSatisfiable = "OBJECTSTORAGE_VALIDATION_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.SignatureInvalid = "OBJECTSTORAGE_DENIED_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreDefinitionInvalid = "OBJECTSTORAGE_VALIDATION_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreNotFound = "OBJECTSTORAGE_NOTFOUND_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreSelectionInvalid = "OBJECTSTORAGE_VALIDATION_004" -> string!
-const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.StoreUnavailable = "OBJECTSTORAGE_UNAVAILABLE_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.UploadNotFound = "OBJECTSTORAGE_NOTFOUND_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobExists = "objectstorage.blob.exists" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.BlobNotFound = "objectstorage.blob.not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.CatalogName = "objectstorage" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteDisabled = "objectstorage.conditional_write.disabled" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteProbeBucketMissing = "objectstorage.conditional_write.probe_bucket_missing" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteProbeDenied = "objectstorage.conditional_write.probe_denied" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteUnsupported = "objectstorage.conditional_write.unsupported" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PageSizeInvalid = "objectstorage.list.page_size_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PartTooSmall = "objectstorage.multipart.part_too_small" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PartUnknown = "objectstorage.multipart.part_unknown" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PartsEmpty = "objectstorage.multipart.parts_empty" -> string!
@@ -228,7 +235,6 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.RangeNotS
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlExpired = "objectstorage.signed_url.expired" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.SignedUrlInvalid = "objectstorage.signed_url.invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreDefinitionInvalid = "objectstorage.store.definition_invalid" -> string!
-const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PageSizeInvalid = "objectstorage.list.page_size_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreNotFound = "objectstorage.store.not_found" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreProviderUnknown = "objectstorage.store.provider_unknown" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreUnavailable = "objectstorage.store.unavailable" -> string!

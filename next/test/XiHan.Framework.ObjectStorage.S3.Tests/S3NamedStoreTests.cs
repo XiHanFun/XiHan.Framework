@@ -49,6 +49,14 @@ public sealed class S3NamedStoreTests
                 new("XiHan:ObjectStorage:Stores:gone:AccessKey", S3TestServer.AccessKey),
                 new("XiHan:ObjectStorage:Stores:gone:SecretKey", S3TestServer.SecretKey),
                 new("XiHan:ObjectStorage:Stores:gone:HealthBucket", "no-such-bucket-" + Guid.NewGuid().ToString("N")[..8]),
+                new("XiHan:ObjectStorage:Stores:gone:ConditionalWrites", "false"),
+                new("XiHan:ObjectStorage:Stores:unprobed:Provider", "s3"),
+                new("XiHan:ObjectStorage:Stores:unprobed:ServiceUrl", S3TestServer.RequireServiceUrl()),
+                new("XiHan:ObjectStorage:Stores:unprobed:HealthBucket", "no-such-bucket-" + Guid.NewGuid().ToString("N")[..8]),
+                new("XiHan:ObjectStorage:Stores:unprobed:AccessKey", S3TestServer.AccessKey),
+                new("XiHan:ObjectStorage:Stores:unprobed:SecretKey", S3TestServer.SecretKey),
+                new("XiHan:ObjectStorage:Stores:nobucket:Provider", "s3"),
+                new("XiHan:ObjectStorage:Stores:nobucket:ServiceUrl", S3TestServer.RequireServiceUrl()),
                 new("XiHan:ObjectStorage:Stores:typo:Provider", "s3"),
                 new("XiHan:ObjectStorage:Stores:typo:SeviceUrl", S3TestServer.RequireServiceUrl()),
             ]);
@@ -65,7 +73,13 @@ public sealed class S3NamedStoreTests
             Assert.Equal((HttpStatusCode.OK, "named"), (download.StatusCode, await download.Content.ReadAsStringAsync()));
         }
 
-        // 健康项：健康桶在即就绪，不在即降级（实例仍可取用）
+        // 建实例先探条件写入：探测桶不存在即不建（NOTFOUND，下次取用重新探测），条件写入开启却没配健康桶是定义不合法
+        var unprobed = await registry.GetAsync("unprobed", CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, unprobed.Error?.Code);
+        Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, (await registry.GetAsync("nobucket", CancellationToken.None)).Error?.Code);
+        Assert.DoesNotContain("unprobed", registry.Check().Select(static s => s.Name[BlobStores.HealthPrefix.Length..]));
+
+        // 健康项：健康桶在即就绪，不在即降级（实例仍可取用；关闭了条件写入的实例建出时不探测）
         _ = (await registry.GetAsync("gone", CancellationToken.None)).ValueOrThrow();
         await registry.ProbeAsync(CancellationToken.None);
         var statuses = registry.Check().ToDictionary(static s => s.Name, static s => s.State);

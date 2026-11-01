@@ -19,18 +19,23 @@ public sealed class S3BlobStoreProviderConformanceTests : BlobStoreProviderConfo
     protected override IBlobStoreProvider CreateProvider() => new S3BlobStoreProvider(TimeProvider.System);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 建实例时在 <see cref="S3TestServer.ProbeBucket"/> 里探测条件写入（ADR-0089）。
+    /// </remarks>
     protected override IReadOnlyDictionary<string, string> ValidSettings()
     {
         S3TestServer.EnsureBucket(S3TestServer.Client(), Container.Value);
+        S3TestServer.EnsureBucket(S3TestServer.Client(), S3TestServer.ProbeBucket);
         return new Dictionary<string, string>
         {
             ["ServiceUrl"] = S3TestServer.RequireServiceUrl(),
             ["AccessKey"] = S3TestServer.AccessKey,
             ["SecretKey"] = S3TestServer.SecretKey,
+            ["HealthBucket"] = S3TestServer.ProbeBucket,
         };
     }
 
     /// <inheritdoc />
     protected override IReadOnlyDictionary<string, string> OtherValidSettings()
-        => new Dictionary<string, string>(ValidSettings()) { ["HealthBucket"] = Container.Value, ["ForcePathStyle"] = "true" };
+        => new Dictionary<string, string>(ValidSettings()) { ["ForcePathStyle"] = "true" };
 }

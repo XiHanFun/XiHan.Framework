@@ -371,7 +371,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     /// 写一个对象。
     /// </summary>
     /// <remarks>
-    /// 配额预检、流式复制到临时文件并计算 SHA-256、原子替换、写元数据、更新用量。
+    /// 配额预检、流式复制到临时文件并计算 SHA-256、原子替换（不覆盖时原子占位）、写元数据、更新用量。
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
@@ -383,7 +383,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
             var existing = ReadMetadata(container, upload.Key);
             if (existing.HasValue && !upload.Options.Overwrite)
             {
-                return Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", upload.Key.Value)));
+                return Exists(container, upload.Key);
             }
 
             var previousLength = existing.TryGetValue(out var previous) ? previous.Length : 0;
@@ -418,7 +418,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
                 etag = Convert.ToHexStringLower(hash.GetHashAndReset());
             }
 
-            return Result.Success(await CommitAsync(container, upload.Key, temporary, length, etag, upload.Options.ContentType, upload.Options.Metadata, previousLength, cancellationToken).ConfigureAwait(false));
+            return await CommitAsync(container, upload.Key, temporary, length, etag, upload.Options.ContentType, upload.Options.Metadata, previousLength, upload.Options.Overwrite, cancellationToken).ConfigureAwait(false);
         }
         catch (IOException exception)
         {
@@ -441,13 +441,31 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     /// 提交写好的临时内容文件。
     /// </summary>
     /// <remarks>
-    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。
+    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时以不替换的移动原子占位，内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量。
     /// </remarks>
-    internal async ValueTask<BlobMetadata> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, long previousLength, CancellationToken cancellationToken)
+    internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, long previousLength, bool overwrite, CancellationToken cancellationToken)
     {
         var metaPath = MetaPath(container, key);
+        var dataPath = DataPath(container, key);
         Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
-        File.Move(temporary, DataPath(container, key), overwrite: true);
+        if (overwrite)
+        {
+            File.Move(temporary, dataPath, overwrite: true);
+        }
+        else
+        {
+            try
+            {
+                // 调用方先查过元数据，但查与写之间另一个写入方可能已经写入：不替换的移动由文件系统原子判定，
+                // 目标已存在就失败，两个不覆盖的写入方只有一个能占位，后到的不会静默覆盖先到的
+                File.Move(temporary, dataPath, overwrite: false);
+            }
+            catch (IOException) when (File.Exists(dataPath))
+            {
+                return Exists(container, key);
+            }
+        }
+
         var document = new BlobMetadataDocument
         {
             Length = length,
@@ -465,7 +483,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
             _usedBytes += length - previousLength;
         }
 
-        return ToMetadata(key, document);
+        return Result.Success(ToMetadata(key, document));
     }
 
     /// <summary>
@@ -646,6 +664,12 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     /// </summary>
     internal static Error NotFound(ContainerName container, BlobKey key)
         => Error.NotFound(ObjectStorageErrors.BlobNotFound, ObjectStorageMessages.BlobNotFound, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
+
+    /// <summary>
+    /// 已存在且不允许覆盖。
+    /// </summary>
+    internal static Error Exists(ContainerName container, BlobKey key)
+        => Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
     /// 超配额。

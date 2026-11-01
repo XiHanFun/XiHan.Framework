@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储选项。
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
+/// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record S3ObjectStorageOptions
@@ -79,12 +79,20 @@ public sealed record S3ObjectStorageOptions
     public bool EnsureBuckets { get; init; }
 
     /// <summary>
-    /// 健康项 <c>objectstorage.s3.connection</c> 探测的桶。
+    /// 框架探测用的桶。
     /// </summary>
     /// <remarks>
-    /// 有值时对它 HEAD（同时验证凭据对该桶的权限）；为 <see langword="null"/> 时列桶。
+    /// 健康项 <c>objectstorage.s3.connection</c> 与命名实例的探测对它 HEAD（同时验证凭据对该桶的权限），为 <see langword="null"/> 时列桶；<see cref="ConditionalWrites"/> 开启时启动或建实例前在其中写探测键 <c>.xihan/probe/conditional-write</c>，这时必须配置（ADR-0089）。
     /// </remarks>
     public string? HealthBucket { get; init; }
+
+    /// <summary>
+    /// 不覆盖写入是否由条件写入保证。
+    /// </summary>
+    /// <remarks>
+    /// 默认开启：缺省实例启动时、命名实例建出时在 <see cref="HealthBucket"/> 里探测服务是否认 <c>If-None-Match: *</c>，不认、连不上、被拒绝或桶不存在都失败，不带着可能静默覆盖的不覆盖写入运行。关闭表示应用明确不需要不覆盖写入：不探测、<see cref="HealthBucket"/> 可以不配，<c>Overwrite = false</c> 的写入与分片上传一律返回 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>，不访问存储（ADR-0089）。
+    /// </remarks>
+    public bool ConditionalWrites { get; init; } = true;
 
     /// <summary>
     /// 健康项 <c>objectstorage.s3.connection</c> 的重探间隔（也是单次探测的超时）。
@@ -104,7 +112,7 @@ public sealed record S3ObjectStorageOptions
     /// <remarks>
     /// 探测间隔由注册表统一（<c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>），不在其中。
     /// </remarks>
-    private static readonly string[] _settingKeys = ["ServiceUrl", "Region", "AccessKey", "SecretKey", "ForcePathStyle", "EnsureBuckets", "HealthBucket"];
+    private static readonly string[] _settingKeys = ["ServiceUrl", "Region", "AccessKey", "SecretKey", "ForcePathStyle", "EnsureBuckets", "HealthBucket", "ConditionalWrites"];
 
     /// <summary>
     /// 从配置读取，再用绑定（若有）覆盖。
@@ -209,6 +217,11 @@ public sealed record S3ObjectStorageOptions
             options = options with { EnsureBuckets = ParseBoolean(ensure, prefix + "EnsureBuckets") };
         }
 
+        if (read("ConditionalWrites") is { } conditional)
+        {
+            options = options with { ConditionalWrites = ParseBoolean(conditional, prefix + "ConditionalWrites") };
+        }
+
         return options;
     }
 
@@ -246,6 +259,7 @@ public sealed record S3ObjectStorageOptions
             .Append(", ForcePathStyle = ").Append(ForcePathStyle)
             .Append(", EnsureBuckets = ").Append(EnsureBuckets)
             .Append(", HealthBucket = ").Append(HealthBucket)
+            .Append(", ConditionalWrites = ").Append(ConditionalWrites)
             .Append(", HealthProbeInterval = ").Append(HealthProbeInterval);
         return true;
     }

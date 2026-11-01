@@ -133,13 +133,13 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 ## 行为与限制
 
-- 写入：已存在且 `Overwrite = false` 的项返回 `OBJECTSTORAGE_CONFLICT_001`，不写入；配额或单对象大小超限返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不写入。空列表返回空，重复的键按顺序各执行一次。
+- 写入：已存在且 `Overwrite = false` 的项返回 `OBJECTSTORAGE_CONFLICT_001`，不写入；不覆盖写入是原子的，多个写入方同时写同一个新键只有一个成功（一致性套件核对，ADR-0089）；配额或单对象大小超限返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不写入。空列表返回空，重复的键按顺序各执行一次。
 - 删除：不存在的项成功并报告为不存在；同一批里重复的键第二次报告不存在。
 - 列举：键的序数顺序；续页标记不透明，原样带回。
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
 - 分片上传：编号 1–10000，可乱序、可重传；完成时清单编号严格升序、ETag 相符、非末片至少 5 MiB；完成前对象不可见；放弃是幂等的。
 - 预签名：有效期 1 秒到 7 天，签名在本地计算，不检查对象是否存在。
-- 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
+- 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来、建实例前的探测不通过（Provider 抛出携带错误码的 `FrameworkException`，注册表原样返回该错误码）时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
 
 | 错误码 | 常量 | 含义 |
 | --- | --- | --- |
@@ -152,9 +152,11 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小越界（HTTP 400，不在构造时抛出） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
+| `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403），启动失败或不建命名实例 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败 |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：服务不认条件写入（启动失败或不建命名实例），或关闭了条件写入 |
 
 ## 相关
 

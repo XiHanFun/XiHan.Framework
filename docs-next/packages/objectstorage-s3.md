@@ -49,7 +49,8 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | `SecretKey` | `string` | 空 | 访问密钥 |
 | `ForcePathStyle` | `bool` | `true` | 桶名放在路径而不是主机名里；各兼容服务对两种寻址的支持不同，按服务商说明设置 |
 | `EnsureBuckets` | `bool` | `false` | 写入遇到桶不存在时建桶再重试一次；缺省由基础设施预先建桶 |
-| `HealthBucket` | `string` | 空 | 健康探测对它做 HEAD（同时验证凭据对该桶的权限）；为空时列桶 |
+| `HealthBucket` | `string` | 空 | 框架探测用的桶：健康探测对它做 HEAD（同时验证凭据对该桶的权限）；`ConditionalWrites` 开启时启动前在其中探测条件写入，这时必填；关闭且为空时健康探测列桶 |
+| `ConditionalWrites` | `bool` | `true` | 不覆盖写入由条件写入（`If-None-Match: *`）保证：开启时启动探测服务是否支持，不支持即启动失败；关闭表示应用不需要不覆盖写入，`Overwrite = false` 的写入一律失败（见下文「条件写入探测」） |
 | `HealthProbeIntervalSeconds` | 正数 | 15 | 健康探测的间隔，也是单次探测的超时 |
 
 ```json
@@ -80,6 +81,26 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 ```
 
 绑定的解析规则见[配置与选项](../guide/configuration#资源绑定)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
+
+## 条件写入探测
+
+不覆盖写入（`Overwrite = false`）在 S3 上靠条件写入 `If-None-Match: *` 保证原子。有的兼容服务不认这个请求头，照常写入：先 HEAD 再写的两个写入方都会成功，后写的静默覆盖先写的（实测 Garage、Zenko CloudServer 上 8 个并发写入方全部"成功"）。所以本包在用之前先探测（ADR-0089）：
+
+- 缺省实例在启动时、健康探针之前探一次；命名实例在建出时探一次，每个实例各探各的。
+- 在 `HealthBucket` 里对探测键 `.xihan/probe/conditional-write` 带 `If-None-Match: *` 写两次，第二次必须被拒（412）；提供分片上传时再以同一个键带条件完成一次分片上传，也必须被拒，被拒的上传随即放弃。
+- 探测键是空对象，写入后不删除：任何一次 412 都证明服务认条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动都得到同一结论。凭据只需要对这个键的 `s3:PutObject` 与 `s3:AbortMultipartUpload`，不需要删除或列举；按空前缀列举该桶时会看到它。
+- 单次探测以 `HealthProbeIntervalSeconds` 为超时；`EnsureBuckets` 开启时探测桶不存在就先建桶。
+
+探测不通过时缺省实例启动失败（`KERNEL_HOSTING_002`，内层错误码说明原因），命名实例不建、不登记，注册表返回同样的错误码，下次取用重新探测：
+
+| 原因 | 错误码 | 怎么办 |
+| --- | --- | --- |
+| 服务不认条件写入（第二次没被拒，或回 501） | `OBJECTSTORAGE_UNAVAILABLE_003` | 换用认条件写入的服务（Amazon S3、RustFS、MinIO 实测通过）；应用从不写 `Overwrite = false` 时关闭 `ConditionalWrites` |
+| 被拒绝（403：密钥错、凭据只读、无权写探测键或放弃分片上传） | `OBJECTSTORAGE_DENIED_002` | 给凭据开探测键的写入权限；只读的应用关闭 `ConditionalWrites` |
+| 探测桶不存在 | `OBJECTSTORAGE_NOTFOUND_001` | 先建桶、开 `EnsureBuckets`，或把 `HealthBucket` 改成已存在的桶 |
+| 连不上、超时或其余服务端错误 | `OBJECTSTORAGE_UNAVAILABLE_001` | 检查端点与网络；没探过就无从确认，不降级运行 |
+
+`ConditionalWrites = false` 只给明确不需要不覆盖写入的应用（只做覆盖写入，或凭据只读）：不探测，`HealthBucket` 可以不配；`Overwrite = false` 的写入、分片上传的发起与完成一律返回 `OBJECTSTORAGE_UNAVAILABLE_003`，不访问存储，框架不做没有保证的先查再写。覆盖写入、读取、删除、列举与预签名不受影响。
 
 ## 主要类型
 
@@ -121,27 +142,29 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 
 ## 行为与限制
 
-- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入；服务端支持条件写入（Amazon S3、MinIO、RustFS）时由它保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；不认 `If-None-Match` 的兼容服务（实测 Garage、Zenko CloudServer）只剩先 HEAD 的检查，并发写入可能覆盖。
+- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入，由服务端保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；服务认条件写入已由启动或建实例时的探测确认（上文「条件写入探测」），不认的服务（实测 Garage、Zenko CloudServer）启动失败，不会带着可能静默覆盖的不覆盖写入运行。
 - 不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。
 - 读取：`GetAsync` 的内容流释放时连同响应一起释放；`HeadAsync` 返回长度、内容类型、ETag、修改时间与去掉 `x-amz-meta-` 前缀的自定义元数据。
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
 - 列举：`ListObjectsV2` 按前缀分页，续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`；不符合键文法的对象（以 `/` 结尾的「目录」占位）跳过；桶不存在视作空容器。
 - 范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长；起点越界（416）返回 `OBJECTSTORAGE_VALIDATION_001`。
-- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。
+- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的完成先 HEAD 再带 `If-None-Match: *`（服务认条件完成同样由探测确认）；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。
 - 预签名经 SDK 在本地签出（签名 V4，端点是 http 时按 http 签）：下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号。
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
-- 健康项 `objectstorage.s3.connection`：启动时同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，原因是 SDK 的异常消息），应用仍在服务。
-- 命名实例被替换、移除或应用停止时释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；探测对实例的 `HealthBucket` 做 HEAD，没配时列桶。
-- 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，此前对 MinIO 验证；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。
+- 健康项 `objectstorage.s3.connection`：在条件写入探测通过后启动，启动时同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶，不重复条件写入探测）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，原因是 SDK 的异常消息），应用仍在服务。
+- 命名实例建出前探测条件写入（`ConditionalWrites` 关闭时不探测、建实例不发请求），被替换、移除或应用停止时释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；健康探测对实例的 `HealthBucket` 做 HEAD，没配时列桶。
+- 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，此前对 MinIO 验证；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。`XIHAN_TEST_S3_UNCONDITIONAL` 指向不认条件写入的兼容服务（如 Zenko CloudServer）时，另核对启动与命名实例的建出都以 `OBJECTSTORAGE_UNAVAILABLE_003` 失败。
 
 | 错误码 | 含义 |
 | --- | --- |
-| `OBJECTSTORAGE_NOTFOUND_001` | 键或桶不存在 |
+| `OBJECTSTORAGE_NOTFOUND_001` | 键或桶不存在（含条件写入探测的桶） |
 | `OBJECTSTORAGE_NOTFOUND_002` | 分片上传不存在（`NoSuchUpload`） |
 | `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点越界 |
 | `OBJECTSTORAGE_VALIDATION_002` | 服务端拒绝分片清单 |
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | 其余服务端错误、网络错误与 SDK 超时 |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | 其余服务端错误、网络错误与 SDK 超时（含探测连不上或超时） |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | 服务不认条件写入（探测发现，启动失败或不建命名实例），或 `ConditionalWrites = false` 时的不覆盖写入 |
+| `OBJECTSTORAGE_DENIED_002` | 条件写入探测被拒绝（403） |
 
 ## 相关
 
@@ -149,4 +172,4 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 - [配置与选项](../guide/configuration)
 - [ObjectStorage.Abstractions](./objectstorage-abstractions)
 - [ObjectStorage.FileSystem](./objectstorage-filesystem)
-- 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050
+- 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050、ADR-0089

@@ -10,7 +10,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 真实的 S3 兼容服务来自环境变量 <c>XIHAN_TEST_S3</c>。
 /// </summary>
 /// <remarks>
-/// 服务端点，如 <c>http://localhost:9000</c>。密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>rustfsadmin</c>，即 RustFS 镜像不设密钥时的根凭据，ADR-0086）。未设置端点时跳过需要它的用例。
+/// 服务端点，如 <c>http://localhost:9000</c>。密钥来自 <c>XIHAN_TEST_S3_ACCESS_KEY</c> / <c>XIHAN_TEST_S3_SECRET_KEY</c>（缺省 <c>rustfsadmin</c>，即 RustFS 镜像不设密钥时的根凭据，ADR-0086）。未设置端点时跳过需要它的用例。另一个端点 <c>XIHAN_TEST_S3_UNCONDITIONAL</c> 指向不认条件写入的兼容服务（如 Zenko CloudServer），用同一对密钥，只有核对启动失败的用例使用（ADR-0089）。
 /// </remarks>
 internal static class S3TestServer
 {
@@ -20,12 +20,25 @@ internal static class S3TestServer
     public const string EnvironmentVariable = "XIHAN_TEST_S3";
 
     /// <summary>
+    /// 指向不认条件写入的兼容服务端点的环境变量名。
+    /// </summary>
+    public const string UnconditionalEnvironmentVariable = "XIHAN_TEST_S3_UNCONDITIONAL";
+
+    /// <summary>
+    /// 条件写入探测与健康项用的桶。
+    /// </summary>
+    /// <remarks>
+    /// 与一致性用例的容器分开，探测键不出现在用例写入的容器里。
+    /// </remarks>
+    public const string ProbeBucket = "xihan-probe";
+
+    /// <summary>
     /// 进程内共享的客户端，首次使用时创建。
     /// </summary>
     private static readonly Lazy<AmazonS3Client> _client = new(() => S3ObjectStorageFeature.CreateClient(Options()));
 
     /// <summary>
-    /// 已确认存在的桶。
+    /// 已确认存在的桶（端点与桶名）。
     /// </summary>
     private static readonly HashSet<string> _buckets = new(StringComparer.Ordinal);
 
@@ -65,6 +78,19 @@ internal static class S3TestServer
     }
 
     /// <summary>
+    /// 返回不认条件写入的服务端点。
+    /// </summary>
+    /// <remarks>
+    /// 未设置时跳过当前用例。
+    /// </remarks>
+    public static string RequireUnconditionalServiceUrl()
+    {
+        var url = Environment.GetEnvironmentVariable(UnconditionalEnvironmentVariable);
+        Assert.SkipWhen(string.IsNullOrWhiteSpace(url), $"Set the environment variable '{UnconditionalEnvironmentVariable}' to an S3-compatible endpoint that ignores conditional writes to run this test.");
+        return url!;
+    }
+
+    /// <summary>
     /// 指向测试服务的选项。
     /// </summary>
     public static S3ObjectStorageOptions Options(bool ensureBuckets = false) => new()
@@ -78,12 +104,20 @@ internal static class S3TestServer
     /// <summary>
     /// 宿主配置：<c>XiHan:ObjectStorage:S3</c> 节指向测试服务。
     /// </summary>
-    public static IEnumerable<KeyValuePair<string, string?>> Configuration() =>
-    [
-        new(S3ObjectStorageOptions.ConfigurationSection + ":ServiceUrl", RequireServiceUrl()),
-        new(S3ObjectStorageOptions.ConfigurationSection + ":AccessKey", AccessKey),
-        new(S3ObjectStorageOptions.ConfigurationSection + ":SecretKey", SecretKey),
-    ];
+    /// <remarks>
+    /// 健康桶是 <see cref="ProbeBucket"/>（保证存在），启动时在其中探测条件写入。
+    /// </remarks>
+    public static IEnumerable<KeyValuePair<string, string?>> Configuration()
+    {
+        EnsureBucket(Client(), ProbeBucket);
+        return
+        [
+            new(S3ObjectStorageOptions.ConfigurationSection + ":ServiceUrl", RequireServiceUrl()),
+            new(S3ObjectStorageOptions.ConfigurationSection + ":AccessKey", AccessKey),
+            new(S3ObjectStorageOptions.ConfigurationSection + ":SecretKey", SecretKey),
+            new(S3ObjectStorageOptions.ConfigurationSection + ":HealthBucket", ProbeBucket),
+        ];
+    }
 
     /// <summary>
     /// 共享客户端。
@@ -111,13 +145,14 @@ internal static class S3TestServer
     /// 桶不存在就创建。
     /// </summary>
     /// <remarks>
-    /// 每个桶只检查一次。
+    /// 每个端点上的每个桶只检查一次。
     /// </remarks>
     public static void EnsureBucket(IAmazonS3 client, string bucket)
     {
+        var entry = client.Config.ServiceURL + "|" + bucket;
         lock (_gate)
         {
-            if (_buckets.Contains(bucket))
+            if (_buckets.Contains(entry))
             {
                 return;
             }
@@ -131,7 +166,7 @@ internal static class S3TestServer
                 // 已存在即可
             }
 
-            _buckets.Add(bucket);
+            _buckets.Add(entry);
         }
     }
 }

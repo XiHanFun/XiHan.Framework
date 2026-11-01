@@ -52,7 +52,8 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
         "Region": "us-east-1",
         "AccessKey": "dev-access-key",
         "SecretKey": "dev-secret-key",
-        "ForcePathStyle": true
+        "ForcePathStyle": true,
+        "HealthBucket": "uploads"
       }
     }
   }
@@ -335,7 +336,7 @@ public sealed record CompletedPart(int Number, string ETag);
     "ObjectStorage": {
       "Stores": {
         "archive": { "Provider": "filesystem", "RootPath": "/var/lib/app/archive" },
-        "media": { "Provider": "s3", "ServiceUrl": "http://localhost:9000", "AccessKey": "dev-access-key", "SecretKey": "dev-secret-key", "ForcePathStyle": "true" }
+        "media": { "Provider": "s3", "ServiceUrl": "http://localhost:9000", "AccessKey": "dev-access-key", "SecretKey": "dev-secret-key", "ForcePathStyle": "true", "HealthBucket": "media" }
       }
     }
   }
@@ -366,9 +367,10 @@ var tenantStore = (await stores.GetOrAddAsync(definition, cancellationToken)).Va
 | `GetOrAddAsync(definition)` | Provider 名与设置完全相同时返回已有实例；定义变了建新实例替换并释放旧的，替换时仍在旧实例上的调用可能失败 |
 | Provider 未登记或设置不合法 | `OBJECTSTORAGE_VALIDATION_003`，已有的同名实例不受影响 |
 | 后端此刻建不出来（目录无权限、磁盘错误） | `OBJECTSTORAGE_UNAVAILABLE_001`，已有的同名实例不受影响 |
+| 建实例前的探测不通过（S3 的条件写入探测） | Provider 给出的错误码（如 `OBJECTSTORAGE_UNAVAILABLE_003`），不登记，下次取用重新探测，已有的同名实例不受影响 |
 | `RemoveAsync(name)` | 移除并释放，返回是否存在过；配置里有定义的实例之后再取用会重新建出 |
 
-文件系统的命名实例必须给 `RootPath`，否则会与缺省实例落在同一目录。S3 的命名实例各建各的客户端，不读连接绑定，实例被替换、移除或应用停止时释放客户端。命名实例的能力随实例本身：S3 实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；文件系统实例实现分片，预签名经宿主签名器的 `ForStore(name)`，签出的地址带 `x-store=<name>`，实例名在签名里，改成别的实例或去掉都验签不过：
+文件系统的命名实例必须给 `RootPath`，否则会与缺省实例落在同一目录。S3 的命名实例各建各的客户端，不读连接绑定，建出前在实例的 `HealthBucket` 里探测服务是否认条件写入（见[ObjectStorage.S3](../packages/objectstorage-s3#条件写入探测)），实例被替换、移除或应用停止时释放客户端。命名实例的能力随实例本身：S3 实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；文件系统实例实现分片，预签名经宿主签名器的 `ForStore(name)`，签出的地址带 `x-store=<name>`，实例名在签名里，改成别的实例或去掉都验签不过：
 
 ```csharp
 var signer = app.Services.GetRequiredService<HostedBlobUrlSigner>().ForStore("archive");
@@ -403,12 +405,14 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 | --- | --- | --- |
 | 清单角色 | `role: default`，`Profiles.Full` 装配 | `role: provider` |
 | 布局 | `<RootPath>/<container>/data/<key>` 存内容，`meta/<key>.json` 存元数据 | 容器即桶，键即对象键 |
-| 原子性 | 先写同目录临时文件再原子替换 | 服务端保证；不覆盖写入带 `If-None-Match: *` |
+| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入以不替换的移动原子占位 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它在启动时探测 |
 | `ETag` | 内容的 SHA-256 | 服务端给出 |
 | 配额 | `MaxTotalBytes`（缺省 1 GiB）、`MaxBlobBytes`（缺省 256 MiB），超限 `OBJECTSTORAGE_UNAVAILABLE_002` | 无，由桶策略管理 |
 | 健康项 | `objectstorage.filesystem.capacity`：用量达到总配额为 Degraded | `objectstorage.s3.connection`：按 `HealthProbeIntervalSeconds`（缺省 15 秒）重探 |
 | 预签名 | 宿主代收发 | 原生，客户端直连 |
 | AOT | 兼容 | 不兼容（AWS SDK 基于运行时反射） |
+
+不覆盖写入在两个实现上都是原子的：多个写入方同时以 `Overwrite = false` 写同一个新键，只有一个成功，其余 `OBJECTSTORAGE_CONFLICT_001`（一致性套件核对）。S3 靠服务端的条件写入，不认条件写入的兼容服务在启动时就被拒绝（ADR-0089）。
 
 文件系统存储单进程正确：启动时扫描目录得到已用量，之后在进程内计量，多个进程共享同一目录时配额只是近似。S3 Provider 覆盖 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS、Cloudflare R2 等），`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；各兼容服务对路径式与虚拟主机式寻址的支持不同，按服务商的说明设置 `ForcePathStyle`。两个实现的细节见各自包页。
 
@@ -425,9 +429,11 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 | `OBJECTSTORAGE_VALIDATION_004` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | 列举的页大小不在 1 到 1000 之间（HTTP 400） |
 | `OBJECTSTORAGE_DENIED_001` | 预签名地址无效或已过期 |
+| `OBJECTSTORAGE_DENIED_002` | 条件写入探测被存储拒绝（S3：凭据无效、只读或无权写探测键，启动失败或不建命名实例） |
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败 |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动失败或不建命名实例），或存储关闭了条件写入（`ConditionalWrites = false`） |
 
 HTTP 宿主按错误码的类别段映射状态码，见[结果与错误](./errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`。
 

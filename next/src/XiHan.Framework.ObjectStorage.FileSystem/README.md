@@ -17,7 +17,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 ## 规则
 
 - 布局：`<RootPath>/<container>/data/<key>` 存内容，`<RootPath>/<container>/meta/<key>.json` 存元数据；根目录默认 `<AppContext.BaseDirectory>/blobs`；容器目录按需创建。
-- 写入先落同目录的临时文件（名含 `.xihan-tmp-`），复制完成后原子替换，再写元数据；读取方要么看到旧对象要么看到完整的新对象。`ETag` 是内容的 SHA-256。
+- 写入先落同目录的临时文件（名含 `.xihan-tmp-`），复制完成后原子替换，再写元数据；读取方要么看到旧对象要么看到完整的新对象。不覆盖的写入（含分片上传的完成）以不替换的移动原子占位：内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功，不会先查再写让后写的静默覆盖（ADR-0089）。`ETag` 是内容的 SHA-256。
 - 配额：`MaxTotalBytes`（默认 1 GiB）与 `MaxBlobBytes`（默认 256 MiB），复制过程中逐段检查，超限的项返回 `OBJECTSTORAGE_UNAVAILABLE_002` 且不留下内容。启动时扫描目录得到已用量并清理残留临时文件，之后在进程内计量；多进程共享同一目录时配额只是近似。
 - 列举：遍历容器目录、序数排序、按前缀过滤，续页标记是上一页最后一个键；元数据缺失（外部直接放进目录的文件）按文件信息补一份。
 - 范围读取（ADR-0049）：打开内容文件后定位到起点，只交出该段。

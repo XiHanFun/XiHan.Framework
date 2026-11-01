@@ -30,6 +30,8 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.<Clone>$() -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.AccessKey.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.AccessKey.init -> void
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConditionalWrites.get -> bool
+XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConditionalWrites.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.EnsureBuckets.get -> bool
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.EnsureBuckets.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? other) -> bool

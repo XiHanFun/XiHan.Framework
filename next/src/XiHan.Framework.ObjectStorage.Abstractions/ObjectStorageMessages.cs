@@ -37,6 +37,38 @@ public static class ObjectStorageMessages
     public const string BlobExists = "objectstorage.blob.exists";
 
     /// <summary>
+    /// 存储不认条件写入。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>bucket</c>、<c>operation</c>（没有拒绝第二次写入的请求，如 <c>PutObject</c>、<c>CompleteMultipartUpload</c>）。
+    /// </remarks>
+    public const string ConditionalWriteUnsupported = "objectstorage.conditional_write.unsupported";
+
+    /// <summary>
+    /// 存储关闭了条件写入，不能不覆盖地写入。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>container</c>、<c>key</c>。
+    /// </remarks>
+    public const string ConditionalWriteDisabled = "objectstorage.conditional_write.disabled";
+
+    /// <summary>
+    /// 条件写入探测被拒绝。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>bucket</c>、<c>key</c>、<c>operation</c>、<c>reason</c>（服务端错误码）。
+    /// </remarks>
+    public const string ConditionalWriteProbeDenied = "objectstorage.conditional_write.probe_denied";
+
+    /// <summary>
+    /// 条件写入探测的桶不存在。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>bucket</c>。
+    /// </remarks>
+    public const string ConditionalWriteProbeBucketMissing = "objectstorage.conditional_write.probe_bucket_missing";
+
+    /// <summary>
     /// 存储不可达。
     /// </summary>
     /// <remarks>

@@ -79,4 +79,20 @@ public static class ObjectStorageErrors
     /// <see cref="Listing.BlobQuery.PageSize"/> 不在 1 到 <see cref="Listing.BlobQuery.MaxPageSize"/> 之间；各 Provider 列举时以结果返回（HTTP 400），不访问存储。
     /// </remarks>
     public const string PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005";
+
+    /// <summary>
+    /// 不覆盖写入在本存储上无法保证。
+    /// </summary>
+    /// <remarks>
+    /// S3 兼容服务不认条件写入（<c>If-None-Match: *</c>），启动或建实例时的探测发现后失败；或存储以 <c>ConditionalWrites = false</c> 关闭了条件写入，<c>Overwrite = false</c> 的写入与分片上传一律以它失败，不访问存储（ADR-0089）。
+    /// </remarks>
+    public const string ConditionalWriteUnavailable = "OBJECTSTORAGE_UNAVAILABLE_003";
+
+    /// <summary>
+    /// 存储拒绝了探测请求。
+    /// </summary>
+    /// <remarks>
+    /// 条件写入探测写探测键、建桶或中止探测用的分片上传时，凭据无效或权限不足（HTTP 403）；启动或建实例因此失败（ADR-0089）。
+    /// </remarks>
+    public const string ProbeDenied = "OBJECTSTORAGE_DENIED_002";
 }

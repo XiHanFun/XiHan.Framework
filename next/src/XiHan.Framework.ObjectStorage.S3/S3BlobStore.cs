@@ -20,7 +20,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// S3 对象存储。
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入由特性启动或命名实例建出时探测（ADR-0089），选项关闭条件写入时不覆盖的写入与分片上传一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不拥有客户端，<see cref="Dispose"/> 什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端，释放实例即释放客户端。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable
@@ -327,6 +327,11 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     public async ValueTask<Result<BlobMultipartUpload>> StartAsync(ContainerName container, BlobKey key, BlobPutOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (!options.Overwrite && !_options.ConditionalWrites)
+        {
+            return ConditionalWritesDisabled(container, key);
+        }
+
         if (!options.Overwrite)
         {
             var existing = await HeadAsync(container, key, cancellationToken).ConfigureAwait(false);
@@ -478,7 +483,12 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
             }
         }
 
-        // 不覆盖：先 HEAD（服务端不支持条件完成时也能拦下），再带 If-None-Match 完成（支持时由它保证原子）
+        if (!upload.Overwrite && !_options.ConditionalWrites)
+        {
+            return ConditionalWritesDisabled(upload.Container, upload.Key);
+        }
+
+        // 不覆盖：先 HEAD（已存在时不必拼接），再带 If-None-Match 完成，由服务端保证原子（服务认条件完成已在启动或建实例时探明）
         if (!upload.Overwrite)
         {
             var existing = await HeadAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false);
@@ -643,10 +653,16 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// 写一个对象。
     /// </summary>
     /// <remarks>
-    /// 不覆盖时先 HEAD 再带条件写入（服务端支持条件写入时由它保证原子）；桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
+    /// 不覆盖时先 HEAD（已存在时不必上传内容）再带条件写入，由服务端保证原子；关闭了条件写入时直接失败，不访问存储。桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
+        // 关闭条件写入表示应用声明不需要不覆盖写入：照样先查再写会在并发时静默覆盖，所以明确拒绝，不做没有保证的尝试
+        if (!upload.Options.Overwrite && !_options.ConditionalWrites)
+        {
+            return ConditionalWritesDisabled(container, upload.Key);
+        }
+
         if (!upload.Options.Overwrite)
         {
             var existing = await HeadAsync(container, upload.Key, cancellationToken).ConfigureAwait(false);
@@ -784,6 +800,12 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// </summary>
     private static Error Exists(ContainerName container, BlobKey key)
         => Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
+
+    /// <summary>
+    /// 关闭了条件写入，不能不覆盖地写入。
+    /// </summary>
+    private static Error ConditionalWritesDisabled(ContainerName container, BlobKey key)
+        => Error.Unavailable(ObjectStorageErrors.ConditionalWriteUnavailable, ObjectStorageMessages.ConditionalWriteDisabled, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
     /// 存储不可用。
