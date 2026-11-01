@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// 到期书签轮询。
 /// </summary>
 /// <remarks>
-/// 覆盖平台与每个租户的分区：每个周期从租户目录（<see cref="ITenantStore"/>，装配了多租户时）取启用的租户，逐个分区取到期书签，合并后按到期时间取一批，逐条在以书签租户开的调用里经引擎恢复——每次恢复一个事务，Tenant 阶段为它绑定租户的分片；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。停用的租户不轮询，它的到期书签等重新启用后再接续；新租户在它进入租户目录后的下一个周期纳入。由 Provider 的特性在应用进入服务状态后启动，多实例部署时由 Provider 保证只有一个节点在轮询。
+/// 覆盖平台与每个租户的分区：每个周期从租户目录（<see cref="ITenantStore"/>，装配了多租户时）取启用的租户，逐个分区取到期书签，合并后按到期时间取一批，逐条在以书签租户开的调用里经引擎恢复——每次恢复一个事务，Tenant 阶段为它绑定租户的分片；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。停用的租户不轮询，它的到期书签等重新启用后再接续；新租户在它进入租户目录后的下一个周期纳入。Provider 的特性启动时就起循环，但每个周期（<see cref="RunCycleAsync"/>）先看应用是否在服务状态：启动中与排空中管道不接受调用，这时的周期什么也不做、不记日志。多实例部署时由 Provider 保证只有一个节点在轮询。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPoller : IDisposable
@@ -128,10 +128,17 @@ public sealed partial class DueBookmarkPoller : IDisposable
     /// 一个周期：轮询一次，到了维护周期再按保留期清理。
     /// </summary>
     /// <remarks>
-    /// Provider 自己驱动循环时（例如先判定轮询领导权）每个周期调用它。返回成功恢复的书签数。
+    /// Provider 自己驱动循环时（例如先判定轮询领导权）每个周期调用它。应用不在服务状态（启动中、排空中）时直接返回 0，不轮询、不清理、不记日志。返回成功恢复的书签数。
     /// </remarks>
     public async ValueTask<int> RunCycleAsync(int batchSize, CancellationToken cancellationToken)
     {
+        // 与调度引擎一样先看应用状态：不在服务状态时每个分区的调用都会被管道拒绝，按存储不可达逐个告警只是噪声；
+        // 这时也不推进维护时刻，进入服务状态后的第一个周期照常清理
+        if (!_services.GetRequiredService<App>().State.IsServing())
+        {
+            return 0;
+        }
+
         var resumed = await PollOnceAsync(batchSize, cancellationToken).ConfigureAwait(false);
         await HousekeepIfDueAsync(cancellationToken).ConfigureAwait(false);
         return resumed;

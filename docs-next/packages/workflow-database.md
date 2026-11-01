@@ -112,7 +112,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 | 类型 | 说明 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；应用进入服务状态后启动轮询，停止时等进行中的轮询结束并释放领导权 |
+| `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期什么也不做、不记告警），停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
 | `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
 | `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`） |

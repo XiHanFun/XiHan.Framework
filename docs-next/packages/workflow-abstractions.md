@@ -105,7 +105,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
 | `WorkflowVariables` | `JsonObject` 变量的视图与类型化读取（`Get<T>`、`TryGet<T>`） |
 | `IWorkflowDefinitionStore`、`IWorkflowInstanceStore`、`IWorkflowBookmarkStore`、`IWorkflowTransaction`、`IWorkflowInstanceLock` | Provider 契约；存储是作用域服务，每个方法的第一个参数是分区（`tenantId`，空为平台）；书签存储的 `AvailableAsync` 按分区、种类、键与可领取时刻限量查询，供外部任务领取下推条数；`ListUserTasksAsync` / `CountUserTasksAsync` 按待办查询的条件列出与计数运行中实例的用户任务书签；`IWorkflowTransaction` 回答能不能加入调用方事务（`IsActive`）、能不能写（`EnsureWritable`） |
-| `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理；引擎选项 |
+| `DueBookmarkPoller`、`WorkflowOptions` | 到期书签轮询与保留期清理（应用不在服务状态的周期什么也不做、不记告警）；引擎选项 |
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`）、能力 ID |
 

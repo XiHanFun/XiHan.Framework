@@ -29,7 +29,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 
 | 类型 | 用途 |
 | --- | --- |
-| `DatabaseWorkflowFeature` | 登记九个实体的仓储，装配存储、事务、实例锁与引擎；应用进入服务状态后启动 `DueBookmarkPollingLoop`，停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
+| `DatabaseWorkflowFeature` | 登记九个实体的仓储，装配存储、事务、实例锁与引擎；启动时起 `DueBookmarkPollingLoop`（应用不在服务状态的周期只续领导权、不轮询、不记告警），停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
 | `Entities.WorkflowDefinitionRow` / `WorkflowInstanceRow` / `WorkflowNodeInstanceRow` / `WorkflowBookmarkRow` | 两个分区共用的列：主键都是模型的 ID；查询列加 `Document`（JSON）；书签行另有 `NodeId` 与所属实例的 `DefinitionName`、`InstanceStatus`（待办查询下推用，存储维护）；实例、节点实例与书签另有写入序号 `Sequence`（首次写入分配、替换保留）作同刻排序的次关键字——UUID v7 只到毫秒单调，不能当写入顺序用 |
 | `Entities.WorkflowDefinitionRecord` / `WorkflowInstanceRecord` / `WorkflowNodeInstanceRecord` / `WorkflowBookmarkRecord` | 租户分区，实现 `IMultiTenant`：持久化按工作单元的租户写入 `TenantId` 并过滤，租户有独立库时落它的分片连接 |
 | `Entities.PlatformWorkflowDefinitionRecord` / `PlatformWorkflowInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` / `PlatformWorkflowBookmarkRecord` | 平台分区，没有租户列，落平台库 |

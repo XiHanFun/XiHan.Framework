@@ -22,7 +22,7 @@
 | `InMemoryWorkflowDefinitionStore`、`InMemoryWorkflowInstanceStore`、`InMemoryWorkflowBookmarkStore` | 有界内存表，保存与返回都是深拷贝（读己之写，调用方改不到存储里的对象）；容量满时写入返回 `WORKFLOW_UNAVAILABLE_002`，不淘汰旧数据 |
 | `InMemoryWorkflowInstanceLock` | 每个实例一个进程内信号量，没人用时回收；等待超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001` |
 
-特性被能力求解选中提供 `workflow.execution` 时，把四个契约指向本包的实现并调用 `AddWorkflowEngine`；被 `Workflow.Database` 顶替时只注册本包自己的具体类型。应用进入服务状态后，特性按 `PollIntervalSeconds` 启动 `DueBookmarkPoller`，每次取 `BatchSize` 条到期书签逐条恢复；停止时等进行中的轮询结束。
+特性被能力求解选中提供 `workflow.execution` 时，把四个契约指向本包的实现并调用 `AddWorkflowEngine`；被 `Workflow.Database` 顶替时只注册本包自己的具体类型。特性启动时按 `PollIntervalSeconds` 起 `DueBookmarkPoller` 的循环，每次取 `BatchSize` 条到期书签逐条恢复；应用不在服务状态（启动中、排空中）的周期什么也不做、不记告警；停止时等进行中的轮询结束。
 
 ## 何时使用
 

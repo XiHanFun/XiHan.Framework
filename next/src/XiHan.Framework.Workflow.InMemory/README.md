@@ -4,7 +4,7 @@
 
 | 类型 | 用途 |
 | --- | --- |
-| `InMemoryWorkflowFeature` | 装配存储、实例锁与引擎，应用进入服务状态后启动 `DueBookmarkPoller`，停止时等进行中的轮询结束 |
+| `InMemoryWorkflowFeature` | 装配存储、实例锁与引擎，启动时起 `DueBookmarkPoller` 的循环（应用不在服务状态的周期什么也不做、不记告警），停止时等进行中的轮询结束 |
 | `InMemoryWorkflowDefinitionStore` / `InMemoryWorkflowInstanceStore` / `InMemoryWorkflowBookmarkStore` | 有界内存表，按分区（平台 / 租户）存放，互不可见；保存与返回都是深拷贝（读己之写）；容量满 → `WORKFLOW_UNAVAILABLE_002` |
 | `InMemoryWorkflowTransaction` | `IWorkflowTransaction`：在调用里即可加入；没有事务，写入立即生效、调用回滚不撤销，不看只读 |
 | `InMemoryWorkflowInstanceLock` | 每个实例一个进程内信号量，没人用时回收；等待超时 → `WORKFLOW_TIMEOUT_001` |
