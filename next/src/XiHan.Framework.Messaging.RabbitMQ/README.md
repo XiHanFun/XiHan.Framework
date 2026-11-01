@@ -6,7 +6,7 @@
 builder.AddXiHan(x => x.UseFeature<RabbitMQMessagingFeature>());
 ```
 
-连接来自 `XiHan:Messaging:RabbitMQ:Configuration`（AMQP URI），或绑定 `queue`（`queue`）的值；两者都没有时装配失败。
+连接来自绑定 `queue`（`queue`）的主值，没有绑定时取 `XiHan:Messaging:RabbitMQ:Configuration`（AMQP URI）：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。
 
 ## 语义
 

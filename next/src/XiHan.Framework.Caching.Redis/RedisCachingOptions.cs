@@ -75,15 +75,16 @@ public sealed record RedisCachingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（配置优先于绑定值）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>Configuration</c>（绑定 <c>cache</c> 的主值优先于配置，RFC-0016）、<c>KeyPrefix</c>、<c>DefaultTimeToLiveSeconds</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </remarks>
     public static RedisCachingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        // 显式配置优先于宿主注入的绑定，便于本地覆盖；两者都没有直接报错而不是静默退回
-        var connection = configuration[$"{ConfigurationSection}:Configuration"]
-            ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"No Redis connection is configured: set {ConfigurationSection}:Configuration or provide the 'cache' binding.");
+        // 绑定来自部署环境（Service Binding），给出的连接覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
+        // 主值为空的绑定不算给出了连接。两者都没有直接报错而不是静默退回
+        var connection = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
+            ?? configuration[$"{ConfigurationSection}:Configuration"]
+            ?? throw new ArgumentException($"No Redis connection is configured: provide the 'cache' binding or set {ConfigurationSection}:Configuration.");
 
         var options = new RedisCachingOptions { Configuration = connection };
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)

@@ -69,14 +69,16 @@ public sealed record RabbitMQMessagingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（配置优先于绑定值）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016）、<c>QueuePrefix</c>、<c>PrefetchCount</c>、<c>HealthProbeIntervalSeconds</c>。
     /// </remarks>
     public static RabbitMQMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        var connection = configuration[$"{ConfigurationSection}:Configuration"]
-            ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"No RabbitMQ connection is configured: set {ConfigurationSection}:Configuration or provide the 'queue' binding.");
+        // 绑定来自部署环境（Service Binding），给出的连接覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
+        // 主值为空的绑定不算给出了连接
+        var connection = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
+            ?? configuration[$"{ConfigurationSection}:Configuration"]
+            ?? throw new ArgumentException($"No RabbitMQ connection is configured: provide the 'queue' binding or set {ConfigurationSection}:Configuration.");
 
         var options = new RabbitMQMessagingOptions { Configuration = connection };
         if (configuration[$"{ConfigurationSection}:QueuePrefix"] is { } prefix)

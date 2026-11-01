@@ -46,7 +46,7 @@ public sealed class RedisCachingTests
     }
 
     [Fact]
-    public void Options_FromConfigurationAndBinding_PreferConfiguration()
+    public void Options_FromConfigurationAndBinding_PreferBinding()
     {
         // 用内存键值对构建配置
         static IConfiguration Build(params (string Key, string Value)[] values)
@@ -54,9 +54,14 @@ public sealed class RedisCachingTests
         var binding = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", "bound:6379", new Dictionary<string, string>()));
 
         Assert.Equal("bound:6379", RedisCachingOptions.FromConfiguration(Build(), binding).Configuration);
+        // 两者都给时取绑定的连接，其余键照读配置节
         var configured = RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:Configuration", "cfg:6379"), ("XiHan:Caching:Redis:KeyPrefix", "app:"), ("XiHan:Caching:Redis:DefaultTimeToLiveSeconds", "60")), binding);
-        Assert.Equal("cfg:6379", configured.Configuration);
+        Assert.Equal("bound:6379", configured.Configuration);
         Assert.Equal("app:", configured.KeyPrefix);
+        Assert.Equal("cfg:6379", RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:Configuration", "cfg:6379")), default).Configuration);
+        // 主值为空的绑定不算给出了连接
+        var empty = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", " ", new Dictionary<string, string>()));
+        Assert.Equal("cfg:6379", RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:Configuration", "cfg:6379")), empty).Configuration);
         Assert.Equal(TimeSpan.FromMinutes(1), configured.DefaultTimeToLive);
         Assert.True(configured.PublishChanges);
         Assert.False(RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:PublishChanges", "false")), binding).PublishChanges);

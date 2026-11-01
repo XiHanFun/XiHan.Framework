@@ -60,7 +60,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeat
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；优先于绑定 `cache` 的值，两者都没有时装配失败 |
+| `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `cache` 时被绑定的主值覆盖，两者都没有时装配失败 |
 | `XiHan:Caching:Redis:KeyPrefix` | 字符串 | `xihan:` | 键前缀；变更频道为 `<KeyPrefix>__changes` |
 | `XiHan:Caching:Redis:DefaultTimeToLiveSeconds` | 正数 | 300 | 条目没有指定过期时的存活时间 |
 | `XiHan:Caching:Redis:PublishChanges` | 布尔 | `true` | 写入与删除后是否向变更频道发布；关掉后本实例的同步通知不受影响 |

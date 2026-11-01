@@ -6,7 +6,7 @@
 builder.AddXiHan(x => x.UseFeature<InMemoryCachingFeature>().UseFeature<RedisCachingFeature>());
 ```
 
-连接来自 `XiHan:Caching:Redis:Configuration`，或绑定 `cache`（`cache:distributed`）的值；两者都没有时装配失败。
+连接来自绑定 `cache`（`cache:distributed`）的主值，没有绑定时取 `XiHan:Caching:Redis:Configuration`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。
 值的序列化按顺序取：已注册的 `ICacheSerializer` → 已注册的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`（本包不支持 AOT，允许反射）。
 
 ## 语义

@@ -19,7 +19,7 @@ public sealed class KafkaMessagingOptionsTests
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     [Fact]
-    public void FromConfigurationAndBinding_PrefersConfiguration_AndValidates()
+    public void FromConfigurationAndBinding_PrefersBinding_AndValidates()
     {
         var binding = Maybe.Some(new BindingValue("stream", "stream", "bound:9092", new Dictionary<string, string>()));
         var bound = KafkaMessagingOptions.FromConfiguration(Build(), binding);
@@ -34,7 +34,9 @@ public sealed class KafkaMessagingOptionsTests
             ("XiHan:Messaging:Kafka:TopicPrefix", "app."),
             ("XiHan:Messaging:Kafka:Properties:security.protocol", "SASL_SSL"),
             ("XiHan:Messaging:Kafka:Properties:sasl.mechanism", "PLAIN")), binding);
-        Assert.Equal("a:9092,b:9092", configured.BootstrapServers);
+        // 两者都给时取绑定的引导地址，其余键照读配置节
+        Assert.Equal("bound:9092", configured.BootstrapServers);
+        Assert.Equal("a:9092,b:9092", KafkaMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:Kafka:BootstrapServers", "a:9092,b:9092")), default).BootstrapServers);
         Assert.Equal("orders", configured.GroupId);
         Assert.Equal("app.", configured.TopicPrefix);
         Assert.Equal("SASL_SSL", configured.Properties["security.protocol"]);

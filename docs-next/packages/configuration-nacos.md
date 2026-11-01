@@ -55,7 +55,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `ServerAddresses` | `string` | 无，必填 | 逗号或分号分隔的绝对 http / https 地址，按序尝试；地址的路径是 Nacos 的上下文路径，没有路径时用 `/nacos`（见下文）。没配时取绑定 `nacos` 的主值，两者都没有时抛出 `ArgumentException` |
+| `ServerAddresses` | `string` | 无，必填 | 逗号或分号分隔的绝对 http / https 地址，按序尝试；地址的路径是 Nacos 的上下文路径，没有路径时用 `/nacos`（见下文）。有绑定 `nacos` 时被绑定的主值覆盖，两者都没有时抛出 `ArgumentException` |
 | `Group` | `string` | `DEFAULT_GROUP` | 配置分组 |
 | `Tenant` | `string` | 空（公共命名空间） | Nacos 命名空间 ID |
 | `Username` | `string` | — | 与 `Password` 都给出时先登录取 `accessToken` |
@@ -83,7 +83,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 }
 ```
 
-服务地址也可以用绑定提供，配置里的 `ServerAddresses` 优先于绑定值：
+服务地址也可以用绑定提供，绑定的主值覆盖配置里的 `ServerAddresses`，用户名、密码等其余键照读配置节：
 
 ```json
 { "XiHan": { "Bindings": { "nacos": { "type": "configuration:remote", "value": "http://localhost:8848" } } } }

@@ -12,7 +12,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// Nacos Provider 的选项。
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔，或绑定 <c>nacos</c> 的值）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>Username</c> / <c>Password</c>、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>。
+/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔；绑定 <c>nacos</c> 的主值优先）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>Username</c> / <c>Password</c>、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record NacosOptions
@@ -117,14 +117,16 @@ public sealed record NacosOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 从配置与绑定读取（地址：配置优先于绑定值）。
+    /// 从配置与绑定读取（地址：绑定 <c>nacos</c> 的主值优先于配置，RFC-0016）。
     /// </summary>
     public static NacosOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        var addresses = configuration[$"{ConfigurationSection}:ServerAddresses"]
-            ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"No Nacos server address is configured: set {ConfigurationSection}:ServerAddresses or provide the 'nacos' binding.");
+        // 绑定来自部署环境（Service Binding），给出的地址覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），
+        // 用户名、密码等其余键照读配置节；主值为空的绑定不算给出了地址
+        var addresses = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
+            ?? configuration[$"{ConfigurationSection}:ServerAddresses"]
+            ?? throw new ArgumentException($"No Nacos server address is configured: provide the 'nacos' binding or set {ConfigurationSection}:ServerAddresses.");
         var options = new NacosOptions
         {
             ServerAddresses = [.. addresses.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],

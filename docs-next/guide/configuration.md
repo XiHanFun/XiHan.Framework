@@ -129,15 +129,15 @@ kubelet 更新 ConfigMap 时切换的是符号链接，默认的文件系统通�
 
 清单里 `required: true` 的绑定在 `AddXiHan` 构建时校验：缺失，或来源声明了类型而与清单不一致，都抛出 `KERNEL_HOSTING_001`，应用不会启动。来源没有声明类型（空字符串）时不比对类型。可选绑定由特性自己用 `TryGetBinding` 处理。
 
-框架内置包声明的绑定都是可选的，与各自配置节的先后关系不同，以下表为准：
+框架内置包声明的绑定都是可选的。绑定来自部署环境，给出的连接信息覆盖 Provider 配置节里的同类键，没给出的键（前缀、超时、凭据等）照读配置节；绑定的主值为空时不算给出了连接；两者都没有连接时装配失败（RFC-0016「资源绑定与配置节」）：
 
 | 绑定名 | 类型 | 声明它的包 | 用法 |
 | --- | --- | --- | --- |
 | `db` | `connection:relational` | `Persistence.EntityFrameworkCore`、`Persistence.SqlSugar` | 交给应用传入特性的配置委托，主值是连接字符串 |
-| `cache` | `cache:distributed` | `Caching.Redis` | `XiHan:Caching:Redis:Configuration` 没配时用主值 |
-| `queue` | `queue` | `Messaging.RabbitMQ` | `XiHan:Messaging:RabbitMQ:Configuration` 没配时用主值 |
-| `stream` | `stream` | `Messaging.Kafka` | `XiHan:Messaging:Kafka:BootstrapServers` 没配时用主值 |
-| `nacos` | `configuration:remote` | `Configuration.Nacos` | `XiHan:Configuration:Nacos:ServerAddresses` 没配时用主值 |
+| `cache` | `cache:distributed` | `Caching.Redis` | 主值覆盖 `XiHan:Caching:Redis:Configuration` |
+| `queue` | `queue` | `Messaging.RabbitMQ` | 主值覆盖 `XiHan:Messaging:RabbitMQ:Configuration` |
+| `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers` |
+| `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses` |
 | `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
 
 `xihan pack` 的应用清单只认 `connection:relational`、`cache:distributed`、`queue`、`blob` 四种绑定类型（见[部署](./deployment)），`stream` 与 `configuration:remote` 两种绑定要应用自己提供。

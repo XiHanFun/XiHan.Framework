@@ -16,7 +16,7 @@ builder.AddXiHan(x => x.UseFeature<NacosConfigurationFeature>());
 { "XiHan": { "Configuration": { "Nacos": { "ServerAddresses": "http://nacos-a:8848,http://nacos-b:8848", "Group": "DEFAULT_GROUP", "Tenant": "", "Username": "nacos", "Password": "nacos", "Format": "Json", "LongPollTimeoutSeconds": 30, "RequestTimeoutSeconds": 10 } } } }
 ```
 
-服务地址来自 `XiHan:Configuration:Nacos:ServerAddresses`，或绑定 `nacos`（`configuration:remote`）的值。地址的路径是 Nacos 的上下文路径（`server.servlet.contextPath`，经网关转发时连同网关前缀），接口路径接在它后面；没有路径时用缺省的 `/nacos`，`http://host:8848` 与 `http://host:8848/nacos` 等价，改过上下文路径写 `http://host:8848/config`，经网关写 `http://gateway/config-center/nacos`。上下文路径设成根的 Nacos 不受支持。
+服务地址来自绑定 `nacos`（`configuration:remote`）的主值，没有绑定时取 `XiHan:Configuration:Nacos:ServerAddresses`：两者都给时绑定优先，用户名、密码等其余键照读配置节（RFC-0016「资源绑定与配置节」）。地址的路径是 Nacos 的上下文路径（`server.servlet.contextPath`，经网关转发时连同网关前缀），接口路径接在它后面；没有路径时用缺省的 `/nacos`，`http://host:8848` 与 `http://host:8848/nacos` 等价，改过上下文路径写 `http://host:8848/config`，经网关写 `http://gateway/config-center/nacos`。上下文路径设成根的 Nacos 不受支持。
 
 ## 语义
 

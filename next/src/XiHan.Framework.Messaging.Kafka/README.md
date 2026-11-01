@@ -10,7 +10,7 @@ builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
 { "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "GroupId": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "…", "sasl.password": "…" } } } } }
 ```
 
-引导地址来自 `XiHan:Messaging:Kafka:BootstrapServers`，或绑定 `stream`（`stream`）的值；两者都没有时装配失败。`Properties:<key>` 原样透传给 librdkafka（生产者与消费者共用）。
+引导地址来自绑定 `stream`（`stream`）的主值，没有绑定时取 `XiHan:Messaging:Kafka:BootstrapServers`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。`Properties:<key>` 原样透传给 librdkafka（生产者与消费者共用）。
 
 ## 语义
 

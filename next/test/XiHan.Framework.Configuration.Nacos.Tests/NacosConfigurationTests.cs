@@ -45,7 +45,9 @@ public sealed class NacosConfigurationTests
             ("XiHan:Configuration:Nacos:Format", "properties"),
             ("XiHan:Configuration:Nacos:LongPollTimeoutSeconds", "5"),
             ("XiHan:Configuration:Nacos:RequestTimeoutSeconds", "2.5")), binding);
-        Assert.Equal(["http://a:8848", "http://b:8848", "http://c:8848"], configured.ServerAddresses);
+        // 两者都给时取绑定的地址，用户名、密码等其余键照读配置节
+        Assert.Equal(["http://bound:8848"], configured.ServerAddresses);
+        Assert.Equal(["http://a:8848", "http://b:8848", "http://c:8848"], NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848, http://b:8848;http://c:8848"))).ServerAddresses);
         Assert.Equal(("orders", "dev", "nacos", "secret"), (configured.Group, configured.Tenant, configured.Username, configured.Password));
         Assert.Equal(NacosConfigFormat.Properties, configured.Format);
         Assert.Equal(TimeSpan.FromSeconds(5), configured.LongPollTimeout);

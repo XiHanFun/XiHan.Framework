@@ -12,7 +12,7 @@ namespace XiHan.Framework.Messaging.Kafka;
 /// Kafka Provider 的选项。
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（或绑定 <c>stream</c> 的值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
+/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
@@ -87,14 +87,16 @@ public sealed record KafkaMessagingOptions
     /// 从配置与绑定读取。
     /// </summary>
     /// <remarks>
-    /// <c>BootstrapServers</c>（配置优先于绑定值）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>。
+    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>。
     /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        var servers = configuration[$"{ConfigurationSection}:BootstrapServers"]
-            ?? (binding.TryGetValue(out var bound) ? bound.Value : null)
-            ?? throw new ArgumentException($"No Kafka bootstrap servers are configured: set {ConfigurationSection}:BootstrapServers or provide the 'stream' binding.");
+        // 绑定来自部署环境（Service Binding），给出的引导地址覆盖配置节里的同一个键（RFC-0016「资源绑定与配置节」），其余键照读配置节；
+        // 主值为空的绑定不算给出了地址
+        var servers = (binding.TryGetValue(out var bound) && !string.IsNullOrWhiteSpace(bound.Value) ? bound.Value : null)
+            ?? configuration[$"{ConfigurationSection}:BootstrapServers"]
+            ?? throw new ArgumentException($"No Kafka bootstrap servers are configured: provide the 'stream' binding or set {ConfigurationSection}:BootstrapServers.");
         var options = new KafkaMessagingOptions { BootstrapServers = servers };
         if (configuration[$"{ConfigurationSection}:GroupId"] is { } group)
         {

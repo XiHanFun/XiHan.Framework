@@ -19,13 +19,15 @@ public sealed class RabbitMQMessagingOptionsTests
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     [Fact]
-    public void FromConfigurationAndBinding_PrefersConfiguration_AndValidates()
+    public void FromConfigurationAndBinding_PrefersBinding_AndValidates()
     {
         var binding = Maybe.Some(new BindingValue("queue", "queue", "amqp://guest:guest@bound:5672", new Dictionary<string, string>()));
 
         Assert.Equal("amqp://guest:guest@bound:5672", RabbitMQMessagingOptions.FromConfiguration(Build(), binding).Configuration);
         var configured = RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Configuration", "amqps://cfg:5671"), ("XiHan:Messaging:RabbitMQ:QueuePrefix", "app."), ("XiHan:Messaging:RabbitMQ:PrefetchCount", "4")), binding);
-        Assert.Equal("amqps://cfg:5671", configured.Configuration);
+        // 两者都给时取绑定的连接，其余键照读配置节
+        Assert.Equal("amqp://guest:guest@bound:5672", configured.Configuration);
+        Assert.Equal("amqps://cfg:5671", RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Configuration", "amqps://cfg:5671")), default).Configuration);
         Assert.Equal("app.", configured.QueuePrefix);
         Assert.Equal(4, configured.PrefetchCount);
         Assert.Equal("xihan.", RabbitMQMessagingOptions.FromConfiguration(Build(), binding).QueuePrefix);

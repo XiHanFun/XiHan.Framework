@@ -56,7 +56,7 @@ builder.AddXiHan(xihan => xihan
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Messaging:RabbitMQ:Configuration` | 字符串 | — | AMQP URI（`amqp://` 或 `amqps://`）；优先于绑定 `queue` 的值，两者都没有时装配失败 |
+| `XiHan:Messaging:RabbitMQ:Configuration` | 字符串 | — | AMQP URI（`amqp://` 或 `amqps://`）；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败 |
 | `XiHan:Messaging:RabbitMQ:QueuePrefix` | 字符串 | `xihan.` | 队列名前缀 |
 | `XiHan:Messaging:RabbitMQ:PrefetchCount` | 1–65535 | 16 | 每个消费者的预取数 |
 | `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
