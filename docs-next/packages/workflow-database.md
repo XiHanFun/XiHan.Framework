@@ -82,6 +82,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 }
 ```
 
+EF Core 的 SQLite Provider 不能比较与排序 `DateTimeOffset`（存成文本），到期书签与实例列表都按时间过滤和排序：SQLite 上在 `ConfigureConventions` 里把它换成整数存储（`configurationBuilder.Properties<DateTimeOffset>().HaveConversion<DateTimeOffsetToBinaryConverter>()`，框架写入的都是 UTC 时刻，换算后保序），租约表照下文「SQLite 上的租约表」放到另一个库文件。数据库测试的 `WorkflowDbContext` 就是这样配的。
+
 ## 配置
 
 | 键 | 类型 | 缺省 | 说明 |
@@ -139,7 +141,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 租约行与业务写入不在同一个事务里：SQLite 上要把租约表放到另一个库文件，见下文「SQLite 上的租约表」；PostgreSQL 等行锁数据库不需要。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
-- 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例。
+- 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例；对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例。
 
 ## SQLite 上的租约表
 
@@ -157,9 +159,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 }
 ```
 
-- `LockConnection` 指向持久化的命名连接（[SqlSugar 的命名连接](./persistence-sqlsugar#命名连接)，RFC-0005）：特性把 `WorkflowLockRecord` 登记到这个连接（`InitTables` 把租约表建在那里），租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上；业务调用不碰租约库，业务事务也就不锁它。
+- `LockConnection` 指向持久化的命名连接（[SqlSugar 的命名连接](./persistence-sqlsugar#命名连接)、[EF Core 的命名连接](./persistence-entityframeworkcore#行为与限制)，RFC-0005）：特性把 `WorkflowLockRecord` 登记到这个连接（`InitTables` / `EnsureCreated` 把租约表建在那里），租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上；业务调用不碰租约库，业务事务也就不锁它。
 - SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明连接，回调按 `config.ConfigId` 区分；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。连接不在客户端里时启动即失败（`PERSISTENCE_VALIDATION_004`）。
-- EF Core 与内存持久化不支持命名连接，配了 `LockConnection` 即装配失败（`PERSISTENCE_UNAVAILABLE_008`）。EF Core 在 SQLite 上跑数据库工作流时，调用方事务里的取锁会超时；用 PostgreSQL 等行锁数据库，或改用 SqlSugar。
+- EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明这个连接（ADR-0087）：租约的每一步与健康探针本来就在自己的作用域里开绑定连接的工作单元，作用域里的 `DbContext` 按租约库的连接串建出；连接没有声明时装配即失败（`PERSISTENCE_VALIDATION_004`）。`DbContext` 里照常登记租约表 `WorkflowLockRecord`。
+- 内存持久化不支持命名连接，配了 `LockConnection` 即装配失败（`PERSISTENCE_UNAVAILABLE_008`）。
 - 不配置时租约表照旧在平台库（默认连接），行为与以前相同；PostgreSQL、SQL Server、MySQL 等行级锁的数据库不需要配。
 - 多个节点共用租约库：租约库的连接串在各节点上要指向同一个库，SQLite 文件只适合单机的开发与集成测试。
 

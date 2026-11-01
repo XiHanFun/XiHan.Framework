@@ -403,10 +403,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     /// 活动工作单元的 DbContext。
     /// </summary>
     /// <remarks>
-    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，实体的落点与工作单元的连接不一致时抛出落点错误（见 <see cref="EntityFrameworkCoreUnitOfWork.ContextFor"/>），每个操作都经此校验。
     /// </remarks>
     private DbContext Context => _unitOfWork.State == UnitOfWorkState.Active
-        ? _unitOfWork.Context
+        ? _unitOfWork.ContextFor(typeof(TEntity))
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
     /// <summary>

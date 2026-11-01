@@ -49,41 +49,6 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     }
 
     [Fact]
-    public async Task NamedConnections_AreNotSupported_AtStartupOrBegin()
-    {
-        // 一个 DbContext 一个连接：实体登记到命名连接在装配时拒绝，启动失败
-        var exception = await Assert.ThrowsAnyAsync<Exception>(() => TestHost.StartAsync(
-            static builder => builder.UseFeature(SqliteDatabase.CreateFeature()),
-            _database.Configuration,
-            static services =>
-            {
-                services.AddSingleton(TimeProvider.System);
-                services.AddRepository<ConformanceOrder, Guid>();
-                services.AddRepository<ConformanceItem, int>("leases");
-            }));
-        Assert.Contains(Chain(exception), static e => e is FrameworkException { Code: PersistenceErrors.NotSupported });
-
-        // 绑定连接的工作单元在开始时拒绝，状态不变
-        await using var host = await _database.StartHostAsync();
-        await using var scope = host.Services.CreateAsyncScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var begun = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), CancellationToken.None));
-        Assert.Equal(PersistenceErrors.NotSupported, begun.Code);
-        Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
-    }
-
-    /// <summary>
-    /// 异常与它的内层异常。
-    /// </summary>
-    private static IEnumerable<Exception> Chain(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            yield return exception;
-        }
-    }
-
-    [Fact]
     public async Task ApplyPersistenceConventions_ConfiguresConcurrencyTokenAndIndexes()
     {
         await using var host = await _database.StartHostAsync();

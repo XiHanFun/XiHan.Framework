@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0021-workflow.md` 随之修订；修订 ADR-0084 第二节（排空期间的领导权））。
+已采纳（`spec/rfcs/0005-persistence.md`、`spec/rfcs/0021-workflow.md`、`spec/conventions/error-codes.md` 随之修订；修订 ADR-0084 第一节（EF Core 的命名连接）、第二节（排空期间的领导权））。
 
 ## 日期
 
@@ -40,3 +40,39 @@ ADR-0084 第二节让 `DueBookmarkPoller.RunCycleAsync` 在应用不在服务状
 - 行为：启动中的节点不再先拿领导权，进入服务状态后的第一个周期才去拿；排空中的节点在下一个周期释放，另一个实例随即接手。配置、表结构不变。
 - 调度引擎（`JobSchedulerEngine`）有同类但较轻的情况：不在服务状态的周期直接返回，不续约也不释放，租约要等 `LeaseTimeToLive`（缺省 30 秒）到期或调度特性停止时释放；它的领导权只管维护（失联节点恢复、历史清理）与不共享存储时的按计划运行，不在本节范围，记为待定。内存工作流没有领导权，不受影响。
 - 测试：数据库工作流一个用例，探针特性排在工作流之后启停，注入时钟、直接调用周期：启动中不拿领导权；服务中拿到、另一个实例拿不到；排空中时钟过了续约点，这个周期释放，另一个实例随即拿到；没有工作流的告警。先写用例复现了「启动中拿到」与「排空中续约、另一个实例拿不到」，再改实现。
+
+## 二、EF Core 支持命名连接，SQLite 上的工作流租约表放到另一个库文件
+
+### 背景
+
+ADR-0084 第一节给持久化加了命名连接（实体登记到命名连接、工作单元绑定一个连接），只在 SqlSugar 上实现，EF Core 明确拒绝（一个 `DbContext` 一个连接）。EF Core 在 SQLite 上跑数据库工作流时租约表因此放不到另一个库：引擎在调用方事务里写过业务库之后取实例锁，租约步骤在新作用域里的 `DbContext`（另一条连接）写同一个库文件，要等调用方自己的事务结束，忙等超时后 `WORKFLOW_TIMEOUT_001`。实测：引擎一致性套件在 EF Core + SQLite（单库文件）上 10 例以 `workflow.lock.timeout` 失败，全是加入调用方事务后取锁的用例。文档当时写「用 PostgreSQL 等行锁数据库，或改用 SqlSugar」。用户拍板：修好，带用例。
+
+### 备选
+
+1. 租约用独立的 `DbContext` 类型：要工作流包认识 EF Core、或应用另写一个 `DbContext` 并注册它的仓储；工作流只依赖持久化契约，做不到，而且绕开了仓储与工作单元。
+2. 绑定连接时改已建出的 `DbContext` 的连接串（`Database.SetConnectionString`）：配置回调不知道这是哪个连接（拦截器、按连接区分的设置都看不到）；应用以现成的 `DbConnection` 配置时会改到别人的连接对象。
+3. 普通工作单元里也支持命名连接上的实体：每个连接一个 `DbContext` 实例、工作单元跨上下文顺序提交。要按连接再建 `TContext`（反射构造或应用提供工厂），工作单元、仓储、残余变更与唯一键核对都要改成多上下文，工作流只用得到绑定连接的工作单元。
+4. 与 SqlSugar 对齐「绑定连接的工作单元」：命名连接在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明；工作单元在开始时才建本作用域的 `DbContext`，绑定了连接就让选项回调按那个连接建——回调收到的绑定主值换成它的连接串、属性沿用 `db` 绑定，与 SqlSugar 方式一的回调同形。
+
+### 决策
+
+选 4。
+
+- `EntityFrameworkCorePersistenceOptions.Connections`：名字与值的规则同 SqlSugar（合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则 `ArgumentException`）。
+- 本作用域的 `DbContext` 建在哪个连接上由一个内部的作用域服务记着：`DbContextOptions` 的回调先看它——绑定了命名连接就交命名连接的绑定，否则照旧（带分片的调用交分片绑定，其余交 `db` 绑定）。
+- `EntityFrameworkCoreUnitOfWork` 由容器以工厂创建，构造不再公开；`Context` 在 `BeginAsync` 时建出（与原来在构造时建出一样落在 Transaction 阶段）。绑定没有声明的连接 → `PERSISTENCE_VALIDATION_004`；本作用域的 `DbContext` 已经按别的连接建出后再绑定 → `PERSISTENCE_VALIDATION_002`，工作单元保持未开始。
+- 仓储每个操作经工作单元取 `DbContext` 时核对落点：绑定了连接而实体落在别处 → `PERSISTENCE_VALIDATION_004`（与 SqlSugar 一致）；没有绑定而实体登记在命名连接上 → `PERSISTENCE_UNAVAILABLE_008`，不静默落到默认库。
+- 实体登记到没有声明的连接在装配时抛出 `PERSISTENCE_VALIDATION_004`（原来是 `PERSISTENCE_UNAVAILABLE_008`）。
+- `EnsureCreated` 对登记了实体的每个命名连接各执行一次（EF Core 按整个模型建表，那个库里多出的空表不用；只用于开发与测试）。
+
+### 理由
+
+- 工作流只用绑定连接的工作单元碰租约表（租约步骤与健康探针都在自己的作用域里开），绑定连接这一半就够用；普通工作单元里的命名连接实体按 Provider 不支持明确拒绝，不做推测性的多上下文事务。
+- 回调按连接各调用一次、绑定的形状与 SqlSugar 方式一相同，应用同一份配置换 Provider 照样合法。
+- 延迟到 `BeginAsync` 才建 `DbContext`，不改已建出上下文的连接，不碰应用传进来的连接对象。
+
+### 影响
+
+- 公开 API：新增 `EntityFrameworkCorePersistenceOptions.Connections`；`EntityFrameworkCoreUnitOfWork(DbContext)` 构造不再公开（由容器创建）。新配置键 `XiHan:Persistence:EntityFrameworkCore:Connections:{name}`（CLI 知识库已登记）。
+- 行为：实体登记到命名连接，原来装配即 `PERSISTENCE_UNAVAILABLE_008`，现在声明了连接就能用，没声明是 `PERSISTENCE_VALIDATION_004`；绑定连接的工作单元原来 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`，现在声明了就能用。EF Core 上配 `XiHan:Workflow:Database:LockConnection` 原来装配失败，现在指向声明的连接即可。不用命名连接的应用行为不变（`DbContext` 的建出时刻从解析工作单元挪到开始工作单元，两者在 Transaction 阶段紧挨着）。
+- 测试：EF Core 一组用例（两个 SQLite 文件：回调看到命名连接的绑定、行落各自的库、业务事务占着默认库写锁时绑定连接的工作单元照样提交、落点不一致与没声明的连接、`DbContext` 已建出后再绑定、选项校验）；数据库工作流在 EF Core + SQLite（租约表在命名连接的另一个库文件）上跑引擎与任务一致性套件全部通过，另一个用例在同一次调用里先写业务再取实例锁、断言租约行落在租约库、结果处理器的写入与实例完成一起回滚或提交。

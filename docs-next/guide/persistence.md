@@ -333,7 +333,7 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 - 实体登记到命名连接：`services.AddRepository<TEntity, TKey>(connection: "leases")`。它在那个连接上读写、建表；普通工作单元里照常参与整体事务。同一实体登记到两个不同的连接抛 `ArgumentException`。
 - 绑定连接的工作单元：管道外开 `new UnitOfWorkOptions(Connection: "leases")`，工作单元只用这个连接，事务只开在它上面，不牵动默认连接；操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。
 
-SQLite 只有一个写者：业务事务写过之后，同一个库文件上的另一个事务要等它结束。工作流的租约表就是这种数据，SQLite 上要配 `XiHan:Workflow:Database:LockConnection` 把它放到另一个库文件，见 [Workflow.Database](../packages/workflow-database#sqlite-上的租约表)。只有 SqlSugar 支持命名连接（方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明，见 [SqlSugar 的命名连接](../packages/persistence-sqlsugar#命名连接)）；EF Core 一个 `DbContext` 一个连接、内存实现没有连接，登记到命名连接在装配时、绑定连接的工作单元在开始时以 `PERSISTENCE_UNAVAILABLE_008` 失败。
+SQLite 只有一个写者：业务事务写过之后，同一个库文件上的另一个事务要等它结束。工作流的租约表就是这种数据，SQLite 上要配 `XiHan:Workflow:Database:LockConnection` 把它放到另一个库文件，见 [Workflow.Database](../packages/workflow-database#sqlite-上的租约表)。SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明命名连接（见 [SqlSugar 的命名连接](../packages/persistence-sqlsugar#命名连接)）。EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明（ADR-0087）：一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写，普通工作单元里取用以 `PERSISTENCE_UNAVAILABLE_008` 失败（见 [EF Core 的行为与限制](../packages/persistence-entityframeworkcore#行为与限制)）。内存实现没有连接，登记到命名连接在装配时、绑定连接的工作单元在开始时以 `PERSISTENCE_UNAVAILABLE_008` 失败。
 
 ## 运行时数据源
 
@@ -418,7 +418,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有当前租户的调用里新增 | `Result` |
 | `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（重复开始、未开始就提交）；同一服务作用域里再经管道的嵌套调用 | 状态错误抛异常；嵌套调用是调用结果 |
 | `PERSISTENCE_VALIDATION_003` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
-| `PERSISTENCE_VALIDATION_004` | 实体落点不成立（装配错误）：SqlSugar 实体的 `[Tenant]` 或登记的命名连接不在客户端里、两者不一致；工作单元绑定的连接不存在，或绑定连接的工作单元里操作的实体不落在它上面 | 启动失败；运行时抛 `FrameworkException` |
+| `PERSISTENCE_VALIDATION_004` | 实体落点不成立（装配错误）：SqlSugar 实体的 `[Tenant]` 或登记的命名连接不在客户端里、两者不一致；EF Core 登记或绑定的命名连接没有声明；工作单元绑定的连接不存在，或绑定连接的工作单元里操作的实体不落在它上面 | 启动失败；运行时抛 `FrameworkException` |
 | `PERSISTENCE_VALIDATION_005` | 查询或表列表的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max`；一次读结构超过 100 张表，参数 `count`、`max` | 仓储查询在构造时抛 `FrameworkException`，调用里由 Transaction 阶段转为校验结果（HTTP 400）；表列表与读结构由读取器以 `Result` 返回 |
 | `PERSISTENCE_VALIDATION_007` | 表列表的 `Skip` 为负或 `Take` 小于 1，参数 `skip`、`take` | `Result`（HTTP 400） |
 | `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
@@ -434,7 +434,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |
 | `PERSISTENCE_UNAVAILABLE_006` | 数据源连不上或读取失败（测试连接、健康探测、库结构读取），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
 | `PERSISTENCE_UNAVAILABLE_007` | 运行时数据源登记已满 | `Result` |
-| `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源、库结构读取与命名连接） | `Result`；命名连接在装配时或 `BeginAsync` 抛 `FrameworkException` |
+| `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源与库结构读取；内存实现的命名连接；EF Core 普通工作单元里取用登记到命名连接的实体） | `Result`；命名连接相关的抛 `FrameworkException` |
 
 `PERSISTENCE_UNAVAILABLE_004` 与 `005` 属于雪花标识生成器，见[标识生成](./distributed-ids#失败与错误码)。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误](./errors)。
 

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
@@ -15,11 +16,50 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWork, IAsyncDisposable
+public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
+    /// <summary>
+    /// 取本作用域的 DbContext。
+    /// </summary>
+    /// <remarks>
+    /// 由作用域容器解析；建 DbContext 选项的回调按 <see cref="_connection"/> 选连接。
+    /// </remarks>
+    private readonly Func<DbContext> _resolve;
+
+    /// <summary>
+    /// 本作用域的 DbContext 建在哪个连接上。
+    /// </summary>
+    private readonly ContextConnection _connection;
+
+    /// <summary>
+    /// 声明的命名连接：名字 → 连接串。
+    /// </summary>
+    private readonly IReadOnlyDictionary<string, string> _connections;
+
+    /// <summary>
+    /// 登记的实体与它们的落点。
+    /// </summary>
+    private readonly RepositoryRegistrations _registrations;
+
+    /// <summary>
+    /// 本作用域的 DbContext。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示尚未建出。
+    /// </remarks>
+    private DbContext? _context;
+
+    /// <summary>
+    /// 绑定的命名连接。
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 表示没有绑定，实体落缺省连接。
+    /// </remarks>
+    private string? _bound;
+
     /// <summary>
     /// 延迟开启的数据库事务。
     /// </summary>
@@ -37,9 +77,28 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
     private Error? _failure;
 
     /// <summary>
+    /// 创建。
+    /// </summary>
+    /// <param name="context">取本作用域的 DbContext；工作单元开始时才调用，那时已知道要不要绑定命名连接。</param>
+    /// <param name="connection">本作用域的 DbContext 建在哪个连接上。</param>
+    /// <param name="options">Provider 选项，取声明的命名连接。</param>
+    /// <param name="registrations">登记的实体与它们的落点。</param>
+    internal EntityFrameworkCoreUnitOfWork(Func<DbContext> context, ContextConnection connection, EntityFrameworkCorePersistenceOptions options, RepositoryRegistrations registrations)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _resolve = context ?? throw new ArgumentNullException(nameof(context));
+        _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        _connections = options.Connections;
+        _registrations = registrations ?? throw new ArgumentNullException(nameof(registrations));
+    }
+
+    /// <summary>
     /// 本作用域的 DbContext。
     /// </summary>
-    public DbContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+    /// <remarks>
+    /// 工作单元开始时建出：绑定了命名连接就建在那个连接上，否则建在缺省连接（带租户分片的调用是分片连接）。开始之前取用即按缺省建出，之后就不能再绑定命名连接。
+    /// </remarks>
+    public DbContext Context => _context ??= _resolve();
 
     /// <inheritdoc />
     public UnitOfWorkState State { get; private set; } = UnitOfWorkState.NotStarted;
@@ -62,12 +121,21 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
         }
 
-        // 不支持命名连接（一个 DbContext 一个连接，要分库另起 DbContext）：明确拒绝，不把绑定连接的工作单元当成普通工作单元静默开在缺省连接上
         if (options.Connection is { } connection)
         {
-            throw new FrameworkException(PersistenceErrors.NotSupported, $"The EF Core persistence provider does not support binding a unit of work to the named connection '{connection}'.");
+            // 先确认连接已声明再开始：没声明是装配错误，不退回缺省连接
+            if (!_connections.ContainsKey(connection))
+            {
+                throw new FrameworkException(PersistenceErrors.UnknownConnection, $"The unit of work is bound to the connection '{connection}', but '{EntityFrameworkCorePersistenceOptions.ConfigurationSection}:Connections' does not declare it.");
+            }
+
+            // 一个 DbContext 一个连接：要在建出之前记下绑定，选项回调才会按这个连接建；本作用域已经按别的连接建出时拒绝
+            _connection.Bind(connection);
         }
 
+        // 开始即建出 DbContext，与此前在构造时建出一样落在 Transaction 阶段（带分片的调用在这时按租户分片建）；建不出时工作单元保持未开始
+        _ = Context;
+        _bound = options.Connection;
         TenantId = options.TenantId;
         IsReadOnly = options.IsReadOnly;
         State = UnitOfWorkState.Active;
@@ -154,8 +222,8 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             await _transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        // 清空跟踪器：已保存但被回滚的实体不能再以"未修改"状态留在上下文里
-        Context.ChangeTracker.Clear();
+        // 清空跟踪器：已保存但被回滚的实体不能再以"未修改"状态留在上下文里；还没建出 DbContext 就没有可清的
+        _context?.ChangeTracker.Clear();
         State = UnitOfWorkState.RolledBack;
     }
 
@@ -168,6 +236,30 @@ public sealed class EntityFrameworkCoreUnitOfWork(DbContext context) : IUnitOfWo
             await _transaction.DisposeAsync().ConfigureAwait(false);
             _transaction = null;
         }
+    }
+
+    /// <summary>
+    /// 仓储取实体所在的 DbContext。
+    /// </summary>
+    /// <remarks>
+    /// 实体登记的落点要与本工作单元的连接一致：绑定了命名连接而实体落在别处，抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>；没有绑定而实体登记在命名连接上，抛出携带 <see cref="PersistenceErrors.NotSupported"/> 的 <see cref="FrameworkException"/>。
+    /// </remarks>
+    internal DbContext ContextFor(Type entityType)
+    {
+        var placed = _registrations.ConnectionOf(entityType);
+        if (string.Equals(placed, _bound, StringComparison.Ordinal))
+        {
+            return Context;
+        }
+
+        // 绑定连接的工作单元只认这一个连接：实体落在别处时读写会碰到不在事务里、也不该碰的库，按落点错误拒绝
+        if (_bound is not null)
+        {
+            throw new FrameworkException(PersistenceErrors.UnknownConnection, $"Entity '{entityType.FullName}' is placed on {(placed is null ? "the default connection" : $"the connection '{placed}'")}, but the unit of work is bound to the connection '{_bound}'.");
+        }
+
+        // 普通工作单元的 DbContext 建在缺省连接上，命名连接上的实体在这里读写不到它的库：不静默落到缺省连接
+        throw new FrameworkException(PersistenceErrors.NotSupported, $"Entity '{entityType.FullName}' is placed on the named connection '{placed}'; the EF Core persistence provider reads and writes it only in a unit of work bound to that connection (one DbContext has one connection).");
     }
 
     /// <summary>

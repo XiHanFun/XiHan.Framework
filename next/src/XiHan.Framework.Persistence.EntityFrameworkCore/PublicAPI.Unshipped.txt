@@ -8,6 +8,8 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFe
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions!
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Connections.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Connections.init -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.EnsureCreated.get -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.EnsureCreated.init -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.EntityFrameworkCorePersistenceOptions() -> void
@@ -33,7 +35,6 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.Co
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EntityFrameworkCoreUnitOfWork(Microsoft.EntityFrameworkCore.DbContext! context) -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState

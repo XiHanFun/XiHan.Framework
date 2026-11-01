@@ -1137,6 +1137,12 @@
           "default": "15",
           "exclusiveMinimum": 0,
           "summary": "健康项 persistence.entityframeworkcore.database 的重探间隔与单次探测超时（秒）"
+        },
+        {
+          "key": "Connections:{name}",
+          "type": "string",
+          "sample": "Data Source=leases.db",
+          "summary": "命名连接：值是连接串，名字合 ^[a-z0-9][a-z0-9-]{0,63}$、不能是 default 或 shard；绑定它的工作单元所在作用域的 DbContext 建在这个连接上，登记到它的实体只在这样的工作单元里读写"
         }
       ]
     },

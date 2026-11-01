@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 持久化的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
 /// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -114,16 +114,30 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         // 绑定可选：缺失时把 Maybe 原样交给回调，由应用决定回退到何种连接
         var binding = context.TryGetBinding(ConnectionBinding);
 
-        context.Services.AddSingleton(_options);
-        // 选项按作用域构建：带租户分片的调用把分片连接作为绑定交给回调，其余用应用默认连接
+        var persistence = _options;
+        context.Services.AddSingleton(persistence);
+        // 选项按作用域构建：绑定了命名连接的作用域把那个连接作为绑定交给回调（主值换成它的连接串、属性沿用 db 绑定，与 SqlSugar 一致），
+        // 带租户分片的调用把分片连接作为绑定交给回调，其余用应用默认连接
+        context.Services.AddScoped<ContextConnection>();
         context.Services.AddDbContext<TContext>((sp, options) =>
         {
+            if (sp.GetRequiredService<ContextConnection>().Build() is { } named)
+            {
+                _configure(NamedBinding(binding, persistence.Connections[named]), options);
+                return;
+            }
+
             var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
             _configure(shard.HasValue ? shard : binding, options);
         });
         // 工作单元只依赖基类 DbContext，把应用的 TContext 转发为作用域内的同一实例，避免产生第二个上下文
         context.Services.TryAddScoped<DbContext>(static sp => sp.GetRequiredService<TContext>());
-        context.Services.TryAddScoped<EntityFrameworkCoreUnitOfWork>();
+        // DbContext 由工作单元在开始时才取：那时才知道这个作用域要不要绑定命名连接
+        context.Services.TryAddScoped(static sp => new EntityFrameworkCoreUnitOfWork(
+            sp.GetRequiredService<DbContext>,
+            sp.GetRequiredService<ContextConnection>(),
+            sp.GetRequiredService<EntityFrameworkCorePersistenceOptions>(),
+            sp.GetRequiredService<RepositoryRegistrations>()));
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<EntityFrameworkCoreUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         // 运行时数据源不支持：数据库 Provider（UseNpgsql 等）由应用选、本包不引用，按数据库类型建不出连接；注册表照样登记，取用返回 PERSISTENCE_UNAVAILABLE_008
@@ -157,6 +171,11 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
             }
         }
 
+        if (_options.EnsureCreated)
+        {
+            await EnsureNamedCreatedAsync(services, cancellationToken).ConfigureAwait(false);
+        }
+
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
         await _health.StartAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -177,14 +196,46 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         where TKey : notnull, IEquatable<TKey>
     {
         ArgumentNullException.ThrowIfNull(services);
-        // 登记集合先记下实体再交给 Provider 注册，这里查得到它的落点；不支持命名连接就在装配时拒绝，不把它静默放到缺省连接上
-        if (services.GetRepositoryRegistrations().ConnectionOf(typeof(TEntity)) is { } connection)
+        // 登记集合先记下实体再交给 Provider 注册，这里查得到它的落点；登记的命名连接没有声明就在装配时拒绝，不把它静默放到缺省连接上
+        if (services.GetRepositoryRegistrations().ConnectionOf(typeof(TEntity)) is { } connection && !_options.Connections.ContainsKey(connection))
         {
-            throw new FrameworkException(PersistenceErrors.NotSupported, $"The EF Core persistence provider does not support placing entity '{typeof(TEntity).FullName}' on the named connection '{connection}' (one DbContext has one connection; register another DbContext for another database).");
+            throw new FrameworkException(PersistenceErrors.UnknownConnection, $"Entity '{typeof(TEntity).FullName}' is registered on the named connection '{connection}', but '{EntityFrameworkCorePersistenceOptions.ConfigurationSection}:Connections' does not declare it.");
         }
 
         services.TryAddScoped<IRepository<TEntity, TKey>, EntityFrameworkCoreRepository<TEntity, TKey>>();
     }
+
+    /// <summary>
+    /// 在登记了实体的每个命名连接上建表。
+    /// </summary>
+    /// <remarks>
+    /// 每个连接一个独立作用域，DbContext 按那个连接建出后 <c>EnsureCreated</c>：EF Core 按整个模型建表，那个库里多出的空表不用。只用于开发与测试，与默认连接的 <c>EnsureCreated</c> 一样。
+    /// </remarks>
+    private static async Task EnsureNamedCreatedAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        var placed = services.GetRequiredService<RepositoryRegistrations>().Entities
+            .Select(static entity => entity.Connection)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal);
+        foreach (var connection in placed)
+        {
+            await using var scope = services.CreateAsyncScope();
+            // 先绑定再取 DbContext：选项回调按这个连接建
+            scope.ServiceProvider.GetRequiredService<ContextConnection>().Bind(connection);
+            await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// 命名连接的绑定。
+    /// </summary>
+    /// <remarks>
+    /// 主值换成命名连接的连接串，属性沿用 <see cref="ConnectionBinding"/> 绑定（数据库类型等，没有绑定时为空）。
+    /// </remarks>
+    private static Maybe<BindingValue> NamedBinding(Maybe<BindingValue> binding, string connectionString)
+        => Maybe.Some(binding.TryGetValue(out var value)
+            ? value with { Value = connectionString }
+            : new BindingValue(ConnectionBinding, ConnectionBindingType, connectionString, new Dictionary<string, string>(StringComparer.Ordinal)));
 
     /// <summary>
     /// 连通性探针。

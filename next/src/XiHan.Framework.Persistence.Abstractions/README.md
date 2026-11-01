@@ -37,7 +37,7 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任�
 
 - 实体落点：`AddRepository<TEntity, TKey>(connection)` 把实体登记到命名连接（`null` 是 Provider 的缺省落点，非空不能是空白）；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取它。同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。
 - 绑定连接的工作单元：`UnitOfWorkOptions(Connection: name)` 只在这个连接上读写——实体必须落在它上面（否则 `PERSISTENCE_VALIDATION_004`），事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。连接名空白抛 `ArgumentException`。
-- Provider：SqlSugar 是客户端里同名 `ConfigId` 的连接（方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 与内存实现不支持，登记到命名连接在装配时、绑定连接的工作单元在 `BeginAsync` 抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`。
+- Provider：SqlSugar 是客户端里同名 `ConfigId` 的连接（方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上，登记到命名连接的实体只能在这样的工作单元里读写（普通工作单元里取用 `PERSISTENCE_UNAVAILABLE_008`，ADR-0087）；内存实现不支持，登记到命名连接在装配时、绑定连接的工作单元在 `BeginAsync` 抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`。
 ## 索引声明
 
 框架自己的表（发件箱、审计、授予、翻译、调度、工作流）与应用实体一样，用本包的 `[EntityIndex]` 声明索引，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`：实体只依赖本包，换 Provider 不改实体（RFC-0005「索引声明」，ADR-0072）。
