@@ -77,7 +77,7 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     }
 
     /// <summary>
-    /// 停止全部宿主，清空连接池并删除数据库文件及其日志、WAL 与共享内存文件。
+    /// 停止全部宿主，清空本库的连接池并删除数据库文件及其日志、WAL 与共享内存文件。
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -87,10 +87,12 @@ internal sealed class SqliteDatabase : IAsyncDisposable
         }
 
         _hosts.Clear();
-        // SQLite 连接会被池化并持有文件句柄，先清空连接池，Windows 上才能删除文件；文件仍被占用时稍等再删
+        // SQLite 连接会被池化并持有文件句柄，先清空本库的连接池，Windows 上才能删除文件；文件仍被占用时稍等再删。
+        // 只清本库连接串的连接池（连接池按连接串分组）。不用 SqliteConnection.ClearAllPools()：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 ObjectDisposedException（SQLitePCL.sqlite3）失败
+        using var connection = new SqliteConnection(ConnectionString);
         for (var attempt = 0; ; attempt++)
         {
-            SqliteConnection.ClearAllPools();
+            SqliteConnection.ClearPool(connection);
             try
             {
                 File.Delete(Path);

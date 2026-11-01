@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Persistence.EntityFrameworkCore;
@@ -87,7 +86,7 @@ internal sealed class EntityFrameworkCoreSqliteDatabase : IAsyncDisposable
     }
 
     /// <summary>
-    /// 停止宿主，清空连接池并删除两个库文件及其附属文件。
+    /// 停止宿主，清空两个库的连接池并删除库文件及其附属文件。
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -97,26 +96,10 @@ internal sealed class EntityFrameworkCoreSqliteDatabase : IAsyncDisposable
             _host = null;
         }
 
+        // 两个库文件的连接串都是 SqliteDatabase.Connection 给出的：按它清各自的连接池再删
         foreach (var file in new[] { Path, LeasePath })
         {
-            // 连接池持有文件句柄，先清空才能在 Windows 上删除；停止时收尾的连接可能仍占着文件，等它们结束再删
-            for (var attempt = 0; ; attempt++)
-            {
-                SqliteConnection.ClearAllPools();
-                try
-                {
-                    File.Delete(file);
-                    break;
-                }
-                catch (IOException) when (attempt < 50)
-                {
-                    await Task.Delay(100);
-                }
-            }
-
-            File.Delete(file + "-journal");
-            File.Delete(file + "-wal");
-            File.Delete(file + "-shm");
+            await SqliteDatabase.DeleteAsync(file);
         }
     }
 }

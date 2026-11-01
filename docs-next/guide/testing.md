@@ -62,6 +62,10 @@ dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --
 
 `StubFeature` 是可注入 `OnConfigure` / `OnStart` / `OnStop` 行为、按顺序记录 `configure` / `start` / `stop` 事件的特性桩；`TestManifests.Create(id, provides, requires, role, kind, bindings)` 用 `id@version` 文本构造清单；`TestInvocationContext.Create(...)` 给不需要宿主的单元测试一个独立的调用上下文。
 
+### SQLite 文件库
+
+用例用临时的 SQLite 文件库时，宿主停止后先清这个库的连接池再删文件：`using var connection = new SqliteConnection(连接串); SqliteConnection.ClearPool(connection);`——连接池按连接串分组，用例自己在连接串后追加了参数（如 `Default Timeout`）的，那个连接串也清一次。不要在用例里调 `SqliteConnection.ClearAllPools()`：它清的是整个进程的连接池，xUnit 并行跑的别的用例此刻正在打开的连接会被 Microsoft.Data.Sqlite 当作泄漏的连接回收并关掉句柄（它在池锁之外先置活动标记、再记外层连接，清池恰好落在两步之间），那个用例随即以 `ObjectDisposedException`（`SQLitePCL.sqlite3`）失败，SqlSugar 建表时报成「需要系统表权限」；负载越高越容易碰到。给连接串加 `Pooling=False` 也能避开，但每次开连接都要重新打开文件，并行负载下实测慢一倍多。框架自己的数据库测试项目按前一种做法。
+
 ## 测一个中间件
 
 中间件在 `InvokeAsync` 里决定是否调用下一步；短路时把失败结果写进上下文，不进入下游。下面的中间件要求调用方带关联 ID：

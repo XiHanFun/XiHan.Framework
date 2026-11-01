@@ -34,11 +34,18 @@ public sealed class PermissionGrantIndexTests : IDisposable
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"xihan-security-index-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 清空连接池后删除数据库文件。
+    /// 清空本库的连接池后删除数据库文件。
     /// </summary>
+    /// <remarks>
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败。
+    /// </remarks>
     public void Dispose()
     {
-        SqliteConnection.ClearAllPools();
+        using (var connection = new SqliteConnection($"Data Source={_path}"))
+        {
+            SqliteConnection.ClearPool(connection);
+        }
+
         File.Delete(_path);
     }
 

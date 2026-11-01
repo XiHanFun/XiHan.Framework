@@ -37,10 +37,13 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
     private readonly SqliteDatabase _named = new();
 
     /// <summary>
-    /// 删除两个临时数据库文件。
+    /// 清空宿主所用连接串的连接池，再删除两个临时数据库文件。
     /// </summary>
     public void Dispose()
     {
+        // 宿主的连接串带忙等时限，是另外的连接池分组
+        SqliteDatabase.ClearPool(Busy(_default));
+        SqliteDatabase.ClearPool(Busy(_named));
         _default.Dispose();
         _named.Dispose();
     }

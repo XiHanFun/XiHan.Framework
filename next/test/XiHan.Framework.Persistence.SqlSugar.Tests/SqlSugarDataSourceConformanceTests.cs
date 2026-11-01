@@ -43,6 +43,8 @@ public sealed class SqlSugarDataSourceConformanceTests : DataSourceConformance, 
     /// </summary>
     public void Dispose()
     {
+        // 套件「定义变了就替换」的用例在外部库的连接串后加了分号，是另外的连接池分组
+        SqliteDatabase.ClearPool(_external.ConnectionString + ";");
         _application.Dispose();
         _external.Dispose();
     }

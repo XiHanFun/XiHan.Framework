@@ -13,7 +13,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// </summary>
 /// <remarks>
 /// 用例结束时没有要删除的文件：超载时杀毒或索引程序短暂占着临时文件，按文件删除会以 IOException 让释放失败。库名带随机后缀，用例之间互不可见。
-/// 共享缓存的内存库在最后一个连接关闭时消失，而别的测试类释放时会清空整个进程的连接池（<see cref="SqliteConnection.ClearAllPools"/>），
+/// 共享缓存的内存库在最后一个连接关闭时消失（内存库的连接不进连接池，关闭即关掉句柄），
 /// 所以本类自己持有一个打开的连接直到释放，库的生命期只由它决定。共享缓存是表级锁、遇锁立即失败而不排队等待，
 /// 只适合不依赖多连接并发语义的用例；要多个连接并发读写的用例仍用 <see cref="SqliteDatabase"/>。
 /// </remarks>

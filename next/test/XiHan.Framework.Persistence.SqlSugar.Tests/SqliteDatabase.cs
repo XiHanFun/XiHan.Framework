@@ -69,15 +69,30 @@ internal sealed class SqliteDatabase : IDisposable
         });
 
     /// <summary>
-    /// 释放连接池并删除数据库文件及其日志、WAL 与共享内存文件。
+    /// 清空本库的连接池并删除数据库文件及其日志、WAL 与共享内存文件。
     /// </summary>
+    /// <remarks>
+    /// 用例自己在 <see cref="ConnectionString"/> 后面追加了参数的（连接池按连接串分组），先对那个连接串调用 <see cref="ClearPool"/>。
+    /// </remarks>
     public void Dispose()
     {
-        // SQLite 连接会被池化并持有文件句柄，先清空连接池，Windows 上才能删除文件
-        SqliteConnection.ClearAllPools();
+        // SQLite 连接会被池化并持有文件句柄，先清空本库的连接池，Windows 上才能删除文件
+        ClearPool(ConnectionString);
         File.Delete(Path);
         File.Delete(Path + "-journal");
         File.Delete(Path + "-wal");
         File.Delete(Path + "-shm");
+    }
+
+    /// <summary>
+    /// 清空一个连接串的连接池。
+    /// </summary>
+    /// <remarks>
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败：Microsoft.Data.Sqlite 在池锁之外先置活动标记、再记外层连接，清池时回收泄漏连接恰好落在两步之间；SqlSugar 建表时把这个异常报成「需要系统表权限」。
+    /// </remarks>
+    public static void ClearPool(string connectionString)
+    {
+        using var connection = new SqliteConnection(connectionString);
+        SqliteConnection.ClearPool(connection);
     }
 }
