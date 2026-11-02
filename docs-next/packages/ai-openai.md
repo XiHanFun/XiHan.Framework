@@ -121,7 +121,8 @@ builder.Services.AddHttpClient("xihan.ai.openai")
 
 - 容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`），本包就从它取名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时取到的是工厂的缺省客户端，应用用 `ConfigureHttpClientDefaults` 给全部客户端加的处理器（如弹性处理器）同样作用于它。
 - 超时只以 `TimeoutSeconds` 为准：取到的客户端的 `HttpClient.Timeout` 由本包置为不限，与 SDK 自己的传输一样，不会被缺省的 100 秒截断；在 `AddHttpClient` 里设的 `Timeout` 不生效。
-- 端点返回错误或不可达记 `AI_UNAVAILABLE_001`，超时记 `AI_TIMEOUT_001`；这两项在 `IAIChat` 里映射，直接从目录取客户端的调用拿到的是 SDK 的原始异常。
+- 端点返回错误或不可达记 `AI_UNAVAILABLE_001`，超时记 `AI_TIMEOUT_001`；这两项在 `IAIChat` 与知识库流水线里映射，直接从目录取客户端的调用拿到的是 SDK 的原始异常。
+- 经 `IAIChat` 与知识库流水线的调用另有框架的超时令牌（同取 `TimeoutSeconds`，按容器的 `TimeProvider` 计时），覆盖整次调用，含函数调用循环；SDK 的 `NetworkTimeout` 照常作用于每次网络请求。两者同时触发、或超时与调用方取消同时发生时，SDK 报的是调用方的取消，框架按自己的令牌报 `AI_TIMEOUT_001`（[超时与取消](../guide/ai#超时与取消)）。
 - 缓存、遥测等横切逻辑可以叠加在目录解析出的客户端上，用 Microsoft.Extensions.AI 自己的中间件。
 - 通过 `AI.Conformance` 的 `AIProviderConformance`。
 

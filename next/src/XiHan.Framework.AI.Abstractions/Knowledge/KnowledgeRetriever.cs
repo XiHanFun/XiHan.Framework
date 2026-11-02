@@ -9,9 +9,17 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <summary>
 /// <see cref="IKnowledgeRetriever"/> 的实现（单例）。
 /// </summary>
+/// <remarks>
+/// 查询文本的嵌入受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeRetriever : IKnowledgeRetriever
 {
+    /// <summary>
+    /// AI 选项（实际的默认嵌入 Provider）。
+    /// </summary>
+    private readonly AIOptions _ai;
+
     /// <summary>
     /// 选项。
     /// </summary>
@@ -23,6 +31,14 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
     private readonly IAIProviderCatalog _providers;
 
     /// <summary>
+    /// 时间源。
+    /// </summary>
+    /// <remarks>
+    /// 嵌入 Provider 的超时令牌按它计时。
+    /// </remarks>
+    private readonly TimeProvider _timeProvider;
+
+    /// <summary>
     /// 存储（没有 Provider 时为空）。
     /// </summary>
     private readonly IKnowledgeStore? _store;
@@ -30,11 +46,12 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
     /// <summary>
     /// 创建。
     /// </summary>
-    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, IKnowledgeStore? store = null)
+    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        _ai = options ?? throw new ArgumentNullException(nameof(options));
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _store = store;
     }
 
@@ -52,17 +69,11 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
             return KnowledgeErrors.NoStore();
         }
 
-        var generator = _providers.ResolveEmbeddingGenerator(query.Provider ?? _options.EmbeddingProvider);
-        if (!generator.TryGetValue(out var embeddings))
-        {
-            return generator.Error!;
-        }
-
-        var provider = query.Provider ?? _options.EmbeddingProvider ?? string.Empty;
-        var generated = await KnowledgeErrors.EmbedAsync(embeddings, [query.Text], provider, cancellationToken).ConfigureAwait(false);
+        var provider = query.Provider ?? _options.EmbeddingProvider ?? _ai.ResolveDefaultEmbeddingProvider();
+        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, [query.Text], _timeProvider, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors) || vectors.Count == 0)
         {
-            return generated.Error ?? Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", "the provider returned no embedding")));
+            return generated.Error ?? Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider ?? string.Empty), ("reason", "the provider returned no embedding")));
         }
 
         var vector = vectors[0].Vector;

@@ -10,11 +10,16 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <see cref="IKnowledgeIngestor"/> 的实现（单例）。
 /// </summary>
 /// <remarks>
-/// 每篇文档一次嵌入批调用。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索。
+/// 每篇文档一次嵌入批调用，受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeIngestor : IKnowledgeIngestor
 {
+    /// <summary>
+    /// AI 选项（实际的默认嵌入 Provider）。
+    /// </summary>
+    private readonly AIOptions _ai;
+
     /// <summary>
     /// 选项。
     /// </summary>
@@ -31,6 +36,14 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
     private readonly IChunkingStrategy _chunking;
 
     /// <summary>
+    /// 时间源。
+    /// </summary>
+    /// <remarks>
+    /// 嵌入 Provider 的超时令牌按它计时。
+    /// </remarks>
+    private readonly TimeProvider _timeProvider;
+
+    /// <summary>
     /// 存储（没有 Provider 时为空）。
     /// </summary>
     private readonly IKnowledgeStore? _store;
@@ -38,12 +51,13 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
     /// <summary>
     /// 创建。
     /// </summary>
-    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, IKnowledgeStore? store = null)
+    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        _ai = options ?? throw new ArgumentNullException(nameof(options));
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _chunking = chunking ?? throw new ArgumentNullException(nameof(chunking));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _store = store;
     }
 
@@ -94,14 +108,8 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
             return removed.IsSuccess ? 0 : removed.Error!;
         }
 
-        var generator = _providers.ResolveEmbeddingGenerator(request.Provider ?? _options.EmbeddingProvider);
-        if (!generator.TryGetValue(out var embeddings))
-        {
-            return generator.Error!;
-        }
-
-        var provider = request.Provider ?? _options.EmbeddingProvider ?? string.Empty;
-        var generated = await KnowledgeErrors.EmbedAsync(embeddings, chunks, provider, cancellationToken).ConfigureAwait(false);
+        var provider = request.Provider ?? _options.EmbeddingProvider ?? _ai.ResolveDefaultEmbeddingProvider();
+        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, chunks, _timeProvider, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors))
         {
             return generated.Error!;

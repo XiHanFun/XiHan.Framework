@@ -180,7 +180,7 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     /// <summary>
     /// Provider 未配置。
     /// </summary>
-    private static Error NotFound(string? name)
+    internal static Error NotFound(string? name)
         => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.ProviderNotFound, MessageArguments.Of(("name", name ?? string.Empty)));
 
     /// <summary>

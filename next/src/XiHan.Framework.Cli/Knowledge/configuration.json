@@ -57,7 +57,7 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "sample": "100",
-          "summary": "单次调用超时（秒），须为有限正数；不写为 100 秒"
+          "summary": "Provider 调用的时限（秒），须为有限正数；不写为 100 秒。IAIChat 与知识库流水线按它落成超时令牌：完整应答覆盖整次调用（含函数调用循环），流式按等每个更新计时，与调用方取消同时触发时报超时"
         },
         {
           "key": "Tools:{operation}",

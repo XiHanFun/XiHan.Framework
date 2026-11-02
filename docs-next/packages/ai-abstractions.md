@@ -51,7 +51,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | `Providers:<name>:ApiKey` | 空 | 空时由 Provider 决定 |
 | `Providers:<name>:ChatModel`、`EmbeddingModel` | — | 解析对应客户端时必填 |
 | `Providers:<name>:EmbeddingDimensions` | 模型缺省 | 至少 1 |
-| `Providers:<name>:TimeoutSeconds` | 100 | 单次调用超时，正数 |
+| `Providers:<name>:TimeoutSeconds` | 100 | Provider 调用的时限，正数；`IAIChat` 与知识库流水线按它落成超时令牌 |
 | `Providers:<name>:Properties:<key>` | — | 透传给工厂的字符串 |
 | `Tools:<操作 ID>` | 按约定推导 | 覆盖操作工具名 |
 | `Prompts:<name>:Template`、`Description` | — | 配置里的提示词 |
@@ -175,6 +175,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
+- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](../guide/ai#超时与取消)。
 
 | 错误码 | 何时出现 |
 | --- | --- |
@@ -184,7 +185,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 | `AI_NOTFOUND_002` | 提示词模板不存在 |
 | `AI_NOTFOUND_003` | 工具不存在 |
 | `AI_DENIED_001` | 被护栏拦截 |
-| `AI_TIMEOUT_001` | 模型调用超时 |
+| `AI_TIMEOUT_001` | 模型调用超时：Provider 的超时令牌已触发（调用方同时取消也一样），或 Provider 报告了自己的超时 |
 | `AI_UNAVAILABLE_001` | 模型端点不可达或返回错误 |
 | `AI_UNAVAILABLE_002` | 没有知识库 Provider，或存储不可达 |
 | `AI_UNEXPECTED_001` | 护栏抛出异常或返回失败 |

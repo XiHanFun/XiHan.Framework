@@ -139,7 +139,27 @@ public sealed class AskAssistant(IAIChat chat) : IOperation<AskRequest, AskRespo
 }
 ```
 
-`StreamAsync` 在返回流之前完成提示词、工具、护栏与 Provider 解析，这些失败以 `Result` 返回；流开始后模型端点的异常在枚举时抛出。模型端点不可达或返回错误记 `AI_UNAVAILABLE_001`；调用方没有取消而调用被取消（如 Provider 的 `TimeoutSeconds` 到期）或抛出 `TimeoutException` 记 `AI_TIMEOUT_001`。
+`StreamAsync` 在返回流之前完成提示词、工具、护栏与 Provider 解析，这些失败以 `Result` 返回；流开始后模型端点的异常在枚举时抛出。模型端点不可达或返回错误记 `AI_UNAVAILABLE_001`，超时记 `AI_TIMEOUT_001`。
+
+### 超时与取消
+
+`IAIChat` 与知识库流水线调用 Provider 时，把这个 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌，与调用方的取消令牌链接后交给 Provider：
+
+| 调用 | 时限的范围 |
+| --- | --- |
+| `CompleteAsync` | 从调用 Provider 起到它返回，含 Provider 自己的函数调用循环与其中的工具调用 |
+| 摄入、检索 | 每一次嵌入批调用 |
+| `StreamAsync` | 等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限 |
+
+归因只看令牌，Provider 抛出与接住取消后正常返回是同一个回答：
+
+| 触发的令牌 | `CompleteAsync`、摄入、检索 | `StreamAsync` 的枚举 |
+| --- | --- | --- |
+| Provider 的超时令牌（调用方是否也取消不论） | `AI_TIMEOUT_001` | 抛出 `TimeoutException` |
+| 只有调用方取消 | 抛出 `OperationCanceledException`，经管道时按调用的截止时间归因（截止时间没到即 `KERNEL_CANCELLED_001`） | 抛出 `OperationCanceledException` |
+| 都没有触发，Provider 却抛出取消或 `TimeoutException`（它自己的传输超时） | `AI_TIMEOUT_001` | 抛出 `TimeoutException` |
+
+Provider 接住取消、交回截断的应答、条数不全的嵌入或提前结束的流时，框架按触发的令牌改报超时或取消，不把截断的结果当作成功。直接从目录解析的客户端不经这一层。完整应答的时限覆盖整个函数调用循环，工具调用多、总时长可能超过 `TimeoutSeconds` 的应用要调大它。
 
 ## 提示词模板
 
@@ -346,7 +366,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | `XiHan:AI:Providers:<name>:ChatModel` | string | — | 聊天模型，解析聊天客户端时必填 |
 | `XiHan:AI:Providers:<name>:EmbeddingModel` | string | — | 嵌入模型，解析嵌入生成器时必填 |
 | `XiHan:AI:Providers:<name>:EmbeddingDimensions` | int，至少 1 | 模型缺省维度 | 请求的嵌入维度 |
-| `XiHan:AI:Providers:<name>:TimeoutSeconds` | 数值，大于 0 | 100 | 单次调用超时 |
+| `XiHan:AI:Providers:<name>:TimeoutSeconds` | 数值，大于 0 | 100 | Provider 调用的时限，范围与归因见[超时与取消](#超时与取消) |
 | `XiHan:AI:Providers:<name>:Properties:<key>` | string | — | 原样透传给工厂 |
 | `XiHan:AI:Tools:<操作 ID>` | string | 按约定推导 | 覆盖操作工具名 |
 | `XiHan:AI:Prompts:<name>:Template` | string | — | 提示词模板 |
@@ -374,7 +394,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | `AI_NOTFOUND_002` | 提示词模板不存在 |
 | `AI_NOTFOUND_003` | 请求里的工具名不在目录里 |
 | `AI_DENIED_001` | 被护栏拦截，细节带 `guardrail` 与 `reason` |
-| `AI_TIMEOUT_001` | 模型调用超时 |
+| `AI_TIMEOUT_001` | 模型调用超时：Provider 的 `TimeoutSeconds` 到了（调用方同时取消也一样），或 Provider 报告了自己的超时 |
 | `AI_UNAVAILABLE_001` | 模型端点不可达或返回错误 |
 | `AI_UNAVAILABLE_002` | 没有知识库 Provider，或向量存储不可达；`AI.VectorData` 启动时找不到 `VectorStore` 也以此码失败 |
 | `AI_UNEXPECTED_001` | 护栏抛出异常或返回失败 |

@@ -18,6 +18,8 @@ namespace XiHan.Framework.AI.Abstractions.Chat;
 /// </summary>
 /// <remarks>
 /// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息。
+/// 调用 Provider 时把它的 <see cref="AIProviderOptions.Timeout"/> 按注入的 <see cref="TimeProvider"/> 落成超时令牌、与调用方令牌链接后交给它，
+/// 超时与取消按令牌归因（RFC-0022「超时与取消」）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIChat : IAIChat
@@ -58,9 +60,17 @@ public sealed class AIChat : IAIChat
     private readonly IServiceProvider _services;
 
     /// <summary>
+    /// 时间源。
+    /// </summary>
+    /// <remarks>
+    /// Provider 的超时令牌按它计时，测试推进虚拟时间即触发。
+    /// </remarks>
+    private readonly TimeProvider _timeProvider;
+
+    /// <summary>
     /// 创建。
     /// </summary>
-    public AIChat(AIOptions options, IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, IServiceProvider services)
+    public AIChat(AIOptions options, IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
@@ -68,6 +78,7 @@ public sealed class AIChat : IAIChat
         _tools = tools ?? throw new ArgumentNullException(nameof(tools));
         _guardrails = (guardrails ?? throw new ArgumentNullException(nameof(guardrails))).ToList();
         _invocation = invocation ?? throw new ArgumentNullException(nameof(invocation));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _services = services ?? throw new ArgumentNullException(nameof(services));
     }
 
@@ -81,15 +92,14 @@ public sealed class AIChat : IAIChat
             return prepared.Error!;
         }
 
+        // 时限覆盖 Provider 的整次调用，含它自己的函数调用循环：工具拿到的也是这个链接令牌
+        using var timeout = new ProviderTimeout(call.Timeout, _timeProvider, cancellationToken);
+        ChatResponse response;
         try
         {
-            return await call.Client.GetResponseAsync(call.Messages, call.Options, cancellationToken).ConfigureAwait(false);
+            response = await call.Client.GetResponseAsync(call.Messages, call.Options, timeout.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return Timeout(call.Provider);
-        }
-        catch (TimeoutException)
+        catch (Exception exception) when (timeout.IsTimeout(exception))
         {
             return Timeout(call.Provider);
         }
@@ -97,6 +107,8 @@ public sealed class AIChat : IAIChat
         {
             return Unavailable(call.Provider, exception);
         }
+
+        return timeout.ReturnedAfterTimeout() ? Timeout(call.Provider) : response;
     }
 
     /// <inheritdoc />
@@ -110,11 +122,46 @@ public sealed class AIChat : IAIChat
     /// <summary>
     /// 流式调用。
     /// </summary>
-    private static async IAsyncEnumerable<ChatResponseUpdate> StreamCoreAsync(PreparedCall call, [EnumeratorCancellation] CancellationToken cancellationToken)
+    /// <remarks>
+    /// 时限是等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限。
+    /// 超时以 <see cref="TimeoutException"/> 抛出（流已交给调用方，不能再返回结果），调用方取消抛出 <see cref="OperationCanceledException"/>，其余异常原样抛出。
+    /// </remarks>
+    private async IAsyncEnumerable<ChatResponseUpdate> StreamCoreAsync(PreparedCall call, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var update in call.Client.GetStreamingResponseAsync(call.Messages, call.Options, cancellationToken).ConfigureAwait(false))
+        using var timeout = new ProviderTimeout(call.Timeout, _timeProvider, cancellationToken, armed: false);
+        var updates = call.Client.GetStreamingResponseAsync(call.Messages, call.Options, timeout.Token).GetAsyncEnumerator(timeout.Token);
+        await using (updates.ConfigureAwait(false))
         {
-            yield return update;
+            while (true)
+            {
+                bool moved;
+                timeout.Arm();
+                try
+                {
+                    moved = await updates.MoveNextAsync().ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is not TimeoutException && timeout.IsTimeout(exception))
+                {
+                    throw timeout.Exceeded(call.Provider, exception);
+                }
+                finally
+                {
+                    timeout.Disarm();
+                }
+
+                // 等这一个更新期间超时令牌已触发：Provider 交出的更新或结束可能是接住取消之后的（截断的流），与抛出同一个回答
+                if (timeout.ReturnedAfterTimeout())
+                {
+                    throw timeout.Exceeded(call.Provider, null);
+                }
+
+                if (!moved)
+                {
+                    yield break;
+                }
+
+                yield return updates.Current;
+            }
         }
     }
 
@@ -192,7 +239,15 @@ public sealed class AIChat : IAIChat
 
         var provider = request.Provider ?? _options.ResolveDefaultProvider() ?? string.Empty;
         var client = _providers.ResolveChatClient(request.Provider);
-        return client.TryGetValue(out var resolved) ? new PreparedCall(resolved, messages, options, provider) : client.Error!;
+        if (!client.TryGetValue(out var resolved))
+        {
+            return client.Error!;
+        }
+
+        // 时限取同一个 Provider 的配置：目录解析得出客户端就查得到它，查不到是目录前后不一致，按未配置报告而不是换个缺省时限
+        return _providers.Find(provider).TryGetValue(out var settings)
+            ? new PreparedCall(resolved, messages, options, provider, settings.Timeout)
+            : AIProviderCatalog.NotFound(provider);
     }
 
     /// <summary>
@@ -210,5 +265,5 @@ public sealed class AIChat : IAIChat
     /// <summary>
     /// 准备好的调用。
     /// </summary>
-    private sealed record PreparedCall(IChatClient Client, List<ChatMessage> Messages, ChatOptions? Options, string Provider);
+    private sealed record PreparedCall(IChatClient Client, List<ChatMessage> Messages, ChatOptions? Options, string Provider, TimeSpan Timeout);
 }
