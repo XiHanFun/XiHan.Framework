@@ -77,8 +77,11 @@ public static class BuiltInActivityDescriptors
     public static ActivityDescriptor UserTask { get; } = new(ActivityTypes.UserTask, "User task", HumanCategory, "Waits for people to act.",
     [
         Input(UserTaskActivity.AssigneesProperty, "array"), Input(UserTaskActivity.AssigneesExpressionProperty, "expression"), Input(UserTaskActivity.AssigneeRulesProperty, "array"), Input(UserTaskActivity.ExcludeStarterProperty, "boolean"),
-        Input(UserTaskActivity.EmptyAssigneeStrategyProperty, "string"), Input(UserTaskActivity.FallbackAssigneeRulesProperty, "array"), Input(UserTaskActivity.CompletionPolicyProperty, "string"), Input(UserTaskActivity.TitleProperty, "template"),
-        Input(UserTaskActivity.FormDataProperty, "object"), Input(UserTaskActivity.CcUserIdsProperty, "array"), Input(UserTaskActivity.CcRulesProperty, "array"), Input(UserTaskActivity.AllowedOutcomesProperty, "array"),
+        Input(UserTaskActivity.EmptyAssigneeStrategyProperty, "string"), Input(UserTaskActivity.FallbackAssigneeRulesProperty, "array"), Input(UserTaskActivity.CompletionPolicyProperty, "string"),
+        Input(UserTaskActivity.ApprovalThresholdProperty, "string", description: "All policy: a positive count or a percentage like 60%."), Input(UserTaskActivity.TitleProperty, "template"),
+        Input(UserTaskActivity.FormDataProperty, "object"), Input(UserTaskActivity.FormKeyProperty, "template"), Input(UserTaskActivity.PriorityProperty, "number"),
+        Input(UserTaskActivity.DueAfterSecondsProperty, "number"), Input(UserTaskActivity.DueAtProperty, "expression", description: "An ISO-8601 date-time or an expression; overrides DueAfterSeconds."), Input(UserTaskActivity.ReminderAfterSecondsProperty, "number"),
+        Input(UserTaskActivity.CcUserIdsProperty, "array"), Input(UserTaskActivity.CcRulesProperty, "array"), Input(UserTaskActivity.AllowedOutcomesProperty, "array"),
     ]);
 
     /// <summary>

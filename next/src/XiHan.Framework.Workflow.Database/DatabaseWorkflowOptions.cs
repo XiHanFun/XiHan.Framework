@@ -81,7 +81,7 @@ public sealed record DatabaseWorkflowOptions
     /// 租约表（<c>WorkflowLockRecord</c>）的命名连接。
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 时租约表在持久化的缺省落点（平台库）。非空时特性把租约表登记到这个连接，租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上（RFC-0005「命名连接」）。SQLite 上必须配：SQLite 只有一个写者，引擎在调用方事务里写过之后再写租约行，同一个库文件上要等的正是调用方自己的事务，忙等超时后以 <c>WORKFLOW_TIMEOUT_001</c> 失败；PostgreSQL 等行级锁的数据库不需要。SqlSugar 是客户端里同名 <c>ConfigId</c> 的连接（方式一在 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明）；EF Core 与内存实现不支持，装配即失败。不能是空白。
+    /// 为 <see langword="null"/> 时租约表在持久化的缺省落点（平台库）。非空时特性把租约表登记到这个连接，租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上（RFC-0005「命名连接」）。SQLite 上必须配：SQLite 只有一个写者，引擎在调用方事务里写过之后再写租约行，同一个库文件上要等的正是调用方自己的事务，忙等超时后以 <c>WORKFLOW_TIMEOUT_001</c> 失败；PostgreSQL 等行级锁的数据库不需要。SqlSugar 是客户端里同名 <c>ConfigId</c> 的连接（方式一在 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明，不在客户端里启动即失败 <c>PERSISTENCE_VALIDATION_004</c>）；EF Core 在 <c>XiHan:Persistence:EntityFrameworkCore:Connections</c> 声明（ADR-0087：租约的每一步在绑定这个连接的工作单元里，作用域里的 <c>DbContext</c> 按租约库建出；没有声明装配即失败 <c>PERSISTENCE_VALIDATION_004</c>）；内存持久化没有连接，配了即装配失败（<c>PERSISTENCE_UNAVAILABLE_008</c>）。不能是空白。
     /// </remarks>
     public string? LockConnection
     {

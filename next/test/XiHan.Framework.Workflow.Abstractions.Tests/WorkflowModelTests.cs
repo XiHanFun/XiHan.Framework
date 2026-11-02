@@ -166,6 +166,22 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
+    public void UserTaskDescriptor_ListsEveryInputTheActivityReads()
+    {
+        // 活动读取的属性名都以常量 *Property 声明：描述符（设计器的属性面板）必须一个不漏、不多不少（ADR-0096 第五节）
+        var declared = typeof(UserTaskActivity).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(static field => field.IsLiteral && field.Name.EndsWith("Property", StringComparison.Ordinal))
+            .Select(static field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        Assert.Equal(18, declared.Count);
+        Assert.Equal(declared, BuiltInActivityDescriptors.UserTask.Inputs.Select(static input => input.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [("ApprovalThreshold", "string"), ("DueAfterSeconds", "number"), ("DueAt", "expression"), ("FormKey", "template"), ("Priority", "number"), ("ReminderAfterSeconds", "number")],
+            BuiltInActivityDescriptors.UserTask.Inputs.Where(static input => input.Name is "ApprovalThreshold" or "FormKey" or "Priority" or "DueAfterSeconds" or "DueAt" or "ReminderAfterSeconds").Select(static input => (input.Name, input.Kind)).OrderBy(static input => input.Name, StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void Messages_AreCompleteForEveryBuiltInLocale()
     {
         var catalog = WorkflowMessages.Catalog;

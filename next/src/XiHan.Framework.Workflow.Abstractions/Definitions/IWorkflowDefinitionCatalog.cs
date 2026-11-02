@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义目录。
 /// </summary>
 /// <remarks>
-/// 定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。定义按租户隔离：名字与版本号在租户（全局定义为空）的名字空间里编号；有租户的调用看得到本租户与全局定义、只改得动本租户的，别的按不存在处理；无租户的调用看得到、改得动全部。
+/// 定义的生命周期（草稿 → 发布 → 停用 / 归档）与版本。按标识的操作都是批量、逐项结果；状态不允许 → <see cref="WorkflowErrors.DefinitionStatus"/>。定义按分区严格隔离（ADR-0077）：平台一个分区、每个租户一个分区，调用只看得到、改得动自己分区的定义——平台调用只有平台的，租户只有本租户的，别的分区的一律按不存在处理（<see cref="WorkflowErrors.DefinitionNotFound"/>）；名字与版本号在分区里编号，没有全局定义，平台建的定义租户看不到。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowDefinitionCatalog
@@ -18,7 +18,7 @@ public interface IWorkflowDefinitionCatalog
     /// 新建草稿。
     /// </summary>
     /// <remarks>
-    /// 分配新 ID，状态 Draft，租户缺省取当前调用的租户，版本号 = 该租户名字空间里同名最大版本 + 1；返回存下的定义。
+    /// 分配新 ID，状态 Draft，定义属于调用方的分区（<see cref="WorkflowDefinition.TenantId"/> 取调用的租户，平台为空；写了别的租户 → <see cref="WorkflowErrors.DefinitionNotFound"/>，不替调用方改写），版本号 = 该分区里同名最大版本 + 1；返回存下的定义。
     /// </remarks>
     ValueTask<Result<WorkflowDefinition>> CreateAsync(WorkflowDefinition definition, CancellationToken cancellationToken);
 
@@ -36,7 +36,7 @@ public interface IWorkflowDefinitionCatalog
     /// 以该名字的最新版本为底复制一个新草稿。
     /// </summary>
     /// <remarks>
-    /// 只在当前调用租户的名字空间里找，新草稿属于同一名字空间；没有 → <see cref="WorkflowErrors.DefinitionNotFound"/>。
+    /// 只在调用方的分区里找，新草稿留在同一分区；没有 → <see cref="WorkflowErrors.DefinitionNotFound"/>。
     /// </remarks>
     ValueTask<Result<WorkflowDefinition>> NewVersionAsync(WorkflowName name, CancellationToken cancellationToken);
 
@@ -64,7 +64,7 @@ public interface IWorkflowDefinitionCatalog
     /// 找已发布版本：给了版本号就找该版本（须 Published），否则最新已发布版本。
     /// </summary>
     /// <remarks>
-    /// 先找当前调用租户的名字空间，没有再找全局定义。
+    /// 只在调用方的分区里找，找不到不退回别的分区（没有全局定义）。
     /// </remarks>
     ValueTask<Result<Maybe<WorkflowDefinition>>> FindPublishedAsync(WorkflowName name, int? version, CancellationToken cancellationToken);
 
