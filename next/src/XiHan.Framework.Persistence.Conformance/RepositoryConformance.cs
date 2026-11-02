@@ -484,6 +484,72 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 11e：规约里字符串的包含、前缀与后缀按字面匹配。
+    /// </summary>
+    /// <remarks>
+    /// 实参里的 <c>%</c>、<c>_</c>、<c>[</c>、反斜杠、<c>!</c> 与单引号不是通配符、转义符或语法：<c>t_2</c> 不命中 <c>budgetx2026</c>，<c>0%</c> 不命中 <c>500 off</c>，<c>[a]</c> 不命中 <c>a</c>（SQL Server 的字符类），<c>a\b</c> 不命中 <c>ab</c>（PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义），<c>!y</c> 不命中 <c>xy</c>。实参是闭包变量与常量都一样。大小写是否敏感各库不同，不在本用例：数据与实参都是小写（RFC-0005「规约里的字符串匹配」）。SqlSugar 原本把它们译成不转义的 <c>LIKE</c>，Provider 必须按本用例的语义翻译。
+    /// </remarks>
+    [Fact]
+    public async Task List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        string[] names = ["budget_2026", "budgetx2026", "50% off", "500 off", "a\\b", "ab", "[a]b", "a", "x!y", "xy", "it's", "its"];
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceOrder, Guid>(context).AddRangeAsync(
+            [.. names.Select(static (name, index) => new ConformanceOrder { Id = Guid.CreateVersion7(), Name = name, Amount = index })],
+            context.CancellationToken).ConfigureAwait(false))).ConfigureAwait(false)).ThrowIfFailure();
+
+        (string Keyword, string[] Expected)[] contains =
+        [
+            ("t_2", ["budget_2026"]),
+            ("0%", ["50% off"]),
+            ("_", ["budget_2026"]),
+            ("[a]", ["[a]b"]),
+            ("\\", ["a\\b"]),
+            ("a\\b", ["a\\b"]),
+            ("!y", ["x!y"]),
+            ("'s", ["it's"]),
+            ("' or '1'='1", []),
+        ];
+        (string Keyword, string[] Expected)[] prefixes = [("50%", ["50% off"]), ("[a", ["[a]b"]), ("a\\", ["a\\b"]), ("x!", ["x!y"])];
+        (string Keyword, string[] Expected)[] suffixes = [("_2026", ["budget_2026"]), ("% off", ["50% off"]), ("\\b", ["a\\b"]), ("!y", ["x!y"])];
+
+        // 整组断言：失败时一次列出全部不符的实参
+        var actual = new List<string>();
+        foreach (var (keyword, _) in contains)
+        {
+            actual.Add(Describe("contains", keyword, await NamesAsync(new Specification<ConformanceOrder>(o => o.Name.Contains(keyword))).ConfigureAwait(false)));
+        }
+
+        foreach (var (keyword, _) in prefixes)
+        {
+            actual.Add(Describe("starts", keyword, await NamesAsync(new Specification<ConformanceOrder>(o => o.Name.StartsWith(keyword))).ConfigureAwait(false)));
+        }
+
+        foreach (var (keyword, _) in suffixes)
+        {
+            actual.Add(Describe("ends", keyword, await NamesAsync(new Specification<ConformanceOrder>(o => o.Name.EndsWith(keyword))).ConfigureAwait(false)));
+        }
+
+        Assert.Equal(
+            [
+                .. contains.Select(static c => Describe("contains", c.Keyword, c.Expected)),
+                .. prefixes.Select(static c => Describe("starts", c.Keyword, c.Expected)),
+                .. suffixes.Select(static c => Describe("ends", c.Keyword, c.Expected)),
+            ],
+            actual);
+        Assert.Equal(["budget_2026"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Name.Contains("t_2"))).ConfigureAwait(false));
+        Assert.Equal(["50% off"], await NamesAsync(new Specification<ConformanceOrder>(static o => o.Name.StartsWith("50%"))).ConfigureAwait(false));
+        Assert.Equal(1, await CountAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>().Where(new Specification<ConformanceOrder>(static o => o.Name.EndsWith("_2026")))).ConfigureAwait(false));
+
+        // 按规约过滤后的订单名，按金额（写入顺序）升序
+        async Task<List<string>> NamesAsync(Specification<ConformanceOrder> filter)
+            => (await ListAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>().Where(filter).OrderBy(static o => o.Amount)).ConfigureAwait(false)).Select(static o => o.Name).ToList();
+
+        // 一个实参的可读描述：方法、实参与命中的名字
+        static string Describe(string method, string keyword, IEnumerable<string> found) => $"{method} '{keyword}' -> [{string.Join(" | ", found)}]";
+    }
+
+    /// <summary>
     /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
     /// </summary>
     [Fact]

@@ -54,6 +54,12 @@ public sealed class AuditRecord : IEntity<Guid> { … }
   - 可空值类型与 null 的 `==` 改写成 `SqlFunc.EqualsNull(x, null)`，译成 `(x is null)`；`!=` 改写成 `HasValue`。C# 把 `x.RevokedAt == null`（`DateTimeOffset?`、`int?` 等）编译成带运算符方法的提升比较，SqlSugar 据此生成 `WHERE revoked_at = NULL`——永假、静默返回空集，而 `string?` 的 `== null` 正确译成 `IS NULL`。改写覆盖字面量 null、闭包里求值为 null 的变量或静态成员、左右互换；与非 null 值的比较不动。
   - 逻辑非下推到叶子：双重否定消去，`!(p && q)` / `!(p || q)` 按德摩根律展开，`!(a == b)` / `!(a < b)` 换成反运算，`!x.HasValue` 换成判空。SqlSugar 在与 / 或条件右侧遇到取反作左操作数（如 `A && (!x.HasValue || B)`、`A && B && (x == null || …)`）时会漏写运算符，生成语法错误的 SQL。下推后的形式在 SQL 三值逻辑下等价。
   - 一致性套件 `List_NullableValueTypeComparedWithNull_FiltersByPresence` 与 `List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten` 覆盖 SQLite，PostgreSQL 由同一套件按配置跑。
+- 字符串匹配按字面（ADR-0098）：`string.Contains` / `StartsWith` / `EndsWith` 由 `SqlSugarConventions.Apply` 登记的同名外部函数（`ConfigureExternalServices.SqlFuncServices`）接管翻译——SqlSugar 解析方法调用时先按名字查外部函数，所以经仓储的规约、直接用施加了约定的客户端的查询、删除条件、投影与子查询都一样；集合的 `Contains`（`IN`）不受影响。SqlSugar 原来译成不转义的 `LIKE`：`t_2` 命中 `budgetx2026`、`0%` 命中 `500 off`，SQL Server 上 `[a]` 是字符类，PostgreSQL 与 MySQL 的 `LIKE` 缺省以反斜杠转义（`a\b` 命中 `ab`，PostgreSQL 上以反斜杠结尾的实参报 22025）。
+  - 在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上（按连接配置的 `DbType`）译成 `LIKE … ESCAPE '!'`：实参是值（常量、闭包变量、字符）时，SqlSugar 为它建的参数值先转义、再拼上通配符，SQL 里只有参数名；实参是列或表达式时在 SQL 里以 `REPLACE` 转义，拼接写法与原来相同（PostgreSQL / MySQL `concat`，SQL Server `+`，SQLite / Oracle `||`），实参为 NULL 的结果不变。转义 `%`、`_` 与 `!`，SQL Server 另转义 `[`；Oracle 的转义符后面只能跟 `%`、`_` 或它自己（ORA-01424），其余库不转义 `[`。转义符不用反斜杠，SQL 里不出现反斜杠，结果与 MySQL 的 `NO_BACKSLASH_ESCAPES`、PostgreSQL 的 `standard_conforming_strings` 无关（MySqlConnector 不探测服务器模式，开了 `NO_BACKSLASH_ESCAPES` 的服务器要在连接串里写 `NoBackslashEscapes=true`，否则驱动给所有参数里的反斜杠加错引号）。连接配置开了 `MoreSettings.EnableILike` 时照 SqlSugar 原样用 `ilike`。
+  - 大小写与重音照各库，不统一：SQLite 只对 ASCII 字母不区分大小写，PostgreSQL 与 Oracle 区分，MySQL 与 SQL Server 按列的排序规则（缺省 `utf8mb4_0900_ai_ci` 不区分大小写与重音、`SQL_Latin1_General_CP1_CI_AS` 不区分大小写）。带 `StringComparison` 的重载照 SqlSugar 原样忽略比较方式。
+  - 需要通配的查询用 `SqlFunc.Like(x.Name, pattern)`，模式由调用方给出、不转义。SQLite 上 SqlSugar 原有的启发式（值里有 `\%` 或 `\_` 时加 `escape '\'`）不再生效，`\%` 按字面是两个字符。
+  - 其余数据库（MySQL、PostgreSQL、Oracle 的兼容库，达梦、人大金仓等）没有在真实库上验证，沿用 SqlSugar 原来的翻译（不转义）。应用在调用 `Apply` 之前自己登记了同名外部函数的，以应用的为准；之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译。运行时数据源不施加约定，沿用原来的翻译。
+  - 一致性套件 `List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally` 覆盖 SQLite 与 PostgreSQL；本包测试在 SQLite（不设门控）与 PostgreSQL、MySQL、SQL Server、Oracle（`XIHAN_TEST_*` 门控）上跑经仓储与经客户端的同一组用例，另验证 PostgreSQL 的 `standard_conforming_strings = off` 与 MySQL 的 `NO_BACKSLASH_ESCAPES` 会话。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它们绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 - 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按 `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——在独立作用域里取客户端对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。
 
@@ -65,4 +71,4 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 
 ## 状态
 
-P5：可用，通过 `Persistence.Conformance` 套件（SQLite）；多库用两个 SQLite 文件验证（平台表落默认库、租户表落分片库、失败一起回滚、`[Tenant]` 显式落点）；分表用按月分表的实体验证（落表、跨表查找、范围提示、更新 / 删除与批量）；索引在 SQLite 与 PostgreSQL（`XIHAN_TEST_POSTGRES`）上验证建出、再次建表不重复、唯一索引拒绝重复。
+P5：可用，通过 `Persistence.Conformance` 套件（SQLite）；多库用两个 SQLite 文件验证（平台表落默认库、租户表落分片库、失败一起回滚、`[Tenant]` 显式落点）；分表用按月分表的实体验证（落表、跨表查找、范围提示、更新 / 删除与批量）；索引在 SQLite 与 PostgreSQL（`XIHAN_TEST_POSTGRES`）上验证建出、再次建表不重复、唯一索引拒绝重复；字符串按字面匹配在 SQLite、PostgreSQL 17、MySQL 9.7、SQL Server 2022、Oracle Free 23 上验证（ADR-0098）。

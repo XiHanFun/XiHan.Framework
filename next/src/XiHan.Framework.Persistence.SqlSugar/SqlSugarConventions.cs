@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 按实体协议配置 SqlSugar 的实体映射。
 /// </summary>
 /// <remarks>
-/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
+/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>），字符串的 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 按字面匹配（见 <see cref="Apply"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SqlSugarConventions
@@ -29,15 +29,17 @@ public static class SqlSugarConventions
     private static readonly NullabilityInfoContext _nullability = new();
 
     /// <summary>
-    /// 在连接配置上登记实体服务与表服务回调。
+    /// 在连接配置上登记实体服务、表服务回调与字符串匹配的翻译。
     /// </summary>
     /// <remarks>
-    /// 配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。返回同一配置以便链式调用。
+    /// 配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。<c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 以同名的外部函数（<c>SqlFuncServices</c>）接管翻译，在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>——实参里的 <c>%</c>、<c>_</c>（SQL Server 还有 <c>[</c>）与反斜杠不再是通配符或转义符；经仓储的规约与直接用这个客户端的查询都一样；需要通配的查询用 <c>SqlFunc.Like</c>。列表里已有同名的外部函数时以它为准（应用自己的 <c>SqlFuncServices</c> 在调用本方法之前设好；之后整体替换列表会丢掉这三个翻译）。返回同一配置以便链式调用。
     /// </remarks>
     public static ConnectionConfig Apply(ConnectionConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
         config.ConfigureExternalServices ??= new ConfigureExternalServices();
+        // SqlSugar 把这三个方法译成不转义的 LIKE，实参里的通配符会误匹配；同名外部函数先于内置翻译被查到（ADR-0098）
+        LiteralStringMatching.Register(config.ConfigureExternalServices);
         var previous = config.ConfigureExternalServices.EntityService;
         config.ConfigureExternalServices.EntityService = (property, column) =>
         {

@@ -24,6 +24,8 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 - 可空值类型与 `null` 的 `==` 改写成 `SqlFunc.EqualsNull(x, null)`，`!=` 改写成 `HasValue`，避免译成 `= NULL` 后静默返回错误的结果。
 - 逻辑非下推到叶子（双重否定消去、`!(p && q)` 按德摩根律展开、`!(a < b)` 换成 `a >= b`、`!x.HasValue` 换成判空）。SqlSugar 在 `A && (!x.HasValue || B)`、`A && B && (x == null || …)` 这类位置会漏写 `OR` / `AND`，生成语法错误的 SQL，改写后照常翻译，结果在 SQL 三值逻辑下不变。
 
+字符串的 `Contains`、`StartsWith`、`EndsWith` 按字面匹配（ADR-0098）。SqlSugar 原来把它们译成不转义的 `LIKE`：`t_2` 命中 `budgetx2026`，`0%` 命中 `500 off`，SQL Server 上 `[a]` 是字符类，PostgreSQL 与 MySQL 上反斜杠被当成转义符。`SqlSugarConventions.Apply` 以同名的外部函数（`SqlFuncServices`）接管这三个方法的翻译，所以不只是仓储的规约，直接用施加了约定的客户端写的查询、删除条件、投影与子查询也一样；集合的 `Contains`（`IN`）不受影响。见下文「行为与限制」的「字符串匹配」一行。
+
 ## 何时使用
 
 - 已有 SqlSugar 代码的应用：实体不推倒重来，原生查询继续用自己的客户端，逐步收进仓储。
@@ -305,6 +307,7 @@ public sealed class ChangeBuffer
 | PostgreSQL 缺省值 | 非可空的数值、枚举、布尔与 `Guid` 列配 CLR 缺省值（`0`、`false`、全零 Guid），`InitTables` 才能给已有行的表加这类列（ADR-0040） |
 | 索引 | 实体上的 `[EntityIndex]` 经表服务回调（`EntityNameService`）转成 `SugarIndexAttribute`，名字按映射出的表名推出（ADR-0072）；`InitTables` 按名字查不到才建，已有的不改不删；分表实体声明它抛 `NotSupportedException` |
 | 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL / SQLite `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0`，SQL Server 筛选索引（键含可空列另加 `IS NOT NULL`）；只支持这三种数据库，其余（MySQL、Oracle、达梦、源自 PostgreSQL 而未验证的国产库等）上启动即失败（`PERSISTENCE_UNAVAILABLE_008`），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
+| 字符串匹配 | `string.Contains` / `StartsWith` / `EndsWith` 在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成 `LIKE … ESCAPE '!'`（ADR-0098）：关键字是值时参数值先转义再拼通配符，SQL 里只有参数名；是列或表达式时在 SQL 里用 `REPLACE` 转义。转义 `%`、`_`、`!`，SQL Server 另转义 `[`。转义符不用反斜杠，结果与 MySQL 的 `NO_BACKSLASH_ESCAPES`、PostgreSQL 的 `standard_conforming_strings` 无关（MySQL 开了 `NO_BACKSLASH_ESCAPES` 时连接串要写 `NoBackslashEscapes=true`，这是 MySqlConnector 对所有参数的要求）。大小写照各库：SQLite 只对 ASCII 字母不区分，PostgreSQL 与 Oracle 区分，MySQL 与 SQL Server 按排序规则；`MoreSettings.EnableILike` 照原样用 `ilike`。要通配用 `SqlFunc.Like`。其余数据库（达梦、人大金仓等兼容库）没有验证，沿用 SqlSugar 原来的翻译；应用在 `Apply` 之前自己登记了同名外部函数的以应用的为准；运行时数据源不施加约定 |
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
 
 - `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
@@ -330,4 +333,4 @@ public sealed class ChangeBuffer
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078
+- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078、ADR-0098
