@@ -62,6 +62,10 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeId.get -> str
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeId.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeInstanceId.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeInstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceTitle.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceTitle.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchTitle.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchTitle.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.Sequence.get -> long
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.Sequence.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.WorkflowBookmarkRow() -> void

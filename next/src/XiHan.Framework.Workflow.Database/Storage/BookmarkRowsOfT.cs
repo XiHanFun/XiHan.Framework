@@ -1,13 +1,16 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json.Nodes;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
+using XiHan.Framework.Workflow.Abstractions.Values;
 using XiHan.Framework.Workflow.Database.Entities;
 
 namespace XiHan.Framework.Workflow.Database.Storage;
@@ -16,7 +19,7 @@ namespace XiHan.Framework.Workflow.Database.Storage;
 /// 一个分区（平台或租户）的书签表的读写。
 /// </summary>
 /// <remarks>
-/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名与状态，写书签时从同一分区的实例行取，实例的状态变了由 <see cref="SyncAsync"/> 同步。
+/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名、状态与标题查询列，写书签时从同一分区的实例行取，实例新增或这几列变了由 <see cref="SyncAsync"/> 同步；任务标题查询列写书签时从载荷算出。
 /// </remarks>
 /// <typeparam name="TRow">行类型。</typeparam>
 /// <typeparam name="TInstance">同一分区的实例行类型。</typeparam>
@@ -102,7 +105,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     /// 新增或整体替换。
     /// </summary>
     /// <remarks>
-    /// 先按 ID 批量取回所属实例的行，把定义名与状态写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例。
+    /// 先按 ID 批量取回所属实例的行，把定义名、状态与实例标题查询列写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例。
     /// </remarks>
     public async ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
@@ -117,10 +120,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 把实例的定义名与状态同步到它们的书签行。
+    /// 把实例的定义名、状态与标题查询列同步到它们的书签行。
     /// </summary>
     /// <remarks>
-    /// 实例存储在新增实例、实例的状态或定义名变化之后调用；只更新与实例不一致的行。
+    /// 实例存储在新增实例、实例的状态、定义名或标题变化之后调用；只更新与实例不一致的行。
     /// </remarks>
     public async ValueTask<Result> SyncAsync(IReadOnlyList<TInstance> owners, CancellationToken cancellationToken)
     {
@@ -140,10 +143,11 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             foreach (var row in rows)
             {
                 var owner = byId[row.InstanceId];
-                if (!string.Equals(row.InstanceStatus, owner.Status, StringComparison.Ordinal) || !string.Equals(row.DefinitionName, owner.DefinitionName, StringComparison.Ordinal))
+                if (!string.Equals(row.InstanceStatus, owner.Status, StringComparison.Ordinal) || !string.Equals(row.DefinitionName, owner.DefinitionName, StringComparison.Ordinal) || !string.Equals(row.SearchInstanceTitle, owner.SearchTitle, StringComparison.Ordinal))
                 {
                     row.InstanceStatus = owner.Status;
                     row.DefinitionName = owner.DefinitionName;
+                    row.SearchInstanceTitle = owner.SearchTitle;
                     stale.Add(row);
                 }
             }
@@ -213,9 +217,6 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 创建时间升序、同刻按写入序号升序、再按 ID 补成全序的查询。
-    /// </summary>
-    /// <summary>
     /// 待办查询的过滤条件。
     /// </summary>
     /// <remarks>
@@ -257,9 +258,18 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             filtered = filtered.Where(new Specification<TRow>(record => record.CreatedAt < createdTo));
         }
 
+        if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
+        {
+            // 任务标题或实例标题任一包含即匹配；两边都已折叠，SqlSugar 翻译出的 LIKE 里没有通配字符；每列先判非空，升级前写入、还没回填的行不匹配
+            filtered = filtered.Where(new Specification<TRow>(record => (record.SearchTitle != null && record.SearchTitle.Contains(keyword)) || (record.SearchInstanceTitle != null && record.SearchInstanceTitle.Contains(keyword))));
+        }
+
         return filtered;
     }
 
+    /// <summary>
+    /// 创建时间升序、同刻按写入序号升序、再按 ID 补成全序的查询。
+    /// </summary>
     private static EntityQuery<TRow> ByCreation(Specification<TRow> filter)
         => EntityQuery.All<TRow>().Where(filter).OrderBy(static record => record.CreatedAt).OrderBy(static record => record.Sequence).OrderBy(static record => record.Id);
 
@@ -279,7 +289,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     /// 书签 → 行。
     /// </summary>
     /// <remarks>
-    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名与状态为空。
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名、状态与实例标题查询列为空；任务标题查询列取自载荷的 <c>title</c>。
     /// </remarks>
     private TRow ToRecord(WorkflowBookmark bookmark, TInstance? owner)
     {
@@ -293,6 +303,8 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             NodeId = bookmark.NodeId,
             DefinitionName = owner?.DefinitionName,
             InstanceStatus = owner?.Status,
+            SearchTitle = TaskTitle(bookmark) is { } title ? WorkflowKeyword.Fold(title) : null,
+            SearchInstanceTitle = owner?.SearchTitle,
             Kind = bookmark.Kind,
             Key = bookmark.Key,
             CorrelationId = bookmark.CorrelationId,
@@ -301,6 +313,15 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             Document = WorkflowJson.Serialize(bookmark),
         };
     }
+
+    /// <summary>
+    /// 用户任务书签载荷里的任务标题。
+    /// </summary>
+    /// <remarks>
+    /// 与 <c>UserTask.From</c> 取标题的方式相同；没有或不是字符串为空。
+    /// </remarks>
+    private static string? TaskTitle(WorkflowBookmark bookmark)
+        => bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Title, out var title) && title is JsonValue value ? WorkflowValues.AsString(value) : null;
 
     /// <summary>
     /// 把新行的内容复制到已有行上。
@@ -312,6 +333,8 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
         target.NodeId = source.NodeId;
         target.DefinitionName = source.DefinitionName;
         target.InstanceStatus = source.InstanceStatus;
+        target.SearchTitle = source.SearchTitle;
+        target.SearchInstanceTitle = source.SearchInstanceTitle;
         target.Kind = source.Kind;
         target.Key = source.Key;
         target.CorrelationId = source.CorrelationId;

@@ -1,12 +1,14 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
+using XiHan.Framework.Workflow.Abstractions.Values;
 
 namespace XiHan.Framework.Workflow.InMemory;
 
@@ -298,8 +300,20 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
         }
 
         var running = _instances.RunningDefinitions(tenantId, candidates.Select(static entry => entry.Bookmark.InstanceId).Distinct(StringComparer.Ordinal));
-        return candidates.Where(entry => running.TryGetValue(entry.Bookmark.InstanceId, out var definition) && (query.DefinitionName is not { } name || definition == name)).ToList();
+        var keyword = WorkflowKeyword.Normalize(query.Keyword);
+        return candidates.Where(entry => running.TryGetValue(entry.Bookmark.InstanceId, out var owner)
+            && (query.DefinitionName is not { } name || owner.Definition == name)
+            && (keyword is null || WorkflowKeyword.Matches(keyword, TaskTitle(entry.Bookmark), owner.Title))).ToList();
     }
+
+    /// <summary>
+    /// 用户任务书签载荷里的任务标题。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="UserTask.From"/> 取标题的方式相同；没有或不是字符串为空。
+    /// </remarks>
+    private static string? TaskTitle(WorkflowBookmark bookmark)
+        => bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Title, out var title) && title is JsonValue value ? WorkflowValues.AsString(value) : null;
 
     /// <summary>
     /// 创建时间升序、同刻按写入顺序，深拷贝。

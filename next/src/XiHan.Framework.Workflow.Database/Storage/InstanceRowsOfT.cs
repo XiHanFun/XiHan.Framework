@@ -66,7 +66,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     /// 新增或整体替换实例，返回要同步书签的行。
     /// </summary>
     /// <remarks>
-    /// 要同步的是新增的行与状态或定义名变了的行：书签行带着所属实例的这两列（待办查询下推），见 <see cref="BookmarkRows{TRow, TInstance}.SyncAsync"/>。
+    /// 要同步的是新增的行与状态、定义名或标题查询列变了的行：书签行带着所属实例的这三列（待办查询下推），见 <see cref="BookmarkRows{TRow, TInstance}.SyncAsync"/>。
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<TInstance>>> SaveAsync(IReadOnlyList<WorkflowInstance> items, CancellationToken cancellationToken)
     {
@@ -75,9 +75,9 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         var changed = new List<TInstance>();
         var saved = await RecordQueries.UpsertAsync(instances, records, (source, target) =>
         {
-            // 已有的行在复制之前比较：状态或定义名没变的，书签行不用动（引擎每个波次都写实例，多数写入不改状态）
+            // 已有的行在复制之前比较：状态、定义名与标题查询列都没变的，书签行不用动（引擎每个波次都写实例，多数写入不改状态）
             replaced.Add(target.Id);
-            if (!string.Equals(source.Status, target.Status, StringComparison.Ordinal) || !string.Equals(source.DefinitionName, target.DefinitionName, StringComparison.Ordinal))
+            if (!string.Equals(source.Status, target.Status, StringComparison.Ordinal) || !string.Equals(source.DefinitionName, target.DefinitionName, StringComparison.Ordinal) || !string.Equals(source.SearchTitle, target.SearchTitle, StringComparison.Ordinal))
             {
                 changed.Add(source);
             }

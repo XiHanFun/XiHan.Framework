@@ -35,6 +35,14 @@ public sealed record UserTaskQuery
     public string? NodeId { get; init; }
 
     /// <summary>
+    /// 标题关键字。
+    /// </summary>
+    /// <remarks>
+    /// 不区分大小写地包含在任务标题（<see cref="UserTask.Title"/>：节点 <c>Title</c> 模板渲染的结果，缺省节点名）或所属实例的标题（<see cref="UserTask.InstanceTitle"/>）里即匹配，规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤（ADR-0096）。
+    /// </remarks>
+    public string? Keyword { get; init; }
+
+    /// <summary>
     /// 创建时间下界（含）。
     /// </summary>
     public DateTimeOffset? CreatedFrom { get; init; }

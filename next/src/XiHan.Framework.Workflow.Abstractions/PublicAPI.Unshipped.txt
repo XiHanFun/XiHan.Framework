@@ -1042,6 +1042,8 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Descending.init -> voi
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Equals(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Keyword.get -> string?
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Keyword.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Limit.get -> int
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Limit.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.NodeId.get -> string?

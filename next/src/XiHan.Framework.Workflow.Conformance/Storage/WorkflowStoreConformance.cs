@@ -424,7 +424,7 @@ public abstract class WorkflowStoreConformance
     /// 用例 10：待办查询下推到存储。
     /// </summary>
     /// <remarks>
-    /// 只含用户任务、所属实例运行中的书签；按指派人、实例、节点、定义名与创建时间过滤，按创建时间升序或降序分页，计数与列表同条件。实例挂起后它的任务退出结果、恢复后回来；别的分区的任务看不到。
+    /// 只含用户任务、所属实例运行中的书签；按指派人、实例、节点、定义名、创建时间与标题关键字（任务标题或实例标题，ADR-0096）过滤，按创建时间升序或降序分页，计数与列表同条件。实例挂起后它的任务退出结果、恢复后回来，实例的标题变了关键字随之匹配新标题；别的分区的任务看不到。
     /// </remarks>
     [Fact]
     public async Task Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus()
@@ -434,18 +434,22 @@ public abstract class WorkflowStoreConformance
         var now = DateTimeOffset.UtcNow;
         now = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond));
         var a = Instance("conf.a", "inst-qa", now.AddMinutes(-1));
+        a.DisplayName = "Expense Claim";
         var b = Instance("conf.b", "inst-qb", now.AddMinutes(-1));
         var held = Instance("conf.a", "inst-qs", now.AddMinutes(-1));
         var t1 = Bookmark(a.Id, "ni-1", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-5));
         t1.NodeId = "approve";
+        t1.Payload[UserTaskPayloadKeys.Title] = "Approve 100% now";
         var t2 = Bookmark(b.Id, "ni-2", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-4));
         t2.NodeId = "review";
+        t2.Payload[UserTaskPayloadKeys.Title] = "Review_Doc";
         var t3 = Bookmark(a.Id, "ni-1", BookmarkKinds.UserTask, "bob", null, now.AddSeconds(-3));
         t3.NodeId = "approve";
         var t4 = Bookmark(held.Id, "ni-3", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-2));
         t4.NodeId = "approve";
         var t5 = Bookmark(a.Id, "ni-4", BookmarkKinds.UserTask, "alice", null, now.AddSeconds(-1));
         t5.NodeId = "approve";
+        t5.Payload[UserTaskPayloadKeys.Title] = "Second look";
         var signal = Bookmark(a.Id, "ni-5", BookmarkKinds.Signal, "alice", null, now.AddSeconds(-6));
         var foreign = Instance("conf.a", "inst-qt", now.AddMinutes(-1));
         foreign.TenantId = "t1";
@@ -486,6 +490,16 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { InstanceId = a.Id, AssigneeId = "bob" }).ConfigureAwait(false));
             Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = now.AddSeconds(-4), CreatedTo = now.AddSeconds(-1) }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { InstanceId = held.Id }).ConfigureAwait(false));
+
+            // 标题关键字：任务标题或实例标题（显示名，没有取定义名）任一包含即匹配；不区分大小写，% 与 _ 按字面，不跨字段
+            Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "EXPENSE" }).ConfigureAwait(false));
+            Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "w_d" }).ConfigureAwait(false));
+            Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = " conf.b " }).ConfigureAwait(false));
+            Assert.Equal([t1.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "100% " }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "100_" }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "nowexpense" }).ConfigureAwait(false));
+            Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "LOOK" }).ConfigureAwait(false));
+            Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "   " }).ConfigureAwait(false));
         }).ConfigureAwait(false);
 
         // 恢复：任务回到结果里；别的分区的任务一直看不到
@@ -496,6 +510,15 @@ public abstract class WorkflowStoreConformance
         {
             Assert.Equal([foreignTask.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
             Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+
+        // 实例的标题变了：它的书签行随之同步，关键字匹配新标题
+        a.DisplayName = "Leave Request";
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Instances.SaveAsync(null, [a], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "leave" }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "expense" }).ConfigureAwait(false));
         }).ConfigureAwait(false);
     }
 

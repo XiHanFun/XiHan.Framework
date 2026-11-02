@@ -363,7 +363,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
 | `PendingAsync(assigneeId)` / `PendingByInstanceAsync(instanceId)` | 某人或某实例的待办 | — |
-| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间与标题关键字 `Keyword`（任务标题或实例标题任一包含即匹配，规则见上文「关键字」，ADR-0096）过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -371,7 +371,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | `ReturnAsync(returns)` | 退回：目标缺省为本节点之前最近完成的用户任务节点，没有则退回 `Start` 之后的首个节点；以跳转实现 | `WORKFLOW_VALIDATION_002` |
 | `UrgeAsync(urges)` | 催办：发布 `workflow.task.urged`，不改状态 | — |
 
-查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行（数据库实现是 SQL），`Total` 是同条件的总数；`Limit` 缺省 100、最大 1000（`UserTaskQuery.MaxLimit`，与持久化的查询条数上限一致），越界在查询时返回校验错误，HTTP 是 400。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
+任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行（数据库实现是 SQL），`Total` 是同条件的总数；`Limit` 缺省 100、最大 1000（`UserTaskQuery.MaxLimit`，与持久化的查询条数上限一致），越界在查询时返回校验错误，HTTP 是 400。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -383,6 +383,10 @@ public sealed class Inbox(IWorkflowTaskService tasks)
     // 第 page 页（从 0 起），最新的在前；Total 用来算页数
     public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
         => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
+
+    // 待办搜索框：任务标题或流程标题包含关键字即命中
+    public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword, int page, CancellationToken cancellationToken)
+        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
         => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId, UserTaskOutcomes.Approved, comment), cancellationToken);

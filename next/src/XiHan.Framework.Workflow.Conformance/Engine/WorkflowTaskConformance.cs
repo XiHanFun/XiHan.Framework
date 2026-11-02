@@ -260,7 +260,7 @@ public abstract class WorkflowTaskConformance
     /// 用例 5：条件查询。
     /// </summary>
     /// <remarks>
-    /// 指派人与实例必填其一，分页越界是校验错误；按实例、节点、定义名、创建时间过滤；按创建时间升序或降序分页，带同条件的总数；只含实例运行中的任务（挂起退出、恢复回来）。
+    /// 指派人与实例必填其一，分页越界是校验错误；按实例、节点、定义名、创建时间与标题关键字（任务标题或实例标题）过滤；按创建时间升序或降序分页，带同条件的总数；只含实例运行中的任务（挂起退出、恢复回来）。
     /// </remarks>
     [Fact]
     public async Task Query_FiltersAndPages()
@@ -318,6 +318,15 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(WorkflowInstanceStatus.Completed, (await host.CompleteAsync(bob.Id, "bob", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal([second.Id, third.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         Assert.Equal(0, (await QueryAsync(host, new UserTaskQuery { InstanceId = first.Id }).ConfigureAwait(false)).ValueOrThrow().Total);
+
+        // 标题关键字（ADR-0096）：任务标题来自节点的 Title 模板，实例标题是启动时给的显示名、没给取定义名；不区分大小写，% 与 _ 按字面
+        var titled = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-query", DisplayName = "Budget_2026", Variables = new JsonObject { ["amount"] = 42 } }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "APPROVE 42" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
+        Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t_2" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t%2" }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Equal(2, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "approve 7" }).ConfigureAwait(false)).ValueOrThrow().Total);
+        Assert.Equal([second.Id, third.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = " CONF-QUERY " }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
+        Assert.Equal(1, (await QueryAsync(host, new UserTaskQuery { InstanceId = titled.Id, Keyword = "budget" }).ConfigureAwait(false)).ValueOrThrow().Items.Count(static task => task.AssigneeId == "bob"));
     }
 
     /// <summary>

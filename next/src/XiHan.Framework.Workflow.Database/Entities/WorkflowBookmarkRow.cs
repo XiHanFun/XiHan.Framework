@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 书签存储行的公共列。
 /// </summary>
 /// <remarks>
-/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。待办查询下推用的三列：节点 ID 取自书签，定义名与实例状态取自所属实例，由存储在写书签、写实例时维护（ADR-0077）。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
+/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。待办查询下推用的列：节点 ID 与任务标题取自书签，定义名、实例状态与实例标题取自所属实例，由存储在写书签、写实例时维护（ADR-0077、ADR-0096）。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowBookmarkRow : IEntity<string>
@@ -59,6 +59,24 @@ public abstract class WorkflowBookmarkRow : IEntity<string>
     /// </remarks>
     [StringLength(32)]
     public string? InstanceStatus { get; set; }
+
+    /// <summary>
+    /// 任务标题的关键字查询列。
+    /// </summary>
+    /// <remarks>
+    /// 书签载荷 <c>title</c>（用户任务的标题）折叠后的值（<c>WorkflowKeyword.Fold</c>），载荷没有标题为空；写书签时由存储算出。可空也为给已有行的表加列（升级前写入的行要从文档回填，ADR-0096）。
+    /// </remarks>
+    [LongText]
+    public string? SearchTitle { get; set; }
+
+    /// <summary>
+    /// 所属实例标题的关键字查询列。
+    /// </summary>
+    /// <remarks>
+    /// 写书签时从实例行的 <c>SearchTitle</c> 取，实例新增或标题变了由实例存储同步（与定义名、实例状态同一路径）；所属实例的行不存在时为空。
+    /// </remarks>
+    [LongText]
+    public string? SearchInstanceTitle { get; set; }
 
     /// <summary>
     /// 种类（<c>BookmarkKinds</c>）。
