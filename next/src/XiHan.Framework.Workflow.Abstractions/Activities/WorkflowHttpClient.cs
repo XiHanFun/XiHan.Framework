@@ -36,17 +36,15 @@ public sealed class WorkflowHttpClient : IDisposable
     }
 
     /// <summary>
-    /// 发送请求。
+    /// 发送请求并读完响应体。
     /// </summary>
     /// <remarks>
-    /// 超过 <paramref name="timeout"/> 以 <see cref="OperationCanceledException"/> 结束。
+    /// 客户端不另计时：<c>Http</c> 活动把它的超时按引擎的时钟落成令牌、与调用方令牌链接后传进来，令牌触发即以 <see cref="OperationCanceledException"/> 结束，超时与取消由活动按令牌归因（RFC-0021「HTTP 活动的超时与取消」）。
     /// </remarks>
-    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, TimeSpan timeout, CancellationToken cancellationToken)
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        linked.CancelAfter(timeout);
-        return await _client.SendAsync(request, HttpCompletionOption.ResponseContentRead, linked.Token).ConfigureAwait(false);
+        return _client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
     }
 
     /// <inheritdoc />

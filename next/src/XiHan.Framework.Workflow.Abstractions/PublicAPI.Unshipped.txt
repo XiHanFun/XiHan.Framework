@@ -155,7 +155,7 @@ XiHan.Framework.Workflow.Abstractions.Activities.WaitSignalActivity.ExecuteAsync
 XiHan.Framework.Workflow.Abstractions.Activities.WaitSignalActivity.WaitSignalActivity() -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.Dispose() -> void
-XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.SendAsync(System.Net.Http.HttpRequestMessage! request, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage!>!
+XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.SendAsync(System.Net.Http.HttpRequestMessage! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage!>!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttpClient() -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttpClient(System.Net.Http.HttpClient! client) -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext

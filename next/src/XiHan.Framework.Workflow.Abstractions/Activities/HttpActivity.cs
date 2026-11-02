@@ -16,6 +16,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// </summary>
 /// <remarks>
 /// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象。
+/// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，<c>reason</c> 为 <c>timeout</c>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HttpActivity : IActivity
@@ -133,14 +134,17 @@ public sealed class HttpActivity : IActivity
             ? TimeSpan.FromSeconds(seconds)
             : context.Services.GetRequiredService<WorkflowOptions>().HttpTimeout;
         var client = context.Services.GetRequiredService<WorkflowHttpClient>();
+        // 活动自己持有超时令牌：按引擎的时钟计时，与调用方令牌链接后交给客户端，归因只看这两个令牌
+        using var timer = new CancellationTokenSource(timeout, context.Clock);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
         HttpResponseMessage response;
         try
         {
-            response = await client.SendAsync(request, timeout, cancellationToken).ConfigureAwait(false);
+            response = await client.SendAsync(request, linked.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception exception) when (IsTimeout(exception, timer.Token, cancellationToken))
         {
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", "timeout")));
+            return TimedOut();
         }
         catch (HttpRequestException exception)
         {
@@ -149,6 +153,14 @@ public sealed class HttpActivity : IActivity
 
         using (response)
         {
+            // 写成结果：应用替换的处理器可能接住了取消、交回一个响应，只看响应分不出来，按令牌归因——
+            // 超时令牌已触发即超时；只有调用方取消时不把响应交出去、抛出取消，与抛出路径同一个回答
+            if (timer.IsCancellationRequested)
+            {
+                return TimedOut();
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
             var result = await ReadResultAsync(response, cancellationToken).ConfigureAwait(false);
             var status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode && context.Property(FailOnErrorStatusProperty, true))
@@ -161,6 +173,40 @@ public sealed class HttpActivity : IActivity
             return ActivityOutcome.Complete(outputs, response.IsSuccessStatusCode ? "success" : "error");
         }
     }
+
+    /// <summary>
+    /// 客户端抛出的异常是否按超时报告。
+    /// </summary>
+    /// <remarks>
+    /// 返回 false 的取消是调用方的取消，原样抛出；其余异常由调用处按请求失败报告或原样抛出。
+    /// </remarks>
+    private static bool IsTimeout(Exception exception, CancellationToken timer, CancellationToken caller)
+    {
+        if (exception is TimeoutException)
+        {
+            return true;
+        }
+
+        if (exception is not OperationCanceledException)
+        {
+            return false;
+        }
+
+        // 超时令牌已触发即超时，不论客户端报的是哪个令牌、调用方是否也已取消：两个都触发时 HttpClient 报的是传给它的链接令牌，
+        // 按「调用方令牌是否已触发」推断就会把同一个超时随调度报成取消
+        if (timer.IsCancellationRequested)
+        {
+            return true;
+        }
+
+        // 只有调用方取消：是取消，原样交给引擎（整个操作随调用回滚）。两个都没触发：客户端自己的超时（如应用替换的 HttpClient 设了 Timeout）
+        return !caller.IsCancellationRequested;
+    }
+
+    /// <summary>
+    /// 超时的节点故障。
+    /// </summary>
+    private static Error TimedOut() => Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", "timeout")));
 
     /// <summary>
     /// 组装请求体。
