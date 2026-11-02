@@ -217,7 +217,7 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 | `Persistence.EntityFrameworkCore` | 一个 `DbContext` 一个连接，整个上下文切到分片连接；平台表要另起 `DbContext`，由应用处理 |
 
 ::: warning 分片库的表结构由应用管理
-框架的建表开关（SqlSugar 的 `InitTables`、EF Core 的 `EnsureCreated`）只作用于默认连接。租户库的建表与升级由应用自己执行，下一节的 `TenantShardScope` 用于在管道外连到租户库。
+框架的建表开关（SqlSugar 的 `InitTables`、EF Core 的 `EnsureCreated`）只作用于默认连接。租户库的建表与升级由应用自己执行，下一节的 `TenantShardScope` 用于在管道外连到租户库。EF Core 在 SQLite 上的时间列核对对分片库在首次绑定时执行（工作单元开始时，ADR-0097）：分片库还是旧的文本形式时，这个租户的工作单元开不起来，修好库之后下一次绑定即恢复，见 [EF Core 的已有 SQLite 库](../packages/persistence-entityframeworkcore#已有-sqlite-库的时间列)。
 :::
 
 ## 管道外绑定分片

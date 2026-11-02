@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "現在の永続化プロバイダーはデータベースのスキーマを読み取れません。",
   "persistence.schema.read_failed": "データソース '{name}' のスキーマの読み取りに失敗しました: {reason}",
   "persistence.schema.table_not_found": "データソース '{dataSource}' にテーブル '{table}' はありません。",
+  "persistence.schema.shard_timestamp_format_mismatch": "テナント '{tenant}' のデータ シャードの SQLite データベースには、モデルが UTC ticks の整数に対応付けている次の時刻列が別の形式のまま保存されています（括弧内は列の宣言型と、最初に書き込まれた行で見つかったストレージクラス）: {columns}。このまま読み取ると誤った時刻としてエラーなしで読み込まれるため、このシャードでは作業単位を開始できません。これらのテーブルを INTEGER 列で再作成し、ADR-0091 第 3 節の換算式で保存済みのテキストを UTC ticks に変換してください。次にこのシャードをバインドするときに再確認します。",
   "persistence.schema.timestamp_format_mismatch": "接続 '{connection}' の SQLite データベースには、モデルが UTC ticks の整数に対応付けている次の時刻列が別の形式のまま保存されています（括弧内は列の宣言型と、最初に書き込まれた行で見つかったストレージクラス）: {columns}。このまま読み取ると、誤った時刻としてエラーなしで読み込まれます。これらのテーブルを INTEGER 列で再作成し、ADR-0091 第 3 節の換算式で保存済みのテキストを UTC ticks に変換してください。データを破棄できる場合はデータベースを作り直してください。",
   "persistence.schema.too_many_tables": "{count} 個のテーブルが要求されましたが、一度に構造を読み取れるのは最大 {max} 個です。最大 {max} 個ずつ分けて読み取ってください。",
   "persistence.snowflake.clock_moved_backwards": "時計が許容範囲を超えて巻き戻りました。追いつくまでスノーフレーク ID は生成されません。",

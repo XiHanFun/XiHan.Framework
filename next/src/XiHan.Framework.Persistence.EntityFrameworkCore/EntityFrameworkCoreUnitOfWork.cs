@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 事务型工作单元。
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。DbContext 建在租户分片上而那个分片库还没有核对通过时，开始之前先核对 SQLite 的时间列，不符即抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>、工作单元保持未开始（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -43,6 +44,11 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     /// 登记的实体与它们的落点。
     /// </summary>
     private readonly RepositoryRegistrations _registrations;
+
+    /// <summary>
+    /// 租户分片库的时间列核对。
+    /// </summary>
+    private readonly ShardTimestampChecks _shards;
 
     /// <summary>
     /// 本作用域的 DbContext。
@@ -83,13 +89,15 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     /// <param name="connection">本作用域的 DbContext 建在哪个连接上。</param>
     /// <param name="options">Provider 选项，取声明的命名连接。</param>
     /// <param name="registrations">登记的实体与它们的落点。</param>
-    internal EntityFrameworkCoreUnitOfWork(Func<DbContext> context, ContextConnection connection, EntityFrameworkCorePersistenceOptions options, RepositoryRegistrations registrations)
+    /// <param name="shards">租户分片库的时间列核对（单例）。</param>
+    internal EntityFrameworkCoreUnitOfWork(Func<DbContext> context, ContextConnection connection, EntityFrameworkCorePersistenceOptions options, RepositoryRegistrations registrations, ShardTimestampChecks shards)
     {
         ArgumentNullException.ThrowIfNull(options);
         _resolve = context ?? throw new ArgumentNullException(nameof(context));
         _connection = connection ?? throw new ArgumentNullException(nameof(connection));
         _connections = options.Connections;
         _registrations = registrations ?? throw new ArgumentNullException(nameof(registrations));
+        _shards = shards ?? throw new ArgumentNullException(nameof(shards));
     }
 
     /// <summary>
@@ -135,11 +143,38 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
 
         // 开始即建出 DbContext，与此前在构造时建出一样落在 Transaction 阶段（带分片的调用在这时按租户分片建）；建不出时工作单元保持未开始
         _ = Context;
+        // 建在租户分片上：分片库启动时枚举不到，在首次绑定时核对时间列，不符即抛出、工作单元保持未开始。
+        // 命名连接的绑定优先于分片，DbContext 建在命名连接上时没有分片要核对
+        if (_connection.Shard is { } shard)
+        {
+            return BeginOnShardAsync(options, shard, cancellationToken);
+        }
+
+        Activate(options);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 核对 DbContext 所在的租户分片库之后开始。
+    /// </summary>
+    /// <remarks>
+    /// 范围与默认连接相同：没有登记到命名连接的实体。核对通过的分片只查一次（<see cref="ShardTimestampChecks"/>）。
+    /// </remarks>
+    private async Task BeginOnShardAsync(UnitOfWorkOptions options, BindingValue shard, CancellationToken cancellationToken)
+    {
+        await _shards.VerifyAsync(Context, shard, type => _registrations.ConnectionOf(type) is null, cancellationToken).ConfigureAwait(false);
+        Activate(options);
+    }
+
+    /// <summary>
+    /// 记下选项，进入活动状态。
+    /// </summary>
+    private void Activate(UnitOfWorkOptions options)
+    {
         _bound = options.Connection;
         TenantId = options.TenantId;
         IsReadOnly = options.IsReadOnly;
         State = UnitOfWorkState.Active;
-        return Task.CompletedTask;
     }
 
     /// <summary>

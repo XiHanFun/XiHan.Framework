@@ -30,11 +30,11 @@ internal static class SqliteTimestampCheck
     /// 找出存储形式与模型不符的时间列。
     /// </summary>
     /// <remarks>
-    /// <paramref name="placedHere"/> 判定一个实体是否落在 <paramref name="context"/> 所在的连接上：只核对这些实体映射的表。Provider 不是 SQLite、没有要核对的列、库文件还不存在时返回空列表，不打开连接。返回 <c>表.列 (声明类型)</c>，抽样不符的另带查到的存储类。
+    /// <paramref name="placedHere"/> 判定一个实体是否落在 <paramref name="context"/> 所在的连接上：只核对这些实体映射的表。Provider 不是 SQLite、没有要核对的列时返回空列表，库文件还不存在时返回 <see langword="null"/>（没有可核对的），都不打开连接。返回 <c>表.列 (声明类型)</c>，抽样不符的另带查到的存储类。
     /// </remarks>
-    public static async Task<IReadOnlyList<string>> FindMismatchesAsync(DbContext context, Func<Type, bool> placedHere, CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<string>?> FindMismatchesAsync(DbContext context, Func<Type, bool> placedHere, CancellationToken cancellationToken)
     {
-        if (!string.Equals(context.Database.ProviderName, ModelBuilderExtensions.SqliteProvider, StringComparison.Ordinal))
+        if (!IsSqlite(context))
         {
             return [];
         }
@@ -45,10 +45,11 @@ internal static class SqliteTimestampCheck
             return [];
         }
 
-        // 库文件还不存在就没有旧数据；SQLite 打开不存在的文件会建出空库，核对不能有这个副作用，所以先问 EF Core 库在不在
+        // 库文件还不存在就没有旧数据；SQLite 打开不存在的文件会建出空库，核对不能有这个副作用，所以先问 EF Core 库在不在。
+        // 与「核对过、没有不符」区分开：租户分片要等库建出之后再核对，不能把还不存在的库记成已核对
         if (!await context.GetService<IRelationalDatabaseCreator>().ExistsAsync(cancellationToken).ConfigureAwait(false))
         {
-            return [];
+            return null;
         }
 
         await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -97,6 +98,11 @@ internal static class SqliteTimestampCheck
             await context.Database.CloseConnectionAsync().ConfigureAwait(false);
         }
     }
+
+    /// <summary>
+    /// 上下文的 Provider 是否是 SQLite。
+    /// </summary>
+    internal static bool IsSqlite(DbContext context) => string.Equals(context.Database.ProviderName, ModelBuilderExtensions.SqliteProvider, StringComparison.Ordinal);
 
     /// <summary>
     /// 声明类型是否是 INTEGER 亲和性。

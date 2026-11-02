@@ -183,7 +183,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 | `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
 | `PERSISTENCE_VALIDATION_006` | `PersistenceErrors.DataSourceInvalid` | 运行时数据源的数据库类型不认识、连接串格式错 |
 | `PERSISTENCE_VALIDATION_007` | `PersistenceErrors.ListPageInvalid` | 库结构表列表的分页越界：`Skip` 为负或 `Take` 小于 1（读取器以结果返回，HTTP 400） |
-| `PERSISTENCE_VALIDATION_008` | `PersistenceErrors.StorageFormatMismatch` | 库里已有数据的存储形式与模型不符：EF Core + SQLite 上 UTC ticks 时间列还是旧的文本形式（特性启动时抛异常、启动失败；ADR-0094） |
+| `PERSISTENCE_VALIDATION_008` | `PersistenceErrors.StorageFormatMismatch` | 库里已有数据的存储形式与模型不符：EF Core + SQLite 上 UTC ticks 时间列还是旧的文本形式（特性启动时抛异常、启动失败；ADR-0094；租户分片库在首次绑定时核对，工作单元开始时抛异常，ADR-0097） |
 | `PERSISTENCE_NOTFOUND_002` | `PersistenceErrors.DataSourceNotFound` | 运行时数据源没有在本进程登记 |
 | `PERSISTENCE_NOTFOUND_003` | `PersistenceErrors.TableNotFound` | 要读结构的表不在库里（逐项结果） |
 | `PERSISTENCE_UNAVAILABLE_006` | `PersistenceErrors.DataSourceUnavailable` | 运行时数据源连不上（参数 `name`、`reason`，已脱敏） |

@@ -388,6 +388,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavaila
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TableNotFound = "persistence.schema.table_not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TakeExceeded = "persistence.query.take_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ShardTimestampFormatMismatch = "persistence.schema.shard_timestamp_format_mismatch" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TimestampFormatMismatch = "persistence.schema.timestamp_format_mismatch" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TooManyTables = "persistence.schema.too_many_tables" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!

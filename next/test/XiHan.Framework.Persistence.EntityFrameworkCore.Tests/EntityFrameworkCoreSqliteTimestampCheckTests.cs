@@ -228,7 +228,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     /// <summary>
     /// 用旧库的 DbContext 建表并写入 <paramref name="rows"/>：时刻列是文本。
     /// </summary>
-    private static async Task CreateLegacyAsync(SqliteDatabase database, IReadOnlyList<TimedRow> rows)
+    internal static async Task CreateLegacyAsync(SqliteDatabase database, IReadOnlyList<TimedRow> rows)
     {
         await using var context = new LegacyTimedDbContext(new DbContextOptionsBuilder<LegacyTimedDbContext>().UseSqlite(database.ConnectionString).Options);
         await context.Database.EnsureCreatedAsync();
@@ -248,7 +248,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     /// <remarks>
     /// 与 EF Core 在 SQLite 上改列类型的迁移同形：建临时表、<c>INSERT … SELECT</c>、删旧表、改名。
     /// </remarks>
-    private static string Rebuild(Func<string, string> convert) => $"""
+    internal static string Rebuild(Func<string, string> convert) => $"""
         CREATE TABLE "ef_temp_TimedRow" ("Id" TEXT NOT NULL CONSTRAINT "PK_TimedRow" PRIMARY KEY, "At" INTEGER NOT NULL, "Due" INTEGER NULL);
         INSERT INTO "ef_temp_TimedRow" ("Id", "At", "Due") SELECT "Id", {convert("\"At\"")}, {convert("\"Due\"")} FROM "TimedRow";
         DROP TABLE "TimedRow";
@@ -261,7 +261,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     /// <remarks>
     /// 文本形如 <c>2026-10-31 20:00:00.1234567-05:00</c>：前 19 位按 UTC 取 Unix 秒，减去偏移，乘 10⁷，加上补足 7 位的小数秒与 0001-01-01 到 Unix 纪元的 ticks。
     /// </remarks>
-    private static string UtcTicksFormula(string column) => $"""
+    internal static string UtcTicksFormula(string column) => $"""
         (unixepoch(substr({column}, 1, 19))
          - (CASE substr({column}, -6, 1) WHEN '-' THEN -1 ELSE 1 END) * (CAST(substr({column}, -5, 2) AS INTEGER) * 3600 + CAST(substr({column}, -2, 2) AS INTEGER) * 60)) * 10000000
         + CASE WHEN substr({column}, 20, 1) = '.' THEN CAST(substr(substr({column}, 21, length({column}) - 26) || '0000000', 1, 7) AS INTEGER) ELSE 0 END
@@ -294,7 +294,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     /// <summary>
     /// 直接连库执行语句。
     /// </summary>
-    private static void Execute(SqliteDatabase database, string sql)
+    internal static void Execute(SqliteDatabase database, string sql)
     {
         using var connection = new SqliteConnection(database.ConnectionString);
         connection.Open();

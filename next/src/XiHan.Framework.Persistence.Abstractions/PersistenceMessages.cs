@@ -226,6 +226,14 @@ public static class PersistenceMessages
     public const string SchemaNotSupported = "persistence.schema.not_supported";
 
     /// <summary>
+    /// 租户分片库里的时间列还是旧的存储形式。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>tenant</c>（分片绑定的租户）、<c>columns</c>（同 <see cref="TimestampFormatMismatch"/>）。分片库首次绑定时核对（ADR-0097），与 <see cref="PersistenceErrors.StorageFormatMismatch"/> 搭配。
+    /// </remarks>
+    public const string ShardTimestampFormatMismatch = "persistence.schema.shard_timestamp_format_mismatch";
+
+    /// <summary>
     /// 库里的时间列还是旧的存储形式。
     /// </summary>
     /// <remarks>

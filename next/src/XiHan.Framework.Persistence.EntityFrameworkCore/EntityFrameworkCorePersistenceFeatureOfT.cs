@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 持久化的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；租户分片库启动时枚举不到，在首次绑定时由工作单元核对（ADR-0097）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
 /// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -129,23 +129,35 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.Services.AddScoped<ContextConnection>();
         context.Services.AddDbContext<TContext>((sp, options) =>
         {
-            if (sp.GetRequiredService<ContextConnection>().Build() is { } named)
+            var connection = sp.GetRequiredService<ContextConnection>();
+            if (connection.Build() is { } named)
             {
                 _configure(NamedBinding(binding, persistence.Connections[named]), options);
                 return;
             }
 
             var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
-            _configure(shard.HasValue ? shard : binding, options);
+            if (shard.TryGetValue(out var onShard))
+            {
+                // 记下建在哪个分片上：工作单元开始时据此在首次绑定时核对分片库（启动时枚举不到分片）
+                connection.BuiltOnShard(onShard);
+                _configure(shard, options);
+                return;
+            }
+
+            _configure(binding, options);
         });
         // 工作单元只依赖基类 DbContext，把应用的 TContext 转发为作用域内的同一实例，避免产生第二个上下文
         context.Services.TryAddScoped<DbContext>(static sp => sp.GetRequiredService<TContext>());
         // DbContext 由工作单元在开始时才取：那时才知道这个作用域要不要绑定命名连接
+        // 分片库的核对结果跨作用域共享：核对通过的分片只查一次
+        context.Services.TryAddSingleton<ShardTimestampChecks>();
         context.Services.TryAddScoped(static sp => new EntityFrameworkCoreUnitOfWork(
             sp.GetRequiredService<DbContext>,
             sp.GetRequiredService<ContextConnection>(),
             sp.GetRequiredService<EntityFrameworkCorePersistenceOptions>(),
-            sp.GetRequiredService<RepositoryRegistrations>()));
+            sp.GetRequiredService<RepositoryRegistrations>(),
+            sp.GetRequiredService<ShardTimestampChecks>()));
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<EntityFrameworkCoreUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         // 运行时数据源不支持：数据库 Provider（UseNpgsql 等）由应用选、本包不引用，按数据库类型建不出连接；注册表照样登记，取用返回 PERSISTENCE_UNAVAILABLE_008
@@ -250,7 +262,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     private static async Task VerifyTimestampsAsync(TContext context, string connection, Func<Type, bool> placedHere, CancellationToken cancellationToken)
     {
         var mismatches = await SqliteTimestampCheck.FindMismatchesAsync(context, placedHere, cancellationToken).ConfigureAwait(false);
-        if (mismatches.Count > 0)
+        if (mismatches is { Count: > 0 })
         {
             // 照读不报错、只是读成错误的时刻：不能带着旧数据进入服务，消息里给出全部不符的列与换算式的出处
             Result.Failure(Error.Validation(PersistenceErrors.StorageFormatMismatch, PersistenceMessages.TimestampFormatMismatch, MessageArguments.Of(("connection", connection), ("columns", string.Join(", ", mismatches))))).ThrowIfFailure();

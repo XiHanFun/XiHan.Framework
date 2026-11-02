@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 
@@ -28,6 +29,14 @@ internal sealed class ContextConnection
     public bool IsBuilt { get; private set; }
 
     /// <summary>
+    /// 本作用域的 DbContext 建在哪个租户分片上。
+    /// </summary>
+    /// <remarks>
+    /// 建在分片上时是那个分片的连接绑定（主值是分片连接串，属性带 <c>tenant</c>），否则为 <see langword="null"/>。工作单元开始时据此决定要不要核对分片库（<see cref="ShardTimestampChecks"/>）。
+    /// </remarks>
+    public BindingValue? Shard { get; private set; }
+
+    /// <summary>
     /// 绑定命名连接。
     /// </summary>
     /// <remarks>
@@ -53,4 +62,9 @@ internal sealed class ContextConnection
         IsBuilt = true;
         return Name;
     }
+
+    /// <summary>
+    /// 建 DbContext 时记下它建在租户分片上。
+    /// </summary>
+    public void BuiltOnShard(BindingValue shard) => Shard = shard ?? throw new ArgumentNullException(nameof(shard));
 }
