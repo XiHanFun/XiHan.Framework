@@ -92,6 +92,8 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
+| `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态过滤，名字升序、版本降序，返回摘要的一页与总数；`Limit` 缺省 100、最大 1000，越界是 `WORKFLOW_VALIDATION_002`（ADR-0096） |
+| `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](../guide/workflow#关键字)） |
 | `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000） |

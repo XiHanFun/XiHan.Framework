@@ -348,6 +348,8 @@ public abstract class WorkflowStoreConformance
             {
                 Assert.False((await s.Definitions.FindAsync(outsider, definition.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
                 Assert.Empty((await s.Definitions.ListAsync(outsider, null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Definitions.ListSummariesAsync(outsider, new WorkflowDefinitionQuery { Keyword = "conf" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Equal(0, (await s.Definitions.CountAsync(outsider, new WorkflowDefinitionQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.Empty((await s.Definitions.FindManyAsync(outsider, [definition.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.False((await s.Instances.FindAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
                 Assert.Empty((await s.Instances.FindManyAsync(outsider, [instance.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
@@ -371,6 +373,7 @@ public abstract class WorkflowStoreConformance
         await host.InPartitionAsync("t1", async s =>
         {
             Assert.True((await s.Definitions.FindAsync("t1", definition.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal(("t1", 1L), (Assert.Single((await s.Definitions.ListSummariesAsync("t1", new WorkflowDefinitionQuery { Keyword = "conf" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).TenantId, (await s.Definitions.CountAsync("t1", new WorkflowDefinitionQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
             Assert.Equal("t1", (await s.Instances.FindAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().TenantId);
             Assert.Single((await s.Instances.NodeInstancesAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(4, (await s.Bookmarks.ByInstanceAsync("t1", instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count);
@@ -477,6 +480,90 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
         }).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 用例 11：定义查询按关键字、名字、分类与状态过滤，排序、分页与计数正确。
+    /// </summary>
+    /// <remarks>
+    /// 关键字去掉首尾空白、不区分大小写地包含在名字、显示名或说明里（ADR-0096）：<c>%</c> 与 <c>_</c> 按字面匹配，不跨字段匹配；整体替换后按新内容匹配。结果按名字升序、版本降序，总数不看分页，摘要带列表要的字段。
+    /// </remarks>
+    [Fact]
+    public async Task Definitions_Query_FiltersPagesAndCounts()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var expense1 = Definition("conf-q-expense", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "Expense Claim", Category = "finance", Description = "Reimburse travel_costs at 50% rate" };
+        var expense2 = Definition("conf-q-expense", 2, WorkflowDefinitionStatus.Draft) with { DisplayName = "Expense Claim", Category = "finance" };
+        var leave = Definition("conf-q-leave", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "请假申请", Category = "hr" };
+        var purchase = Definition("conf-q-purchase", 1, WorkflowDefinitionStatus.Disabled) with { Description = "Buy EQUIPMENT" };
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [purchase, leave, expense2, expense1], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([expense2.Id, expense1.Id, leave.Id, purchase.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery()).ConfigureAwait(false));
+            Assert.Equal(4, await DefinitionCountAsync(s, new WorkflowDefinitionQuery()).ConfigureAwait(false));
+
+            // 关键字：名字、显示名、说明任一包含即匹配，不区分大小写，去掉首尾空白，只有空白不过滤
+            Assert.Equal([expense2.Id, expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "EXPENSE" }).ConfigureAwait(false));
+            Assert.Equal([expense2.Id, expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "claim" }).ConfigureAwait(false));
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "请假" }).ConfigureAwait(false));
+            Assert.Equal([purchase.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "equipment" }).ConfigureAwait(false));
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "  q-leave  " }).ConfigureAwait(false));
+            Assert.Equal(4, await DefinitionCountAsync(s, new WorkflowDefinitionQuery { Keyword = "   " }).ConfigureAwait(false));
+            Assert.Equal(2, await DefinitionCountAsync(s, new WorkflowDefinitionQuery { Keyword = "Expense" }).ConfigureAwait(false));
+
+            // % 与 _ 按字面匹配，不当通配；关键字不跨字段（名字末尾 + 显示名开头）匹配
+            Assert.Equal([expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "l_c" }).ConfigureAwait(false));
+            Assert.Equal([expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "50% r" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "50_" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "t%r" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "leave请" }).ConfigureAwait(false));
+
+            // 名字、分类、状态精确过滤，与关键字取交集
+            Assert.Equal([expense2.Id, expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Name = new WorkflowName("conf-q-expense") }).ConfigureAwait(false));
+            Assert.Equal([expense2.Id, expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Category = "finance" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Category = "fin" }).ConfigureAwait(false));
+            Assert.Equal([expense1.Id, leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Status = WorkflowDefinitionStatus.Published }).ConfigureAwait(false));
+            Assert.Equal([expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "expense", Status = WorkflowDefinitionStatus.Published }).ConfigureAwait(false));
+            Assert.Equal(1, await DefinitionCountAsync(s, new WorkflowDefinitionQuery { Category = "hr", Status = WorkflowDefinitionStatus.Published }).ConfigureAwait(false));
+
+            // 分页：总数不看分页；越过末尾为空
+            Assert.Equal([expense1.Id, leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Skip = 1, Limit = 2 }).ConfigureAwait(false));
+            Assert.Equal(4, await DefinitionCountAsync(s, new WorkflowDefinitionQuery { Skip = 1, Limit = 2 }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Skip = 4 }).ConfigureAwait(false));
+
+            // 摘要带列表要的字段，不带整份文档
+            var summary = Assert.Single((await s.Definitions.ListSummariesAsync(null, new WorkflowDefinitionQuery { Name = new WorkflowName("conf-q-expense"), Status = WorkflowDefinitionStatus.Published }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal((expense1.Id, "conf-q-expense", 1, WorkflowDefinitionStatus.Published, "Expense Claim"), (summary.Id, summary.Name.Value, summary.Version, summary.Status, summary.Title));
+            Assert.Equal("Expense Claim", summary.DisplayName);
+            Assert.Equal("Reimburse travel_costs at 50% rate", summary.Description);
+            Assert.Equal("finance", summary.Category);
+            Assert.Null(summary.TenantId);
+            Assert.Equal(expense1.CreatedAt, summary.CreatedAt);
+            Assert.Equal("conf-q-purchase", Assert.Single((await s.Definitions.ListSummariesAsync(null, new WorkflowDefinitionQuery { Keyword = "equipment" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).Title);
+        }).ConfigureAwait(false);
+
+        // 整体替换后按新内容匹配
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [leave with { DisplayName = "Leave Request", Category = "people" }], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "request" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "请假" }).ConfigureAwait(false));
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Category = "people" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Category = "hr" }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 定义查询的定义 ID。
+    /// </summary>
+    private static async Task<List<string>> DefinitionIdsAsync(WorkflowStores stores, WorkflowDefinitionQuery query)
+        => (await stores.Definitions.ListSummariesAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static summary => summary.Id).ToList();
+
+    /// <summary>
+    /// 定义查询的总数。
+    /// </summary>
+    private static async Task<long> DefinitionCountAsync(WorkflowStores stores, WorkflowDefinitionQuery query)
+        => (await stores.Definitions.CountAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
 
     /// <summary>
     /// 待办查询的书签 ID。

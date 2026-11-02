@@ -10,6 +10,7 @@
   "workflow.child.failed": "子流程 '{id}' 失败：{reason}",
   "workflow.definition.invalid": "工作流定义不合法：{errors}",
   "workflow.definition.not_found": "工作流定义 '{name}' 不存在或没有已发布版本。",
+  "workflow.definition.query_page_invalid": "定义查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
   "workflow.definition.status": "工作流定义 '{id}' 处于 {status} 状态，不允许该操作。",
   "workflow.expression.invalid": "表达式 '{expression}' 不合法：{reason}",
   "workflow.external.denied": "工作者 '{worker}' 没有持有外部任务 '{task}' 的锁。",

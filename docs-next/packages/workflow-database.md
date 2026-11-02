@@ -117,7 +117,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期不轮询、不记告警、不持有领导权），停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
 | `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
-| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`） |
+| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`Category`、`SearchText`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`）。`Category` 与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列）供定义列表下推（ADR-0096） |
 | `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowNodeInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`NodeId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`，以及所属实例的 `DefinitionName` 与 `InstanceStatus`（待办查询下推用）；租户表另有 `TenantId` |
@@ -135,6 +135,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已折叠（见 [关键字](../guide/workflow#关键字)），SqlSugar 翻译出的 `LIKE` 里没有通配字符；分类、名字、状态等值；名字升序、版本降序；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名与状态，写书签时从实例行取，实例新增或状态变化时同步到它的书签行（同一事务），只取状态为 `Running` 的。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。

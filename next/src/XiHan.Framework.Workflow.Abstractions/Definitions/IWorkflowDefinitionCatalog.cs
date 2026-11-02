@@ -69,9 +69,12 @@ public interface IWorkflowDefinitionCatalog
     ValueTask<Result<Maybe<WorkflowDefinition>>> FindPublishedAsync(WorkflowName name, int? version, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 列表：名字升序、版本降序。
+    /// 按条件列定义摘要的一页，带同条件的总数。
     /// </summary>
-    ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 只列调用方分区的定义；按关键字（名字、显示名、说明）、名字、分类与状态过滤，名字升序、版本降序。过滤、排序、分页与计数都由存储执行（ADR-0096）。<see cref="WorkflowDefinitionQuery.Skip"/> 为负或 <see cref="WorkflowDefinitionQuery.Limit"/> 不在 1 到 <see cref="WorkflowDefinitionQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.definition.query_page_invalid</c>），不进存储。
+    /// </remarks>
+    ValueTask<Result<WorkflowDefinitionPage>> QueryAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 已登记活动的描述符（设计器用），按类型名排序。

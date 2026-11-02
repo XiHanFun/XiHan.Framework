@@ -10,6 +10,7 @@
   "workflow.child.failed": "Der Sub-Workflow '{id}' ist fehlgeschlagen: {reason}",
   "workflow.definition.invalid": "Die Workflow-Definition ist ungültig: {errors}",
   "workflow.definition.not_found": "Die Workflow-Definition '{name}' existiert nicht oder hat keine veröffentlichte Version.",
+  "workflow.definition.query_page_invalid": "Die Seite der Definitionsabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
   "workflow.definition.status": "Die Workflow-Definition '{id}' ist {status} und erlaubt diesen Vorgang nicht.",
   "workflow.expression.invalid": "Der Ausdruck '{expression}' ist ungültig: {reason}",
   "workflow.external.denied": "Der Worker '{worker}' hält die Sperre der externen Aufgabe '{task}' nicht.",

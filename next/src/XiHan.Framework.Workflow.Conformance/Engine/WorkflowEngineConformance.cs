@@ -1069,7 +1069,9 @@ public abstract class WorkflowEngineConformance
             Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             Assert.False((await catalog.FindAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            Assert.Equal([t2.Id], (await catalog.ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static definition => definition.Id));
+            var listed = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Name = new WorkflowName("conf-tenant-def") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal([t2.Id], listed.Items.Select(static definition => definition.Id));
+            Assert.Equal(1L, listed.Total);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.DisableAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.ArchiveAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.UpdateAsync(t1 with { DisplayName = "taken" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
@@ -1095,7 +1097,7 @@ public abstract class WorkflowEngineConformance
         await AsTenantAsync(host, null, async sp =>
         {
             var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
-            Assert.Empty((await catalog.ListAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(0, (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-tenant-def" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Total);
             Assert.False((await catalog.FindAsync(own.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.DisableAsync(own.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.CreateAsync(Labeled("conf-tenant-def", "forged") with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
@@ -1413,6 +1415,47 @@ public abstract class WorkflowEngineConformance
         // 被拒绝的清理什么都没删
         Assert.True(await host.InstanceExistsAsync(instance.Id).ConfigureAwait(false));
         Assert.Equal(1, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-paging", Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
+    /// 用例 33：目录按条件列定义摘要的一页与总数。
+    /// </summary>
+    /// <remarks>
+    /// 分页越界以 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.definition.query_page_invalid</c>）返回，不在构造时抛出；关键字、分类与状态在目录建出、发布后的定义上生效，名字升序、版本降序，总数不看分页（ADR-0096）。
+    /// </remarks>
+    [Fact]
+    public async Task Catalog_Query_PagesSummaries_AndRejectsOutOfRangePages()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var expense = await host.PublishAsync(Labeled("conf-catalog-expense", "a") with { DisplayName = "Expense", Category = "finance" }).ConfigureAwait(false);
+        var leave = await host.PublishAsync(Labeled("conf-catalog-leave", "a") with { DisplayName = "Leave", Category = "hr" }).ConfigureAwait(false);
+        var draft = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().NewVersionAsync("conf-catalog-expense", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+
+        await host.AsTenantAsync(null, async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            foreach (var invalid in new[] { new WorkflowDefinitionQuery { Limit = 0 }, new WorkflowDefinitionQuery { Limit = WorkflowDefinitionQuery.MaxLimit + 1 }, new WorkflowDefinitionQuery { Skip = -1 } })
+            {
+                var rejected = await catalog.QueryAsync(invalid, CancellationToken.None).ConfigureAwait(false);
+                Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
+                Assert.Equal(WorkflowMessages.DefinitionQueryPageInvalid, rejected.Error?.MessageKey);
+            }
+
+            var all = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-catalog", Limit = WorkflowDefinitionQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal([draft.Id, expense.Id, leave.Id], all.Items.Select(static summary => summary.Id));
+            Assert.Equal(3, all.Total);
+            Assert.Equal((2, WorkflowDefinitionStatus.Draft, "finance"), (all.Items[0].Version, all.Items[0].Status, all.Items[0].Category));
+
+            var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "CONF-CATALOG", Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal(expense.Id, Assert.Single(page.Items).Id);
+            Assert.Equal(3, page.Total);
+
+            var published = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "expense", Status = WorkflowDefinitionStatus.Published }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal((expense.Id, 1L), (Assert.Single(published.Items).Id, published.Total));
+            Assert.Equal([leave.Id], (await catalog.QueryAsync(new WorkflowDefinitionQuery { Category = "hr" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            return true;
+        }).ConfigureAwait(false);
     }
 
     /// <summary>

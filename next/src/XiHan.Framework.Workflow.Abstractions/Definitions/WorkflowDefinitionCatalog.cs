@@ -308,8 +308,33 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
         => _scope.RunAsync<IWorkflowDefinitionCatalog, Maybe<WorkflowDefinition>>(false, "workflow.definition.find-published", () => WorkflowDefinitionNamespace.FindPublishedAsync(_store, Tenant, name, version, cancellationToken), catalog => catalog.FindPublishedAsync(name, version, cancellationToken), cancellationToken);
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
-        => _scope.RunAsync<IWorkflowDefinitionCatalog, IReadOnlyList<WorkflowDefinition>>(false, "workflow.definition.list", () => _store.ListAsync(Tenant, name, status, cancellationToken), catalog => catalog.ListAsync(name, status, cancellationToken), cancellationToken);
+    public ValueTask<Result<WorkflowDefinitionPage>> QueryAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储、不开事务；上限与持久化的查询条数上限一致
+        if (query.Skip < 0 || query.Limit is < 1 or > WorkflowDefinitionQuery.MaxLimit)
+        {
+            return ValueTask.FromResult<Result<WorkflowDefinitionPage>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowDefinitionQuery.MaxLimit))));
+        }
+
+        return _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinitionPage>(false, "workflow.definition.query", async () =>
+        {
+            // 这一页与总数在同一次调用里各读一次（数据库实现在同一事务里），条件相同，只是总数不看分页
+            var listed = await _store.ListSummariesAsync(Tenant, query, cancellationToken).ConfigureAwait(false);
+            if (!listed.TryGetValue(out var items))
+            {
+                return listed.Error!;
+            }
+
+            var counted = await _store.CountAsync(Tenant, query, cancellationToken).ConfigureAwait(false);
+            if (!counted.TryGetValue(out var total))
+            {
+                return counted.Error!;
+            }
+
+            return new WorkflowDefinitionPage(items, total);
+        }, catalog => catalog.QueryAsync(query, cancellationToken), cancellationToken);
+    }
 
     /// <summary>
     /// 删掉停用或归档成功的定义的定时启动书签。

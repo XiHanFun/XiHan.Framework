@@ -52,9 +52,24 @@ public sealed record WorkflowDefinition
     public string? Description { get; init; }
 
     /// <summary>
+    /// 分类的最大长度。
+    /// </summary>
+    /// <remarks>
+    /// 与数据库实现的分类列同宽（ADR-0096）。
+    /// </remarks>
+    public const int MaxCategoryLength = 128;
+
+    /// <summary>
     /// 分类。
     /// </summary>
-    public string? Category { get; init; }
+    /// <remarks>
+    /// 定义列表按它精确过滤（<see cref="WorkflowDefinitionQuery.Category"/>）。最多 <see cref="MaxCategoryLength"/> 个字符，超长抛出 <see cref="ArgumentException"/>；从 JSON 读入时 <c>WorkflowJson.DeserializeDefinition</c> 把它转成 <c>WORKFLOW_VALIDATION_001</c>。
+    /// </remarks>
+    public string? Category
+    {
+        get => field;
+        init => field = value is null || value.Length <= MaxCategoryLength ? value : throw new ArgumentException($"The category must be at most {MaxCategoryLength} characters.", nameof(value));
+    }
 
     /// <summary>
     /// 状态。

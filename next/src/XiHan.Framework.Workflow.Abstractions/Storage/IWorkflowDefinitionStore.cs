@@ -50,9 +50,28 @@ public interface IWorkflowDefinitionStore
     ValueTask<Result<int>> MaxVersionAsync(string? tenantId, WorkflowName name, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 列表：名字升序、版本降序。
+    /// 整份定义的列表：名字升序、版本降序。
     /// </summary>
+    /// <remarks>
+    /// 不分页，引擎的信号启动用它找监听该信号的已发布定义；面向列表页的查询用 <see cref="ListSummariesAsync"/>。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(string? tenantId, WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按定义查询列出摘要的一页。
+    /// </summary>
+    /// <remarks>
+    /// 过滤项见 <see cref="WorkflowDefinitionQuery.Matches"/>（关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配名字、显示名或说明，分类精确匹配）；名字升序、版本降序，跳过 <see cref="WorkflowDefinitionQuery.Skip"/> 条后最多 <see cref="WorkflowDefinitionQuery.Limit"/> 条。分页已由调用方校验。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 与 <see cref="ListSummariesAsync"/> 同条件的定义总数。
+    /// </summary>
+    /// <remarks>
+    /// 不看分页。
+    /// </remarks>
+    ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 新增或整体替换。

@@ -98,6 +98,31 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
+    /// 定义查询的一页摘要。
+    /// </summary>
+    /// <remarks>
+    /// 过滤、排序与分页都在 SQL 里；名字升序、版本降序，再按 ID 补成全序。仓储读回整行，摘要从文档取，与按 ID 找到的定义一致。
+    /// </remarks>
+    public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        var paged = Filter(query)
+            .OrderBy(static record => record.Name)
+            .OrderBy(static record => record.Version, descending: true)
+            .OrderBy(static record => record.Id)
+            .Page(query.Skip, query.Limit);
+        var definitions = ToDefinitions([.. await repository.ListAsync(paged, cancellationToken).ConfigureAwait(false)]);
+        return definitions.TryGetValue(out var values)
+            ? Result.Success<IReadOnlyList<WorkflowDefinitionSummary>>(values.Select(WorkflowDefinitionSummary.From).ToList())
+            : definitions.Error!;
+    }
+
+    /// <summary>
+    /// 定义查询的总数。
+    /// </summary>
+    public async ValueTask<Result<long>> CountAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+        => await repository.CountAsync(Filter(query), cancellationToken).ConfigureAwait(false);
+
+    /// <summary>
     /// 新增或整体替换。
     /// </summary>
     public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
@@ -110,6 +135,40 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     {
         var rows = await RecordQueries.FindManyAsync(repository, ids, cancellationToken).ConfigureAwait(false);
         return await RecordQueries.RemoveManyAsync(repository, rows, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 把定义查询的过滤项逐项翻译成条件。
+    /// </summary>
+    /// <remarks>
+    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。关键字对查询列做包含判断：两边都已折叠，没有 <c>LIKE</c> 的通配字符；先判非空，升级前写入、还没回填的行不匹配。
+    /// </remarks>
+    private static EntityQuery<TRow> Filter(WorkflowDefinitionQuery query)
+    {
+        var filtered = EntityQuery.All<TRow>();
+        if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
+        {
+            filtered = filtered.Where(new Specification<TRow>(record => record.SearchText != null && record.SearchText.Contains(keyword)));
+        }
+
+        if (query.Name is { } name)
+        {
+            var value = name.Value;
+            filtered = filtered.Where(new Specification<TRow>(record => record.Name == value));
+        }
+
+        if (query.Category is { } category)
+        {
+            filtered = filtered.Where(new Specification<TRow>(record => record.Category == category));
+        }
+
+        if (query.Status is { } status)
+        {
+            var statusName = status.ToString();
+            filtered = filtered.Where(new Specification<TRow>(record => record.Status == statusName));
+        }
+
+        return filtered;
     }
 
     /// <summary>
@@ -136,6 +195,8 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
             Name = definition.Name.Value,
             Version = definition.Version,
             Status = definition.Status.ToString(),
+            Category = definition.Category,
+            SearchText = WorkflowKeyword.Join(definition.Name.Value, definition.DisplayName, definition.Description),
             CreatedAt = definition.CreatedAt,
             PublishedAt = definition.PublishedAt,
             Document = WorkflowJson.Serialize(definition),
@@ -150,6 +211,8 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
         target.Name = source.Name;
         target.Version = source.Version;
         target.Status = source.Status;
+        target.Category = source.Category;
+        target.SearchText = source.SearchText;
         target.CreatedAt = source.CreatedAt;
         target.PublishedAt = source.PublishedAt;
         target.Document = source.Document;

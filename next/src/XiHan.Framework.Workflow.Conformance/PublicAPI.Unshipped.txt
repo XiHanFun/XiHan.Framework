@@ -21,6 +21,7 @@ XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler
 XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.HandleAsync(XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.RecordingOutcomeHandler(XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog! log) -> void
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Catalog_Query_PagesSummaries_AndRejectsOutOfRangePages() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Compensate_ActivityAndOnFault() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Control_SuspendResumeCancelTerminate() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Decision_PicksMatchingTransition_OrDefault() -> System.Threading.Tasks.Task!
@@ -31,13 +32,13 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.DelayedSta
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.EventGateway_TakesFirstSignalOrTimeout() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_SendsRequests_AndMapsResponses() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceTimeout_FaultsOrTerminates() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Instances_AreIsolatedPerPartition() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.OutputMappings_WriteVariables_AndFailLoudly() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Poller_CoversThePlatformAndEveryEnabledTenant() -> System.Threading.Tasks.Task!
-XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Purge_AndDelayVariants() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!
@@ -90,6 +91,7 @@ XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_Queries_Order_AndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_NameQueries_AreScopedToThePartition() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_Query_FiltersPagesAndCounts() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Lock_IsExclusivePerInstance_AndTimesOut() -> System.Threading.Tasks.Task!

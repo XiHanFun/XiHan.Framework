@@ -10,6 +10,7 @@
   "workflow.child.failed": "Вложенный процесс '{id}' завершился ошибкой: {reason}",
   "workflow.definition.invalid": "Определение рабочего процесса недопустимо: {errors}",
   "workflow.definition.not_found": "Определение рабочего процесса '{name}' не существует или не имеет опубликованной версии.",
+  "workflow.definition.query_page_invalid": "Страница запроса определений вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
   "workflow.definition.status": "Определение рабочего процесса '{id}' находится в состоянии {status} и не допускает эту операцию.",
   "workflow.expression.invalid": "Выражение '{expression}' недопустимо: {reason}",
   "workflow.external.denied": "Исполнитель '{worker}' не держит блокировку внешней задачи '{task}'.",

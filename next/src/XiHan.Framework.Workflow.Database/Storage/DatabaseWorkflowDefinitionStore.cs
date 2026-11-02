@@ -92,6 +92,22 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
+    public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListSummariesAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.ListSummariesAsync(query, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        Enter(tenantId);
+        return StorePartition.OrUnavailable(tenantId is null ? await _platform.CountAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.CountAsync(query, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
     public async ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);

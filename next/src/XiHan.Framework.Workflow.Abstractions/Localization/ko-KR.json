@@ -10,6 +10,7 @@
   "workflow.child.failed": "하위 워크플로 '{id}'이(가) 실패했습니다: {reason}",
   "workflow.definition.invalid": "워크플로 정의가 잘못되었습니다: {errors}",
   "workflow.definition.not_found": "워크플로 정의 '{name}'이(가) 없거나 게시된 버전이 없습니다.",
+  "workflow.definition.query_page_invalid": "정의 조회의 페이지 범위가 잘못되었습니다: 건너뛸 수 {skip}은(는) 음수일 수 없고 페이지 크기 {limit}은(는) 1에서 {max} 사이여야 합니다.",
   "workflow.definition.status": "워크플로 정의 '{id}'은(는) {status} 상태라서 이 작업을 할 수 없습니다.",
   "workflow.expression.invalid": "식 '{expression}'이(가) 잘못되었습니다: {reason}",
   "workflow.external.denied": "작업자 '{worker}'은(는) 외부 작업 '{task}'의 잠금을 보유하고 있지 않습니다.",

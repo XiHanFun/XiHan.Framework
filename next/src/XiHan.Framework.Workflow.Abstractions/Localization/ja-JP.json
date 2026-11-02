@@ -10,6 +10,7 @@
   "workflow.child.failed": "サブワークフロー '{id}' が失敗しました: {reason}",
   "workflow.definition.invalid": "ワークフロー定義が不正です: {errors}",
   "workflow.definition.not_found": "ワークフロー定義 '{name}' は存在しないか、公開済みバージョンがありません。",
+  "workflow.definition.query_page_invalid": "定義クエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {limit} は 1 から {max} の範囲で指定してください。",
   "workflow.definition.status": "ワークフロー定義 '{id}' は {status} 状態のため、この操作はできません。",
   "workflow.expression.invalid": "式 '{expression}' が不正です: {reason}",
   "workflow.external.denied": "ワーカー '{worker}' は外部タスク '{task}' のロックを保持していません。",

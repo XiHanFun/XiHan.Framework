@@ -6,6 +6,7 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Serialization;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
@@ -83,6 +84,51 @@ public sealed class WorkflowModelTests
 
         instance.Status = WorkflowInstanceStatus.Suspended;
         Assert.False(instance.IsFinal);
+    }
+
+    [Fact]
+    public void Keyword_FoldsCaseAndLikeWildcards_AndNeverSpansFields()
+    {
+        Assert.Null(WorkflowKeyword.Normalize(null));
+        Assert.Null(WorkflowKeyword.Normalize("  \t "));
+        Assert.Equal("expense", WorkflowKeyword.Normalize("  Expense "));
+        // LIKE 的通配与转义字符换成全角同形字符，字段分隔符换成空格；折叠幂等
+        Assert.Equal("50％ off＿a［b]＼c d", WorkflowKeyword.Fold("50% OFF_a[b]\\c\u001Fd"));
+        Assert.Equal(WorkflowKeyword.Fold("A_b%"), WorkflowKeyword.Fold(WorkflowKeyword.Fold("A_b%")));
+
+        Assert.Equal("order\u001F\u001Fbuy ＿x", WorkflowKeyword.Join("Order", null, "Buy _X"));
+        var keyword = WorkflowKeyword.Normalize("BUY _x")!;
+        Assert.True(WorkflowKeyword.Matches(keyword, "order", null, "Buy _X"));
+        Assert.False(WorkflowKeyword.Matches(keyword, "order", null, "Buy aX"));
+        // 关键字折叠后不含分隔符，在拼成一列的值里也不会跨过字段的边界
+        var spanning = WorkflowKeyword.Normalize("der\u001Fbuy")!;
+        Assert.False(WorkflowKeyword.Matches(spanning, "order", "buy"));
+        Assert.DoesNotContain(spanning, WorkflowKeyword.Join("order", "buy"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DefinitionQueryAndSummary_FollowTheContract()
+    {
+        Assert.Equal((100, 0, 1000), (new WorkflowDefinitionQuery().Limit, new WorkflowDefinitionQuery().Skip, WorkflowDefinitionQuery.MaxLimit));
+        // 越界不在构造时抛出：由目录以校验错误返回（一致性套件用例 33）
+        Assert.Equal(0, new WorkflowDefinitionQuery { Limit = 0 }.Limit);
+
+        var definition = WorkflowDefinitionBuilder.Create("expense", "Expense Claim").WithCategory("finance").WithDescription("Travel").AddStart().Build();
+        Assert.True(new WorkflowDefinitionQuery { Keyword = " CLAIM ", Category = "finance", Status = WorkflowDefinitionStatus.Draft, Name = new WorkflowName("expense") }.Matches(definition));
+        Assert.True(new WorkflowDefinitionQuery { Keyword = "travel" }.Matches(definition));
+        Assert.False(new WorkflowDefinitionQuery { Category = "Finance" }.Matches(definition));
+        // 名字末尾 + 显示名开头拼起来才有的片段不匹配
+        Assert.False(new WorkflowDefinitionQuery { Keyword = "seex" }.Matches(definition));
+
+        var summary = WorkflowDefinitionSummary.From(definition);
+        Assert.Equal((definition.Id, "expense", "Expense Claim", "Travel", "finance", "Expense Claim"), (summary.Id, summary.Name.Value, summary.DisplayName!, summary.Description!, summary.Category!, summary.Title));
+        Assert.Equal("expense", (summary with { DisplayName = " " }).Title);
+
+        // 分类与数据库的分类列同宽：超长构造即抛出，从 JSON 读入是定义不合法
+        Assert.Equal(128, (definition with { Category = new string('c', WorkflowDefinition.MaxCategoryLength) }).Category!.Length);
+        Assert.Throws<ArgumentException>(() => definition with { Category = new string('c', WorkflowDefinition.MaxCategoryLength + 1) });
+        var json = WorkflowJson.Serialize(definition).Replace("\"finance\"", $"\"{new string('c', 129)}\"", StringComparison.Ordinal);
+        Assert.Equal(WorkflowErrors.DefinitionInvalid, WorkflowJson.DeserializeDefinition(json).Error?.Code);
     }
 
     [Fact]

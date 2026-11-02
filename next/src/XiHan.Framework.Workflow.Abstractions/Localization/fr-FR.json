@@ -10,6 +10,7 @@
   "workflow.child.failed": "Le sous-workflow '{id}' a échoué : {reason}",
   "workflow.definition.invalid": "La définition de workflow n'est pas valide : {errors}",
   "workflow.definition.not_found": "La définition de workflow '{name}' n'existe pas ou n'a pas de version publiée.",
+  "workflow.definition.query_page_invalid": "La page de la requête de définitions est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
   "workflow.definition.status": "La définition de workflow '{id}' est à l'état {status} et n'autorise pas cette opération.",
   "workflow.expression.invalid": "L'expression '{expression}' n'est pas valide : {reason}",
   "workflow.external.denied": "Le travailleur '{worker}' ne détient pas le verrou de la tâche externe '{task}'.",

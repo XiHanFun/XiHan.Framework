@@ -317,6 +317,14 @@ public static class WorkflowMessages
     public const string InstanceQueryPageInvalid = "workflow.instance.query_page_invalid";
 
     /// <summary>
+    /// 定义查询的分页越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid";
+
+    /// <summary>
     /// 清理一次删除的条数越界。
     /// </summary>
     /// <remarks>

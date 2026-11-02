@@ -30,7 +30,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 | 类型 | 用途 |
 | --- | --- |
 | `DatabaseWorkflowFeature` | 登记九个实体的仓储，装配存储、事务、实例锁与引擎；启动时起 `DueBookmarkPollingLoop`（应用不在服务状态的周期不轮询、不记告警，也不拿不续领导权、持有就释放），停止时等进行中的轮询结束并释放领导权。健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds`（默认 15）在后台重探——在独立作用域里开只读工作单元读行后回滚，不经管道；租约表不可达时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务 |
-| `Entities.WorkflowDefinitionRow` / `WorkflowInstanceRow` / `WorkflowNodeInstanceRow` / `WorkflowBookmarkRow` | 两个分区共用的列：主键都是模型的 ID；查询列加 `Document`（JSON）；书签行另有 `NodeId` 与所属实例的 `DefinitionName`、`InstanceStatus`（待办查询下推用，存储维护）；实例、节点实例与书签另有写入序号 `Sequence`（首次写入分配、替换保留）作同刻排序的次关键字——UUID v7 只到毫秒单调，不能当写入顺序用 |
+| `Entities.WorkflowDefinitionRow` / `WorkflowInstanceRow` / `WorkflowNodeInstanceRow` / `WorkflowBookmarkRow` | 两个分区共用的列：主键都是模型的 ID；查询列加 `Document`（JSON）；定义行另有 `Category`（精确过滤）与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列，ADR-0096）；书签行另有 `NodeId` 与所属实例的 `DefinitionName`、`InstanceStatus`（待办查询下推用，存储维护）；实例、节点实例与书签另有写入序号 `Sequence`（首次写入分配、替换保留）作同刻排序的次关键字——UUID v7 只到毫秒单调，不能当写入顺序用 |
 | `Entities.WorkflowDefinitionRecord` / `WorkflowInstanceRecord` / `WorkflowNodeInstanceRecord` / `WorkflowBookmarkRecord` | 租户分区，实现 `IMultiTenant`：持久化按工作单元的租户写入 `TenantId` 并过滤，租户有独立库时落它的分片连接 |
 | `Entities.PlatformWorkflowDefinitionRecord` / `PlatformWorkflowInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` / `PlatformWorkflowBookmarkRecord` | 平台分区，没有租户列，落平台库 |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
@@ -47,6 +47,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 - 保存是“新增或整体替换”：按 ID 批量取回已有行，有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录的 `TenantId` 必须等于分区（不等抛 `ArgumentException`）。删除对不存在的 ID 忽略；删实例级联删节点实例，`DeleteByInstanceAsync` 删该实例全部书签。
 - 读出来的模型来自 JSON 反序列化，天然是快照。按 ID 批量查找每 1000 个一批；列表与级联查询按全序排序分页读完。
 - 实例列表：`WorkflowInstanceQuery` 的每个过滤项都是 SQL 条件（状态集合是 `IN`，时间范围按列比较），创建时间降序、同刻按写入序号降序，`Skip` / `Limit` 直接分页；`CountAsync` 是 SQL 计数。
+- 定义列表：`ListSummariesAsync` / `CountAsync` 是 SQL 条件、排序、分页与计数（ADR-0096）：关键字对 `SearchText` 做包含判断（`WorkflowKeyword.Join(name, displayName, description)`，两边都已折叠，SqlSugar 翻译出的 `LIKE` 里没有通配字符），分类、名字、状态等值；名字升序、版本降序、再按 ID；摘要从读回的 `Document` 取。两列可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` 按上式），没回填的行不被分类与关键字匹配。
 - 待办查询：`ListUserTasksAsync` / `CountUserTasksAsync` 是 SQL 条件、排序、分页与计数，只取 `InstanceStatus = 'Running'` 的用户任务书签。书签保存时按 ID 批量取回所属实例的行填入定义名与状态；实例保存后把新增的与状态或定义名变了的实例同步到它们的书签行（只更新不一致的行），都在调用方的事务里。
 - 书签：到期查询 `DueAt <= now` 按到期时间升序，其余按创建时间升序，同刻按写入序号；节点实例按开始时间升序，同刻按写入序号（同一实例的写入由实例锁串行化，序号即创建顺序）。可空时间列的条件不写 `!= null`：SQL 的 `NULL <= 值` 本就不成立，而 SqlSugar 会把它翻译成 `<> @参数(NULL)`。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，`reason` 是原错误码，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。引擎在调用之外被调用时自己开一次调用：应用不在服务状态 → `WORKFLOW_UNAVAILABLE_001`。

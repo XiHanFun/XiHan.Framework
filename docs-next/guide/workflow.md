@@ -198,10 +198,41 @@ var definition = parsed.ValueOrThrow();
 | `DisableAsync(ids)` | `Published` | 停用，删除定时启动书签 |
 | `ArchiveAsync(ids)` | 任意 | 归档，删除定时启动书签 |
 | `DeleteAsync(ids)` | `Draft` | 删除草稿 |
-| `FindAsync(id)` / `FindPublishedAsync(name, version)` / `ListAsync(name, status)` | — | 查询；`version` 为空取最新已发布版本，只在当前分区里找 |
+| `FindAsync(id)` / `FindPublishedAsync(name, version)` | — | 查询；`version` 为空取最新已发布版本，只在当前分区里找 |
+| `QueryAsync(WorkflowDefinitionQuery)` | — | 定义列表：摘要的一页与总数（`WorkflowDefinitionPage`），见下文「定义列表」 |
 | `ActivityTypes()` | — | 已登记活动的描述符（类型、显示名、分类、输入属性），供设计器列出可用节点 |
 
-状态不允许时返回 `WORKFLOW_CONFLICT_002`。按标识的操作都是批量、逐项结果，单条写法是 `WorkflowDefinitionCatalogExtensions` 里的扩展方法。
+状态不允许时返回 `WORKFLOW_CONFLICT_002`。按标识的操作都是批量、逐项结果，单条写法是 `WorkflowDefinitionCatalogExtensions` 里的扩展方法。`Category` 最多 128 个字符（`WorkflowDefinition.MaxCategoryLength`），超长构造即抛 `ArgumentException`，从 JSON 读入时 `WorkflowJson.DeserializeDefinition` 返回 `WORKFLOW_VALIDATION_001`。
+
+### 定义列表
+
+`QueryAsync(WorkflowDefinitionQuery)` 列当前分区的定义，返回这一页的摘要与同条件的总数（ADR-0096）。摘要 `WorkflowDefinitionSummary` 只有列表要的字段：`Id`、`Name`、`Version`、`DisplayName`、`Description`、`Category`、`Status`、`TenantId`、`CreatedAt`、`PublishedAt`，以及显示名或名字 `Title`；节点、转移、变量与扩展属性不在里面，要整份定义按 `Id` 调 `FindAsync`。
+
+| 条件 | 说明 |
+| --- | --- |
+| `Keyword` | 关键字：不区分大小写地包含在名字、显示名或说明里即匹配，规则见下文「关键字」 |
+| `Name` | 定义名 |
+| `Category` | 分类，精确匹配 |
+| `Status` | 状态 |
+| `Skip` / `Limit` | 缺省 0 与 100，`Limit` 最大 1000（`WorkflowDefinitionQuery.MaxLimit`） |
+
+条件同时给出时取交集，结果按名字升序、版本降序。过滤、排序、分页与计数都由存储执行，数据库实现是 SQL。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`QueryAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_page_invalid`），不进存储。
+
+```csharp
+var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
+{
+    Keyword = "报销",
+    Category = "finance",
+    Status = WorkflowDefinitionStatus.Published,
+    Skip = 0,
+    Limit = 20,
+}, cancellationToken)).ValueOrThrow();
+// page.Items：这一页的摘要；page.Total：同条件的总数
+```
+
+### 关键字
+
+列表查询的 `Keyword` 都按同一套规则匹配（`WorkflowKeyword`）：去掉首尾空白，为空或只有空白不过滤；关键字与被搜的文本先折叠——不变文化的小写，SQL `LIKE` 的通配与转义字符 `%`、`_`、`[`、`` 换成全角的 `％`、`＿`、`［`、`＼`——再判断包含，任一被搜字段包含即匹配，不跨字段。所以关键字里的 `%`、`_` 按字面匹配，内存实现与各数据库 Provider 的结果一致；代价是这四个字符与对应的全角字符视为相同。数据库的排序规则另有放宽（如 MySQL 缺省排序规则不区分重音）时以排序规则为准。
 
 ### 定义的租户
 

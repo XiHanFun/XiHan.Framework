@@ -222,9 +222,9 @@ XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.Del
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.DisableAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>!>
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.FindAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.FindPublishedAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, int? version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
-XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.ListAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName? name, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus? status, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.NewVersionAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.PublishAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>!>
+XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.QueryAsync(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog.UpdateAsync(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
@@ -299,17 +299,68 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.Dele
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.DisableAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>!>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.FindAsync(string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.FindPublishedAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, int? version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.ListAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName? name, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus? status, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.NewVersionAsync(XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.PublishAsync(System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>!>
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.QueryAsync(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.UpdateAsync(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalog.WorkflowDefinitionCatalog(XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore! store, XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore! bookmarks, XiHan.Framework.Workflow.Abstractions.Activities.ActivityRegistry! registry, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator! validator, System.TimeProvider! clock, System.IServiceProvider! services) -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalogExtensions
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!>! Items, out long Total) -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!>!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Items.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Total.get -> long
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Total.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.WorkflowDefinitionPage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!>! Items, long Total) -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Category.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Category.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Limit.get -> int
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Limit.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Matches(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Skip.get -> int
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Skip.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.WorkflowDefinitionQuery() -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus.Archived = 3 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus.Disabled = 2 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus.Draft = 0 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus.Published = 1 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Category.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Category.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.CreatedAt.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Description.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Description.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.DisplayName.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.DisplayName.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Id.get -> string!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Id.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Name.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Name.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.PublishedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.PublishedAt.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Status.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Status.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.TenantId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.TenantId.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Title.get -> string!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Version.get -> int
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Version.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.WorkflowDefinitionSummary() -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Errors(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Validate(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Primitives.Result
@@ -846,12 +897,14 @@ XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.FindManyAsy
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.ListUserTasksAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowBookmarkStore.SaveAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>! bookmarks, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore
+XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.CountAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.DeleteAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.FindAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.WorkflowName name, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.FindAsync(string? tenantId, string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.FindLatestPublishedAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.FindManyAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<string!>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.ListAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.WorkflowName? name, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus? status, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>!>>
+XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.ListSummariesAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!>!>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.MaxVersionAsync(string? tenantId, XiHan.Framework.Workflow.Abstractions.WorkflowName name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<int>>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowDefinitionStore.SaveAsync(string? tenantId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>! definitions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Abstractions.Storage.IWorkflowInstanceLock
@@ -1069,6 +1122,7 @@ XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.this[string! name
 XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities
 XiHan.Framework.Workflow.Abstractions.WorkflowErrors
 XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers
+XiHan.Framework.Workflow.Abstractions.WorkflowKeyword
 XiHan.Framework.Workflow.Abstractions.WorkflowMessages
 XiHan.Framework.Workflow.Abstractions.WorkflowName
 XiHan.Framework.Workflow.Abstractions.WorkflowName.Equals(XiHan.Framework.Workflow.Abstractions.WorkflowName other) -> bool
@@ -1192,6 +1246,8 @@ const XiHan.Framework.Workflow.Abstractions.Activities.WaitSignalActivity.Signal
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.Expression = "Expression" -> string!
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.Starter = "Starter" -> string!
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.User = "User" -> string!
+const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.MaxCategoryLength = 128 -> int
+const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildFaultInput = "childFault" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildInstanceIdInput = "childInstanceId" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildStatusInput = "childStatus" -> string!
@@ -1288,6 +1344,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.StoreUnavailable = "W
 const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.TaskDenied = "WORKFLOW_DENIED_001" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.TypeNotRegistered = "WORKFLOW_NOTFOUND_004" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers.MaxElementIdLength = 64 -> int
+const XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.FieldSeparator = '\u001f' -> char
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActiveInstanceExists = "workflow.instance.active_exists" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFailed = "workflow.activity.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityNotRegistered = "workflow.activity.not_registered" -> string!
@@ -1301,6 +1358,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.CatalogName = "work
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildFailed = "workflow.child.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionInvalid = "workflow.definition.invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNotFound = "workflow.definition.not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatus = "workflow.definition.status" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionInvalid = "workflow.expression.invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskDenied = "workflow.external.denied" -> string!
@@ -1310,12 +1368,14 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "wo
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceJoinDead = "workflow.instance.join_dead" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNoTransition = "workflow.instance.no_transition" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNotFound = "workflow.instance.not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryPageInvalid = "workflow.instance.query_page_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceRunaway = "workflow.instance.runaway" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatus = "workflow.instance.status" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceTimedOut = "workflow.instance.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.LockTimeout = "workflow.lock.timeout" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.MigrationIncompatible = "workflow.instance.migration_incompatible" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeNotFound = "workflow.instance.node_not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PurgeLimitInvalid = "workflow.purge.limit_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreCapacity = "workflow.store.capacity" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreUnavailable = "workflow.store.unavailable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskAssigneeExists = "workflow.task.assignee_exists" -> string!
@@ -1327,8 +1387,6 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNotClaimable = 
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskOutcomeInvalid = "workflow.task.outcome_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryInvalid = "workflow.task.query_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryPageInvalid = "workflow.task.query_page_invalid" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryPageInvalid = "workflow.instance.query_page_invalid" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PurgeLimitInvalid = "workflow.purge.limit_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariableRequired = "workflow.variable.required" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowName.MaxLength = 128 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowOptions.ConfigurationSection = "XiHan:Workflow" -> string!
@@ -1352,6 +1410,15 @@ override XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule.ToString()
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.ToString() -> string!
@@ -1493,6 +1560,13 @@ static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatal
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalogExtensions.DeleteAsync(this XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog! catalog, string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalogExtensions.DisableAsync(this XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog! catalog, string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionCatalogExtensions.PublishAsync(this XiHan.Framework.Workflow.Abstractions.Definitions.IWorkflowDefinitionCatalog! catalog, string! id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>>
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.From(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowRetryPolicy.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowRetryPolicy? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowRetryPolicy? right) -> bool
@@ -1593,6 +1667,10 @@ static XiHan.Framework.Workflow.Abstractions.Values.WorkflowValues.TryConvert<T>
 static XiHan.Framework.Workflow.Abstractions.Values.WorkflowValues.TryDecimal(System.Text.Json.Nodes.JsonValue! value, out decimal number) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers.IsValidElementId(string? value) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers.NewId() -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.Fold(string! text) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.Join(params System.ReadOnlySpan<string?> fields) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.Matches(string! keyword, params System.ReadOnlySpan<string?> fields) -> bool
+static XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.Normalize(string? keyword) -> string?
 static XiHan.Framework.Workflow.Abstractions.WorkflowMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.IsValid(string? value) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.Validate(string! value) -> string!

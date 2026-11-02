@@ -127,6 +127,35 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        lock (_lock)
+        {
+            // 名字与版本在分区里唯一，这两个键已是全序，分页不重不漏
+            IReadOnlyList<WorkflowDefinitionSummary> page = InPartition(tenantId)
+                .Where(query.Matches)
+                .OrderBy(static candidate => candidate.Name.Value, StringComparer.Ordinal)
+                .ThenByDescending(static candidate => candidate.Version)
+                .Skip(query.Skip)
+                .Take(query.Limit)
+                .Select(WorkflowDefinitionSummary.From)
+                .ToList();
+            return ValueTask.FromResult(Result.Success(page));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        lock (_lock)
+        {
+            return ValueTask.FromResult(Result.Success(InPartition(tenantId).LongCount(query.Matches)));
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result> SaveAsync(string? tenantId, IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);
