@@ -35,25 +35,24 @@ internal static class WorkflowDefinitionPrecheck
 
         var definition = WorkflowJsonContext.Default.WorkflowDefinition;
         Required(root, "$", definition, issues);
-        Rule(root, "$", definition, nameof(WorkflowDefinition.Id), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidDefinitionId, static _ => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionIdEmpty), issues);
-        Rule(root, "$", definition, nameof(WorkflowDefinition.Name), WorkflowJsonContext.Default.String, WorkflowName.IsValid, static name => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionNameInvalid, MessageArguments.Of(("value", name ?? string.Empty), ("max", WorkflowName.MaxLength))), issues);
-        Rule(root, "$", definition, nameof(WorkflowDefinition.Version), WorkflowJsonContext.Default.Int32, WorkflowDefinitionRules.IsValidVersion, static version => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionVersionInvalid, MessageArguments.Of(("value", version))), issues);
-        Rule(root, "$", definition, nameof(WorkflowDefinition.Category), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidCategory, static category => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionCategoryTooLong, MessageArguments.Of(("length", category?.Length ?? 0), ("max", WorkflowDefinition.MaxCategoryLength))), issues);
-        Rule(root, "$", definition, nameof(WorkflowDefinition.Timeout), WorkflowJsonContext.Default.NullableTimeSpan, WorkflowDefinitionRules.IsValidTimeout, Timeout, issues);
+        Rule(root, "$", nameof(WorkflowDefinition.Id), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidDefinitionId, static _ => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionIdEmpty), issues);
+        Rule(root, "$", nameof(WorkflowDefinition.Name), WorkflowJsonContext.Default.String, WorkflowName.IsValid, static name => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionNameInvalid, MessageArguments.Of(("value", name ?? string.Empty), ("max", WorkflowName.MaxLength))), issues);
+        Rule(root, "$", nameof(WorkflowDefinition.Version), WorkflowJsonContext.Default.Int32, WorkflowDefinitionRules.IsValidVersion, static version => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionVersionInvalid, MessageArguments.Of(("value", version))), issues);
+        Rule(root, "$", nameof(WorkflowDefinition.Category), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidCategory, static category => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionCategoryTooLong, MessageArguments.Of(("length", category?.Length ?? 0), ("max", WorkflowDefinition.MaxCategoryLength))), issues);
+        Rule(root, "$", nameof(WorkflowDefinition.Timeout), WorkflowJsonContext.Default.NullableTimeSpan, WorkflowDefinitionRules.IsValidTimeout, Timeout, issues);
 
         foreach (var (node, path) in Items(root, nameof(WorkflowDefinition.Nodes)))
         {
             var type = WorkflowJsonContext.Default.WorkflowNode;
             Required(node, path, type, issues);
-            Rule(node, path, type, nameof(WorkflowNode.Id), WorkflowJsonContext.Default.String, WorkflowIdentifiers.IsValidElementId, static id => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionNodeIdInvalid, MessageArguments.Of(("value", id ?? string.Empty), ("max", WorkflowIdentifiers.MaxElementIdLength))), issues);
-            Rule(node, path, type, nameof(WorkflowNode.ActivityType), WorkflowJsonContext.Default.String, ActivityType.IsValid, static activity => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionActivityTypeInvalid, MessageArguments.Of(("value", activity ?? string.Empty), ("max", ActivityType.MaxLength))), issues);
-            Rule(node, path, type, nameof(WorkflowNode.Timeout), WorkflowJsonContext.Default.NullableTimeSpan, WorkflowDefinitionRules.IsValidTimeout, Timeout, issues);
+            Rule(node, path, nameof(WorkflowNode.Id), WorkflowJsonContext.Default.String, WorkflowIdentifiers.IsValidElementId, static id => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionNodeIdInvalid, MessageArguments.Of(("value", id ?? string.Empty), ("max", WorkflowIdentifiers.MaxElementIdLength))), issues);
+            Rule(node, path, nameof(WorkflowNode.ActivityType), WorkflowJsonContext.Default.String, ActivityType.IsValid, static activity => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionActivityTypeInvalid, MessageArguments.Of(("value", activity ?? string.Empty), ("max", ActivityType.MaxLength))), issues);
+            Rule(node, path, nameof(WorkflowNode.Timeout), WorkflowJsonContext.Default.NullableTimeSpan, WorkflowDefinitionRules.IsValidTimeout, Timeout, issues);
             if (Member(node, path, nameof(WorkflowNode.RetryPolicy), out var retry, out var retryPath) && retry.ValueKind == JsonValueKind.Object)
             {
-                var policy = WorkflowJsonContext.Default.WorkflowRetryPolicy;
-                Rule(retry, retryPath, policy, nameof(WorkflowRetryPolicy.MaxAttempts), WorkflowJsonContext.Default.Int32, WorkflowDefinitionRules.IsValidMaxAttempts, static attempts => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryAttemptsInvalid, MessageArguments.Of(("value", attempts))), issues);
-                Rule(retry, retryPath, policy, nameof(WorkflowRetryPolicy.FirstDelay), WorkflowJsonContext.Default.TimeSpan, WorkflowDefinitionRules.IsValidFirstDelay, static delay => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryDelayNegative, MessageArguments.Of(("value", delay.ToString("c", CultureInfo.InvariantCulture)))), issues);
-                Rule(retry, retryPath, policy, nameof(WorkflowRetryPolicy.BackoffFactor), WorkflowJsonContext.Default.Double, WorkflowDefinitionRules.IsValidBackoffFactor, static backoff => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryBackoffInvalid, MessageArguments.Of(("value", backoff))), issues);
+                Rule(retry, retryPath, nameof(WorkflowRetryPolicy.MaxAttempts), WorkflowJsonContext.Default.Int32, WorkflowDefinitionRules.IsValidMaxAttempts, static attempts => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryAttemptsInvalid, MessageArguments.Of(("value", attempts))), issues);
+                Rule(retry, retryPath, nameof(WorkflowRetryPolicy.FirstDelay), WorkflowJsonContext.Default.TimeSpan, WorkflowDefinitionRules.IsValidFirstDelay, static delay => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryDelayNegative, MessageArguments.Of(("value", delay.ToString("c", CultureInfo.InvariantCulture)))), issues);
+                Rule(retry, retryPath, nameof(WorkflowRetryPolicy.BackoffFactor), WorkflowJsonContext.Default.Double, WorkflowDefinitionRules.IsValidBackoffFactor, static backoff => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionRetryBackoffInvalid, MessageArguments.Of(("value", backoff))), issues);
             }
         }
 
@@ -61,14 +60,14 @@ internal static class WorkflowDefinitionPrecheck
         {
             var type = WorkflowJsonContext.Default.WorkflowTransition;
             Required(transition, path, type, issues);
-            Rule(transition, path, type, nameof(WorkflowTransition.Id), WorkflowJsonContext.Default.String, WorkflowIdentifiers.IsValidElementId, static id => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionTransitionIdInvalid, MessageArguments.Of(("value", id ?? string.Empty), ("max", WorkflowIdentifiers.MaxElementIdLength))), issues);
+            Rule(transition, path, nameof(WorkflowTransition.Id), WorkflowJsonContext.Default.String, WorkflowIdentifiers.IsValidElementId, static id => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionTransitionIdInvalid, MessageArguments.Of(("value", id ?? string.Empty), ("max", WorkflowIdentifiers.MaxElementIdLength))), issues);
         }
 
         foreach (var (variable, path) in Items(root, nameof(WorkflowDefinition.Variables)))
         {
             var type = WorkflowJsonContext.Default.WorkflowVariableDefinition;
             Required(variable, path, type, issues);
-            Rule(variable, path, type, nameof(WorkflowVariableDefinition.Name), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidVariableName, static _ => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionVariableNameEmpty), issues);
+            Rule(variable, path, nameof(WorkflowVariableDefinition.Name), WorkflowJsonContext.Default.String, WorkflowDefinitionRules.IsValidVariableName, static _ => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionVariableNameEmpty), issues);
         }
 
         return issues;
@@ -84,18 +83,12 @@ internal static class WorkflowDefinitionPrecheck
     /// 按一条值的规则核对一个成员。
     /// </summary>
     /// <remarks>
-    /// 在场的成员用序列化器同一个转换器读出，过不了规则就报 <paramref name="invalid"/>；类型不对时不报（反序列化会报）。不在场的非必填成员，序列化器会把类型的默认值交给模型的 <c>init</c>（盖掉模型的初值），默认值过不了规则时模型同样会拒绝，报缺了这个成员；必填成员缺了由 <see cref="Required"/> 报。
+    /// 在场的成员用序列化器同一个转换器读出，过不了规则就报 <paramref name="invalid"/>；类型不对时不报（反序列化会报）。不在场的成员不报：必填成员缺了由 <see cref="Required"/> 报，非必填成员取模型的初值（ADR-0107），初值本身过得了规则。
     /// </remarks>
-    private static void Rule<T>(JsonElement owner, string ownerPath, JsonTypeInfo ownerType, string clrName, JsonTypeInfo<T> type, Func<T?, bool> valid, Func<T?, Error> invalid, List<SchemaViolation> issues)
+    private static void Rule<T>(JsonElement owner, string ownerPath, string clrName, JsonTypeInfo<T> type, Func<T?, bool> valid, Func<T?, Error> invalid, List<SchemaViolation> issues)
     {
         if (!Member(owner, ownerPath, clrName, out var element, out var path))
         {
-            var name = JsonNamingPolicy.CamelCase.ConvertName(clrName);
-            if (!ownerType.Properties.Any(property => property.IsRequired && property.Name == name) && !valid(default))
-            {
-                Add(issues, path, MemberMissing(name));
-            }
-
             return;
         }
 

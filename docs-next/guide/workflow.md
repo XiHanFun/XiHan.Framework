@@ -154,6 +154,8 @@ var definition = parsed.ValueOrThrow();
 
 `id`、`version`、`status` 在 `CreateAsync` 时由目录重新分配，JSON 里的值只是占位。节点没有 `properties` 或写成 `null` 时按空属性处理。
 
+必填的成员只有：定义的 `id`、`name`，节点的 `id`、`activityType`，转移的 `id`、`sourceNodeId`、`targetNodeId`，变量的 `name`；没写报 `workflow.definition.member_missing`。其余成员都可省略，取模型的初值（ADR-0107）：`version` 1、`status` `Draft`、`nodes` / `transitions` / `variables` 空列表、节点的 `properties` 空对象、重试策略的 `maxAttempts` 1、`firstDelay` 10 秒、`backoffFactor` 2，其余为空、`false` 或 0；写成 `null` 与不写相同。`WorkflowJson.Serialize` 写出全部成员（只省略值为 `null` 的），等于初值的也写出，读回来的值不变。
+
 ### 节点、转移与变量
 
 ::: v-pre
@@ -725,7 +727,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 - **经 HTTP**：宿主把 `details.errors` 写成 Problem Details 的字段级 `errors`，键是去掉 `$.` 的路径（如 `nodes[2].properties.Cron`），值是按调用方区域翻译好的文案数组；`detail` 是汇总（"工作流定义有 3 处问题。"）。设计器按键里的下标定位节点或转移。
 - **进程内**：`validator.Diagnose(definition)` 返回同一组问题；在调用里用 `issue.MessageKey.L(issue.Arguments)` 即得调用方语言。
 
-表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 先按与模型同一份规则核对文档，再构造模型：模型会拒绝的值（缺少成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）是 `workflow.definition.invalid` 加 `details.errors` 的违规列表，形状与发布时的校验相同（路径如 `$.nodes[0].id`、`$.nodes[0].retryPolicy.maxAttempts`，键如 `workflow.definition.node_id_invalid`、`member_missing`），经 HTTP 同样是字段级 `errors`。JSON 为 `null` 是 `workflow.definition.json_null`，语法错误与值的类型不符是 `json_malformed`（参数 `path`、`line`、`position`）。注意序列化器会把不在场的 `init` 属性设成类型默认值：没写 `version`、重试策略没写 `maxAttempts` 或 `backoffFactor` 都报缺少成员，没写 `firstDelay` 时它是 0，不是模型的初值 10 秒。
+表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 先按与模型同一份规则核对文档，再构造模型：模型会拒绝的值（缺少成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）是 `workflow.definition.invalid` 加 `details.errors` 的违规列表，形状与发布时的校验相同（路径如 `$.nodes[0].id`、`$.nodes[0].retryPolicy.maxAttempts`，键如 `workflow.definition.node_id_invalid`、`member_missing`），经 HTTP 同样是字段级 `errors`。JSON 为 `null` 是 `workflow.definition.json_null`，语法错误与值的类型不符是 `json_malformed`（参数 `path`、`line`、`position`）。没写的成员取模型的初值，与直接构造模型一致（ADR-0107）：`version` 是 1，重试策略的 `maxAttempts` 是 1、`firstDelay` 是 10 秒、`backoffFactor` 是 2；写成 `null` 与不写相同。只有必填成员没写才报缺少成员（`member_missing`），见上文 [用 JSON](#用-json)。
 
 ### 状态的展示名
 

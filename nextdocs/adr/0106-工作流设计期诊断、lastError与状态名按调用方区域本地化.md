@@ -164,3 +164,5 @@ ADR-0105 让运行期的失败原因按调用方区域本地化，留了三处�
 > - 新键 13 个：`member_missing`、`id_empty`、`name_invalid`、`version_invalid`、`category_too_long`、`timeout_invalid`、`node_id_invalid`、`activity_type_invalid`、`transition_id_invalid`、`variable_name_empty`、`retry_attempts_invalid`、`retry_delay_negative`、`retry_backoff_invalid`（都在 `workflow.definition.` 下），10 种语言。
 > - 核对通过的文档构造模型不再抛出；模型自己的英文异常保持原样，只兜住编程错误（AGENTS「其余运行时英文」），读入不再捕获 `ArgumentException`。语法错误与值的类型不符仍是 `json_malformed`。
 > - 一致性：Abstractions 的 `WorkflowDefinitionJsonRulesTests` 对每条规则三处对照：读入报出的路径、消息键与 zh-CN / en-US 精确文案，同一个值直接构造模型抛出，边界上合法的文档读入通过、构造不抛出。
+
+> 修订（2026-11-03，第十七批）：上一条修订里「不在场的 `init` 属性被设成类型默认值、默认值过不了规则的报缺少成员」由 ADR-0107 取消：定义 JSON 里没写的成员取模型的初值（`version` 1、重试策略 `maxAttempts` 1、`firstDelay` 10 秒、`backoffFactor` 2），`member_missing` 只针对必填成员。

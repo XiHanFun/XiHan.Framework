@@ -119,25 +119,6 @@ public sealed class WorkflowDefinitionJsonRulesTests
     }
 
     [Fact]
-    public void AbsentMembers_WhoseDefaultTheModelRejects_AreReportedAsMissing()
-    {
-        // 序列化器把不在场的 init 属性设成类型的默认值：版本 0、最多尝试 0 次、退避因子 0 都过不了模型的规则；首次延迟 0 合法，不报
-        var document = Valid();
-        document.Remove("version");
-        Node(document)["retryPolicy"] = new JsonObject();
-
-        var issues = Issues(document);
-        Assert.Equal(
-            ["$.nodes[0].retryPolicy.backoffFactor", "$.nodes[0].retryPolicy.maxAttempts", "$.version"],
-            issues.Select(static issue => issue.Path).Order(StringComparer.Ordinal));
-        Assert.All(issues, static issue => Assert.Equal(WorkflowMessages.DefinitionMemberMissing, issue.MessageKey));
-        Assert.Equal("缺少必填成员 'version'。", Render("zh-CN", Assert.Single(issues, static issue => issue.Path == "$.version")));
-
-        // 同样的文档直接交给序列化器：模型以英文异常拒绝
-        Assert.ThrowsAny<ArgumentException>(() => System.Text.Json.JsonSerializer.Deserialize(document.ToJsonString(), WorkflowJsonContext.Default.WorkflowDefinition));
-    }
-
-    [Fact]
     public void ValuesOnTheBoundary_PassTheCheck_AndTheModelIsBuilt()
     {
         var document = Valid();

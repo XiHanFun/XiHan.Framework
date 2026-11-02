@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
@@ -35,11 +36,35 @@ public sealed record WorkflowDefinition
     /// <summary>
     /// 版本号，从 1 起。
     /// </summary>
+    /// <remarks>
+    /// JSON 里没写时取初值 1（ADR-0107）。
+    /// </remarks>
+    [JsonIgnore]
     public int Version
     {
         get => field;
         init => field = WorkflowDefinitionRules.IsValidVersion(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The version must be at least 1.");
     } = 1;
+
+    /// <summary>
+    /// 序列化用的 <see cref="Version"/>。
+    /// </summary>
+    /// <remarks>
+    /// 源生成的序列化器把不在场的 init 成员设成类型的默认值、盖掉初值（ADR-0107）：经这一层可空的成员，不在场或给 <see langword="null"/> 时什么也不赋，定义保留 <see cref="Version"/> 的初值；给了值照常经 <see cref="Version"/> 的校验。写出时总是写出当前值。
+    /// </remarks>
+    [JsonInclude]
+    [JsonPropertyName("version")]
+    internal int? VersionJson
+    {
+        get => Version;
+        init
+        {
+            if (value is { } given)
+            {
+                Version = given;
+            }
+        }
+    }
 
     /// <summary>
     /// 显示名。
