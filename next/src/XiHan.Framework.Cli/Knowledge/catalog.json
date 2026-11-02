@@ -845,6 +845,10 @@
         {
           "id": "SqlSugarCore",
           "version": "5.1.4.221"
+        },
+        {
+          "id": "Microsoft.Data.Sqlite",
+          "version": "10.0.13"
         }
       ],
       "frameworkReferences": []
