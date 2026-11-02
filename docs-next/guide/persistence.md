@@ -136,6 +136,10 @@ var lastMonth = EntityQuery.All<Order>().Within(DateTimeOffset.UtcNow.AddMonths(
 
 要跨库一致地不区分大小写，存一列折叠后的值（如 `ToLowerInvariant()`）并对它匹配。要通配时不用这三个方法：SqlSugar 用 `SqlFunc.Like`，EF Core 用 `EF.Functions.Like`，模式由调用方给出、不转义。
 
+::: warning SqlSugar 的兼容库与运行时数据源仍按通配匹配（已定）
+按字面匹配只在验证过的 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上。TiDB、OceanBase、openGauss、人大金仓、达梦等兼容库没有在真实库上验证，维持 SqlSugar 原来的翻译：关键字里的 `%`、`_` 是通配符，PostgreSQL 系的兼容库上以反斜杠结尾的关键字可能报错；在真实库上验证之后再加进名单。运行时数据源的客户端不施加约定，同样按通配匹配（ADR-0101）。
+:::
+
 ## 写入
 
 | 方法 | 写入的字段 | 可恢复失败 |
