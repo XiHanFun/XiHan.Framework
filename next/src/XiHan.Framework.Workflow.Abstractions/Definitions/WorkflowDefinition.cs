@@ -21,7 +21,7 @@ public sealed record WorkflowDefinition
     public required string Id
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The definition ID must not be empty.", nameof(value));
+        init => field = WorkflowDefinitionRules.IsValidDefinitionId(value) ? value : throw new ArgumentException("The definition ID must not be empty.", nameof(value));
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public sealed record WorkflowDefinition
     public int Version
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The version must be at least 1.");
+        init => field = WorkflowDefinitionRules.IsValidVersion(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The version must be at least 1.");
     } = 1;
 
     /// <summary>
@@ -68,7 +68,7 @@ public sealed record WorkflowDefinition
     public string? Category
     {
         get => field;
-        init => field = value is null || value.Length <= MaxCategoryLength ? value : throw new ArgumentException($"The category must be at most {MaxCategoryLength} characters.", nameof(value));
+        init => field = WorkflowDefinitionRules.IsValidCategory(value) ? value : throw new ArgumentException($"The category must be at most {MaxCategoryLength} characters.", nameof(value));
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public sealed record WorkflowDefinition
     public TimeSpan? Timeout
     {
         get => field;
-        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
+        init => field = WorkflowDefinitionRules.IsValidTimeout(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
     }
 
     /// <summary>

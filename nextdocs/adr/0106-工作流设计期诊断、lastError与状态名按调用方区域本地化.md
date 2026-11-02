@@ -156,3 +156,11 @@ ADR-0105 让运行期的失败原因按调用方区域本地化，留了三处�
 ## 4.x 对照
 
 4.x 的定义校验与受理人规则的问题是写在代码里的中文文本（只读查看 `framework/src/XiHan.Framework.Workflow/Definitions/WorkflowDefinitionValidator.cs`、`Assignees/WorkflowAssigneeResolver.cs`），不随调用方的区域变化。5.0 不对齐 4.x，按 RFC-0010 统一处理。
+
+> 修订（2026-11-03，第十六批）：「定义 JSON」一节里模型 `init` 拒绝的值不再报 `json_value_invalid`（该键删除）。`WorkflowJson.DeserializeDefinition` 在构造模型之前按与模型同一份规则核对文档，问题以 `workflow.definition.invalid`（参数 `count`）与 `details.errors` 的违规列表返回，形状同发布时的校验：
+>
+> - 规则只在一处：值的规则是内部的 `WorkflowDefinitionRules`（定义 ID、版本、分类长度、超时、变量名、重试策略的三项），加上已有的 `WorkflowName.IsValid`、`ActivityType.IsValid`、`WorkflowIdentifiers.IsValidElementId`；模型的 `init` 与读入的核对（内部的 `WorkflowDefinitionPrecheck`）都调用它们。必填成员取自序列化器元数据里的 `IsRequired`（即模型的 `required`），成员名按序列化器同一命名策略由属性名得出。
+> - 不在场的 `init` 属性会被源生成的序列化器设成类型默认值（盖掉模型的初值）：默认值过不了规则的（`version`、重试策略的 `maxAttempts`、`backoffFactor`）报缺少成员 `workflow.definition.member_missing`。
+> - 新键 13 个：`member_missing`、`id_empty`、`name_invalid`、`version_invalid`、`category_too_long`、`timeout_invalid`、`node_id_invalid`、`activity_type_invalid`、`transition_id_invalid`、`variable_name_empty`、`retry_attempts_invalid`、`retry_delay_negative`、`retry_backoff_invalid`（都在 `workflow.definition.` 下），10 种语言。
+> - 核对通过的文档构造模型不再抛出；模型自己的英文异常保持原样，只兜住编程错误（AGENTS「其余运行时英文」），读入不再捕获 `ArgumentException`。语法错误与值的类型不符仍是 `json_malformed`。
+> - 一致性：Abstractions 的 `WorkflowDefinitionJsonRulesTests` 对每条规则三处对照：读入报出的路径、消息键与 zh-CN / en-US 精确文案，同一个值直接构造模型抛出，边界上合法的文档读入通过、构造不抛出。

@@ -18,7 +18,7 @@ public sealed record WorkflowVariableDefinition
     public required string Name
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The variable name must not be empty.", nameof(value));
+        init => field = WorkflowDefinitionRules.IsValidVariableName(value) ? value : throw new ArgumentException("The variable name must not be empty.", nameof(value));
     }
 
     /// <summary>

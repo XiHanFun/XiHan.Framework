@@ -20,7 +20,7 @@ public sealed record WorkflowRetryPolicy
     public int MaxAttempts
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum attempts must be at least 1.");
+        init => field = WorkflowDefinitionRules.IsValidMaxAttempts(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum attempts must be at least 1.");
     } = 1;
 
     /// <summary>
@@ -32,7 +32,7 @@ public sealed record WorkflowRetryPolicy
     public TimeSpan FirstDelay
     {
         get => field;
-        init => field = value >= TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The first delay must not be negative.");
+        init => field = WorkflowDefinitionRules.IsValidFirstDelay(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The first delay must not be negative.");
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
@@ -44,7 +44,7 @@ public sealed record WorkflowRetryPolicy
     public double BackoffFactor
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The backoff factor must be at least 1.");
+        init => field = WorkflowDefinitionRules.IsValidBackoffFactor(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The backoff factor must be at least 1.");
     } = 2.0;
 
     /// <summary>

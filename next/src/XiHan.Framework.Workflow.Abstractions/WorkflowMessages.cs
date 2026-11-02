@@ -750,13 +750,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string DefinitionJsonMalformed = "workflow.definition.json_malformed";
 
-    /// <summary>
-    /// 定义 JSON 里有模型拒绝的值。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>reason</c>（模型的英文说明，编程错误，不本地化）。
-    /// </remarks>
-    public const string DefinitionJsonValueInvalid = "workflow.definition.json_value_invalid";
 
     /// <summary>
     /// 表达式为空。
@@ -1328,6 +1321,104 @@ public static class WorkflowMessages
     /// 用户任务 DueAt 输入的说明。
     /// </summary>
     public const string ActivityUserTaskDueAtInput = "workflow.activity_type.user_task.due_at";
+
+    /// <summary>
+    /// 定义 ID 为空。
+    /// </summary>
+    public const string DefinitionIdEmpty = "workflow.definition.id_empty";
+
+    /// <summary>
+    /// 工作流名称不合文法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionNameInvalid = "workflow.definition.name_invalid";
+
+    /// <summary>
+    /// 版本号小于 1。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>。
+    /// </remarks>
+    public const string DefinitionVersionInvalid = "workflow.definition.version_invalid";
+
+    /// <summary>
+    /// 分类超长。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>length</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionCategoryTooLong = "workflow.definition.category_too_long";
+
+    /// <summary>
+    /// 超时不是正数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>（<c>c</c> 格式的时长）。
+    /// </remarks>
+    public const string DefinitionTimeoutInvalid = "workflow.definition.timeout_invalid";
+
+    /// <summary>
+    /// 节点 ID 不合文法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionNodeIdInvalid = "workflow.definition.node_id_invalid";
+
+    /// <summary>
+    /// 转移 ID 不合文法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionTransitionIdInvalid = "workflow.definition.transition_id_invalid";
+
+    /// <summary>
+    /// 活动类型名不合文法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionActivityTypeInvalid = "workflow.definition.activity_type_invalid";
+
+    /// <summary>
+    /// 变量名为空。
+    /// </summary>
+    public const string DefinitionVariableNameEmpty = "workflow.definition.variable_name_empty";
+
+    /// <summary>
+    /// 重试的最多尝试次数小于 1。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>。
+    /// </remarks>
+    public const string DefinitionRetryAttemptsInvalid = "workflow.definition.retry_attempts_invalid";
+
+    /// <summary>
+    /// 首次重试延迟为负。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>（<c>c</c> 格式的时长）。
+    /// </remarks>
+    public const string DefinitionRetryDelayNegative = "workflow.definition.retry_delay_negative";
+
+    /// <summary>
+    /// 退避因子小于 1。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>value</c>。
+    /// </remarks>
+    public const string DefinitionRetryBackoffInvalid = "workflow.definition.retry_backoff_invalid";
+
+    /// <summary>
+    /// 缺少必填成员。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>member</c>（JSON 成员名）。
+    /// </remarks>
+    public const string DefinitionMemberMissing = "workflow.definition.member_missing";
 
     /// <summary>
     /// 本包的消息目录。

@@ -725,7 +725,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 - **经 HTTP**：宿主把 `details.errors` 写成 Problem Details 的字段级 `errors`，键是去掉 `$.` 的路径（如 `nodes[2].properties.Cron`），值是按调用方区域翻译好的文案数组；`detail` 是汇总（"工作流定义有 3 处问题。"）。设计器按键里的下标定位节点或转移。
 - **进程内**：`validator.Diagnose(definition)` 返回同一组问题；在调用里用 `issue.MessageKey.L(issue.Arguments)` 即得调用方语言。
 
-表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 的错误是 `workflow.definition.json_null`、`json_malformed`（参数 `path`、`line`、`position`）与 `json_value_invalid`（参数 `reason` 是模型自己的英文说明，编程错误不本地化）。
+表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 先按与模型同一份规则核对文档，再构造模型：模型会拒绝的值（缺少成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）是 `workflow.definition.invalid` 加 `details.errors` 的违规列表，形状与发布时的校验相同（路径如 `$.nodes[0].id`、`$.nodes[0].retryPolicy.maxAttempts`，键如 `workflow.definition.node_id_invalid`、`member_missing`），经 HTTP 同样是字段级 `errors`。JSON 为 `null` 是 `workflow.definition.json_null`，语法错误与值的类型不符是 `json_malformed`（参数 `path`、`line`、`position`）。注意序列化器会把不在场的 `init` 属性设成类型默认值：没写 `version`、重试策略没写 `maxAttempts` 或 `backoffFactor` 都报缺少成员，没写 `firstDelay` 时它是 0，不是模型的初值 10 秒。
 
 ### 状态的展示名
 

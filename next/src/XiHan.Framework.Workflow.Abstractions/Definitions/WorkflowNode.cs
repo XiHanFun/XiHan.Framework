@@ -68,7 +68,7 @@ public sealed record WorkflowNode
     public TimeSpan? Timeout
     {
         get => field;
-        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
+        init => field = WorkflowDefinitionRules.IsValidTimeout(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
     }
 
     /// <summary>

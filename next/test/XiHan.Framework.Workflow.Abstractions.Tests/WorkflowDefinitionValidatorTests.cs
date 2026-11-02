@@ -119,20 +119,16 @@ public sealed class WorkflowDefinitionValidatorTests
     [Fact]
     public void DefinitionJsonErrors_CarryMessageKeys()
     {
-        var malformed = WorkflowJson.DeserializeDefinition("{\"id\":\"d\",\"name\":\"Bad Name\",\"nodes\":[]}").Error!;
-        Assert.Equal((WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonMalformed, (object?)"$.name"), (malformed.Code, malformed.MessageKey, malformed.Details!["path"]));
+        // 值的类型不对：序列化器报的位置，行与字节位置从 1 起
+        var malformed = WorkflowJson.DeserializeDefinition("{\"id\":\"d\",\"name\":\"ok\",\"version\":\"x\"}").Error!;
+        Assert.Equal((WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonMalformed, (object?)"$.version"), (malformed.Code, malformed.MessageKey, malformed.Details!["path"]));
         using (MessageScope.Use(_messages, "zh-CN"))
         {
-            Assert.Equal($"工作流定义的 JSON 在 '$.name' 处不合法（第 1 行，第 {malformed.Details["position"]} 个字节）。", malformed.MessageKey!.L(malformed.Details));
+            Assert.Equal($"工作流定义的 JSON 在 '$.version' 处不合法（第 1 行，第 {malformed.Details["position"]} 个字节）。", malformed.MessageKey!.L(malformed.Details));
         }
 
         Assert.Equal(WorkflowMessages.DefinitionJsonMalformed, WorkflowJson.DeserializeDefinition("not json").Error?.MessageKey);
         Assert.Equal(WorkflowMessages.DefinitionJsonNull, WorkflowJson.DeserializeDefinition("null").Error?.MessageKey);
-
-        // 模型自己拒绝的值（这里是不合法的节点 ID）：外层的键本地化，参数是模型的英文说明
-        var value = WorkflowJson.DeserializeDefinition("{\"id\":\"d\",\"name\":\"ok\",\"nodes\":[{\"id\":\"bad id\",\"activityType\":\"Log\"}]}").Error!;
-        Assert.Equal((WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonValueInvalid), (value.Code, value.MessageKey));
-        Assert.Contains("bad id", (string?)value.Details!["reason"], StringComparison.Ordinal);
     }
 
     [Fact]

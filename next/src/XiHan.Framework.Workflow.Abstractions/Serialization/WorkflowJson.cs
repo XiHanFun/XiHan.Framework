@@ -32,13 +32,29 @@ public static class WorkflowJson
     /// JSON → 定义。
     /// </summary>
     /// <remarks>
-    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>（ADR-0106）：JSON 为 <c>null</c> 是 <see cref="WorkflowMessages.DefinitionJsonNull"/>；语法错误、类型不符、名字或活动类型不合法是 <see cref="WorkflowMessages.DefinitionJsonMalformed"/>（参数 <c>path</c>、<c>line</c>、<c>position</c>，行与字节位置从 1 起）；模型自己拒绝的值（节点 ID、版本、超时、重试策略等）是 <see cref="WorkflowMessages.DefinitionJsonValueInvalid"/>（参数 <c>reason</c> 是模型的英文说明，编程错误，不本地化）。
+    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>（ADR-0106 及其修订）：JSON 为 <c>null</c> 是 <see cref="WorkflowMessages.DefinitionJsonNull"/>；语法错误、值的类型不符是 <see cref="WorkflowMessages.DefinitionJsonMalformed"/>（参数 <c>path</c>、<c>line</c>、<c>position</c>，行与字节位置从 1 起）；模型会拒绝的值（缺少必填成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）在构造模型之前核对，是 <see cref="WorkflowMessages.DefinitionInvalid"/>（参数 <c>count</c>），<c>details.errors</c> 是全部问题（<see cref="Kernel.Validation.SchemaViolation"/>：定义 JSON 里的路径、消息键与参数），与发布时的校验同一形状。核对过的文档构造模型不再抛出；模型的英文异常只兜住编程错误。
     /// </remarks>
     public static Result<WorkflowDefinition> DeserializeDefinition(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
         try
         {
+            // 先按模型的规则核对：模型以英文异常拒绝的值在这里变成带路径、消息键与参数的问题
+            using (var document = JsonDocument.Parse(json))
+            {
+                if (document.RootElement.ValueKind == JsonValueKind.Null)
+                {
+                    return Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonNull);
+                }
+
+                var issues = WorkflowDefinitionPrecheck.Check(document.RootElement);
+                if (issues.Count > 0)
+                {
+                    return Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionInvalid, MessageArguments.Of(("count", issues.Count), ("errors", issues)));
+                }
+            }
+
+            // 再从原文反序列化（不从文档转）：类型不符的位置与行号对着调用方给的原文
             var definition = JsonSerializer.Deserialize(json, WorkflowJsonContext.Default.WorkflowDefinition);
             return definition is null
                 ? Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonNull)
@@ -48,10 +64,6 @@ public static class WorkflowJson
         {
             // 位置按人数：行与字节位置从 1 起；序列化器没给的（如末尾截断）按 1
             return Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonMalformed, MessageArguments.Of(("path", exception.Path ?? "$"), ("line", (exception.LineNumber ?? 0) + 1), ("position", (exception.BytePositionInLine ?? 0) + 1)));
-        }
-        catch (ArgumentException exception)
-        {
-            return Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionJsonValueInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
     }
 
