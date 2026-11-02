@@ -70,10 +70,10 @@ public sealed record WorkflowInstanceQuery
     public bool TopLevelOnly { get; init; }
 
     /// <summary>
-    /// 标题关键字。
+    /// 关键字。
     /// </summary>
     /// <remarks>
-    /// 不区分大小写地包含在实例标题（<see cref="WorkflowInstance.Title"/>：启动时给的显示名，没给取定义的显示名，再没有取定义名）里即匹配，规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤。
+    /// 不区分大小写地包含在实例标题（<see cref="WorkflowInstance.Title"/>：启动时给的显示名，没给取定义的显示名，再没有取定义名）或关联 ID（<see cref="WorkflowInstance.CorrelationId"/>）里即匹配，同 4.x 的实例列表（ADR-0099），规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤。
     /// </remarks>
     public string? Keyword { get; init; }
 
@@ -136,7 +136,7 @@ public sealed record WorkflowInstanceQuery
             && (CorrelationIds is null || (instance.CorrelationId is { } correlation && CorrelationIds.Contains(correlation, StringComparer.Ordinal)))
             && (ParentInstanceId is null || string.Equals(instance.ParentInstanceId, ParentInstanceId, StringComparison.Ordinal))
             && (!TopLevelOnly || instance.ParentInstanceId is null)
-            && (keyword is null || WorkflowKeyword.Matches(keyword, instance.Title))
+            && (keyword is null || WorkflowKeyword.Matches(keyword, instance.Title, instance.CorrelationId))
             && (StarterId is null || string.Equals(instance.StarterId, StarterId, StringComparison.Ordinal))
             && (CreatedFrom is null || instance.CreatedAt >= CreatedFrom.Value)
             && (CreatedTo is null || instance.CreatedAt < CreatedTo.Value)

@@ -51,7 +51,7 @@ public interface IWorkflowBookmarkStore
     /// 按待办查询的条件列出用户任务书签的一页。
     /// </summary>
     /// <remarks>
-    /// 只含种类为 <see cref="BookmarkKinds.UserTask"/>、所属实例在运行中（<see cref="WorkflowInstanceStatus.Running"/>）的书签；<see cref="UserTaskQuery.AssigneeId"/> 匹配书签的键，其余条件匹配书签的实例、节点、所属实例的定义名与创建时间；<see cref="UserTaskQuery.Keyword"/> 按 <see cref="WorkflowKeyword"/> 折叠后匹配书签载荷的 <c>title</c> 或所属实例的标题（ADR-0096）。按创建时间排序（<see cref="UserTaskQuery.Descending"/>），同刻按写入先后，跳过 <see cref="UserTaskQuery.Skip"/> 条后最多 <see cref="UserTaskQuery.Limit"/> 条。分页已由调用方校验。实例的状态变了（挂起、恢复、故障、重试），它的书签随之进出结果。
+    /// 只含种类为 <see cref="BookmarkKinds.UserTask"/>、所属实例在运行中（<see cref="WorkflowInstanceStatus.Running"/>）的书签；<see cref="UserTaskQuery.AssigneeId"/> 匹配书签的键，其余条件匹配书签的实例、节点、所属实例的定义名与创建时间；<see cref="UserTaskQuery.Keyword"/> 按 <see cref="WorkflowKeyword"/> 折叠后匹配书签载荷的 <c>title</c>、所属实例的标题、定义名或关联 ID（ADR-0096、ADR-0099）。按创建时间排序（<see cref="UserTaskQuery.Descending"/>），同刻按写入先后，跳过 <see cref="UserTaskQuery.Skip"/> 条后最多 <see cref="UserTaskQuery.Limit"/> 条。分页已由调用方校验。实例的状态变了（挂起、恢复、故障、重试），它的书签随之进出结果。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken);
 

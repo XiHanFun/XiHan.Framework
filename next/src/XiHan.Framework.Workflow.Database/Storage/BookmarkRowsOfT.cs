@@ -19,7 +19,7 @@ namespace XiHan.Framework.Workflow.Database.Storage;
 /// 一个分区（平台或租户）的书签表的读写。
 /// </summary>
 /// <remarks>
-/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名、状态与标题查询列，写书签时从同一分区的实例行取，实例新增或这几列变了由 <see cref="SyncAsync"/> 同步；任务标题查询列写书签时从载荷算出。
+/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列（标题、关联 ID、定义名），写书签时从同一分区的实例行算出，实例新增或这几列变了由 <see cref="SyncAsync"/> 同步；任务标题查询列写书签时从载荷算出。
 /// </remarks>
 /// <typeparam name="TRow">行类型。</typeparam>
 /// <typeparam name="TInstance">同一分区的实例行类型。</typeparam>
@@ -105,7 +105,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     /// 新增或整体替换。
     /// </summary>
     /// <remarks>
-    /// 先按 ID 批量取回所属实例的行，把定义名、状态与实例标题查询列写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例。
+    /// 先按 ID 批量取回所属实例的行，把定义名、状态与实例一侧的关键字查询列写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例。
     /// </remarks>
     public async ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
@@ -120,10 +120,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 把实例的定义名、状态与标题查询列同步到它们的书签行。
+    /// 把实例的定义名、状态与实例一侧的关键字查询列同步到它们的书签行。
     /// </summary>
     /// <remarks>
-    /// 实例存储在新增实例、实例的状态、定义名或标题变化之后调用；只更新与实例不一致的行。
+    /// 实例存储在新增实例、实例的状态、定义名或关键字查询列（标题、关联 ID）变化之后调用；只更新与实例不一致的行。
     /// </remarks>
     public async ValueTask<Result> SyncAsync(IReadOnlyList<TInstance> owners, CancellationToken cancellationToken)
     {
@@ -143,11 +143,12 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             foreach (var row in rows)
             {
                 var owner = byId[row.InstanceId];
-                if (!string.Equals(row.InstanceStatus, owner.Status, StringComparison.Ordinal) || !string.Equals(row.DefinitionName, owner.DefinitionName, StringComparison.Ordinal) || !string.Equals(row.SearchInstanceTitle, owner.SearchTitle, StringComparison.Ordinal))
+                var instanceText = InstanceSearchText(owner);
+                if (!string.Equals(row.InstanceStatus, owner.Status, StringComparison.Ordinal) || !string.Equals(row.DefinitionName, owner.DefinitionName, StringComparison.Ordinal) || !string.Equals(row.SearchInstanceText, instanceText, StringComparison.Ordinal))
                 {
                     row.InstanceStatus = owner.Status;
                     row.DefinitionName = owner.DefinitionName;
-                    row.SearchInstanceTitle = owner.SearchTitle;
+                    row.SearchInstanceText = instanceText;
                     stale.Add(row);
                 }
             }
@@ -260,8 +261,8 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
 
         if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
         {
-            // 任务标题或实例标题任一包含即匹配；两边都已折叠，SqlSugar 翻译出的 LIKE 里没有通配字符；每列先判非空，升级前写入、还没回填的行不匹配
-            filtered = filtered.Where(new Specification<TRow>(record => (record.SearchTitle != null && record.SearchTitle.Contains(keyword)) || (record.SearchInstanceTitle != null && record.SearchInstanceTitle.Contains(keyword))));
+            // 任务标题，或实例一侧的标题、关联 ID、定义名任一包含即匹配（实例一侧一列里以分隔符隔开，折叠后的关键字里没有分隔符，不跨字段）；两边都已折叠，SqlSugar 翻译出的 LIKE 里没有通配字符；每列先判非空，升级前写入、还没回填的行不匹配
+            filtered = filtered.Where(new Specification<TRow>(record => (record.SearchTitle != null && record.SearchTitle.Contains(keyword)) || (record.SearchInstanceText != null && record.SearchInstanceText.Contains(keyword))));
         }
 
         return filtered;
@@ -289,7 +290,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     /// 书签 → 行。
     /// </summary>
     /// <remarks>
-    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名、状态与实例标题查询列为空；任务标题查询列取自载荷的 <c>title</c>。
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名、状态与实例一侧的关键字查询列为空；任务标题查询列取自载荷的 <c>title</c>。
     /// </remarks>
     private TRow ToRecord(WorkflowBookmark bookmark, TInstance? owner)
     {
@@ -304,7 +305,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             DefinitionName = owner?.DefinitionName,
             InstanceStatus = owner?.Status,
             SearchTitle = TaskTitle(bookmark) is { } title ? WorkflowKeyword.Fold(title) : null,
-            SearchInstanceTitle = owner?.SearchTitle,
+            SearchInstanceText = owner is null ? null : InstanceSearchText(owner),
             Kind = bookmark.Kind,
             Key = bookmark.Key,
             CorrelationId = bookmark.CorrelationId,
@@ -313,6 +314,15 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             Document = WorkflowJson.Serialize(bookmark),
         };
     }
+
+    /// <summary>
+    /// 由所属实例行算出书签行的实例一侧关键字查询列。
+    /// </summary>
+    /// <remarks>
+    /// 实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名，结果与 <c>WorkflowKeyword.Join(标题, 关联 ID, 定义名)</c> 相同：<c>SearchText</c> 就是前两个字段的 <c>Join</c>，这里只按同一分隔符接上第三个字段，不必从文档取回标题。实例行的 <c>SearchText</c> 为空（升级前写入、还没回填）时为空，与实例列表一样不被关键字匹配。
+    /// </remarks>
+    private static string? InstanceSearchText(TInstance owner)
+        => owner.SearchText is { } text ? string.Join(WorkflowKeyword.FieldSeparator, text, WorkflowKeyword.Fold(owner.DefinitionName)) : null;
 
     /// <summary>
     /// 用户任务书签载荷里的任务标题。
@@ -334,7 +344,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
         target.DefinitionName = source.DefinitionName;
         target.InstanceStatus = source.InstanceStatus;
         target.SearchTitle = source.SearchTitle;
-        target.SearchInstanceTitle = source.SearchInstanceTitle;
+        target.SearchInstanceText = source.SearchInstanceText;
         target.Kind = source.Kind;
         target.Key = source.Key;
         target.CorrelationId = source.CorrelationId;

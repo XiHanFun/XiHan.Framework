@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 工作流实例存储行的公共列。
 /// </summary>
 /// <remarks>
-/// <c>WorkflowInstanceQuery</c> 的每个过滤项都有对应的列（标题关键字是折叠后的 <see cref="SearchTitle"/>，只取顶层是 <see cref="ParentInstanceId"/> 为空），整份实例在 JSON 文档里；同刻排序以写入序号为次关键字。两张表共用它：租户分区的 <see cref="WorkflowInstanceRecord"/> 与平台分区的 <see cref="PlatformWorkflowInstanceRecord"/>。
+/// <c>WorkflowInstanceQuery</c> 的每个过滤项都有对应的列（关键字是折叠后的 <see cref="SearchText"/>，只取顶层是 <see cref="ParentInstanceId"/> 为空），整份实例在 JSON 文档里；同刻排序以写入序号为次关键字。两张表共用它：租户分区的 <see cref="WorkflowInstanceRecord"/> 与平台分区的 <see cref="PlatformWorkflowInstanceRecord"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowInstanceRow : IEntity<string>
@@ -63,13 +63,13 @@ public abstract class WorkflowInstanceRow : IEntity<string>
     public string? ParentInstanceId { get; set; }
 
     /// <summary>
-    /// 标题关键字查询列。
+    /// 关键字查询列。
     /// </summary>
     /// <remarks>
-    /// 实例标题（显示名，没有取定义名）折叠后的值（<c>WorkflowKeyword.Fold</c>），实例列表的关键字在 SQL 里对它做包含判断；书签行的 <c>SearchInstanceTitle</c> 也取自它。存储写入的行总有值；可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填，ADR-0096）。
+    /// 实例标题（显示名，没有取定义名）与关联 ID 各自折叠后以 U+001F 拼成（<c>WorkflowKeyword.Join</c>，关联 ID 为空按空串拼入），实例列表的关键字在 SQL 里对它做包含判断（同 4.x 匹配实例名称与关联 ID，ADR-0099）；书签行的 <c>SearchInstanceText</c> 由它再拼上折叠后的定义名。存储写入的行总有值；可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填，ADR-0096）。
     /// </remarks>
     [LongText]
-    public string? SearchTitle { get; set; }
+    public string? SearchText { get; set; }
 
     /// <summary>
     /// 创建时间。

@@ -132,7 +132,7 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
-    public void InstanceQuery_MatchesCorrelationSetTopLevelAndTitle()
+    public void InstanceQuery_MatchesCorrelationSetTopLevelAndKeyword()
     {
         Assert.Equal(1000, WorkflowInstanceQuery.MaxCorrelationIds);
         var parent = new WorkflowInstance { Id = "p", DefinitionId = "d", DefinitionName = new WorkflowName("leave"), CorrelationId = "doc-1", DisplayName = "Leave Request" };
@@ -151,6 +151,11 @@ public sealed class WorkflowModelTests
         Assert.False(new WorkflowInstanceQuery { Keyword = "leave-" }.Matches(parent));
         Assert.True(new WorkflowInstanceQuery { Keyword = "leave-" }.Matches(child));
         Assert.True(new WorkflowInstanceQuery { Keyword = "  " }.Matches(child));
+
+        // 关联 ID 也被关键字匹配（同 4.x，ADR-0099），不跨字段；没有关联 ID 的实例只按标题
+        Assert.True(new WorkflowInstanceQuery { Keyword = "DOC-1" }.Matches(parent));
+        Assert.False(new WorkflowInstanceQuery { Keyword = "requestdoc" }.Matches(parent));
+        Assert.False(new WorkflowInstanceQuery { Keyword = "doc" }.Matches(new WorkflowInstance { Id = "x", DefinitionId = "d", DefinitionName = new WorkflowName("leave") }));
     }
 
     [Fact]

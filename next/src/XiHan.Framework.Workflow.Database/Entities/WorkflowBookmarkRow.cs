@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Database.Entities;
 /// 书签存储行的公共列。
 /// </summary>
 /// <remarks>
-/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。待办查询下推用的列：节点 ID 与任务标题取自书签，定义名、实例状态与实例标题取自所属实例，由存储在写书签、写实例时维护（ADR-0077、ADR-0096）。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
+/// 按实例、种类与键、信号与到期时间查询用的列，整份书签在 JSON 文档里。待办查询下推用的列：节点 ID 与任务标题取自书签，定义名、实例状态与实例一侧的关键字查询列取自所属实例，由存储在写书签、写实例时维护（ADR-0077、ADR-0096、ADR-0099）。两张表共用它：租户分区的 <see cref="WorkflowBookmarkRecord"/> 与平台分区的 <see cref="PlatformWorkflowBookmarkRecord"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowBookmarkRow : IEntity<string>
@@ -70,13 +70,13 @@ public abstract class WorkflowBookmarkRow : IEntity<string>
     public string? SearchTitle { get; set; }
 
     /// <summary>
-    /// 所属实例标题的关键字查询列。
+    /// 所属实例一侧的关键字查询列。
     /// </summary>
     /// <remarks>
-    /// 写书签时从实例行的 <c>SearchTitle</c> 取，实例新增或标题变了由实例存储同步（与定义名、实例状态同一路径）；所属实例的行不存在时为空。
+    /// 实例标题、关联 ID、定义名各自折叠后以 U+001F 拼成：实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名（同 4.x 的待办匹配实例名称、定义编码与关联 ID，ADR-0099）。写书签时从实例行算出，实例新增或这几个字段变了由实例存储同步（与定义名、实例状态同一路径）；所属实例的行不存在、或实例行的 <c>SearchText</c> 还没回填时为空。
     /// </remarks>
     [LongText]
-    public string? SearchInstanceTitle { get; set; }
+    public string? SearchInstanceText { get; set; }
 
     /// <summary>
     /// 种类（<c>BookmarkKinds</c>）。

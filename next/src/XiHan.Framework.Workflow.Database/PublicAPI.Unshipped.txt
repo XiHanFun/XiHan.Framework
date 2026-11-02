@@ -62,8 +62,8 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeId.get -> str
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeId.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeInstanceId.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.NodeInstanceId.set -> void
-XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceTitle.get -> string?
-XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceTitle.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceText.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchInstanceText.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchTitle.get -> string?
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.SearchTitle.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowBookmarkRow.Sequence.get -> long
@@ -116,8 +116,8 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Id.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Id.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.ParentInstanceId.get -> string?
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.ParentInstanceId.set -> void
-XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchTitle.get -> string?
-XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchTitle.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchText.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchText.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Sequence.get -> long
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Sequence.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StarterId.get -> string?

@@ -234,6 +234,16 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
 
 列表查询的 `Keyword` 都按同一套规则匹配（`WorkflowKeyword`）：去掉首尾空白，为空或只有空白不过滤；关键字与被搜的文本先折叠——不变文化的小写，SQL `LIKE` 的通配与转义字符 `%`、`_`、`[`、`` 换成全角的 `％`、`＿`、`［`、`＼`——再判断包含，任一被搜字段包含即匹配，不跨字段。所以关键字里的 `%`、`_` 按字面匹配，内存实现与各数据库 Provider 的结果一致；代价是这四个字符与对应的全角字符视为相同。数据库的排序规则另有放宽（如 MySQL 缺省排序规则不区分重音）时以排序规则为准。
 
+三处查询各自匹配的字段与 4.x 对齐（ADR-0099）：
+
+| 查询 | 匹配的字段 |
+| --- | --- |
+| 定义列表 `WorkflowDefinitionQuery` | 名字、显示名、说明 |
+| 实例列表 `WorkflowInstanceQuery` | 实例标题、关联 ID |
+| 待办 `UserTaskQuery` | 任务标题、实例标题、定义名、关联 ID（所属实例的） |
+
+关联 ID 是按包含匹配的，搜索框里输单据号的一段就能找到；要按一组单据号精确查进度，用实例查询的 `CorrelationIds`。
+
 ### 定义的租户
 
 定义属于一个分区（`TenantId` 是分区的租户，平台为空）。每个分区是一个名字空间：同名定义在不同分区里各自从版本 1 编号，互不占号。调用只看得到、改得动自己分区的定义，按名字解析（启动、`FindPublishedAsync`、子流程与 `ForEach`）也只在自己的分区里找。看不到的定义一律按不存在处理，返回 `WORKFLOW_NOTFOUND_001`，不暴露别的分区有没有这个定义。
@@ -363,7 +373,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
 | `PendingAsync(assigneeId)` / `PendingByInstanceAsync(instanceId)` | 某人或某实例的待办 | — |
-| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间与标题关键字 `Keyword`（任务标题或实例标题任一包含即匹配，规则见上文「关键字」，ADR-0096）过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间与关键字 `Keyword`（任务标题、实例标题、定义名或关联 ID 任一包含即匹配，规则见上文「关键字」，ADR-0096、ADR-0099）过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -384,7 +394,7 @@ public sealed class Inbox(IWorkflowTaskService tasks)
     public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
         => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
-    // 待办搜索框：任务标题或流程标题包含关键字即命中
+    // 待办搜索框：任务标题、流程标题、定义名或单据号（关联 ID）包含关键字即命中
     public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword, int page, CancellationToken cancellationToken)
         => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
@@ -526,13 +536,13 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、标题关键字、创建时间范围、结束时间上界过滤，同时给出的取交集，按创建时间降序；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围、结束时间上界过滤，同时给出的取交集，按创建时间降序；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。
 
 | 条件 | 说明 |
 | --- | --- |
 | `CorrelationIds` | 一组关联 ID，实例的关联 ID 是其中之一即匹配；重复的只算一个。`null` 不过滤，**空集合不匹配任何实例**（列表为空、计数为 0，不进存储）。最多 1000 个（`WorkflowInstanceQuery.MaxCorrelationIds`），不能有空白的 ID，否则列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.query_correlations_invalid`） |
 | `TopLevelOnly` | 只取顶层实例（`ParentInstanceId` 为空）。子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度都要加它 |
-| `Keyword` | 标题关键字：不区分大小写地包含在实例标题 `Title` 里即匹配（启动时给的 `DisplayName`，没给取定义的显示名，再没有取定义名），规则见上文「关键字」 |
+| `Keyword` | 关键字：不区分大小写地包含在实例标题 `Title`（启动时给的 `DisplayName`，没给取定义的显示名，再没有取定义名）或关联 ID 里即匹配（ADR-0099），规则见上文「关键字」 |
 
 ```csharp
 // 审批中心「我发起的」：只取顶层，带标题搜索

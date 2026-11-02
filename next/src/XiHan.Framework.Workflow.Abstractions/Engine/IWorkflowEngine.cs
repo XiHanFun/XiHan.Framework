@@ -112,7 +112,7 @@ public interface IWorkflowEngine
     /// 按条件列实例。
     /// </summary>
     /// <remarks>
-    /// 只列调用方分区的实例。过滤、排序与分页由存储执行（关联 ID 集合、只取顶层、标题关键字见 <see cref="WorkflowInstanceQuery"/>，ADR-0096）。<see cref="WorkflowInstanceQuery.Skip"/> 为负或 <see cref="WorkflowInstanceQuery.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.instance.query_page_invalid</c>）；<see cref="WorkflowInstanceQuery.CorrelationIds"/> 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID → 同一错误码（消息键 <c>workflow.instance.query_correlations_invalid</c>），都不进存储；关联 ID 的空集合直接返回空列表。
+    /// 只列调用方分区的实例。过滤、排序与分页由存储执行（关联 ID 集合、只取顶层、关键字见 <see cref="WorkflowInstanceQuery"/>，ADR-0096、ADR-0099）。<see cref="WorkflowInstanceQuery.Skip"/> 为负或 <see cref="WorkflowInstanceQuery.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.instance.query_page_invalid</c>）；<see cref="WorkflowInstanceQuery.CorrelationIds"/> 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID → 同一错误码（消息键 <c>workflow.instance.query_correlations_invalid</c>），都不进存储；关联 ID 的空集合直接返回空列表。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
 

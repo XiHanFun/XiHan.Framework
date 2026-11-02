@@ -16,7 +16,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 有界内存的书签存储。
 /// </summary>
 /// <remarks>
-/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。待办查询与同一特性的实例存储连接，取实例的状态与定义名。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。待办查询与同一特性的实例存储连接，取实例的状态、定义名、标题与关联 ID。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
@@ -42,7 +42,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     private readonly int _capacity;
 
     /// <summary>
-    /// 同一特性的实例存储：待办查询按它取实例的状态与定义名。
+    /// 同一特性的实例存储：待办查询按它取实例的状态、定义名、标题与关联 ID。
     /// </summary>
     private readonly InMemoryWorkflowInstanceStore _instances;
 
@@ -303,7 +303,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
         var keyword = WorkflowKeyword.Normalize(query.Keyword);
         return candidates.Where(entry => running.TryGetValue(entry.Bookmark.InstanceId, out var owner)
             && (query.DefinitionName is not { } name || owner.Definition == name)
-            && (keyword is null || WorkflowKeyword.Matches(keyword, TaskTitle(entry.Bookmark), owner.Title))).ToList();
+            && (keyword is null || WorkflowKeyword.Matches(keyword, TaskTitle(entry.Bookmark), owner.Title, owner.Definition.Value, owner.CorrelationId))).ToList();
     }
 
     /// <summary>

@@ -1479,10 +1479,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 34：实例查询只取顶层、按一组关联 ID 与标题关键字过滤。
+    /// 用例 34：实例查询只取顶层、按一组关联 ID 与关键字过滤。
     /// </summary>
     /// <remarks>
-    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）。
+    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；关键字匹配实例标题或关联 ID（同 4.x，ADR-0099），标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）。
     /// </remarks>
     [Fact]
     public async Task Instances_Query_TopLevelCorrelationSetAndTitleKeyword()
@@ -1522,6 +1522,13 @@ public abstract class WorkflowEngineConformance
         Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "50_" }).ConfigureAwait(false));
         Assert.Equal(3, (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child" }).ConfigureAwait(false)).Count);
         Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child", TopLevelOnly = true }).ConfigureAwait(false));
+
+        // 关联 ID 也被关键字匹配：子流程继承关联 ID，只取顶层时每个单据一个实例；标题与关联 ID 不跨字段
+        Assert.Equal(2, (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "DOC-1" }).ConfigureAwait(false)).Count);
+        Assert.Equal([expense.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "doc-1", TopLevelOnly = true }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal(3, (await host.EngineAsync(engine => engine.CountInstancesAsync(new WorkflowInstanceQuery { Keyword = "doc-", TopLevelOnly = true }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "flowdoc" }).ConfigureAwait(false));
+        Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "flow doc" }).ConfigureAwait(false));
 
         // 关联 ID 集合越界：超过上限或有空白是校验错误，列表与计数都校验；空集合列表为空、计数为 0
         var tooMany = Enumerable.Range(0, WorkflowInstanceQuery.MaxCorrelationIds + 1).Select(static index => $"doc-{index}").ToList();
