@@ -550,6 +550,52 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// 用例 11f：规约里字符串的包含、前缀与后缀在大小写上一致。
+    /// </summary>
+    /// <remarks>
+    /// 同一个 Provider 上，三个方法之间、实参是闭包变量、常量还是另一列之间，ASCII 字母的大小写规则相同：全都区分或全都不区分，不断言是哪一种（照各库，RFC-0005「规约里的字符串匹配」）。列实参取多租户实体的租户列：租户 <c>acme</c> 的笔记 <c>ACME</c> 与它只差大小写。EF Core 的 SQLite Provider 原本把 <c>Contains</c> 译成区分大小写的 <c>instr</c>、<c>StartsWith</c> / <c>EndsWith</c> 的值实参译成不区分的 <c>LIKE</c>、列实参译成区分的 <c>substr</c> 比较，一个库上三种规则，Provider 必须统一成一套。
+    /// </remarks>
+    [Fact]
+    public async Task List_StringContainsStartsWithEndsWith_AgreeOnLetterCase()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        const string tenant = "acme";
+        (await RunAsync(host, async context => Fold(await Repository<ConformanceNote, Guid>(context).AddRangeAsync(
+            [new ConformanceNote { Id = Guid.CreateVersion7(), Text = "ACME" }, new ConformanceNote { Id = Guid.CreateVersion7(), Text = "other" }],
+            context.CancellationToken).ConfigureAwait(false)), tenant).ConfigureAwait(false)).ThrowIfFailure();
+
+        var keyword = "acme";
+        (string Form, Specification<ConformanceNote> Filter)[] forms =
+        [
+            ("contains variable", new Specification<ConformanceNote>(n => n.Text.Contains(keyword))),
+            ("contains constant", new Specification<ConformanceNote>(static n => n.Text.Contains("acme"))),
+            ("contains column", new Specification<ConformanceNote>(static n => n.Text.Contains(n.TenantId))),
+            ("starts variable", new Specification<ConformanceNote>(n => n.Text.StartsWith(keyword))),
+            ("starts constant", new Specification<ConformanceNote>(static n => n.Text.StartsWith("acme"))),
+            ("starts column", new Specification<ConformanceNote>(static n => n.Text.StartsWith(n.TenantId))),
+            ("ends variable", new Specification<ConformanceNote>(n => n.Text.EndsWith(keyword))),
+            ("ends constant", new Specification<ConformanceNote>(static n => n.Text.EndsWith("acme"))),
+            ("ends column", new Specification<ConformanceNote>(static n => n.Text.EndsWith(n.TenantId))),
+        ];
+
+        // 九种写法各自命中的笔记：全部相同才算一致，失败时一次列出各写法的结果
+        var outcomes = new List<(string Form, string Found)>();
+        foreach (var (form, filter) in forms)
+        {
+            var found = await ListAsync<ConformanceNote, Guid>(host, EntityQuery.All<ConformanceNote>().Where(filter), tenant).ConfigureAwait(false);
+            outcomes.Add((form, $"[{string.Join(" | ", found.Select(static n => n.Text))}]"));
+        }
+
+        Assert.True(
+            outcomes.Select(static o => o.Found).Distinct(StringComparer.Ordinal).Count() == 1,
+            "Contains, StartsWith and EndsWith must follow one letter-case rule for variables, constants and columns: " + string.Join("; ", outcomes.Select(static o => $"{o.Form} -> {o.Found}")) + ".");
+        // 大小写相同的总是命中，另一条笔记哪种写法都不命中
+        var exact = await ListAsync<ConformanceNote, Guid>(host, EntityQuery.All<ConformanceNote>().Where(new Specification<ConformanceNote>(static n => n.Text.Contains("ACME"))), tenant).ConfigureAwait(false);
+        Assert.Equal(["ACME"], exact.Select(static n => n.Text));
+        Assert.DoesNotContain("other", outcomes[0].Found, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
     /// </summary>
     [Fact]

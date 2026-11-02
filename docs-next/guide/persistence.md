@@ -126,12 +126,12 @@ var lastMonth = EntityQuery.All<Order>().Within(DateTimeOffset.UtcNow.AddMonths(
 
 `Within` 不是过滤条件：不分表的实体与不支持范围的 Provider 忽略它，范围之外的行照常返回，要按时间过滤另写规约。目前只有 SqlSugar Provider 的分表实体使用它。
 
-规约里字符串的 `Contains`、`StartsWith`、`EndsWith` 按字面匹配，与 .NET 的语义一致：关键字里的 `%`、`_`、`[`、反斜杠不是通配符或转义符，`o.Name.Contains("t_2")` 不会命中 `budgetx2026`，关键字是常量、闭包变量还是另一列都一样（RFC-0005「规约里的字符串匹配」，ADR-0098）。大小写与重音是否敏感照各数据库，不统一：
+规约里字符串的 `Contains`、`StartsWith`、`EndsWith` 按字面匹配，与 .NET 的语义一致：关键字里的 `%`、`_`、`[`、反斜杠不是通配符或转义符，`o.Name.Contains("t_2")` 不会命中 `budgetx2026`，关键字是常量、闭包变量还是另一列都一样（RFC-0005「规约里的字符串匹配」，ADR-0098）。大小写一个库一套规则（ADR-0101）：同一个库上三个方法之间、关键字是常量、闭包变量还是另一列之间规则相同，换 Provider 也相同；规则照那个库，不统一成区分或不区分；重音照排序规则。各 Provider：
 
 | Provider | 大小写 |
 | --- | --- |
 | `Persistence.InMemory` | 按序数比较，区分大小写 |
-| `Persistence.EntityFrameworkCore` | 照 EF Core 数据库 Provider 的翻译；SQLite 上 `Contains`（`instr`）区分大小写，`StartsWith` / `EndsWith`（`LIKE`）只对 ASCII 字母不区分 |
+| `Persistence.EntityFrameworkCore` | SQLite 上三个方法一律译成 `LIKE … ESCAPE '\'`，只对 ASCII 字母不区分，与 SqlSugar 相同（原来 `Contains` 是区分大小写的 `instr`，ADR-0101）；PostgreSQL 与 Oracle 区分，SQL Server 按排序规则，照 EF Core 数据库 Provider 的翻译 |
 | `Persistence.SqlSugar` | `LIKE … ESCAPE '!'`：SQLite 只对 ASCII 字母不区分；PostgreSQL 与 Oracle 区分（PostgreSQL 开了 `MoreSettings.EnableILike` 时不区分）；MySQL 与 SQL Server 按列的排序规则，缺省不区分（MySQL 的缺省还不区分重音） |
 
 要跨库一致地不区分大小写，存一列折叠后的值（如 `ToLowerInvariant()`）并对它匹配。要通配时不用这三个方法：SqlSugar 用 `SqlFunc.Like`，EF Core 用 `EF.Functions.Like`，模式由调用方给出、不转义。

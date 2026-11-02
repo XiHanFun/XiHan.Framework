@@ -27,6 +27,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// </summary>
 /// <remarks>
 /// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；租户分片库启动时枚举不到，在首次绑定时由工作单元核对（ADR-0097）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// 建出的 DbContext 带字符串匹配的查询拦截器与翻译插件：SQLite 上 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 一律译成 <c>LIKE … ESCAPE '\'</c>，只对 ASCII 字母不区分大小写，与 SqlSugar 在 SQLite 上同一套规则（ADR-0101）。
 /// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -129,6 +130,8 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.Services.AddScoped<ContextConnection>();
         context.Services.AddDbContext<TContext>((sp, options) =>
         {
+            // SQLite 上字符串的 Contains / StartsWith / EndsWith 一律译成 LIKE（ADR-0101）：拦截器只在 SQLite 上改写，其余 Provider 不受影响
+            SqliteStringMatching.Use(options);
             var connection = sp.GetRequiredService<ContextConnection>();
             if (connection.Build() is { } named)
             {

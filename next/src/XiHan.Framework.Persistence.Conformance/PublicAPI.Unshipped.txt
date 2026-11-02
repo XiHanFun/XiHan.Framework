@@ -86,6 +86,7 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_AppliesFilter
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_NullableValueTypeComparedWithNull_FiltersByPresence() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_ReturnsAtMostTheMaximumTake_AndLargerTakesAreRejected() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_StringContainsStartsWithEndsWith_AgreeOnLetterCase() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_WithTimeRangeHint_OnUnpartitionedEntity_ReturnsAllRows() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.MultiTenant_RequiresTenant_AndIsolatesTenants() -> System.Threading.Tasks.Task!
