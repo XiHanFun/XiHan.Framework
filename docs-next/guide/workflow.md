@@ -518,7 +518,29 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID、父实例、发起人、创建时间范围、结束时间上界过滤，按创建时间降序；`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、标题关键字、创建时间范围、结束时间上界过滤，同时给出的取交集，按创建时间降序；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。
+
+| 条件 | 说明 |
+| --- | --- |
+| `CorrelationIds` | 一组关联 ID，实例的关联 ID 是其中之一即匹配；重复的只算一个。`null` 不过滤，**空集合不匹配任何实例**（列表为空、计数为 0，不进存储）。最多 1000 个（`WorkflowInstanceQuery.MaxCorrelationIds`），不能有空白的 ID，否则列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.query_correlations_invalid`） |
+| `TopLevelOnly` | 只取顶层实例（`ParentInstanceId` 为空）。子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度都要加它 |
+| `Keyword` | 标题关键字：不区分大小写地包含在实例标题 `Title` 里即匹配（启动时给的 `DisplayName`，没给取定义的显示名，再没有取定义名），规则见上文「关键字」 |
+
+```csharp
+// 审批中心「我发起的」：只取顶层，带标题搜索
+var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Limit = 20 };
+var items = (await engine.ListInstancesAsync(mine, cancellationToken)).ValueOrThrow();
+var total = (await engine.CountInstancesAsync(mine, cancellationToken)).ValueOrThrow();
+
+// 一页单据的审批进度：一次查询，按关联 ID 分组
+var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
+{
+    DefinitionName = "permission-request",
+    CorrelationIds = requests.Select(static r => r.Id.ToString()).ToList(),
+    TopLevelOnly = true,
+    Limit = WorkflowInstanceQuery.MaxLimit,
+}, cancellationToken)).ValueOrThrow().ToLookup(static instance => instance.CorrelationId);
+```实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
 
 ## 控制实例
 

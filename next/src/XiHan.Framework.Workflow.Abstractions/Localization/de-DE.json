@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "Der Knoten '{node}' hat keinen passenden ausgehenden Übergang.",
   "workflow.instance.node_not_found": "Die Workflow-Instanz '{id}' hat keinen Knoten '{node}'.",
   "workflow.instance.not_found": "Die Workflow-Instanz '{id}' existiert nicht.",
+  "workflow.instance.query_correlations_invalid": "Der Korrelations-ID-Filter akzeptiert höchstens {max} nicht leere IDs; {count} wurden angegeben.",
   "workflow.instance.query_page_invalid": "Die Seite der Instanzabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
   "workflow.instance.runaway": "Die Workflow-Instanz '{id}' hat in einem Durchlauf mehr als {limit} Knoten ausgeführt und wurde als Endlosschleife auf Fehler gesetzt.",
   "workflow.instance.status": "Die Workflow-Instanz '{id}' ist {status} und erlaubt diesen Vorgang nicht.",

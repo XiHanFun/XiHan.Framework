@@ -9,7 +9,7 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 工作流表的索引（ADR-0072，ADR-0077 修订）。
+/// 工作流表的索引（ADR-0072，ADR-0077、ADR-0096 修订）。
 /// </summary>
 /// <remarks>
 /// <c>InitTables</c> 在 SQLite 上建出租户分区与平台分区的定义、实例、节点实例与书签的索引，租约表只有主键。
@@ -66,6 +66,7 @@ public sealed class WorkflowIndexTests : IDisposable
                 "IX_WorkflowInstanceRecord_PaInId ParentInstanceId",
                 "IX_WorkflowInstanceRecord_TeId_CrAt TenantId,CreatedAt",
                 "IX_WorkflowInstanceRecord_TeId_EnAt TenantId,EndedAt",
+                "IX_WorkflowInstanceRecord_TeId_StId_CrAt TenantId,StarterId,CreatedAt",
             ],
             Indexes(client, nameof(WorkflowInstanceRecord)));
         Assert.Equal(
@@ -74,6 +75,7 @@ public sealed class WorkflowIndexTests : IDisposable
                 "IX_PlatformWorkflowInstanceRecord_CrAt CreatedAt",
                 "IX_PlatformWorkflowInstanceRecord_EnAt EndedAt",
                 "IX_PlatformWorkflowInstanceRecord_PaInId ParentInstanceId",
+                "IX_PlatformWorkflowInstanceRecord_StId_CrAt StarterId,CreatedAt",
             ],
             Indexes(client, nameof(PlatformWorkflowInstanceRecord)));
         Assert.Equal(["IX_WorkflowNodeInstanceRecord_InId InstanceId"], Indexes(client, nameof(WorkflowNodeInstanceRecord)));

@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "節點 '{node}' 沒有符合的出邊。",
   "workflow.instance.node_not_found": "工作流實例 '{id}' 沒有節點 '{node}'。",
   "workflow.instance.not_found": "工作流程實例 '{id}' 不存在。",
+  "workflow.instance.query_correlations_invalid": "執行個體查詢的關聯 ID 集合最多 {max} 個且不能有空白，收到 {count} 個。",
   "workflow.instance.query_page_invalid": "執行個體查詢的分頁越界：略過筆數 {skip} 不能為負，頁大小 {limit} 必須在 1 到 {max} 之間。",
   "workflow.instance.runaway": "工作流程實例 '{id}' 在一個波次裡執行了超過 {limit} 個節點，按無窮迴圈處理為故障。",
   "workflow.instance.status": "工作流程實例 '{id}' 處於 {status} 狀態，不允許該操作。",

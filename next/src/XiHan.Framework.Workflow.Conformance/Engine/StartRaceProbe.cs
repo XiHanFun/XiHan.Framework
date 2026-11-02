@@ -92,7 +92,7 @@ internal sealed class StartRaceProbe
     /// </summary>
     public async Task OnActiveQueryAsync(WorkflowInstanceQuery query)
     {
-        if (_current.Value is not { } racer || query.CorrelationId is null)
+        if (_current.Value is not { } racer || query.CorrelationIds is null)
         {
             return;
         }

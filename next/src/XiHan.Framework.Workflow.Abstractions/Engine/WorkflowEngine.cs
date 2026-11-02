@@ -1590,7 +1590,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         await using (handle.ConfigureAwait(false))
         {
             // 重用策略：同一分区里同名定义在同一关联 ID 下已有未结束的实例
-            var active = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationId = correlation, Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
+            var active = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationIds = [correlation], Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
             if (!active.TryGetValue(out var activeList))
             {
                 return active.Error!;
@@ -1732,6 +1732,17 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowInstanceQuery.MaxLimit))));
         }
 
+        if (CorrelationsInvalid(query) is { } invalid)
+        {
+            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(invalid);
+        }
+
+        // 关联 ID 的空集合不匹配任何实例：直接返回空页，不进存储（存储也按同一语义处理，这里省一次调用）
+        if (query.CorrelationIds is { Count: 0 })
+        {
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<WorkflowInstance>>([]));
+        }
+
         return _scope.RunAsync<IWorkflowEngine, IReadOnlyList<WorkflowInstance>>(false, "workflow.list-instances", () => _instances.ListAsync(Tenant, query, cancellationToken), engine => engine.ListInstancesAsync(query, cancellationToken), cancellationToken);
     }
 
@@ -1739,8 +1750,29 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     public ValueTask<Result<long>> CountInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        if (CorrelationsInvalid(query) is { } invalid)
+        {
+            return ValueTask.FromResult<Result<long>>(invalid);
+        }
+
+        if (query.CorrelationIds is { Count: 0 })
+        {
+            return ValueTask.FromResult(Result.Success(0L));
+        }
+
         return _scope.RunAsync<IWorkflowEngine, long>(false, "workflow.count-instances", () => _instances.CountAsync(Tenant, query, cancellationToken), engine => engine.CountInstancesAsync(query, cancellationToken), cancellationToken);
     }
+
+    /// <summary>
+    /// 关联 ID 集合越界时的校验错误。
+    /// </summary>
+    /// <remarks>
+    /// 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID 是调用方可以改正的输入，以校验错误返回（不进存储）；没给集合或集合合法为 <see langword="null"/>。
+    /// </remarks>
+    private static Error? CorrelationsInvalid(WorkflowInstanceQuery query)
+        => query.CorrelationIds is { } ids && (ids.Count > WorkflowInstanceQuery.MaxCorrelationIds || ids.Any(string.IsNullOrWhiteSpace))
+            ? Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryCorrelationsInvalid, MessageArguments.Of(("count", ids.Count), ("max", WorkflowInstanceQuery.MaxCorrelationIds)))
+            : null;
 
     /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)

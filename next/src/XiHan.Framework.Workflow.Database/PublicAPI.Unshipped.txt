@@ -112,6 +112,8 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Id.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Id.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.ParentInstanceId.get -> string?
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.ParentInstanceId.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchTitle.get -> string?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.SearchTitle.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Sequence.get -> long
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Sequence.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StarterId.get -> string?

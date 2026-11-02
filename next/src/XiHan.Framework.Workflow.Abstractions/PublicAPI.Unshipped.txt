@@ -771,8 +771,8 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance.Variables.set -
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance.WorkflowInstance() -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery!
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CorrelationId.get -> string?
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CorrelationId.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CorrelationIds.get -> System.Collections.Generic.IReadOnlyList<string!>?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CorrelationIds.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CreatedFrom.get -> System.DateTimeOffset?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CreatedFrom.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CreatedTo.get -> System.DateTimeOffset?
@@ -782,6 +782,8 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Definition
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.EndedBefore.get -> System.DateTimeOffset?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.EndedBefore.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Keyword.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Keyword.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Limit.get -> int
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Limit.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Matches(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance! instance) -> bool
@@ -795,6 +797,8 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Status.get
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Status.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Statuses.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus>?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Statuses.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.get -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.WorkflowInstanceQuery() -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus.Canceled = 4 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
@@ -1302,6 +1306,7 @@ const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.Signal = "Si
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.SubWorkflow = "SubWorkflow" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.Timer = "Timer" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.UserTask = "UserTask" -> string!
+const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxCorrelationIds = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Approved = "approved" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Rejected = "rejected" -> string!
@@ -1368,6 +1373,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "wo
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceJoinDead = "workflow.instance.join_dead" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNoTransition = "workflow.instance.no_transition" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNotFound = "workflow.instance.not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryCorrelationsInvalid = "workflow.instance.query_correlations_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryPageInvalid = "workflow.instance.query_page_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceRunaway = "workflow.instance.runaway" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatus = "workflow.instance.status" -> string!

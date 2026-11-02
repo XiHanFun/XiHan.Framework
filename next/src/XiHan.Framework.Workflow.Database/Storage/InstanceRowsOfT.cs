@@ -5,6 +5,7 @@ using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Database.Entities;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Workflow.Database.Storage;
 /// 一个分区（平台或租户）的实例表与节点实例表的读写。
 /// </summary>
 /// <remarks>
-/// <see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件；租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；删实例级联删节点实例。
+/// <see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件（关联 ID 集合是 <c>IN</c>，只取顶层是父实例为空，标题关键字对折叠后的查询列做包含判断）；租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；删实例级联删节点实例。
 /// </remarks>
 /// <typeparam name="TInstance">实例行类型。</typeparam>
 /// <typeparam name="TNode">节点实例行类型。</typeparam>
@@ -185,14 +186,29 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
             filtered = filtered.Where(new Specification<TInstance>(record => record.DefinitionName == definitionName));
         }
 
-        if (query.CorrelationId is { } correlationId)
+        if (query.CorrelationIds is { } correlationIds)
         {
-            filtered = filtered.Where(new Specification<TInstance>(record => record.CorrelationId == correlationId));
+            // 空集合不匹配任何实例：翻译成恒假条件（SqlSugar 对空的 IN 列表本来就生成 1=2，这里不依赖它）
+            var ids = correlationIds.Distinct(StringComparer.Ordinal).Select(static id => (string?)id).ToList();
+            filtered = ids.Count == 0
+                ? filtered.Where(new Specification<TInstance>(static record => record.Id == null))
+                : filtered.Where(new Specification<TInstance>(record => ids.Contains(record.CorrelationId)));
         }
 
         if (query.ParentInstanceId is { } parentInstanceId)
         {
             filtered = filtered.Where(new Specification<TInstance>(record => record.ParentInstanceId == parentInstanceId));
+        }
+
+        if (query.TopLevelOnly)
+        {
+            filtered = filtered.Where(new Specification<TInstance>(static record => record.ParentInstanceId == null));
+        }
+
+        if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
+        {
+            // 两边都已折叠：SqlSugar 翻译出的 LIKE 里没有通配字符；先判非空，升级前写入、还没回填的行不匹配
+            filtered = filtered.Where(new Specification<TInstance>(record => record.SearchTitle != null && record.SearchTitle.Contains(keyword)));
         }
 
         if (query.StarterId is { } starterId)
@@ -239,6 +255,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
             CorrelationId = instance.CorrelationId,
             StarterId = instance.StarterId,
             ParentInstanceId = instance.ParentInstanceId,
+            SearchTitle = WorkflowKeyword.Fold(instance.Title),
             CreatedAt = instance.CreatedAt,
             EndedAt = instance.EndedAt,
             Document = WorkflowJson.Serialize(instance),
@@ -257,6 +274,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         target.CorrelationId = source.CorrelationId;
         target.StarterId = source.StarterId;
         target.ParentInstanceId = source.ParentInstanceId;
+        target.SearchTitle = source.SearchTitle;
         target.CreatedAt = source.CreatedAt;
         target.EndedAt = source.EndedAt;
         target.Document = source.Document;

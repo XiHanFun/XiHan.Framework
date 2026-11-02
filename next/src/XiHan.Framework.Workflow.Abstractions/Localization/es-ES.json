@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "El nodo '{node}' no tiene ninguna transición de salida coincidente.",
   "workflow.instance.node_not_found": "La instancia de flujo de trabajo '{id}' no tiene el nodo '{node}'.",
   "workflow.instance.not_found": "La instancia de flujo de trabajo '{id}' no existe.",
+  "workflow.instance.query_correlations_invalid": "El filtro de ID de correlación admite como máximo {max} ID no vacíos; se indicaron {count}.",
   "workflow.instance.query_page_invalid": "La página de la consulta de instancias está fuera de rango: skip {skip} no puede ser negativo y limit {limit} debe estar entre 1 y {max}.",
   "workflow.instance.runaway": "La instancia de flujo de trabajo '{id}' ejecutó más de {limit} nodos en una ráfaga y se marcó como fallida por bucle descontrolado.",
   "workflow.instance.status": "La instancia de flujo de trabajo '{id}' está en estado {status} y no permite esta operación.",

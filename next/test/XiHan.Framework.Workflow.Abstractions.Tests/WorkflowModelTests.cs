@@ -132,6 +132,28 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
+    public void InstanceQuery_MatchesCorrelationSetTopLevelAndTitle()
+    {
+        Assert.Equal(1000, WorkflowInstanceQuery.MaxCorrelationIds);
+        var parent = new WorkflowInstance { Id = "p", DefinitionId = "d", DefinitionName = new WorkflowName("leave"), CorrelationId = "doc-1", DisplayName = "Leave Request" };
+        var child = new WorkflowInstance { Id = "c", DefinitionId = "d2", DefinitionName = new WorkflowName("leave-step"), CorrelationId = "doc-1", ParentInstanceId = "p" };
+
+        Assert.True(new WorkflowInstanceQuery { CorrelationIds = ["doc-2", "doc-1"] }.Matches(child));
+        Assert.False(new WorkflowInstanceQuery { CorrelationIds = ["doc-2"] }.Matches(parent));
+        // 空集合不匹配任何实例；没有关联 ID 的实例也不匹配任何集合
+        Assert.False(new WorkflowInstanceQuery { CorrelationIds = [] }.Matches(parent));
+        Assert.False(new WorkflowInstanceQuery { CorrelationIds = ["doc-1"] }.Matches(new WorkflowInstance { Id = "x", DefinitionId = "d", DefinitionName = new WorkflowName("leave") }));
+        Assert.True(new WorkflowInstanceQuery { TopLevelOnly = true }.Matches(parent));
+        Assert.False(new WorkflowInstanceQuery { TopLevelOnly = true }.Matches(child));
+
+        // 标题：显示名，没有显示名取定义名
+        Assert.True(new WorkflowInstanceQuery { Keyword = "REQUEST" }.Matches(parent));
+        Assert.False(new WorkflowInstanceQuery { Keyword = "leave-" }.Matches(parent));
+        Assert.True(new WorkflowInstanceQuery { Keyword = "leave-" }.Matches(child));
+        Assert.True(new WorkflowInstanceQuery { Keyword = "  " }.Matches(child));
+    }
+
+    [Fact]
     public void Messages_AreCompleteForEveryBuiltInLocale()
     {
         var catalog = WorkflowMessages.Catalog;

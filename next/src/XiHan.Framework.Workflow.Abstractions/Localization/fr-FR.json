@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "Le nœud '{node}' n'a aucune transition sortante correspondante.",
   "workflow.instance.node_not_found": "L'instance de flux de travail '{id}' n'a pas de nœud '{node}'.",
   "workflow.instance.not_found": "L'instance de workflow '{id}' n'existe pas.",
+  "workflow.instance.query_correlations_invalid": "Le filtre d'ID de corrélation accepte au plus {max} ID non vides ; {count} ont été fournis.",
   "workflow.instance.query_page_invalid": "La page de la requête d'instances est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
   "workflow.instance.runaway": "L'instance de workflow '{id}' a exécuté plus de {limit} nœuds en une rafale ; elle a été mise en défaut comme boucle infinie.",
   "workflow.instance.status": "L'instance de workflow '{id}' est à l'état {status} et n'autorise pas cette opération.",

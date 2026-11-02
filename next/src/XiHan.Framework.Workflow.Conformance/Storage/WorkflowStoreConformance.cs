@@ -104,7 +104,7 @@ public abstract class WorkflowStoreConformance
     /// 用例 3：实例列表按创建时间降序、过滤项与上限生效。
     /// </summary>
     /// <remarks>
-    /// 节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例。
+    /// 关联 ID 集合（重复只算一个、空集合不匹配）、只取顶层、标题关键字（显示名，没有取定义名；<c>%</c> 与 <c>_</c> 按字面）也是过滤项（ADR-0096）。节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例。
     /// </remarks>
     [Fact]
     public async Task Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades()
@@ -112,6 +112,7 @@ public abstract class WorkflowStoreConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var now = DateTimeOffset.UtcNow;
         var a = Instance("conf-list", "inst-a", now.AddMinutes(-2));
+        a.DisplayName = "Expense 50% Claim";
         var b = Instance("conf-list", "inst-b", now.AddMinutes(-1));
         b.Status = WorkflowInstanceStatus.Completed;
         b.CorrelationId = "doc-1";
@@ -119,6 +120,8 @@ public abstract class WorkflowStoreConformance
         var c = Instance("conf-list-2", "inst-c", now);
         c.ParentInstanceId = "inst-a";
         c.StarterId = "starter-c";
+        c.CorrelationId = "doc-1";
+        c.DisplayName = "Sub_Order";
         var n1 = NodeInstance("inst-a", "n1", now.AddSeconds(1));
         var n2 = NodeInstance("inst-a", "n2", now);
         var n3 = NodeInstance("inst-a", "n3", now);
@@ -131,7 +134,22 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Limit = 2 }).ConfigureAwait(false));
             Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed }).ConfigureAwait(false));
             Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-list") }).ConfigureAwait(false));
-            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { CorrelationId = "doc-1" }).ConfigureAwait(false));
+            Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { CorrelationIds = ["doc-1"] }).ConfigureAwait(false));
+            // 关联 ID 集合：重复只算一个、不存在的不影响；空集合不匹配任何实例；只取顶层排除子流程
+            Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { CorrelationIds = ["doc-1", "doc-1", "doc-none"] }).ConfigureAwait(false));
+            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { CorrelationIds = ["doc-1"], TopLevelOnly = true }).ConfigureAwait(false));
+            Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { CorrelationIds = [] }).ConfigureAwait(false));
+            Assert.Equal(0, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { CorrelationIds = [] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { TopLevelOnly = true }).ConfigureAwait(false));
+            Assert.Equal(2, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { TopLevelOnly = true, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { TopLevelOnly = true, ParentInstanceId = "inst-a" }).ConfigureAwait(false));
+            // 标题关键字：显示名，没有显示名取定义名；不区分大小写，% 与 _ 按字面
+            Assert.Equal(["inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = " CLAIM " }).ConfigureAwait(false));
+            Assert.Equal(["inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "conf-list" }).ConfigureAwait(false));
+            Assert.Equal(["inst-c"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "b_o" }).ConfigureAwait(false));
+            Assert.Equal(["inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "50% c" }).ConfigureAwait(false));
+            Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "50_" }).ConfigureAwait(false));
+            Assert.Equal(1, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { Keyword = "sub_", StarterId = "starter-c" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(["inst-c"], await IdsAsync(s, new WorkflowInstanceQuery { ParentInstanceId = "inst-a" }).ConfigureAwait(false));
             // 分页、多状态、发起人、时间范围、结束时间与计数
             Assert.Equal(["inst-b", "inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { Skip = 1 }).ConfigureAwait(false));
@@ -353,7 +371,7 @@ public abstract class WorkflowStoreConformance
                 Assert.Empty((await s.Definitions.FindManyAsync(outsider, [definition.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.False((await s.Instances.FindAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
                 Assert.Empty((await s.Instances.FindManyAsync(outsider, [instance.Id], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-                Assert.Empty((await s.Instances.ListAsync(outsider, new WorkflowInstanceQuery { CorrelationId = "doc-part" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+                Assert.Empty((await s.Instances.ListAsync(outsider, new WorkflowInstanceQuery { CorrelationIds = ["doc-part"] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.Equal(0, (await s.Instances.CountAsync(outsider, new WorkflowInstanceQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.Empty((await s.Instances.NodeInstancesAsync(outsider, instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
                 Assert.False((await s.Instances.FindNodeInstanceAsync(outsider, node.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);

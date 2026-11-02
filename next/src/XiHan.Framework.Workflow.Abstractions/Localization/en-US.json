@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "Node '{node}' has no matching outgoing transition.",
   "workflow.instance.node_not_found": "Workflow instance '{id}' has no node '{node}'.",
   "workflow.instance.not_found": "Workflow instance '{id}' does not exist.",
+  "workflow.instance.query_correlations_invalid": "The correlation ID filter accepts at most {max} non-blank IDs; {count} were given.",
   "workflow.instance.query_page_invalid": "The instance query page is out of range: skip {skip} must not be negative and limit {limit} must be between 1 and {max}.",
   "workflow.instance.runaway": "Workflow instance '{id}' executed more than {limit} nodes in one burst; it was faulted as a runaway loop.",
   "workflow.instance.status": "Workflow instance '{id}' is {status} and does not allow this operation.",

@@ -35,6 +35,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_Sends
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceTimeout_FaultsOrTerminates() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Instances_AreIsolatedPerPartition() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Instances_Query_TopLevelCorrelationSetAndTitleKeyword() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.OutputMappings_WriteVariables_AndFailLoudly() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!

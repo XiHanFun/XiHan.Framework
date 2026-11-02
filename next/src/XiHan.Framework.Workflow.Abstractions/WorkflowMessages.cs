@@ -317,6 +317,14 @@ public static class WorkflowMessages
     public const string InstanceQueryPageInvalid = "workflow.instance.query_page_invalid";
 
     /// <summary>
+    /// 实例查询的关联 ID 集合越界。
+    /// </summary>
+    /// <remarks>
+    /// 超过上限或有空白的 ID。参数：<c>count</c>（给出的个数）、<c>max</c>。
+    /// </remarks>
+    public const string InstanceQueryCorrelationsInvalid = "workflow.instance.query_correlations_invalid";
+
+    /// <summary>
     /// 定义查询的分页越界。
     /// </summary>
     /// <remarks>

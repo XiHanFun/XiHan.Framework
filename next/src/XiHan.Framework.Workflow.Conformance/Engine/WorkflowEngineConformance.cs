@@ -1034,7 +1034,7 @@ public abstract class WorkflowEngineConformance
 
         Assert.Single(results, static result => result.IsSuccess);
         Assert.Single(results, static result => result.Error?.Code == WorkflowErrors.ActiveInstanceExists);
-        var instances = await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationId = "race-1" }).ConfigureAwait(false);
+        var instances = await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-start-race"), CorrelationIds = ["race-1"] }).ConfigureAwait(false);
         Assert.Equal(results.Single(static result => result.IsSuccess).ValueOrThrow().Id, Assert.Single(instances).Id);
     }
 
@@ -1456,6 +1456,67 @@ public abstract class WorkflowEngineConformance
             Assert.Equal([leave.Id], (await catalog.QueryAsync(new WorkflowDefinitionQuery { Category = "hr" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
             return true;
         }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 用例 34：实例查询只取顶层、按一组关联 ID 与标题关键字过滤。
+    /// </summary>
+    /// <remarks>
+    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）。
+    /// </remarks>
+    [Fact]
+    public async Task Instances_Query_TopLevelCorrelationSetAndTitleKeyword()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(Approval("conf-q-child", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-q-parent", "Parent Flow")
+            .AddStart()
+            .AddNode("sub", ActivityTypes.SubWorkflow, configure: node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-q-child"))
+            .AddEnd()
+            .AddTransition("start", "sub").AddTransition("sub", "end")
+            .Build()).ConfigureAwait(false);
+
+        async Task<WorkflowInstance> StartParentAsync(string correlationId, string starterId, string? displayName)
+            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-q-parent", CorrelationId = correlationId, StarterId = starterId, DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+
+        var expense = await StartParentAsync("doc-1", "alice", "Expense 50% Claim").ConfigureAwait(false);
+        var untitled = await StartParentAsync("doc-2", "alice", null).ConfigureAwait(false);
+        var leave = await StartParentAsync("doc-3", "bob", "Leave_Request").ConfigureAwait(false);
+        await WaitUntilAsync(async () => (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-q-child") }).ConfigureAwait(false)).Count == 3).ConfigureAwait(false);
+
+        // 子流程继承发起人与关联 ID：不只取顶层时它们也在结果里
+        Assert.Equal(4, (await host.ListInstancesAsync(new WorkflowInstanceQuery { StarterId = "alice" }).ConfigureAwait(false)).Count);
+        Assert.Equal([untitled.Id, expense.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { StarterId = "alice", TopLevelOnly = true }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal(2, (await host.EngineAsync(engine => engine.CountInstancesAsync(new WorkflowInstanceQuery { StarterId = "alice", TopLevelOnly = true }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+
+        // 一组关联 ID：重复与不存在的不影响，只取顶层时每个单据一个实例
+        Assert.Equal([leave.Id, expense.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { CorrelationIds = ["doc-1", "doc-3", "doc-1", "doc-none"], TopLevelOnly = true }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal(4, (await host.EngineAsync(engine => engine.CountInstancesAsync(new WorkflowInstanceQuery { CorrelationIds = ["doc-1", "doc-3"] }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+
+        // 标题关键字：启动时给的显示名，没给取定义的显示名；% 与 _ 按字面
+        Assert.Equal("Parent Flow", untitled.DisplayName);
+        Assert.Equal([expense.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "claim" }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([untitled.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "PARENT flow" }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([leave.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "e_r" }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "50_" }).ConfigureAwait(false));
+        Assert.Equal(3, (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child" }).ConfigureAwait(false)).Count);
+        Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child", TopLevelOnly = true }).ConfigureAwait(false));
+
+        // 关联 ID 集合越界：超过上限或有空白是校验错误，列表与计数都校验；空集合列表为空、计数为 0
+        var tooMany = Enumerable.Range(0, WorkflowInstanceQuery.MaxCorrelationIds + 1).Select(static index => $"doc-{index}").ToList();
+        foreach (var invalid in new[] { new WorkflowInstanceQuery { CorrelationIds = tooMany }, new WorkflowInstanceQuery { CorrelationIds = ["doc-1", " "] } })
+        {
+            var listed = await host.EngineAsync(engine => engine.ListInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
+            var counted = await host.EngineAsync(engine => engine.CountInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryCorrelationsInvalid), (listed.Error?.Code, listed.Error?.MessageKey));
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryCorrelationsInvalid), (counted.Error?.Code, counted.Error?.MessageKey));
+        }
+
+        // 恰好上限个照常查询：doc-1 到 doc-3 的父实例与子实例
+        Assert.Equal(6, (await host.EngineAsync(engine => engine.ListInstancesAsync(new WorkflowInstanceQuery { CorrelationIds = tooMany.Take(WorkflowInstanceQuery.MaxCorrelationIds).ToList() }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Count);
+        Assert.Empty((await host.EngineAsync(engine => engine.ListInstancesAsync(new WorkflowInstanceQuery { CorrelationIds = [] }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(0, (await host.EngineAsync(engine => engine.CountInstancesAsync(new WorkflowInstanceQuery { CorrelationIds = [] }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>

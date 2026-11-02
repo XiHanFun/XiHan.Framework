@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "节点 '{node}' 没有匹配的出边。",
   "workflow.instance.node_not_found": "工作流实例 '{id}' 没有节点 '{node}'。",
   "workflow.instance.not_found": "工作流实例 '{id}' 不存在。",
+  "workflow.instance.query_correlations_invalid": "实例查询的关联 ID 集合最多 {max} 个且不能有空白，收到 {count} 个。",
   "workflow.instance.query_page_invalid": "实例查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
   "workflow.instance.runaway": "工作流实例 '{id}' 在一个波次里执行了超过 {limit} 个节点，按死循环处理为故障。",
   "workflow.instance.status": "工作流实例 '{id}' 处于 {status} 状态，不允许该操作。",

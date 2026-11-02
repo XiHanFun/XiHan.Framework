@@ -23,6 +23,7 @@
   "workflow.instance.no_transition": "У узла '{node}' нет подходящего исходящего перехода.",
   "workflow.instance.node_not_found": "В экземпляре рабочего процесса '{id}' нет узла '{node}'.",
   "workflow.instance.not_found": "Экземпляр рабочего процесса '{id}' не существует.",
+  "workflow.instance.query_correlations_invalid": "Фильтр идентификаторов корреляции принимает не более {max} непустых идентификаторов; передано {count}.",
   "workflow.instance.query_page_invalid": "Страница запроса экземпляров вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
   "workflow.instance.runaway": "Экземпляр рабочего процесса '{id}' выполнил более {limit} узлов за один проход и переведён в сбой как бесконечный цикл.",
   "workflow.instance.status": "Экземпляр рабочего процесса '{id}' находится в состоянии {status} и не допускает эту операцию.",

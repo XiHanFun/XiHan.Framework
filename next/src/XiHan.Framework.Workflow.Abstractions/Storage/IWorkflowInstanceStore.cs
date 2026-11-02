@@ -31,6 +31,9 @@ public interface IWorkflowInstanceStore
     /// <summary>
     /// 列表：按创建时间降序，最多 <see cref="WorkflowInstanceQuery.Limit"/> 条。
     /// </summary>
+    /// <remarks>
+    /// 过滤项见 <see cref="WorkflowInstanceQuery.Matches"/>：关联 ID 集合为空不匹配任何实例，只取顶层是父实例为空，标题关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配实例标题（ADR-0096）。分页与关联 ID 集合的上限已由调用方校验。
+    /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken);
 
     /// <summary>

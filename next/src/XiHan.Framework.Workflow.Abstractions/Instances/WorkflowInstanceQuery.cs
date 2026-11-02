@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表查询。
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）。
+/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。分页与关联 ID 集合越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowInstanceQuery
@@ -18,6 +18,14 @@ public sealed record WorkflowInstanceQuery
     /// 上限的最大值。
     /// </summary>
     public const int MaxLimit = 1000;
+
+    /// <summary>
+    /// 关联 ID 集合的最大个数。
+    /// </summary>
+    /// <remarks>
+    /// 与一页的上限相同：一页业务单据各查一次进度，一次查询就够；数据库实现翻译成一个 <c>IN</c>（ADR-0096）。
+    /// </remarks>
+    public const int MaxCorrelationIds = 1000;
 
     /// <summary>
     /// 状态（单个）。
@@ -41,14 +49,33 @@ public sealed record WorkflowInstanceQuery
     public WorkflowName? DefinitionName { get; init; }
 
     /// <summary>
-    /// 关联 ID。
+    /// 关联 ID 集合：实例的关联 ID 是其中之一即匹配。
     /// </summary>
-    public string? CorrelationId { get; init; }
+    /// <remarks>
+    /// <see langword="null"/> 不过滤；空集合不匹配任何实例（要找的业务键一个都没有，列表为空、计数为 0，不进存储）——与 <see cref="Statuses"/> 的「空集合视同未限定」不同，免得一页没有单据时查出全部实例。重复的 ID 只算一个。最多 <see cref="MaxCorrelationIds"/> 个、每个都不能为空白，否则 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_correlations_invalid</c>）。子流程继承父实例的关联 ID：按单据查进度时配合 <see cref="TopLevelOnly"/>。
+    /// </remarks>
+    public IReadOnlyList<string>? CorrelationIds { get; init; }
 
     /// <summary>
     /// 父实例 ID。
     /// </summary>
     public string? ParentInstanceId { get; init; }
+
+    /// <summary>
+    /// 是否只取顶层实例（没有父实例）。
+    /// </summary>
+    /// <remarks>
+    /// 子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度要排除它们（ADR-0096）。与 <see cref="ParentInstanceId"/> 同时给出时取交集，结果为空。
+    /// </remarks>
+    public bool TopLevelOnly { get; init; }
+
+    /// <summary>
+    /// 标题关键字。
+    /// </summary>
+    /// <remarks>
+    /// 不区分大小写地包含在实例标题（<see cref="WorkflowInstance.Title"/>：启动时给的显示名，没给取定义的显示名，再没有取定义名）里即匹配，规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤。
+    /// </remarks>
+    public string? Keyword { get; init; }
 
     /// <summary>
     /// 发起人。
@@ -103,10 +130,13 @@ public sealed record WorkflowInstanceQuery
         var statusMatches = !statusRestricted
             || (Status is { } single && instance.Status == single)
             || (Statuses is { Count: > 0 } set && set.Contains(instance.Status));
+        var keyword = WorkflowKeyword.Normalize(Keyword);
         return statusMatches
             && (DefinitionName is null || instance.DefinitionName == DefinitionName.Value)
-            && (CorrelationId is null || string.Equals(instance.CorrelationId, CorrelationId, StringComparison.Ordinal))
+            && (CorrelationIds is null || (instance.CorrelationId is { } correlation && CorrelationIds.Contains(correlation, StringComparer.Ordinal)))
             && (ParentInstanceId is null || string.Equals(instance.ParentInstanceId, ParentInstanceId, StringComparison.Ordinal))
+            && (!TopLevelOnly || instance.ParentInstanceId is null)
+            && (keyword is null || WorkflowKeyword.Matches(keyword, instance.Title))
             && (StarterId is null || string.Equals(instance.StarterId, StarterId, StringComparison.Ordinal))
             && (CreatedFrom is null || instance.CreatedAt >= CreatedFrom.Value)
             && (CreatedTo is null || instance.CreatedAt < CreatedTo.Value)
