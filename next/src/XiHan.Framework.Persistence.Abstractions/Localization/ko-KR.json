@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "현재 영속성 공급자는 데이터베이스 스키마를 읽을 수 없습니다.",
   "persistence.schema.read_failed": "데이터 원본 '{name}'의 스키마를 읽지 못했습니다: {reason}",
   "persistence.schema.table_not_found": "데이터 원본 '{dataSource}'에 '{table}' 테이블이 없습니다.",
+  "persistence.schema.timestamp_format_mismatch": "연결 '{connection}'의 SQLite 데이터베이스에 모델이 UTC ticks 정수로 매핑하는 다음 시각 열이 아직 다른 형식으로 저장되어 있습니다(괄호 안은 열의 선언 형식과 가장 먼저 기록된 행에서 찾은 저장 클래스): {columns}. 그대로 읽으면 오류 없이 잘못된 시각으로 읽힙니다. 이 테이블을 INTEGER 열로 다시 만들고 ADR-0091 3절의 환산식으로 저장된 텍스트를 UTC ticks로 변환하십시오. 데이터를 버려도 되면 데이터베이스를 다시 만드십시오.",
   "persistence.schema.too_many_tables": "{count}개의 테이블을 요청했지만 한 번에 구조를 읽을 수 있는 최대 개수는 {max}개입니다. 최대 {max}개씩 나누어 읽으십시오.",
   "persistence.snowflake.clock_moved_backwards": "시계가 허용 범위를 넘어 뒤로 이동했습니다. 따라잡을 때까지 스노우플레이크 ID를 생성하지 않습니다.",
   "persistence.snowflake.worker_unavailable": "현재 보유 중인 스노우플레이크 워커 ID가 없습니다. 리스를 아직 획득하지 못했거나 잃었습니다.",

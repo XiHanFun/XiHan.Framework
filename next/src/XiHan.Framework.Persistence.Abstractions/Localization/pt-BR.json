@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "O provedor de persistência em uso não consegue ler o esquema do banco de dados.",
   "persistence.schema.read_failed": "Falha ao ler o esquema da fonte de dados '{name}': {reason}",
   "persistence.schema.table_not_found": "A fonte de dados '{dataSource}' não tem uma tabela chamada '{table}'.",
+  "persistence.schema.timestamp_format_mismatch": "O banco de dados SQLite da conexão '{connection}' ainda guarda em outra forma colunas de data e hora que o modelo mapeia para inteiros em ticks UTC (tipo declarado da coluna e classe de armazenamento encontrada nas primeiras linhas): {columns}. Lidos assim, esses valores se tornariam silenciosamente instantes errados. Recrie essas tabelas com colunas INTEGER e converta o texto armazenado em ticks UTC com a fórmula da ADR-0091 (seção 3), ou recrie o banco de dados se os dados puderem ser descartados.",
   "persistence.schema.too_many_tables": "Foram solicitadas {count} tabelas, mais do que as {max} cujo esquema pode ser lido de uma vez; leia-as em lotes de no máximo {max}.",
   "persistence.snowflake.clock_moved_backwards": "O relógio voltou além da tolerância; IDs snowflake não são gerados até que ele se recupere.",
   "persistence.snowflake.worker_unavailable": "Nenhum ID de worker snowflake está em posse no momento: o arrendamento não foi adquirido ou foi perdido.",

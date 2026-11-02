@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// EF Core 持久化的能力包入口。
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
 /// </remarks>
 /// <typeparam name="TContext">应用的 DbContext。</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -47,6 +47,14 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     /// 连接绑定的类型。
     /// </summary>
     private const string ConnectionBindingType = "connection:relational";
+
+    /// <summary>
+    /// 默认连接在核对消息里的名字。
+    /// </summary>
+    /// <remarks>
+    /// 与命名连接保留的名字 <c>default</c> 一致（命名连接不能叫这个名字）。
+    /// </remarks>
+    private const string DefaultConnection = "default";
 
     /// <summary>
     /// 应用提供的 DbContext 配置回调。
@@ -158,6 +166,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
+        var registrations = services.GetRequiredService<RepositoryRegistrations>();
         // DbContext 是作用域服务，建模与建表要在独立作用域内完成，不能从根容器直接解析
         await using (var scope = services.CreateAsyncScope())
         {
@@ -169,12 +178,12 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
             {
                 await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
             }
+
+            // 默认连接上是没有登记到命名连接的实体（含没经仓储登记、只在 DbContext 里配置的）
+            await VerifyTimestampsAsync(context, DefaultConnection, type => registrations.ConnectionOf(type) is null, cancellationToken).ConfigureAwait(false);
         }
 
-        if (_options.EnsureCreated)
-        {
-            await EnsureNamedCreatedAsync(services, cancellationToken).ConfigureAwait(false);
-        }
+        await StartNamedAsync(services, registrations, cancellationToken).ConfigureAwait(false);
 
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
         await _health.StartAsync(cancellationToken).ConfigureAwait(false);
@@ -206,14 +215,14 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     }
 
     /// <summary>
-    /// 在登记了实体的每个命名连接上建表。
+    /// 在登记了实体的每个命名连接上建表并核对时间列。
     /// </summary>
     /// <remarks>
-    /// 每个连接一个独立作用域，DbContext 按那个连接建出后 <c>EnsureCreated</c>：EF Core 按整个模型建表，那个库里多出的空表不用。只用于开发与测试，与默认连接的 <c>EnsureCreated</c> 一样。
+    /// 每个连接一个独立作用域，DbContext 按那个连接建出：开着 <c>EnsureCreated</c> 时先建表（EF Core 按整个模型建表，那个库里多出的空表不用；只用于开发与测试，与默认连接一样），再核对登记到这个连接的实体的时间列（<see cref="VerifyTimestampsAsync"/>）。
     /// </remarks>
-    private static async Task EnsureNamedCreatedAsync(IServiceProvider services, CancellationToken cancellationToken)
+    private async Task StartNamedAsync(IServiceProvider services, RepositoryRegistrations registrations, CancellationToken cancellationToken)
     {
-        var placed = services.GetRequiredService<RepositoryRegistrations>().Entities
+        var placed = registrations.Entities
             .Select(static entity => entity.Connection)
             .OfType<string>()
             .Distinct(StringComparer.Ordinal);
@@ -222,7 +231,29 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
             await using var scope = services.CreateAsyncScope();
             // 先绑定再取 DbContext：选项回调按这个连接建
             scope.ServiceProvider.GetRequiredService<ContextConnection>().Bind(connection);
-            await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+            var context = scope.ServiceProvider.GetRequiredService<TContext>();
+            if (_options.EnsureCreated)
+            {
+                await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            await VerifyTimestampsAsync(context, connection, type => string.Equals(registrations.ConnectionOf(type), connection, StringComparison.Ordinal), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// 核对一个连接上的 UTC ticks 时间列，库里还是旧的存储形式就启动失败。
+    /// </summary>
+    /// <remarks>
+    /// SQLite 上由约定映射成 UTC ticks 整数的列，在库里声明的不是 INTEGER（旧库的文本列，空表也算）或抽样到非整数的值（重建表时没换算），照读会静默读成错误的时刻：这个连接上的不符列一次列出，抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094）。其余 Provider、库文件还不存在时什么也不做。
+    /// </remarks>
+    private static async Task VerifyTimestampsAsync(TContext context, string connection, Func<Type, bool> placedHere, CancellationToken cancellationToken)
+    {
+        var mismatches = await SqliteTimestampCheck.FindMismatchesAsync(context, placedHere, cancellationToken).ConfigureAwait(false);
+        if (mismatches.Count > 0)
+        {
+            // 照读不报错、只是读成错误的时刻：不能带着旧数据进入服务，消息里给出全部不符的列与换算式的出处
+            Result.Failure(Error.Validation(PersistenceErrors.StorageFormatMismatch, PersistenceMessages.TimestampFormatMismatch, MessageArguments.Of(("connection", connection), ("columns", string.Join(", ", mismatches))))).ThrowIfFailure();
         }
     }
 

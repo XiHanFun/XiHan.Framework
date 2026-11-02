@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "Der verwendete Persistenz-Provider kann das Datenbankschema nicht lesen.",
   "persistence.schema.read_failed": "Das Schema der Datenquelle '{name}' konnte nicht gelesen werden: {reason}",
   "persistence.schema.table_not_found": "Die Datenquelle '{dataSource}' hat keine Tabelle namens '{table}'.",
+  "persistence.schema.timestamp_format_mismatch": "Die SQLite-Datenbank der Verbindung '{connection}' speichert Zeitspalten, die das Modell auf UTC-Ticks als Ganzzahlen abbildet, noch in einer anderen Form (deklarierter Spaltentyp sowie die in den frühesten Zeilen gefundene Speicherklasse): {columns}. So gelesen würden diese Werte stillschweigend zu falschen Zeitpunkten. Erstellen Sie diese Tabellen mit INTEGER-Spalten neu und rechnen Sie den gespeicherten Text mit der Formel aus ADR-0091 (Abschnitt 3) in UTC-Ticks um, oder erstellen Sie die Datenbank neu, wenn ihre Daten verworfen werden können.",
   "persistence.schema.too_many_tables": "Es wurden {count} Tabellen angefordert, mehr als die {max}, deren Schema auf einmal gelesen werden kann; lesen Sie sie in Gruppen von höchstens {max}.",
   "persistence.snowflake.clock_moved_backwards": "Die Uhr wurde über die Toleranz hinaus zurückgestellt; Snowflake-IDs werden erst wieder erzeugt, wenn sie aufgeholt hat.",
   "persistence.snowflake.worker_unavailable": "Derzeit wird keine Snowflake-Worker-ID gehalten: die Lease wurde noch nicht erworben oder ist verloren gegangen.",

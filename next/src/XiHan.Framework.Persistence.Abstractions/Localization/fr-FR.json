@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "Le fournisseur de persistance utilisé ne peut pas lire le schéma de la base de données.",
   "persistence.schema.read_failed": "La lecture du schéma de la source de données '{name}' a échoué : {reason}",
   "persistence.schema.table_not_found": "La source de données '{dataSource}' n'a pas de table nommée '{table}'.",
+  "persistence.schema.timestamp_format_mismatch": "La base de données SQLite de la connexion '{connection}' stocke encore sous une autre forme des colonnes d'horodatage que le modèle associe à des entiers en ticks UTC (type déclaré de la colonne et classe de stockage trouvée dans ses premières lignes) : {columns}. Lues telles quelles, ces valeurs deviendraient silencieusement des instants erronés. Recréez ces tables avec des colonnes INTEGER et convertissez le texte stocké en ticks UTC avec la formule de l'ADR-0091 (section 3), ou recréez la base de données si ses données peuvent être supprimées.",
   "persistence.schema.too_many_tables": "{count} tables ont été demandées, plus que les {max} dont le schéma peut être lu en une fois ; lisez-les par lots d'au plus {max}.",
   "persistence.snowflake.clock_moved_backwards": "L'horloge a reculé au-delà de la tolérance ; aucun identifiant snowflake n'est généré tant qu'elle n'a pas rattrapé son retard.",
   "persistence.snowflake.worker_unavailable": "Aucun identifiant de worker snowflake n'est actuellement détenu : le bail n'a pas été acquis ou a été perdu.",

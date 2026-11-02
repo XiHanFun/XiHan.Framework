@@ -104,6 +104,14 @@ public static class PersistenceErrors
     public const string ListPageInvalid = "PERSISTENCE_VALIDATION_007";
 
     /// <summary>
+    /// 库里已有数据的存储形式与模型不符。
+    /// </summary>
+    /// <remarks>
+    /// EF Core 在 SQLite 上由约定映射成 UTC ticks 整数的时间列，库里还是旧的文本形式（列声明不是 INTEGER，或抽样到非整数的值）：照读会静默读成错误的时刻。特性启动时以异常抛出、启动失败；参数 <c>connection</c>、<c>columns</c>（ADR-0094）。
+    /// </remarks>
+    public const string StorageFormatMismatch = "PERSISTENCE_VALIDATION_008";
+
+    /// <summary>
     /// 没有活动的工作单元。
     /// </summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";

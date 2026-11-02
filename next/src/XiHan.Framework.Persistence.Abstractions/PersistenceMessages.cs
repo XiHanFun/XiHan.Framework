@@ -226,6 +226,14 @@ public static class PersistenceMessages
     public const string SchemaNotSupported = "persistence.schema.not_supported";
 
     /// <summary>
+    /// 库里的时间列还是旧的存储形式。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>connection</c>（<c>default</c> 或命名连接名）、<c>columns</c>（<c>表.列 (声明类型)</c>，抽样不符的另带查到的存储类）。与 <see cref="PersistenceErrors.StorageFormatMismatch"/> 搭配。
+    /// </remarks>
+    public const string TimestampFormatMismatch = "persistence.schema.timestamp_format_mismatch";
+
+    /// <summary>
     /// 延迟装载的目录。
     /// </summary>
     /// <remarks>

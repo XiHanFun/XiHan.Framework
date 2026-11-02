@@ -104,10 +104,12 @@ EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大�
 
   ```sql
   (unixepoch(substr(col, 1, 19))
-   - (CASE substr(col, -6, 1) WHEN - THEN -1 ELSE 1 END) * (CAST(substr(col, -5, 2) AS INTEGER) * 3600 + CAST(substr(col, -2, 2) AS INTEGER) * 60)) * 10000000
-  + CASE WHEN substr(col, 20, 1) = . THEN CAST(substr(substr(col, 21, length(col) - 26) || 0000000, 1, 7) AS INTEGER) ELSE 0 END
+   - (CASE substr(col, -6, 1) WHEN '-' THEN -1 ELSE 1 END) * (CAST(substr(col, -5, 2) AS INTEGER) * 3600 + CAST(substr(col, -2, 2) AS INTEGER) * 60)) * 10000000
+  + CASE WHEN substr(col, 20, 1) = '.' THEN CAST(substr(substr(col, 21, length(col) - 26) || '0000000', 1, 7) AS INTEGER) ELSE 0 END
   + 621355968000000000
   ```
 
   只就地 `UPDATE` 不重建表时，列的声明类型仍是 `TEXT`，整数按文本存，比较退化成等长数字串的文本比较，不要这样留着。原来自己配了转换的列不受影响。
 - 测试：EF Core 测试项目新增四例（SQLite 上存成整数、不同偏移写入的值按时刻比较与排序、可空列判空与比较、100 纳秒往返与偏移为零、库里存的就是 UTC ticks；应用自己配的转换保留；复杂类型也转换、其余 Provider 不转换；转换器的边界值）；工作流测试的 `WorkflowDbContext` 去掉手工转换后 EF Core + SQLite 的引擎、任务一致性套件与工作流用例 41 例全部通过（修前全部失败）。
+
+> 修订（2026-11-02）：第三节「影响」里已有 SQLite 库被静默误读的风险，改为 EF Core 特性启动时核对、库里还是旧的存储形式即启动失败（`PERSISTENCE_VALIDATION_008`），见 ADR-0094 第一节；第三节换算式里丢失的引号（`'-'`、`'.'`、`'0000000'`）已补上，补后的式子由 EF Core 测试逐字执行验证。

@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "当前的持久化 Provider 不能读取库结构。",
   "persistence.schema.read_failed": "读取数据源 '{name}' 的库结构失败：{reason}",
   "persistence.schema.table_not_found": "数据源 '{dataSource}' 里没有名为 '{table}' 的表。",
+  "persistence.schema.timestamp_format_mismatch": "连接 '{connection}' 的 SQLite 库里，下列时间列还是别的存储形式，模型已把它们映射成 UTC ticks 整数（括号里是列的声明类型，以及在最早写入的行里查到的存储类）：{columns}。照读会静默读成错误的时刻。请重建这些表、把列建成 INTEGER，并按 ADR-0091 第三节的换算式把存储的文本换算成 UTC ticks；数据可以丢弃时删库重建。",
   "persistence.schema.too_many_tables": "请求了 {count} 张表，超过一次最多可读结构的 {max} 张；请分批读取，每批最多 {max} 张。",
   "persistence.snowflake.clock_moved_backwards": "时钟回拨超过容忍阈值：时钟追上之前不生成雪花标识。",
   "persistence.snowflake.worker_unavailable": "当前没有持有雪花标识的机器位：租约尚未取得或已丢失。",

@@ -183,7 +183,7 @@ public static class ModelBuilderExtensions
     /// <summary>
     /// 标准 SQL 的双引号标识符（PostgreSQL、SQLite）。
     /// </summary>
-    private static string Quote(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
+    internal static string Quote(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 
     /// <summary>
     /// SQL Server 的方括号标识符。

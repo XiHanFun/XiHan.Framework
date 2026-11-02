@@ -144,8 +144,8 @@ public sealed class OrderReports(AppDbContext db)
 - 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
 - 依赖 `Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据）。
 - 软删除实体的唯一索引只约束未删除的行（ADR-0081）：`HasFilter` 的条件 Npgsql `"IsDeleted" = false`、SQLite `"IsDeleted" = 0`、SQL Server `[IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`）；Pomelo MySQL、Oracle 等不支持部分唯一索引的 Provider 建模即失败，要唯一约束就把 `IsDeleted` 显式写进列。
-- SQLite 上 `ApplyPersistenceConventions(Database)` 把模型里全部 `DateTimeOffset` 与可空 `DateTimeOffset` 属性（含从属类型与复杂类型里的，框架表与应用实体一样）存成 UTC ticks 整数（ADR-0091）：EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大小比较与排序（`SQLite does not support expressions of type 'DateTimeOffset' in ORDER BY clauses`），到期书签、按时间过滤与分页都要用到。写入 `UtcTicks`、读回偏移为零的同一时刻，100 纳秒精度与 SqlSugar 在 SQLite 上的 UTC 日期时间文本一致，整数的比较与排序就是时刻的比较与排序。应用已配了值转换或存储类型的属性（`HasConversion`、`ConfigureConventions` 的 `HaveConversion`）不动；其余 Provider 不动。已有的 SQLite 库：原来没配转换的列存的是 EF Core 的 `DateTimeOffset` 文本，模型改成整数后旧行会被**静默读成错误的时刻**（如 `0001-01-01T00:00:00.0002026`，SQLite 把文本开头的年份当整数），不报错——开发库删了重建（`EnsureCreated`），要留数据的重建表、把列建成 `INTEGER` 并在搬数据时换算成 UTC ticks（换算式见 ADR-0091 第三节）；原来自己配了转换（如 `DateTimeOffsetToBinaryConverter`）的照旧，库不用动。
-- 启动时在独立作用域里取一次模型，建模错误（索引声明不合法、Provider 不支持部分唯一索引）在启动时失败，不论是否开着 `EnsureCreated`。
+- SQLite 上 `ApplyPersistenceConventions(Database)` 把模型里全部 `DateTimeOffset` 与可空 `DateTimeOffset` 属性（含从属类型与复杂类型里的，框架表与应用实体一样）存成 UTC ticks 整数（ADR-0091）：EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大小比较与排序（`SQLite does not support expressions of type 'DateTimeOffset' in ORDER BY clauses`），到期书签、按时间过滤与分页都要用到。写入 `UtcTicks`、读回偏移为零的同一时刻，100 纳秒精度与 SqlSugar 在 SQLite 上的 UTC 日期时间文本一致，整数的比较与排序就是时刻的比较与排序。应用已配了值转换或存储类型的属性（`HasConversion`、`ConfigureConventions` 的 `HaveConversion`）不动；其余 Provider 不动。已有的 SQLite 库：原来没配转换的列存的是 EF Core 的 `DateTimeOffset` 文本，照读会被**静默读成错误的时刻**；特性启动时核对，旧库即启动失败（`PERSISTENCE_VALIDATION_008`，ADR-0094），怎么修见下文[已有 SQLite 库的时间列](#已有-sqlite-库的时间列)；原来自己配了转换（如 `DateTimeOffsetToBinaryConverter`）的照旧，库不用动、也不核对。
+- 启动时在独立作用域里取一次模型，建模错误（索引声明不合法、Provider 不支持部分唯一索引）在启动时失败，不论是否开着 `EnsureCreated`；SQLite 上随后逐连接核对时间列的存储形式（见下文[已有 SQLite 库的时间列](#已有-sqlite-库的时间列)）。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `CanConnect`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
@@ -154,6 +154,39 @@ public sealed class OrderReports(AppDbContext db)
 - 命名连接（ADR-0087）：在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，值是连接串（名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则装配即 `ArgumentException`）。一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions(Connection: name)` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：普通工作单元里取用它的仓储抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，绑定连接的工作单元里取用落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。登记到没有声明的连接装配即失败、绑定没有声明的连接 `BeginAsync` 抛出，都是 `PERSISTENCE_VALIDATION_004`；作用域里已经按别的连接建出 `DbContext`（先取用了它）再绑定，`BeginAsync` 抛 `PERSISTENCE_VALIDATION_002`，在新作用域里绑定即可。`EnsureCreated` 对登记了实体的每个命名连接各执行一次，按整个模型建表（那个库里多出的空表不用）。命名连接与默认连接用同一个配置回调，是同一种数据库 Provider。工作流的租约表就这样放到另一个库：SQLite 上 `XiHan:Workflow:Database:LockConnection` 指向这里声明的连接，调用方事务里取锁不再等自己的事务。
 - 运行时数据源（ADR-0078）不支持：EF Core 的数据库 Provider 由应用选、本包不引用，按数据库类型建不出连接。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 这两项（运行时数据源、库结构读取）不计划支持，已定（ADR-0084）：需要代码生成的读结构、外部数据源或零代码运行时的应用用 `Persistence.SqlSugar`。
+
+### 已有 SQLite 库的时间列
+
+约定把时刻映射成 UTC ticks 整数（ADR-0091）之前建出的 SQLite 库，没配转换的列是 `TEXT`，存 EF Core 的 `DateTimeOffset` 文本（如 `2026-11-01 08:00:00+08:00`）；按整数读时 SQLite 把文本开头的年份当整数，旧行会被静默读成 `0001-01-01T00:00:00.0002026` 这样的错误时刻，不报错。特性启动时因此核对库里的存储形式，不符即启动失败（ADR-0094）：
+
+- 核对什么：默认连接一次，登记了实体的每个命名连接各一次；落在这个连接上的实体的表里、由约定映射成 UTC ticks 的列。列的声明类型不是 INTEGER（旧库的 `TEXT`，空表也算——TEXT 列会把之后写入的整数也存成文本）即不符；声明是 INTEGER 时抽样表里最早写入的 1000 行，查到非整数的值（重建表时没换算）即不符。
+- 失败的样子：特性启动失败，原因是 `PERSISTENCE_VALIDATION_008`，消息列出连接与不符的列，如 `TimedRow.At (TEXT)`（声明类型）、`TimedRow.Due (INTEGER, text)`（声明类型与抽样查到的存储类）。核对只读，不改库。
+- 不核对什么：SQLite 之外的数据库；应用自己配了转换的列；库里没有的表或列（迁移没跑到，读写时 EF Core 自己报错）；库文件还不存在（不打开连接，不会因此建出空库）；租户分片库（调用时才解析，表结构由应用管理，给分片库建表或迁移时按下面的办法处理）。
+- 开销：每个连接一次读表结构，每张这类表一次至多 1000 行的抽样，与表的大小无关：1 张 100 万行的表约 1 毫秒，200 张表各 1 万行约 100 毫秒。
+
+怎么修：
+
+- 数据可以丢的开发、测试库：删库重建（`EnsureCreated` 或重新跑迁移）。
+- 要留数据：重建表，列建成 `INTEGER`，搬数据时把文本换算成 UTC ticks。SQLite 改不了列类型，EF Core 迁移改列类型本来就是重建表，但它搬数据是原样 `INSERT … SELECT`，文本搬进 INTEGER 列仍是文本，启动核对照样失败——要把迁移里搬数据的语句换成带换算式的（`migrationBuilder.Sql(...)`），或手工执行。只就地 `UPDATE` 不重建表时列仍声明为 `TEXT`，整数按文本存，启动核对同样失败。
+
+换算式（`col` 换成列名；对 NULL 得 NULL），把 EF Core 的文本 `yyyy-MM-dd HH:mm:ss[.fffffff]±hh:mm` 换成 UTC ticks，实测不同偏移、带 7 位小数的值往返一致：
+
+```sql
+(unixepoch(substr(col, 1, 19))
+ - (CASE substr(col, -6, 1) WHEN '-' THEN -1 ELSE 1 END) * (CAST(substr(col, -5, 2) AS INTEGER) * 3600 + CAST(substr(col, -2, 2) AS INTEGER) * 60)) * 10000000
++ CASE WHEN substr(col, 20, 1) = '.' THEN CAST(substr(substr(col, 21, length(col) - 26) || '0000000', 1, 7) AS INTEGER) ELSE 0 END
++ 621355968000000000
+```
+
+重建一张表（以 `TimedRow(Id, At NOT NULL, Due NULL)` 为例，`<At 的换算式>` 是上式把 `col` 换成 `"At"`）：
+
+```sql
+CREATE TABLE "ef_temp_TimedRow" ("Id" TEXT NOT NULL CONSTRAINT "PK_TimedRow" PRIMARY KEY, "At" INTEGER NOT NULL, "Due" INTEGER NULL);
+INSERT INTO "ef_temp_TimedRow" ("Id", "At", "Due") SELECT "Id", <At 的换算式>, <Due 的换算式> FROM "TimedRow";
+DROP TABLE "TimedRow";
+ALTER TABLE "ef_temp_TimedRow" RENAME TO "TimedRow";
+-- 再建回这张表原有的索引
+```
 
 ## 相关
 

@@ -16,6 +16,7 @@
   "persistence.schema.not_supported": "El proveedor de persistencia en uso no puede leer el esquema de la base de datos.",
   "persistence.schema.read_failed": "No se pudo leer el esquema del origen de datos '{name}': {reason}",
   "persistence.schema.table_not_found": "El origen de datos '{dataSource}' no tiene ninguna tabla llamada '{table}'.",
+  "persistence.schema.timestamp_format_mismatch": "La base de datos SQLite de la conexión '{connection}' aún guarda en otra forma columnas de tiempo que el modelo asigna a enteros de ticks UTC (tipo declarado de la columna y clase de almacenamiento encontrada en sus primeras filas): {columns}. Leídos así, estos valores se convertirían en silencio en instantes erróneos. Vuelva a crear estas tablas con columnas INTEGER y convierta el texto guardado a ticks UTC con la fórmula de ADR-0091 (sección 3), o vuelva a crear la base de datos si sus datos se pueden descartar.",
   "persistence.schema.too_many_tables": "Se solicitaron {count} tablas, más de las {max} cuyo esquema se puede leer a la vez; léalas en lotes de como máximo {max}.",
   "persistence.snowflake.clock_moved_backwards": "El reloj retrocedió más allá de la tolerancia; no se generan ID snowflake hasta que se recupere.",
   "persistence.snowflake.worker_unavailable": "Actualmente no se posee ningún ID de trabajador snowflake: el arrendamiento no se ha adquirido o se ha perdido.",
