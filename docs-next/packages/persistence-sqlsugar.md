@@ -323,6 +323,21 @@ public sealed class ChangeBuffer
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
 - 库结构读取与实体目录（ADR-0078）：读表与读列经 `DbMaintenance`（同步 API）；缺省连接 `CopyNew` 另开不在事务里的连接，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`。实体目录取 `EntityMaintenance.GetEntityInfo`。SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；PostgreSQL 的注释、identity、serial 缺省值与加引号的大小写混合表名都能读到。MySQL、SQL Server、Oracle 在真实库上实测过（ADR-0084）：注释、自增、主键、缺省值原文、大小写混合的表名、分表折叠与分页总数都对；长度只给字符与二进制类型（`tinyint(1)`、`datetime(6)`、SQL Server `int` 的 10 这类显示宽度或精度不算长度）。Oracle 的读列不走 SqlSugar（它给 CLR 类型名、读不到 identity、缺省值错位、大小写混合的表名查不到），改查连接用户自己的数据字典，要 Oracle 12c 及以上；运行时数据源在 Oracle 上不自动转大写。不支持（已定，ADR-0087）：Oracle 11g 及更早的版本读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`），不做 11g 的分支；达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 原来的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证。
+- MySQL 上的已知限制（SqlSugar 上游缺陷，已报上游，待上游修复；ADR-0100 修订）：两个及以上值的 `In(…)`、按实体删除（单个实体也是）与 `Deleteable<T>().In(…)` 把字符串内联成只转义单引号的字面量，集合 `Contains` 则把反斜杠写成两个。MySQL 缺省 sql_mode 下前一组对含反斜杠的值静默漏行（值里有 `\'` 时报语法错误），开了 `NO_BACKSLASH_ESCAPES` 时后一组静默漏行；逐个 `==`、只有一个值的 `In`、单行写入与多行插入用参数，两种模式都对。仓储里受影响的是 `FindManyAsync`（两个及以上标识）、`AddRangeAsync` 的标识预查、`UpdateRangeAsync` / `RemoveRangeAsync` 的加锁取回、物理删除的 `RemoveAsync` / `RemoveRangeAsync`（缺省模式），以及规约里的集合 `Contains`（`NO_BACKSLASH_ESCAPES`）。框架自己的字符串主键（租户、调度、工作流定义）是不含反斜杠与引号的受限标识符，Guid 与整数主键也不受影响；框架不在仓储里绕开。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验）；做不到时改用参数化的写法：
+
+  ```csharp
+  // db：本作用域的 ISqlSugarClient；documents：IRepository<Doc, string>；unitOfWork：本作用域的 SqlSugarUnitOfWork
+  // 多个标识的查找：缺省 sql_mode 下用集合 Contains（SqlSugar 对 MySQL 把反斜杠写成两个），不用 In / FindManyAsync
+  var docs = await db.Queryable<Doc>().Where(d => ids.Contains(d.Id)).ToListAsync();
+  var viaRepository = await documents.ListAsync(EntityQuery.All<Doc>().Where(new Specification<Doc>(d => ids.Contains(d.Id))), ct);
+  // 开了 NO_BACKSLASH_ESCAPES 的反过来：用 db.Queryable<Doc>().In(ids)，不用集合 Contains
+
+  // 两种模式都对的写法：逐个按 == 比较（参数）
+  var one = await documents.FindAsync(id, ct);
+  await unitOfWork.EnsureTransactionAsync(ct); // 在调用的工作单元里直接用客户端写入之前
+  await db.Deleteable<Doc>().Where(d => d.Id == id).ExecuteCommandAsync(); // 代替 RemoveAsync 的物理删除与 Deleteable(entity)
+  ```
+
 - 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
 
 ## 相关
@@ -334,4 +349,4 @@ public sealed class ChangeBuffer
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078、ADR-0098、ADR-0100、ADR-0101
+- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078、ADR-0098、ADR-0100（含 MySQL 已知限制的修订）、ADR-0101
