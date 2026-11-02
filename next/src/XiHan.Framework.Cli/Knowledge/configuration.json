@@ -1145,6 +1145,13 @@
           "summary": "健康项 persistence.entityframeworkcore.database 的重探间隔与单次探测超时（秒）"
         },
         {
+          "key": "VerifiedShardCapacity",
+          "type": "integer",
+          "default": "1024",
+          "minimum": 1,
+          "summary": "SQLite 上核对通过的租户分片库最多记多少个；记满淘汰最早记下的，被淘汰的分片下次绑定时重新核对时间列"
+        },
+        {
           "key": "Connections:{name}",
           "type": "string",
           "sample": "Data Source=leases.db",

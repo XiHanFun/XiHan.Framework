@@ -48,6 +48,18 @@ public sealed record EntityFrameworkCorePersistenceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// 核对通过的租户分片库最多记多少个。
+    /// </summary>
+    /// <remarks>
+    /// SQLite 上租户分片库首次绑定时核对时间列（ADR-0097），核对通过的按分片连接串记在进程内、之后不再查；记满时淘汰最早记下的，被淘汰的分片下次绑定时重新核对一次。默认 1024，至少 1。
+    /// </remarks>
+    public int VerifiedShardCapacity
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The verified shard capacity must be positive.");
+    } = 1024;
+
+    /// <summary>
     /// 命名连接：名字 → 连接串。
     /// </summary>
     /// <remarks>
@@ -60,10 +72,10 @@ public sealed record EntityFrameworkCorePersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取：<c>EnsureCreated</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>。
+    /// 从配置读取。
     /// </summary>
     /// <remarks>
-    /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理。
+    /// 读 <c>EnsureCreated</c>、<c>HealthProbeIntervalSeconds</c>、<c>VerifiedShardCapacity</c>、<c>Connections:&lt;name&gt;</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理。
     /// </remarks>
     public static EntityFrameworkCorePersistenceOptions FromConfiguration(IConfiguration configuration)
     {
@@ -83,6 +95,15 @@ public sealed record EntityFrameworkCorePersistenceOptions
             options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+        }
+
+        var capacity = configuration[$"{ConfigurationSection}:VerifiedShardCapacity"];
+        if (capacity is not null)
+        {
+            // NumberStyles.None 只接受纯数字：带符号、空白或千分位的值一律视为非法，而不是宽松解析
+            options = int.TryParse(capacity, NumberStyles.None, CultureInfo.InvariantCulture, out var verified) && verified >= 1
+                ? options with { VerifiedShardCapacity = verified }
+                : throw new ArgumentException($"'{ConfigurationSection}:VerifiedShardCapacity' must be a positive integer, but was '{capacity}'.");
         }
 
         var named = configuration.GetSection($"{ConfigurationSection}:Connections").GetChildren().ToList();

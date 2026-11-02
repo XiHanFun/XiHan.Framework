@@ -16,6 +16,8 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOp
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions? other) -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.HealthProbeInterval.init -> void
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity.get -> int
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity.init -> void
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!

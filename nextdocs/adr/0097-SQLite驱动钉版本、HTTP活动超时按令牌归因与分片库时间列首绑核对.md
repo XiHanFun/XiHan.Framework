@@ -142,7 +142,8 @@ ADR-0094 第一节让 EF Core 特性启动时逐连接核对 SQLite 上由约定
 ### 决策
 
 - 时机：工作单元开始（`BeginAsync`）时本作用域的 `DbContext` 建在租户分片上（Tenant 阶段写进调用的分片，或 `TenantShardScope` 显式绑定的分片；选项回调把分片绑定记进作用域的 `ContextConnection`），而这个分片库还没有核对通过，就在开始之前核对一次。范围（没有登记到命名连接的实体，与默认连接相同）、判定、不打开不存在的库文件都与启动时相同。命名连接的绑定优先于分片，不在此列。
-- 只查一次：新的内部单例 `ShardTimestampChecks` 按分片连接串记结果。核对通过的分片之后每次开工作单元只读一个标志；同一分片的并发首绑经每分片一个信号量排队，只有一个去查，其余等到之后看标志，各用自己的令牌与 `DbContext`（前一个取消或抛出时，下一个接着查）。不是 SQLite 的分片不建记录。
+- 只查一次：新的内部单例 `ShardTimestampChecks` 按分片连接串记下核对通过的分片，之后每次开工作单元只查一次字典（不加锁）；同一分片的并发首绑经每分片一个信号量排队，只有一个去查，其余等到之后看记录，各用自己的令牌与 `DbContext`（前一个取消或抛出时，下一个接着查）。不是 SQLite 的分片不建记录。
+- 容量上限（收口时补，见下「理由」）：核对通过的记录最多 `XiHan:Persistence:EntityFrameworkCore:VerifiedShardCapacity` 条（`EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity`，正整数，默认 1024，值不合法装配时即抛 `ArgumentException`、启动失败），记满淘汰最早记下的（先进先出）；被淘汰的分片下次绑定时重新核对一次，并发再绑同样只查一次。排队门只在有首绑在用时存在（使用者计数归零即移除并释放），条数不超过同时在核对的分片数。
 - 不记下的情形：核对不符（每次绑定都重查、都失败，修好即恢复，不用重启）、库文件还不存在（`SqliteTimestampCheck.FindMismatchesAsync` 改为返回 `null` 区分「没有可查的」，下次绑定再查）、核对抛出异常（打不开库、忙等超时、调用取消）。
 - 结果：不符抛出携带 `PERSISTENCE_VALIDATION_008` 的 `FrameworkException`，工作单元保持未开始；新消息键 `persistence.schema.shard_timestamp_format_mismatch`（参数 `tenant`、`columns`，不带连接串，10 种区域）。经管道的调用在 Transaction 阶段抛出，由 Observe 阶段转为 `KERNEL_UNEXPECTED_001`（HTTP 500，原因是本码）——与 `BeginAsync` 里其余装配类错误一样；这是服务端的数据问题，不按 VALIDATION 回 400。
 - SqlSugar 不核对：它的 `DateTimeOffsetConverter` 在 SQLite 上一直存 UTC 日期时间文本（ADR-0013 起写入没有变过，ADR-0037 只改了 PostgreSQL 的读取），读取按整段文本解析（`DateTime.Parse`），不是取开头的年份；库里是整数或浮点数（如 EF Core 建的库）时转换抛出 `InvalidCastException`，读取失败而不是读错。没有同类的静默误读。
@@ -152,11 +153,12 @@ ADR-0094 第一节让 EF Core 特性启动时逐连接核对 SQLite 上由约定
 - 分片库的旧数据与默认库一样会被静默读错，只是启动时看不到；首次绑定是框架第一次能看到它的时候。
 - 核对开销与启动时相同（每库一次读表结构加每表至多 1000 行抽样），缓存之后摊到这个分片的第一次调用上；排队保证并发首绑不重复查。
 - 不符不缓存：失败本来就要人修，修好之后不重启即恢复，与 ADR-0093 对 S3「修好自动恢复」同一取舍；代价是坏掉的分片每次调用都重查一次，只落在这个分片自己的调用上。
+- 记录要有上限（仓库约定：缓存、注册表不得无界增长）：分片库数由应用决定，进程内的记录不能跟着无界增长。淘汰的代价只是被淘汰的分片再核对一次（每库一次读表结构加每表至多 1000 行抽样），语义不变，所以用最简单的先进先出：快路径只读、不记访问先后。上限做成配置键而不是常量：SQLite 分片库很多的应用可以调大，避免活跃分片数超过上限时反复核对。
 
 ### 影响
 
 - 启动期没有新的失败条件；运行期新的失败：EF Core + SQLite 的租户分片库里由约定映射成 UTC ticks 的列声明为 `TEXT`（含空表）或最早写入的 1000 行里有非整数值时，这个分片上的调用都以 `KERNEL_UNEXPECTED_001` ← `PERSISTENCE_VALIDATION_008` 失败，别的租户与不带分片的调用不受影响。修法同 ADR-0091 第三节的换算式，修好之后下一次调用即恢复。
-- 内存：每个出现过的 SQLite 分片库一条记录（一个标志与一个不取等待句柄的信号量），条数随应用的分片库数，与分片目录同量级，不另设上限。
-- 公开签名：`PersistenceMessages.ShardTimestampFormatMismatch` 新增（只增）；`EntityFrameworkCoreUnitOfWork` 的内部构造多一个参数。没有新错误码、配置键、表结构变化。
+- 内存：核对通过的记录至多 `VerifiedShardCapacity` 条（默认 1024，每条是一个分片连接串）；排队门至多是同时在核对的分片数。
+- 公开签名：`PersistenceMessages.ShardTimestampFormatMismatch` 与 `EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity` 新增（只增）；`EntityFrameworkCoreUnitOfWork` 的内部构造多一个参数。新配置键 `XiHan:Persistence:EntityFrameworkCore:VerifiedShardCapacity`（CLI 知识库 `configuration.json` 同步），值不合法启动失败。没有新错误码、表结构变化。
 - 不经工作单元、在作用域里直接解析 `DbContext` 读写分片的不在范围内。
-- 测试：EF Core 测试项目的 `EntityFrameworkCoreShardTimestampCheckTests` 3 例（处理器不碰库，分片上读写连接的打开次数就是核对次数）：旧库分片每次绑定都失败、别的租户照常、按换算式修好之后下一次绑定即通过且读回同一时刻、之后不再核对；合格分片 8 个并发首绑只核对一次（第一个核对打开连接后挂起，8 个都进入核对之后才放行），之后的绑定不碰库；分片库文件还不存在时不建出文件、不记下，放进旧库之后下一次绑定即失败。修改验证：去掉排队门，并发用例 3/3 失败。
+- 测试：EF Core 测试项目的 `EntityFrameworkCoreShardTimestampCheckTests` 3 例（处理器不碰库，分片上读写连接的打开次数就是核对次数）：旧库分片每次绑定都失败、别的租户照常、按换算式修好之后下一次绑定即通过且读回同一时刻、之后不再核对；合格分片 8 个并发首绑只核对一次（第一个核对打开连接后挂起，8 个都进入核对之后才放行），之后的绑定不碰库；分片库文件还不存在时不建出文件、不记下，放进旧库之后下一次绑定即失败。修改验证：去掉排队门，并发用例 3/3 失败。容量（收口时补）：上限 1 时两个分片交替绑定，记满后照常工作、被淘汰的分片再绑定重新核对一次且之后只看记录、被淘汰的分片上 8 个并发再绑只核对一次；`VerifiedShardCapacity` 取 `0`、`-1`、`1e3`、` 8`、`many` 都启动失败、消息带配置键。修改验证：不淘汰时容量用例失败，去掉排队门时两个并发用例都失败。

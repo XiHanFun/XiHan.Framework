@@ -81,6 +81,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- | --- | --- |
 | `XiHan:Persistence:EntityFrameworkCore:EnsureCreated` | 布尔 | `false` | 启动时对默认连接调用 `EnsureCreated` 建表；只用于开发与测试，生产用迁移 |
 | `XiHan:Persistence:EntityFrameworkCore:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
+| `XiHan:Persistence:EntityFrameworkCore:VerifiedShardCapacity` | 正整数 | `1024` | SQLite 上核对通过的租户分片库最多记多少个（见「已有 SQLite 库的时间列」）；记满淘汰最早记下的，被淘汰的分片下次绑定时重新核对一次 |
 | `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` | 字符串 | — | 命名连接，值是连接串；绑定它的工作单元所在作用域的 `DbContext` 建在这个连接上（见「行为与限制」） |
 | `XiHan:Bindings:db` | 字符串 | — | 连接绑定的主值，作为 `BindingValue.Value` 交给回调 |
 
@@ -106,7 +107,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | 类型 | 说明 |
 | --- | --- |
 | `EntityFrameworkCorePersistenceFeature<TContext>` | 特性入口；构造参数是配置回调；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.entityframeworkcore.database`） |
-| `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`、`Connections`（命名连接）；`FromConfiguration(configuration)` |
+| `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`、`VerifiedShardCapacity`、`Connections`（命名连接）；`FromConfiguration(configuration)` |
 | `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081）；SQLite 上 `DateTimeOffset` 与可空 `DateTimeOffset` 属性存成 UTC ticks 整数，应用已配转换的不动（ADR-0091） |
 | `EntityFrameworkCoreUnitOfWork` | 事务型工作单元；`Context` 是本作用域的 `DbContext`（开始时建出：绑定了命名连接就建在那个连接上）；由容器创建，构造不公开 |
 | `EntityFrameworkCoreRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
@@ -162,7 +163,7 @@ public sealed class OrderReports(AppDbContext db)
 - 核对什么：默认连接一次，登记了实体的每个命名连接各一次；落在这个连接上的实体的表里、由约定映射成 UTC ticks 的列。列的声明类型不是 INTEGER（旧库的 `TEXT`，空表也算——TEXT 列会把之后写入的整数也存成文本）即不符；声明是 INTEGER 时抽样表里最早写入的 1000 行，查到非整数的值（重建表时没换算）即不符。
 - 失败的样子：特性启动失败，原因是 `PERSISTENCE_VALIDATION_008`，消息列出连接与不符的列，如 `TimedRow.At (TEXT)`（声明类型）、`TimedRow.Due (INTEGER, text)`（声明类型与抽样查到的存储类）。核对只读，不改库。
 - 不核对什么：SQLite 之外的数据库；应用自己配了转换的列；库里没有的表或列（迁移没跑到，读写时 EF Core 自己报错）；库文件还不存在（不打开连接，不会因此建出空库）。
-- 租户分片库（ADR-0097）：启动时还不知道有哪些分片，改在首次绑定时核对——工作单元开始时 `DbContext` 建在租户分片上（Tenant 阶段解析出的分片，或 `TenantShardScope` 显式绑定的），而这个分片库还没有核对通过，就先按同样的范围与判定核对一次。不符时那次工作单元开不起来：抛出携带 `PERSISTENCE_VALIDATION_008` 的异常，经管道的调用是 `KERNEL_UNEXPECTED_001`（HTTP 500）、原因是它，消息带租户与不符的列（消息键 `persistence.schema.shard_timestamp_format_mismatch`，不带连接串）；这个分片上的调用都失败，别的租户照常。核对通过的分片按连接串记在进程内，之后每次开工作单元只看这条记录，同一分片的并发首绑排队、只查一次；不符、库文件还不存在、核对抛出异常（打不开库、调用取消）都不记下，按下面的办法修好或建出库之后，下一次绑定即重新核对，不用重启。不经工作单元、直接解析 `DbContext` 读写分片的不在范围内。
+- 租户分片库（ADR-0097）：启动时还不知道有哪些分片，改在首次绑定时核对——工作单元开始时 `DbContext` 建在租户分片上（Tenant 阶段解析出的分片，或 `TenantShardScope` 显式绑定的），而这个分片库还没有核对通过，就先按同样的范围与判定核对一次。不符时那次工作单元开不起来：抛出携带 `PERSISTENCE_VALIDATION_008` 的异常，经管道的调用是 `KERNEL_UNEXPECTED_001`（HTTP 500）、原因是它，消息带租户与不符的列（消息键 `persistence.schema.shard_timestamp_format_mismatch`，不带连接串）；这个分片上的调用都失败，别的租户照常。核对通过的分片按连接串记在进程内，之后每次开工作单元只看这条记录，同一分片的并发首绑排队、只查一次；记录至多 `VerifiedShardCapacity` 条（默认 1024），记满淘汰最早记下的，被淘汰的分片下次绑定时重新核对一次（并发再绑同样只查一次），SQLite 分片库很多的应用可以调大；不符、库文件还不存在、核对抛出异常（打不开库、调用取消）都不记下，按下面的办法修好或建出库之后，下一次绑定即重新核对，不用重启。不经工作单元、直接解析 `DbContext` 读写分片的不在范围内。
 - 开销：每个连接一次读表结构，每张这类表一次至多 1000 行的抽样，与表的大小无关：1 张 100 万行的表约 1 毫秒，200 张表各 1 万行约 100 毫秒。租户分片是每个分片库首次绑定时一次，算在那次调用里。
 - SqlSugar 不需要这项核对：它在 SQLite 上一直把 `DateTimeOffset` 存成 UTC 日期时间文本、读取时整段解析，存储形式没有变过；库里是整数（如 EF Core 建的库）时读取抛出 `InvalidCastException`，不会静默读错。
 

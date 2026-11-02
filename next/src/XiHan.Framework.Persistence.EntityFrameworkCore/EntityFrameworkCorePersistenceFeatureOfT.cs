@@ -150,8 +150,8 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         // 工作单元只依赖基类 DbContext，把应用的 TContext 转发为作用域内的同一实例，避免产生第二个上下文
         context.Services.TryAddScoped<DbContext>(static sp => sp.GetRequiredService<TContext>());
         // DbContext 由工作单元在开始时才取：那时才知道这个作用域要不要绑定命名连接
-        // 分片库的核对结果跨作用域共享：核对通过的分片只查一次
-        context.Services.TryAddSingleton<ShardTimestampChecks>();
+        // 分片库的核对结果跨作用域共享：核对通过的分片只查一次，记录有上限（满了淘汰最早记下的，被淘汰的下次绑定重新核对）
+        context.Services.TryAddSingleton(static sp => new ShardTimestampChecks(sp.GetRequiredService<EntityFrameworkCorePersistenceOptions>().VerifiedShardCapacity));
         context.Services.TryAddScoped(static sp => new EntityFrameworkCoreUnitOfWork(
             sp.GetRequiredService<DbContext>,
             sp.GetRequiredService<ContextConnection>(),
