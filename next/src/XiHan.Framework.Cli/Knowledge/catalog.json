@@ -1393,6 +1393,7 @@
       "summary": "内存工作流默认实现：按分区的有界内存定义 / 实例 / 书签存储（非事务）、进程内实例锁、单进程到期书签轮询",
       "description": "XiHan Framework 内存工作流（默认实现）：有界内存的定义、实例与书签存储，进程内实例锁，单进程到期书签轮询。",
       "references": [
+        "XiHan.Framework.Persistence.Abstractions",
         "XiHan.Framework.Workflow.Abstractions"
       ],
       "dependencies": [],
