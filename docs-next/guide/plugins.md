@@ -56,7 +56,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
 | `contributes.operations` | 插件服务的全部操作 ID，握手声明的操作必须都在其中 |
 | `contributes.config.section` | `Configure` 时宿主下发的配置节（领域节或其子节，如 `XiHan:Echo` 或 `XiHan:Caching:Remote`），按 `IConfiguration` 展开后序列化为 JSON 对象；没有声明为 `{}` |
 | `contributes.health` | 插件自报的健康项名，未声明的健康项是握手不一致 |
-| `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了（非空）在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略 |
+| `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了（非空）在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略；Go SDK 读清单时同样拒绝 |
 | `permissions` | 所需权限，见下一节 |
 | `activation` | `onStartup`（缺省）、`onOperation:<模式>`、`onEvent:<模式>` |
 
@@ -321,7 +321,7 @@ wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈�
 
 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 是规范的 Go 实现，`plugin` 包提供进程外插件运行时 `plugin.Serve`：读环境变量、监听、写握手行、实现 `xihan.plugin.v1` 服务端、生命周期与健康推送、事件投递、宿主回调客户端和 stderr 结构化日志。SDK 当前为 `v0.1`，不提供流式操作，不覆盖 Wasm 载体。
 
-1. 写清单 `xihan.manifest.json`：`kind: plugin`、`isolation: out-of-process`、`contributes.operations` 列出全部操作、`entry` 是可执行文件名。
+1. 写清单 `xihan.manifest.json`：`kind: plugin`、`isolation: out-of-process`、`contributes.operations` 列出全部操作、`entry` 是可执行文件名。不写 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，SDK 的 `manifest.Read`（`plugin.Serve` 启动时调用）读到非空即返回错误、插件不启动，与宿主在发现时以 `PLUGINS_VALIDATION_001` 拒绝是同一条规则。
 2. 写入口，用 `operation.Add` 登记操作，交给 `plugin.Serve`：
 
    ```go
