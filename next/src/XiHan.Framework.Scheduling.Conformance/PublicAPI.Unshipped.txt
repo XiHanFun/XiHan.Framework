@@ -32,6 +32,7 @@ XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Runs_ExclusiveBegin_C
 XiHan.Framework.Scheduling.Conformance.JobStoreConformance.Triggers_RoundTripAllFields() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance
 XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Acquire_RefusesWhileHeld_AndSucceedsAfterRelease() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Engine_HoldsTheLeaseOnlyWhileTheApplicationServes() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.LeaderElectionConformance() -> void
 XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Lease_ExpiresUnlessRenewed() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.RecordingJob
@@ -51,6 +52,7 @@ XiHan.Framework.Scheduling.Conformance.RecordingJobLog.WaitAsync(XiHan.Framework
 abstract XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.StartAsync(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null) -> System.Threading.Tasks.Task<XiHan.Framework.Scheduling.Conformance.JobSchedulerHost!>!
 abstract XiHan.Framework.Scheduling.Conformance.JobStoreConformance.CreateAsync() -> System.Threading.Tasks.Task<(XiHan.Framework.Scheduling.Abstractions.Storage.IJobStore! Store, System.IAsyncDisposable! Host)>!
 abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.CreateElection(System.TimeProvider! clock) -> XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection!
+abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.StartNodeAsync(System.TimeProvider! clock, XiHan.Framework.Kernel.Hosting.IFeature! probe) -> System.Threading.Tasks.Task<(XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection! Competitor, System.IAsyncDisposable! Host)>!
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.AttemptsAsync(XiHan.Framework.Scheduling.Conformance.JobSchedulerHost! host, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>!
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName

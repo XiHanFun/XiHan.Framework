@@ -37,7 +37,7 @@
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 30 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
-| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 2 |
+| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 4 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 10 + 32 + 8 |
 
@@ -196,9 +196,9 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 | --- | --- | --- |
 | `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页） |
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
-| `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期 |
+| `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒）；`StartNodeAsync(clock, probe)` 返回 `(ILeaderElection Competitor, IAsyncDisposable Host)`：起一个调度引擎用被测选举的节点（登记套件的时钟、轮询周期设得很长、`UseFeature(probe)` 装配套件给的探针特性），`Competitor` 是与节点争同一租约、节点启动到停止期间都在服务的另一个持有者（数据库实现是同一个库上的另一个节点，进程内实现是节点自己的选举），`Host` 释放这一切（节点可能已被用例停止） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期；应用生命周期（ADR-0094）：启动中的周期不拿租约，进入服务后竞争者放手即由节点拿到，排空中的周期释放、竞争者在租约到期之前就拿到 |
 
-调度器用例由用例驱动时间（ADR-0074）：套件登记一个只由用例推进的时钟（`FakeTimeProvider`），引擎的到期判定、领导租约、作业的停留与执行时限都按它计时；用例推进时钟、调用 `JobSchedulerHost.PollAsync` 轮询一次再断言，不靠后台循环、也不按墙钟等待，结果与机器快慢和负载无关。等作业开始用 `RecordingJobLog.WaitAsync`，由作业的记录唤醒。`RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`（按注入的时钟停留），用来构造重试与超时场景。`Scheduling.InMemory`、`Scheduling.Database` 通过三套用例，`Scheduling.Kubernetes` 通过领导选举用例（以内存 API Server 桩验证）。
+调度器用例由用例驱动时间（ADR-0074）：套件登记一个只由用例推进的时钟（`FakeTimeProvider`），引擎的到期判定、领导租约、作业的停留与执行时限都按它计时；用例推进时钟、调用 `JobSchedulerHost.PollAsync` 轮询一次再断言，不靠后台循环、也不按墙钟等待，结果与机器快慢和负载无关。等作业开始用 `RecordingJobLog.WaitAsync`，由作业的记录唤醒。`RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`（按注入的时钟停留），用来构造重试与超时场景。`Scheduling.InMemory`、`Scheduling.Database` 通过三套用例，`Scheduling.Kubernetes` 通过领导选举用例（以内存 API Server 桩验证，应用生命周期用例的节点装配内存调度与 Kubernetes 选举）。领导选举的应用生命周期用例要求 `Release` 在应用不在服务状态时也真正生效：经管道释放的实现（排空与停止时管道拒绝调用）过不了。
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;

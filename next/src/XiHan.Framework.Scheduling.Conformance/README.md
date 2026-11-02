@@ -4,7 +4,7 @@
 
 - `JobSchedulerConformance`：实现 `StartAsync(configure, configuration)` 启动一个装配了被测调度器的宿主，返回 `JobSchedulerHost(scheduler, poll, host)`。回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用（`TestHost` 的服务回调即是）；`poll` 执行一个轮询周期并等本周期起的运行连同收尾结束，即 `JobSchedulerEngine.PollOnceAsync`。Provider 把轮询周期设得很长（如 `XiHan:Scheduling:PollIntervalSeconds = 3600`），让后台循环不动作。用例覆盖手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复（ADR-0060）、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页，ADR-0082）。`RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`。
 - `JobStoreConformance`：实现 `CreateAsync()`，返回 `(IJobStore Store, IAsyncDisposable Host)`；用例覆盖作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞（`BlockTriggerAsync`）/ 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复。
-- `LeaderElectionConformance`：实现 `CreateElection(clock)`，选举与租约按传入的时钟判定到期；用例推进时钟而不是等待真实时间，覆盖获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期。
+- `LeaderElectionConformance`：实现 `CreateElection(clock)`，选举与租约按传入的时钟判定到期；用例推进时钟而不是等待真实时间，覆盖获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期。另实现 `StartNodeAsync(clock, probe)` 供应用生命周期用例（ADR-0094）：返回 `(Competitor, Host)`——起一个调度引擎用被测选举的节点（登记 `clock`、轮询周期设得很长、`UseFeature(probe)`；探针依赖 `scheduling.jobs`，在调度之后启动、之前停止），`Competitor` 是与节点争同一租约、全程在服务的另一个持有者，`Host` 释放这一切。用例断言启动中的周期不拿租约、进入服务后竞争者放手即由节点拿到、排空中的周期释放且竞争者在租约到期之前就拿到——`Release` 在应用不在服务状态时必须真正生效。
 
 ```csharp
 public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConformance

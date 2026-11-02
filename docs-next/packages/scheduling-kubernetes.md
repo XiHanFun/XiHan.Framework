@@ -135,7 +135,7 @@ public sealed record LeaderView(string Holder, bool IsLeader);
 - 只提供领导选举。运行时登记的作业、暂停状态与运行历史仍在各 Pod 的内存里，不在副本间共享，也没有失联恢复。
 - Lease 存活时间以整秒写入，小于 1 秒的存活时间在 API Server 上按 1 秒处理。
 - 与 `Scheduling.Database` 同时装配时，两个显式 Provider 都提供 `scheduling.leader`，需要用 `XiHan:Providers:scheduling.leader` 指定一个，规则见[能力包与清单](../guide/modularity)。
-- 通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证）。
+- 通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证），含应用生命周期用例：排空中的节点释放 Lease，另一个 Pod 在租约到期之前就接手（ADR-0094）。
 
 ## 相关
 

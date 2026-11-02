@@ -113,3 +113,5 @@ EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本，翻译不了大�
 - 测试：EF Core 测试项目新增四例（SQLite 上存成整数、不同偏移写入的值按时刻比较与排序、可空列判空与比较、100 纳秒往返与偏移为零、库里存的就是 UTC ticks；应用自己配的转换保留；复杂类型也转换、其余 Provider 不转换；转换器的边界值）；工作流测试的 `WorkflowDbContext` 去掉手工转换后 EF Core + SQLite 的引擎、任务一致性套件与工作流用例 41 例全部通过（修前全部失败）。
 
 > 修订（2026-11-02）：第三节「影响」里已有 SQLite 库被静默误读的风险，改为 EF Core 特性启动时核对、库里还是旧的存储形式即启动失败（`PERSISTENCE_VALIDATION_008`），见 ADR-0094 第一节；第三节换算式里丢失的引号（`'-'`、`'.'`、`'0000000'`）已补上，补后的式子由 EF Core 测试逐字执行验证。
+
+> 修订（2026-11-02）：第一节「影响」里内存与数据库各自的排空用例并入调度一致性套件的应用生命周期用例（`LeaderElectionConformance.StartNodeAsync`，三个实现都通过），见 ADR-0094 第二节。

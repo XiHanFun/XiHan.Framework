@@ -26,4 +26,4 @@ RBAC 最小权限：`coordination.k8s.io` 的 `leases` 资源 `get` / `update` /
 
 ## 状态
 
-P3：可用，通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证）。
+P3：可用，通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证，含应用生命周期用例，ADR-0094）。

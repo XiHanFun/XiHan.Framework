@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0005-persistence.md`、`spec/conventions/error-codes.md` 随之修订；补充 ADR-0091 第三节「影响」：已有 SQLite 库被静默误读的风险改为启动时查出）。
+已采纳（`spec/rfcs/0005-persistence.md`、`spec/conventions/error-codes.md`、`spec/rfcs/0013-scheduling.md` 随之修订；补充 ADR-0091 第三节「影响」：已有 SQLite 库被静默误读的风险改为启动时查出；ADR-0091 第一节各 Provider 自己的排空用例并入调度一致性套件）。
 
 ## 日期
 
@@ -10,7 +10,7 @@
 
 ## 背景
 
-第六批收口时数据分区留下几项待定（`j-round-summary.md` 第 5 节、`j-data.md` 第 4 节），用户逐条拍板，全按推荐（`k-batch-backlog.md` 第 7、8、9 条）。本 ADR 记其中的两项决定，每项一节。第 8 条（Microsoft.Data.Sqlite 清池竞态、SqlSugar 在 SQLite 上不释放命令，各起草一份上游 issue）只产出共享笔记里的 issue 草稿，不改框架，不进本 ADR。
+第六批收口时数据分区留下几项待定（`j-round-summary.md` 第 5 节、`j-data.md` 第 4 节），用户逐条拍板，全按推荐（`k-batch-backlog.md` 第 7、8、9 条）。本 ADR 记其中的两项决定（第 7、9 条），每项一节。第 8 条（Microsoft.Data.Sqlite 清池竞态、SqlSugar 在 SQLite 上不释放命令，各起草一份上游 issue）只产出共享笔记里的 issue 草稿，不改框架，不进本 ADR。
 
 ## 一、EF Core 在 SQLite 上启动时核对时间列的存储形式
 
@@ -65,3 +65,39 @@ ADR-0091 第三节让 `ApplyPersistenceConventions(Database)` 在 SQLite 上把�
 - 启动期新增的失败条件：EF Core + SQLite，库里由约定映射成 UTC ticks 的列声明为 `TEXT`（含空表），或最早写入的 1000 行里有文本——启动失败，`KERNEL_HOSTING_002`，原因 `PERSISTENCE_VALIDATION_008`。SqlSugar、内存实现与 EF Core 的其余数据库不受影响。
 - 行为：不开 `EnsureCreated` 的 SQLite 应用，库文件存在时启动多一次读表结构与每表一次抽样；库文件被别的进程长时间独占写锁时，启动等到忙等超时失败（原来启动不碰数据库）。
 - 测试：EF Core 测试项目新增 14 例——旧库（有行与空表）启动失败、消息列出两列、核对不改库；按 EF Core 迁移的方式重建未换算（另追加 1000 行整数、建覆盖索引）启动失败，并演示直接读确实读成第 1 年；按换算式重建后启动成功、读回同一时刻并按时刻排序；新库空表与写过行后再启动都成功；库文件不存在时启动成功且不建出文件；应用自己配了转换的列不核对；命名连接上的旧库失败、消息是那个连接名；亲和性判定六例。修改验证：去掉 `NOT INDEXED`，重建未换算一例失败；去掉核对，四例失败。
+
+## 二、领导选举一致性套件加上应用生命周期用例
+
+### 背景
+
+ADR-0091 第一节让调度引擎在应用不在服务状态（启动中、排空中）时不持有领导租约，并修正了数据库实现停止释放不生效的缺陷（释放经管道，排空与停止时管道拒绝调用，行删不掉）。那时的用例是内存与数据库各自写的；`LeaderElectionConformance` 只有 `CreateElection(clock)`，没有应用生命周期，自写 Provider 的同类缺陷——释放在应用不在服务状态时不生效——套件查不出。用户拍板：套件加上应用生命周期，补「应用不在服务状态时释放」这条，内存与数据库实现都过。
+
+### 备选
+
+1. 只在选举层面加用例：选举接口不知道应用状态，模拟不出「排空中管道拒绝调用」，查不出要查的缺陷。
+2. 另起一个抽象类（如 `LeaderElectionLifecycleConformance`）：已有实现不受影响，但新 Provider 可以只继承旧类而漏掉这条契约。
+3. 在 `LeaderElectionConformance` 上加抽象工厂与一个用例：继承它的实现都必须面对这条契约。
+
+### 决策
+
+选 3。
+
+- 套件 API：新增 `protected abstract Task<(ILeaderElection Competitor, IAsyncDisposable Host)> StartNodeAsync(TimeProvider clock, IFeature probe)` 与用例 `Engine_HoldsTheLeaseOnlyWhileTheApplicationServes`；新增内部类型 `LeadershipProbeFeature`（依赖 `scheduling.jobs`，在调度之后启动、之前停止，两个钩子都正赶上应用不在服务状态）。
+- Provider 的实现：起一个节点——装配调度引擎（`JobSchedulerEngine`）与被测选举，登记套件的时钟，轮询周期设得很长、后台循环不动作，`UseFeature(probe)`；`Competitor` 是与节点争同一租约、节点启动到停止期间都在服务的另一个持有者；`Host` 释放这一切（用例可能已经停止了节点）。
+- 用例：探针启动钩子里执行一个周期，记下应用不在服务、节点不是领导者；进入服务后竞争者先拿到（资源确实空着），节点这个周期拿不到，竞争者放手后节点下一个周期拿到、竞争者被拒；用例停止节点，探针停止钩子里（应用 `Draining`）时钟只走半个租约，节点这个周期释放，竞争者立即拿到。钩子里只记录、出钩子再断言：断言失败在钩子里会变成特性启动或停止失败，掩盖原因。
+- 「恢复服务后可重新拿」的落法：内核里应用离开服务状态只有启动中与排空中两段，排空之后只能停止、不会回到服务状态（`LifecycleState` 的迁移表）。所以用例验证的是启动中让出、进入服务后（另一个持有者放手）重新拿到。
+- 三个实现都接上：内存（竞争者是节点自己的选举实例，进程内不分持有者）、数据库（同一 SQLite 文件上另一个节点，先于被测节点起）、Kubernetes（同一个 API Server 桩上另一个持有者；节点装配内存调度与 Kubernetes 选举）。
+- 测试去重：第六批内存实现的 `LeadershipLifecycleTests`（同一场景，一致性用例是它的超集）删掉；数据库实现的排空一例删掉，只留「停止即删行、另一个节点立刻接手、不记告警」一例。
+
+### 理由
+
+- 引擎在抽象包里只有一份，Provider 之间只差在选举的释放能否在应用不在服务状态时生效——这正是一致性套件该查的契约，RFC-0013 已写明 `LeaderLease.Release` 在那时也必须生效。
+- 抽象成员而不是带默认实现的虚方法：默认跳过等于让自写 Provider 不知不觉漏掉这条，也是用户定的「不加带默认实现的兼容重载」。
+- 注入时钟、直接驱动周期：排空中时钟只走半个租约，竞争者拿到只能说明真的释放了，不是租约到期；不靠后台循环与真实等待，结果与机器快慢无关。
+- 修改验证：让引擎在应用不在服务状态时不释放，三个实现的新用例都失败；让数据库实现的释放在应用不在服务状态时被拒（模拟原先经管道的缺陷），数据库的新用例失败。
+
+### 影响
+
+- 公开 API（`Scheduling.Conformance`，PublicAPI 同步）：新增抽象方法 `LeaderElectionConformance.StartNodeAsync(TimeProvider, IFeature)` 与用例方法 `Engine_HoldsTheLeaseOnlyWhileTheApplicationServes`。继承 `LeaderElectionConformance` 的自写 Provider 测试要实现 `StartNodeAsync`，否则编译不过：起一个用被测选举的调度节点（时钟、长轮询周期、`UseFeature(probe)`），给出全程在服务的竞争者；释放经管道的实现过不了这条用例，要改成不经管道（参照 `Scheduling.Database` 的 `LeaseRows.ReleaseAsync`）。
+- 运行时行为、配置、表结构不变。
+- 测试数：`Scheduling.InMemory.Tests` 32（新增 1、删去 1），`Scheduling.Database.Tests` 37（新增 1、删去 1），`Scheduling.Kubernetes.Tests` 8（新增 1）。
