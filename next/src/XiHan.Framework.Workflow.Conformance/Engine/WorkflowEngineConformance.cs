@@ -1594,6 +1594,54 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 36：目录与实例查询的排序经引擎下推，排序字段越界是校验错误。
+    /// </summary>
+    /// <remarks>
+    /// 排序字段不在白名单里（请求里给了越界的数字）以 <see cref="WorkflowErrors.InputInvalid"/> 返回，消息键 <c>workflow.definition.query_sort_invalid</c> / <c>workflow.instance.query_sort_invalid</c>，不在构造时抛出；实例计数不看排序。定义按标题升降序、按创建时间区间过滤；实例的排序方向缺省降序，按标题升降序（ADR-0102）。
+    /// </remarks>
+    [Fact]
+    public async Task Queries_SortThroughTheEngine_AndRejectUnknownSortFields()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var bravo = await host.PublishAsync(Labeled("conf-sort-a", "a") with { DisplayName = "bravo" }).ConfigureAwait(false);
+        var alpha = await host.PublishAsync(Labeled("conf-sort-b", "a") with { DisplayName = "alpha" }).ConfigureAwait(false);
+
+        await host.AsTenantAsync(null, async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            var rejected = await catalog.QueryAsync(new WorkflowDefinitionQuery { SortBy = (WorkflowDefinitionSortField)99 }, CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid), (rejected.Error?.Code, rejected.Error?.MessageKey));
+
+            var byTitle = new WorkflowDefinitionQuery { Keyword = "conf-sort", SortBy = WorkflowDefinitionSortField.Title };
+            Assert.Equal([alpha.Id, bravo.Id], (await catalog.QueryAsync(byTitle, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(byTitle with { Descending = true }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            var future = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", CreatedFrom = DateTimeOffset.UtcNow.AddHours(1) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.Equal(0, future.Total);
+            Assert.Equal(2, (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", CreatedFrom = DateTimeOffset.UtcNow.AddHours(-1), CreatedTo = DateTimeOffset.UtcNow.AddHours(1) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Total);
+            return true;
+        }).ConfigureAwait(false);
+
+        async Task<WorkflowInstance> StartTitledAsync(string displayName)
+            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-sort-a", DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+
+        var charlie = await StartTitledAsync("charlie").ConfigureAwait(false);
+        var first = await StartTitledAsync("alpha").ConfigureAwait(false);
+        var middle = await StartTitledAsync("bravo").ConfigureAwait(false);
+        var invalid = new WorkflowInstanceQuery { SortBy = (WorkflowInstanceSortField)99 };
+        var listed = await host.EngineAsync(engine => engine.ListInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQuerySortInvalid), (listed.Error?.Code, listed.Error?.MessageKey));
+        Assert.Equal(3, (await host.EngineAsync(engine => engine.CountInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+
+        // 排序方向缺省降序（实例列表最新的在前）；给了升序才从小到大
+        var byTitleQuery = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a"), SortBy = WorkflowInstanceSortField.Title };
+        Assert.Equal([charlie.Id, middle.Id, first.Id], (await host.ListInstancesAsync(byTitleQuery).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([first.Id, middle.Id, charlie.Id], (await host.ListInstancesAsync(byTitleQuery with { Descending = false }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([middle.Id, first.Id, charlie.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a") }).ConfigureAwait(false)).Select(static instance => instance.Id));
+    }
+
+    /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束。
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)

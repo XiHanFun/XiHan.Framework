@@ -214,9 +214,11 @@ var definition = parsed.ValueOrThrow();
 | `Name` | 定义名 |
 | `Category` | 分类，精确匹配 |
 | `Status` | 状态 |
+| `CreatedFrom` / `CreatedTo` | 创建时间区间：下界含、上界不含（ADR-0102） |
+| `SortBy` / `Descending` | 排序字段与方向，见下文「列表排序」；缺省 `Name` 升序（名字升序、版本降序） |
 | `Skip` / `Limit` | 缺省 0 与 100，`Limit` 最大 1000（`WorkflowDefinitionQuery.MaxLimit`） |
 
-条件同时给出时取交集，结果按名字升序、版本降序。过滤、排序、分页与计数都由存储执行，数据库实现是 SQL。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`QueryAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_page_invalid`），不进存储。
+条件同时给出时取交集。过滤、排序、分页与计数都由存储执行，数据库实现是 SQL。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`QueryAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_page_invalid`），不进存储；排序字段越界同样是 400（见下文「列表排序」）。
 
 ```csharp
 var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
@@ -224,11 +226,31 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
     Keyword = "报销",
     Category = "finance",
     Status = WorkflowDefinitionStatus.Published,
+    CreatedFrom = monthStart,
+    CreatedTo = monthStart.AddMonths(1),
+    SortBy = WorkflowDefinitionSortField.CreatedAt,
+    Descending = true,
     Skip = 0,
     Limit = 20,
 }, cancellationToken)).ValueOrThrow();
 // page.Items：这一页的摘要；page.Total：同条件的总数
 ```
+
+### 列表排序
+
+定义查询与实例查询各有排序字段 `SortBy`（白名单枚举）与方向 `Descending`，以 4.x 两个列表能排的列为参照（ADR-0102）。排序在存储里执行（数据库实现是 SQL 的 `ORDER BY`），排序字段之后接固定的次序键，同值的行在各页之间不重不漏。
+
+| 查询 | `SortBy` | 缺省 | 次序键 |
+| --- | --- | --- | --- |
+| `WorkflowDefinitionQuery` | `Name`（名字）、`Title`（显示名，没有取名字）、`Version`、`Status`、`CreatedAt`、`PublishedAt` | `Name`，`Descending = false` | 名字升序、版本降序（数据库实现最后再按 ID） |
+| `WorkflowInstanceQuery` | `CreatedAt`、`EndedAt`、`Status`、`DefinitionName`、`Title`（实例标题） | `CreatedAt`，`Descending = true` | 创建时间降序、写入先后降序；按创建时间排序时随它的方向 |
+
+- 一次一个排序字段，不做多列排序。缺省排序与加排序之前相同；注意实例查询的 `Descending` 缺省是 `true`，要升序得写 `Descending = false`。
+- `SortBy` 不是白名单里的值（请求里给了越界的数字）：`QueryAsync` / `ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_sort_invalid` / `workflow.instance.query_sort_invalid`，参数 `sort`），不进存储；`CountInstancesAsync` 不看排序。请求里给不认识的名字（如 `"sortBy": "starter"`）在反序列化时就被拒绝。
+- 文本（名字、标题、定义名）按数据库列的排序规则比较，内存实现按序数：大小写、标点与中文的先后可能随库不同。
+- 状态按状态名比较，排出来是按名字的分组（定义：`Archived`、`Disabled`、`Draft`、`Published`；实例：`Canceled`、`Completed`、`Faulted`、`Running`、`Suspended`、`Terminated`），不是生命周期的先后。
+- 没发布过的定义 `PublishedAt` 为空、没结束的实例 `EndedAt` 为空：空值排在哪头照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小），内存实现当作最小。
+- 标题按前 256 个字符比较（`WorkflowSortKeys.Title`）。
 
 ### 关键字
 
@@ -540,17 +562,20 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围、结束时间上界过滤，同时给出的取交集，按创建时间降序；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围、结束时间上界过滤，同时给出的取交集，按 `SortBy` / `Descending` 排序（缺省创建时间降序，见上文「列表排序」）；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页（ADR-0082）。
 
 | 条件 | 说明 |
 | --- | --- |
 | `CorrelationIds` | 一组关联 ID，实例的关联 ID 是其中之一即匹配；重复的只算一个。`null` 不过滤，**空集合不匹配任何实例**（列表为空、计数为 0，不进存储）。最多 1000 个（`WorkflowInstanceQuery.MaxCorrelationIds`），不能有空白的 ID，否则列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.query_correlations_invalid`） |
 | `TopLevelOnly` | 只取顶层实例（`ParentInstanceId` 为空）。子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度都要加它 |
 | `Keyword` | 关键字：不区分大小写地包含在实例标题 `Title`（启动时给的 `DisplayName`，没给取定义的显示名，再没有取定义名）或关联 ID 里即匹配（ADR-0099），规则见上文「关键字」 |
+| `SortBy` / `Descending` | 排序字段与方向（ADR-0102）：`CreatedAt`、`EndedAt`、`Status`、`DefinitionName`、`Title`；缺省 `CreatedAt`、`Descending = true` |
 
 ```csharp
 // 审批中心「我发起的」：只取顶层，带标题搜索
 var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Limit = 20 };
+// 实例列表点「结束时间」列升序
+var finished = new WorkflowInstanceQuery { SortBy = WorkflowInstanceSortField.EndedAt, Descending = false, Skip = page * 20, Limit = 20 };
 var items = (await engine.ListInstancesAsync(mine, cancellationToken)).ValueOrThrow();
 var total = (await engine.CountInstancesAsync(mine, cancellationToken)).ValueOrThrow();
 
@@ -562,7 +587,9 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
     TopLevelOnly = true,
     Limit = WorkflowInstanceQuery.MaxLimit,
 }, cancellationToken)).ValueOrThrow().ToLookup(static instance => instance.CorrelationId);
-```实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
+```
+
+实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
 
 ## 控制实例
 
@@ -773,7 +800,7 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 | 错误码 | 含义 |
 | --- | --- |
 | `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
-| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页或清理的条数越界 |
+| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页、关联 ID 集合或清理的条数越界、定义查询的分页越界、定义与实例查询的排序字段不在白名单 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |

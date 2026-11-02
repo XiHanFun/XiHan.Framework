@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义列表查询。
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按名字升序、版本降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行，过滤、排序、分页与计数都由存储执行（数据库实现是 SQL，ADR-0096）。分页越界不在构造时抛出，由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
+/// 过滤项都可空、同时给出的取交集；结果按 <see cref="SortBy"/> 与 <see cref="Descending"/> 排序（缺省名字升序、版本降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行，过滤、排序、分页与计数都由存储执行（数据库实现是 SQL，ADR-0096、ADR-0102）。分页与排序字段越界不在构造时抛出，由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowDefinitionQuery
@@ -46,6 +46,32 @@ public sealed record WorkflowDefinitionQuery
     public WorkflowDefinitionStatus? Status { get; init; }
 
     /// <summary>
+    /// 创建时间下界（含）。
+    /// </summary>
+    public DateTimeOffset? CreatedFrom { get; init; }
+
+    /// <summary>
+    /// 创建时间上界（不含）。
+    /// </summary>
+    public DateTimeOffset? CreatedTo { get; init; }
+
+    /// <summary>
+    /// 排序字段。
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see cref="WorkflowDefinitionSortField.Name"/>。按它排序之后接次序键名字升序、版本降序（与排序字段相同的跳过；名字与版本在分区里唯一，已是全序，数据库实现最后再按 ID），同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按状态名比较；没发布过的定义发布时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值时 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.definition.query_sort_invalid</c>）。
+    /// </remarks>
+    public WorkflowDefinitionSortField SortBy { get; init; }
+
+    /// <summary>
+    /// 是否按排序字段降序。
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see langword="false"/>（升序）；只作用于 <see cref="SortBy"/>，次序键的方向固定。
+    /// </remarks>
+    public bool Descending { get; init; }
+
+    /// <summary>
     /// 跳过条数。
     /// </summary>
     /// <remarks>
@@ -74,6 +100,13 @@ public sealed record WorkflowDefinitionQuery
         return (keyword is null || WorkflowKeyword.Matches(keyword, definition.Name.Value, definition.DisplayName, definition.Description))
             && (Name is null || definition.Name == Name.Value)
             && (Category is null || string.Equals(definition.Category, Category, StringComparison.Ordinal))
-            && (Status is null || definition.Status == Status.Value);
+            && (Status is null || definition.Status == Status.Value)
+            && (CreatedFrom is null || definition.CreatedAt >= CreatedFrom.Value)
+            && (CreatedTo is null || definition.CreatedAt < CreatedTo.Value);
     }
+
+    /// <summary>
+    /// 排序字段是否在白名单里。
+    /// </summary>
+    internal bool SortIsDefined => SortBy is WorkflowDefinitionSortField.Name or WorkflowDefinitionSortField.Title or WorkflowDefinitionSortField.Version or WorkflowDefinitionSortField.Status or WorkflowDefinitionSortField.CreatedAt or WorkflowDefinitionSortField.PublishedAt;
 }

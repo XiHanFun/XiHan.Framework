@@ -44,6 +44,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.OutputMapp
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_RunsBothBranches_AndJoinWaitsForAll() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Poller_CoversThePlatformAndEveryEnabledTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Purge_AndDelayVariants() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Queries_SortThroughTheEngine_AndRejectUnknownSortFields() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SetVariables_Jump_AndMigrate() -> System.Threading.Tasks.Task!
@@ -97,8 +98,10 @@ XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_NameQueries_AreScopedToThePartition() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_Query_FiltersPagesAndCounts() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_Query_SortsByEachField_AndFiltersTheCreatedRange() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Definitions_SaveFindListAndDelete() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Instances_List_SortsByEachField_WithStableTieBreaks() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Lock_IsExclusivePerInstance_AndTimesOut() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Partitions_AreIsolated() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Storage.WorkflowStoreConformance.Stores_KeepSnapshots_NotReferences() -> System.Threading.Tasks.Task!

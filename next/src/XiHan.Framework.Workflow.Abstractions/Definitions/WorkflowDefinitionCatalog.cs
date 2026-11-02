@@ -317,6 +317,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
             return ValueTask.FromResult<Result<WorkflowDefinitionPage>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowDefinitionQuery.MaxLimit))));
         }
 
+        // 排序字段只能是白名单里的（枚举越界来自请求里的数字）：同样是可以改正的输入，存储不必再猜怎么排
+        if (!query.SortIsDefined)
+        {
+            return ValueTask.FromResult<Result<WorkflowDefinitionPage>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid, MessageArguments.Of(("sort", query.SortBy.ToString()))));
+        }
+
         return _scope.RunAsync<IWorkflowDefinitionCatalog, WorkflowDefinitionPage>(false, "workflow.definition.query", async () =>
         {
             // 这一页与总数在同一次调用里各读一次（数据库实现在同一事务里），条件相同，只是总数不看分页

@@ -117,8 +117,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期不轮询、不记告警、不持有领导权），停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
 | `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
-| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`Category`、`SearchText`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`）。`Category` 与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列）供定义列表下推（ADR-0096） |
-| `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、`SearchText`（实例标题与关联 ID 折叠后以 U+001F 拼成，关键字用，ADR-0096、ADR-0099）、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
+| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`Category`、`SearchText`、`Title`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`）。`Category` 与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列）供定义列表下推（ADR-0096），`Title`（varchar(256)，显示名或名字的前 256 个字符）供按标题排序（ADR-0102） |
+| `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、`SearchText`（实例标题与关联 ID 折叠后以 U+001F 拼成，关键字用，ADR-0096、ADR-0099）、`Title`（varchar(256)，实例标题的前 256 个字符，按标题排序用，ADR-0102）、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowNodeInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`NodeId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`，`SearchTitle`（载荷 `title` 折叠后的值），以及所属实例的 `DefinitionName`、`InstanceStatus` 与 `SearchInstanceText`（实例标题、关联 ID、定义名折叠后拼成；待办查询下推用，ADR-0077、ADR-0096、ADR-0099）；租户表另有 `TenantId` |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
@@ -134,8 +134,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 ## 行为与限制
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
-- 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，升级前写入的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值；名字升序、版本降序；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
+- 实例列表的每个过滤项都是 SQL 条件，按 `SortBy` / `Descending`（缺省创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102，排序字段是创建时间时写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，升级前写入的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按 `SortBy` / `Descending`（缺省名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102；次序键跳过与排序字段相同的列，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（同 4.x，ADR-0096、ADR-0099），升级前写入的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
@@ -176,6 +176,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - `TenantId` 为 NULL 的定义、实例、书签与这些实例的节点实例搬到对应的 `Platform*` 表（同列复制，不带 `TenantId`）。平台定义搬过去之前先查 `(Name, Version)` 重复：旧索引不约束 NULL 行，可能已有重复。
 - 有独立库的租户，把它的行从平台库搬到它自己的库。
 - 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。
+
+排序用的标题列（ADR-0102）：
+
+- 定义表与实例表（租户与平台）新增可空列 `Title`（varchar(256)），`InitTables` 照常给已有行的表加上；没有新索引（定义每个分区的行少；实例按创建时间、结束时间排序仍走 `(TenantId, CreatedAt)`、`(TenantId, EndedAt)`，按标题、状态、定义名排序是对过滤后的行排序）。
+- 回填：定义行 `Title = WorkflowSortKeys.Title(displayName 为空取 name)`，实例行 `Title = WorkflowSortKeys.Title(displayName 为空取 definitionName)`（都从 `Document` 取）。没回填的行按标题排序时，空值排在哪头照数据库；存储整体替换一行时写上，下一次保存即自愈。
 
 关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 

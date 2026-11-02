@@ -131,10 +131,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
         ArgumentNullException.ThrowIfNull(query);
         lock (_lock)
         {
-            IReadOnlyList<WorkflowInstance> listed = InPartition(tenantId)
-                .Where(entry => query.Matches(entry.Instance))
-                .OrderByDescending(static entry => entry.Instance.CreatedAt)
-                .ThenByDescending(static entry => entry.Sequence)
+            IReadOnlyList<WorkflowInstance> listed = Sorted(InPartition(tenantId).Where(entry => query.Matches(entry.Instance)), query)
                 .Skip(query.Skip)
                 .Take(query.Limit)
                 .Select(static entry => WorkflowJson.Clone(entry.Instance))
@@ -142,6 +139,38 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
             return ValueTask.FromResult(Result.Success(listed));
         }
     }
+
+    /// <summary>
+    /// 按实例查询的排序字段与方向排序，再接次序键创建时间降序、写入先后降序。
+    /// </summary>
+    /// <remarks>
+    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102）；排序字段是创建时间时，写入先后随它的方向（同刻的先写的在升序里排前面）。文本按序数比较，状态按状态名，结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// </remarks>
+    private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Sorted(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, WorkflowInstanceQuery query)
+    {
+        var descending = query.Descending;
+        if (query.SortBy == WorkflowInstanceSortField.CreatedAt)
+        {
+            var byCreation = Order(entries, static entry => entry.Instance.CreatedAt, Comparer<DateTimeOffset>.Default, descending);
+            return descending ? byCreation.ThenByDescending(static entry => entry.Sequence) : byCreation.ThenBy(static entry => entry.Sequence);
+        }
+
+        var sorted = query.SortBy switch
+        {
+            WorkflowInstanceSortField.EndedAt => Order(entries, static entry => entry.Instance.EndedAt, Comparer<DateTimeOffset?>.Default, descending),
+            WorkflowInstanceSortField.Status => Order(entries, static entry => entry.Instance.Status.ToString(), StringComparer.Ordinal, descending),
+            WorkflowInstanceSortField.DefinitionName => Order(entries, static entry => entry.Instance.DefinitionName.Value, StringComparer.Ordinal, descending),
+            WorkflowInstanceSortField.Title => Order(entries, static entry => WorkflowSortKeys.Title(entry.Instance.Title), StringComparer.Ordinal, descending),
+            _ => throw new ArgumentOutOfRangeException(nameof(query), query.SortBy, $"The workflow instance sort field '{query.SortBy}' is not supported."),
+        };
+        return sorted.ThenByDescending(static entry => entry.Instance.CreatedAt).ThenByDescending(static entry => entry.Sequence);
+    }
+
+    /// <summary>
+    /// 按一个键升序或降序排。
+    /// </summary>
+    private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Order<TKey>(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, Func<(WorkflowInstance Instance, long Sequence), TKey> key, IComparer<TKey> comparer, bool descending)
+        => descending ? entries.OrderByDescending(key, comparer) : entries.OrderBy(key, comparer);
 
     /// <inheritdoc />
     public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)

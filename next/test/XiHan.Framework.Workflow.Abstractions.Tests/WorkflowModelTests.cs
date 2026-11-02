@@ -136,6 +136,29 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
+    public void SortKeys_TruncateTitles_WithoutSplittingSurrogatePairs_AndQueriesKeepTheirDefaultOrder()
+    {
+        Assert.Equal("short", WorkflowSortKeys.Title("short"));
+        var exact = new string('a', WorkflowSortKeys.MaxTitleLength);
+        Assert.Equal(exact, WorkflowSortKeys.Title(exact));
+        Assert.Equal(exact, WorkflowSortKeys.Title(exact + "tail"));
+        // 第 256 个字符是高位代理：少取一个，不留下孤立的代理
+        var surrogate = new string('a', WorkflowSortKeys.MaxTitleLength - 1) + "\U0001F600" + "tail";
+        Assert.Equal(new string('a', WorkflowSortKeys.MaxTitleLength - 1), WorkflowSortKeys.Title(surrogate));
+
+        // 缺省排序与原来相同：定义名字升序（版本降序是次序键），实例创建时间降序
+        Assert.Equal((WorkflowDefinitionSortField.Name, false), (new WorkflowDefinitionQuery().SortBy, new WorkflowDefinitionQuery().Descending));
+        Assert.Equal((WorkflowInstanceSortField.CreatedAt, true), (new WorkflowInstanceQuery().SortBy, new WorkflowInstanceQuery().Descending));
+
+        // 定义的创建时间区间：下界含、上界不含
+        var created = DateTimeOffset.UnixEpoch.AddDays(1);
+        var definition = WorkflowDefinitionBuilder.Create("range").AddStart().AddEnd().AddTransition("start", "end").Build() with { CreatedAt = created };
+        Assert.True(new WorkflowDefinitionQuery { CreatedFrom = created, CreatedTo = created.AddTicks(1) }.Matches(definition));
+        Assert.False(new WorkflowDefinitionQuery { CreatedTo = created }.Matches(definition));
+        Assert.False(new WorkflowDefinitionQuery { CreatedFrom = created.AddTicks(1) }.Matches(definition));
+    }
+
+    [Fact]
     public void InstanceQuery_MatchesCorrelationSetTopLevelAndKeyword()
     {
         Assert.Equal(1000, WorkflowInstanceQuery.MaxCorrelationIds);

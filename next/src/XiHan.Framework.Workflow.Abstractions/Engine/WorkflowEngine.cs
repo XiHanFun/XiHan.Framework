@@ -1737,6 +1737,12 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(invalid);
         }
 
+        // 排序字段只能是白名单里的（枚举越界来自请求里的数字）：可以改正的输入，以校验错误返回、不进存储；计数不排序，不校验
+        if (!query.SortIsDefined)
+        {
+            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQuerySortInvalid, MessageArguments.Of(("sort", query.SortBy.ToString()))));
+        }
+
         // 关联 ID 的空集合不匹配任何实例：直接返回空页，不进存储（存储也按同一语义处理，这里省一次调用）
         if (query.CorrelationIds is { Count: 0 })
         {

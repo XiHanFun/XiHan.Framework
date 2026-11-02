@@ -101,15 +101,11 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     /// 定义查询的一页摘要。
     /// </summary>
     /// <remarks>
-    /// 过滤、排序与分页都在 SQL 里；名字升序、版本降序，再按 ID 补成全序。仓储读回整行，摘要从文档取，与按 ID 找到的定义一致。
+    /// 过滤、排序与分页都在 SQL 里；按排序字段与方向，再接名字升序、版本降序与 ID 补成全序（<see cref="Sorted"/>）。仓储读回整行，摘要从文档取，与按 ID 找到的定义一致。
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
-        var paged = Filter(query)
-            .OrderBy(static record => record.Name)
-            .OrderBy(static record => record.Version, descending: true)
-            .OrderBy(static record => record.Id)
-            .Page(query.Skip, query.Limit);
+        var paged = Sorted(Filter(query), query).Page(query.Skip, query.Limit);
         var definitions = ToDefinitions([.. await repository.ListAsync(paged, cancellationToken).ConfigureAwait(false)]);
         return definitions.TryGetValue(out var values)
             ? Result.Success<IReadOnlyList<WorkflowDefinitionSummary>>(values.Select(WorkflowDefinitionSummary.From).ToList())
@@ -168,7 +164,51 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
             filtered = filtered.Where(new Specification<TRow>(record => record.Status == statusName));
         }
 
+        if (query.CreatedFrom is { } createdFrom)
+        {
+            filtered = filtered.Where(new Specification<TRow>(record => record.CreatedAt >= createdFrom));
+        }
+
+        if (query.CreatedTo is { } createdTo)
+        {
+            filtered = filtered.Where(new Specification<TRow>(record => record.CreatedAt < createdTo));
+        }
+
         return filtered;
+    }
+
+    /// <summary>
+    /// 按定义查询的排序字段与方向排序，再接次序键补成全序。
+    /// </summary>
+    /// <remarks>
+    /// 次序键是名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本、状态名按列的排序规则比较，发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
+    /// </remarks>
+    private static EntityQuery<TRow> Sorted(EntityQuery<TRow> query, WorkflowDefinitionQuery definitionQuery)
+    {
+        var descending = definitionQuery.Descending;
+        var sorted = definitionQuery.SortBy switch
+        {
+            WorkflowDefinitionSortField.Name => query.OrderBy(static record => record.Name, descending),
+            WorkflowDefinitionSortField.Title => query.OrderBy(static record => record.Title, descending),
+            WorkflowDefinitionSortField.Version => query.OrderBy(static record => record.Version, descending),
+            WorkflowDefinitionSortField.Status => query.OrderBy(static record => record.Status, descending),
+            WorkflowDefinitionSortField.CreatedAt => query.OrderBy(static record => record.CreatedAt, descending),
+            WorkflowDefinitionSortField.PublishedAt => query.OrderBy(static record => record.PublishedAt, descending),
+            _ => throw new ArgumentOutOfRangeException(nameof(definitionQuery), definitionQuery.SortBy, $"The workflow definition sort field '{definitionQuery.SortBy}' is not supported."),
+        };
+
+        // 次序键跳过与排序字段相同的列：SQL Server 不许同一列在 ORDER BY 里出现两次
+        if (definitionQuery.SortBy != WorkflowDefinitionSortField.Name)
+        {
+            sorted = sorted.OrderBy(static record => record.Name);
+        }
+
+        if (definitionQuery.SortBy != WorkflowDefinitionSortField.Version)
+        {
+            sorted = sorted.OrderBy(static record => record.Version, descending: true);
+        }
+
+        return sorted.OrderBy(static record => record.Id);
     }
 
     /// <summary>
@@ -197,6 +237,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
             Status = definition.Status.ToString(),
             Category = definition.Category,
             SearchText = WorkflowKeyword.Join(definition.Name.Value, definition.DisplayName, definition.Description),
+            Title = WorkflowSortKeys.Title(definition.Title),
             CreatedAt = definition.CreatedAt,
             PublishedAt = definition.PublishedAt,
             Document = WorkflowJson.Serialize(definition),
@@ -213,6 +254,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
         target.Status = source.Status;
         target.Category = source.Category;
         target.SearchText = source.SearchText;
+        target.Title = source.Title;
         target.CreatedAt = source.CreatedAt;
         target.PublishedAt = source.PublishedAt;
         target.Document = source.Document;

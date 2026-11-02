@@ -333,6 +333,22 @@ public static class WorkflowMessages
     public const string DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid";
 
     /// <summary>
+    /// 定义查询的排序字段不在白名单里。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>sort</c>（给出的值）。
+    /// </remarks>
+    public const string DefinitionQuerySortInvalid = "workflow.definition.query_sort_invalid";
+
+    /// <summary>
+    /// 实例查询的排序字段不在白名单里。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>sort</c>（给出的值）。
+    /// </remarks>
+    public const string InstanceQuerySortInvalid = "workflow.instance.query_sort_invalid";
+
+    /// <summary>
     /// 清理一次删除的条数越界。
     /// </summary>
     /// <remarks>

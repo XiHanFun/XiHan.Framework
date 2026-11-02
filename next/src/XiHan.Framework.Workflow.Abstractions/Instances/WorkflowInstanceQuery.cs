@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表查询。
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按创建时间降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。分页与关联 ID 集合越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）。
+/// 过滤项都可空、同时给出的取交集；结果按 <see cref="SortBy"/> 与 <see cref="Descending"/> 排序（缺省创建时间降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。分页、关联 ID 集合与排序字段越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowInstanceQuery
@@ -101,6 +101,22 @@ public sealed record WorkflowInstanceQuery
     public DateTimeOffset? EndedBefore { get; init; }
 
     /// <summary>
+    /// 排序字段。
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see cref="WorkflowInstanceSortField.CreatedAt"/>。按它排序之后接次序键创建时间降序、写入先后降序（数据库实现最后再按 ID 降序）；排序字段是创建时间时，次序键随它的方向。同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按状态名比较；没结束的实例结束时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowInstanceSortField"/> 里定义的值时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_sort_invalid</c>）；计数不看排序。
+    /// </remarks>
+    public WorkflowInstanceSortField SortBy { get; init; }
+
+    /// <summary>
+    /// 是否按排序字段降序。
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see langword="true"/>：实例列表缺省最新的在前（与原来的固定排序相同）。只作用于 <see cref="SortBy"/>（排序字段是创建时间时也作用于写入先后与 ID），其余次序键的方向固定。
+    /// </remarks>
+    public bool Descending { get; init; } = true;
+
+    /// <summary>
     /// 跳过条数。
     /// </summary>
     /// <remarks>
@@ -142,4 +158,9 @@ public sealed record WorkflowInstanceQuery
             && (CreatedTo is null || instance.CreatedAt < CreatedTo.Value)
             && (EndedBefore is null || (instance.EndedAt is { } ended && ended < EndedBefore.Value));
     }
+
+    /// <summary>
+    /// 排序字段是否在白名单里。
+    /// </summary>
+    internal bool SortIsDefined => SortBy is WorkflowInstanceSortField.CreatedAt or WorkflowInstanceSortField.EndedAt or WorkflowInstanceSortField.Status or WorkflowInstanceSortField.DefinitionName or WorkflowInstanceSortField.Title;
 }

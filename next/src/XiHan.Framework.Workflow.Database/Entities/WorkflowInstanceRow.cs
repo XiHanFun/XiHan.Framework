@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions;
 
 namespace XiHan.Framework.Workflow.Database.Entities;
 
@@ -70,6 +71,15 @@ public abstract class WorkflowInstanceRow : IEntity<string>
     /// </remarks>
     [LongText]
     public string? SearchText { get; set; }
+
+    /// <summary>
+    /// 排序用的标题。
+    /// </summary>
+    /// <remarks>
+    /// 实例标题（显示名，没有取定义名）的前 256 个字符（<c>WorkflowSortKeys.Title</c>），按标题排序时 SQL 对它 <c>ORDER BY</c>（ADR-0102）；定长是因为长文本在 Oracle 上不能排序。存储写入的行总有值；可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填，没回填的行按标题排序时位置照数据库的空值规则）。
+    /// </remarks>
+    [StringLength(WorkflowSortKeys.MaxTitleLength)]
+    public string? Title { get; set; }
 
     /// <summary>
     /// 创建时间。

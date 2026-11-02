@@ -43,15 +43,11 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 列表：创建时间降序，同刻按写入序号降序，再按 ID 补成全序。
+    /// 列表：按排序字段与方向，再接创建时间降序、写入序号降序与 ID 补成全序（<see cref="Sorted"/>）。
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
-        var filtered = Filter(query)
-            .OrderBy(static record => record.CreatedAt, descending: true)
-            .OrderBy(static record => record.Sequence, descending: true)
-            .OrderBy(static record => record.Id, descending: true)
-            .Page(query.Skip, query.Limit);
+        var filtered = Sorted(Filter(query), query).Page(query.Skip, query.Limit);
         var records = await instances.ListAsync(filtered, cancellationToken).ConfigureAwait(false);
         return Result.Success<IReadOnlyList<WorkflowInstance>>(records.Select(static record => WorkflowJson.DeserializeInstance(record.Document)).ToList());
     }
@@ -236,6 +232,31 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
+    /// 按实例查询的排序字段与方向排序，再接次序键补成全序。
+    /// </summary>
+    /// <remarks>
+    /// 次序键是创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序字段是创建时间时，写入序号与 ID 随它的方向，同刻的行按写入先后。文本、状态名按列的排序规则比较，结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
+    /// </remarks>
+    private static EntityQuery<TInstance> Sorted(EntityQuery<TInstance> query, WorkflowInstanceQuery instanceQuery)
+    {
+        var descending = instanceQuery.Descending;
+        if (instanceQuery.SortBy == WorkflowInstanceSortField.CreatedAt)
+        {
+            return query.OrderBy(static record => record.CreatedAt, descending).OrderBy(static record => record.Sequence, descending).OrderBy(static record => record.Id, descending);
+        }
+
+        var sorted = instanceQuery.SortBy switch
+        {
+            WorkflowInstanceSortField.EndedAt => query.OrderBy(static record => record.EndedAt, descending),
+            WorkflowInstanceSortField.Status => query.OrderBy(static record => record.Status, descending),
+            WorkflowInstanceSortField.DefinitionName => query.OrderBy(static record => record.DefinitionName, descending),
+            WorkflowInstanceSortField.Title => query.OrderBy(static record => record.Title, descending),
+            _ => throw new ArgumentOutOfRangeException(nameof(instanceQuery), instanceQuery.SortBy, $"The workflow instance sort field '{instanceQuery.SortBy}' is not supported."),
+        };
+        return sorted.OrderBy(static record => record.CreatedAt, descending: true).OrderBy(static record => record.Sequence, descending: true).OrderBy(static record => record.Id, descending: true);
+    }
+
+    /// <summary>
     /// 实例 → 行。
     /// </summary>
     /// <remarks>
@@ -256,6 +277,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
             StarterId = instance.StarterId,
             ParentInstanceId = instance.ParentInstanceId,
             SearchText = WorkflowKeyword.Join(instance.Title, instance.CorrelationId),
+            Title = WorkflowSortKeys.Title(instance.Title),
             CreatedAt = instance.CreatedAt,
             EndedAt = instance.EndedAt,
             Document = WorkflowJson.Serialize(instance),
@@ -275,6 +297,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         target.StarterId = source.StarterId;
         target.ParentInstanceId = source.ParentInstanceId;
         target.SearchText = source.SearchText;
+        target.Title = source.Title;
         target.CreatedAt = source.CreatedAt;
         target.EndedAt = source.EndedAt;
         target.Document = source.Document;

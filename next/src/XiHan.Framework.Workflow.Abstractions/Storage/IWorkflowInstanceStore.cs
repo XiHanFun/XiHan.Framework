@@ -29,10 +29,10 @@ public interface IWorkflowInstanceStore
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(string? tenantId, IReadOnlyList<string> ids, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 列表：按创建时间降序，最多 <see cref="WorkflowInstanceQuery.Limit"/> 条。
+    /// 列表：按排序字段排序，最多 <see cref="WorkflowInstanceQuery.Limit"/> 条。
     /// </summary>
     /// <remarks>
-    /// 过滤项见 <see cref="WorkflowInstanceQuery.Matches"/>：关联 ID 集合为空不匹配任何实例，只取顶层是父实例为空，关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配实例标题或关联 ID（ADR-0096、ADR-0099）。分页与关联 ID 集合的上限已由调用方校验。
+    /// 过滤项见 <see cref="WorkflowInstanceQuery.Matches"/>：关联 ID 集合为空不匹配任何实例，只取顶层是父实例为空，关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配实例标题或关联 ID（ADR-0096、ADR-0099）。按 <see cref="WorkflowInstanceQuery.SortBy"/> 与 <see cref="WorkflowInstanceQuery.Descending"/> 排序（缺省创建时间降序），再接次序键创建时间降序、写入先后降序（排序字段是创建时间时随它的方向），标题按 <see cref="WorkflowSortKeys.Title"/> 比较（ADR-0102）。分页、关联 ID 集合的上限与排序字段已由调用方校验：排序字段不在白名单里抛出 <see cref="ArgumentOutOfRangeException"/>。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken);
 
