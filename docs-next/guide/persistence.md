@@ -433,7 +433,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_VALIDATION_005` | 查询或表列表的 `Take` 超过 `EntityQuery.DefaultMaxTake`（1000），参数 `take`、`max`；一次读结构超过 100 张表，参数 `count`、`max` | 仓储查询在构造时抛 `FrameworkException`，调用里由 Transaction 阶段转为校验结果（HTTP 400）；表列表与读结构由读取器以 `Result` 返回 |
 | `PERSISTENCE_VALIDATION_007` | 表列表的 `Skip` 为负或 `Take` 小于 1，参数 `skip`、`take` | `Result`（HTTP 400） |
 | `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
-| `PERSISTENCE_VALIDATION_008` | EF Core + SQLite：由约定映射成 UTC ticks 整数的时间列在库里还是旧的文本形式（列声明不是 INTEGER，或抽样到非整数的值），参数 `connection`、`columns`（[EF Core 的已有 SQLite 库](../packages/persistence-entityframeworkcore#已有-sqlite-库的时间列)，ADR-0094）；租户分片库在首次绑定时核对，参数 `tenant`、`columns`（ADR-0097） | 启动失败；租户分片上那次工作单元开不起来，调用得到 `KERNEL_UNEXPECTED_001`（HTTP 500） |
+| `PERSISTENCE_VALIDATION_008` | EF Core + SQLite：由约定映射成 UTC ticks 整数的时间列在库里还是旧的文本形式（列声明不是 INTEGER，或抽样到非整数的值），参数 `connection`、`columns`（[EF Core 的已有 SQLite 库](../packages/persistence-entityframeworkcore#已有-sqlite-库的时间列)，ADR-0094）；租户分片库在首次绑定时核对，参数 `tenant`、`columns`（ADR-0097） | 启动失败；租户分片上那次工作单元开不起来，调用得到 `KERNEL_UNEXPECTED_001`（HTTP 500，原因是本码；已定，不按 400 回给调用方，ADR-0099） |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_NOTFOUND_002` | 运行时数据源没有在本进程登记（`GetAsync`） | `Result` |
 | `PERSISTENCE_NOTFOUND_003` | 要读结构的表不在库里 | 逐项 `Result` |
