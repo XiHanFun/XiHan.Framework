@@ -13,6 +13,8 @@ XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordCompensation(st
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordExecution(string! instanceId, string! nodeId, int attempt) -> void
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordOrigin(XiHan.Framework.Kernel.Pipeline.InvocationOrigin? origin) -> void
 XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.RecordOutcome(string! outcome) -> void
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.StartAsync(System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!>! subscriptions, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.RecordActivity
 XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.CompensateAsync(XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Conformance.Engine.RecordActivity.ExecuteAsync(XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome!>>
@@ -62,6 +64,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.AsTenantAsync<T>(
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.BookmarksAsync(string! instanceId, string? tenantId = null) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!>!>
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.CompleteAsync(string! taskId, string! actorId, string! outcome, System.Text.Json.Nodes.JsonObject? variables = null, string? comment = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.DrainOutboxAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.EngineAsync<T>(System.Func<XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.InScopeAsync<T>(System.Func<System.IServiceProvider!, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineHost.InstanceAsync(string! id, string? tenantId = null) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>

@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Events;
@@ -11,10 +12,13 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 套件的记录器（单例）：执行过的节点、补偿过的节点、处理过的结果、发布过的事件。
+/// 套件的记录器（单例）：执行过的节点、补偿、结果与送达代理的事件。
 /// </summary>
+/// <remarks>
+/// 事件在代理一侧记录：记录器登记成 <see cref="IMessageBroker"/>（ADR-0096 第六节）。宿主没装发件箱时，引擎经 <see cref="DirectPublisher"/> 直接发到这里（与真实宿主一样可能早于提交）；装了发件箱时，事件随事务写进发件箱，提交后才由投递器送到这里，回滚的不会送达——记录的时机就是「事件随事务提交」的语义。同一信封（按 ID）只记一次：发件箱至少一次投递，后台投递循环与夹具的主动投递可能把同一条送达两次。只记录、不消费：宿主别的消息订阅在套件里收不到消息。
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class ConformanceLog : IMessagePublisher
+public sealed class ConformanceLog : IMessageBroker
 {
     /// <summary>
     /// 保护列表的锁。
@@ -40,6 +44,14 @@ public sealed class ConformanceLog : IMessagePublisher
     /// 发布过的事件：(主题, 数据)。
     /// </summary>
     private readonly List<(string Topic, WorkflowEventData Data)> _events = [];
+
+    /// <summary>
+    /// 已记录的信封 ID。
+    /// </summary>
+    /// <remarks>
+    /// 至少一次投递的重复送达按它去重。
+    /// </remarks>
+    private readonly HashSet<string> _envelopeIds = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 活动执行时调用上下文里的来源。
@@ -106,7 +118,7 @@ public sealed class ConformanceLog : IMessagePublisher
     }
 
     /// <summary>
-    /// 发布过的事件。
+    /// 送达代理的事件，按送达顺序。
     /// </summary>
     public IReadOnlyList<(string Topic, WorkflowEventData Data)> Events
     {
@@ -174,7 +186,7 @@ public sealed class ConformanceLog : IMessagePublisher
         ArgumentNullException.ThrowIfNull(envelope);
         lock (_lock)
         {
-            _events.Add((topic, WorkflowJson.DeserializeEvent(envelope.Data.Span)));
+            Record(topic, envelope);
         }
 
         return ValueTask.FromResult(Result.Success());
@@ -188,10 +200,34 @@ public sealed class ConformanceLog : IMessagePublisher
         {
             foreach (var envelope in envelopes)
             {
-                _events.Add((topic, WorkflowJson.DeserializeEvent(envelope.Data.Span)));
+                Record(topic, envelope);
             }
         }
 
         return ValueTask.FromResult<IReadOnlyList<Result>>(envelopes.Select(static _ => Result.Success()).ToList());
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 只记录、不消费：订阅登记了也不会收到消息。
+    /// </remarks>
+    public Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// 记一个信封（调用方持锁）。
+    /// </summary>
+    /// <remarks>
+    /// 同一 ID 的信封只记第一次：发件箱是至少一次投递。
+    /// </remarks>
+    private void Record(string topic, MessageEnvelope envelope)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        if (_envelopeIds.Add(envelope.Id))
+        {
+            _events.Add((topic, WorkflowJson.DeserializeEvent(envelope.Data.Span)));
+        }
     }
 }

@@ -62,4 +62,4 @@ modelBuilder.ApplyPersistenceConventions(Database);
 
 ## 状态
 
-P5：可用，对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例（含加入调用方事务的用例），对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例。从上一版升级的表结构与数据迁移见 ADR-0077。
+P5：可用，对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例（含加入调用方事务的用例），对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例；对 SQLite（`Persistence.SqlSugar`）加内存消息与发件箱的宿主也通过引擎与任务全部用例（ADR-0096 第六节）。从上一版升级的表结构与数据迁移见 ADR-0077。

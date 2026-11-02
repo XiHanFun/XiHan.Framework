@@ -511,7 +511,10 @@ public abstract class WorkflowTaskConformance
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(log);
         services.AddSingleton(log);
-        services.AddSingleton<IMessagePublisher>(log);
+        // 记录器登记成代理而不是发布者（ADR-0096 第六节）：Provider 以 TryAdd 登记代理与直接发布者，先登记的记录器不被顶替；
+        // 发件箱以 Replace 换掉发布者也不影响——事件随事务写进发件箱，提交后由投递器送到这里。没装消息 Provider 的宿主由这里补上直接发布者
+        services.AddSingleton<IMessageBroker>(log);
+        services.TryAddScoped<IMessagePublisher, DirectPublisher>();
         // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
         services.TryAddSingleton<ITenantStore, ConformanceTenants>();
         services.AddActivity<RecordActivity>(RecordActivity.TypeName);

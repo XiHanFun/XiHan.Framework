@@ -4,7 +4,10 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
@@ -1211,7 +1214,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 27：业务回滚时引擎的写入一起回滚。
     /// </summary>
     /// <remarks>
-    /// 在调用方的调用里发起流程，之后业务失败、调用回滚：实例、节点实例与书签都不留（<see cref="JoinsCallerTransaction"/> 的 Provider）；调用提交时都在。不加入事务的 Provider（内存实现）写入立即生效，回滚不撤销，套件照实断言这一点。
+    /// 在调用方的调用里发起流程，之后业务失败、调用回滚：实例、节点实例与书签都不留（<see cref="JoinsCallerTransaction"/> 的 Provider）；调用提交时都在。不加入事务的 Provider（内存实现）写入立即生效，回滚不撤销，套件照实断言这一点。宿主装了发件箱时，事件随调用写进发件箱：回滚的调用发出的事件不会送达，提交的会（ADR-0096 第六节）。
     /// </remarks>
     [Fact]
     public async Task Transaction_BusinessRollback_DiscardsTheWorkflowWrites()
@@ -1235,6 +1238,14 @@ public abstract class WorkflowEngineConformance
         var committed = await host.AsTenantAsync(null, async sp => (await StartByNameAsync(sp, "conf-tx-start").ConfigureAwait(false)).ValueOrThrow().Id).ConfigureAwait(false);
         Assert.True(await host.InstanceExistsAsync(committed).ConfigureAwait(false));
         Assert.Single(await host.BookmarksAsync(committed).ConfigureAwait(false));
+
+        // 装了发件箱：事件与引擎写入同一事务，回滚的调用发出的事件从没提交，不会送达；没装时直接发布，可能早于提交（RFC-0021「事件」），这里不断言
+        if (host.Services.GetService<OutboxDispatcher>() is not null)
+        {
+            Assert.DoesNotContain(log.EventsOf(WorkflowTopics.InstanceStarted), data => data.InstanceId == rolledBack);
+            Assert.Contains(log.EventsOf(WorkflowTopics.InstanceStarted), data => data.InstanceId == committed);
+            Assert.Contains(log.EventsOf(WorkflowTopics.TaskCreated), data => data.InstanceId == committed);
+        }
     }
 
     /// <summary>
@@ -1304,7 +1315,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝。
     /// </summary>
     /// <remarks>
-    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也不落库；查询照常。不加入事务的 Provider 不看调用是否只读。
+    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也不落库，调用本身照常结束；查询照常。不加入事务的 Provider 不看调用是否只读，启动成功；宿主装了发件箱时，它发出的事件写进这次调用的只读工作单元被拒，调用以 <c>PERSISTENCE_UNEXPECTED_001</c> 结束——只读调用里写入是缺陷（ADR-0096 第六节）。
     /// </remarks>
     [Fact]
     public async Task Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities()
@@ -1316,21 +1327,30 @@ public abstract class WorkflowEngineConformance
         var existing = (await host.StartAsync("conf-tx-readonly").ConfigureAwait(false)).ValueOrThrow();
         var executed = log.Executed.Count;
 
-        var started = await host.AsTenantAsync(null, async sp =>
+        // 自己开只读调用而不用夹具的 AsTenantAsync：要看调用本身的结果（装了发件箱时不加入事务的 Provider 的调用以失败结束）
+        var started = default(Result<WorkflowInstance>);
+        var ran = false;
+        await using var scope = host.Services.CreateAsyncScope();
+        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None);
+        context.SetOperation(new ReadOnlyProbeOperation());
+        var invoked = await host.Services.GetRequiredService<App>().InvokeAsync(context, async invocation =>
         {
-            var engine = sp.GetRequiredService<IWorkflowEngine>();
-            Assert.True((await engine.FindInstanceAsync(existing.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            return await StartByNameAsync(sp, "conf-tx-readonly").ConfigureAwait(false);
-        }, readOnly: true).ConfigureAwait(false);
+            Assert.True((await invocation.Services.GetRequiredService<IWorkflowEngine>().FindInstanceAsync(existing.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            started = await StartByNameAsync(invocation.Services, "conf-tx-readonly").ConfigureAwait(false);
+            ran = true;
+        }).ConfigureAwait(false);
+        Assert.True(ran);
         if (JoinsCallerTransaction)
         {
             Assert.Equal("PERSISTENCE_UNEXPECTED_001", started.Error?.Code);
+            Assert.True(invoked.IsSuccess);
             Assert.Equal(executed, log.Executed.Count);
             Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-tx-readonly") }).ConfigureAwait(false));
         }
         else
         {
             Assert.True(started.IsSuccess);
+            Assert.Equal(host.Services.GetService<OutboxDispatcher>() is null ? null : "PERSISTENCE_UNEXPECTED_001", invoked.Error?.Code);
         }
     }
 
@@ -1598,7 +1618,10 @@ public abstract class WorkflowEngineConformance
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(log);
         services.AddSingleton(log);
-        services.AddSingleton<IMessagePublisher>(log);
+        // 记录器登记成代理而不是发布者（ADR-0096 第六节）：Provider 以 TryAdd 登记代理与直接发布者，先登记的记录器不被顶替；
+        // 发件箱以 Replace 换掉发布者也不影响——事件随事务写进发件箱，提交后由投递器送到这里。没装消息 Provider 的宿主由这里补上直接发布者
+        services.AddSingleton<IMessageBroker>(log);
+        services.TryAddScoped<IMessagePublisher, DirectPublisher>();
         // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
         services.TryAddSingleton<ITenantStore, ConformanceTenants>();
         services.AddActivity<RecordActivity>(RecordActivity.TypeName);

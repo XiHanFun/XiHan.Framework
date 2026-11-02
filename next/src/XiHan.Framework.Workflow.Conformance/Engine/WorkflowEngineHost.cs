@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
@@ -22,7 +23,7 @@ namespace XiHan.Framework.Workflow.Conformance.Engine;
 /// 引擎套件的夹具。
 /// </summary>
 /// <remarks>
-/// 装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口。两种用法：<see cref="InScopeAsync{T}"/> 在没有调用的新作用域里解析服务（引擎自己开调用，平台分区），<see cref="AsTenantAsync{T}"/> 在以给定租户开的一次调用里解析（加入这次调用的事务）。读存储的辅助方法都在调用里、按给定分区读。
+/// 装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口。两种用法：<see cref="InScopeAsync{T}"/> 在没有调用的新作用域里解析服务（引擎自己开调用，平台分区），<see cref="AsTenantAsync{T}"/> 在以给定租户开的一次调用里解析（加入这次调用的事务）。读存储的辅助方法都在调用里、按给定分区读。宿主装了发件箱（<see cref="OutboxFeature"/>）时，这两个入口与 <see cref="PollAsync"/> 在操作结束（提交或回滚）之后都调 <see cref="DrainOutboxAsync"/>，把已提交的事件立即送到套件的记录器，用例读事件不必等投递循环（ADR-0096 第六节）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowEngineHost : IAsyncDisposable
@@ -36,6 +37,11 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     /// 轮询一次。
     /// </summary>
     private readonly Func<CancellationToken, ValueTask<int>> _poll;
+
+    /// <summary>
+    /// 一次 <see cref="DrainOutboxAsync"/> 至多投递的轮数。
+    /// </summary>
+    private const int MaxDrainRounds = 100;
 
     /// <summary>
     /// 创建。
@@ -58,7 +64,35 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     /// <remarks>
     /// 返回恢复的书签数。
     /// </remarks>
-    public ValueTask<int> PollAsync(CancellationToken cancellationToken = default) => _poll(cancellationToken);
+    public async ValueTask<int> PollAsync(CancellationToken cancellationToken = default)
+    {
+        var resumed = await _poll(cancellationToken).ConfigureAwait(false);
+        await DrainOutboxAsync(cancellationToken).ConfigureAwait(false);
+        return resumed;
+    }
+
+    /// <summary>
+    /// 宿主装了发件箱时，把已提交、待投递的事件立即投递到代理。
+    /// </summary>
+    /// <remarks>
+    /// 没装发件箱时什么也不做。逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/> 直到一轮没有可投递的，至多 <see cref="MaxDrainRounds"/> 轮。只投递已提交的行：回滚的事件从没进过发件箱，也就不会送到记录器。发件箱自己的投递循环可能同时投递同一批，记录器按信封 ID 去重。
+    /// </remarks>
+    public async ValueTask DrainOutboxAsync(CancellationToken cancellationToken = default)
+    {
+        if (Services.GetService<OutboxDispatcher>() is not { } dispatcher)
+        {
+            return;
+        }
+
+        // 一轮最多投递一批（发件箱的 BatchSize），有剩余就再来一轮；轮数有上限，投递一直失败时不会在这里打转
+        for (var round = 0; round < MaxDrainRounds; round++)
+        {
+            if (await dispatcher.RunOnceAsync(cancellationToken).ConfigureAwait(false) == 0)
+            {
+                return;
+            }
+        }
+    }
 
     /// <summary>
     /// 在没有调用的新作用域里执行：引擎、目录与任务服务自己开调用（平台分区）。
@@ -66,8 +100,15 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     public async ValueTask<T> InScopeAsync<T>(Func<IServiceProvider, ValueTask<T>> action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        await using var scope = Services.CreateAsyncScope();
-        return await action(scope.ServiceProvider).ConfigureAwait(false);
+        T outcome;
+        await using (var scope = Services.CreateAsyncScope())
+        {
+            outcome = await action(scope.ServiceProvider).ConfigureAwait(false);
+        }
+
+        // 作用域结束之后（引擎自己开的调用已提交，持有的实例锁已释放）再投递发件箱
+        await DrainOutboxAsync().ConfigureAwait(false);
+        return outcome;
     }
 
     /// <summary>
@@ -112,6 +153,8 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
         }).ConfigureAwait(false);
         failure?.Throw();
         Assert.Equal(rollback, invoked.IsFailure);
+        // 调用已提交或回滚：只有提交了的事件在发件箱里
+        await DrainOutboxAsync().ConfigureAwait(false);
         return outcome!;
     }
 

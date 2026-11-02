@@ -7,6 +7,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.InMemory/XiHan.Framework.Workflow.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Workflow.Conformance/XiHan.Framework.Workflow.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

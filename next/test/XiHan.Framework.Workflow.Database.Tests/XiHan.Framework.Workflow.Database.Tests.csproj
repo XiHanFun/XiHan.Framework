@@ -10,6 +10,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.EntityFrameworkCore/XiHan.Framework.Persistence.EntityFrameworkCore.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
   </ItemGroup>
 
