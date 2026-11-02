@@ -74,3 +74,5 @@ EF Core 按字面匹配（SQLite 上 `Contains` 译成 `instr`，`StartsWith` / 
 - 验证：本包新增用例在 SQLite 与 PostgreSQL 17（`postgres:17-alpine`）、MySQL 9.7（`mysql:9.7`）、SQL Server 2022（`mssql/server:2022-latest`）、Oracle Free 23（`gvenzl/oracle-free:23-slim-faststart`）上跑经仓储（规约的闭包变量、常量、字符、列实参，计数）与经客户端（查询、`SqlFunc.Contains`、删除条件）的同一组用例，修复前 SQLite 15 例失败、四个库 30 例里 22 例失败（通过的只有大小写与 `SqlFunc.Like` 两组），修复后全部通过；另有不连库的翻译用例（参数值的转义、`ESCAPE`、兼容库沿用原翻译、应用的同名函数优先、重复施加、`EnableILike`、集合 `IN`、投影与子查询）。一致性用例在 SqlSugar（SQLite、PostgreSQL）、EF Core（SQLite）与内存实现上都通过。
 - 工作流（ADR-0096）的折叠值仍在：本项合入后由 m-wf 评估能否撤销。
 - 待定：兼容库（人大金仓、openGauss、达梦、TiDB 等）是否也改写，要在真实库上验证 `ESCAPE` 与转义规则之后再加进名单。
+
+> 修订（2026-11-02）：「工作流的折叠值仍在」由 ADR-0099 第四节处理：撤销全角替换，只留小写折叠（EF Core 区分大小写，仍要）；兼容库上工作流关键字随本 ADR 的待定项一并解决。
