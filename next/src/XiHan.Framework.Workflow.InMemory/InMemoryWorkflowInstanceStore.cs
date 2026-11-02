@@ -144,7 +144,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     /// 按实例查询的排序字段与方向排序，再接次序键创建时间降序、写入先后降序。
     /// </summary>
     /// <remarks>
-    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102）；排序字段是创建时间时，写入先后随它的方向（同刻的先写的在升序里排前面）。文本按序数比较，状态按状态名，结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102）；排序字段是创建时间时，写入先后随它的方向（同刻的先写的在升序里排前面）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
     /// </remarks>
     private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Sorted(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, WorkflowInstanceQuery query)
     {
@@ -158,7 +158,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
         var sorted = query.SortBy switch
         {
             WorkflowInstanceSortField.EndedAt => Order(entries, static entry => entry.Instance.EndedAt, Comparer<DateTimeOffset?>.Default, descending),
-            WorkflowInstanceSortField.Status => Order(entries, static entry => entry.Instance.Status.ToString(), StringComparer.Ordinal, descending),
+            WorkflowInstanceSortField.Status => Order(entries, static entry => WorkflowStatusOrder.Of(entry.Instance.Status), Comparer<int>.Default, descending),
             WorkflowInstanceSortField.DefinitionName => Order(entries, static entry => entry.Instance.DefinitionName.Value, StringComparer.Ordinal, descending),
             WorkflowInstanceSortField.Title => Order(entries, static entry => WorkflowSortKeys.Title(entry.Instance.Title), StringComparer.Ordinal, descending),
             _ => throw new ArgumentOutOfRangeException(nameof(query), query.SortBy, $"The workflow instance sort field '{query.SortBy}' is not supported."),

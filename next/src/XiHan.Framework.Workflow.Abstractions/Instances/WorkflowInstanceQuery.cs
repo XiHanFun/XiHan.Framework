@@ -104,7 +104,7 @@ public sealed record WorkflowInstanceQuery
     /// 排序字段。
     /// </summary>
     /// <remarks>
-    /// 缺省 <see cref="WorkflowInstanceSortField.CreatedAt"/>。按它排序之后接次序键创建时间降序、写入先后降序（数据库实现最后再按 ID 降序）；排序字段是创建时间时，次序键随它的方向。同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按状态名比较；没结束的实例结束时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowInstanceSortField"/> 里定义的值时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_sort_invalid</c>）；计数不看排序。
+    /// 缺省 <see cref="WorkflowInstanceSortField.CreatedAt"/>。按它排序之后接次序键创建时间降序、写入先后降序（数据库实现最后再按 ID 降序）；排序字段是创建时间时，次序键随它的方向。同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（运行中、已挂起、已完成、已取消、故障、已终止，ADR-0103）；没结束的实例结束时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowInstanceSortField"/> 里定义的值时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.instance.query_sort_invalid</c>）；计数不看排序。
     /// </remarks>
     public WorkflowInstanceSortField SortBy { get; init; }
 

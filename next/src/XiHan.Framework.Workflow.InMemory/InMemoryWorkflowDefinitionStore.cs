@@ -145,7 +145,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     /// 按定义查询的排序字段与方向排序，再接次序键名字升序、版本降序。
     /// </summary>
     /// <remarks>
-    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102）。文本按序数比较，状态按状态名，发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
     /// </remarks>
     private static IOrderedEnumerable<WorkflowDefinition> Sorted(IEnumerable<WorkflowDefinition> definitions, WorkflowDefinitionQuery query)
     {
@@ -155,7 +155,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
             WorkflowDefinitionSortField.Name => Order(definitions, static candidate => candidate.Name.Value, StringComparer.Ordinal, descending),
             WorkflowDefinitionSortField.Title => Order(definitions, static candidate => WorkflowSortKeys.Title(candidate.Title), StringComparer.Ordinal, descending),
             WorkflowDefinitionSortField.Version => Order(definitions, static candidate => candidate.Version, Comparer<int>.Default, descending),
-            WorkflowDefinitionSortField.Status => Order(definitions, static candidate => candidate.Status.ToString(), StringComparer.Ordinal, descending),
+            WorkflowDefinitionSortField.Status => Order(definitions, static candidate => WorkflowStatusOrder.Of(candidate.Status), Comparer<int>.Default, descending),
             WorkflowDefinitionSortField.CreatedAt => Order(definitions, static candidate => candidate.CreatedAt, Comparer<DateTimeOffset>.Default, descending),
             WorkflowDefinitionSortField.PublishedAt => Order(definitions, static candidate => candidate.PublishedAt, Comparer<DateTimeOffset?>.Default, descending),
             _ => throw new ArgumentOutOfRangeException(nameof(query), query.SortBy, $"The workflow definition sort field '{query.SortBy}' is not supported."),

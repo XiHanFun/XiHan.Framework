@@ -1642,6 +1642,69 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 37：按状态排序是生命周期的先后，经目录与引擎改了状态之后位置随之变化。
+    /// </summary>
+    /// <remarks>
+    /// 同 4.x 按状态枚举的整数值排（ADR-0103）：定义草稿、已发布、已停用、已归档；实例运行中、已挂起、已完成、已取消、故障、已终止。定义经目录发布、停用、归档，实例经引擎挂起、取消、终止、恢复；升序是生命周期的顺序，降序反过来，同状态按次序键。名字的字母序、状态名的字母序都与生命周期不同，排错了用例就失败。
+    /// </remarks>
+    [Fact]
+    public async Task SortByStatus_FollowsTheLifecycle_AsTheCatalogAndEngineChangeStates()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+
+        // 定义：名字 a、b、c、d 分别停在已归档、已停用、草稿、已发布——名字序、状态名序（Archived、Disabled、Draft、Published）都是 a b c d，生命周期是 c d b a
+        var (draft, published, disabled, archived) = await host.AsTenantAsync(null, async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            async Task<string> CreateAsync(string name) => (await catalog.CreateAsync(Waiting(name), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Id;
+            var a = await CreateAsync("conf-life-a").ConfigureAwait(false);
+            var b = await CreateAsync("conf-life-b").ConfigureAwait(false);
+            var c = await CreateAsync("conf-life-c").ConfigureAwait(false);
+            var d = await CreateAsync("conf-life-d").ConfigureAwait(false);
+            Assert.All(await catalog.PublishAsync([a, b, d], CancellationToken.None).ConfigureAwait(false), static published => Assert.True(published.IsSuccess));
+
+            (await catalog.DisableAsync(b, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            (await catalog.ArchiveAsync(a, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            return (c, d, b, a);
+        }).ConfigureAwait(false);
+
+        async Task<List<string>> DefinitionsByStatusAsync(bool descending)
+            => await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-life-", SortBy = WorkflowDefinitionSortField.Status, Descending = descending }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id).ToList()).ConfigureAwait(false);
+
+        Assert.Equal([draft, published, disabled, archived], await DefinitionsByStatusAsync(false).ConfigureAwait(false));
+        Assert.Equal([archived, disabled, published, draft], await DefinitionsByStatusAsync(true).ConfigureAwait(false));
+
+        // 草稿发布之后与 d 同在已发布，同状态按名字升序
+        await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync(draft, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        Assert.Equal([draft, published, disabled, archived], await DefinitionsByStatusAsync(false).ConfigureAwait(false));
+        Assert.Equal([archived, disabled, draft, published], await DefinitionsByStatusAsync(true).ConfigureAwait(false));
+
+        // 实例：四个停在延时上的实例，挂起、取消、终止各一个
+        await host.PublishAsync(Waiting("conf-life-run")).ConfigureAwait(false);
+        async Task<string> StartWaitingAsync() => (await host.StartAsync("conf-life-run").ConfigureAwait(false)).ValueOrThrow().Id;
+        var running = await StartWaitingAsync().ConfigureAwait(false);
+        var suspended = await StartWaitingAsync().ConfigureAwait(false);
+        var terminated = await StartWaitingAsync().ConfigureAwait(false);
+        var canceled = await StartWaitingAsync().ConfigureAwait(false);
+        Assert.Equal(WorkflowInstanceStatus.Suspended, (await host.EngineAsync(engine => engine.SuspendAsync(suspended, "hold", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Equal(WorkflowInstanceStatus.Terminated, (await host.EngineAsync(engine => engine.TerminateAsync(terminated, "stop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Equal(WorkflowInstanceStatus.Canceled, (await host.EngineAsync(engine => engine.CancelAsync(canceled, "drop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+
+        async Task<List<string>> InstancesByStatusAsync(bool descending)
+            => (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-life-run"), SortBy = WorkflowInstanceSortField.Status, Descending = descending }).ConfigureAwait(false)).Select(static instance => instance.Id).ToList();
+
+        // 运行中 < 已挂起 < 已取消 < 已终止（状态名的字母序是 Canceled、Running、Suspended、Terminated）
+        Assert.Equal([running, suspended, canceled, terminated], await InstancesByStatusAsync(false).ConfigureAwait(false));
+        Assert.Equal([terminated, canceled, suspended, running], await InstancesByStatusAsync(true).ConfigureAwait(false));
+
+        // 恢复之后回到运行中，同状态按创建时间降序（次序键的方向固定）
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.EngineAsync(engine => engine.ResumeInstanceAsync(suspended, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Equal([suspended, running, canceled, terminated], await InstancesByStatusAsync(false).ConfigureAwait(false));
+        Assert.Equal([terminated, canceled, suspended, running], await InstancesByStatusAsync(true).ConfigureAwait(false));
+    }
+
+    /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束。
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)

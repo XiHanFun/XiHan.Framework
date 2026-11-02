@@ -50,6 +50,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoo
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SetVariables_Jump_AndMigrate() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SignalStart_AndCronStart() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Signal_ResumesMatchingBookmarks() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SortByStatus_FollowsTheLifecycle_AsTheCatalogAndEngineChangeStates() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SubWorkflow_AndForEach_RunChildren() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Tenant_IsolatesTasksAndSignals() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Transaction_BusinessRollback_DiscardsTheWorkflowWrites() -> System.Threading.Tasks.Task!

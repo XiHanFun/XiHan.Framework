@@ -61,7 +61,7 @@ public interface IWorkflowDefinitionStore
     /// 按定义查询列出摘要的一页。
     /// </summary>
     /// <remarks>
-    /// 过滤项见 <see cref="WorkflowDefinitionQuery.Matches"/>（关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配名字、显示名或说明，分类精确匹配，创建时间下界含、上界不含）；按 <see cref="WorkflowDefinitionQuery.SortBy"/> 与 <see cref="WorkflowDefinitionQuery.Descending"/> 排序，再接次序键名字升序、版本降序（与排序字段相同的跳过），标题按 <see cref="WorkflowSortKeys.Title"/> 比较（ADR-0102）；跳过 <see cref="WorkflowDefinitionQuery.Skip"/> 条后最多 <see cref="WorkflowDefinitionQuery.Limit"/> 条。分页与排序字段已由调用方校验：排序字段不在白名单里抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// 过滤项见 <see cref="WorkflowDefinitionQuery.Matches"/>（关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配名字、显示名或说明，分类精确匹配，创建时间下界含、上界不含）；按 <see cref="WorkflowDefinitionQuery.SortBy"/> 与 <see cref="WorkflowDefinitionQuery.Descending"/> 排序，再接次序键名字升序、版本降序（与排序字段相同的跳过），标题按 <see cref="WorkflowSortKeys.Title"/> 比较（ADR-0102），状态按生命周期的先后（ADR-0103）；跳过 <see cref="WorkflowDefinitionQuery.Skip"/> 条后最多 <see cref="WorkflowDefinitionQuery.Limit"/> 条。分页与排序字段已由调用方校验：排序字段不在白名单里抛出 <see cref="ArgumentOutOfRangeException"/>。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken);
 

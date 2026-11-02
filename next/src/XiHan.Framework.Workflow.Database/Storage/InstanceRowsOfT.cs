@@ -235,7 +235,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     /// 按实例查询的排序字段与方向排序，再接次序键补成全序。
     /// </summary>
     /// <remarks>
-    /// 次序键是创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序字段是创建时间时，写入序号与 ID 随它的方向，同刻的行按写入先后。文本、状态名按列的排序规则比较，结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
+    /// 次序键是创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序字段是创建时间时，写入序号与 ID 随它的方向，同刻的行按写入先后。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
     /// </remarks>
     private static EntityQuery<TInstance> Sorted(EntityQuery<TInstance> query, WorkflowInstanceQuery instanceQuery)
     {
@@ -248,7 +248,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         var sorted = instanceQuery.SortBy switch
         {
             WorkflowInstanceSortField.EndedAt => query.OrderBy(static record => record.EndedAt, descending),
-            WorkflowInstanceSortField.Status => query.OrderBy(static record => record.Status, descending),
+            WorkflowInstanceSortField.Status => query.OrderBy(static record => record.StatusOrder, descending),
             WorkflowInstanceSortField.DefinitionName => query.OrderBy(static record => record.DefinitionName, descending),
             WorkflowInstanceSortField.Title => query.OrderBy(static record => record.Title, descending),
             _ => throw new ArgumentOutOfRangeException(nameof(instanceQuery), instanceQuery.SortBy, $"The workflow instance sort field '{instanceQuery.SortBy}' is not supported."),
@@ -273,6 +273,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
             DefinitionName = instance.DefinitionName.Value,
             DefinitionVersion = instance.DefinitionVersion,
             Status = instance.Status.ToString(),
+            StatusOrder = WorkflowStatusOrder.Of(instance.Status),
             CorrelationId = instance.CorrelationId,
             StarterId = instance.StarterId,
             ParentInstanceId = instance.ParentInstanceId,
@@ -293,6 +294,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
         target.DefinitionName = source.DefinitionName;
         target.DefinitionVersion = source.DefinitionVersion;
         target.Status = source.Status;
+        target.StatusOrder = source.StatusOrder;
         target.CorrelationId = source.CorrelationId;
         target.StarterId = source.StarterId;
         target.ParentInstanceId = source.ParentInstanceId;

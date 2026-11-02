@@ -39,7 +39,7 @@
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 4 |
-| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 13 + 36 + 8 |
+| [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 13 + 37 + 8 |
 
 ## AI
 
@@ -230,8 +230,8 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `WorkflowStoreConformance` | `StartAsync()` 返回 `WorkflowStoreHost(services, host)`；存储是作用域服务，用例在 `InPartitionAsync(tenantId, …)` 开的调用里使用它们 | 定义按 ID / 名字 / 版本 / 最新已发布查找、列表排序与过滤、批量写与删、级联、快照语义、书签按到期 / 种类与键 / 信号查询、可领取书签按到期时刻限量查询、待办查询的过滤 / 升降序 / 分页 / 计数且随实例状态进出、定义查询的过滤 / 分页 / 计数与关键字按字面且不跨字段匹配、实例列表的关联 ID 集合 / 只取顶层 / 关键字（标题或关联 ID）、定义查询的创建时间区间与每个排序字段的升降序、实例列表每个排序字段的升降序（次序键补成全序、标题按前 256 个字符、可空时间只比较有值的行，ADR-0102）、待办的关键字（任务标题、实例标题、定义名或关联 ID）、按分区的名字空间、分区互不可见、写入别的分区的记录即抛出、实例锁的互斥与超时（锁等待上限配置在 1 秒以内） |
-| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、分区隔离（平台与租户对等：任务、信号、定义的名字空间与实例的控制和查询）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型）、业务回滚丢弃引擎写入、办理任务随业务提交或回滚、实例锁持有到调用结束、只读调用在执行活动之前拒绝写入、轮询覆盖平台与每个启用的租户、实例查询的分页与清理的条数越界是校验错误（`WORKFLOW_VALIDATION_002`）、目录的定义查询（摘要的一页与总数、分页越界）、实例查询只取顶层与一组关联 ID（子流程继承发起人与关联 ID、集合越界与空集合）、按实例列出全部等待点（全部书签种类、分区隔离）、目录与实例查询的排序经引擎下推且排序字段越界是校验错误（ADR-0102）；不加入调用方事务的 Provider 覆写 `JoinsCallerTransaction => false`（只读调用的用例两种 Provider 同一断言，ADR-0099） |
+| `WorkflowStoreConformance` | `StartAsync()` 返回 `WorkflowStoreHost(services, host)`；存储是作用域服务，用例在 `InPartitionAsync(tenantId, …)` 开的调用里使用它们 | 定义按 ID / 名字 / 版本 / 最新已发布查找、列表排序与过滤、批量写与删、级联、快照语义、书签按到期 / 种类与键 / 信号查询、可领取书签按到期时刻限量查询、待办查询的过滤 / 升降序 / 分页 / 计数且随实例状态进出、定义查询的过滤 / 分页 / 计数与关键字按字面且不跨字段匹配、实例列表的关联 ID 集合 / 只取顶层 / 关键字（标题或关联 ID）、定义查询的创建时间区间与每个排序字段的升降序、实例列表每个排序字段的升降序（次序键补成全序、标题按前 256 个字符、可空时间只比较有值的行，ADR-0102；状态按生命周期、状态变了位置随之变化，ADR-0103）、待办的关键字（任务标题、实例标题、定义名或关联 ID）、按分区的名字空间、分区互不可见、写入别的分区的记录即抛出、实例锁的互斥与超时（锁等待上限配置在 1 秒以内） |
+| `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、分区隔离（平台与租户对等：任务、信号、定义的名字空间与实例的控制和查询）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型）、业务回滚丢弃引擎写入、办理任务随业务提交或回滚、实例锁持有到调用结束、只读调用在执行活动之前拒绝写入、轮询覆盖平台与每个启用的租户、实例查询的分页与清理的条数越界是校验错误（`WORKFLOW_VALIDATION_002`）、目录的定义查询（摘要的一页与总数、分页越界）、实例查询只取顶层与一组关联 ID（子流程继承发起人与关联 ID、集合越界与空集合）、按实例列出全部等待点（全部书签种类、分区隔离）、目录与实例查询的排序经引擎下推且排序字段越界是校验错误（ADR-0102）、按状态排序是生命周期的先后且经目录与引擎改了状态之后位置随之变化（ADR-0103）；不加入调用方事务的 Provider 覆写 `JoinsCallerTransaction => false`（只读调用的用例两种 Provider 同一断言，ADR-0099） |
 | `WorkflowTaskConformance` | 同 `WorkflowEngineConformance` 的 `StartAsync` | 会签阈值（按人数或百分比）、认领与释放、退回与历史、催办事件、条件查询的分页结果与总数（越界是校验错误、挂起的实例的任务不出现）、任务元数据（优先级、到期、表单键）与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、按创建先后限量领取与条数上限 |
 
 `ConformanceLog`（兼消息代理）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例，引擎与任务两套在装了发件箱的宿主上也通过。

@@ -90,6 +90,8 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.SearchText.get 
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.SearchText.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.Status.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.Status.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.StatusOrder.get -> int?
+XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.StatusOrder.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.Title.get -> string?
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.Title.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowDefinitionRow.Version.get -> int
@@ -126,6 +128,8 @@ XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StarterId.get -> 
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StarterId.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Status.get -> string!
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Status.set -> void
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StatusOrder.get -> int?
+XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.StatusOrder.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Title.get -> string?
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.Title.set -> void
 XiHan.Framework.Workflow.Database.Entities.WorkflowInstanceRow.WorkflowInstanceRow() -> void

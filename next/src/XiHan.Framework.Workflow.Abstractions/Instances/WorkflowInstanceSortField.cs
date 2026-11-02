@@ -33,7 +33,7 @@ public enum WorkflowInstanceSortField
     /// 状态。
     /// </summary>
     /// <remarks>
-    /// 按状态名比较（序数），排出来是按名字的分组，不是生命周期的先后。
+    /// 按生命周期的先后：<see cref="WorkflowInstanceStatus.Running"/> → <see cref="WorkflowInstanceStatus.Suspended"/> → <see cref="WorkflowInstanceStatus.Completed"/> → <see cref="WorkflowInstanceStatus.Canceled"/> → <see cref="WorkflowInstanceStatus.Faulted"/> → <see cref="WorkflowInstanceStatus.Terminated"/>，同 4.x（ADR-0103）。
     /// </remarks>
     Status = 2,
 

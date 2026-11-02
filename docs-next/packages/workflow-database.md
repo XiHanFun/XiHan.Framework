@@ -117,8 +117,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseWorkflowFeature` | 特性：登记九个实体的仓储，装配存储、事务、实例锁、引擎与健康项；启动时起轮询循环（应用不在服务状态的周期不轮询、不记告警、不持有领导权），停止时等进行中的轮询结束并释放领导权 |
 | `DatabaseWorkflowOptions` | 轮询周期、批量、租约时长、持有者、健康探针间隔 |
 | `Entities.WorkflowDefinitionRow` 等四个基类 | 两个分区共用的列 |
-| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`Category`、`SearchText`、`Title`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`）。`Category` 与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列）供定义列表下推（ADR-0096），`Title`（varchar(256)，显示名或名字的前 256 个字符）供按标题排序（ADR-0102） |
-| `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、`SearchText`（实例标题与关联 ID 折叠后以 U+001F 拼成，关键字用，ADR-0096、ADR-0099）、`Title`（varchar(256)，实例标题的前 256 个字符，按标题排序用，ADR-0102）、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
+| `Entities.WorkflowDefinitionRecord` / `PlatformWorkflowDefinitionRecord` | 定义行：`Name`、`Version`、`Status`、`Category`、`SearchText`、`Title`、`CreatedAt`、`PublishedAt`、`Document`；租户表另有 `TenantId`（`IMultiTenant`）。`Category` 与 `SearchText`（名字、显示名、说明折叠后拼成的关键字查询列）供定义列表下推（ADR-0096），`Title`（varchar(256)，显示名或名字的前 256 个字符）供按标题排序（ADR-0102），`StatusOrder`（可空整数，状态在生命周期里的序号）供按状态排序（ADR-0103） |
+| `Entities.WorkflowInstanceRecord` / `PlatformWorkflowInstanceRecord` | 实例行：定义引用、`Status`、`CorrelationId`、`StarterId`、`ParentInstanceId`、`SearchText`（实例标题与关联 ID 折叠后以 U+001F 拼成，关键字用，ADR-0096、ADR-0099）、`Title`（varchar(256)，实例标题的前 256 个字符，按标题排序用，ADR-0102）、`StatusOrder`（可空整数，状态在生命周期里的序号，按状态排序用，ADR-0103）、时间列、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowNodeInstanceRecord` / `PlatformWorkflowNodeInstanceRecord` | 节点实例行：`InstanceId`、`StartedAt`、`Sequence`、`Document`；租户表另有 `TenantId` |
 | `Entities.WorkflowBookmarkRecord` / `PlatformWorkflowBookmarkRecord` | 书签行：`InstanceId`、`NodeInstanceId`、`NodeId`、`Kind`、`Key`、`CorrelationId`、`DueAt`、`Sequence`、`Document`，`SearchTitle`（载荷 `title` 折叠后的值），以及所属实例的 `DefinitionName`、`InstanceStatus` 与 `SearchInstanceText`（实例标题、关联 ID、定义名折叠后拼成；待办查询下推用，ADR-0077、ADR-0096、ADR-0099）；租户表另有 `TenantId` |
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
@@ -176,6 +176,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - `TenantId` 为 NULL 的定义、实例、书签与这些实例的节点实例搬到对应的 `Platform*` 表（同列复制，不带 `TenantId`）。平台定义搬过去之前先查 `(Name, Version)` 重复：旧索引不约束 NULL 行，可能已有重复。
 - 有独立库的租户，把它的行从平台库搬到它自己的库。
 - 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。
+
+状态序号列（ADR-0103）：
+
+- 定义表与实例表（租户与平台，独立库的租户库同样要加）新增可空列 `StatusOrder`（整数：SqlSugar `int`、EF Core `INTEGER` / `integer`），值是状态在生命周期里的序号——定义 `Draft` 0、`Published` 1、`Disabled` 2、`Archived` 3，实例 `Running` 1、`Suspended` 2、`Completed` 3、`Canceled` 4、`Faulted` 5、`Terminated` 6（即 4.x 状态枚举的整数值）。按状态排序时对它 `ORDER BY`；存储每次整行写入时随 `Status` 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节。
+- 可空是为了 `InitTables` 能给已有行的表加上（RFC-0005：SqlSugar 只在 PostgreSQL 上给非空数值列带缺省值，别的库给已有行的表加非空列会失败）；没有新索引（按状态排序是对过滤后的行排序，实例按状态过滤已有 `Status` 列）。
+- 回填（升级前写入的行；没回填的行按状态排序时位置照数据库的空值规则，下一次整行写入时自愈）：只靠 `Status` 列即可，SQL 写法（表名、列名按应用的命名规则换）：
+
+```sql
+UPDATE WorkflowDefinitionRecord SET StatusOrder = CASE Status WHEN 'Draft' THEN 0 WHEN 'Published' THEN 1 WHEN 'Disabled' THEN 2 WHEN 'Archived' THEN 3 END WHERE StatusOrder IS NULL;
+UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 1 WHEN 'Suspended' THEN 2 WHEN 'Completed' THEN 3 WHEN 'Canceled' THEN 4 WHEN 'Faulted' THEN 5 WHEN 'Terminated' THEN 6 END WHERE StatusOrder IS NULL;
+-- 平台表 PlatformWorkflowDefinitionRecord、PlatformWorkflowInstanceRecord 同样两句
+```
 
 排序用的标题列（ADR-0102）：
 

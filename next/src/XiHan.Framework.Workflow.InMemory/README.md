@@ -12,7 +12,7 @@
 
 引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`、`RetentionDays`、`HousekeepingIntervalSeconds`、`HttpTimeoutSeconds`），见 `Workflow.Abstractions`。两处选项的值写错都在启动时抛出。
 
-单进程：实例锁与轮询只在本进程内有效，多实例部署换 `Workflow.Database`（租约行实例锁、领导节点轮询）。非事务：业务回滚不撤销引擎写入，要求"写申请并发起流程"原子的应用换 `Workflow.Database`。列表排序在内存里做，文本按序数比较、空时间当作最小（数据库实现按列的排序规则与库的空值规则，ADR-0102）。通过 `Workflow.Conformance` 全部用例（事务相关的用例以 `JoinsCallerTransaction = false` 断言，只读调用的用例与数据库实现同一断言）。特性另登记持久化的消息目录（`PersistenceMessages.Catalog`），只读拒绝的消息在没装持久化的宿主上也能翻译。
+单进程：实例锁与轮询只在本进程内有效，多实例部署换 `Workflow.Database`（租约行实例锁、领导节点轮询）。非事务：业务回滚不撤销引擎写入，要求"写申请并发起流程"原子的应用换 `Workflow.Database`。列表排序在内存里做，文本按序数比较、状态按生命周期的先后（同 4.x，ADR-0103）、空时间当作最小（数据库实现按列的排序规则与库的空值规则，ADR-0102）。通过 `Workflow.Conformance` 全部用例（事务相关的用例以 `JoinsCallerTransaction = false` 断言，只读调用的用例与数据库实现同一断言）。特性另登记持久化的消息目录（`PersistenceMessages.Catalog`），只读拒绝的消息在没装持久化的宿主上也能翻译。
 
 ## 依赖方向
 

@@ -638,7 +638,7 @@ public abstract class WorkflowStoreConformance
     /// 用例 12：定义查询按每个排序字段排序，并按创建时间区间过滤。
     /// </summary>
     /// <remarks>
-    /// 次序键是名字升序、版本降序（ADR-0102）：同值的行按它排，分页不重不漏。标题按前 256 个字符比较：前 256 个字符相同的两个长标题按名字排，而不是按完整的标题。发布时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起（在最前或最后）。数据只用各种排序规则下先后都相同的文本（首字母不同、只有小写），状态按状态名比较。创建时间区间下界含、上界不含。
+    /// 次序键是名字升序、版本降序（ADR-0102）：同值的行按它排，分页不重不漏。状态按生命周期的先后（ADR-0103），状态变了位置随之变化。标题按前 256 个字符比较：前 256 个字符相同的两个长标题按名字排，而不是按完整的标题。发布时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起（在最前或最后）。数据只用各种排序规则下先后都相同的文本（首字母不同、只有小写）。创建时间区间下界含、上界不含。
     /// </remarks>
     [Fact]
     public async Task Definitions_Query_SortsByEachField_AndFiltersTheCreatedRange()
@@ -674,9 +674,9 @@ public abstract class WorkflowStoreConformance
             Assert.Equal([a1.Id, b1.Id, c1.Id, l1.Id, l2.Id, a2.Id], await SortedAsync(WorkflowDefinitionSortField.Version, false).ConfigureAwait(false));
             Assert.Equal([a2.Id, a1.Id, b1.Id, c1.Id, l1.Id, l2.Id], await SortedAsync(WorkflowDefinitionSortField.Version, true).ConfigureAwait(false));
 
-            // 状态按状态名：Disabled < Draft < Published
-            Assert.Equal([b1.Id, a2.Id, l1.Id, l2.Id, a1.Id, c1.Id], await SortedAsync(WorkflowDefinitionSortField.Status, false).ConfigureAwait(false));
-            Assert.Equal([a1.Id, c1.Id, a2.Id, l1.Id, l2.Id, b1.Id], await SortedAsync(WorkflowDefinitionSortField.Status, true).ConfigureAwait(false));
+            // 状态按生命周期（同 4.x，ADR-0103）：Draft < Published < Disabled < Archived，不是状态名的字母序
+            Assert.Equal([a2.Id, l1.Id, l2.Id, a1.Id, c1.Id, b1.Id], await SortedAsync(WorkflowDefinitionSortField.Status, false).ConfigureAwait(false));
+            Assert.Equal([b1.Id, a1.Id, c1.Id, a2.Id, l1.Id, l2.Id], await SortedAsync(WorkflowDefinitionSortField.Status, true).ConfigureAwait(false));
 
             // 创建时间：同刻按名字升序
             Assert.Equal([a1.Id, b1.Id, a2.Id, l1.Id, l2.Id, c1.Id], await SortedAsync(WorkflowDefinitionSortField.CreatedAt, false).ConfigureAwait(false));
@@ -706,13 +706,22 @@ public abstract class WorkflowStoreConformance
             Assert.Equal([a1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { CreatedTo = now.AddMinutes(-4) }).ConfigureAwait(false));
             Assert.Equal(0, await DefinitionCountAsync(s, new WorkflowDefinitionQuery { CreatedFrom = now }).ConfigureAwait(false));
         }).ConfigureAwait(false);
+
+        // 状态变了（整体替换）：按状态排序的位置随之变化，已归档排在最后
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [c1 with { Status = WorkflowDefinitionStatus.Archived }, l1 with { Status = WorkflowDefinitionStatus.Published, PublishedAt = now }], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal([a2.Id, l2.Id, a1.Id, l1.Id, b1.Id, c1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { SortBy = WorkflowDefinitionSortField.Status }).ConfigureAwait(false));
+            Assert.Equal([c1.Id, b1.Id, a1.Id, l1.Id, a2.Id, l2.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { SortBy = WorkflowDefinitionSortField.Status, Descending = true }).ConfigureAwait(false));
+            Assert.Equal([a1.Id, l1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Status = WorkflowDefinitionStatus.Published, SortBy = WorkflowDefinitionSortField.Status }).ConfigureAwait(false));
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
     /// 用例 13：实例列表按每个排序字段升序或降序排，次序键补成全序。
     /// </summary>
     /// <remarks>
-    /// 次序键是创建时间降序、写入先后降序（ADR-0102）；按创建时间排序时写入先后随它的方向，同刻的两个实例在升序里先写的在前。标题按前 256 个字符：超长的显示名照样写得进数据库的标题列。结束时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起。数据只用各种排序规则下先后都相同的文本，状态按状态名比较。
+    /// 次序键是创建时间降序、写入先后降序（ADR-0102）；状态按生命周期的先后（ADR-0103），终止、恢复、故障之后位置随之变化；按创建时间排序时写入先后随它的方向，同刻的两个实例在升序里先写的在前。标题按前 256 个字符：超长的显示名照样写得进数据库的标题列。结束时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起。数据只用各种排序规则下先后都相同的文本。
     /// </remarks>
     [Fact]
     public async Task Instances_List_SortsByEachField_WithStableTieBreaks()
@@ -751,9 +760,9 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(["inst-s5", "inst-s4", "inst-s3", "inst-s2", "inst-s1", "inst-s6"], await SortedAsync(WorkflowInstanceSortField.CreatedAt, true).ConfigureAwait(false));
             Assert.Equal(["inst-s6", "inst-s1", "inst-s2", "inst-s3", "inst-s4", "inst-s5"], await SortedAsync(WorkflowInstanceSortField.CreatedAt, false).ConfigureAwait(false));
 
-            // 状态按状态名：Canceled < Completed < Running < Suspended；同状态按创建时间降序
-            Assert.Equal(["inst-s5", "inst-s3", "inst-s2", "inst-s1", "inst-s6", "inst-s4"], await SortedAsync(WorkflowInstanceSortField.Status, false).ConfigureAwait(false));
-            Assert.Equal(["inst-s4", "inst-s1", "inst-s6", "inst-s3", "inst-s2", "inst-s5"], await SortedAsync(WorkflowInstanceSortField.Status, true).ConfigureAwait(false));
+            // 状态按生命周期（同 4.x，ADR-0103）：Running < Suspended < Completed < Canceled < Faulted < Terminated，不是状态名的字母序；同状态按创建时间降序
+            Assert.Equal(["inst-s1", "inst-s6", "inst-s4", "inst-s3", "inst-s2", "inst-s5"], await SortedAsync(WorkflowInstanceSortField.Status, false).ConfigureAwait(false));
+            Assert.Equal(["inst-s5", "inst-s3", "inst-s2", "inst-s4", "inst-s1", "inst-s6"], await SortedAsync(WorkflowInstanceSortField.Status, true).ConfigureAwait(false));
 
             // 定义名
             Assert.Equal(["inst-s3", "inst-s1", "inst-s5", "inst-s2", "inst-s6", "inst-s4"], await SortedAsync(WorkflowInstanceSortField.DefinitionName, false).ConfigureAwait(false));
@@ -778,6 +787,19 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(["inst-s3", "inst-s2", "inst-s5", "inst-s4", "inst-s1", "inst-s6"], pages);
             Assert.Equal(["inst-s5", "inst-s2"], await IdsAsync(s, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-s-beta"), SortBy = WorkflowInstanceSortField.Title }).ConfigureAwait(false));
             Assert.Equal(6, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { SortBy = WorkflowInstanceSortField.Title, Descending = false, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        }).ConfigureAwait(false);
+
+        // 状态变了（整体替换）：终止、恢复运行、故障之后，按状态排序的位置随之变化
+        i1.Status = WorkflowInstanceStatus.Terminated;
+        i1.EndedAt = now;
+        i4.Status = WorkflowInstanceStatus.Running;
+        i2.Status = WorkflowInstanceStatus.Faulted;
+        await host.InPartitionAsync(null, async s => Assert.True((await s.Instances.SaveAsync(null, [i1, i4, i2], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
+        await host.InPartitionAsync(null, async s =>
+        {
+            Assert.Equal(["inst-s4", "inst-s6", "inst-s3", "inst-s5", "inst-s2", "inst-s1"], await IdsAsync(s, new WorkflowInstanceQuery { SortBy = WorkflowInstanceSortField.Status, Descending = false }).ConfigureAwait(false));
+            Assert.Equal(["inst-s1", "inst-s2", "inst-s5", "inst-s3", "inst-s4", "inst-s6"], await IdsAsync(s, new WorkflowInstanceQuery { SortBy = WorkflowInstanceSortField.Status }).ConfigureAwait(false));
+            Assert.Equal(["inst-s2", "inst-s1"], await IdsAsync(s, new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Terminated, WorkflowInstanceStatus.Faulted], SortBy = WorkflowInstanceSortField.Status, Descending = false }).ConfigureAwait(false));
         }).ConfigureAwait(false);
     }
 

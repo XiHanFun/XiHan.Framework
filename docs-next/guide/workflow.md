@@ -248,7 +248,7 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
 - 一次一个排序字段，不做多列排序。缺省排序与加排序之前相同；注意实例查询的 `Descending` 缺省是 `true`，要升序得写 `Descending = false`。
 - `SortBy` 不是白名单里的值（请求里给了越界的数字）：`QueryAsync` / `ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_sort_invalid` / `workflow.instance.query_sort_invalid`，参数 `sort`），不进存储；`CountInstancesAsync` 不看排序。请求里给不认识的名字（如 `"sortBy": "starter"`）在反序列化时就被拒绝。
 - 文本（名字、标题、定义名）按数据库列的排序规则比较，内存实现按序数：大小写、标点与中文的先后可能随库不同。
-- 状态按状态名比较，排出来是按名字的分组（定义：`Archived`、`Disabled`、`Draft`、`Published`；实例：`Canceled`、`Completed`、`Faulted`、`Running`、`Suspended`、`Terminated`），不是生命周期的先后。
+- 状态按生命周期的先后（同 4.x，ADR-0103）：定义 `Draft` → `Published` → `Disabled` → `Archived`；实例 `Running` → `Suspended` → `Completed` → `Canceled` → `Faulted` → `Terminated`。升序是这个顺序、降序反过来，同状态按次序键；状态变了（发布、停用、挂起、恢复、取消、终止、重试……）位置随之变化。
 - 没发布过的定义 `PublishedAt` 为空、没结束的实例 `EndedAt` 为空：空值排在哪头照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小），内存实现当作最小。
 - 标题按前 256 个字符比较（`WorkflowSortKeys.Title`）。
 

@@ -38,7 +38,7 @@ public enum WorkflowDefinitionSortField
     /// 状态。
     /// </summary>
     /// <remarks>
-    /// 按状态名比较（序数），排出来是按名字的分组，不是生命周期的先后。
+    /// 按生命周期的先后：<see cref="WorkflowDefinitionStatus.Draft"/> → <see cref="WorkflowDefinitionStatus.Published"/> → <see cref="WorkflowDefinitionStatus.Disabled"/> → <see cref="WorkflowDefinitionStatus.Archived"/>，同 4.x（ADR-0103）。
     /// </remarks>
     Status = 3,
 

@@ -59,7 +59,7 @@ public sealed record WorkflowDefinitionQuery
     /// 排序字段。
     /// </summary>
     /// <remarks>
-    /// 缺省 <see cref="WorkflowDefinitionSortField.Name"/>。按它排序之后接次序键名字升序、版本降序（与排序字段相同的跳过；名字与版本在分区里唯一，已是全序，数据库实现最后再按 ID），同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按状态名比较；没发布过的定义发布时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值时 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.definition.query_sort_invalid</c>）。
+    /// 缺省 <see cref="WorkflowDefinitionSortField.Name"/>。按它排序之后接次序键名字升序、版本降序（与排序字段相同的跳过；名字与版本在分区里唯一，已是全序，数据库实现最后再按 ID），同值的行分页不重不漏（ADR-0102）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（草稿、已发布、已停用、已归档，ADR-0103）；没发布过的定义发布时间为空，空值的位置照数据库（内存实现当作最小）。不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值时 <c>WORKFLOW_VALIDATION_002</c>（消息键 <c>workflow.definition.query_sort_invalid</c>）。
     /// </remarks>
     public WorkflowDefinitionSortField SortBy { get; init; }
 

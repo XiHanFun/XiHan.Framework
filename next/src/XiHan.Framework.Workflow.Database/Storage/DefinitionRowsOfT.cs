@@ -181,7 +181,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     /// 按定义查询的排序字段与方向排序，再接次序键补成全序。
     /// </summary>
     /// <remarks>
-    /// 次序键是名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本、状态名按列的排序规则比较，发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
+    /// 次序键是名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
     /// </remarks>
     private static EntityQuery<TRow> Sorted(EntityQuery<TRow> query, WorkflowDefinitionQuery definitionQuery)
     {
@@ -191,7 +191,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
             WorkflowDefinitionSortField.Name => query.OrderBy(static record => record.Name, descending),
             WorkflowDefinitionSortField.Title => query.OrderBy(static record => record.Title, descending),
             WorkflowDefinitionSortField.Version => query.OrderBy(static record => record.Version, descending),
-            WorkflowDefinitionSortField.Status => query.OrderBy(static record => record.Status, descending),
+            WorkflowDefinitionSortField.Status => query.OrderBy(static record => record.StatusOrder, descending),
             WorkflowDefinitionSortField.CreatedAt => query.OrderBy(static record => record.CreatedAt, descending),
             WorkflowDefinitionSortField.PublishedAt => query.OrderBy(static record => record.PublishedAt, descending),
             _ => throw new ArgumentOutOfRangeException(nameof(definitionQuery), definitionQuery.SortBy, $"The workflow definition sort field '{definitionQuery.SortBy}' is not supported."),
@@ -235,6 +235,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
             Name = definition.Name.Value,
             Version = definition.Version,
             Status = definition.Status.ToString(),
+            StatusOrder = WorkflowStatusOrder.Of(definition.Status),
             Category = definition.Category,
             SearchText = WorkflowKeyword.Join(definition.Name.Value, definition.DisplayName, definition.Description),
             Title = WorkflowSortKeys.Title(definition.Title),
@@ -252,6 +253,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
         target.Name = source.Name;
         target.Version = source.Version;
         target.Status = source.Status;
+        target.StatusOrder = source.StatusOrder;
         target.Category = source.Category;
         target.SearchText = source.SearchText;
         target.Title = source.Title;
