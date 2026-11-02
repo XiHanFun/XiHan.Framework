@@ -33,6 +33,9 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// <summary>
     /// 实例变量里记录最近一次"继续"错误的键。
     /// </summary>
+    /// <remarks>
+    /// 值是 <see cref="WorkflowFault"/> 的 JSON（ADR-0106）：表达式读 <c>lastError.code</c>（错误码）与 <c>lastError.message</c>（按进程默认区域渲染的文本），展示用 <c>WorkflowJson.DeserializeFault(variables[LastErrorVariable])?.Localize()</c> 按调用方的区域渲染 <c>messageKey</c> 与 <c>arguments</c>。
+    /// </remarks>
     public const string LastErrorVariable = "lastError";
 
     /// <summary>
@@ -976,7 +979,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 {
                     [ChildInstanceIdInput] = child.InstanceId,
                     [ChildStatusInput] = WorkflowInstanceStatus.Faulted.ToString(),
-                    [ChildFaultInput] = WorkflowJson.ToNode(WorkflowFault.From(started.Error!)),
+                    [ChildFaultInput] = WorkflowJson.SerializeFault(WorkflowFault.From(started.Error!)),
                 };
                 await NotifyParentAsync(instance.Id, child.ParentNodeInstanceId, inputs, cancellationToken).ConfigureAwait(false);
             }
@@ -989,7 +992,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 [ChildInstanceIdInput] = instance.Id,
                 [ChildStatusInput] = instance.Status.ToString(),
                 [ChildVariablesInput] = WorkflowJson.CloneObject(instance.Variables),
-                [ChildFaultInput] = WorkflowJson.ToNode(instance.Fault),
+                [ChildFaultInput] = instance.Fault is null ? null : WorkflowJson.SerializeFault(instance.Fault),
             };
             await NotifyParentAsync(instance.ParentInstanceId, instance.ParentNodeInstanceId, inputs, cancellationToken).ConfigureAwait(false);
         }
@@ -1262,7 +1265,8 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         {
             nodeInstance.EndedAt = session.Now;
             session.RemoveBookmarksOf(nodeInstance.Id);
-            session.Variables.Set(LastErrorVariable, new JsonObject { ["code"] = error.Code, ["message"] = error.Message });
+            // 表达式照旧读 code 与 message（message 是按进程默认区域渲染的文本）；展示用 messageKey 与 arguments 按调用方的区域渲染
+            session.Variables.Set(LastErrorVariable, WorkflowJson.SerializeFault(WorkflowFault.From(error)));
             FlowOutgoing(session, node, ErrorOutcome);
             return;
         }
@@ -1838,7 +1842,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// 实例状态不允许该操作。
     /// </summary>
     private static Error StatusConflict(WorkflowInstance instance)
-        => Error.Conflict(WorkflowErrors.InstanceStatus, WorkflowMessages.InstanceStatus, MessageArguments.Of(("id", instance.Id), ("status", instance.Status.ToString())));
+        => WorkflowStatusConflicts.Of(instance);
 
     /// <summary>
     /// 书签不存在。

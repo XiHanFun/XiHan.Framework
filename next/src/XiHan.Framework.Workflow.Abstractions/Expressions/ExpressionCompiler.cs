@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Values;
 
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
@@ -47,14 +48,14 @@ internal sealed class ExpressionCompiler
         compiler.SkipWhitespace();
         if (compiler._position >= expression.Length)
         {
-            throw new ExpressionException("The expression is empty.");
+            throw new ExpressionException(WorkflowMessages.ExpressionEmpty);
         }
 
         var compiled = compiler.ParseOr();
         compiler.SkipWhitespace();
         if (compiler._position < expression.Length)
         {
-            throw new ExpressionException($"Unexpected '{expression[compiler._position]}' at position {compiler._position}.");
+            throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", expression[compiler._position].ToString()), ("position", compiler._position + 1)));
         }
 
         return compiled;
@@ -208,7 +209,7 @@ internal sealed class ExpressionCompiler
                 left = scope =>
                 {
                     var divisor = Number(r(scope), "/");
-                    return divisor == 0 ? throw new ExpressionException("Division by zero.") : JsonValue.Create(Number(l(scope), "/") / divisor);
+                    return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(Number(l(scope), "/") / divisor);
                 };
             }
             else if (TryConsume("%"))
@@ -218,7 +219,7 @@ internal sealed class ExpressionCompiler
                 left = scope =>
                 {
                     var divisor = Number(r(scope), "%");
-                    return divisor == 0 ? throw new ExpressionException("Division by zero.") : JsonValue.Create(Number(l(scope), "%") % divisor);
+                    return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(Number(l(scope), "%") % divisor);
                 };
             }
             else
@@ -259,7 +260,7 @@ internal sealed class ExpressionCompiler
             SkipWhitespace();
             if (TryConsume("."))
             {
-                var member = ReadIdentifier() ?? throw new ExpressionException($"Expected a member name at position {_position}.");
+                var member = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionMemberExpected, MessageArguments.Of(("position", _position + 1)));
                 var t = target;
                 target = scope => Member(t(scope), member);
             }
@@ -269,7 +270,7 @@ internal sealed class ExpressionCompiler
                 SkipWhitespace();
                 if (!TryConsume("]"))
                 {
-                    throw new ExpressionException($"Expected ']' at position {_position}.");
+                    throw new ExpressionException(WorkflowMessages.ExpressionTokenExpected, MessageArguments.Of(("token", "]"), ("position", _position + 1)));
                 }
 
                 var t = target;
@@ -290,7 +291,7 @@ internal sealed class ExpressionCompiler
         SkipWhitespace();
         if (_position >= _text.Length)
         {
-            throw new ExpressionException("Unexpected end of expression.");
+            throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedEnd);
         }
 
         var c = _text[_position];
@@ -301,7 +302,7 @@ internal sealed class ExpressionCompiler
             SkipWhitespace();
             if (!TryConsume(")"))
             {
-                throw new ExpressionException($"Expected ')' at position {_position}.");
+                throw new ExpressionException(WorkflowMessages.ExpressionTokenExpected, MessageArguments.Of(("token", ")"), ("position", _position + 1)));
             }
 
             return inner;
@@ -320,7 +321,7 @@ internal sealed class ExpressionCompiler
             return _ => JsonValue.Create(number);
         }
 
-        var identifier = ReadIdentifier() ?? throw new ExpressionException($"Unexpected '{c}' at position {_position}.");
+        var identifier = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", c.ToString()), ("position", _position + 1)));
         switch (identifier)
         {
             case "true":
@@ -346,7 +347,7 @@ internal sealed class ExpressionCompiler
                 while (TryConsume(","));
                 if (!TryConsume(")"))
                 {
-                    throw new ExpressionException($"Expected ')' at position {_position}.");
+                    throw new ExpressionException(WorkflowMessages.ExpressionTokenExpected, MessageArguments.Of(("token", ")"), ("position", _position + 1)));
                 }
             }
 
@@ -355,7 +356,7 @@ internal sealed class ExpressionCompiler
 
         var name = identifier;
         // 未知根变量是错误：条件里写错变量名应当暴露，而不是悄悄变成 null
-        return scope => scope.TryResolve(name, out var value) ? value : throw new ExpressionException($"Unknown variable '{name}'.");
+        return scope => scope.TryResolve(name, out var value) ? value : throw new ExpressionException(WorkflowMessages.ExpressionUnknownVariable, MessageArguments.Of(("name", name)));
     }
 
     /// <summary>
@@ -370,7 +371,9 @@ internal sealed class ExpressionCompiler
         {
             if (args.Count < min || args.Count > max)
             {
-                throw new ExpressionException($"Function '{name}' expects {(min == max ? min.ToString(CultureInfo.InvariantCulture) : $"{min} to {max}")} argument(s).");
+                throw min == max
+                    ? new ExpressionException(WorkflowMessages.ExpressionArgumentCount, MessageArguments.Of(("function", name), ("count", min)))
+                    : new ExpressionException(WorkflowMessages.ExpressionArgumentRange, MessageArguments.Of(("function", name), ("min", min), ("max", max)));
             }
         }
 
@@ -463,10 +466,10 @@ internal sealed class ExpressionCompiler
                     var text = Text(args[0](scope));
                     return DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var when)
                         ? JsonValue.Create(when)
-                        : throw new ExpressionException($"'{text}' is not a date.");
+                        : throw new ExpressionException(WorkflowMessages.ExpressionNotDate, MessageArguments.Of(("value", text)));
                 };
             default:
-                throw new ExpressionException($"Unknown function '{name}'.");
+                throw new ExpressionException(WorkflowMessages.ExpressionUnknownFunction, MessageArguments.Of(("function", name)));
         }
     }
 
@@ -487,7 +490,7 @@ internal sealed class ExpressionCompiler
     {
         null => null,
         JsonObject obj => obj.TryGetPropertyValue(member, out var value) ? value : null,
-        _ => throw new ExpressionException($"Cannot read member '{member}' of a non-object value."),
+        _ => throw new ExpressionException(WorkflowMessages.ExpressionMemberOfNonObject, MessageArguments.Of(("member", member))),
     };
 
     /// <summary>
@@ -501,11 +504,11 @@ internal sealed class ExpressionCompiler
                 return null;
             case JsonArray array:
                 var position = (int)Number(index, "[]");
-                return position >= 0 && position < array.Count ? array[position] : throw new ExpressionException($"Index {position} is out of range (length {array.Count}).");
+                return position >= 0 && position < array.Count ? array[position] : throw new ExpressionException(WorkflowMessages.ExpressionIndexOutOfRange, MessageArguments.Of(("index", position), ("length", array.Count)));
             case JsonObject obj:
                 return obj.TryGetPropertyValue(Text(index), out var value) ? value : null;
             default:
-                throw new ExpressionException("Cannot index a scalar value.");
+                throw new ExpressionException(WorkflowMessages.ExpressionIndexOfScalar);
         }
     }
 
@@ -573,20 +576,20 @@ internal sealed class ExpressionCompiler
             return string.CompareOrdinal(WorkflowValues.AsString(l), WorkflowValues.AsString(r));
         }
 
-        throw new ExpressionException($"Operator '{op}' needs two scalar operands.");
+        throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotScalar, MessageArguments.Of(("operator", op)));
     }
 
     /// <summary>
     /// 要求布尔。
     /// </summary>
     private static bool Boolean(JsonNode? node, string op)
-        => node is JsonValue value && !IsString(value) && WorkflowValues.TryBool(value, out var flag) ? flag : throw new ExpressionException($"Operator '{op}' needs boolean operands.");
+        => node is JsonValue value && !IsString(value) && WorkflowValues.TryBool(value, out var flag) ? flag : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotBoolean, MessageArguments.Of(("operator", op)));
 
     /// <summary>
     /// 要求数字（字符串形式的数字也接受）。
     /// </summary>
     private static decimal Number(JsonNode? node, string op)
-        => node is JsonValue value && WorkflowValues.TryDecimal(value, out var number) ? number : throw new ExpressionException($"Operator '{op}' needs numeric operands.");
+        => node is JsonValue value && WorkflowValues.TryDecimal(value, out var number) ? number : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotNumeric, MessageArguments.Of(("operator", op)));
 
     /// <summary>
     /// 任意值的字符串形式：null 为空串，标量按 <see cref="WorkflowValues.AsString"/>，容器为 JSON 文本。
@@ -675,7 +678,7 @@ internal sealed class ExpressionCompiler
         var text = _text[start.._position];
         return decimal.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var number)
             ? number
-            : throw new ExpressionException($"'{text}' is not a number.");
+            : throw new ExpressionException(WorkflowMessages.ExpressionNotNumber, MessageArguments.Of(("value", text)));
     }
 
     /// <summary>
@@ -709,6 +712,6 @@ internal sealed class ExpressionCompiler
             builder.Append(c);
         }
 
-        throw new ExpressionException("Unterminated string literal.");
+        throw new ExpressionException(WorkflowMessages.ExpressionUnterminatedString);
     }
 }

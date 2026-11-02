@@ -32,6 +32,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definition
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definitions_Lifecycle_AndOutcomeHandlers() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Delay_AndNodeTimeout_ResumeByPolling() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.DelayedStart_AndReusePolicy() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.DesignDiagnostics_LastError_AndStatusNames_LocalizeInTheCallersLocale() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.EventGateway_TakesFirstSignalOrTimeout() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_KeepMessageKeys_AndLocalizeInTheCallersLocale() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!

@@ -49,24 +49,24 @@ public sealed class AssigneeResolver
     /// 校验一组规则。
     /// </summary>
     /// <remarks>
-    /// 未登记的类型与 Provider 拒绝的参数都算错误；返回错误说明（空表示合法）。
+    /// 每条问题一个错误（空表示合法）：未登记的类型是 <see cref="WorkflowErrors.TypeNotRegistered"/>（消息键 <see cref="WorkflowMessages.AssigneeRuleUnknown"/>），Provider 拒绝的参数是 Provider 给的错误原样（带消息键时按调用方的区域翻译，ADR-0106）。
     /// </remarks>
-    public IReadOnlyList<string> Validate(IEnumerable<AssigneeRule> rules)
+    public IReadOnlyList<Error> Validate(IEnumerable<AssigneeRule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        var errors = new List<string>();
+        var errors = new List<Error>();
         foreach (var rule in rules)
         {
             if (!_providers.TryGetValue(rule.Type, out var provider))
             {
-                errors.Add($"Assignee rule type '{rule.Type}' is not registered.");
+                errors.Add(Error.NotFound(WorkflowErrors.TypeNotRegistered, WorkflowMessages.AssigneeRuleUnknown, MessageArguments.Of(("type", rule.Type))));
                 continue;
             }
 
             var validated = provider.Validate(rule);
             if (validated.IsFailure)
             {
-                errors.Add($"Assignee rule '{rule.Type}': {validated.Error!.Message}");
+                errors.Add(validated.Error!);
             }
         }
 

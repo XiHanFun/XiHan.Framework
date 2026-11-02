@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
@@ -20,6 +21,7 @@ using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Events;
 using XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 using XiHan.Framework.Workflow.Abstractions.Instances;
+using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
 using Xunit;
 
@@ -539,7 +541,8 @@ public abstract class WorkflowEngineConformance
             Assert.Equal((1, WorkflowDefinitionStatus.Draft), (created.Version, created.Status));
             var rejected = await catalog.PublishAsync(created.Id, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(WorkflowErrors.DefinitionInvalid, rejected.Error?.Code);
-            Assert.Contains("NoSuchActivity", rejected.Error!.Details!["errors"]!.ToString(), StringComparison.Ordinal);
+            var unknown = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<SchemaViolation>>(rejected.Error!.Details!["errors"]), static issue => issue.MessageKey == WorkflowMessages.DefinitionActivityUnknown);
+            Assert.Equal(("$.nodes[1].activityType", (object?)"NoSuchActivity"), (unknown.Path, unknown.Arguments!["type"]));
 
             var fixedDraft = created with
             {
@@ -1796,15 +1799,15 @@ public abstract class WorkflowEngineConformance
         Assert.Equal("活动属性 'Items' 的求值结果必须是数组。", In("zh-CN", notArray.Localize));
         Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", notArray.Localize));
 
-        // 子流程故障：父节点是"子流程没有正常完成"（子实例与状态），子实例的故障作为内层原因接在后面，两段同一种语言
+        // 子流程故障：父节点是"子流程故障"（参数子实例与状态枚举名，状态名不进文案），子实例的故障作为内层原因接在后面，两段同一种语言
         var parent = (await host.StartAsync("conf-l10n-parent").ConfigureAwait(false)).ValueOrThrow();
         await WaitUntilAsync(async () => (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
         var child = Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = parent.Id }).ConfigureAwait(false));
         var childFailed = (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).Fault!;
-        Assert.Equal((WorkflowMessages.ChildFailed, child.Id, nameof(WorkflowInstanceStatus.Faulted)), (childFailed.MessageKey, childFailed.Arguments!["id"], childFailed.Arguments["status"]));
+        Assert.Equal((WorkflowMessages.ChildFaulted, child.Id, nameof(WorkflowInstanceStatus.Faulted)), (childFailed.MessageKey, childFailed.Arguments!["id"], childFailed.Arguments["status"]));
         Assert.Equal((WorkflowMessages.ActivityFaultRaised, "Budget exceeded"), (childFailed.Inner?.MessageKey, childFailed.Inner?.Arguments?["message"]));
-        Assert.Equal($"子流程 '{child.Id}' 没有正常完成（状态 Faulted）。原因：流程报告故障：Budget exceeded", In("zh-CN", childFailed.Localize));
-        Assert.Equal($"Sub-workflow '{child.Id}' did not complete (status Faulted). Cause: The workflow raised a fault: Budget exceeded", In("en-US", childFailed.Localize));
+        Assert.Equal($"子流程 '{child.Id}' 故障。原因：流程报告故障：Budget exceeded", In("zh-CN", childFailed.Localize));
+        Assert.Equal($"Sub-workflow '{child.Id}' faulted. Cause: The workflow raised a fault: Budget exceeded", In("en-US", childFailed.Localize));
         Assert.Equal(WorkflowMessages.ActivityFaultRaised, childFailed.ToError().Inner?.MessageKey);
     }
 
@@ -1841,6 +1844,115 @@ public abstract class WorkflowEngineConformance
         Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryTargetMissing), (target.Code, target.MessageKey));
         Assert.Equal("待办查询需要指派人 ID 或实例 ID。", Resolve(target, "zh-CN"));
         Assert.Equal("The task query needs an assignee ID or an instance ID.", Resolve(target, "en-US"));
+    }
+
+    /// <summary>
+    /// 用例 40：设计期诊断、lastError 与状态名按调用方的区域渲染。
+    /// </summary>
+    /// <remarks>
+    /// 发布不合法的定义返回逐条问题（路径、消息键与参数）与汇总；活动描述符按区域渲染；继续出错写进 <c>lastError</c> 的是故障的结构，表达式照旧按 <c>code</c> 判断，展示按区域渲染；条件里的未知变量让实例故障，原因是表达式的键；子流程被取消时父节点是"子流程被取消"；状态不允许操作按状态各一句，状态的展示名按区域（ADR-0106）。
+    /// </remarks>
+    [Fact]
+    public async Task DesignDiagnostics_LastError_AndStatusNames_LocalizeInTheCallersLocale()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var messages = new CatalogMessageResolver(host.Services.GetServices<MessageCatalog>());
+        string In(string locale, Func<string> render)
+        {
+            using var scope = MessageScope.Use(messages, locale);
+            return render();
+        }
+
+        // 设计期诊断：发布时逐条问题带定义 JSON 里的路径与消息键，汇总只给条数
+        var design = WorkflowDefinitionBuilder.Create("conf-l10n-design")
+            .AddStart().AddEnd().AddNode("island", ActivityTypes.Log, configure: static node => node.WithProperty(LogActivity.MessageProperty, "hi"))
+            .AddTransition("start", "end", "amount >")
+            .Build();
+        var rejected = await host.InScopeAsync(async sp =>
+        {
+            var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
+            var created = (await catalog.CreateAsync(design, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            return (await catalog.PublishAsync(created.Id, CancellationToken.None).ConfigureAwait(false)).Error!;
+        }).ConfigureAwait(false);
+        var issues = Assert.IsAssignableFrom<IReadOnlyList<SchemaViolation>>(rejected.Details!["errors"]);
+        Assert.Equal([("$.nodes[2]", WorkflowMessages.DefinitionNodeUnreachable), ("$.transitions[0].condition", WorkflowMessages.ExpressionUnexpectedEnd)], issues.Select(static issue => (issue.Path, issue.MessageKey!)).OrderBy(static issue => issue.Path, StringComparer.Ordinal));
+        string Issue(string locale, string path)
+        {
+            var issue = Assert.Single(issues, issue => issue.Path == path);
+            return In(locale, () => issue.MessageKey!.L(issue.Arguments));
+        }
+
+        Assert.Equal(("节点 'island' 从开始节点走不到。", "表达式 'amount >' 意外结束。"), (Issue("zh-CN", "$.nodes[2]"), Issue("zh-CN", "$.transitions[0].condition")));
+        Assert.Equal(("Node 'island' cannot be reached from the Start node.", "Expression 'amount >' ends unexpectedly."), (Issue("en-US", "$.nodes[2]"), Issue("en-US", "$.transitions[0].condition")));
+        Assert.Equal("工作流定义有 2 处问题。", In("zh-CN", () => rejected.MessageKey!.L(rejected.Details)));
+
+        // 活动描述符：显示名、分类显示名、说明与输入说明按区域渲染
+        async Task<IReadOnlyList<ActivityDescriptor>> ActivitiesAsync(string locale)
+        {
+            // 作用域里有只能异步释放的服务（数据库实现的工作单元），经夹具的异步作用域取目录
+            using var scope = MessageScope.Use(messages, locale);
+            return await host.InScopeAsync(static sp => ValueTask.FromResult(sp.GetRequiredService<IWorkflowDefinitionCatalog>().ActivityTypes())).ConfigureAwait(false);
+        }
+
+        var chinese = Assert.Single(await ActivitiesAsync("zh-CN").ConfigureAwait(false), static activity => activity.Type == ActivityTypes.UserTask);
+        Assert.Equal(("用户任务", "人工", "等待人员处理。"), (chinese.DisplayName, chinese.CategoryName, chinese.Description));
+        Assert.Equal("All 策略：正整数人数，或形如 60% 的百分比。", Assert.Single(chinese.Inputs, static input => input.Name == UserTaskActivity.ApprovalThresholdProperty).Description);
+        var english = Assert.Single(await ActivitiesAsync("en-US").ConfigureAwait(false), static activity => activity.Type == ActivityTypes.UserTask);
+        Assert.Equal(("User task", "Human", "Waits for people to act.", BuiltInActivityDescriptors.HumanCategory), (english.DisplayName, english.CategoryName, english.Description, english.Category));
+
+        await host.PublishManyAsync(
+            null,
+            WorkflowDefinitionBuilder.Create("conf-l10n-continue")
+                .AddVariable("count", defaultValue: 3)
+                .AddStart()
+                .AddNode("each", ActivityTypes.ForEach, configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait").WithContinueOnError())
+                .AddDecision("check").AddEnd("errored", outcome: "errored").AddEnd("fine", outcome: "fine")
+                .AddTransition("start", "each").AddTransition("each", "check")
+                .AddTransition("check", "errored", $"outcome == 'error' && lastError.code == '{WorkflowErrors.InputInvalid}' && lastError.messageKey == '{WorkflowMessages.PropertyNotArray}' && lastError.message != null")
+                .AddDefaultTransition("check", "fine")
+                .Build(),
+            WorkflowDefinitionBuilder.Create("conf-l10n-expr")
+                .AddStart().AddDecision("check").AddEnd("a", outcome: "a").AddEnd("b", outcome: "b")
+                .AddTransition("start", "check").AddTransition("check", "a", "nope > 1").AddDefaultTransition("check", "b")
+                .Build(),
+            Waiting("conf-l10n-wait"),
+            WorkflowDefinitionBuilder.Create("conf-l10n-waiting-parent")
+                .AddStart().AddNode("sub", ActivityTypes.SubWorkflow, configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait")).AddEnd()
+                .AddTransition("start", "sub").AddTransition("sub", "end")
+                .Build()).ConfigureAwait(false);
+
+        // lastError：表达式照旧按错误码、消息键与按进程默认区域渲染的消息判断；展示按区域渲染
+        var continued = (await host.StartAsync("conf-l10n-continue").ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal((WorkflowInstanceStatus.Completed, "errored"), (continued.Status, continued.Outcome));
+        var lastError = WorkflowJson.DeserializeFault((await host.InstanceAsync(continued.Id).ConfigureAwait(false)).Variables[WorkflowEngine.LastErrorVariable])!;
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.PropertyNotArray), (lastError.Code, lastError.MessageKey));
+        Assert.Equal("活动属性 'Items' 的求值结果必须是数组。", In("zh-CN", lastError.Localize));
+        Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", lastError.Localize));
+
+        // 表达式的运行期错误：条件里的未知变量让实例故障，原因是表达式的键与参数
+        var broken = (await host.StartAsync("conf-l10n-expr").ConfigureAwait(false)).ValueOrThrow();
+        var unknownVariable = (await host.InstanceAsync(broken.Id).ConfigureAwait(false)).Fault!;
+        Assert.Equal((WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionUnknownVariable), (unknownVariable.Code, unknownVariable.MessageKey));
+        Assert.Equal("表达式 'nope > 1' 引用了未知变量 'nope'。", In("zh-CN", unknownVariable.Localize));
+        Assert.Equal("Expression 'nope > 1': variable 'nope' is unknown.", In("en-US", unknownVariable.Localize));
+
+        // 子流程被取消：父节点的故障按状态各一个键，状态名不进文案
+        var parent = (await host.StartAsync("conf-l10n-waiting-parent").ConfigureAwait(false)).ValueOrThrow();
+        var child = Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = parent.Id }).ConfigureAwait(false));
+        Assert.Equal(WorkflowInstanceStatus.Canceled, (await host.EngineAsync(engine => engine.CancelAsync(child.Id, "drop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
+        await WaitUntilAsync(async () => (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
+        var childCanceled = (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).Fault!;
+        Assert.Equal((WorkflowMessages.ChildCanceled, nameof(WorkflowInstanceStatus.Canceled), null), (childCanceled.MessageKey, childCanceled.Arguments!["status"], childCanceled.Inner));
+        Assert.Equal($"子流程 '{child.Id}' 被取消。", In("zh-CN", childCanceled.Localize));
+        Assert.Equal($"Sub-workflow '{child.Id}' was canceled.", In("en-US", childCanceled.Localize));
+
+        // 状态不允许操作：每种状态一句；状态的展示名按区域
+        var denied = (await host.EngineAsync(engine => engine.SuspendAsync(child.Id, null, CancellationToken.None)).ConfigureAwait(false)).Error!;
+        Assert.Equal((WorkflowErrors.InstanceStatus, WorkflowMessages.InstanceIsCanceled, (object?)nameof(WorkflowInstanceStatus.Canceled)), (denied.Code, denied.MessageKey, denied.Details!["status"]));
+        Assert.Equal($"工作流实例 '{child.Id}' 已取消，不允许该操作。", In("zh-CN", () => denied.MessageKey!.L(denied.Details)));
+        Assert.Equal($"Workflow instance '{child.Id}' has been canceled and does not allow this operation.", In("en-US", () => denied.MessageKey!.L(denied.Details)));
+        Assert.Equal(("已取消", "Canceled"), (In("zh-CN", () => WorkflowInstanceStatus.Canceled.Localize()), In("en-US", () => WorkflowInstanceStatus.Canceled.Localize())));
     }
 
     /// <summary>

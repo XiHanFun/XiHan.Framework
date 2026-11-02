@@ -29,13 +29,28 @@ internal static class ActivityFailures
     /// 子流程没有正常完成。
     /// </summary>
     /// <remarks>
-    /// 子实例的故障（回调输入里 <see cref="WorkflowEngine.ChildFaultInput"/>，<see cref="WorkflowFault"/> 的 JSON）是内层原因，子实例的文案随外层一起按调用方的区域本地化。
+    /// 子实例的故障（回调输入里 <see cref="WorkflowEngine.ChildFaultInput"/>，<see cref="WorkflowFault"/> 的 JSON）是内层原因，子实例的文案随外层一起按调用方的区域本地化。故障、取消、终止各一个消息键，状态名不进文案（ADR-0106）；参数 <c>status</c> 仍是枚举名。
     /// </remarks>
     public static Error ChildFailed(JsonObject inputs, string status)
     {
         var id = inputs[WorkflowEngine.ChildInstanceIdInput] is JsonValue child ? WorkflowValues.AsString(child) : string.Empty;
-        var fault = WorkflowJson.ReadFault(inputs[WorkflowEngine.ChildFaultInput]);
-        return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, fault?.ToError(), MessageArguments.Of(("id", id), ("status", status)));
+        var inner = WorkflowJson.DeserializeFault(inputs[WorkflowEngine.ChildFaultInput])?.ToError();
+        var details = MessageArguments.Of(("id", id), ("status", status));
+
+        // 引擎回调给的是终态的枚举名；手工恢复书签给的别的值没有对应的说法，报通用的键、状态原样
+        if (string.Equals(status, nameof(WorkflowInstanceStatus.Faulted), StringComparison.OrdinalIgnoreCase))
+        {
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFaulted, inner, details);
+        }
+
+        if (string.Equals(status, nameof(WorkflowInstanceStatus.Canceled), StringComparison.OrdinalIgnoreCase))
+        {
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildCanceled, inner, details);
+        }
+
+        return string.Equals(status, nameof(WorkflowInstanceStatus.Terminated), StringComparison.OrdinalIgnoreCase)
+            ? Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildTerminated, inner, details)
+            : Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, inner, details);
     }
 
     /// <summary>

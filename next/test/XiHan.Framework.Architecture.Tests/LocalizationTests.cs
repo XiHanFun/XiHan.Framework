@@ -26,6 +26,7 @@ public sealed partial class LocalizationTests
         "XiHan.Framework.Primitives/FrameworkException.cs",
         "XiHan.Framework.Caching.Abstractions/Idempotency/IdempotencyRecord.cs",
         "XiHan.Framework.Workflow.Abstractions/Instances/WorkflowFault.cs",
+        "XiHan.Framework.Workflow.Abstractions/Expressions/ExpressionException.cs",
         "XiHan.Framework.Scheduling.Abstractions/Jobs/JobRunRecord.cs",
         "XiHan.Framework.Auditing.Database/Trail/AuditRecordMapping.cs",
         "XiHan.Framework.Plugins.Protocol/Mapping/PluginErrorMapper.cs",

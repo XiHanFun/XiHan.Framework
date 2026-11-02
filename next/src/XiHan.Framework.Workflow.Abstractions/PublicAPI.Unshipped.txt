@@ -27,10 +27,22 @@ XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.ActivityDescriptor(string! type, string? displayName = null, string? category = null, string? description = null, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor!>? inputs = null) -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Category.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.CategoryKey.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.CategoryKey.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.CategoryName.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.CategoryName.init -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Description.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Description.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DescriptionKey.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DescriptionKey.init -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DisplayName.get -> string!
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DisplayName.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DisplayNameKey.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.DisplayNameKey.init -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Equals(XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Inputs.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor!>!
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Inputs.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Localize() -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor.Type.get -> string!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor!
@@ -38,9 +50,12 @@ XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Activit
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Deconstruct(out string! Name, out string! Kind, out bool Required, out string? Description) -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Description.get -> string?
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Description.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.DescriptionKey.get -> string?
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.DescriptionKey.init -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Equals(XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Kind.get -> string!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Kind.init -> void
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Localize() -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Name.get -> string!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Name.init -> void
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityInputDescriptor.Required.get -> bool
@@ -180,7 +195,7 @@ XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.AssigneeResolve
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.ResolveAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule!>! rules, XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! activity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<string!>!>>
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.RuleTypes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.Supports(string! ruleType) -> bool
-XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.Validate(System.Collections.Generic.IEnumerable<XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule!>! rules) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver.Validate(System.Collections.Generic.IEnumerable<XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule!>! rules) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Error!>!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule.AssigneeRule(string! Type, System.Collections.Generic.IReadOnlyList<string!>! Values) -> void
@@ -384,7 +399,7 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Vers
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Version.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.WorkflowDefinitionSummary() -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Errors(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Diagnose(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Validation.SchemaViolation!>!
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Validate(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.WorkflowDefinitionValidator(XiHan.Framework.Workflow.Abstractions.Activities.ActivityRegistry! registry, XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator! evaluator, XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver! assignees) -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode
@@ -1227,6 +1242,7 @@ XiHan.Framework.Workflow.Abstractions.WorkflowOptions.Retention.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.WorkflowOptions() -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowServiceCollectionExtensions
 XiHan.Framework.Workflow.Abstractions.WorkflowSortKeys
+XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.MaxLength = 64 -> int
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityTypes.Compensate = "Compensate" -> string!
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityTypes.Decision = "Decision" -> string!
@@ -1426,11 +1442,58 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.TypeNotRegistered = "
 const XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers.MaxElementIdLength = 64 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.FieldSeparator = '\u001f' -> char
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActiveInstanceExists = "workflow.instance.active_exists" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCategoryControl = "workflow.activity_category.control" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCategoryData = "workflow.activity_category.data" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCategoryHuman = "workflow.activity_category.human" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCategoryIntegration = "workflow.activity_category.integration" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCompensateDescription = "workflow.activity_type.compensate.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityCompensateName = "workflow.activity_type.compensate.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityDecisionDescription = "workflow.activity_type.decision.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityDecisionName = "workflow.activity_type.decision.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityDelayDescription = "workflow.activity_type.delay.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityDelayName = "workflow.activity_type.delay.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityEndDescription = "workflow.activity_type.end.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityEndName = "workflow.activity_type.end.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityEventGatewayDescription = "workflow.activity_type.event_gateway.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityEventGatewayName = "workflow.activity_type.event_gateway.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityExternalTaskDescription = "workflow.activity_type.external_task.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityExternalTaskName = "workflow.activity_type.external_task.name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFailed = "workflow.activity.failed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFaultDescription = "workflow.activity_type.fault.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFaultName = "workflow.activity_type.fault.name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFaultRaised = "workflow.activity.fault_raised" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityForEachDescription = "workflow.activity_type.for_each.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityForEachName = "workflow.activity_type.for_each.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityHttpDescription = "workflow.activity_type.http.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityHttpName = "workflow.activity_type.http.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityJoinDescription = "workflow.activity_type.join.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityJoinModeInput = "workflow.activity_type.join.mode" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityJoinName = "workflow.activity_type.join.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityLogDescription = "workflow.activity_type.log.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityLogName = "workflow.activity_type.log.name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityNoInvocation = "workflow.activity.no_invocation" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityNotRegistered = "workflow.activity.not_registered" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityParallelDescription = "workflow.activity_type.parallel.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityParallelName = "workflow.activity_type.parallel.name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityPropertyInvalid = "workflow.activity.property_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityPublishEventDescription = "workflow.activity_type.publish_event.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityPublishEventName = "workflow.activity_type.publish_event.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivitySetVariableDescription = "workflow.activity_type.set_variable.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivitySetVariableName = "workflow.activity_type.set_variable.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityStartCronInput = "workflow.activity_type.start.cron" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityStartDescription = "workflow.activity_type.start.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityStartName = "workflow.activity_type.start.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityStartSignalNameInput = "workflow.activity_type.start.signal_name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivitySubWorkflowDescription = "workflow.activity_type.sub_workflow.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivitySubWorkflowName = "workflow.activity_type.sub_workflow.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityTerminateDescription = "workflow.activity_type.terminate.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityTerminateName = "workflow.activity_type.terminate.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityUserTaskApprovalThresholdInput = "workflow.activity_type.user_task.approval_threshold" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityUserTaskDescription = "workflow.activity_type.user_task.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityUserTaskDueAtInput = "workflow.activity_type.user_task.due_at" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityUserTaskName = "workflow.activity_type.user_task.name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityWaitSignalDescription = "workflow.activity_type.wait_signal.description" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityWaitSignalName = "workflow.activity_type.wait_signal.name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeExpressionCount = "workflow.assignee.expression_count" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRuleTypeMissing = "workflow.assignee.rule_type_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRuleUnknown = "workflow.assignee.rule_unknown" -> string!
@@ -1440,18 +1503,62 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkKeyMismatch
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotFound = "workflow.bookmark.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotResumable = "workflow.bookmark.not_resumable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.CatalogName = "workflow" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildCanceled = "workflow.child.canceled" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildFailed = "workflow.child.failed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildFaulted = "workflow.child.faulted" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildTerminated = "workflow.child.terminated" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionActivityUnknown = "workflow.definition.activity_unknown" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionDefaultDuplicate = "workflow.definition.default_duplicate" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionFallbackRulesMissing = "workflow.definition.fallback_rules_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionInvalid = "workflow.definition.invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionIsArchived = "workflow.definition.is_archived" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionIsDisabled = "workflow.definition.is_disabled" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionIsDraft = "workflow.definition.is_draft" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionIsPublished = "workflow.definition.is_published" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionJsonMalformed = "workflow.definition.json_malformed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionJsonNull = "workflow.definition.json_null" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionJsonValueInvalid = "workflow.definition.json_value_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionMappingVariableEmpty = "workflow.definition.mapping_variable_empty" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNoNodes = "workflow.definition.no_nodes" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNodeDuplicate = "workflow.definition.node_duplicate" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNodeUnreachable = "workflow.definition.node_unreachable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNotFound = "workflow.definition.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortDuplicate = "workflow.definition.query_sort_duplicate" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortInvalid = "workflow.definition.query_sort_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortsTooMany = "workflow.definition.query_sorts_too_many" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStartDuplicate = "workflow.definition.start_duplicate" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStartIncoming = "workflow.definition.start_incoming" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStartMissing = "workflow.definition.start_missing" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatus = "workflow.definition.status" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionInvalid = "workflow.expression.invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatusArchived = "workflow.definition_status.archived" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatusDisabled = "workflow.definition_status.disabled" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatusDraft = "workflow.definition_status.draft" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatusPublished = "workflow.definition_status.published" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionTransitionDuplicate = "workflow.definition.transition_duplicate" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionTransitionSourceMissing = "workflow.definition.transition_source_missing" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionTransitionTargetMissing = "workflow.definition.transition_target_missing" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionUserTaskNoAssignees = "workflow.definition.user_task_no_assignees" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionArgumentCount = "workflow.expression.argument_count" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionArgumentRange = "workflow.expression.argument_range" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionDivisionByZero = "workflow.expression.division_by_zero" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionEmpty = "workflow.expression.empty" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionIndexOfScalar = "workflow.expression.index_of_scalar" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionIndexOutOfRange = "workflow.expression.index_out_of_range" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionMemberExpected = "workflow.expression.member_expected" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionMemberOfNonObject = "workflow.expression.member_of_non_object" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotBoolean = "workflow.expression.not_boolean" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotDate = "workflow.expression.not_date" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotNumber = "workflow.expression.not_number" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotBoolean = "workflow.expression.operands_not_boolean" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotNumeric = "workflow.expression.operands_not_numeric" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotScalar = "workflow.expression.operands_not_scalar" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionTokenExpected = "workflow.expression.token_expected" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnexpectedCharacter = "workflow.expression.unexpected_character" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnexpectedEnd = "workflow.expression.unexpected_end" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnknownFunction = "workflow.expression.unknown_function" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnknownVariable = "workflow.expression.unknown_variable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnterminatedPlaceholder = "workflow.expression.unterminated_placeholder" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnterminatedString = "workflow.expression.unterminated_string" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskDenied = "workflow.external.denied" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskFailed = "workflow.external.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskLockDurationInvalid = "workflow.external.lock_duration_invalid" -> string!
@@ -1461,6 +1568,12 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.FaultCausedBy = "wo
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpFailed = "workflow.http.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpTimedOut = "workflow.http.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "workflow.instance.depth" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsCanceled = "workflow.instance.is_canceled" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsCompleted = "workflow.instance.is_completed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsFaulted = "workflow.instance.is_faulted" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsRunning = "workflow.instance.is_running" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsSuspended = "workflow.instance.is_suspended" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceIsTerminated = "workflow.instance.is_terminated" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceJoinDead = "workflow.instance.join_dead" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNoTransition = "workflow.instance.no_transition" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNotFound = "workflow.instance.not_found" -> string!
@@ -1470,11 +1583,22 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortDu
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortInvalid = "workflow.instance.query_sort_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortsTooMany = "workflow.instance.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceRunaway = "workflow.instance.runaway" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatus = "workflow.instance.status" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusCanceled = "workflow.instance_status.canceled" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusCompleted = "workflow.instance_status.completed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusFaulted = "workflow.instance_status.faulted" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusRunning = "workflow.instance_status.running" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusSuspended = "workflow.instance_status.suspended" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatusTerminated = "workflow.instance_status.terminated" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceTimedOut = "workflow.instance.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.LockTimeout = "workflow.lock.timeout" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.MigrationIncompatible = "workflow.instance.migration_incompatible" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeNotFound = "workflow.instance.node_not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusCanceled = "workflow.node_status.canceled" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusCompensated = "workflow.node_status.compensated" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusCompleted = "workflow.node_status.completed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusFaulted = "workflow.node_status.faulted" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusRunning = "workflow.node_status.running" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeStatusSuspended = "workflow.node_status.suspended" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeTimedOut = "workflow.node.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyCronExhausted = "workflow.activity.property_cron_exhausted" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyEmpty = "workflow.activity.property_empty" -> string!
@@ -1760,6 +1884,7 @@ static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.CloneObj
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeBookmark(string! json) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark!
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeDefinition(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!>
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeEvent(System.ReadOnlySpan<byte> json) -> XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData!
+static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeFault(System.Text.Json.Nodes.JsonNode? node) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault?
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeInstance(string! json) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.DeserializeNodeInstance(string! json) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.Serialize(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> string!
@@ -1767,6 +1892,7 @@ static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.Serializ
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.Serialize(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance! instance) -> string!
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.Serialize(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance! nodeInstance) -> string!
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.SerializeEvent(XiHan.Framework.Workflow.Abstractions.Events.WorkflowEventData! data) -> byte[]!
+static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.SerializeFault(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault! fault) -> System.Text.Json.Nodes.JsonObject!
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTask.From(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark! bookmark, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance! instance) -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTask!
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTask.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTask? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTask? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTask.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTask? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTask? right) -> bool
@@ -1824,5 +1950,11 @@ static XiHan.Framework.Workflow.Abstractions.WorkflowServiceCollectionExtensions
 static XiHan.Framework.Workflow.Abstractions.WorkflowServiceCollectionExtensions.AddWorkflowOutcomeHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Workflow.Abstractions.WorkflowServiceCollectionExtensions.GetActivityRegistry(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityRegistry!
 static XiHan.Framework.Workflow.Abstractions.WorkflowSortKeys.Title(string! title) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.KeyOf(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.KeyOf(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.KeyOf(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus status) -> string!
 ~override XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.Equals(object obj) -> bool
 ~override XiHan.Framework.Workflow.Abstractions.WorkflowName.Equals(object obj) -> bool

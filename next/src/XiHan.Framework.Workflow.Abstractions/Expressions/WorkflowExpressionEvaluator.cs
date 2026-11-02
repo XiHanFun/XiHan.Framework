@@ -48,7 +48,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         }
         catch (ExpressionException exception)
         {
-            return Invalid(expression, exception.Message);
+            return exception.ToError(expression);
         }
     }
 
@@ -64,7 +64,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         }
         catch (ExpressionException exception)
         {
-            return Invalid(expression, exception.Message);
+            return exception.ToError(expression);
         }
     }
 
@@ -185,10 +185,4 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         _cache[expression] = compiled;
         return compiled;
     }
-
-    /// <summary>
-    /// 表达式错误。
-    /// </summary>
-    private static Error Invalid(string expression, string reason)
-        => Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionInvalid, MessageArguments.Of(("expression", expression), ("reason", reason)));
 }

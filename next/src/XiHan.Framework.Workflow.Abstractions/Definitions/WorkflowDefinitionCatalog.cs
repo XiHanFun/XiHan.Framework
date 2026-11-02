@@ -242,7 +242,7 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<ActivityDescriptor> ActivityTypes() => _registry.Activities.Select(static activity => activity.Descriptor).OrderBy(static descriptor => descriptor.Type, StringComparer.Ordinal).ToList();
+    public IReadOnlyList<ActivityDescriptor> ActivityTypes() => _registry.Activities.Select(static activity => activity.Descriptor.Localize()).OrderBy(static descriptor => descriptor.Type, StringComparer.Ordinal).ToList();
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<Result>> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
@@ -417,5 +417,5 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     /// 定义的状态不允许该操作。
     /// </summary>
     private static Error StatusConflict(WorkflowDefinition definition)
-        => Error.Conflict(WorkflowErrors.DefinitionStatus, WorkflowMessages.DefinitionStatus, MessageArguments.Of(("id", definition.Id), ("status", definition.Status.ToString())));
+        => WorkflowStatusConflicts.Of(definition);
 }

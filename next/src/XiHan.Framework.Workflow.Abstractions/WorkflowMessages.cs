@@ -24,7 +24,7 @@ public static class WorkflowMessages
     /// 定义不合法。
     /// </summary>
     /// <remarks>
-    /// 参数：<c>errors</c>。
+    /// 参数：<c>count</c>（问题条数）；<c>details.errors</c> 是全部问题（<c>SchemaViolation</c> 的列表，每条有自己的消息键与参数，ADR-0106）。
     /// </remarks>
     public const string DefinitionInvalid = "workflow.definition.invalid";
 
@@ -36,13 +36,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string DefinitionNotFound = "workflow.definition.not_found";
 
-    /// <summary>
-    /// 定义状态不允许该操作。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>id</c>、<c>status</c>。
-    /// </remarks>
-    public const string DefinitionStatus = "workflow.definition.status";
 
     /// <summary>
     /// 实例不存在。
@@ -52,13 +45,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string InstanceNotFound = "workflow.instance.not_found";
 
-    /// <summary>
-    /// 实例状态不允许该操作。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>id</c>、<c>status</c>。
-    /// </remarks>
-    public const string InstanceStatus = "workflow.instance.status";
 
     /// <summary>
     /// 子流程深度超限。
@@ -148,13 +134,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string ActivityPropertyInvalid = "workflow.activity.property_invalid";
 
-    /// <summary>
-    /// 表达式语法不合法或求值失败。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>expression</c>、<c>reason</c>。
-    /// </remarks>
-    public const string ExpressionInvalid = "workflow.expression.invalid";
 
     /// <summary>
     /// 操作者不是任务的指派人。
@@ -222,10 +201,10 @@ public static class WorkflowMessages
     public const string StoreCapacity = "workflow.store.capacity";
 
     /// <summary>
-    /// 子流程没有正常完成。
+    /// 子流程以意外的状态结束。
     /// </summary>
     /// <remarks>
-    /// 没起来或以故障、取消、终止结束；子实例的故障是内层原因。参数：<c>id</c>（子实例）、<c>status</c>（子实例的状态）。
+    /// 故障、取消、终止各有键（<see cref="ChildFaulted"/>、<see cref="ChildCanceled"/>、<see cref="ChildTerminated"/>）；这个键只用于手工恢复书签给了别的状态。参数：<c>id</c>（子实例）、<c>status</c>（原样）。
     /// </remarks>
     public const string ChildFailed = "workflow.child.failed";
 
@@ -656,6 +635,699 @@ public static class WorkflowMessages
     /// 外部任务的重试延迟为负。
     /// </summary>
     public const string ExternalTaskRetryAfterNegative = "workflow.external.retry_after_negative";
+
+    /// <summary>
+    /// 定义没有节点。
+    /// </summary>
+    public const string DefinitionNoNodes = "workflow.definition.no_nodes";
+
+    /// <summary>
+    /// 节点 ID 重复。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionNodeDuplicate = "workflow.definition.node_duplicate";
+
+    /// <summary>
+    /// 节点的活动类型没有登记。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>、<c>type</c>。
+    /// </remarks>
+    public const string DefinitionActivityUnknown = "workflow.definition.activity_unknown";
+
+    /// <summary>
+    /// 定义有不止一个开始节点。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>（多出来的开始节点）。
+    /// </remarks>
+    public const string DefinitionStartDuplicate = "workflow.definition.start_duplicate";
+
+    /// <summary>
+    /// 输出映射的变量名为空。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionMappingVariableEmpty = "workflow.definition.mapping_variable_empty";
+
+    /// <summary>
+    /// 转移 ID 重复。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>transition</c>。
+    /// </remarks>
+    public const string DefinitionTransitionDuplicate = "workflow.definition.transition_duplicate";
+
+    /// <summary>
+    /// 转移的源节点不存在。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>transition</c>、<c>node</c>。
+    /// </remarks>
+    public const string DefinitionTransitionSourceMissing = "workflow.definition.transition_source_missing";
+
+    /// <summary>
+    /// 转移的目标节点不存在。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>transition</c>、<c>node</c>。
+    /// </remarks>
+    public const string DefinitionTransitionTargetMissing = "workflow.definition.transition_target_missing";
+
+    /// <summary>
+    /// 转移指向开始节点。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>transition</c>、<c>node</c>（开始节点）。
+    /// </remarks>
+    public const string DefinitionStartIncoming = "workflow.definition.start_incoming";
+
+    /// <summary>
+    /// 节点有不止一条默认出边。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionDefaultDuplicate = "workflow.definition.default_duplicate";
+
+    /// <summary>
+    /// 节点从开始节点走不到。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionNodeUnreachable = "workflow.definition.node_unreachable";
+
+    /// <summary>
+    /// 用户任务没有任何指派来源。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionUserTaskNoAssignees = "workflow.definition.user_task_no_assignees";
+
+    /// <summary>
+    /// 兜底策略缺兜底规则。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string DefinitionFallbackRulesMissing = "workflow.definition.fallback_rules_missing";
+
+    /// <summary>
+    /// 定义 JSON 为空值。
+    /// </summary>
+    public const string DefinitionJsonNull = "workflow.definition.json_null";
+
+    /// <summary>
+    /// 定义 JSON 语法或类型不合法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>、<c>line</c>、<c>position</c>（行与字节位置从 1 起）。
+    /// </remarks>
+    public const string DefinitionJsonMalformed = "workflow.definition.json_malformed";
+
+    /// <summary>
+    /// 定义 JSON 里有模型拒绝的值。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>（模型的英文说明，编程错误，不本地化）。
+    /// </remarks>
+    public const string DefinitionJsonValueInvalid = "workflow.definition.json_value_invalid";
+
+    /// <summary>
+    /// 表达式为空。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionEmpty = "workflow.expression.empty";
+
+    /// <summary>
+    /// 表达式里出现意外的字符。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>character</c>、<c>position</c>（从 1 起）。
+    /// </remarks>
+    public const string ExpressionUnexpectedCharacter = "workflow.expression.unexpected_character";
+
+    /// <summary>
+    /// 表达式除以零。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionDivisionByZero = "workflow.expression.division_by_zero";
+
+    /// <summary>
+    /// 表达式在该处应有成员名。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>position</c>（从 1 起）。
+    /// </remarks>
+    public const string ExpressionMemberExpected = "workflow.expression.member_expected";
+
+    /// <summary>
+    /// 表达式在该处缺少符号。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>token</c>、<c>position</c>（从 1 起）。
+    /// </remarks>
+    public const string ExpressionTokenExpected = "workflow.expression.token_expected";
+
+    /// <summary>
+    /// 表达式意外结束。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionUnexpectedEnd = "workflow.expression.unexpected_end";
+
+    /// <summary>
+    /// 表达式引用了未知变量。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>name</c>。
+    /// </remarks>
+    public const string ExpressionUnknownVariable = "workflow.expression.unknown_variable";
+
+    /// <summary>
+    /// 函数的参数个数不对（固定个数）。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>function</c>、<c>count</c>。
+    /// </remarks>
+    public const string ExpressionArgumentCount = "workflow.expression.argument_count";
+
+    /// <summary>
+    /// 函数的参数个数不对（范围）。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>function</c>、<c>min</c>、<c>max</c>。
+    /// </remarks>
+    public const string ExpressionArgumentRange = "workflow.expression.argument_range";
+
+    /// <summary>
+    /// 值不是日期。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>value</c>。
+    /// </remarks>
+    public const string ExpressionNotDate = "workflow.expression.not_date";
+
+    /// <summary>
+    /// 函数未知。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>function</c>。
+    /// </remarks>
+    public const string ExpressionUnknownFunction = "workflow.expression.unknown_function";
+
+    /// <summary>
+    /// 从非对象值读成员。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>member</c>。
+    /// </remarks>
+    public const string ExpressionMemberOfNonObject = "workflow.expression.member_of_non_object";
+
+    /// <summary>
+    /// 下标越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>index</c>、<c>length</c>。
+    /// </remarks>
+    public const string ExpressionIndexOutOfRange = "workflow.expression.index_out_of_range";
+
+    /// <summary>
+    /// 对标量取下标。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionIndexOfScalar = "workflow.expression.index_of_scalar";
+
+    /// <summary>
+    /// 运算符需要两个标量操作数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>operator</c>。
+    /// </remarks>
+    public const string ExpressionOperandsNotScalar = "workflow.expression.operands_not_scalar";
+
+    /// <summary>
+    /// 运算符需要布尔操作数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>operator</c>。
+    /// </remarks>
+    public const string ExpressionOperandsNotBoolean = "workflow.expression.operands_not_boolean";
+
+    /// <summary>
+    /// 运算符需要数值操作数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>operator</c>。
+    /// </remarks>
+    public const string ExpressionOperandsNotNumeric = "workflow.expression.operands_not_numeric";
+
+    /// <summary>
+    /// 值不是数字。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>value</c>。
+    /// </remarks>
+    public const string ExpressionNotNumber = "workflow.expression.not_number";
+
+    /// <summary>
+    /// 字符串字面量没闭合。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionUnterminatedString = "workflow.expression.unterminated_string";
+
+    /// <summary>
+    /// 子流程故障。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>（子实例）、<c>status</c>（枚举名）；子实例的故障是内层原因。
+    /// </remarks>
+    public const string ChildFaulted = "workflow.child.faulted";
+
+    /// <summary>
+    /// 子流程被取消。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>（子实例）、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string ChildCanceled = "workflow.child.canceled";
+
+    /// <summary>
+    /// 子流程被终止。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>（子实例）、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string ChildTerminated = "workflow.child.terminated";
+
+    /// <summary>
+    /// 实例正在运行，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsRunning = "workflow.instance.is_running";
+
+    /// <summary>
+    /// 实例已挂起，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsSuspended = "workflow.instance.is_suspended";
+
+    /// <summary>
+    /// 实例已完成，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsCompleted = "workflow.instance.is_completed";
+
+    /// <summary>
+    /// 实例已取消，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsCanceled = "workflow.instance.is_canceled";
+
+    /// <summary>
+    /// 实例已故障，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsFaulted = "workflow.instance.is_faulted";
+
+    /// <summary>
+    /// 实例已终止，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string InstanceIsTerminated = "workflow.instance.is_terminated";
+
+    /// <summary>
+    /// 定义是草稿，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string DefinitionIsDraft = "workflow.definition.is_draft";
+
+    /// <summary>
+    /// 定义已发布，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string DefinitionIsPublished = "workflow.definition.is_published";
+
+    /// <summary>
+    /// 定义已停用，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string DefinitionIsDisabled = "workflow.definition.is_disabled";
+
+    /// <summary>
+    /// 定义已归档，不允许该操作。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>status</c>（枚举名）。
+    /// </remarks>
+    public const string DefinitionIsArchived = "workflow.definition.is_archived";
+
+    /// <summary>
+    /// 实例状态 Running 的展示名。
+    /// </summary>
+    public const string InstanceStatusRunning = "workflow.instance_status.running";
+
+    /// <summary>
+    /// 实例状态 Suspended 的展示名。
+    /// </summary>
+    public const string InstanceStatusSuspended = "workflow.instance_status.suspended";
+
+    /// <summary>
+    /// 实例状态 Completed 的展示名。
+    /// </summary>
+    public const string InstanceStatusCompleted = "workflow.instance_status.completed";
+
+    /// <summary>
+    /// 实例状态 Canceled 的展示名。
+    /// </summary>
+    public const string InstanceStatusCanceled = "workflow.instance_status.canceled";
+
+    /// <summary>
+    /// 实例状态 Faulted 的展示名。
+    /// </summary>
+    public const string InstanceStatusFaulted = "workflow.instance_status.faulted";
+
+    /// <summary>
+    /// 实例状态 Terminated 的展示名。
+    /// </summary>
+    public const string InstanceStatusTerminated = "workflow.instance_status.terminated";
+
+    /// <summary>
+    /// 节点实例状态 Running 的展示名。
+    /// </summary>
+    public const string NodeStatusRunning = "workflow.node_status.running";
+
+    /// <summary>
+    /// 节点实例状态 Suspended 的展示名。
+    /// </summary>
+    public const string NodeStatusSuspended = "workflow.node_status.suspended";
+
+    /// <summary>
+    /// 节点实例状态 Completed 的展示名。
+    /// </summary>
+    public const string NodeStatusCompleted = "workflow.node_status.completed";
+
+    /// <summary>
+    /// 节点实例状态 Canceled 的展示名。
+    /// </summary>
+    public const string NodeStatusCanceled = "workflow.node_status.canceled";
+
+    /// <summary>
+    /// 节点实例状态 Faulted 的展示名。
+    /// </summary>
+    public const string NodeStatusFaulted = "workflow.node_status.faulted";
+
+    /// <summary>
+    /// 节点实例状态 Compensated 的展示名。
+    /// </summary>
+    public const string NodeStatusCompensated = "workflow.node_status.compensated";
+
+    /// <summary>
+    /// 定义状态 Draft 的展示名。
+    /// </summary>
+    public const string DefinitionStatusDraft = "workflow.definition_status.draft";
+
+    /// <summary>
+    /// 定义状态 Published 的展示名。
+    /// </summary>
+    public const string DefinitionStatusPublished = "workflow.definition_status.published";
+
+    /// <summary>
+    /// 定义状态 Disabled 的展示名。
+    /// </summary>
+    public const string DefinitionStatusDisabled = "workflow.definition_status.disabled";
+
+    /// <summary>
+    /// 定义状态 Archived 的展示名。
+    /// </summary>
+    public const string DefinitionStatusArchived = "workflow.definition_status.archived";
+
+    /// <summary>
+    /// 活动分类 Control 的展示名。
+    /// </summary>
+    public const string ActivityCategoryControl = "workflow.activity_category.control";
+
+    /// <summary>
+    /// 活动分类 Human 的展示名。
+    /// </summary>
+    public const string ActivityCategoryHuman = "workflow.activity_category.human";
+
+    /// <summary>
+    /// 活动分类 Integration 的展示名。
+    /// </summary>
+    public const string ActivityCategoryIntegration = "workflow.activity_category.integration";
+
+    /// <summary>
+    /// 活动分类 Data 的展示名。
+    /// </summary>
+    public const string ActivityCategoryData = "workflow.activity_category.data";
+
+    /// <summary>
+    /// 活动 Start 的显示名。
+    /// </summary>
+    public const string ActivityStartName = "workflow.activity_type.start.name";
+
+    /// <summary>
+    /// 活动 Start 的说明。
+    /// </summary>
+    public const string ActivityStartDescription = "workflow.activity_type.start.description";
+
+    /// <summary>
+    /// 活动 End 的显示名。
+    /// </summary>
+    public const string ActivityEndName = "workflow.activity_type.end.name";
+
+    /// <summary>
+    /// 活动 End 的说明。
+    /// </summary>
+    public const string ActivityEndDescription = "workflow.activity_type.end.description";
+
+    /// <summary>
+    /// 活动 Terminate 的显示名。
+    /// </summary>
+    public const string ActivityTerminateName = "workflow.activity_type.terminate.name";
+
+    /// <summary>
+    /// 活动 Terminate 的说明。
+    /// </summary>
+    public const string ActivityTerminateDescription = "workflow.activity_type.terminate.description";
+
+    /// <summary>
+    /// 活动 SetVariable 的显示名。
+    /// </summary>
+    public const string ActivitySetVariableName = "workflow.activity_type.set_variable.name";
+
+    /// <summary>
+    /// 活动 SetVariable 的说明。
+    /// </summary>
+    public const string ActivitySetVariableDescription = "workflow.activity_type.set_variable.description";
+
+    /// <summary>
+    /// 活动 Decision 的显示名。
+    /// </summary>
+    public const string ActivityDecisionName = "workflow.activity_type.decision.name";
+
+    /// <summary>
+    /// 活动 Decision 的说明。
+    /// </summary>
+    public const string ActivityDecisionDescription = "workflow.activity_type.decision.description";
+
+    /// <summary>
+    /// 活动 Parallel 的显示名。
+    /// </summary>
+    public const string ActivityParallelName = "workflow.activity_type.parallel.name";
+
+    /// <summary>
+    /// 活动 Parallel 的说明。
+    /// </summary>
+    public const string ActivityParallelDescription = "workflow.activity_type.parallel.description";
+
+    /// <summary>
+    /// 活动 Join 的显示名。
+    /// </summary>
+    public const string ActivityJoinName = "workflow.activity_type.join.name";
+
+    /// <summary>
+    /// 活动 Join 的说明。
+    /// </summary>
+    public const string ActivityJoinDescription = "workflow.activity_type.join.description";
+
+    /// <summary>
+    /// 活动 Delay 的显示名。
+    /// </summary>
+    public const string ActivityDelayName = "workflow.activity_type.delay.name";
+
+    /// <summary>
+    /// 活动 Delay 的说明。
+    /// </summary>
+    public const string ActivityDelayDescription = "workflow.activity_type.delay.description";
+
+    /// <summary>
+    /// 活动 UserTask 的显示名。
+    /// </summary>
+    public const string ActivityUserTaskName = "workflow.activity_type.user_task.name";
+
+    /// <summary>
+    /// 活动 UserTask 的说明。
+    /// </summary>
+    public const string ActivityUserTaskDescription = "workflow.activity_type.user_task.description";
+
+    /// <summary>
+    /// 活动 PublishEvent 的显示名。
+    /// </summary>
+    public const string ActivityPublishEventName = "workflow.activity_type.publish_event.name";
+
+    /// <summary>
+    /// 活动 PublishEvent 的说明。
+    /// </summary>
+    public const string ActivityPublishEventDescription = "workflow.activity_type.publish_event.description";
+
+    /// <summary>
+    /// 活动 WaitSignal 的显示名。
+    /// </summary>
+    public const string ActivityWaitSignalName = "workflow.activity_type.wait_signal.name";
+
+    /// <summary>
+    /// 活动 WaitSignal 的说明。
+    /// </summary>
+    public const string ActivityWaitSignalDescription = "workflow.activity_type.wait_signal.description";
+
+    /// <summary>
+    /// 活动 EventGateway 的显示名。
+    /// </summary>
+    public const string ActivityEventGatewayName = "workflow.activity_type.event_gateway.name";
+
+    /// <summary>
+    /// 活动 EventGateway 的说明。
+    /// </summary>
+    public const string ActivityEventGatewayDescription = "workflow.activity_type.event_gateway.description";
+
+    /// <summary>
+    /// 活动 SubWorkflow 的显示名。
+    /// </summary>
+    public const string ActivitySubWorkflowName = "workflow.activity_type.sub_workflow.name";
+
+    /// <summary>
+    /// 活动 SubWorkflow 的说明。
+    /// </summary>
+    public const string ActivitySubWorkflowDescription = "workflow.activity_type.sub_workflow.description";
+
+    /// <summary>
+    /// 活动 ForEach 的显示名。
+    /// </summary>
+    public const string ActivityForEachName = "workflow.activity_type.for_each.name";
+
+    /// <summary>
+    /// 活动 ForEach 的说明。
+    /// </summary>
+    public const string ActivityForEachDescription = "workflow.activity_type.for_each.description";
+
+    /// <summary>
+    /// 活动 Log 的显示名。
+    /// </summary>
+    public const string ActivityLogName = "workflow.activity_type.log.name";
+
+    /// <summary>
+    /// 活动 Log 的说明。
+    /// </summary>
+    public const string ActivityLogDescription = "workflow.activity_type.log.description";
+
+    /// <summary>
+    /// 活动 Fault 的显示名。
+    /// </summary>
+    public const string ActivityFaultName = "workflow.activity_type.fault.name";
+
+    /// <summary>
+    /// 活动 Fault 的说明。
+    /// </summary>
+    public const string ActivityFaultDescription = "workflow.activity_type.fault.description";
+
+    /// <summary>
+    /// 活动 Compensate 的显示名。
+    /// </summary>
+    public const string ActivityCompensateName = "workflow.activity_type.compensate.name";
+
+    /// <summary>
+    /// 活动 Compensate 的说明。
+    /// </summary>
+    public const string ActivityCompensateDescription = "workflow.activity_type.compensate.description";
+
+    /// <summary>
+    /// 活动 Http 的显示名。
+    /// </summary>
+    public const string ActivityHttpName = "workflow.activity_type.http.name";
+
+    /// <summary>
+    /// 活动 Http 的说明。
+    /// </summary>
+    public const string ActivityHttpDescription = "workflow.activity_type.http.description";
+
+    /// <summary>
+    /// 活动 ExternalTask 的显示名。
+    /// </summary>
+    public const string ActivityExternalTaskName = "workflow.activity_type.external_task.name";
+
+    /// <summary>
+    /// 活动 ExternalTask 的说明。
+    /// </summary>
+    public const string ActivityExternalTaskDescription = "workflow.activity_type.external_task.description";
+
+    /// <summary>
+    /// 开始节点 SignalName 输入的说明。
+    /// </summary>
+    public const string ActivityStartSignalNameInput = "workflow.activity_type.start.signal_name";
+
+    /// <summary>
+    /// 开始节点 Cron 输入的说明。
+    /// </summary>
+    public const string ActivityStartCronInput = "workflow.activity_type.start.cron";
+
+    /// <summary>
+    /// 汇合节点 Mode 输入的说明。
+    /// </summary>
+    public const string ActivityJoinModeInput = "workflow.activity_type.join.mode";
+
+    /// <summary>
+    /// 用户任务 ApprovalThreshold 输入的说明。
+    /// </summary>
+    public const string ActivityUserTaskApprovalThresholdInput = "workflow.activity_type.user_task.approval_threshold";
+
+    /// <summary>
+    /// 用户任务 DueAt 输入的说明。
+    /// </summary>
+    public const string ActivityUserTaskDueAtInput = "workflow.activity_type.user_task.due_at";
 
     /// <summary>
     /// 本包的消息目录。

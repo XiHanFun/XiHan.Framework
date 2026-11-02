@@ -150,7 +150,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 
 ## 行为与限制
 
-- 校验失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题；创建草稿不校验，发布与启动时校验。
+- 校验失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题（每条一个 `SchemaViolation`：定义 JSON 里的路径、消息键与参数，宿主写成 Problem Details 的字段级 `errors` 并按调用方区域翻译，ADR-0106）；创建草稿不校验，发布与启动时校验。
 - 按名字启动取最新的已发布版本；发布新版本不改变旧版本状态，已在跑的实例留在原版本，用 `MigrateAsync` 迁移（只迁到同一名字空间里的同名版本）。
 - 分区隔离（ADR-0077）：平台一个分区、每个租户一个分区，调用只看得到、改得动自己分区的定义、实例与书签，别的分区的按不存在处理；平台与租户对等，平台也看不到租户的。没有全局定义：名字与版本号在分区里编号，按名字解析只在自己的分区里找。`WorkflowStartRequest` 与 `WorkflowInstanceQuery` 没有租户字段，分区取当前调用。
 - 存储契约每个方法带分区参数，写入的记录必须属于该分区（不等抛 `ArgumentException`）。

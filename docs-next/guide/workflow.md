@@ -183,7 +183,7 @@ var definition = parsed.ValueOrThrow();
 
 ### 校验
 
-`WorkflowDefinitionValidator` 在发布与启动前执行，失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题：名字与版本合法；至少一个节点；节点 ID 唯一；活动类型都已登记；恰好一个 `Start` 且没有入边；转移两端存在；条件与输出映射的表达式语法合法；每个节点最多一条默认出边；`Join` 的 `Mode`、`UserTask` 的 `CompletionPolicy`、`EmptyAssigneeStrategy` 与 `ApprovalThreshold` 取值合法；`End` 的 `Outcome` 不是空串；每个 `UserTask` 至少一个指派来源且规则类型已登记；`Start.Cron` 是合法 cron；`EventGateway` 至少一个信号；`Http` 的 `Url` 非空、`Method` 合法；所有节点从 `Start` 可达。
+`WorkflowDefinitionValidator` 在发布与启动前执行，失败返回 `WORKFLOW_VALIDATION_001`，`details.errors` 列出全部问题（每条的路径、消息键与参数见 [设计期诊断](#设计期诊断)）：名字与版本合法；至少一个节点；节点 ID 唯一；活动类型都已登记；恰好一个 `Start` 且没有入边；转移两端存在；条件与输出映射的表达式语法合法；每个节点最多一条默认出边；`Join` 的 `Mode`、`UserTask` 的 `CompletionPolicy`、`EmptyAssigneeStrategy` 与 `ApprovalThreshold` 取值合法；`End` 的 `Outcome` 不是空串；每个 `UserTask` 至少一个指派来源且规则类型已登记；`Start.Cron` 是合法 cron；`EventGateway` 至少一个信号；`Http` 的 `Url` 非空、`Method` 合法；所有节点从 `Start` 可达。
 
 ## 发布与版本
 
@@ -200,7 +200,7 @@ var definition = parsed.ValueOrThrow();
 | `DeleteAsync(ids)` | `Draft` | 删除草稿 |
 | `FindAsync(id)` / `FindPublishedAsync(name, version)` | — | 查询；`version` 为空取最新已发布版本，只在当前分区里找 |
 | `QueryAsync(WorkflowDefinitionQuery)` | — | 定义列表：摘要的一页与总数（`WorkflowDefinitionPage`），见下文「定义列表」 |
-| `ActivityTypes()` | — | 已登记活动的描述符（类型、显示名、分类、输入属性），供设计器列出可用节点 |
+| `ActivityTypes()` | — | 已登记活动的描述符（类型、显示名、分类、输入属性），供设计器列出可用节点；显示名、分类显示名（`CategoryName`）、说明与输入说明按调用方的区域渲染 |
 
 状态不允许时返回 `WORKFLOW_CONFLICT_002`。按标识的操作都是批量、逐项结果，单条写法是 `WorkflowDefinitionCatalogExtensions` 里的扩展方法。`Category` 最多 128 个字符（`WorkflowDefinition.MaxCategoryLength`），超长构造即抛 `ArgumentException`，从 JSON 读入时 `WorkflowJson.DeserializeDefinition` 返回 `WORKFLOW_VALIDATION_001`。
 
@@ -691,7 +691,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 节点失败（活动返回失败的 `Result`，或抛出异常并被翻译为 `WORKFLOW_UNEXPECTED_001`）时按顺序处理：
 
 1. 有重试策略且未用尽：节点记为 `Faulted`，插入 `Retry` 书签，第 n 次尝试失败后等 `FirstDelay × BackoffFactor^(n−1)`，实例保持运行。`WorkflowRetryPolicy.MaxAttempts` 含首次（至少 1，1 为不重试），`FirstDelay` 缺省 10 秒，`BackoffFactor` 至少 1、缺省 2。
-2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入错误码与消息，以 `outcome = "error"` 流出。
+2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入这次错误的故障结构（`code`、`message`、`messageKey`、`arguments`、`inner`），以 `outcome = "error"` 流出。表达式照旧按 `lastError.code` 判断（`message` 是按进程默认区域渲染的文本，只适合判空）；展示用 `WorkflowJson.DeserializeFault(instance.Variables[WorkflowEngine.LastErrorVariable])?.Localize()`。
 3. 否则实例 `Faulted`，记录 `Fault`、`FaultNodeId`、`FaultNodeInstanceId`；`CompensateOnFault` 时执行补偿。之后可以 `RetryAsync` 从故障节点重来，或 `JumpAsync` 改走别的节点。
 
 补偿按完成顺序的逆序调用已完成节点的 `ICompensableActivity.CompensateAsync`，节点状态改为 `Compensated`。三个入口：`EnableCompensation` 的定义被取消时、`CompensateOnFault` 的定义故障时、流程走到 `Compensate` 节点时（BPMN 的补偿抛出事件）。
@@ -708,7 +708,28 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | 把故障作为错误返回给调用方 | `instance.Fault.ToError()`：带键、参数与内层的错误，宿主在 Egress 按调用方的区域翻译 |
 | 在调用之外按收件人的区域渲染（通知、邮件） | `using (MessageScope.Use(null, recipientLocale)) { text = fault.Localize(); }` |
 
-引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。应用或第三方给的文本——活动抛出的异常消息、HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。定义校验的逐条明细与表达式解析器的语法诊断仍是英文（设计期给流程作者看的诊断）；变量 `lastError` 仍是错误码与按进程默认区域渲染的消息，供表达式判断。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
+引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。应用或第三方给的文本——活动抛出的异常消息、HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），状态名不进文案，参数 `status` 是枚举名。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
+
+### 设计期诊断
+
+发布时的校验结果给设计器逐条展示（ADR-0106）。`WORKFLOW_VALIDATION_001` 的消息键是 `workflow.definition.invalid`，只带问题条数 `count`；`details.errors` 是 `SchemaViolation` 的列表，每条：
+
+| 成员 | 内容 |
+| --- | --- |
+| `Path` | 定义 JSON 里的位置：`$.nodes[2]`、`$.nodes[2].activityType`、`$.nodes[2].properties.Cron`、`$.nodes[2].outputMappings.total`、`$.transitions[0].condition`、`$.transitions[0].sourceNodeId`；定义级的问题（没有节点、没有开始节点）是 `$.nodes` |
+| `MessageKey`、`Arguments` | 这条问题的消息键与参数：结构问题 `workflow.definition.*`（参数 `node`、`transition` 等），属性问题沿用 `workflow.activity.property_*`，表达式问题是 `workflow.expression.*`，指派规则问题是 Provider 给的错误 |
+| `Reason` | 按进程默认区域渲染的文本，日志用 |
+
+接法：
+
+- **经 HTTP**：宿主把 `details.errors` 写成 Problem Details 的字段级 `errors`，键是去掉 `$.` 的路径（如 `nodes[2].properties.Cron`），值是按调用方区域翻译好的文案数组；`detail` 是汇总（"工作流定义有 3 处问题。"）。设计器按键里的下标定位节点或转移。
+- **进程内**：`validator.Diagnose(definition)` 返回同一组问题；在调用里用 `issue.MessageKey.L(issue.Arguments)` 即得调用方语言。
+
+表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 的错误是 `workflow.definition.json_null`、`json_malformed`（参数 `path`、`line`、`position`）与 `json_value_invalid`（参数 `reason` 是模型自己的英文说明，编程错误不本地化）。
+
+### 状态的展示名
+
+状态在模型、查询结果、事件与回调输入里都是枚举值，程序照旧按枚举判断。给人看时用 `WorkflowStatusMessages`：`KeyOf(status)` 给消息键（`workflow.instance_status.*`、`workflow.node_status.*`、`workflow.definition_status.*`），`status.Localize()` 按当前区域渲染。状态不允许操作的错误（`WORKFLOW_CONFLICT_001` / `_002`）按状态各一句（`workflow.instance.is_running` … `is_terminated`、`workflow.definition.is_draft` … `is_archived`），参数 `status` 是枚举名。
 
 ## 自定义活动
 

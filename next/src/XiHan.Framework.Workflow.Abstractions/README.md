@@ -11,7 +11,7 @@
 | `WorkflowSortKeys` | 列表按标题排序的键：标题的前 256 个字符，不拆开代理对（数据库实现存进定长的 `Title` 列，内存实现按同一个键比较，ADR-0102） |
 | `WorkflowKeyword` | 列表查询关键字的规则：去首尾空白，不变文化小写后按序数包含，任一字段匹配、不跨字段（ADR-0096）；`%` `_` `[` `\` 按字面、与全角字符不同（按字面由持久化的 `Contains` 保证，ADR-0098、ADR-0099 第四节）；数据库实现以它写查询列 |
 | `WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy` | 定义：图、节点属性（`JsonObject`，字符串支持 `{{ 表达式 }}`）、输出映射、条件出边与默认出边、变量声明、重试、实例级超时（`Timeout` / `TimeoutAction`）、补偿（取消时 / 故障时） |
-| `WorkflowDefinitionBuilder`、`WorkflowDefinitionValidator`、`WorkflowJson` | 流式构造、发布前校验（`details.errors`）、源生成 JSON 往返（AOT） |
+| `WorkflowDefinitionBuilder`、`WorkflowDefinitionValidator`、`WorkflowJson` | 流式构造、发布前校验（`details.errors` 与 `Diagnose`：逐条的路径、消息键与参数）、源生成 JSON 往返（AOT） |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage`、`ActivityDescriptor` | 定义生命周期：草稿 → 发布 → 停用 / 归档，新版本；按标识批量；`Start.Cron` 的定义在发布时排定时启动；定义列表 `QueryAsync`（关键字匹配名字 / 显示名 / 说明、名字、分类、状态、创建时间区间；排序项 `Sorts`（`WorkflowDefinitionSort`：`WorkflowDefinitionSortField` 白名单字段加方向，有序、可多个、最多 6 项、每个字段一次，ADR-0104），空时名字升序、版本降序；过滤、排序、分页与计数下推到存储，返回摘要的一页与总数，`Limit` 最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`，ADR-0096、ADR-0102）；活动描述符供设计器 |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityOutcome` | 活动是作用域服务，在引擎这次操作的调用里执行（同一作用域、同一事务）；返回完成 / 挂起 / 结束 / 终止，失败的 `Result` 即故障 |
 | `ActivityTypes` 与内置活动 | `Start`（信号 / 定时启动、延迟启动）、`End`、`Terminate`、`SetVariable`、`Decision`、`Parallel`、`Join`、`Delay`（时长 / 时刻 / cron）、`UserTask`、`PublishEvent`、`WaitSignal`、`EventGateway`、`SubWorkflow`、`ForEach`、`Log`、`Fault`、`Compensate`、`Http`（`WorkflowHttpClient`，应用可替换）、`ExternalTask` |
@@ -54,7 +54,7 @@ await tasks.CompleteAsync(new UserTaskCompletion(todo.ValueOrThrow()[0].Id, "man
 
 `Http` 活动的超时按引擎的 `TimeProvider` 计时、按令牌归因（RFC-0021，ADR-0097）：活动的超时令牌已触发即节点故障 `WORKFLOW_UNEXPECTED_001`（消息键 `workflow.http.timed_out`），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 `OperationCanceledException`（操作随调用回滚）；两个都没触发时客户端抛出的取消与 `TimeoutException` 也按超时。`WorkflowHttpClient.SendAsync(request, ct)` 不另计时。
 
-实例与节点实例的 `Fault`（`WorkflowFault`）存错误码、消息键、参数与内层原因，不存渲染好的文案（RFC-0010，ADR-0105）：展示用 `Fault.Localize()`（按当前消息作用域，调用链里是调用方的区域），返回给调用方用 `Fault.ToError()`（宿主在 Egress 翻译）；`Message` 是按进程默认区域渲染的文本，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程的回调输入 `childFault` 是子实例故障的 JSON，父节点的故障是 `workflow.child.failed`、内层是子实例的故障。
+实例与节点实例的 `Fault`（`WorkflowFault`）存错误码、消息键、参数与内层原因，不存渲染好的文案（RFC-0010，ADR-0105）：展示用 `Fault.Localize()`（按当前消息作用域，调用链里是调用方的区域），返回给调用方用 `Fault.ToError()`（宿主在 Egress 翻译）；`Message` 是按进程默认区域渲染的文本，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程的回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例的状态是 `workflow.child.faulted` / `canceled` / `terminated`、内层是子实例的故障。设计期诊断（定义校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式照旧读 `code`）、活动描述符与状态名同样是消息键（ADR-0106）：状态的展示名用 `WorkflowStatusMessages`。
 
 定义不合法 → `WORKFLOW_VALIDATION_001`；定义未发布或在别的分区 → `WORKFLOW_NOTFOUND_001`（实例、书签在别的分区 → `_002` / `_003`）；状态不允许 → `WORKFLOW_CONFLICT_001` / `_002`；同关联已有未结束实例 → `_005`；操作者不是指派人 → `WORKFLOW_DENIED_001`；工作者没有锁 → `_002`；等锁超时 → `WORKFLOW_TIMEOUT_001`；只读调用里写入 → `PERSISTENCE_UNEXPECTED_001`；在调用之外被调用而应用不在服务状态 → `WORKFLOW_UNAVAILABLE_001`。
 

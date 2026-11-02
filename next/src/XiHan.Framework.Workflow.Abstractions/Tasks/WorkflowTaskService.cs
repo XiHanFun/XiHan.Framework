@@ -692,7 +692,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
 
         if (instance.Status != WorkflowInstanceStatus.Running)
         {
-            return Error.Conflict(WorkflowErrors.InstanceStatus, WorkflowMessages.InstanceStatus, MessageArguments.Of(("id", instance.Id), ("status", instance.Status.ToString())));
+            return WorkflowStatusConflicts.Of(instance);
         }
 
         return instance;

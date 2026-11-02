@@ -79,5 +79,8 @@ public interface IWorkflowDefinitionCatalog
     /// <summary>
     /// 已登记活动的描述符（设计器用），按类型名排序。
     /// </summary>
+    /// <remarks>
+    /// 显示名、分类显示名、说明与输入说明按当前消息作用域渲染（<see cref="Activities.ActivityDescriptor.Localize"/>，调用链里是调用方的区域，ADR-0106）。
+    /// </remarks>
     IReadOnlyList<Activities.ActivityDescriptor> ActivityTypes();
 }

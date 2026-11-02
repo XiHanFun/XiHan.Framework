@@ -1,36 +1,49 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Primitives;
+
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
 /// 表达式的语法或求值错误。
 /// </summary>
 /// <remarks>
-/// 在求值器边界翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>。
+/// 带消息键与参数（RFC-0010，ADR-0106），在求值器边界经 <see cref="ToError"/> 翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>；异常消息只是键与参数的描述，不给人看。
 /// </remarks>
 internal sealed class ExpressionException : Exception
 {
     /// <summary>
     /// 创建。
     /// </summary>
-    public ExpressionException(string message)
-        : base(message)
+    public ExpressionException(string messageKey, IReadOnlyDictionary<string, object?>? arguments = null)
+        : base(MessageTemplate.Describe(messageKey, arguments))
     {
+        MessageKey = messageKey;
+        Arguments = arguments;
     }
 
     /// <summary>
-    /// 创建。
+    /// 消息键（<c>workflow.expression.*</c>）。
     /// </summary>
-    public ExpressionException()
-    {
-    }
+    public string MessageKey { get; }
 
     /// <summary>
-    /// 创建。
+    /// 消息参数（不含表达式本身）。
     /// </summary>
-    public ExpressionException(string message, Exception innerException)
-        : base(message, innerException)
+    public IReadOnlyDictionary<string, object?>? Arguments { get; }
+
+    /// <summary>
+    /// 转成错误：表达式文本放在参数 <c>expression</c>，其余参数随后。
+    /// </summary>
+    public Error ToError(string expression)
     {
+        var details = new Dictionary<string, object?>(StringComparer.Ordinal) { ["expression"] = expression };
+        foreach (var (name, value) in Arguments ?? new Dictionary<string, object?>())
+        {
+            details[name] = value;
+        }
+
+        return Error.Validation(WorkflowErrors.ExpressionInvalid, MessageKey, details);
     }
 }
