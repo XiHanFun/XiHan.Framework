@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Workflow.Abstractions;
@@ -18,7 +19,7 @@ namespace XiHan.Framework.Workflow.InMemory;
 /// 内存工作流特性（<c>role: default</c>）。
 /// </summary>
 /// <remarks>
-/// 提供 <c>workflow.execution@1</c>——有界内存存储（按平台与租户分区）、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。没有事务：写入立即生效，不随调用方提交或回滚（<see cref="InMemoryWorkflowTransaction"/>）。
+/// 提供 <c>workflow.execution@1</c>——有界内存存储（按平台与租户分区）、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。没有事务：写入立即生效，不随调用方提交或回滚；只读的调用里拒绝写入（<see cref="InMemoryWorkflowTransaction"/>）。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowFeature : IHostedFeature
@@ -54,6 +55,8 @@ public sealed class InMemoryWorkflowFeature : IHostedFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(WorkflowMessages.Catalog);
+        // 只读调用里的写入以持久化的错误码与消息键拒绝（InMemoryWorkflowTransaction）：宿主可能没装持久化，自己登记它的目录（同名目录合并，重复登记无副作用）
+        context.Services.AddMessageCatalog(PersistenceMessages.Catalog);
         _options = InMemoryWorkflowOptions.FromConfiguration(context.Configuration);
         var engineOptions = WorkflowOptions.FromConfiguration(context.Configuration);
         context.Services.AddSingleton(_options);

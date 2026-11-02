@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Workflow.Abstractions/XiHan.Framework.Workflow.Abstractions.csproj" />
   </ItemGroup>
 </Project>

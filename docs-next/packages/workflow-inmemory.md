@@ -9,7 +9,7 @@
 | 能力 | 提供 `workflow.execution@1`（`role: default`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `InMemoryWorkflowFeature`（清单 ID `xihan.workflow.inmemory`） |
 | 配置节 | `XiHan:Workflow`（引擎选项）、`XiHan:Workflow:InMemory` |
-| 依赖 | `XiHan.Framework.Workflow.Abstractions`；无第三方依赖 |
+| 依赖 | `XiHan.Framework.Workflow.Abstractions`、`XiHan.Framework.Persistence.Abstractions`（只读拒绝的错误码与消息键）；无第三方依赖 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -77,7 +77,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
 | `InMemoryWorkflowDefinitionStore` | `IWorkflowDefinitionStore` 实现 |
 | `InMemoryWorkflowInstanceStore` | `IWorkflowInstanceStore` 实现 |
 | `InMemoryWorkflowBookmarkStore` | `IWorkflowBookmarkStore` 实现 |
-| `InMemoryWorkflowTransaction` | `IWorkflowTransaction` 实现：在调用里即可加入，没有事务 |
+| `InMemoryWorkflowTransaction` | `IWorkflowTransaction` 实现：在调用里即可加入，没有事务；只读的调用里写入以 `PERSISTENCE_UNEXPECTED_001` 拒绝 |
 | `InMemoryWorkflowInstanceLock` | `IWorkflowInstanceLock` 实现 |
 | `InMemoryWorkflowOptions` | 容量、轮询周期与批量 |
 
@@ -101,8 +101,9 @@ public sealed class WorkflowClock(DueBookmarkPoller poller)
 - 容量满时写入失败（`WORKFLOW_UNAVAILABLE_002`），不会淘汰旧实例；长期运行的应用配置 `XiHan:Workflow:RetentionDays` 自动清理已结束的实例。
 - 实例锁只在本进程内互斥，多个实例各用一份本包时彼此看不到对方的数据。
 - 没有事务：引擎的写入立即生效，调用方回滚不撤销（实例锁照样持有到调用结束）；要求"写申请并发起流程"原子的应用用 [Workflow.Database](./workflow-database)。
+- 只读的调用（操作契约只读：`get` / `list` 或声明了只读）里，引擎、任务服务、定义目录的写入在取锁、执行活动之前返回 `PERSISTENCE_UNEXPECTED_001`（HTTP 500），与数据库实现相同（ADR-0099）；不需要装持久化，特性自己登记持久化的消息目录，拒绝的消息照样翻译。原来内存实现不看调用是否只读：写入成功、活动的副作用已经发生，装了发件箱时事件写进只读工作单元被拒、调用才以 500 结束。
 - 按分区（平台、每个租户一个）存放，平台与租户互不可见，与数据库实现语义一致。
-- 待办查询由书签存储与实例存储连接完成（先筛书签，再取运行中实例的定义名），分页与计数在内存里做；两步之间没有事务。
+- 待办查询由书签存储与实例存储连接完成（先筛书签，再取运行中实例的定义名、标题与关联 ID），分页与计数在内存里做；两步之间没有事务。
 - 本包不注册健康项。
 - 通过 `Workflow.Conformance` 的存储、引擎与任务套件。
 

@@ -1,6 +1,6 @@
 # XiHan.Framework.Workflow.Conformance
 
-工作流一致性套件（工具链，RFC-0021）：Provider 继承三个抽象测试类并实现夹具，通过全部用例。存储是作用域服务，用例在夹具开的调用里使用它们（`WorkflowStoreHost.InPartitionAsync`）；不加入调用方事务的 Provider（内存实现）覆写 `JoinsCallerTransaction => false`，事务相关的用例照实断言。
+工作流一致性套件（工具链，RFC-0021）：Provider 继承三个抽象测试类并实现夹具，通过全部用例。存储是作用域服务，用例在夹具开的调用里使用它们（`WorkflowStoreHost.InPartitionAsync`）；不加入调用方事务的 Provider（内存实现）覆写 `JoinsCallerTransaction => false`，事务相关的用例照实断言；只读调用的用例（30）两种 Provider 同一断言：写入在执行活动之前以 `PERSISTENCE_UNEXPECTED_001` 拒绝、调用本身成功（ADR-0099）。
 
 | 类型 | 用途 |
 | --- | --- |

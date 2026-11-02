@@ -1315,7 +1315,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝。
     /// </summary>
     /// <remarks>
-    /// 只读的调用（动词 <c>get</c>）里启动流程：加入事务的 Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也不落库，调用本身照常结束；查询照常。不加入事务的 Provider 不看调用是否只读，启动成功；宿主装了发件箱时，它发出的事件写进这次调用的只读工作单元被拒，调用以 <c>PERSISTENCE_UNEXPECTED_001</c> 结束——只读调用里写入是缺陷（ADR-0096 第六节）。
+    /// 只读的调用（动词 <c>get</c>）里启动流程：Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也没写下，调用本身照常结束；查询照常。加入事务与不加入事务的 Provider 同一断言（ADR-0099）：数据库实现看工作单元，内存实现看调用的操作契约，宿主装没装发件箱都一样。
     /// </remarks>
     [Fact]
     public async Task Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities()
@@ -1327,7 +1327,7 @@ public abstract class WorkflowEngineConformance
         var existing = (await host.StartAsync("conf-tx-readonly").ConfigureAwait(false)).ValueOrThrow();
         var executed = log.Executed.Count;
 
-        // 自己开只读调用而不用夹具的 AsTenantAsync：要看调用本身的结果（装了发件箱时不加入事务的 Provider 的调用以失败结束）
+        // 自己开只读调用而不用夹具的 AsTenantAsync：要看调用本身的结果——写入被提前拒绝，什么也没发出，调用照常成功
         var started = default(Result<WorkflowInstance>);
         var ran = false;
         await using var scope = host.Services.CreateAsyncScope();
@@ -1340,18 +1340,10 @@ public abstract class WorkflowEngineConformance
             ran = true;
         }).ConfigureAwait(false);
         Assert.True(ran);
-        if (JoinsCallerTransaction)
-        {
-            Assert.Equal("PERSISTENCE_UNEXPECTED_001", started.Error?.Code);
-            Assert.True(invoked.IsSuccess);
-            Assert.Equal(executed, log.Executed.Count);
-            Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-tx-readonly") }).ConfigureAwait(false));
-        }
-        else
-        {
-            Assert.True(started.IsSuccess);
-            Assert.Equal(host.Services.GetService<OutboxDispatcher>() is null ? null : "PERSISTENCE_UNEXPECTED_001", invoked.Error?.Code);
-        }
+        Assert.Equal("PERSISTENCE_UNEXPECTED_001", started.Error?.Code);
+        Assert.True(invoked.IsSuccess);
+        Assert.Equal(executed, log.Executed.Count);
+        Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-tx-readonly") }).ConfigureAwait(false));
     }
 
     /// <summary>
