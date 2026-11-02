@@ -308,6 +308,7 @@ public sealed class ChangeBuffer
 | 索引 | 实体上的 `[EntityIndex]` 经表服务回调（`EntityNameService`）转成 `SugarIndexAttribute`，名字按映射出的表名推出（ADR-0072）；`InitTables` 按名字查不到才建，已有的不改不删；分表实体声明它抛 `NotSupportedException` |
 | 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL / SQLite `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0`，SQL Server 筛选索引（键含可空列另加 `IS NOT NULL`）；只支持这三种数据库，其余（MySQL、Oracle、达梦、源自 PostgreSQL 而未验证的国产库等）上启动即失败（`PERSISTENCE_UNAVAILABLE_008`），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
 | 字符串匹配 | `string.Contains` / `StartsWith` / `EndsWith` 在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成 `LIKE … ESCAPE '!'`（ADR-0098）：关键字是值时参数值先转义再拼通配符，SQL 里只有参数名；是列或表达式时在 SQL 里用 `REPLACE` 转义。转义 `%`、`_`、`!`，SQL Server 另转义 `[`。转义符不用反斜杠，结果与 MySQL 的 `NO_BACKSLASH_ESCAPES`、PostgreSQL 的 `standard_conforming_strings` 无关（MySQL 开了 `NO_BACKSLASH_ESCAPES` 时连接串要写 `NoBackslashEscapes=true`，这是 MySqlConnector 对所有参数的要求）。大小写照各库：SQLite 只对 ASCII 字母不区分，PostgreSQL 与 Oracle 区分，MySQL 与 SQL Server 按排序规则；`MoreSettings.EnableILike` 照原样用 `ilike`。要通配用 `SqlFunc.Like`。其余数据库（达梦、人大金仓等兼容库）没有验证，沿用 SqlSugar 原来的翻译；应用在 `Apply` 之前自己登记了同名外部函数的以应用的为准；运行时数据源不施加约定 |
+| PostgreSQL 会话 | 连接串（含从库）的启动参数 `Options` 追加 `-c standard_conforming_strings=on`（ADR-0100）：SqlSugar 在多行插入、批量更新、按实体删除、`In`、集合 `Contains` 里内联的字符串字面量只在 on 时正确，库或角色设成 off 时含反斜杠的值会让语句报错或被静默改掉、按主键的更新删除查找静默漏行。服务器在建连时施加它，优先于库与角色的缺省值；连接串已显式写成 on 以外的值时 `Apply` 抛 `ArgumentException`。经这个配置的全部连接（含应用的原生 SQL）都是 on；会话里自己 `SET … = off` 的不支持；PgBouncer 要 1.20 及以上；PostgreSQL 系其他 `DbType` 与运行时数据源不加 |
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
 
 - `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
@@ -333,4 +334,4 @@ public sealed class ChangeBuffer
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078、ADR-0098
+- 决策：ADR-0013、ADR-0022、ADR-0023、ADR-0035、ADR-0036、ADR-0037、ADR-0040、ADR-0044、ADR-0078、ADR-0098、ADR-0100

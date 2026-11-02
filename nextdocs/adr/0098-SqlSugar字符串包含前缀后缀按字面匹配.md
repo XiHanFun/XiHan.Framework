@@ -76,3 +76,5 @@ EF Core 按字面匹配（SQLite 上 `Contains` 译成 `instr`，`StartsWith` / 
 - 待定：兼容库（人大金仓、openGauss、达梦、TiDB 等）是否也改写，要在真实库上验证 `ESCAPE` 与转义规则之后再加进名单。
 
 > 修订（2026-11-02）：「工作流的折叠值仍在」由 ADR-0099 第四节处理：撤销全角替换，只留小写折叠（EF Core 区分大小写，仍要）；兼容库上工作流关键字随本 ADR 的待定项一并解决。
+
+> 修订（2026-11-02）：「影响」里 PostgreSQL `standard_conforming_strings = off` 下多行写入失败的那一条由 ADR-0100 处理：PostgreSQL 连接串的启动参数固定 `-c standard_conforming_strings=on`。

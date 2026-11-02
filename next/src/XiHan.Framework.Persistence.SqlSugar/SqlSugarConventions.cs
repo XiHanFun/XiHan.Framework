@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 按实体协议配置 SqlSugar 的实体映射。
 /// </summary>
 /// <remarks>
-/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>），字符串的 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 按字面匹配（见 <see cref="Apply"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
+/// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>），字符串的 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 按字面匹配，PostgreSQL 的连接固定 <c>standard_conforming_strings = on</c>（见 <see cref="Apply"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SqlSugarConventions
@@ -29,14 +29,32 @@ public static class SqlSugarConventions
     private static readonly NullabilityInfoContext _nullability = new();
 
     /// <summary>
-    /// 在连接配置上登记实体服务、表服务回调与字符串匹配的翻译。
+    /// 在连接配置上施加协议约定。
     /// </summary>
     /// <remarks>
-    /// 配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。<c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 以同名的外部函数（<c>SqlFuncServices</c>）接管翻译，在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>——实参里的 <c>%</c>、<c>_</c>（SQL Server 还有 <c>[</c>）与反斜杠不再是通配符或转义符；经仓储的规约与直接用这个客户端的查询都一样；需要通配的查询用 <c>SqlFunc.Like</c>。列表里已有同名的外部函数时以它为准（应用自己的 <c>SqlFuncServices</c> 在调用本方法之前设好；之后整体替换列表会丢掉这三个翻译）。返回同一配置以便链式调用。
+    /// 登记实体服务、表服务回调与字符串匹配的翻译，并固定 PostgreSQL 会话的字面量规则。配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。<c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 以同名的外部函数（<c>SqlFuncServices</c>）接管翻译，在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>——实参里的 <c>%</c>、<c>_</c>（SQL Server 还有 <c>[</c>）与反斜杠不再是通配符或转义符；经仓储的规约与直接用这个客户端的查询都一样；需要通配的查询用 <c>SqlFunc.Like</c>。列表里已有同名的外部函数时以它为准（应用自己的 <c>SqlFuncServices</c> 在调用本方法之前设好；之后整体替换列表会丢掉这三个翻译）。数据库类型是 PostgreSQL 时，连接串（含读写分离的从库连接串）的启动参数 <c>Options</c> 追加 <c>-c standard_conforming_strings=on</c>：SqlSugar 在多行写入、批量更新、按主键删除、<c>In</c> 与集合 <c>Contains</c> 里内联的字符串字面量只在它为 on 时正确，库或角色把它设成 off 时含反斜杠的值会让语句出错或被静默改掉；数据库类型与连接串要在调用本方法之前设好，之后再改的连接串不带这个参数。返回同一配置以便链式调用。
     /// </remarks>
+    /// <exception cref="ArgumentException">PostgreSQL 连接串的启动参数把 <c>standard_conforming_strings</c> 设成了 on 以外的值。</exception>
     public static ConnectionConfig Apply(ConnectionConfig config)
     {
         ArgumentNullException.ThrowIfNull(config);
+        if (config.DbType == DbType.PostgreSQL)
+        {
+            // SqlSugar 内联的字符串字面量按 standard_conforming_strings = on 转义；用启动参数固定它，库与角色上的 off 不再起作用（ADR-0100）
+            if (!string.IsNullOrWhiteSpace(config.ConnectionString))
+            {
+                config.ConnectionString = PostgreSqlStartupOptions.Enforce(config.ConnectionString);
+            }
+
+            foreach (var replica in config.SlaveConnectionConfigs ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(replica.ConnectionString))
+                {
+                    replica.ConnectionString = PostgreSqlStartupOptions.Enforce(replica.ConnectionString);
+                }
+            }
+        }
+
         config.ConfigureExternalServices ??= new ConfigureExternalServices();
         // SqlSugar 把这三个方法译成不转义的 LIKE，实参里的通配符会误匹配；同名外部函数先于内置翻译被查到（ADR-0098）
         LiteralStringMatching.Register(config.ConfigureExternalServices);

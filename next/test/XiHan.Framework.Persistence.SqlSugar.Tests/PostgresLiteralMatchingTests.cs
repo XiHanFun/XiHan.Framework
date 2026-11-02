@@ -45,6 +45,7 @@ public sealed class PostgresLiteralMatchingTests : SqlSugarLiteralMatchingTests,
     {
         // standard_conforming_strings = off 时普通字符串字面量里的反斜杠是转义符：约定生成的 SQL 里没有反斜杠，结果与缺省设置相同。
         // 建表与写入在缺省设置下做：SqlSugar 的多行写入把值内联成字符串字面量、不转义反斜杠，off 下含反斜杠的值让写入的 SQL 不合法（与查询的翻译无关）；
+        // 约定的启动参数（ADR-0100）只定会话的初值，这里会话里自己 SET 的 off 不在它的覆盖之内；
         // 会话里切换设置后在同一连接上查询
         using var client = new SqlSugarClient(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.PostgreSQL, ConnectionString = Database.ConnectionString, IsAutoCloseConnection = true }));
         SqlSugarConventions.InitTables(client, typeof(LiteralMatchRecord));
