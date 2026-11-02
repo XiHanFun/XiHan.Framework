@@ -604,7 +604,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 }, cancellationToken)).ValueOrThrow().ToLookup(static instance => instance.CorrelationId);
 ```
 
-实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码与消息）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
+实例的 `Status` 是 `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted` 或 `Terminated`，故障信息在 `Fault`（错误码、消息键与参数，展示见 [故障原因的展示](#故障原因的展示)）、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome`。
 
 ## 控制实例
 
@@ -654,14 +654,14 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 
 | 情形 | 结果 |
 | --- | --- |
-| 活动的超时令牌已触发（不论调用方是否也已取消，不论客户端抛出取消还是处理器接住取消后交回了响应） | 节点故障 `WORKFLOW_UNEXPECTED_001`，`details.status` 为 0、`details.reason` 为 `timeout`，响应不写进变量 |
+| 活动的超时令牌已触发（不论调用方是否也已取消，不论客户端抛出取消还是处理器接住取消后交回了响应） | 节点故障 `WORKFLOW_UNEXPECTED_001`，消息键 `workflow.http.timed_out`（没有参数），响应不写进变量 |
 | 只有调用方取消 | 抛出 `OperationCanceledException`：整个操作随调用回滚，不记成节点故障；交回的响应同样不写进变量 |
 | 两个都没触发，客户端抛出取消（它自己的超时）或 `TimeoutException` | 同超时 |
 | `HttpRequestException` | 同码故障，`details.reason` 是异常消息 |
 
 测试里注入 `FakeTimeProvider`（在装配工作流特性之前登记为 `TimeProvider`），推进时钟即让请求超时，不用真实等待。
 
-子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault` 回调父实例。
+子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault`（子实例 `Fault` 的 JSON，没有故障为空）回调父实例；子实例没有正常完成而父节点因此失败时，父节点的故障是 `workflow.child.failed`（参数 `id`、`status`），子实例的故障是它的内层原因。
 
 ## 表达式
 
@@ -697,6 +697,18 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 补偿按完成顺序的逆序调用已完成节点的 `ICompensableActivity.CompensateAsync`，节点状态改为 `Compensated`。三个入口：`EnableCompensation` 的定义被取消时、`CompensateOnFault` 的定义故障时、流程走到 `Compensate` 节点时（BPMN 的补偿抛出事件）。
 
 一个波次执行的节点数超过 `MaxNodeExecutionsPerBurst`（缺省 1000）时实例故障，防止条件写错导致的死循环；波次结束时仍有凑不齐的汇合而又没有书签，实例同样故障。
+
+### 故障原因的展示
+
+实例与节点实例上的 `Fault`（`WorkflowFault`）以及故障事件里的 `Fault` 存错误码 `Code`、消息键 `MessageKey`、参数 `Arguments`（值按不变文化转成字符串）与内层原因 `Inner`，面向人的文案不存进库（RFC-0010，ADR-0105）。`Message` 是写入时按进程默认区域渲染的文本，只供日志用，不要直接展示给用户。
+
+| 场景 | 写法 |
+| --- | --- |
+| 在一次调用里展示（接口返回的视图、时间线） | `instance.Fault?.Localize()`：按当前消息作用域渲染，调用链里就是调用方的区域；有内层原因时以 `workflow.fault.caused_by` 接上 |
+| 把故障作为错误返回给调用方 | `instance.Fault.ToError()`：带键、参数与内层的错误，宿主在 Egress 按调用方的区域翻译 |
+| 在调用之外按收件人的区域渲染（通知、邮件） | `using (MessageScope.Use(null, recipientLocale)) { text = fault.Localize(); }` |
+
+引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。应用或第三方给的文本——活动抛出的异常消息、HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。定义校验的逐条明细与表达式解析器的语法诊断仍是英文（设计期给流程作者看的诊断）；变量 `lastError` 仍是错误码与按进程默认区域渲染的消息，供表达式判断。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
 
 ## 自定义活动
 

@@ -130,7 +130,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
         var instanceId = query.InstanceId?.Trim();
         if (string.IsNullOrEmpty(assigneeId) && string.IsNullOrEmpty(instanceId))
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "AssigneeId or InstanceId is required")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryTargetMissing);
         }
 
         // 分页越界是调用方可以改正的输入（查询常由请求绑定），以校验错误返回而不是抛出；上限与持久化的查询条数上限一致

@@ -16,7 +16,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// </summary>
 /// <remarks>
 /// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象。
-/// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，<c>reason</c> 为 <c>timeout</c>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>。
+/// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HttpActivity : IActivity
@@ -96,13 +96,13 @@ public sealed class HttpActivity : IActivity
 
         if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            return ActivityContext.PropertyInvalid(UrlProperty, $"'{address}' is not an absolute HTTP URL");
+            return ActivityFailures.NotUrl(UrlProperty, address);
         }
 
         var method = context.Property<string>(MethodProperty) ?? "GET";
         if (!IsValidMethod(method))
         {
-            return ActivityContext.PropertyInvalid(MethodProperty, $"'{method}' is not a supported HTTP method");
+            return ActivityFailures.NotHttpMethod(MethodProperty, method);
         }
 
         using var request = new HttpRequestMessage(new HttpMethod(method.ToUpperInvariant()), uri);
@@ -119,7 +119,7 @@ public sealed class HttpActivity : IActivity
                 // 内容类头放到内容上，其余放到请求上；无法解析的头名是属性错误
                 if (!name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase) && !request.Headers.TryAddWithoutValidation(name, text))
                 {
-                    return ActivityContext.PropertyInvalid(HeadersProperty, $"header '{name}' is invalid");
+                    return ActivityFailures.HeaderInvalid(HeadersProperty, name);
                 }
             }
         }
@@ -206,7 +206,7 @@ public sealed class HttpActivity : IActivity
     /// <summary>
     /// 超时的节点故障。
     /// </summary>
-    private static Error TimedOut() => Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", "timeout")));
+    private static Error TimedOut() => Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpTimedOut);
 
     /// <summary>
     /// 组装请求体。
@@ -244,7 +244,7 @@ public sealed class HttpActivity : IActivity
 
         if (!MediaTypeHeaderValue.TryParse(contentType, out var mediaType))
         {
-            return ActivityContext.PropertyInvalid(ContentTypeProperty, $"'{contentType}' is not a media type");
+            return ActivityFailures.NotMediaType(ContentTypeProperty, contentType);
         }
 
         var built = new StringContent(text, Encoding.UTF8);

@@ -58,6 +58,9 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     /// <summary>
     /// 子流程回调输入：子实例故障。
     /// </summary>
+    /// <remarks>
+    /// 是 <see cref="WorkflowFault"/> 的 JSON（<c>code</c>、<c>message</c>、<c>messageKey</c>、<c>arguments</c>、<c>inner</c>），子实例没有故障时为空（ADR-0105）。
+    /// </remarks>
     public const string ChildFaultInput = "childFault";
 
     /// <summary>
@@ -192,7 +195,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
             session.Publish(WorkflowTopics.InstanceStarted, session.EventData());
             if (session.Graph.StartNode is null)
             {
-                FaultInstance(session, Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionInvalid, MessageArguments.Of(("errors", "no start node"))), null, null);
+                FaultInstance(session, Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionStartMissing), null, null);
                 return Result.Success();
             }
 
@@ -973,7 +976,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 {
                     [ChildInstanceIdInput] = child.InstanceId,
                     [ChildStatusInput] = WorkflowInstanceStatus.Faulted.ToString(),
-                    [ChildFaultInput] = JsonValue.Create(started.Error!.Code + ": " + started.Error.Message),
+                    [ChildFaultInput] = WorkflowJson.ToNode(WorkflowFault.From(started.Error!)),
                 };
                 await NotifyParentAsync(instance.Id, child.ParentNodeInstanceId, inputs, cancellationToken).ConfigureAwait(false);
             }
@@ -986,7 +989,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
                 [ChildInstanceIdInput] = instance.Id,
                 [ChildStatusInput] = instance.Status.ToString(),
                 [ChildVariablesInput] = WorkflowJson.CloneObject(instance.Variables),
-                [ChildFaultInput] = instance.Fault is null ? null : JsonValue.Create(instance.Fault.Code + ": " + instance.Fault.Message),
+                [ChildFaultInput] = WorkflowJson.ToNode(instance.Fault),
             };
             await NotifyParentAsync(instance.ParentInstanceId, instance.ParentNodeInstanceId, inputs, cancellationToken).ConfigureAwait(false);
         }
@@ -1398,7 +1401,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         var waitAny = string.Equals(mode, JoinActivity.WaitAny, StringComparison.OrdinalIgnoreCase);
         if (!waitAny && !string.Equals(mode, JoinActivity.WaitAll, StringComparison.OrdinalIgnoreCase))
         {
-            FaultInstance(session, ActivityContext.PropertyInvalid(JoinActivity.ModeProperty, mode), target.Id, null);
+            FaultInstance(session, ActivityFailures.UnknownValue(JoinActivity.ModeProperty, mode), target.Id, null);
             return false;
         }
 

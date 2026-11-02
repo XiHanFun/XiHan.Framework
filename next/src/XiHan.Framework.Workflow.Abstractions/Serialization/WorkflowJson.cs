@@ -163,4 +163,22 @@ public static class WorkflowJson
     /// </remarks>
     public static WorkflowEventData DeserializeEvent(ReadOnlySpan<byte> json)
         => JsonSerializer.Deserialize(json, WorkflowJsonContext.Default.WorkflowEventData) ?? throw new JsonException("The event JSON is null.");
+
+    /// <summary>
+    /// 故障 → JSON 节点（子流程回调输入用）。
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 得到 <see langword="null"/>。
+    /// </remarks>
+    internal static JsonNode? ToNode(WorkflowFault? fault)
+        => fault is null ? null : JsonSerializer.SerializeToNode(fault, WorkflowJsonContext.Default.WorkflowFault);
+
+    /// <summary>
+    /// JSON 节点 → 故障。
+    /// </summary>
+    /// <remarks>
+    /// 不是 JSON 对象（没有故障）时为 <see langword="null"/>；对象不合法抛出 <see cref="JsonException"/>。
+    /// </remarks>
+    internal static WorkflowFault? ReadFault(JsonNode? node)
+        => node is JsonObject value ? value.Deserialize(WorkflowJsonContext.Default.WorkflowFault) : null;
 }

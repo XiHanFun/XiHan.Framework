@@ -91,7 +91,7 @@ public sealed class HttpActivityTimeoutTests
         var error = Assert.IsType<Result<ActivityOutcome>>(outcome).Error;
         Assert.NotNull(error);
         Assert.Equal(WorkflowErrors.ActivityFailed, error.Code);
-        Assert.Equal(("timeout", 0), ((string?)error.Details!["reason"], (int?)error.Details["status"]));
+        Assert.Equal((WorkflowMessages.HttpTimedOut, null), (error.MessageKey, error.Details));
     }
 
     [Theory]
@@ -110,7 +110,7 @@ public sealed class HttpActivityTimeoutTests
         var outcome = await RunAsync(Trigger.None, Reply.Throw, static () => new TimeoutException("The client gave up."));
 
         var error = Assert.IsType<Result<ActivityOutcome>>(outcome).Error;
-        Assert.Equal(("timeout", 0), ((string?)error!.Details!["reason"], (int?)error.Details["status"]));
+        Assert.Equal((WorkflowMessages.HttpTimedOut, null), (error!.MessageKey, error.Details));
     }
 
     [Fact]

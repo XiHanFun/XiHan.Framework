@@ -24,7 +24,7 @@ public interface IWorkflowExternalTaskService
     /// 领取。
     /// </summary>
     /// <remarks>
-    /// 当前租户下主题为 <paramref name="topic"/>、未锁定（或锁已过期）且已到 <c>notBefore</c> 的任务，按创建时间最多 <paramref name="maxTasks"/> 条，锁 <paramref name="lockDuration"/>。<paramref name="maxTasks"/> 取 1 到 <see cref="MaxTasksPerFetch"/>，超出返回 <c>WORKFLOW_VALIDATION_002</c>。租户、可领取时刻与条数下推到存储查询，候选在实例锁内重读确认，被别的工作者抢先或实例已不在运行中的跳过，所以可能少于 <paramref name="maxTasks"/> 条。
+    /// 当前租户下主题为 <paramref name="topic"/>、未锁定（或锁已过期）且已到 <c>notBefore</c> 的任务，按创建时间最多 <paramref name="maxTasks"/> 条，锁 <paramref name="lockDuration"/>。<paramref name="maxTasks"/> 取 1 到 <see cref="MaxTasksPerFetch"/>，超出返回 <c>WORKFLOW_VALIDATION_002</c>（<see cref="WorkflowMessages.ExternalTaskMaxTasksInvalid"/>），<paramref name="lockDuration"/> 不是正数同样（<see cref="WorkflowMessages.ExternalTaskLockDurationInvalid"/>）。租户、可领取时刻与条数下推到存储查询，候选在实例锁内重读确认，被别的工作者抢先或实例已不在运行中的跳过，所以可能少于 <paramref name="maxTasks"/> 条。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchAsync(string topic, string workerId, TimeSpan lockDuration, int maxTasks, CancellationToken cancellationToken);
 

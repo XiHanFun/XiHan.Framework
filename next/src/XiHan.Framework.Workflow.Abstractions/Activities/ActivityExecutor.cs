@@ -79,7 +79,7 @@ internal sealed class ActivityExecutor
 
             if (resume.IsTimeout)
             {
-                return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", "The node timed out.")));
+                return ActivityFailures.TimedOut(node);
             }
 
             return ActivityOutcome.Complete(WorkflowJson.CloneObject(resume.Inputs));
@@ -119,7 +119,7 @@ internal sealed class ActivityExecutor
         // 引擎的每个操作都在一次调用里执行（调用方的，或引擎自己开的），活动沿用它：同一作用域、同一事务、同一租户
         if (!_scope.Invocation.TryGetValue(out var invocation))
         {
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", "The activity has no invocation to run in.")));
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityNoInvocation, details: MessageArguments.Of(("type", node.ActivityType.Value)));
         }
 
         try

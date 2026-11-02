@@ -35,7 +35,7 @@ public sealed class ExpressionAssigneeProvider : IAssigneeProvider
         ArgumentNullException.ThrowIfNull(rule);
         if (rule.Values.Count != 1)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", RuleType), ("reason", "exactly one expression is required")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeExpressionCount, MessageArguments.Of(("type", RuleType)));
         }
 
         return _evaluator.Validate(rule.Values[0]);
@@ -47,7 +47,7 @@ public sealed class ExpressionAssigneeProvider : IAssigneeProvider
         ArgumentNullException.ThrowIfNull(resolution);
         if (resolution.Rule.Values.Count != 1)
         {
-            return ValueTask.FromResult(Result.Failure<IReadOnlyList<string>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", RuleType), ("reason", "exactly one expression is required")))));
+            return ValueTask.FromResult(Result.Failure<IReadOnlyList<string>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeExpressionCount, MessageArguments.Of(("type", RuleType)))));
         }
 
         var evaluated = _evaluator.Evaluate(resolution.Rule.Values[0], resolution.Activity.Scope());

@@ -54,7 +54,7 @@ public sealed class DelayActivity : IResumableActivity
     {
         ArgumentNullException.ThrowIfNull(context);
         return ValueTask.FromResult(context.IsTimeout
-            ? Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", ActivityTypes.Delay), ("reason", "The node timed out."))))
+            ? Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node))
             : Result.Success(ActivityOutcome.Complete()));
     }
 
@@ -74,7 +74,7 @@ public sealed class DelayActivity : IResumableActivity
 
             if (!CronExpression.TryParse(cronText, out var cron))
             {
-                return ActivityContext.PropertyInvalid(CronProperty, $"'{cronText}' is not a cron expression");
+                return ActivityFailures.NotCron(CronProperty, cronText);
             }
 
             var zoneId = context.Property<string>(TimeZoneProperty);
@@ -89,10 +89,10 @@ public sealed class DelayActivity : IResumableActivity
             }
             else
             {
-                return ActivityContext.PropertyInvalid(TimeZoneProperty, $"'{zoneId}' is not a time zone");
+                return ActivityFailures.NotTimeZone(TimeZoneProperty, zoneId);
             }
 
-            return next.TryGetValue(out var at) ? at : ActivityContext.PropertyInvalid(CronProperty, "has no next occurrence within five years");
+            return next.TryGetValue(out var at) ? at : ActivityFailures.CronExhausted(CronProperty, cronText);
         }
 
         if (context.Property(UntilProperty) is not null)
@@ -108,7 +108,7 @@ public sealed class DelayActivity : IResumableActivity
                 return until;
             }
 
-            return ActivityContext.PropertyInvalid(UntilProperty, "must be a date-time");
+            return ActivityFailures.NotDateTime(UntilProperty);
         }
 
         var duration = context.EvaluateProperty(DurationProperty);
@@ -119,7 +119,7 @@ public sealed class DelayActivity : IResumableActivity
 
         if (!WorkflowValues.TryConvert<double>(seconds.OrNull(), out var total) || total <= 0 || !double.IsFinite(total))
         {
-            return ActivityContext.PropertyInvalid(DurationProperty, "must be a positive number of seconds");
+            return ActivityFailures.NotSeconds(DurationProperty);
         }
 
         return now + TimeSpan.FromSeconds(total);

@@ -37,13 +37,13 @@ public sealed class WaitSignalActivity : IActivity
 
         if (string.IsNullOrWhiteSpace(signalName))
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(SignalNameProperty, "must not be empty")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.Empty(SignalNameProperty)));
         }
 
         var acceptAny = context.Property(AcceptAnyCorrelationProperty, false);
         if (!acceptAny && string.IsNullOrWhiteSpace(context.Instance.CorrelationId))
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(AcceptAnyCorrelationProperty, "the instance has no correlation ID; set AcceptAnyCorrelation or start with a correlation ID")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NeedsCorrelation(AcceptAnyCorrelationProperty)));
         }
 
         var bookmark = new BookmarkRequest { Kind = BookmarkKinds.Signal, Key = signalName, CorrelationId = acceptAny ? null : context.Instance.CorrelationId };

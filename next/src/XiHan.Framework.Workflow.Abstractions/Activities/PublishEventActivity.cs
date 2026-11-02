@@ -42,7 +42,7 @@ public sealed class PublishEventActivity : IActivity
 
         if (string.IsNullOrWhiteSpace(eventName))
         {
-            return ActivityContext.PropertyInvalid(EventNameProperty, "must not be empty");
+            return ActivityFailures.Empty(EventNameProperty);
         }
 
         var payload = new JsonObject();

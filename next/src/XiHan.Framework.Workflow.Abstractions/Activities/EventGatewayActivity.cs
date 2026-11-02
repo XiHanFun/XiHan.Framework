@@ -72,13 +72,13 @@ public sealed class EventGatewayActivity : IResumableActivity
 
         if (names.Count == 0)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(SignalsProperty, "needs at least one signal name")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NoSignal(SignalsProperty)));
         }
 
         var acceptAny = context.Property(AcceptAnyCorrelationProperty, false);
         if (!acceptAny && string.IsNullOrWhiteSpace(context.Instance.CorrelationId))
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(AcceptAnyCorrelationProperty, "the instance has no correlation ID; set AcceptAnyCorrelation or start with a correlation ID")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NeedsCorrelation(AcceptAnyCorrelationProperty)));
         }
 
         var bookmarks = names.Select(name => new BookmarkRequest { Kind = BookmarkKinds.Signal, Key = name, CorrelationId = acceptAny ? null : context.Instance.CorrelationId }).ToList();
@@ -86,7 +86,7 @@ public sealed class EventGatewayActivity : IResumableActivity
         {
             if (!WorkflowValues.TryConvert<double>(timeoutNode, out var seconds) || seconds <= 0 || !double.IsFinite(seconds))
             {
-                return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(TimeoutSecondsProperty, "must be a positive number of seconds")));
+                return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NotSeconds(TimeoutSecondsProperty)));
             }
 
             bookmarks.Add(new BookmarkRequest { Kind = BookmarkKinds.Timer, DueAt = context.Clock.GetUtcNow() + TimeSpan.FromSeconds(seconds) });
@@ -101,7 +101,7 @@ public sealed class EventGatewayActivity : IResumableActivity
         ArgumentNullException.ThrowIfNull(context);
         if (context.IsTimeout)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", ActivityTypes.EventGateway), ("reason", "The node timed out.")))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
         if (string.Equals(context.Bookmark.Kind, BookmarkKinds.Timer, StringComparison.Ordinal))

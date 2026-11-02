@@ -142,7 +142,7 @@ public sealed class UserTaskActivity : IResumableActivity
             var strategy = context.Property(EmptyAssigneeStrategyProperty, EmptyAssigneeStrategy.Fault);
             if (context.Property(EmptyAssigneeStrategyProperty) is not null && !WorkflowValues.TryConvert<EmptyAssigneeStrategy>(context.Property(EmptyAssigneeStrategyProperty), out _))
             {
-                return ActivityContext.PropertyInvalid(EmptyAssigneeStrategyProperty, "unknown strategy");
+                return ActivityFailures.UnknownValue(EmptyAssigneeStrategyProperty, context.Property(EmptyAssigneeStrategyProperty));
             }
 
             switch (strategy)
@@ -169,12 +169,12 @@ public sealed class UserTaskActivity : IResumableActivity
 
         if (context.Property(CompletionPolicyProperty) is not null && !WorkflowValues.TryConvert<UserTaskCompletionPolicy>(context.Property(CompletionPolicyProperty), out _))
         {
-            return ActivityContext.PropertyInvalid(CompletionPolicyProperty, "unknown policy");
+            return ActivityFailures.UnknownValue(CompletionPolicyProperty, context.Property(CompletionPolicyProperty));
         }
 
         if (context.Property(ApprovalThresholdProperty) is { } thresholdNode && !TryParseApprovalThreshold(thresholdNode, out _, out _))
         {
-            return ActivityContext.PropertyInvalid(ApprovalThresholdProperty, "must be a positive integer or a percentage like '60%'");
+            return ActivityFailures.NotThreshold(ApprovalThresholdProperty);
         }
 
         var policy = context.Property(CompletionPolicyProperty, UserTaskCompletionPolicy.Any);
@@ -195,7 +195,7 @@ public sealed class UserTaskActivity : IResumableActivity
         {
             if (!TryParsePriority(priorityNode, out var priorityValue))
             {
-                return ActivityContext.PropertyInvalid(PriorityProperty, "must be an integer");
+                return ActivityFailures.NotInteger(PriorityProperty);
             }
 
             priority = priorityValue;
@@ -211,7 +211,7 @@ public sealed class UserTaskActivity : IResumableActivity
         {
             if (!TryParseSeconds(reminderNode, out var interval))
             {
-                return ActivityContext.PropertyInvalid(ReminderAfterSecondsProperty, "must be a positive number of seconds");
+                return ActivityFailures.NotSeconds(ReminderAfterSecondsProperty);
             }
 
             reminder = interval;
@@ -464,7 +464,7 @@ public sealed class UserTaskActivity : IResumableActivity
 
         if (!TryParseApprovalThreshold(property, out var isPercent, out var value))
         {
-            return ActivityContext.PropertyInvalid(ApprovalThresholdProperty, "must be a positive integer or a percentage like '60%'");
+            return ActivityFailures.NotThreshold(ApprovalThresholdProperty);
         }
 
         // 阈值在每次恢复时按当前指派人数重算：加签、转办后人数变了阈值也跟着变，人数阈值超过总人数时按全部处理
@@ -501,14 +501,14 @@ public sealed class UserTaskActivity : IResumableActivity
                 return null;
             }
 
-            return ActivityContext.PropertyInvalid(DueAtProperty, "must be a date-time");
+            return ActivityFailures.NotDateTime(DueAtProperty);
         }
 
         if (context.Property(DueAfterSecondsProperty) is { } afterNode)
         {
             if (!TryParseSeconds(afterNode, out var seconds))
             {
-                return ActivityContext.PropertyInvalid(DueAfterSecondsProperty, "must be a positive number of seconds");
+                return ActivityFailures.NotSeconds(DueAfterSecondsProperty);
             }
 
             dueAt = context.Clock.GetUtcNow() + TimeSpan.FromSeconds(seconds);

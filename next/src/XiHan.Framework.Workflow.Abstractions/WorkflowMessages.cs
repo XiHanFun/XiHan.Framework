@@ -196,13 +196,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string AssigneeRuleUnknown = "workflow.assignee.rule_unknown";
 
-    /// <summary>
-    /// 指派规则不合法。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>type</c>、<c>reason</c>。
-    /// </remarks>
-    public const string AssigneeRuleInvalid = "workflow.assignee.rule_invalid";
 
     /// <summary>
     /// 实例锁等待超时。
@@ -229,10 +222,10 @@ public static class WorkflowMessages
     public const string StoreCapacity = "workflow.store.capacity";
 
     /// <summary>
-    /// 子流程启动失败。
+    /// 子流程没有正常完成。
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>reason</c>。
+    /// 没起来或以故障、取消、终止结束；子实例的故障是内层原因。参数：<c>id</c>（子实例）、<c>status</c>（子实例的状态）。
     /// </remarks>
     public const string ChildFailed = "workflow.child.failed";
 
@@ -292,13 +285,6 @@ public static class WorkflowMessages
     /// </remarks>
     public const string TaskNoReturnTarget = "workflow.task.no_return_target";
 
-    /// <summary>
-    /// 任务查询不合法。
-    /// </summary>
-    /// <remarks>
-    /// 参数：<c>reason</c>。
-    /// </remarks>
-    public const string TaskQueryInvalid = "workflow.task.query_invalid";
 
     /// <summary>
     /// 待办查询的分页越界。
@@ -411,6 +397,265 @@ public static class WorkflowMessages
     /// 参数：<c>status</c>、<c>reason</c>。
     /// </remarks>
     public const string HttpFailed = "workflow.http.failed";
+
+    /// <summary>
+    /// HTTP 请求超时。
+    /// </summary>
+    public const string HttpTimedOut = "workflow.http.timed_out";
+
+    /// <summary>
+    /// 故障与它的内层原因连成一句。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>message</c>（外层的文案）、<c>cause</c>（内层的文案）。
+    /// </remarks>
+    public const string FaultCausedBy = "workflow.fault.caused_by";
+
+    /// <summary>
+    /// 节点超时。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>node</c>。
+    /// </remarks>
+    public const string NodeTimedOut = "workflow.node.timed_out";
+
+    /// <summary>
+    /// 活动没有可运行的调用。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>type</c>。
+    /// </remarks>
+    public const string ActivityNoInvocation = "workflow.activity.no_invocation";
+
+    /// <summary>
+    /// <c>Fault</c> 节点让流程故障。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>message</c>（节点作者写的消息，原样）。
+    /// </remarks>
+    public const string ActivityFaultRaised = "workflow.activity.fault_raised";
+
+    /// <summary>
+    /// 活动属性必须是正的秒数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNotSeconds = "workflow.activity.property_not_seconds";
+
+    /// <summary>
+    /// 活动属性必须是日期时间。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNotDateTime = "workflow.activity.property_not_datetime";
+
+    /// <summary>
+    /// 活动属性不能为空。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyEmpty = "workflow.activity.property_empty";
+
+    /// <summary>
+    /// 活动属性的值不是 cron 表达式。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotCron = "workflow.activity.property_not_cron";
+
+    /// <summary>
+    /// 活动属性的值不是时区。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotTimeZone = "workflow.activity.property_not_time_zone";
+
+    /// <summary>
+    /// cron 表达式五年内没有下一次触发。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyCronExhausted = "workflow.activity.property_cron_exhausted";
+
+    /// <summary>
+    /// 活动属性至少需要一个信号名。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNoSignal = "workflow.activity.property_no_signal";
+
+    /// <summary>
+    /// 实例没有关联 ID，又没有允许任意关联。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>（允许任意关联的属性）。
+    /// </remarks>
+    public const string PropertyNeedsCorrelation = "workflow.activity.property_needs_correlation";
+
+    /// <summary>
+    /// 活动属性的求值结果必须是数组。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNotArray = "workflow.activity.property_not_array";
+
+    /// <summary>
+    /// 活动属性的值不是绝对 HTTP URL。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotUrl = "workflow.activity.property_not_url";
+
+    /// <summary>
+    /// 活动属性的值不是支持的 HTTP 方法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotHttpMethod = "workflow.activity.property_not_http_method";
+
+    /// <summary>
+    /// 活动属性里的请求头不合法。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>（请求头名）。
+    /// </remarks>
+    public const string PropertyHeaderInvalid = "workflow.activity.property_header_invalid";
+
+    /// <summary>
+    /// 活动属性的值不是媒体类型。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotMediaType = "workflow.activity.property_not_media_type";
+
+    /// <summary>
+    /// 活动属性里的项不是表达式。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>（项名）。
+    /// </remarks>
+    public const string PropertyNotExpression = "workflow.activity.property_not_expression";
+
+    /// <summary>
+    /// 活动属性的值不是工作流名称。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyNotWorkflowName = "workflow.activity.property_not_workflow_name";
+
+    /// <summary>
+    /// 活动属性的值不在允许的取值里。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>value</c>。
+    /// </remarks>
+    public const string PropertyUnknownValue = "workflow.activity.property_unknown_value";
+
+    /// <summary>
+    /// 活动属性必须是正整数或百分比。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNotThreshold = "workflow.activity.property_not_threshold";
+
+    /// <summary>
+    /// 活动属性必须是整数。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>。
+    /// </remarks>
+    public const string PropertyNotInteger = "workflow.activity.property_not_integer";
+
+    /// <summary>
+    /// 指派规则必须是数组。
+    /// </summary>
+    public const string AssigneeRulesNotArray = "workflow.assignee.rules_not_array";
+
+    /// <summary>
+    /// 指派规则缺少类型。
+    /// </summary>
+    public const string AssigneeRuleTypeMissing = "workflow.assignee.rule_type_missing";
+
+    /// <summary>
+    /// 指派规则需要恰好一个表达式。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>type</c>。
+    /// </remarks>
+    public const string AssigneeExpressionCount = "workflow.assignee.expression_count";
+
+    /// <summary>
+    /// 指派规则至少需要一个用户。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>type</c>。
+    /// </remarks>
+    public const string AssigneeUsersMissing = "workflow.assignee.users_missing";
+
+    /// <summary>
+    /// 表达式的结果不是布尔值。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>。
+    /// </remarks>
+    public const string ExpressionNotBoolean = "workflow.expression.not_boolean";
+
+    /// <summary>
+    /// 模板里有未闭合的占位符。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>（模板）。
+    /// </remarks>
+    public const string ExpressionUnterminatedPlaceholder = "workflow.expression.unterminated_placeholder";
+
+    /// <summary>
+    /// 定义没有开始节点。
+    /// </summary>
+    public const string DefinitionStartMissing = "workflow.definition.start_missing";
+
+    /// <summary>
+    /// 工作流自己开的调用没有可加入的工作单元。
+    /// </summary>
+    /// <remarks>
+    /// 装配错误：持久化没有在 Transaction 阶段开启工作单元。
+    /// </remarks>
+    public const string StoreUnitOfWorkMissing = "workflow.store.unit_of_work_missing";
+
+    /// <summary>
+    /// 待办查询既没给指派人也没给实例。
+    /// </summary>
+    public const string TaskQueryTargetMissing = "workflow.task.query_target_missing";
+
+    /// <summary>
+    /// 外部任务的锁定时长不是正数。
+    /// </summary>
+    public const string ExternalTaskLockDurationInvalid = "workflow.external.lock_duration_invalid";
+
+    /// <summary>
+    /// 一次拉取的外部任务数越界。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>（给出的个数）、<c>max</c>。
+    /// </remarks>
+    public const string ExternalTaskMaxTasksInvalid = "workflow.external.max_tasks_invalid";
+
+    /// <summary>
+    /// 外部任务的重试延迟为负。
+    /// </summary>
+    public const string ExternalTaskRetryAfterNegative = "workflow.external.retry_after_negative";
 
     /// <summary>
     /// 本包的消息目录。

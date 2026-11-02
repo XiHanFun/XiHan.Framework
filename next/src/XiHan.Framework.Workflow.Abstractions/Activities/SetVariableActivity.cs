@@ -36,7 +36,7 @@ public sealed class SetVariableActivity : IActivity
             {
                 if (expression is not JsonValue value)
                 {
-                    return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(ExpressionsProperty, $"'{name}' is not an expression")));
+                    return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NotExpression(ExpressionsProperty, name)));
                 }
 
                 var evaluated = context.Evaluator.Evaluate(WorkflowValues.AsString(value), scope);

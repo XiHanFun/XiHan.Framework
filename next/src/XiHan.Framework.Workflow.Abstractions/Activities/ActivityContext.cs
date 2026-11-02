@@ -158,6 +158,9 @@ public class ActivityContext
     /// <summary>
     /// 属性不合法的错误。
     /// </summary>
+    /// <remarks>
+    /// 给自定义活动用：<paramref name="reason"/> 原样放进参数，不随调用方的区域本地化；要本地化的原因用应用自己的消息键返回错误（RFC-0010）。内置活动按种类各有消息键（ADR-0105）。
+    /// </remarks>
     public static Error PropertyInvalid(string name, string reason)
         => Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.ActivityPropertyInvalid, MessageArguments.Of(("name", name), ("reason", reason)));
 }

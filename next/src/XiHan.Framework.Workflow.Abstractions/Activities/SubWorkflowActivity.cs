@@ -78,15 +78,14 @@ public sealed class SubWorkflowActivity : IResumableActivity
         ArgumentNullException.ThrowIfNull(context);
         if (context.IsTimeout)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", ActivityTypes.SubWorkflow), ("reason", "The node timed out.")))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
         var status = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
         var completed = string.Equals(status, nameof(WorkflowInstanceStatus.Completed), StringComparison.OrdinalIgnoreCase);
         if (!completed && context.Property(FailOnChildFaultProperty, true))
         {
-            var fault = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildFaultInput, out var faultNode) && faultNode is JsonValue faultValue ? WorkflowValues.AsString(faultValue) : status;
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, details: MessageArguments.Of(("id", context.Inputs[WorkflowEngine.ChildInstanceIdInput]?.ToString() ?? string.Empty), ("reason", fault)))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.ChildFailed(context.Inputs, status)));
         }
 
         var outputs = new JsonObject();
@@ -112,7 +111,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
 
         if (!WorkflowName.IsValid(name))
         {
-            return ActivityContext.PropertyInvalid(DefinitionNameProperty, $"'{name}' is not a workflow name");
+            return ActivityFailures.NotWorkflowName(DefinitionNameProperty, name);
         }
 
         var variables = WorkflowJson.CloneObject(literals);
@@ -123,7 +122,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
             {
                 if (expression is not JsonValue value)
                 {
-                    return ActivityContext.PropertyInvalid(VariableExpressionsProperty, $"'{variable}' is not an expression");
+                    return ActivityFailures.NotExpression(VariableExpressionsProperty, variable);
                 }
 
                 var evaluated = context.Evaluator.Evaluate(WorkflowValues.AsString(value), scope);

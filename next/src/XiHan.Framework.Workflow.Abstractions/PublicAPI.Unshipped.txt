@@ -759,12 +759,19 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.NodeInst
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.WorkflowBookmarkSummary() -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Arguments.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Arguments.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Code.get -> string!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Code.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Deconstruct(out string! Code, out string! Message) -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Inner.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Inner.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Localize() -> string!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Message.get -> string!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Message.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.MessageKey.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.MessageKey.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.ToError() -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.WorkflowFault(string! Code, string! Message) -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance
@@ -1420,10 +1427,15 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowIdentifiers.MaxElementIdLeng
 const XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.FieldSeparator = '\u001f' -> char
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActiveInstanceExists = "workflow.instance.active_exists" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFailed = "workflow.activity.failed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityFaultRaised = "workflow.activity.fault_raised" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityNoInvocation = "workflow.activity.no_invocation" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityNotRegistered = "workflow.activity.not_registered" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ActivityPropertyInvalid = "workflow.activity.property_invalid" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRuleInvalid = "workflow.assignee.rule_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeExpressionCount = "workflow.assignee.expression_count" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRuleTypeMissing = "workflow.assignee.rule_type_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRuleUnknown = "workflow.assignee.rule_unknown" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeRulesNotArray = "workflow.assignee.rules_not_array" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeUsersMissing = "workflow.assignee.users_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkKeyMismatch = "workflow.bookmark.key_mismatch" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotFound = "workflow.bookmark.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotResumable = "workflow.bookmark.not_resumable" -> string!
@@ -1435,11 +1447,19 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQueryPage
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortDuplicate = "workflow.definition.query_sort_duplicate" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortInvalid = "workflow.definition.query_sort_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortsTooMany = "workflow.definition.query_sorts_too_many" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStartMissing = "workflow.definition.start_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatus = "workflow.definition.status" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionInvalid = "workflow.expression.invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotBoolean = "workflow.expression.not_boolean" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionUnterminatedPlaceholder = "workflow.expression.unterminated_placeholder" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskDenied = "workflow.external.denied" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskFailed = "workflow.external.failed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskLockDurationInvalid = "workflow.external.lock_duration_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskMaxTasksInvalid = "workflow.external.max_tasks_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskRetryAfterNegative = "workflow.external.retry_after_negative" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.FaultCausedBy = "workflow.fault.caused_by" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpFailed = "workflow.http.failed" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpTimedOut = "workflow.http.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "workflow.instance.depth" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceJoinDead = "workflow.instance.join_dead" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNoTransition = "workflow.instance.no_transition" -> string!
@@ -1455,9 +1475,29 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceTimedOut = 
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.LockTimeout = "workflow.lock.timeout" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.MigrationIncompatible = "workflow.instance.migration_incompatible" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeNotFound = "workflow.instance.node_not_found" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.NodeTimedOut = "workflow.node.timed_out" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyCronExhausted = "workflow.activity.property_cron_exhausted" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyEmpty = "workflow.activity.property_empty" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyHeaderInvalid = "workflow.activity.property_header_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNeedsCorrelation = "workflow.activity.property_needs_correlation" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNoSignal = "workflow.activity.property_no_signal" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotArray = "workflow.activity.property_not_array" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotCron = "workflow.activity.property_not_cron" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotDateTime = "workflow.activity.property_not_datetime" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotExpression = "workflow.activity.property_not_expression" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotHttpMethod = "workflow.activity.property_not_http_method" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotInteger = "workflow.activity.property_not_integer" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotMediaType = "workflow.activity.property_not_media_type" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotSeconds = "workflow.activity.property_not_seconds" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotThreshold = "workflow.activity.property_not_threshold" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotTimeZone = "workflow.activity.property_not_time_zone" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotUrl = "workflow.activity.property_not_url" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotWorkflowName = "workflow.activity.property_not_workflow_name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyUnknownValue = "workflow.activity.property_unknown_value" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PurgeLimitInvalid = "workflow.purge.limit_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreCapacity = "workflow.store.capacity" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreUnavailable = "workflow.store.unavailable" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreUnitOfWorkMissing = "workflow.store.unit_of_work_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskAssigneeExists = "workflow.task.assignee_exists" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskClaimed = "workflow.task.claimed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskDenied = "workflow.task.denied" -> string!
@@ -1465,8 +1505,8 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNoAssignee = "w
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNoReturnTarget = "workflow.task.no_return_target" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNotClaimable = "workflow.task.not_claimable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskOutcomeInvalid = "workflow.task.outcome_invalid" -> string!
-const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryInvalid = "workflow.task.query_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryPageInvalid = "workflow.task.query_page_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryTargetMissing = "workflow.task.query_target_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariableRequired = "workflow.variable.required" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowName.MaxLength = 128 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowOptions.ConfigurationSection = "XiHan:Workflow" -> string!

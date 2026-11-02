@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
@@ -1729,6 +1730,117 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.EngineAsync(engine => engine.ResumeInstanceAsync(suspended, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal([suspended, running, canceled, terminated], await InstancesByStatusAsync(false).ConfigureAwait(false));
         Assert.Equal([terminated, canceled, suspended, running], await InstancesByStatusAsync(true).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 38：故障存消息键与参数，按调用方的区域本地化。
+    /// </summary>
+    /// <remarks>
+    /// 三条路径：发起即故障（没有指派人）、完成任务之后活动失败（属性不合法）、子流程故障（子实例的故障是内层原因）。实例、节点实例与故障事件上的 <see cref="WorkflowFault"/> 经存储与事件往返之后仍带消息键与参数，<see cref="WorkflowFault.Localize"/> 在 zh-CN 与 en-US 的消息作用域里分别得到中文与英文，<see cref="WorkflowFault.ToError"/> 带键、参数与内层（ADR-0105）。
+    /// </remarks>
+    [Fact]
+    public async Task Faults_KeepMessageKeys_AndLocalizeInTheCallersLocale()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var messages = new CatalogMessageResolver(host.Services.GetServices<MessageCatalog>());
+        string In(string locale, Func<string> render)
+        {
+            using var scope = MessageScope.Use(messages, locale);
+            return render();
+        }
+
+        await host.PublishManyAsync(
+            null,
+            WorkflowDefinitionBuilder.Create("conf-l10n-nobody")
+                .AddStart().AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.Starter)).AddEnd()
+                .AddTransition("start", "approve").AddTransition("approve", "end")
+                .Build(),
+            WorkflowDefinitionBuilder.Create("conf-l10n-approve")
+                .AddVariable("count", defaultValue: 3)
+                .AddStart()
+                .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.User, ["alice"]))
+                .AddNode("each", ActivityTypes.ForEach, configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child"))
+                .AddEnd()
+                .AddTransition("start", "approve").AddTransition("approve", "each").AddTransition("each", "end")
+                .Build(),
+            WorkflowDefinitionBuilder.Create("conf-l10n-child")
+                .AddStart().AddNode("stop", ActivityTypes.Fault, configure: static node => node.WithProperty(FaultActivity.MessageProperty, "Budget exceeded")).AddEnd()
+                .AddTransition("start", "stop").AddTransition("stop", "end")
+                .Build(),
+            WorkflowDefinitionBuilder.Create("conf-l10n-parent")
+                .AddStart().AddNode("sub", ActivityTypes.SubWorkflow, configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child")).AddEnd()
+                .AddTransition("start", "sub").AddTransition("sub", "end")
+                .Build()).ConfigureAwait(false);
+
+        // 发起即故障：用户任务按发起人指派，没有发起人就没有指派人——存储里是键与参数，不是写入时渲染的英文
+        var nobody = (await host.StartAsync("conf-l10n-nobody").ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(WorkflowInstanceStatus.Faulted, nobody.Status);
+        var noAssignee = (await host.InstanceAsync(nobody.Id).ConfigureAwait(false)).Fault!;
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.TaskNoAssignee, "approve"), (noAssignee.Code, noAssignee.MessageKey, noAssignee.Arguments!["node"]));
+        Assert.Equal("用户任务 'approve' 没有解析出指派人。", In("zh-CN", noAssignee.Localize));
+        Assert.Equal("User task 'approve' resolved no assignee.", In("en-US", noAssignee.Localize));
+        var returned = noAssignee.ToError();
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.TaskNoAssignee, (object?)"approve"), (returned.Code, returned.MessageKey, returned.Details!["node"]));
+        var nodeFault = Assert.Single(await host.NodeInstancesAsync(nobody.Id).ConfigureAwait(false), static node => node.NodeId == "approve").Fault!;
+        Assert.Equal("User task 'approve' resolved no assignee.", In("en-US", nodeFault.Localize));
+        var faultedEvent = Assert.Single(log.EventsOf(WorkflowTopics.InstanceFaulted), data => data.InstanceId == nobody.Id);
+        Assert.Equal("用户任务 'approve' 没有解析出指派人。", In("zh-CN", faultedEvent.Fault!.Localize));
+
+        // 完成任务之后活动失败：ForEach 的 Items 求值是数字不是数组，原因是按属性的键，不是英文句子
+        var approving = (await host.StartAsync("conf-l10n-approve").ConfigureAwait(false)).ValueOrThrow();
+        var task = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false), task => task.InstanceId == approving.Id);
+        Assert.Equal(WorkflowInstanceStatus.Faulted, (await host.CompleteAsync(task.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
+        var notArray = (await host.InstanceAsync(approving.Id).ConfigureAwait(false)).Fault!;
+        Assert.Equal((WorkflowMessages.PropertyNotArray, ForEachActivity.ItemsProperty), (notArray.MessageKey, notArray.Arguments!["name"]));
+        Assert.Equal("活动属性 'Items' 的求值结果必须是数组。", In("zh-CN", notArray.Localize));
+        Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", notArray.Localize));
+
+        // 子流程故障：父节点是"子流程没有正常完成"（子实例与状态），子实例的故障作为内层原因接在后面，两段同一种语言
+        var parent = (await host.StartAsync("conf-l10n-parent").ConfigureAwait(false)).ValueOrThrow();
+        await WaitUntilAsync(async () => (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
+        var child = Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = parent.Id }).ConfigureAwait(false));
+        var childFailed = (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).Fault!;
+        Assert.Equal((WorkflowMessages.ChildFailed, child.Id, nameof(WorkflowInstanceStatus.Faulted)), (childFailed.MessageKey, childFailed.Arguments!["id"], childFailed.Arguments["status"]));
+        Assert.Equal((WorkflowMessages.ActivityFaultRaised, "Budget exceeded"), (childFailed.Inner?.MessageKey, childFailed.Inner?.Arguments?["message"]));
+        Assert.Equal($"子流程 '{child.Id}' 没有正常完成（状态 Faulted）。原因：流程报告故障：Budget exceeded", In("zh-CN", childFailed.Localize));
+        Assert.Equal($"Sub-workflow '{child.Id}' did not complete (status Faulted). Cause: The workflow raised a fault: Budget exceeded", In("en-US", childFailed.Localize));
+        Assert.Equal(WorkflowMessages.ActivityFaultRaised, childFailed.ToError().Inner?.MessageKey);
+    }
+
+    /// <summary>
+    /// 用例 39：返回给调用方的错误只带消息键与参数，由宿主按调用方的区域翻译。
+    /// </summary>
+    /// <remarks>
+    /// 外部任务的锁定时长与拉取条数、待办查询的目标：错误码不变，消息键是具体的键，参数里没有英文句子；按 zh-CN 与 en-US 解析得到各自的语言（ADR-0105）。
+    /// </remarks>
+    [Fact]
+    public async Task ReturnedErrors_CarryMessageKeys_ThatResolvePerLocale()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var messages = new CatalogMessageResolver(host.Services.GetServices<MessageCatalog>());
+        string Resolve(Error error, string locale)
+            => messages.TryResolve(error.MessageKey!, locale, error.Details, out var text) ? text : throw new InvalidOperationException($"No '{locale}' template for '{error.MessageKey}'.");
+
+        ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchAsync(TimeSpan lockDuration, int maxTasks)
+            => host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowExternalTaskService>().FetchAsync("conf-l10n", "worker", lockDuration, maxTasks, CancellationToken.None));
+
+        var lockDuration = (await FetchAsync(TimeSpan.Zero, 1).ConfigureAwait(false)).Error!;
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskLockDurationInvalid), (lockDuration.Code, lockDuration.MessageKey));
+        Assert.Null(lockDuration.Details);
+        Assert.Equal("外部任务的锁定时长必须为正。", Resolve(lockDuration, "zh-CN"));
+        Assert.Equal("The external task lock duration must be positive.", Resolve(lockDuration, "en-US"));
+
+        var maxTasks = (await FetchAsync(TimeSpan.FromMinutes(1), 0).ConfigureAwait(false)).Error!;
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskMaxTasksInvalid), (maxTasks.Code, maxTasks.MessageKey));
+        Assert.Equal($"一次拉取的外部任务数 0 必须在 1 到 {IWorkflowExternalTaskService.MaxTasksPerFetch} 之间。", Resolve(maxTasks, "zh-CN"));
+        Assert.Equal($"The number of external tasks to fetch, 0, must be between 1 and {IWorkflowExternalTaskService.MaxTasksPerFetch}.", Resolve(maxTasks, "en-US"));
+
+        var target = (await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery(), CancellationToken.None)).ConfigureAwait(false)).Error!;
+        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryTargetMissing), (target.Code, target.MessageKey));
+        Assert.Equal("待办查询需要指派人 ID 或实例 ID。", Resolve(target, "zh-CN"));
+        Assert.Equal("The task query needs an assignee ID or an instance ID.", Resolve(target, "en-US"));
     }
 
     /// <summary>

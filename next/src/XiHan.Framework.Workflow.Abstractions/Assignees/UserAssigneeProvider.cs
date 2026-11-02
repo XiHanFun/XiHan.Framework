@@ -20,7 +20,7 @@ public sealed class UserAssigneeProvider : IAssigneeProvider
         ArgumentNullException.ThrowIfNull(rule);
         return rule.Values.Count > 0
             ? Result.Success()
-            : Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", RuleType), ("reason", "at least one user is required")));
+            : Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeUsersMissing, MessageArguments.Of(("type", RuleType)));
     }
 
     /// <inheritdoc />

@@ -44,7 +44,7 @@ public sealed class ExternalTaskActivity : IResumableActivity
 
         if (string.IsNullOrWhiteSpace(topic))
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(TopicProperty, "must not be empty")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.Empty(TopicProperty)));
         }
 
         var payload = new JsonObject();
@@ -85,7 +85,7 @@ public sealed class ExternalTaskActivity : IResumableActivity
         ArgumentNullException.ThrowIfNull(context);
         if (context.IsTimeout)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", ActivityTypes.ExternalTask), ("reason", "The node timed out.")))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
         if (context.Inputs.TryGetPropertyValue(ExternalTaskPayloadKeys.Outputs, out var outputs))

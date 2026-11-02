@@ -80,7 +80,7 @@ public sealed class ForEachActivity : IResumableActivity
 
         if (itemsNode.OrNull() is not JsonArray items)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityContext.PropertyInvalid(ItemsProperty, "must evaluate to an array")));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.NotArray(ItemsProperty)));
         }
 
         if (items.Count == 0)
@@ -115,14 +115,13 @@ public sealed class ForEachActivity : IResumableActivity
         ArgumentNullException.ThrowIfNull(context);
         if (context.IsTimeout)
         {
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", ActivityTypes.ForEach), ("reason", "The node timed out.")))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
         var status = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
         if (!string.Equals(status, nameof(WorkflowInstanceStatus.Completed), StringComparison.OrdinalIgnoreCase) && context.Property(FailFastProperty, true))
         {
-            var fault = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildFaultInput, out var faultNode) && faultNode is JsonValue faultValue ? WorkflowValues.AsString(faultValue) : status;
-            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, details: MessageArguments.Of(("id", context.Inputs[WorkflowEngine.ChildInstanceIdInput]?.ToString() ?? string.Empty), ("reason", fault)))));
+            return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.ChildFailed(context.Inputs, status)));
         }
 
         // 状态里的数组已有父节点，改副本再放回去（JSON 节点只能有一个父）

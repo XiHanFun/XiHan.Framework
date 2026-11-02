@@ -40,7 +40,7 @@ public sealed record AssigneeRule(string Type, IReadOnlyList<string> Values)
 
         if (node is not JsonArray array)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", "?"), ("reason", "rules must be an array")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRulesNotArray);
         }
 
         var rules = new List<AssigneeRule>(array.Count);
@@ -48,13 +48,13 @@ public sealed record AssigneeRule(string Type, IReadOnlyList<string> Values)
         {
             if (item is not JsonObject obj || !obj.TryGetPropertyValue("type", out var type) || type is not JsonValue typeValue)
             {
-                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", "?"), ("reason", "each rule needs a type")));
+                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleTypeMissing);
             }
 
             var typeName = WorkflowValues.AsString(typeValue);
             if (string.IsNullOrWhiteSpace(typeName))
             {
-                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleInvalid, MessageArguments.Of(("type", "?"), ("reason", "each rule needs a type")));
+                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.AssigneeRuleTypeMissing);
             }
 
             rules.Add(new AssigneeRule(typeName, WorkflowValues.ToStringList(obj.TryGetPropertyValue("values", out var values) ? values : null)));

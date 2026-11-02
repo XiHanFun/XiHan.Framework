@@ -118,7 +118,7 @@ internal sealed class WorkflowScope : IAsyncDisposable, IDisposable
         if (Invocation.TryGetValue(out var current) && current.Get(WorkflowInvocations.OwnedKey).HasValue)
         {
             // 自己开的调用里事务仍不能加入：持久化没有在 Transaction 阶段开启工作单元，是装配错误，不再开一层调用（否则无限递归）
-            return fail(WorkflowInvocations.Unavailable("The workflow's own invocation has no unit of work to join; check that the persistence provider is assembled."));
+            return fail(Error.Unavailable(WorkflowErrors.StoreUnavailable, WorkflowMessages.StoreUnitOfWorkMissing));
         }
 
         TResult result = default!;

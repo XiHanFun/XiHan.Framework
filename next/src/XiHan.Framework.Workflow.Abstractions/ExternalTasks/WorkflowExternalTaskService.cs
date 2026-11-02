@@ -91,12 +91,12 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     {
         if (lockDuration <= TimeSpan.Zero)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "lockDuration must be positive")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskLockDurationInvalid);
         }
 
         if (maxTasks is < 1 or > IWorkflowExternalTaskService.MaxTasksPerFetch)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", $"maxTasks must be between 1 and {IWorkflowExternalTaskService.MaxTasksPerFetch}")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskMaxTasksInvalid, MessageArguments.Of(("count", maxTasks), ("max", IWorkflowExternalTaskService.MaxTasksPerFetch)));
         }
 
         // 调用方分区、此刻可领取（书签到期时刻为空或已过：未锁定、锁已过期或已到 notBefore）与条数都下推到存储查询，不读回该主题的全部书签；
@@ -247,7 +247,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
         {
             if (retryAfter < TimeSpan.Zero)
             {
-                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "RetryAfter must not be negative")));
+                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskRetryAfterNegative);
             }
 
             var peekFound = await FindExternalBookmarkAsync(failure.TaskId, cancellationToken).ConfigureAwait(false);
@@ -311,7 +311,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
         ArgumentNullException.ThrowIfNull(extension);
         if (extension.LockDuration <= TimeSpan.Zero)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryInvalid, MessageArguments.Of(("reason", "LockDuration must be positive")));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.ExternalTaskLockDurationInvalid);
         }
 
         var peekFound = await FindExternalBookmarkAsync(extension.TaskId, cancellationToken).ConfigureAwait(false);

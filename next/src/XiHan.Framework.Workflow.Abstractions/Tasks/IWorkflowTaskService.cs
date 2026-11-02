@@ -53,7 +53,7 @@ public interface IWorkflowTaskService
     /// 按条件查询待办，返回一页与总数。
     /// </summary>
     /// <remarks>
-    /// 只含调用方分区、实例 Running 的任务；过滤、排序与分页由存储执行，<see cref="UserTaskPage.Total"/> 是同条件的总数。指派人与实例都没给 → <see cref="WorkflowErrors.InputInvalid"/>（<see cref="WorkflowMessages.TaskQueryInvalid"/>）；<see cref="UserTaskQuery.Skip"/> 为负或 <see cref="UserTaskQuery.Limit"/> 不在 1 到 <see cref="UserTaskQuery.MaxLimit"/> 之间 → <see cref="WorkflowErrors.InputInvalid"/>（<see cref="WorkflowMessages.TaskQueryPageInvalid"/>）。
+    /// 只含调用方分区、实例 Running 的任务；过滤、排序与分页由存储执行，<see cref="UserTaskPage.Total"/> 是同条件的总数。指派人与实例都没给 → <see cref="WorkflowErrors.InputInvalid"/>（<see cref="WorkflowMessages.TaskQueryTargetMissing"/>）；<see cref="UserTaskQuery.Skip"/> 为负或 <see cref="UserTaskQuery.Limit"/> 不在 1 到 <see cref="UserTaskQuery.MaxLimit"/> 之间 → <see cref="WorkflowErrors.InputInvalid"/>（<see cref="WorkflowMessages.TaskQueryPageInvalid"/>）。
     /// </remarks>
     ValueTask<Result<UserTaskPage>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken);
 

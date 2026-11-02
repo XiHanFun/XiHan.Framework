@@ -82,7 +82,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             return flag;
         }
 
-        return Invalid(expression, "The result is not a boolean.");
+        return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionNotBoolean, MessageArguments.Of(("expression", expression)));
     }
 
     /// <inheritdoc />
@@ -105,7 +105,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             var close = FindClose(source, open + 2);
             if (close < 0)
             {
-                return Invalid(source, "Unterminated '{{' placeholder.");
+                return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionUnterminatedPlaceholder, MessageArguments.Of(("expression", source)));
             }
 
             var expression = source[(open + 2)..close].Trim();

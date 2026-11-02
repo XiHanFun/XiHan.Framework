@@ -33,6 +33,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Definition
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Delay_AndNodeTimeout_ResumeByPolling() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.DelayedStart_AndReusePolicy() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.EventGateway_TakesFirstSignalOrTimeout() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_KeepMessageKeys_AndLocalizeInTheCallersLocale() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_SendsRequests_AndMapsResponses() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
@@ -45,6 +46,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Parallel_R
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Poller_CoversThePlatformAndEveryEnabledTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Purge_AndDelayVariants() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Queries_SortThroughTheEngine_AndRejectUnknownSortFields() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.ReturnedErrors_CarryMessageKeys_ThatResolvePerLocale() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.RunawayLoop_FaultsInstance() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.SetVariables_Jump_AndMigrate() -> System.Threading.Tasks.Task!
