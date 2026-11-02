@@ -493,7 +493,7 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
 
 ## 查询实例
 
-实例与节点实例的查询用引擎（作用域服务）的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`。它们只查调用方的分区：租户的调用只查得到本租户的实例，平台的调用只查得到平台的实例；按 ID 找别的分区的实例为无值或 `WORKFLOW_NOTFOUND_002`。
+实例与节点实例的查询用引擎（作用域服务）的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`。它们只查调用方的分区：租户的调用只查得到本租户的实例，平台的调用只查得到平台的实例；按 ID 找别的分区的实例为无值或 `WORKFLOW_NOTFOUND_002`。
 
 ```csharp
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -519,6 +519,10 @@ public sealed class LeaveReports(IWorkflowEngine engine)
     // 节点实例按开始时间升序，就是流程走过的轨迹
     public async ValueTask<IReadOnlyList<WorkflowNodeInstance>> TrailAsync(string instanceId, CancellationToken cancellationToken)
         => (await engine.NodeInstancesAsync(instanceId, cancellationToken)).ValueOrThrow();
+
+    // 实例在等什么：用户任务、定时、信号、子流程、超时……（实例详情的「待恢复」）
+    public async ValueTask<IReadOnlyList<WorkflowBookmarkSummary>> WaitingAsync(string instanceId, CancellationToken cancellationToken)
+        => (await engine.BookmarksAsync(instanceId, cancellationToken)).ValueOrThrow();
 }
 ```
 

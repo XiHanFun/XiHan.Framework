@@ -154,6 +154,18 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
+    public void BookmarkSummary_CopiesTheWaitPoint_WithoutThePayload()
+    {
+        var due = DateTimeOffset.UnixEpoch.AddDays(1);
+        var bookmark = new WorkflowBookmark { Id = "b", InstanceId = "i", NodeId = "n", NodeInstanceId = "ni", Kind = BookmarkKinds.Signal, Key = "go", DueAt = due, CorrelationId = "doc", CreatedAt = DateTimeOffset.UnixEpoch, TenantId = "t1" };
+        bookmark.Payload["secret"] = "x";
+        var summary = WorkflowBookmarkSummary.From(bookmark);
+        Assert.Equal(("b", "i", "n", "ni", BookmarkKinds.Signal), (summary.Id, summary.InstanceId, summary.NodeId, summary.NodeInstanceId, summary.Kind));
+        Assert.Equal(("go", "doc"), (summary.Key!, summary.CorrelationId!));
+        Assert.Equal((due, DateTimeOffset.UnixEpoch), (summary.DueAt!.Value, summary.CreatedAt));
+    }
+
+    [Fact]
     public void Messages_AreCompleteForEveryBuiltInLocale()
     {
         var catalog = WorkflowMessages.Catalog;

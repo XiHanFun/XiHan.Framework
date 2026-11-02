@@ -1540,6 +1540,60 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 35：引擎按实例列出全部等待点（书签）的摘要。
+    /// </summary>
+    /// <remarks>
+    /// 并行分支同时停在用户任务（两个指派人加节点超时）、信号与延时上：摘要列出全部种类，创建时间升序，用户任务的摘要 ID 就是任务 ID；书签被消费后随之消失。只看调用方分区的实例：别的分区与不存在的实例都是 <see cref="WorkflowErrors.InstanceNotFound"/>（ADR-0096）。
+    /// </remarks>
+    [Fact]
+    public async Task Bookmarks_ListEveryWaitPointOfTheInstance_InTheCallersPartition()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-waits")
+            .AddStart()
+            .AddParallel("fork")
+            .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice", "bob").WithTimeout(TimeSpan.FromHours(1)))
+            .AddNode("signal", ActivityTypes.WaitSignal, configure: static node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf-waits-go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true))
+            .AddDelay("wait", TimeSpan.FromHours(1))
+            .AddJoin("join")
+            .AddEnd()
+            .AddTransition("start", "fork").AddTransition("fork", "approve").AddTransition("fork", "signal").AddTransition("fork", "wait")
+            .AddTransition("approve", "join").AddTransition("signal", "join").AddTransition("wait", "join").AddTransition("join", "end")
+            .Build(), "t1").ConfigureAwait(false);
+        var instance = (await host.StartAsync("conf-waits", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+
+        async ValueTask<Result<IReadOnlyList<WorkflowBookmarkSummary>>> ListAsync(string? tenantId, string instanceId)
+            => await host.AsTenantAsync(tenantId, sp => sp.GetRequiredService<IWorkflowEngine>().BookmarksAsync(instanceId, CancellationToken.None)).ConfigureAwait(false);
+
+        var waits = (await ListAsync("t1", instance.Id).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([BookmarkKinds.NodeTimeout, BookmarkKinds.Signal, BookmarkKinds.Timer, BookmarkKinds.UserTask, BookmarkKinds.UserTask], waits.Select(static wait => wait.Kind).Order(StringComparer.Ordinal));
+        Assert.All(waits, wait => Assert.Equal(instance.Id, wait.InstanceId));
+        Assert.True(waits.Zip(waits.Skip(1)).All(static pair => pair.First.CreatedAt <= pair.Second.CreatedAt));
+        Assert.Equal(["alice", "bob"], waits.Where(static wait => wait.Kind == BookmarkKinds.UserTask).Select(static wait => wait.Key).Order(StringComparer.Ordinal));
+        Assert.Equal(("signal", "conf-waits-go"), waits.Where(static wait => wait.Kind == BookmarkKinds.Signal).Select(static wait => (wait.NodeId, wait.Key)).Single());
+        Assert.All(waits.Where(static wait => wait.Kind is BookmarkKinds.Timer or BookmarkKinds.NodeTimeout), static wait => Assert.NotNull(wait.DueAt));
+        // 用户任务的摘要 ID 就是任务 ID
+        var tasks = await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().PendingByInstanceAsync(instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        Assert.Equal(tasks.Select(static task => task.Id).Order(StringComparer.Ordinal), waits.Where(static wait => wait.Kind == BookmarkKinds.UserTask).Select(static wait => wait.Id).Order(StringComparer.Ordinal));
+
+        // 别的分区与不存在的实例都按不存在处理
+        foreach (var outsider in new[] { "t2", null })
+        {
+            Assert.Equal(WorkflowErrors.InstanceNotFound, (await ListAsync(outsider, instance.Id).ConfigureAwait(false)).Error?.Code);
+        }
+
+        Assert.Equal(WorkflowErrors.InstanceNotFound, (await ListAsync("t1", "conf-missing").ConfigureAwait(false)).Error?.Code);
+
+        // 消费之后随之消失：Any 策略一人办理，用户任务与节点超时撤下；再发信号，只剩延时
+        var task = tasks.Single(static task => task.AssigneeId == "alice");
+        await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        Assert.Equal([BookmarkKinds.Signal, BookmarkKinds.Timer], (await ListAsync("t1", instance.Id).ConfigureAwait(false)).ValueOrThrow().Select(static wait => wait.Kind).Order(StringComparer.Ordinal));
+        Assert.Equal(1, (await host.AsTenantAsync("t1", sp => sp.GetRequiredService<IWorkflowEngine>().SignalAsync("conf-waits-go", null, null, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal([BookmarkKinds.Timer], (await ListAsync("t1", instance.Id).ConfigureAwait(false)).ValueOrThrow().Select(static wait => wait.Kind));
+    }
+
+    /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束。
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)

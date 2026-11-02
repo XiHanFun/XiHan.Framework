@@ -23,6 +23,7 @@ XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler
 XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.HandleAsync(XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Workflow.Conformance.Engine.RecordingOutcomeHandler.RecordingOutcomeHandler(XiHan.Framework.Workflow.Conformance.Engine.ConformanceLog! log) -> void
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Bookmarks_ListEveryWaitPointOfTheInstance_InTheCallersPartition() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Catalog_Query_PagesSummaries_AndRejectsOutOfRangePages() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Compensate_ActivityAndOnFault() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Control_SuspendResumeCancelTerminate() -> System.Threading.Tasks.Task!

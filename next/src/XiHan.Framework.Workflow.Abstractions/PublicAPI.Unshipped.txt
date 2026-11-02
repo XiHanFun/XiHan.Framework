@@ -453,6 +453,7 @@ XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller.RunCycleAsync(int
 XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller.StartAsync(System.TimeSpan interval, int batchSize, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Abstractions.Engine.DueBookmarkPoller.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine
+XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.BookmarksAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary!>!>>
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.CancelAsync(System.Collections.Generic.IReadOnlyList<string!>! instanceIds, string? reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.CountInstancesAsync(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.FindInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>>
@@ -470,6 +471,7 @@ XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.StartAsync(XiHan.Fr
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.SuspendAsync(System.Collections.Generic.IReadOnlyList<string!>! instanceIds, string? reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Engine.IWorkflowEngine.TerminateAsync(System.Collections.Generic.IReadOnlyList<string!>! instanceIds, string? reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine
+XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.BookmarksAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary!>!>>
 XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.CancelAsync(System.Collections.Generic.IReadOnlyList<string!>! instanceIds, string? reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>!>
 XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.CountInstancesAsync(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.FindInstanceAsync(string! instanceId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!>>>
@@ -711,6 +713,28 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark.Payload.set -> 
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark.TenantId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark.TenantId.set -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark.WorkflowBookmark() -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.CorrelationId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.CorrelationId.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.CreatedAt.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.DueAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.DueAt.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Id.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Id.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.InstanceId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.InstanceId.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Key.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Key.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Kind.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Kind.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.NodeId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.NodeId.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.NodeInstanceId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.NodeInstanceId.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.WorkflowBookmarkSummary() -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Code.get -> string!
@@ -1469,6 +1493,9 @@ override XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskLockExt
 override XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.ToString() -> string!
@@ -1615,6 +1642,9 @@ static XiHan.Framework.Workflow.Abstractions.ExternalTasks.WorkflowExternalTaskS
 static XiHan.Framework.Workflow.Abstractions.ExternalTasks.WorkflowExternalTaskServiceExtensions.FailAsync(this XiHan.Framework.Workflow.Abstractions.ExternalTasks.IWorkflowExternalTaskService! service, XiHan.Framework.Workflow.Abstractions.ExternalTasks.ExternalTaskFailure! failure, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest? left, XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest? left, XiHan.Framework.Workflow.Abstractions.Instances.BookmarkRequest? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.From(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmark! bookmark) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary!
+static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowBookmarkSummary? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.From(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault!
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? right) -> bool

@@ -1795,6 +1795,31 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         }, engine => engine.NodeInstancesAsync(instanceId, cancellationToken), cancellationToken);
     }
 
+    /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<WorkflowBookmarkSummary>>> BookmarksAsync(string instanceId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
+        return _scope.RunAsync<IWorkflowEngine, IReadOnlyList<WorkflowBookmarkSummary>>(false, "workflow.bookmarks", async () =>
+        {
+            // 先确认实例在调用方的分区里：别的分区的实例按不存在处理（不暴露它是否存在），也挡住拿定义 ID 来列定义级定时书签
+            var found = await _instances.FindAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
+            if (!found.TryGetValue(out var maybe))
+            {
+                return found.Error!;
+            }
+
+            if (!maybe.HasValue)
+            {
+                return Error.NotFound(WorkflowErrors.InstanceNotFound, WorkflowMessages.InstanceNotFound, MessageArguments.Of(("id", instanceId)));
+            }
+
+            var listed = await _bookmarks.ByInstanceAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
+            return listed.TryGetValue(out var bookmarks)
+                ? Result.Success<IReadOnlyList<WorkflowBookmarkSummary>>(bookmarks.Select(WorkflowBookmarkSummary.From).ToList())
+                : listed.Error!;
+        }, engine => engine.BookmarksAsync(instanceId, cancellationToken), cancellationToken);
+    }
+
     /// <summary>
     /// 调用方的分区：调用的租户，空为平台。
     /// </summary>

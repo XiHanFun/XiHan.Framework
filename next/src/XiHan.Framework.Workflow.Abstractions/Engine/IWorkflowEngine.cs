@@ -131,4 +131,12 @@ public interface IWorkflowEngine
     /// 实例不存在或看不到 → <see cref="WorkflowErrors.InstanceNotFound"/>。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 实例的全部等待点（书签）摘要，创建时间升序。
+    /// </summary>
+    /// <remarks>
+    /// 只读：定时、信号、子流程、用户任务、外部任务、重试、超时、提醒等全部种类，实例详情的「待恢复」用它，不必经存储契约（ADR-0096）。实例不存在或在别的分区 → <see cref="WorkflowErrors.InstanceNotFound"/>。
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<WorkflowBookmarkSummary>>> BookmarksAsync(string instanceId, CancellationToken cancellationToken);
 }
