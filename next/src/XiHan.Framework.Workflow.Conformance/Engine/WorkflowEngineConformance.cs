@@ -1594,10 +1594,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 36：目录与实例查询的排序经引擎下推，排序字段越界是校验错误。
+    /// 用例 36：目录与实例查询的排序经引擎下推，排序项越界是校验错误。
     /// </summary>
     /// <remarks>
-    /// 排序字段不在白名单里（请求里给了越界的数字）以 <see cref="WorkflowErrors.InputInvalid"/> 返回，消息键 <c>workflow.definition.query_sort_invalid</c> / <c>workflow.instance.query_sort_invalid</c>，不在构造时抛出；实例计数不看排序。定义按标题升降序、按创建时间区间过滤；实例的排序方向缺省降序，按标题升降序（ADR-0102）。
+    /// 排序项不合法以 <see cref="WorkflowErrors.InputInvalid"/> 返回、不在构造时抛出（ADR-0104）：字段不在白名单（请求里给了越界的数字）或某项为空是 <c>query_sort_invalid</c>，同一字段两次是 <c>query_sort_duplicate</c>，项数超过上限是 <c>query_sorts_too_many</c>，按上限、非法、重复的顺序检查；白名单里的全部字段各一次照常查询，空列表等于缺省排序；实例计数不看排序、不校验。定义按标题升降序、按创建时间区间过滤；实例按标题升降序，没给排序项时按创建时间降序（ADR-0102、ADR-0104）。
     /// </remarks>
     [Fact]
     public async Task Queries_SortThroughTheEngine_AndRejectUnknownSortFields()
@@ -1610,13 +1610,27 @@ public abstract class WorkflowEngineConformance
         await host.AsTenantAsync(null, async sp =>
         {
             var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
-            var rejected = await catalog.QueryAsync(new WorkflowDefinitionQuery { SortBy = (WorkflowDefinitionSortField)99 }, CancellationToken.None).ConfigureAwait(false);
-            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid), (rejected.Error?.Code, rejected.Error?.MessageKey));
+            async Task<(string? Code, string? Key)> RejectedAsync(IReadOnlyList<WorkflowDefinitionSort> sorts)
+            {
+                var rejected = await catalog.QueryAsync(new WorkflowDefinitionQuery { Sorts = sorts }, CancellationToken.None).ConfigureAwait(false);
+                return (rejected.Error?.Code, rejected.Error?.MessageKey);
+            }
 
-            var byTitle = new WorkflowDefinitionQuery { Keyword = "conf-sort", SortBy = WorkflowDefinitionSortField.Title };
+            // 排序项不合法：字段越界、某项为空、同一字段两次（不论方向）、项数超过上限；检查顺序是上限、非法、重复
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid), await RejectedAsync([new((WorkflowDefinitionSortField)99)]).ConfigureAwait(false));
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid), await RejectedAsync([new(WorkflowDefinitionSortField.Name), null!]).ConfigureAwait(false));
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortDuplicate), await RejectedAsync([new(WorkflowDefinitionSortField.Title), new(WorkflowDefinitionSortField.Name), new(WorkflowDefinitionSortField.Title, Descending: true)]).ConfigureAwait(false));
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortInvalid), await RejectedAsync([new(WorkflowDefinitionSortField.Name), new(WorkflowDefinitionSortField.Name), new((WorkflowDefinitionSortField)99)]).ConfigureAwait(false));
+            var tooMany = Enumerable.Range(0, WorkflowDefinitionQuery.MaxSorts + 1).Select(static index => new WorkflowDefinitionSort((WorkflowDefinitionSortField)(index % WorkflowDefinitionQuery.MaxSorts))).ToList();
+            Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQuerySortsTooMany), await RejectedAsync(tooMany).ConfigureAwait(false));
+            var everyField = Enumerable.Range(0, WorkflowDefinitionQuery.MaxSorts).Select(static index => new WorkflowDefinitionSort((WorkflowDefinitionSortField)index, Descending: index % 2 == 1)).ToList();
+            Assert.Equal(2, (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", Sorts = everyField }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Total);
+
+            var byTitle = new WorkflowDefinitionQuery { Keyword = "conf-sort", Sorts = [new(WorkflowDefinitionSortField.Title)] };
             Assert.Equal([alpha.Id, bravo.Id], (await catalog.QueryAsync(byTitle, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
-            Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(byTitle with { Descending = true }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(byTitle with { Sorts = [new(WorkflowDefinitionSortField.Title, Descending: true)] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
             Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
+            Assert.Equal([bravo.Id, alpha.Id], (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", Sorts = [] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id));
             var future = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", CreatedFrom = DateTimeOffset.UtcNow.AddHours(1) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal(0, future.Total);
             Assert.Equal(2, (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-sort", CreatedFrom = DateTimeOffset.UtcNow.AddHours(-1), CreatedTo = DateTimeOffset.UtcNow.AddHours(1) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Total);
@@ -1629,16 +1643,29 @@ public abstract class WorkflowEngineConformance
         var charlie = await StartTitledAsync("charlie").ConfigureAwait(false);
         var first = await StartTitledAsync("alpha").ConfigureAwait(false);
         var middle = await StartTitledAsync("bravo").ConfigureAwait(false);
-        var invalid = new WorkflowInstanceQuery { SortBy = (WorkflowInstanceSortField)99 };
-        var listed = await host.EngineAsync(engine => engine.ListInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
-        Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQuerySortInvalid), (listed.Error?.Code, listed.Error?.MessageKey));
-        Assert.Equal(3, (await host.EngineAsync(engine => engine.CountInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        var tooManyInstanceSorts = Enumerable.Range(0, WorkflowInstanceQuery.MaxSorts + 1).Select(static index => new WorkflowInstanceSort((WorkflowInstanceSortField)(index % WorkflowInstanceQuery.MaxSorts))).ToList();
+        foreach (var (invalid, key) in new (WorkflowInstanceQuery, string)[]
+        {
+            (new WorkflowInstanceQuery { Sorts = [new((WorkflowInstanceSortField)99)] }, WorkflowMessages.InstanceQuerySortInvalid),
+            (new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.Title), null!] }, WorkflowMessages.InstanceQuerySortInvalid),
+            (new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.Status), new(WorkflowInstanceSortField.Status, Descending: true)] }, WorkflowMessages.InstanceQuerySortDuplicate),
+            (new WorkflowInstanceQuery { Sorts = tooManyInstanceSorts }, WorkflowMessages.InstanceQuerySortsTooMany),
+        })
+        {
+            var listed = await host.EngineAsync(engine => engine.ListInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal((WorkflowErrors.InputInvalid, key), (listed.Error?.Code, listed.Error?.MessageKey));
+            // 计数不看排序，也不校验
+            Assert.Equal(3, (await host.EngineAsync(engine => engine.CountInstancesAsync(invalid, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        }
 
-        // 排序方向缺省降序（实例列表最新的在前）；给了升序才从小到大
-        var byTitleQuery = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a"), SortBy = WorkflowInstanceSortField.Title };
+        // 排序项按标题降序、升序；没给排序项时按创建时间降序（实例列表最新的在前）
+        var byTitleQuery = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a"), Sorts = [new(WorkflowInstanceSortField.Title, Descending: true)] };
         Assert.Equal([charlie.Id, middle.Id, first.Id], (await host.ListInstancesAsync(byTitleQuery).ConfigureAwait(false)).Select(static instance => instance.Id));
-        Assert.Equal([first.Id, middle.Id, charlie.Id], (await host.ListInstancesAsync(byTitleQuery with { Descending = false }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([first.Id, middle.Id, charlie.Id], (await host.ListInstancesAsync(byTitleQuery with { Sorts = [new(WorkflowInstanceSortField.Title)] }).ConfigureAwait(false)).Select(static instance => instance.Id));
         Assert.Equal([middle.Id, first.Id, charlie.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a") }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        Assert.Equal([middle.Id, first.Id, charlie.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a"), Sorts = [] }).ConfigureAwait(false)).Select(static instance => instance.Id));
+        var everyInstanceField = Enumerable.Range(0, WorkflowInstanceQuery.MaxSorts).Select(static index => new WorkflowInstanceSort((WorkflowInstanceSortField)index, Descending: index % 2 == 0)).ToList();
+        Assert.Equal(3, (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-sort-a"), Sorts = everyInstanceField }).ConfigureAwait(false)).Count);
     }
 
     /// <summary>
@@ -1670,7 +1697,7 @@ public abstract class WorkflowEngineConformance
         }).ConfigureAwait(false);
 
         async Task<List<string>> DefinitionsByStatusAsync(bool descending)
-            => await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-life-", SortBy = WorkflowDefinitionSortField.Status, Descending = descending }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id).ToList()).ConfigureAwait(false);
+            => await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-life-", Sorts = [new(WorkflowDefinitionSortField.Status, descending)] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static summary => summary.Id).ToList()).ConfigureAwait(false);
 
         Assert.Equal([draft, published, disabled, archived], await DefinitionsByStatusAsync(false).ConfigureAwait(false));
         Assert.Equal([archived, disabled, published, draft], await DefinitionsByStatusAsync(true).ConfigureAwait(false));
@@ -1692,7 +1719,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowInstanceStatus.Canceled, (await host.EngineAsync(engine => engine.CancelAsync(canceled, "drop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
 
         async Task<List<string>> InstancesByStatusAsync(bool descending)
-            => (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-life-run"), SortBy = WorkflowInstanceSortField.Status, Descending = descending }).ConfigureAwait(false)).Select(static instance => instance.Id).ToList();
+            => (await host.ListInstancesAsync(new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-life-run"), Sorts = [new(WorkflowInstanceSortField.Status, descending)] }).ConfigureAwait(false)).Select(static instance => instance.Id).ToList();
 
         // 运行中 < 已挂起 < 已取消 < 已终止（状态名的字母序是 Canceled、Running、Suspended、Terminated）
         Assert.Equal([running, suspended, canceled, terminated], await InstancesByStatusAsync(false).ConfigureAwait(false));

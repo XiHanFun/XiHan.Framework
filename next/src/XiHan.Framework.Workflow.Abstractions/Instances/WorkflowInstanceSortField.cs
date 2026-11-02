@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表可以按哪个字段排序。
 /// </summary>
 /// <remarks>
-/// 白名单，以 4.x 实例列表能排的列为参照（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键创建时间降序、写入先后降序，规则见 <see cref="WorkflowInstanceQuery.SortBy"/>。
+/// 白名单，以 4.x 实例列表能排的列为参照（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键创建时间降序、写入先后降序，放进 <see cref="WorkflowInstanceSort"/>，规则见 <see cref="WorkflowInstanceQuery.Sorts"/>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceSortField>))]

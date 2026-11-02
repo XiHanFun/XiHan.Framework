@@ -341,12 +341,44 @@ public static class WorkflowMessages
     public const string DefinitionQuerySortInvalid = "workflow.definition.query_sort_invalid";
 
     /// <summary>
+    /// 定义查询的同一排序字段出现了两次。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>sort</c>（重复的字段）。
+    /// </remarks>
+    public const string DefinitionQuerySortDuplicate = "workflow.definition.query_sort_duplicate";
+
+    /// <summary>
+    /// 定义查询的排序项超过上限。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>（给出的项数）、<c>max</c>。
+    /// </remarks>
+    public const string DefinitionQuerySortsTooMany = "workflow.definition.query_sorts_too_many";
+
+    /// <summary>
     /// 实例查询的排序字段不在白名单里。
     /// </summary>
     /// <remarks>
     /// 参数：<c>sort</c>（给出的值）。
     /// </remarks>
     public const string InstanceQuerySortInvalid = "workflow.instance.query_sort_invalid";
+
+    /// <summary>
+    /// 实例查询的同一排序字段出现了两次。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>sort</c>（重复的字段）。
+    /// </remarks>
+    public const string InstanceQuerySortDuplicate = "workflow.instance.query_sort_duplicate";
+
+    /// <summary>
+    /// 实例查询的排序项超过上限。
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>（给出的项数）、<c>max</c>。
+    /// </remarks>
+    public const string InstanceQuerySortsTooMany = "workflow.instance.query_sorts_too_many";
 
     /// <summary>
     /// 清理一次删除的条数越界。

@@ -146,9 +146,14 @@ public sealed class WorkflowModelTests
         var surrogate = new string('a', WorkflowSortKeys.MaxTitleLength - 1) + "\U0001F600" + "tail";
         Assert.Equal(new string('a', WorkflowSortKeys.MaxTitleLength - 1), WorkflowSortKeys.Title(surrogate));
 
-        // 缺省排序与原来相同：定义名字升序（版本降序是次序键），实例创建时间降序
-        Assert.Equal((WorkflowDefinitionSortField.Name, false), (new WorkflowDefinitionQuery().SortBy, new WorkflowDefinitionQuery().Descending));
-        Assert.Equal((WorkflowInstanceSortField.CreatedAt, true), (new WorkflowInstanceQuery().SortBy, new WorkflowInstanceQuery().Descending));
+        // 没给排序项（缺省排序由存储施加：定义名字升序，实例创建时间降序）；排序项的方向缺省升序；上限等于可排序字段数
+        Assert.Null(new WorkflowDefinitionQuery().Sorts);
+        Assert.Null(new WorkflowInstanceQuery().Sorts);
+        Assert.False(new WorkflowDefinitionSort(WorkflowDefinitionSortField.Title).Descending);
+        Assert.False(new WorkflowInstanceSort(WorkflowInstanceSortField.Title).Descending);
+        Assert.Equal((6, 5), (WorkflowDefinitionQuery.MaxSorts, WorkflowInstanceQuery.MaxSorts));
+        Assert.Equal(WorkflowDefinitionQuery.MaxSorts, Enum.GetValues<WorkflowDefinitionSortField>().Length);
+        Assert.Equal(WorkflowInstanceQuery.MaxSorts, Enum.GetValues<WorkflowInstanceSortField>().Length);
 
         // 定义的创建时间区间：下界含、上界不含
         var created = DateTimeOffset.UnixEpoch.AddDays(1);

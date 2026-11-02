@@ -32,7 +32,7 @@ public interface IWorkflowInstanceStore
     /// 列表：按排序字段排序，最多 <see cref="WorkflowInstanceQuery.Limit"/> 条。
     /// </summary>
     /// <remarks>
-    /// 过滤项见 <see cref="WorkflowInstanceQuery.Matches"/>：关联 ID 集合为空不匹配任何实例，只取顶层是父实例为空，关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配实例标题或关联 ID（ADR-0096、ADR-0099）。按 <see cref="WorkflowInstanceQuery.SortBy"/> 与 <see cref="WorkflowInstanceQuery.Descending"/> 排序（缺省创建时间降序），再接次序键创建时间降序、写入先后降序（排序字段是创建时间时随它的方向），标题按 <see cref="WorkflowSortKeys.Title"/> 比较（ADR-0102），状态按生命周期的先后（ADR-0103）。分页、关联 ID 集合的上限与排序字段已由调用方校验：排序字段不在白名单里抛出 <see cref="ArgumentOutOfRangeException"/>。
+    /// 过滤项见 <see cref="WorkflowInstanceQuery.Matches"/>：关联 ID 集合为空不匹配任何实例，只取顶层是父实例为空，关键字按 <see cref="WorkflowKeyword"/> 折叠后匹配实例标题或关联 ID（ADR-0096、ADR-0099）。按排序项 <see cref="WorkflowInstanceQuery.Sorts"/> 依次排序（空时创建时间降序），再接次序键创建时间降序、写入先后降序（排序项里已有创建时间时跳过它，写入先后随它的方向，ADR-0104），标题按 <see cref="WorkflowSortKeys.Title"/> 比较（ADR-0102），状态按生命周期的先后（ADR-0103）。分页、关联 ID 集合的上限与排序项已由调用方校验：排序项为空抛出 <see cref="ArgumentException"/>，字段不在白名单里抛出 <see cref="ArgumentOutOfRangeException"/>（重复的字段只按第一次出现的排）。
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken);
 

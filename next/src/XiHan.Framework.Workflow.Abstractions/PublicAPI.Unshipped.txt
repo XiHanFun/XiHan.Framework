@@ -322,8 +322,6 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Create
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.CreatedFrom.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.CreatedTo.get -> System.DateTimeOffset?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.CreatedTo.init -> void
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Descending.get -> bool
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Descending.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.get -> string?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.init -> void
@@ -334,11 +332,20 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.g
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Skip.get -> int
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Skip.init -> void
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.SortBy.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.SortBy.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Sorts.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort!>?
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Sorts.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.WorkflowDefinitionQuery() -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort!
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Deconstruct(out XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField Field, out bool Descending) -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Descending.get -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Descending.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Field.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Field.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.WorkflowDefinitionSort(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField Field, bool Descending = false) -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField.CreatedAt = 4 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField.Name = 0 -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSortField
@@ -818,8 +825,6 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CreatedTo.
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.CreatedTo.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.DefinitionName.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.DefinitionName.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Descending.get -> bool
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Descending.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.EndedBefore.get -> System.DateTimeOffset?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.EndedBefore.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? other) -> bool
@@ -832,8 +837,8 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.ParentInst
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.ParentInstanceId.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Skip.get -> int
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Skip.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.SortBy.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.SortBy.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Sorts.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort!>?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Sorts.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.StarterId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.StarterId.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Status.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus?
@@ -843,6 +848,15 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Statuses.i
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.get -> bool
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.WorkflowInstanceQuery() -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Deconstruct(out XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField Field, out bool Descending) -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Descending.get -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Descending.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Field.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Field.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.WorkflowInstanceSort(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField Field, bool Descending = false) -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField.CreatedAt = 0 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField.DefinitionName = 3 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSortField
@@ -1304,6 +1318,7 @@ const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.Starter 
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.User = "User" -> string!
 const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.MaxCategoryLength = 128 -> int
 const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxLimit = 1000 -> int
+const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxSorts = 6 -> int
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildFaultInput = "childFault" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildInstanceIdInput = "childInstanceId" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowEngine.ChildStatusInput = "childStatus" -> string!
@@ -1360,6 +1375,7 @@ const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.Timer = "Tim
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.UserTask = "UserTask" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxCorrelationIds = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxLimit = 1000 -> int
+const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxSorts = 5 -> int
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Approved = "approved" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Rejected = "rejected" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Timeout = "timeout" -> string!
@@ -1416,7 +1432,9 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildFailed = "work
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionInvalid = "workflow.definition.invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionNotFound = "workflow.definition.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortDuplicate = "workflow.definition.query_sort_duplicate" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortInvalid = "workflow.definition.query_sort_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionQuerySortsTooMany = "workflow.definition.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.DefinitionStatus = "workflow.definition.status" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionInvalid = "workflow.expression.invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskDenied = "workflow.external.denied" -> string!
@@ -1428,7 +1446,9 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNoTransitio
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceNotFound = "workflow.instance.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryCorrelationsInvalid = "workflow.instance.query_correlations_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQueryPageInvalid = "workflow.instance.query_page_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortDuplicate = "workflow.instance.query_sort_duplicate" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortInvalid = "workflow.instance.query_sort_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceQuerySortsTooMany = "workflow.instance.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceRunaway = "workflow.instance.runaway" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceStatus = "workflow.instance.status" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceTimedOut = "workflow.instance.timed_out" -> string!
@@ -1477,6 +1497,9 @@ override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPag
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.ToString() -> string!
@@ -1531,6 +1554,9 @@ override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.ToString(
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ToString() -> string!
@@ -1628,6 +1654,8 @@ static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionPage? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.From(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary!
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.operator !=(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.operator ==(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? left, XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary? right) -> bool
@@ -1679,6 +1707,8 @@ static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.operator !=
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceSort? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.operator !=(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.operator ==(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest? left, XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Serialization.WorkflowJson.Clone(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!

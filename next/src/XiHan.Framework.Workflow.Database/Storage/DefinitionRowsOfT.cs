@@ -178,32 +178,53 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 按定义查询的排序字段与方向排序，再接次序键补成全序。
+    /// 没给排序项时的排序：名字升序。
+    /// </summary>
+    private static readonly WorkflowDefinitionSort[] _defaultSorts = [new(WorkflowDefinitionSortField.Name)];
+
+    /// <summary>
+    /// 按定义查询的排序项依次排序，再接次序键补成全序。
     /// </summary>
     /// <remarks>
-    /// 次序键是名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
+    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
     /// </remarks>
     private static EntityQuery<TRow> Sorted(EntityQuery<TRow> query, WorkflowDefinitionQuery definitionQuery)
     {
-        var descending = definitionQuery.Descending;
-        var sorted = definitionQuery.SortBy switch
+        var sorted = query;
+        var used = new HashSet<WorkflowDefinitionSortField>();
+        foreach (var sort in definitionQuery.Sorts is { Count: > 0 } sorts ? sorts : _defaultSorts)
         {
-            WorkflowDefinitionSortField.Name => query.OrderBy(static record => record.Name, descending),
-            WorkflowDefinitionSortField.Title => query.OrderBy(static record => record.Title, descending),
-            WorkflowDefinitionSortField.Version => query.OrderBy(static record => record.Version, descending),
-            WorkflowDefinitionSortField.Status => query.OrderBy(static record => record.StatusOrder, descending),
-            WorkflowDefinitionSortField.CreatedAt => query.OrderBy(static record => record.CreatedAt, descending),
-            WorkflowDefinitionSortField.PublishedAt => query.OrderBy(static record => record.PublishedAt, descending),
-            _ => throw new ArgumentOutOfRangeException(nameof(definitionQuery), definitionQuery.SortBy, $"The workflow definition sort field '{definitionQuery.SortBy}' is not supported."),
-        };
+            if (sort is null)
+            {
+                throw new ArgumentException("A workflow definition sort item is null.", nameof(definitionQuery));
+            }
 
-        // 次序键跳过与排序字段相同的列：SQL Server 不许同一列在 ORDER BY 里出现两次
-        if (definitionQuery.SortBy != WorkflowDefinitionSortField.Name)
+            // SQL Server 不许同一列在 ORDER BY 里出现两次：重复的字段只按第一次出现的排（调用方已校验，这里不让一条坏查询打到库上）
+            if (!used.Add(sort.Field))
+            {
+                continue;
+            }
+
+            var descending = sort.Descending;
+            sorted = sort.Field switch
+            {
+                WorkflowDefinitionSortField.Name => sorted.OrderBy(static record => record.Name, descending),
+                WorkflowDefinitionSortField.Title => sorted.OrderBy(static record => record.Title, descending),
+                WorkflowDefinitionSortField.Version => sorted.OrderBy(static record => record.Version, descending),
+                WorkflowDefinitionSortField.Status => sorted.OrderBy(static record => record.StatusOrder, descending),
+                WorkflowDefinitionSortField.CreatedAt => sorted.OrderBy(static record => record.CreatedAt, descending),
+                WorkflowDefinitionSortField.PublishedAt => sorted.OrderBy(static record => record.PublishedAt, descending),
+                _ => throw new ArgumentOutOfRangeException(nameof(definitionQuery), sort.Field, $"The workflow definition sort field '{sort.Field}' is not supported."),
+            };
+        }
+
+        // 次序键跳过排序项里已有的列，同样是为了 SQL Server
+        if (!used.Contains(WorkflowDefinitionSortField.Name))
         {
             sorted = sorted.OrderBy(static record => record.Name);
         }
 
-        if (definitionQuery.SortBy != WorkflowDefinitionSortField.Version)
+        if (!used.Contains(WorkflowDefinitionSortField.Version))
         {
             sorted = sorted.OrderBy(static record => record.Version, descending: true);
         }

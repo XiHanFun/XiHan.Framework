@@ -142,32 +142,64 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 按定义查询的排序字段与方向排序，再接次序键名字升序、版本降序。
+    /// 没给排序项时的排序：名字升序。
+    /// </summary>
+    private static readonly WorkflowDefinitionSort[] _defaultSorts = [new(WorkflowDefinitionSortField.Name)];
+
+    /// <summary>
+    /// 按定义查询的排序项依次排序，再接次序键名字升序、版本降序。
     /// </summary>
     /// <remarks>
-    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102、ADR-0104）。排序项里已有的字段不再作次序键，重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
     /// </remarks>
     private static IOrderedEnumerable<WorkflowDefinition> Sorted(IEnumerable<WorkflowDefinition> definitions, WorkflowDefinitionQuery query)
     {
-        var descending = query.Descending;
-        var sorted = query.SortBy switch
+        IOrderedEnumerable<WorkflowDefinition>? sorted = null;
+        var used = new HashSet<WorkflowDefinitionSortField>();
+        foreach (var sort in query.Sorts is { Count: > 0 } sorts ? sorts : _defaultSorts)
         {
-            WorkflowDefinitionSortField.Name => Order(definitions, static candidate => candidate.Name.Value, StringComparer.Ordinal, descending),
-            WorkflowDefinitionSortField.Title => Order(definitions, static candidate => WorkflowSortKeys.Title(candidate.Title), StringComparer.Ordinal, descending),
-            WorkflowDefinitionSortField.Version => Order(definitions, static candidate => candidate.Version, Comparer<int>.Default, descending),
-            WorkflowDefinitionSortField.Status => Order(definitions, static candidate => WorkflowStatusOrder.Of(candidate.Status), Comparer<int>.Default, descending),
-            WorkflowDefinitionSortField.CreatedAt => Order(definitions, static candidate => candidate.CreatedAt, Comparer<DateTimeOffset>.Default, descending),
-            WorkflowDefinitionSortField.PublishedAt => Order(definitions, static candidate => candidate.PublishedAt, Comparer<DateTimeOffset?>.Default, descending),
-            _ => throw new ArgumentOutOfRangeException(nameof(query), query.SortBy, $"The workflow definition sort field '{query.SortBy}' is not supported."),
-        };
-        return sorted.ThenBy(static candidate => candidate.Name.Value, StringComparer.Ordinal).ThenByDescending(static candidate => candidate.Version);
+            if (sort is null)
+            {
+                throw new ArgumentException("A workflow definition sort item is null.", nameof(query));
+            }
+
+            if (used.Add(sort.Field))
+            {
+                sorted = Then(definitions, sorted, sort);
+            }
+        }
+
+        // 次序键：名字升序、版本降序，排序项里已有的跳过
+        var ordered = sorted!;
+        if (!used.Contains(WorkflowDefinitionSortField.Name))
+        {
+            ordered = ordered.ThenBy(static candidate => candidate.Name.Value, StringComparer.Ordinal);
+        }
+
+        return used.Contains(WorkflowDefinitionSortField.Version) ? ordered : ordered.ThenByDescending(static candidate => candidate.Version);
     }
 
     /// <summary>
-    /// 按一个键升序或降序排。
+    /// 接上一个排序项：还没有排序时开始排，否则作次级排序。
     /// </summary>
-    private static IOrderedEnumerable<WorkflowDefinition> Order<TKey>(IEnumerable<WorkflowDefinition> definitions, Func<WorkflowDefinition, TKey> key, IComparer<TKey> comparer, bool descending)
-        => descending ? definitions.OrderByDescending(key, comparer) : definitions.OrderBy(key, comparer);
+    private static IOrderedEnumerable<WorkflowDefinition> Then(IEnumerable<WorkflowDefinition> definitions, IOrderedEnumerable<WorkflowDefinition>? sorted, WorkflowDefinitionSort sort) => sort.Field switch
+    {
+        WorkflowDefinitionSortField.Name => Order(definitions, sorted, static candidate => candidate.Name.Value, StringComparer.Ordinal, sort.Descending),
+        WorkflowDefinitionSortField.Title => Order(definitions, sorted, static candidate => WorkflowSortKeys.Title(candidate.Title), StringComparer.Ordinal, sort.Descending),
+        WorkflowDefinitionSortField.Version => Order(definitions, sorted, static candidate => candidate.Version, Comparer<int>.Default, sort.Descending),
+        WorkflowDefinitionSortField.Status => Order(definitions, sorted, static candidate => WorkflowStatusOrder.Of(candidate.Status), Comparer<int>.Default, sort.Descending),
+        WorkflowDefinitionSortField.CreatedAt => Order(definitions, sorted, static candidate => candidate.CreatedAt, Comparer<DateTimeOffset>.Default, sort.Descending),
+        WorkflowDefinitionSortField.PublishedAt => Order(definitions, sorted, static candidate => candidate.PublishedAt, Comparer<DateTimeOffset?>.Default, sort.Descending),
+        _ => throw new ArgumentOutOfRangeException(nameof(sort), sort.Field, $"The workflow definition sort field '{sort.Field}' is not supported."),
+    };
+
+    /// <summary>
+    /// 按一个键升序或降序排：作主排序或次级排序。
+    /// </summary>
+    private static IOrderedEnumerable<WorkflowDefinition> Order<TKey>(IEnumerable<WorkflowDefinition> definitions, IOrderedEnumerable<WorkflowDefinition>? sorted, Func<WorkflowDefinition, TKey> key, IComparer<TKey> comparer, bool descending)
+        => sorted is null
+            ? (descending ? definitions.OrderByDescending(key, comparer) : definitions.OrderBy(key, comparer))
+            : (descending ? sorted.ThenByDescending(key, comparer) : sorted.ThenBy(key, comparer));
 
     /// <inheritdoc />
     public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)

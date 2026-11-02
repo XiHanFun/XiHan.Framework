@@ -141,36 +141,66 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 按实例查询的排序字段与方向排序，再接次序键创建时间降序、写入先后降序。
+    /// 没给排序项时的排序：创建时间降序。
+    /// </summary>
+    private static readonly WorkflowInstanceSort[] _defaultSorts = [new(WorkflowInstanceSortField.CreatedAt, Descending: true)];
+
+    /// <summary>
+    /// 按实例查询的排序项依次排序，再接次序键创建时间降序、写入先后降序。
     /// </summary>
     /// <remarks>
-    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102）；排序字段是创建时间时，写入先后随它的方向（同刻的先写的在升序里排前面）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102、ADR-0104）；排序项里有创建时间时不再作次序键，写入先后随它的方向（同刻的先写的在升序里排前面），没有时降序。重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
     /// </remarks>
     private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Sorted(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, WorkflowInstanceQuery query)
     {
-        var descending = query.Descending;
-        if (query.SortBy == WorkflowInstanceSortField.CreatedAt)
+        IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)>? sorted = null;
+        var used = new HashSet<WorkflowInstanceSortField>();
+        bool? creationDescending = null;
+        foreach (var sort in query.Sorts is { Count: > 0 } sorts ? sorts : _defaultSorts)
         {
-            var byCreation = Order(entries, static entry => entry.Instance.CreatedAt, Comparer<DateTimeOffset>.Default, descending);
-            return descending ? byCreation.ThenByDescending(static entry => entry.Sequence) : byCreation.ThenBy(static entry => entry.Sequence);
+            if (sort is null)
+            {
+                throw new ArgumentException("A workflow instance sort item is null.", nameof(query));
+            }
+
+            if (!used.Add(sort.Field))
+            {
+                continue;
+            }
+
+            if (sort.Field == WorkflowInstanceSortField.CreatedAt)
+            {
+                creationDescending = sort.Descending;
+            }
+
+            sorted = Then(entries, sorted, sort);
         }
 
-        var sorted = query.SortBy switch
-        {
-            WorkflowInstanceSortField.EndedAt => Order(entries, static entry => entry.Instance.EndedAt, Comparer<DateTimeOffset?>.Default, descending),
-            WorkflowInstanceSortField.Status => Order(entries, static entry => WorkflowStatusOrder.Of(entry.Instance.Status), Comparer<int>.Default, descending),
-            WorkflowInstanceSortField.DefinitionName => Order(entries, static entry => entry.Instance.DefinitionName.Value, StringComparer.Ordinal, descending),
-            WorkflowInstanceSortField.Title => Order(entries, static entry => WorkflowSortKeys.Title(entry.Instance.Title), StringComparer.Ordinal, descending),
-            _ => throw new ArgumentOutOfRangeException(nameof(query), query.SortBy, $"The workflow instance sort field '{query.SortBy}' is not supported."),
-        };
-        return sorted.ThenByDescending(static entry => entry.Instance.CreatedAt).ThenByDescending(static entry => entry.Sequence);
+        // 次序键：创建时间降序（排序项里已有时跳过），写入先后随排序项里创建时间的方向，没有时降序
+        var ordered = creationDescending is null ? sorted!.ThenByDescending(static entry => entry.Instance.CreatedAt) : sorted!;
+        return creationDescending ?? true ? ordered.ThenByDescending(static entry => entry.Sequence) : ordered.ThenBy(static entry => entry.Sequence);
     }
 
     /// <summary>
-    /// 按一个键升序或降序排。
+    /// 接上一个排序项：还没有排序时开始排，否则作次级排序。
     /// </summary>
-    private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Order<TKey>(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, Func<(WorkflowInstance Instance, long Sequence), TKey> key, IComparer<TKey> comparer, bool descending)
-        => descending ? entries.OrderByDescending(key, comparer) : entries.OrderBy(key, comparer);
+    private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Then(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)>? sorted, WorkflowInstanceSort sort) => sort.Field switch
+    {
+        WorkflowInstanceSortField.CreatedAt => Order(entries, sorted, static entry => entry.Instance.CreatedAt, Comparer<DateTimeOffset>.Default, sort.Descending),
+        WorkflowInstanceSortField.EndedAt => Order(entries, sorted, static entry => entry.Instance.EndedAt, Comparer<DateTimeOffset?>.Default, sort.Descending),
+        WorkflowInstanceSortField.Status => Order(entries, sorted, static entry => WorkflowStatusOrder.Of(entry.Instance.Status), Comparer<int>.Default, sort.Descending),
+        WorkflowInstanceSortField.DefinitionName => Order(entries, sorted, static entry => entry.Instance.DefinitionName.Value, StringComparer.Ordinal, sort.Descending),
+        WorkflowInstanceSortField.Title => Order(entries, sorted, static entry => WorkflowSortKeys.Title(entry.Instance.Title), StringComparer.Ordinal, sort.Descending),
+        _ => throw new ArgumentOutOfRangeException(nameof(sort), sort.Field, $"The workflow instance sort field '{sort.Field}' is not supported."),
+    };
+
+    /// <summary>
+    /// 按一个键升序或降序排：作主排序或次级排序。
+    /// </summary>
+    private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Order<TKey>(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)>? sorted, Func<(WorkflowInstance Instance, long Sequence), TKey> key, IComparer<TKey> comparer, bool descending)
+        => sorted is null
+            ? (descending ? entries.OrderByDescending(key, comparer) : entries.OrderBy(key, comparer))
+            : (descending ? sorted.ThenByDescending(key, comparer) : sorted.ThenBy(key, comparer));
 
     /// <inheritdoc />
     public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)

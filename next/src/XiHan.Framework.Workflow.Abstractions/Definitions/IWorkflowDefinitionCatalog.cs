@@ -72,7 +72,7 @@ public interface IWorkflowDefinitionCatalog
     /// 按条件列定义摘要的一页，带同条件的总数。
     /// </summary>
     /// <remarks>
-    /// 只列调用方分区的定义；按关键字（名字、显示名、说明）、名字、分类、状态与创建时间区间过滤，按 <see cref="WorkflowDefinitionQuery.SortBy"/> 与 <see cref="WorkflowDefinitionQuery.Descending"/> 排序（缺省名字升序、版本降序）。过滤、排序、分页与计数都由存储执行（ADR-0096、ADR-0102）。<see cref="WorkflowDefinitionQuery.Skip"/> 为负或 <see cref="WorkflowDefinitionQuery.Limit"/> 不在 1 到 <see cref="WorkflowDefinitionQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.definition.query_page_invalid</c>）；<see cref="WorkflowDefinitionQuery.SortBy"/> 不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值 → 同一错误码（消息键 <c>workflow.definition.query_sort_invalid</c>），都不进存储。
+    /// 只列调用方分区的定义；按关键字（名字、显示名、说明）、名字、分类、状态与创建时间区间过滤，按排序项 <see cref="WorkflowDefinitionQuery.Sorts"/> 排序（多字段，缺省名字升序、版本降序）。过滤、排序、分页与计数都由存储执行（ADR-0096、ADR-0102、ADR-0104）。<see cref="WorkflowDefinitionQuery.Skip"/> 为负或 <see cref="WorkflowDefinitionQuery.Limit"/> 不在 1 到 <see cref="WorkflowDefinitionQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.definition.query_page_invalid</c>）；排序项不合法 → 同一错误码：项数超过 <see cref="WorkflowDefinitionQuery.MaxSorts"/>（消息键 <c>workflow.definition.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值（<c>workflow.definition.query_sort_invalid</c>），同一字段出现两次（<c>workflow.definition.query_sort_duplicate</c>）；都不进存储。
     /// </remarks>
     ValueTask<Result<WorkflowDefinitionPage>> QueryAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken);
 

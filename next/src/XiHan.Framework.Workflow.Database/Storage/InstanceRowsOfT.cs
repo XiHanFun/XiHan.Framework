@@ -232,28 +232,59 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 按实例查询的排序字段与方向排序，再接次序键补成全序。
+    /// 没给排序项时的排序：创建时间降序。
+    /// </summary>
+    private static readonly WorkflowInstanceSort[] _defaultSorts = [new(WorkflowInstanceSortField.CreatedAt, Descending: true)];
+
+    /// <summary>
+    /// 按实例查询的排序项依次排序，再接次序键补成全序。
     /// </summary>
     /// <remarks>
-    /// 次序键是创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序字段是创建时间时，写入序号与 ID 随它的方向，同刻的行按写入先后。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
+    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向，同刻的行按写入先后。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
     /// </remarks>
     private static EntityQuery<TInstance> Sorted(EntityQuery<TInstance> query, WorkflowInstanceQuery instanceQuery)
     {
-        var descending = instanceQuery.Descending;
-        if (instanceQuery.SortBy == WorkflowInstanceSortField.CreatedAt)
+        var sorted = query;
+        var used = new HashSet<WorkflowInstanceSortField>();
+        bool? creationDescending = null;
+        foreach (var sort in instanceQuery.Sorts is { Count: > 0 } sorts ? sorts : _defaultSorts)
         {
-            return query.OrderBy(static record => record.CreatedAt, descending).OrderBy(static record => record.Sequence, descending).OrderBy(static record => record.Id, descending);
+            if (sort is null)
+            {
+                throw new ArgumentException("A workflow instance sort item is null.", nameof(instanceQuery));
+            }
+
+            // SQL Server 不许同一列在 ORDER BY 里出现两次：重复的字段只按第一次出现的排（调用方已校验，这里不让一条坏查询打到库上）
+            if (!used.Add(sort.Field))
+            {
+                continue;
+            }
+
+            var descending = sort.Descending;
+            if (sort.Field == WorkflowInstanceSortField.CreatedAt)
+            {
+                creationDescending = descending;
+            }
+
+            sorted = sort.Field switch
+            {
+                WorkflowInstanceSortField.CreatedAt => sorted.OrderBy(static record => record.CreatedAt, descending),
+                WorkflowInstanceSortField.EndedAt => sorted.OrderBy(static record => record.EndedAt, descending),
+                WorkflowInstanceSortField.Status => sorted.OrderBy(static record => record.StatusOrder, descending),
+                WorkflowInstanceSortField.DefinitionName => sorted.OrderBy(static record => record.DefinitionName, descending),
+                WorkflowInstanceSortField.Title => sorted.OrderBy(static record => record.Title, descending),
+                _ => throw new ArgumentOutOfRangeException(nameof(instanceQuery), sort.Field, $"The workflow instance sort field '{sort.Field}' is not supported."),
+            };
         }
 
-        var sorted = instanceQuery.SortBy switch
+        // 次序键：创建时间降序（排序项里已有时跳过，同样是为了 SQL Server），写入序号与 ID 随排序项里创建时间的方向，没有时降序
+        if (creationDescending is null)
         {
-            WorkflowInstanceSortField.EndedAt => query.OrderBy(static record => record.EndedAt, descending),
-            WorkflowInstanceSortField.Status => query.OrderBy(static record => record.StatusOrder, descending),
-            WorkflowInstanceSortField.DefinitionName => query.OrderBy(static record => record.DefinitionName, descending),
-            WorkflowInstanceSortField.Title => query.OrderBy(static record => record.Title, descending),
-            _ => throw new ArgumentOutOfRangeException(nameof(instanceQuery), instanceQuery.SortBy, $"The workflow instance sort field '{instanceQuery.SortBy}' is not supported."),
-        };
-        return sorted.OrderBy(static record => record.CreatedAt, descending: true).OrderBy(static record => record.Sequence, descending: true).OrderBy(static record => record.Id, descending: true);
+            sorted = sorted.OrderBy(static record => record.CreatedAt, descending: true);
+        }
+
+        var tieDescending = creationDescending ?? true;
+        return sorted.OrderBy(static record => record.Sequence, tieDescending).OrderBy(static record => record.Id, tieDescending);
     }
 
     /// <summary>
