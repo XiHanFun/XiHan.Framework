@@ -531,7 +531,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 | `Http` | AllMatched | `Url`、`Method`、`Headers`、`Body`、`ContentType`、`TimeoutSeconds`、`ResultVariable`（缺省 `http`）、`FailOnErrorStatus`（缺省 `true`）；输出 `{ status, headers, body }`，JSON 响应解析为对象 |
 | `ExternalTask` | AllMatched | `Topic`、`Payload`；锁的时长由领取方在 `FetchAsync` 里给出 |
 
-`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。
+`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。5.0 不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了常见场景，脚本引擎属于第三方依赖。
 
 超时由活动自己计时、按令牌归因（RFC-0021，ADR-0097）：`TimeoutSeconds` 按引擎的 `TimeProvider` 落成定时取消，与这次调用的取消令牌链接后交给客户端，时限从发出请求到读完响应体。
 
@@ -542,7 +542,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 | 两个都没触发，客户端抛出取消（它自己的超时）或 `TimeoutException` | 同超时 |
 | `HttpRequestException` | 同码故障，`details.reason` 是异常消息 |
 
-测试里注入 `FakeTimeProvider`（在装配工作流特性之前登记为 `TimeProvider`），推进时钟即让请求超时，不用真实等待。5.0 不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了常见场景，脚本引擎属于第三方依赖。
+测试里注入 `FakeTimeProvider`（在装配工作流特性之前登记为 `TimeProvider`），推进时钟即让请求超时，不用真实等待。
 
 子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault` 回调父实例。
 
