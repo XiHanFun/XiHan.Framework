@@ -162,3 +162,5 @@ ADR-0094 第一节让 EF Core 特性启动时逐连接核对 SQLite 上由约定
 - 公开签名：`PersistenceMessages.ShardTimestampFormatMismatch` 与 `EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity` 新增（只增）；`EntityFrameworkCoreUnitOfWork` 的内部构造多一个参数。新配置键 `XiHan:Persistence:EntityFrameworkCore:VerifiedShardCapacity`（CLI 知识库 `configuration.json` 同步），值不合法启动失败。没有新错误码、表结构变化。
 - 不经工作单元、在作用域里直接解析 `DbContext` 读写分片的不在范围内。
 - 测试：EF Core 测试项目的 `EntityFrameworkCoreShardTimestampCheckTests` 3 例（处理器不碰库，分片上读写连接的打开次数就是核对次数）：旧库分片每次绑定都失败、别的租户照常、按换算式修好之后下一次绑定即通过且读回同一时刻、之后不再核对；合格分片 8 个并发首绑只核对一次（第一个核对打开连接后挂起，8 个都进入核对之后才放行），之后的绑定不碰库；分片库文件还不存在时不建出文件、不记下，放进旧库之后下一次绑定即失败。修改验证：去掉排队门，并发用例 3/3 失败。容量（收口时补）：上限 1 时两个分片交替绑定，记满后照常工作、被淘汰的分片再绑定重新核对一次且之后只看记录、被淘汰的分片上 8 个并发再绑只核对一次；`VerifiedShardCapacity` 取 `0`、`-1`、`1e3`、` 8`、`many` 都启动失败、消息带配置键。修改验证：不淘汰时容量用例失败，去掉排队门时两个并发用例都失败。
+
+> 修订（2026-11-02）：第五节「经管道是 `KERNEL_UNEXPECTED_001`（HTTP 500）、原因码 008」由 ADR-0099 第三节定为已定：不转成 400 的同码结果，也不另立码。
