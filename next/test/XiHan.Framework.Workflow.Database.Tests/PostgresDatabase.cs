@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// 每个测试一个临时 PostgreSQL 库，宿主装配 SqlSugar 持久化与数据库工作流特性。
 /// </summary>
 /// <remarks>
-/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（不含 <c>Database</c> 的连接串，如 <c>Host=127.0.0.1;Port=5432;Username=postgres;Password=postgres</c>），未设置即跳过。PostgreSQL 是行级锁，租约表不必放到另一个库（与 <see cref="SqliteDatabase"/> 不同）；定义列表、实例与待办的关键字在这里翻译成区分大小写的 <c>LIKE</c>，折叠后的查询列与关键字照样按字面匹配（ADR-0096）。释放时停止宿主并删库。
+/// 服务器来自环境变量 <see cref="EnvironmentVariable"/>（不含 <c>Database</c> 的连接串，如 <c>Host=127.0.0.1;Port=5432;Username=postgres;Password=postgres</c>），未设置即跳过。PostgreSQL 是行级锁，租约表不必放到另一个库（与 <see cref="SqliteDatabase"/> 不同）；定义列表、实例与待办的关键字在这里翻译成区分大小写、带转义的 <c>LIKE … ESCAPE '!'</c>（ADR-0098），小写折叠的查询列与关键字按字面匹配（ADR-0099 第四节）。释放时停止宿主并删库。
 /// </remarks>
 internal sealed class PostgresDatabase : IAsyncDisposable
 {

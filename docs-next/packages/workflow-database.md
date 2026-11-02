@@ -135,7 +135,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按创建时间降序、同刻按写入序号降序分页；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，升级前写入的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已折叠（见 [关键字](../guide/workflow#关键字)），SqlSugar 翻译出的 `LIKE` 里没有通配字符；分类、名字、状态等值；名字升序、版本降序；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值；名字升序、版本降序；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（同 4.x，ADR-0096、ADR-0099），升级前写入的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
@@ -180,7 +180,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 关键字查询列（ADR-0096、ADR-0099）：
 
 - 实例表（租户与平台）的 `SearchTitle` 改名 `SearchText`，两张书签表的 `SearchInstanceTitle` 改名 `SearchInstanceText`。`InitTables` 只加列不删列：它会加上新列，旧列留着（可空、框架不再读写），可以手工删掉。
-- 回填：实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
+- 第八批的全角替换撤销（ADR-0099 第四节）：折叠只剩不变文化小写，`%`、`_`、`[`、反斜杠不再换成全角。升级前写入的查询列——定义行 `SearchText`、书签行 `SearchTitle`，以及第八批的实例行 `SearchTitle` 与书签行 `SearchInstanceTitle`（已改名，见上一条）——里这四个字符存的是全角，按半角关键字搜不到；不含这四个字符的行不受影响，但值无法从旧列反推（原文本里的全角字符与替换出来的分不开），所以按下一条从 `Document` 重算，不要在旧值上做字符替换。
+- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
 
 ## 相关
 

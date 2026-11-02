@@ -261,7 +261,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
 
         if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
         {
-            // 任务标题，或实例一侧的标题、关联 ID、定义名任一包含即匹配（实例一侧一列里以分隔符隔开，折叠后的关键字里没有分隔符，不跨字段）；两边都已折叠，SqlSugar 翻译出的 LIKE 里没有通配字符；每列先判非空，升级前写入、还没回填的行不匹配
+            // 任务标题，或实例一侧的标题、关联 ID、定义名任一包含即匹配（实例一侧一列里以分隔符隔开，折叠后的关键字里没有分隔符，不跨字段）；两边都已小写折叠（EF Core 与 PostgreSQL、Oracle 的匹配区分大小写），按字面由持久化的 Contains 保证（ADR-0098）；每列先判非空，升级前写入、还没回填的行不匹配
             filtered = filtered.Where(new Specification<TRow>(record => (record.SearchTitle != null && record.SearchTitle.Contains(keyword)) || (record.SearchInstanceText != null && record.SearchInstanceText.Contains(keyword))));
         }
 

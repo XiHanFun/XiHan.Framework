@@ -207,7 +207,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
 
         if (WorkflowKeyword.Normalize(query.Keyword) is { } keyword)
         {
-            // 标题或关联 ID 包含即匹配（一列里以分隔符隔开，折叠后的关键字里没有分隔符，不跨字段）；两边都已折叠：SqlSugar 翻译出的 LIKE 里没有通配字符；先判非空，升级前写入、还没回填的行不匹配
+            // 标题或关联 ID 包含即匹配（一列里以分隔符隔开，折叠后的关键字里没有分隔符，不跨字段）；两边都已小写折叠（EF Core 与 PostgreSQL、Oracle 的匹配区分大小写），按字面由持久化的 Contains 保证（ADR-0098）；先判非空，升级前写入、还没回填的行不匹配
             filtered = filtered.Where(new Specification<TInstance>(record => record.SearchText != null && record.SearchText.Contains(keyword)));
         }
 

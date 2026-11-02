@@ -141,7 +141,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     /// 把定义查询的过滤项逐项翻译成条件。
     /// </summary>
     /// <remarks>
-    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。关键字对查询列做包含判断：两边都已折叠，没有 <c>LIKE</c> 的通配字符；先判非空，升级前写入、还没回填的行不匹配。
+    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。关键字对查询列做包含判断：两边都已小写折叠，按字面由持久化的 <c>Contains</c> 保证（RFC-0005，ADR-0098）；先判非空，升级前写入、还没回填的行不匹配。
     /// </remarks>
     private static EntityQuery<TRow> Filter(WorkflowDefinitionQuery query)
     {

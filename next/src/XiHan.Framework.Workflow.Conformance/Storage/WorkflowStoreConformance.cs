@@ -149,6 +149,9 @@ public abstract class WorkflowStoreConformance
             Assert.Equal(["inst-c"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "b_o" }).ConfigureAwait(false));
             Assert.Equal(["inst-a"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "50% c" }).ConfigureAwait(false));
             Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "50_" }).ConfigureAwait(false));
+            // 全角与半角是不同的字符（ADR-0099 第四节）
+            Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "50％" }).ConfigureAwait(false));
+            Assert.Empty(await IdsAsync(s, new WorkflowInstanceQuery { Keyword = "sub＿order" }).ConfigureAwait(false));
             Assert.Equal(1, (await s.Instances.CountAsync(null, new WorkflowInstanceQuery { Keyword = "sub_", StarterId = "starter-c" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             // 关联 ID 也被关键字匹配（同 4.x，ADR-0099）：不区分大小写、按包含；与只取顶层取交集；标题与关联 ID 不跨字段
             Assert.Equal(["inst-c", "inst-b"], await IdsAsync(s, new WorkflowInstanceQuery { Keyword = " DOC-1 " }).ConfigureAwait(false));
@@ -512,6 +515,10 @@ public abstract class WorkflowStoreConformance
             Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "CONF.A" }).ConfigureAwait(false));
             Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "exp_2026" }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "exp%2026" }).ConfigureAwait(false));
+            // 全角与半角是不同的字符（ADR-0099 第四节）
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "exp＿2026" }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "100％" }).ConfigureAwait(false));
+            Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "review＿doc" }).ConfigureAwait(false));
             Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { InstanceId = a.Id, AssigneeId = "bob", Keyword = "2026-07" }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "claimexp" }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Keyword = "07conf" }).ConfigureAwait(false));
@@ -546,7 +553,7 @@ public abstract class WorkflowStoreConformance
     /// 用例 11：定义查询按关键字、名字、分类与状态过滤，排序、分页与计数正确。
     /// </summary>
     /// <remarks>
-    /// 关键字去掉首尾空白、不区分大小写地包含在名字、显示名或说明里（ADR-0096）：<c>%</c> 与 <c>_</c> 按字面匹配，不跨字段匹配；整体替换后按新内容匹配。结果按名字升序、版本降序，总数不看分页，摘要带列表要的字段。
+    /// 关键字去掉首尾空白、不区分大小写地包含在名字、显示名或说明里（ADR-0096）：<c>%</c>、<c>_</c>、<c>[</c>、<c>\</c> 按字面匹配，与全角的 <c>％</c>、<c>＿</c>、<c>［</c>、<c>＼</c> 不视为相同（ADR-0099），不跨字段匹配；整体替换后按新内容匹配。结果按名字升序、版本降序，总数不看分页，摘要带列表要的字段。
     /// </remarks>
     [Fact]
     public async Task Definitions_Query_FiltersPagesAndCounts()
@@ -554,8 +561,8 @@ public abstract class WorkflowStoreConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var expense1 = Definition("conf-q-expense", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "Expense Claim", Category = "finance", Description = "Reimburse travel_costs at 50% rate" };
         var expense2 = Definition("conf-q-expense", 2, WorkflowDefinitionStatus.Draft) with { DisplayName = "Expense Claim", Category = "finance" };
-        var leave = Definition("conf-q-leave", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "请假申请", Category = "hr" };
-        var purchase = Definition("conf-q-purchase", 1, WorkflowDefinitionStatus.Disabled) with { Description = "Buy EQUIPMENT" };
+        var leave = Definition("conf-q-leave", 1, WorkflowDefinitionStatus.Published) with { DisplayName = "请假申请", Category = "hr", Description = @"Form C:\hr\[leave]" };
+        var purchase = Definition("conf-q-purchase", 1, WorkflowDefinitionStatus.Disabled) with { Description = "Buy EQUIPMENT at 10％ off" };
         await host.InPartitionAsync(null, async s => Assert.True((await s.Definitions.SaveAsync(null, [purchase, leave, expense2, expense1], CancellationToken.None).ConfigureAwait(false)).IsSuccess)).ConfigureAwait(false);
 
         await host.InPartitionAsync(null, async s =>
@@ -578,6 +585,19 @@ public abstract class WorkflowStoreConformance
             Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "50_" }).ConfigureAwait(false));
             Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "t%r" }).ConfigureAwait(false));
             Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "leave请" }).ConfigureAwait(false));
+
+            // [ 与 \ 也按字面（SQL Server 的 [ 字符类、PostgreSQL 与 MySQL 的 LIKE 缺省转义符都不起作用，以 \ 结尾的关键字照常查询）；
+            // 全角的 ％ ＿ ［ ＼ 与半角是不同的字符，互不匹配（ADR-0099 第四节撤销了第八批的全角替换）
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = @"C:\HR\[" }).ConfigureAwait(false));
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "[leave]" }).ConfigureAwait(false));
+            Assert.Equal([leave.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = @"c:\" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = @"hr\\[" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "［leave］" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "＼hr" }).ConfigureAwait(false));
+            Assert.Equal([purchase.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "10％" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "10%" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "50％" }).ConfigureAwait(false));
+            Assert.Empty(await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Keyword = "travel＿costs" }).ConfigureAwait(false));
 
             // 名字、分类、状态精确过滤，与关键字取交集
             Assert.Equal([expense2.Id, expense1.Id], await DefinitionIdsAsync(s, new WorkflowDefinitionQuery { Name = new WorkflowName("conf-q-expense") }).ConfigureAwait(false));

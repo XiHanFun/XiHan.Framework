@@ -87,19 +87,23 @@ public sealed class WorkflowModelTests
     }
 
     [Fact]
-    public void Keyword_FoldsCaseAndLikeWildcards_AndNeverSpansFields()
+    public void Keyword_FoldsCaseOnly_KeepsWildcardCharacters_AndNeverSpansFields()
     {
         Assert.Null(WorkflowKeyword.Normalize(null));
         Assert.Null(WorkflowKeyword.Normalize("  \t "));
         Assert.Equal("expense", WorkflowKeyword.Normalize("  Expense "));
-        // LIKE 的通配与转义字符换成全角同形字符，字段分隔符换成空格；折叠幂等
-        Assert.Equal("50％ off＿a［b]＼c d", WorkflowKeyword.Fold("50% OFF_a[b]\\c\u001Fd"));
+        // 只做不变文化小写与分隔符替换：% _ [ \ 与全角字符原样保留（ADR-0099 第四节）；折叠幂等
+        Assert.Equal("50% off_a[b]\\c dｅ％＿［＼", WorkflowKeyword.Fold("50% OFF_a[b]\\c\u001FdＥ％＿［＼"));
         Assert.Equal(WorkflowKeyword.Fold("A_b%"), WorkflowKeyword.Fold(WorkflowKeyword.Fold("A_b%")));
 
-        Assert.Equal("order\u001F\u001Fbuy ＿x", WorkflowKeyword.Join("Order", null, "Buy _X"));
+        Assert.Equal("order\u001F\u001Fbuy _x", WorkflowKeyword.Join("Order", null, "Buy _X"));
         var keyword = WorkflowKeyword.Normalize("BUY _x")!;
         Assert.True(WorkflowKeyword.Matches(keyword, "order", null, "Buy _X"));
         Assert.False(WorkflowKeyword.Matches(keyword, "order", null, "Buy aX"));
+        // 全角与半角是不同的字符
+        Assert.False(WorkflowKeyword.Matches(WorkflowKeyword.Normalize("50％")!, "50% off"));
+        Assert.False(WorkflowKeyword.Matches(WorkflowKeyword.Normalize("50%")!, "50％ off"));
+        Assert.True(WorkflowKeyword.Matches(WorkflowKeyword.Normalize(@"A\B[")!, @"x a\b[ y"));
         // 关键字折叠后不含分隔符，在拼成一列的值里也不会跨过字段的边界
         var spanning = WorkflowKeyword.Normalize("der\u001Fbuy")!;
         Assert.False(WorkflowKeyword.Matches(spanning, "order", "buy"));

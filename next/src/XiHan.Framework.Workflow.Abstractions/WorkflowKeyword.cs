@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions;
 /// 列表查询关键字的折叠与匹配规则。
 /// </summary>
 /// <remarks>
-/// 定义、实例与待办查询的 <c>Keyword</c> 都按这里匹配：关键字去掉首尾空白，空白视同未给；关键字与被搜的文本先折叠，再按序数判断包含（ADR-0096）。折叠是不变文化的小写，并把 SQL <c>LIKE</c> 的通配与转义字符 <c>%</c>、<c>_</c>、<c>[</c>、<c>\</c> 换成全角的 <c>％</c>、<c>＿</c>、<c>［</c>、<c>＼</c>，字段分隔符 U+001F 换成空格。数据库实现把被搜文本的折叠结果存进查询列，SQL 里比较的两边都不含通配字符，翻译成 <c>LIKE</c>（SqlSugar）还是 <c>instr</c> / <c>strpos</c>（EF Core）结果都与内存实现一致；代价是这四个 ASCII 字符与对应的全角字符视为相同。数据库的排序规则另有放宽（如 MySQL 缺省排序规则不区分重音）时，以排序规则为准。
+/// 定义、实例与待办查询的 <c>Keyword</c> 都按这里匹配：关键字去掉首尾空白，空白视同未给；关键字与被搜的文本先折叠，再按序数判断包含（ADR-0096）。折叠是不变文化的小写，字段分隔符 U+001F 换成空格；别的字符原样保留，<c>%</c>、<c>_</c>、<c>[</c>、<c>\</c> 按字面匹配，与全角的 <c>％</c>、<c>＿</c>、<c>［</c>、<c>＼</c> 是不同的字符（ADR-0099 第四节撤销了第八批把它们换成全角的做法）。数据库实现把被搜文本的折叠结果存进查询列、在 SQL 里对它做 <c>Contains</c>：按字面由持久化保证（RFC-0005「规约里的字符串匹配」，SqlSugar 在五种主库上译成带转义的 <c>LIKE</c>，EF Core 按字面）；两边都折叠成小写，是因为 EF Core 的 <c>Contains</c> 与 PostgreSQL、Oracle 的 <c>LIKE</c> 区分大小写，SQLite 的 <c>LIKE</c> 只对 ASCII 不区分——不折叠，各 Provider 与内存实现的结果就不一致。数据库的排序规则另有放宽（如 MySQL 缺省排序规则不区分重音）时，以排序规则为准；持久化还没保证字面匹配的库（ADR-0098 的兼容库）上，<c>%</c>、<c>_</c> 照那个库的 <c>LIKE</c> 当通配。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowKeyword
@@ -45,16 +45,9 @@ public static class WorkflowKeyword
         {
             for (var index = 0; index < source.Length; index++)
             {
-                // 先小写再换字符：全角的四个字符没有大小写，换出来的结果不受小写影响
-                span[index] = char.ToLowerInvariant(source[index]) switch
-                {
-                    '%' => '％',
-                    '_' => '＿',
-                    '[' => '［',
-                    '\\' => '＼',
-                    FieldSeparator => ' ',
-                    var other => other,
-                };
+                // 只做小写与分隔符替换：分隔符换成空格，关键字里就不会有它，一次包含判断不跨字段；按字面匹配交给持久化（ADR-0099 第四节）
+                var lowered = char.ToLowerInvariant(source[index]);
+                span[index] = lowered == FieldSeparator ? ' ' : lowered;
             }
         });
     }

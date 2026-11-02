@@ -324,6 +324,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "APPROVE 42" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t_2" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t%2" }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t＿2" }).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Equal(2, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "approve 7" }).ConfigureAwait(false)).ValueOrThrow().Total);
         // 定义名：没给显示名的 second、third 的标题就是它，titled 的标题不是、照样按定义名匹配
         Assert.Equal([second.Id, third.Id, titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = " CONF-QUERY " }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));

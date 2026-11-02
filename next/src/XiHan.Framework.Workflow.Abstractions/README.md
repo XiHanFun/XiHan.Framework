@@ -7,7 +7,7 @@
 | 契约 | 用途 |
 | --- | --- |
 | `WorkflowName`、`ActivityType`、`WorkflowIdentifiers` | 定义名（主题文法）、活动类型名、节点 / 转移 ID 文法与 UUID v7 标识 |
-| `WorkflowKeyword` | 列表查询关键字的规则：去首尾空白，不变文化小写并把 `LIKE` 的 `%` `_` `[` `` 换成全角同形字符后按序数包含，任一字段匹配、不跨字段（ADR-0096）；数据库实现以它写查询列 |
+| `WorkflowKeyword` | 列表查询关键字的规则：去首尾空白，不变文化小写后按序数包含，任一字段匹配、不跨字段（ADR-0096）；`%` `_` `[` `\` 按字面、与全角字符不同（按字面由持久化的 `Contains` 保证，ADR-0098、ADR-0099 第四节）；数据库实现以它写查询列 |
 | `WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy` | 定义：图、节点属性（`JsonObject`，字符串支持 `{{ 表达式 }}`）、输出映射、条件出边与默认出边、变量声明、重试、实例级超时（`Timeout` / `TimeoutAction`）、补偿（取消时 / 故障时） |
 | `WorkflowDefinitionBuilder`、`WorkflowDefinitionValidator`、`WorkflowJson` | 流式构造、发布前校验（`details.errors`）、源生成 JSON 往返（AOT） |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage`、`ActivityDescriptor` | 定义生命周期：草稿 → 发布 → 停用 / 归档，新版本；按标识批量；`Start.Cron` 的定义在发布时排定时启动；定义列表 `QueryAsync`（关键字匹配名字 / 显示名 / 说明、名字、分类、状态，名字升序、版本降序，过滤、分页与计数下推到存储，返回摘要的一页与总数，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002`，ADR-0096）；活动描述符供设计器 |

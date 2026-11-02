@@ -1512,6 +1512,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal([untitled.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "PARENT flow" }).ConfigureAwait(false)).Select(static instance => instance.Id));
         Assert.Equal([leave.Id], (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "e_r" }).ConfigureAwait(false)).Select(static instance => instance.Id));
         Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "50_" }).ConfigureAwait(false));
+        Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "e＿r" }).ConfigureAwait(false));
         Assert.Equal(3, (await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child" }).ConfigureAwait(false)).Count);
         Assert.Empty(await host.ListInstancesAsync(new WorkflowInstanceQuery { Keyword = "conf-q-child", TopLevelOnly = true }).ConfigureAwait(false));
 
