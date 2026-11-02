@@ -177,9 +177,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - 有独立库的租户，把它的行从平台库搬到它自己的库。
 - 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。
 
-关键字查询列（ADR-0096、ADR-0099）：
+关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 
-- 实例表（租户与平台）的 `SearchTitle` 改名 `SearchText`，两张书签表的 `SearchInstanceTitle` 改名 `SearchInstanceText`。`InitTables` 只加列不删列：它会加上新列，旧列留着（可空、框架不再读写），可以手工删掉。
+- 实例表（租户与平台）的 `SearchTitle` 改名 `SearchText`，两张书签表的 `SearchInstanceTitle` 改名 `SearchInstanceText`，列名已定（ADR-0101），表结构基线按新列名生成。`InitTables` 只加列不删列：它会加上新列，旧列留着（可空、框架不再读写），可以手工删掉。
 - 第八批的全角替换撤销（ADR-0099 第四节）：折叠只剩不变文化小写，`%`、`_`、`[`、反斜杠不再换成全角。升级前写入的查询列——定义行 `SearchText`、书签行 `SearchTitle`，以及第八批的实例行 `SearchTitle` 与书签行 `SearchInstanceTitle`（已改名，见上一条）——里这四个字符存的是全角，按半角关键字搜不到；不含这四个字符的行不受影响，但值无法从旧列反推（原文本里的全角字符与替换出来的分不开），所以按下一条从 `Document` 重算，不要在旧值上做字符替换。
 - 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
 
