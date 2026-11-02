@@ -156,7 +156,7 @@ public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 
 | 方法 | 返回 |
 | --- | --- |
-| `ReadRuntime()` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率 |
+| `ReadRuntime()` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率（用户名是运行进程的系统账户，不是登录凭据，`ToString()` 照常打印，ADR-0093） |
 | `ReadProcessor()` | `ProcessorInfo`：型号、厂商、架构、物理与逻辑核心、标称频率（MHz）、最后一级缓存、系统 CPU 使用率 |
 | `ReadMemory()` | `MemoryInfo`：总量、可用、空闲、缓存，以及已用与使用率 |
 | `ReadDisks()` | `DiskInfo` 列表：挂载点或盘符、设备、卷标、文件系统、类型、总量、空闲、当前用户可用，以及已用与使用率 |
