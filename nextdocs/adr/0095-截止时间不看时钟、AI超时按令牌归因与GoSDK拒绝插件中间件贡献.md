@@ -108,3 +108,5 @@ ADR-0092 第一节让 .NET 的进程外与进程内插件宿主在发现或加�
 
 - Go 插件的清单写了非空 `contributes.pipeline`：`plugin.Serve` 返回错误、不监听、不写握手行；`manifest.Read` / `Write` 返回 `PRIMITIVES_VALIDATION_001`。仓库里的示例插件都没写，不受影响。
 - 测试：`TestOnlyWasmPluginsMayContributeMiddleware`（进程外、进程内被拒并核对错误码与消息；Wasm 插件、能力包、Provider、空列表接受；`Write` 同样拒绝），`TestServeRejectsBadConfiguration` 补一例，改动前都失败。
+
+> 修订（2026-11-02）：第二节流式「等每个更新计时」由 ADR-0097 第二节定为已定。第二节的令牌归因推广到工作流的 `Http` 活动（活动持有超时令牌、按令牌归因，`WorkflowHttpClient.SendAsync` 去掉 `timeout` 参数），见 ADR-0097 第三节。

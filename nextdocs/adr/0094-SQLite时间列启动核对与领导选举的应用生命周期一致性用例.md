@@ -101,3 +101,5 @@ ADR-0091 第一节让调度引擎在应用不在服务状态（启动中、排�
 - 公开 API（`Scheduling.Conformance`，PublicAPI 同步）：新增抽象方法 `LeaderElectionConformance.StartNodeAsync(TimeProvider, IFeature)` 与用例方法 `Engine_HoldsTheLeaseOnlyWhileTheApplicationServes`。继承 `LeaderElectionConformance` 的自写 Provider 测试要实现 `StartNodeAsync`，否则编译不过：起一个用被测选举的调度节点（时钟、长轮询周期、`UseFeature(probe)`），给出全程在服务的竞争者；释放经管道的实现过不了这条用例，要改成不经管道（参照 `Scheduling.Database` 的 `LeaseRows.ReleaseAsync`）。
 - 运行时行为、配置、表结构不变。
 - 测试数：`Scheduling.InMemory.Tests` 32（新增 1、删去 1），`Scheduling.Database.Tests` 37（新增 1、删去 1），`Scheduling.Kubernetes.Tests` 8（新增 1）。
+
+> 修订（2026-11-02）：第一节「租户分片库不核对」由 ADR-0097 第五节修订：分片库在首次绑定时（工作单元开始、DbContext 建在分片上时）核对，不符即那次工作单元开不起来（同码，消息键 `persistence.schema.shard_timestamp_format_mismatch`），通过的分片只查一次，不符与库还不存在不记下。
