@@ -41,7 +41,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 依赖方向
 
-依赖 `Persistence.Abstractions`、`MultiTenancy.Abstractions`（分片绑定，能力可选）与 `Microsoft.EntityFrameworkCore`、`Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据；各关系型数据库的 EF Core Provider 本来就依赖它）。数据库驱动包（Sqlite、Npgsql、SqlServer）由应用引用。
+依赖 `Persistence.Abstractions`、`MultiTenancy.Abstractions`（分片绑定，能力可选）与 `Microsoft.EntityFrameworkCore`、`Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据；各关系型数据库的 EF Core Provider 本来就依赖它）。数据库驱动包（Sqlite、Npgsql、SqlServer）由应用引用；SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高——它带来的 `Microsoft.Data.Sqlite.Core` 10.0.13 修复了连接池激活的竞态（dotnet/efcore#39008），更低的版本带着它。本包不依赖任何 SQLite 包，不替应用钉这个版本（ADR-0097）。
 
 ## 状态
 

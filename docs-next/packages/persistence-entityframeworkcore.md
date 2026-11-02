@@ -35,7 +35,7 @@
 <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。
+5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高：它带来的 `Microsoft.Data.Sqlite.Core` 10.0.13 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），更低的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
 
 1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。

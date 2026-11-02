@@ -37,6 +37,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.5" />
     <PackageVersion Include="SqlSugarCore" Version="5.1.4.221" />
+    <!-- SqlSugarCore 声明的下限是 10.0.11，按下限解析就带着连接池激活的竞态（dotnet/efcore#39008，10.0.13 修复）：Persistence.SqlSugar 显式引用这一版，依赖带到使用方（ADR-0097） -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.23.0" />
     <PackageVersion Include="IP2Region.Net" Version="3.0.2" />
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
