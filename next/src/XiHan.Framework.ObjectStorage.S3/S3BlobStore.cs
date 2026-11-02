@@ -127,7 +127,7 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// 健康探测：连通性加条件写入的状态。
     /// </summary>
     /// <remarks>
-    /// 按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项），连通之后再看条件写入是否已确认：尚未确认时返回最近一次探测失败的错误，探明不认时返回不认的错误（注册表都记为 Degraded）。
+    /// 按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项），连通之后再看条件写入是否已确认：尚未确认时返回最近一次探测失败的错误（连不上，或启动之后才被拒绝、缺桶），探明不认时返回不认的错误（注册表都记为 Degraded）。
     /// </remarks>
     internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {

@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel;
@@ -21,10 +22,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 条件写入探测、启动时探明不认即失败与关闭条件写入（ADR-0089、ADR-0090）。
+/// 条件写入探测、启动时的配置错误即失败与关闭条件写入。
 /// </summary>
 /// <remarks>
-/// 探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务（尚未确认时的后台重试见 <see cref="S3ConditionalWriteRetryTests"/>）；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行。
+/// 启动时探明不认、被拒绝、缺桶都启动失败（ADR-0089、ADR-0090、ADR-0093）。探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务（启动时连不上之后的后台重试见 <see cref="S3ConditionalWriteRetryTests"/>）；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行。
 /// </remarks>
 public sealed class S3ConditionalWriteTests
 {
@@ -199,6 +200,63 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
+    public async Task Startup_Fails_WhenTheProbeIsDenied_OrTheProbeBucketIsMissing()
+    {
+        // 被拒绝：配置错误，启动这一刻就报出来（ADR-0093），内层是被拒的错误码，消息带出是哪一步
+        var denied = FakeS3Client.Create(Bucket);
+        denied.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
+        var clock = new FakeTimeProvider();
+        var logs = new LogCapture();
+        var failed = await Assert.ThrowsAsync<FrameworkException>(() => StartAsync(denied, clock, logs));
+        Assert.Equal(KernelErrors.FeatureStartFailed, failed.Code);
+        var inner = Assert.IsType<FrameworkException>(failed.InnerException);
+        Assert.Equal(ObjectStorageErrors.ProbeDenied, inner.Code);
+        Assert.Contains("AccessDenied", inner.Message, StringComparison.Ordinal);
+
+        // 不起后台重试：推进时钟不再探测；启动失败本身就是报告，条件写入的状态不另记"后台重试"的日志
+        var requests = denied.Requests.Count;
+        clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.Equal(requests, denied.Requests.Count);
+        Assert.DoesNotContain(logs.Entries, static e => e.Category == typeof(S3ConditionalWriteGate).FullName);
+
+        // 探测桶不存在：同样启动失败，消息指出桶名
+        var missing = await Assert.ThrowsAsync<FrameworkException>(() => StartAsync(FakeS3Client.Create(), new FakeTimeProvider()));
+        Assert.Equal(KernelErrors.FeatureStartFailed, missing.Code);
+        inner = Assert.IsType<FrameworkException>(missing.InnerException);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, inner.Code);
+
+        // 开了 EnsureBuckets：缺桶先建，启动通过
+        var ensured = FakeS3Client.Create();
+        await using var host = await StartAsync(ensured, ("XiHan:ObjectStorage:S3:EnsureBuckets", "true"));
+        Assert.Contains("PutBucket", ensured.Requests);
+        Assert.Equal("confirmed", Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName).Data["conditionalWrites"]);
+    }
+
+    [Fact]
+    public async Task NamedStore_IsNotCreated_WhenTheProbeIsDenied_OrTheProbeBucketIsMissing()
+    {
+        var denied = FakeS3Client.Create(Bucket);
+        denied.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
+        var missing = FakeS3Client.Create();
+        var provider = new S3BlobStoreProvider(new FakeTimeProvider(), NullLoggerFactory.Instance, options => options.ServiceUrl == "http://denied:9000" ? denied.AsClient() : missing.AsClient());
+        var registry = new BlobStores([provider], TimeProvider.System);
+        await using (registry)
+        {
+            // 配置错误在登记实例时就报给调用方：注册表原样返回 Provider 的错误码，不登记
+            var refused = await registry.GetOrAddAsync(new BlobStoreDefinition("denied", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://denied:9000", ["HealthBucket"] = Bucket }), CancellationToken.None);
+            Assert.Equal(ObjectStorageErrors.ProbeDenied, refused.Error?.Code);
+            var absent = await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket }), CancellationToken.None);
+            Assert.Equal(ObjectStorageErrors.BlobNotFound, absent.Error?.Code);
+            Assert.Empty(registry.Names);
+
+            // 下次取用重新探测：桶建好后建出
+            missing.AddBucket(Bucket);
+            Assert.True((await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket }), CancellationToken.None)).IsSuccess);
+            Assert.Equal(["absent"], registry.Names);
+        }
+    }
+
+    [Fact]
     public async Task Startup_ProbesAlongsideTheFirstHealthCheck()
     {
         var fake = FakeS3Client.Create(Bucket);
@@ -250,7 +308,7 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
-    public async Task NamedStore_ProbesOnCreation_CreatesAnUnconfirmedStore_AndRejectsOnlyInvalidDefinitions()
+    public async Task NamedStore_ProbesOnCreation_CreatesAnUnreachableStore_AndRejectsInvalidDefinitions()
     {
         var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
         await using (registry)
@@ -308,18 +366,25 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
-    public async Task RealService_RejectedCredentials_StartDegraded_AndRefuseWritesWithoutOverwrite()
+    public async Task RealService_RejectedCredentialsOrAMissingProbeBucket_FailTheStartup_AndTheNamedStoreCreation()
     {
         var configuration = S3TestServer.Configuration().Where(static p => !p.Key.EndsWith(":SecretKey", StringComparison.Ordinal)).Append(new(S3ObjectStorageOptions.ConfigurationSection + ":SecretKey", "wrong-secret-key")).ToList();
 
-        // 被拒绝只是尚未确认：照常启动，健康项降级并带出被拒的原因，不覆盖写入不可用
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration);
-        var status = Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
-        Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.ProbeDenied), (status.State, status.Error?.Code));
-        Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
-        var refused = await host.Services.GetRequiredService<IBlobStore>().PutAsync(S3TestServer.ProbeBucket, Guid.NewGuid().ToString("N"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, refused.Error?.Code);
-        Assert.Equal(ObjectStorageErrors.ProbeDenied, (string?)refused.Error!.Details!["reason"]);
+        // 密钥错：服务回 403，配置错误，启动失败（ADR-0093）
+        var failed = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration));
+        Assert.Equal(KernelErrors.FeatureStartFailed, failed.Code);
+        Assert.Equal(ObjectStorageErrors.ProbeDenied, Assert.IsType<FrameworkException>(failed.InnerException).Code);
+
+        // 命名实例同理：密钥错、探测桶不存在都不建，注册表原样返回错误码
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
+        await using (registry)
+        {
+            var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = "wrong-secret-key", ["HealthBucket"] = S3TestServer.ProbeBucket };
+            Assert.Equal(ObjectStorageErrors.ProbeDenied, (await registry.GetOrAddAsync(new BlobStoreDefinition("denied", "s3", settings), CancellationToken.None)).Error?.Code);
+            settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = "xihan-missing-" + Guid.NewGuid().ToString("N")[..8] };
+            Assert.Equal(ObjectStorageErrors.BlobNotFound, (await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", settings), CancellationToken.None)).Error?.Code);
+            Assert.Empty(registry.Names);
+        }
     }
 
     [Fact]
@@ -375,6 +440,26 @@ public sealed class S3ConditionalWriteTests
                 .. extra.Select(static e => new KeyValuePair<string, string?>(e.Key, e.Value)),
             ],
             services => services.AddSingleton(fake.AsClient()));
+
+    /// <summary>
+    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）。
+    /// </summary>
+    private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, LogCapture? logs = null)
+        => TestHost.StartAsync(
+            static b => b.UseFeature<S3ObjectStorageFeature>(),
+            [
+                new("XiHan:ObjectStorage:S3:ServiceUrl", "http://localhost:9000"),
+                new("XiHan:ObjectStorage:S3:HealthBucket", Bucket),
+            ],
+            services =>
+            {
+                services.AddSingleton(fake.AsClient());
+                services.AddSingleton<TimeProvider>(clock);
+                if (logs is not null)
+                {
+                    services.AddSingleton<ILoggerFactory>(logs);
+                }
+            });
 
     /// <summary>
     /// 只装配不启动，返回容器。

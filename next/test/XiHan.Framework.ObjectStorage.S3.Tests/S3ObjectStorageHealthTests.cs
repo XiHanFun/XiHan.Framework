@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// 健康项 <c>objectstorage.s3.connection</c>。
 /// </summary>
 /// <remarks>
-/// 选项里的健康桶与探测间隔解析；真实服务可用时宿主启动后条目 Ready——配了健康桶就 HEAD 它，关闭条件写入且不配健康桶时列桶（未设置 <c>XIHAN_TEST_S3</c> 时跳过）。健康桶不存在时照常启动、条目降级：条件写入开启时原因是探测桶不存在（尚未确认，后台重试），关闭时是 HEAD 失败（ADR-0089、ADR-0090）。
+/// 选项里的健康桶与探测间隔解析；真实服务可用时宿主启动后条目 Ready——配了健康桶就 HEAD 它，关闭条件写入且不配健康桶时列桶（未设置 <c>XIHAN_TEST_S3</c> 时跳过）。健康桶不存在时：条件写入开启即启动失败（探测桶不存在是配置错误，ADR-0093），关闭时照常启动、条目降级（HEAD 失败）。
 /// </remarks>
 public sealed class S3ObjectStorageHealthTests
 {
@@ -56,21 +56,18 @@ public sealed class S3ObjectStorageHealthTests
     }
 
     [Fact]
-    public async Task MissingHealthBucket_StartsDegraded_WithOrWithoutConditionalWrites()
+    public async Task MissingHealthBucket_FailsTheStartup_WithConditionalWrites_AndStartsDegradedWithout()
     {
         var missing = "xihan-missing-" + Guid.NewGuid().ToString("N")[..8];
         var configuration = S3TestServer.Configuration().Where(static p => !p.Key.EndsWith(":HealthBucket", StringComparison.Ordinal)).ToList();
         configuration.Add(new(S3ObjectStorageOptions.ConfigurationSection + ":HealthBucket", missing));
 
-        // 条件写入开启：启动探测在桶里写探测键，桶不存在只是尚未确认——照常启动，条目降级，原因指出探测桶
-        await using (var probing = await TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration))
-        {
-            var health = probing.App.Health();
-            var status = Assert.Single(health.Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
-            Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.BlobNotFound), (status.State, status.Error?.Code));
-            Assert.Contains(missing, status.Error!.Message, StringComparison.Ordinal);
-            Assert.True(health.Ready);
-        }
+        // 条件写入开启：启动探测在桶里写探测键，桶不存在是配置错误——启动失败，原因指出探测桶（ADR-0093）
+        var failed = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(static b => b.UseFeature<S3ObjectStorageFeature>(), configuration));
+        Assert.Equal(Kernel.KernelErrors.FeatureStartFailed, failed.Code);
+        var probe = Assert.IsType<FrameworkException>(failed.InnerException);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, probe.Code);
+        Assert.Contains(missing, probe.Message, StringComparison.Ordinal);
 
         // 关闭条件写入：不探测，HEAD 抛出由探针宿主记成 Degraded；应用仍就绪
         configuration.Add(new(S3ObjectStorageOptions.ConfigurationSection + ":ConditionalWrites", "false"));

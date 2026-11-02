@@ -4,6 +4,7 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Hosting;
@@ -17,10 +18,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 条件写入尚未确认时照常启动、后台重试与写入时就地探测（ADR-0090）。
+/// 启动时连不上照常启动、后台重试与写入时就地探测。
 /// </summary>
 /// <remarks>
-/// 用内存替身 <see cref="FakeS3Client"/> 控制服务何时连得上、何时认条件写入，用 <see cref="FakeTimeProvider"/> 推进退避，不靠真实等待；推进之前先等后台重试排定计时器（<see cref="S3ConditionalWriteGate.WhenRetryScheduledAsync"/>）。等待都带真实时间的上限，只为失败时不挂死。
+/// 尚未确认时的行为（ADR-0090），以及启动之后才被拒绝或缺桶（ADR-0093）。照常启动的只有启动时连不上（启动时被拒绝、缺桶即启动失败，见 <see cref="S3ConditionalWriteTests"/>）。用内存替身 <see cref="FakeS3Client"/> 控制服务何时连得上、何时认条件写入，用 <see cref="FakeTimeProvider"/> 推进退避，不靠真实等待；推进之前先等后台重试排定计时器（<see cref="S3ConditionalWriteGate.WhenRetryScheduledAsync"/>）。等待都带真实时间的上限，只为失败时不挂死。
 /// </remarks>
 public sealed class S3ConditionalWriteRetryTests
 {
@@ -109,43 +110,70 @@ public sealed class S3ConditionalWriteRetryTests
     }
 
     [Fact]
-    public async Task Startup_WhenTheProbeIsDenied_StartsDegraded_AndRecoversOncePermissionIsGranted()
+    public async Task Background_FindingTheProbeDenied_FailsTheHealthItem_KeepsRetrying_AndRecoversOncePermissionIsGranted()
     {
         var fake = FakeS3Client.Create(Bucket);
-        fake.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
+        fake.Fault = static request => request == "PutObject" ? new HttpRequestException("Connection refused.") : null;
         var clock = new FakeTimeProvider();
-        await using var host = await StartAsync(fake, clock);
-
-        // 被拒绝不是终态：照常启动，健康项降级并带出被拒的原因，不覆盖写入不可用
-        var status = Connection(host);
-        Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.ProbeDenied), (status.State, status.Error?.Code));
-        Assert.Equal(ObjectStorageErrors.ProbeDenied, (string?)(await Put(host.Services.GetRequiredService<IBlobStore>(), "a.txt")).Error!.Details!["reason"]);
-
-        // 权限改好后，后台的下一次探测通过，不必重启
+        var logs = new LogCapture();
+        await using var host = await StartAsync(fake, clock, logs);
         var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+        var store = host.Services.GetRequiredService<IBlobStore>();
+
+        // 启动时连不上照常启动；第 1 秒连上时凭据已被吊销（或配置本来就错，启动时探不到）
         await Within(gate.WhenRetryScheduledAsync(1));
-        fake.Fault = static _ => null;
+        fake.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
         clock.Advance(TimeSpan.FromSeconds(1));
+        await Within(gate.WhenRetryScheduledAsync(2));
+
+        // 配置错误要人处理：健康项 Failed（不混同于连不上的 Degraded），应用不停止、仍就绪；
+        // 不覆盖写入仍是暂不可用（503），原因是被拒，不访问写入目标
+        var status = Connection(host);
+        Assert.Equal((LifecycleState.Failed, ObjectStorageErrors.ProbeDenied, ObjectStorageMessages.ConditionalWriteProbeDenied), (status.State, status.Error?.Code, status.Error?.MessageKey));
+        Assert.Equal("unconfirmed", status.Data["conditionalWrites"]);
+        Assert.True(host.App.Health().Ready);
+        var requests = fake.Requests.Count;
+        var refused = await Put(store, "a.txt");
+        Assert.Equal((ObjectStorageErrors.ConditionalWriteUnconfirmed, ObjectStorageErrors.ProbeDenied), (refused.Error?.Code, (string?)refused.Error!.Details!["reason"]));
+        Assert.Equal(requests, fake.Requests.Count);
+
+        // 照常重试：下一次排在 2 秒后；权限改好后那一次探测通过，不必重启
+        Assert.False(gate.Settled.IsCompleted);
+        fake.Fault = static _ => null;
+        clock.Advance(TimeSpan.FromSeconds(2));
         await Within(gate.Settled);
-        Assert.Equal(LifecycleState.Ready, Connection(host).State);
+        status = Connection(host);
+        Assert.Equal((LifecycleState.Ready, "confirmed"), (status.State, status.Data["conditionalWrites"]));
+        Assert.True((await Put(store, "a.txt")).IsSuccess);
+
+        // 日志：连不上是 Warning，之后被拒是 Error，确认是 Information，各一条
+        Assert.Equal([LogLevel.Warning, LogLevel.Error, LogLevel.Information], GateLogs(logs).Select(static e => e.Level));
+        Assert.Contains(ObjectStorageErrors.ProbeDenied, GateLogs(logs)[1].Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Startup_WhenTheProbeBucketIsMissing_StartsDegraded_AndRecoversOnceTheBucketExists()
+    public async Task Background_FindingTheProbeBucketMissing_FailsTheHealthItem_AndRecoversOnceTheBucketExists()
     {
         var fake = FakeS3Client.Create();
+        fake.Fault = static request => request == "PutObject" ? new HttpRequestException("Connection refused.") : null;
         var clock = new FakeTimeProvider();
         await using var host = await StartAsync(fake, clock);
-
-        // 缺桶不是终态：照常启动，健康项的错误是探测桶不存在（而不是笼统的连通性失败）
-        var status = Connection(host);
-        Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.BlobNotFound, ObjectStorageMessages.ConditionalWriteProbeBucketMissing), (status.State, status.Error?.Code, status.Error?.MessageKey));
-
-        // 运维事后建桶：后台的下一次探测通过
         var gate = host.Services.GetRequiredService<S3ConditionalWriteGate>();
+
+        // 启动时连不上照常启动；连上时探测桶不存在（被删了，或配置本来就错）
         await Within(gate.WhenRetryScheduledAsync(1));
-        fake.AddBucket(Bucket);
+        fake.Fault = static _ => null;
         clock.Advance(TimeSpan.FromSeconds(1));
+        await Within(gate.WhenRetryScheduledAsync(2));
+
+        // 健康项 Failed，错误是探测桶不存在（而不是笼统的连通性失败）；不覆盖写入暂不可用，原因是缺桶
+        var status = Connection(host);
+        Assert.Equal((LifecycleState.Failed, ObjectStorageErrors.BlobNotFound, ObjectStorageMessages.ConditionalWriteProbeBucketMissing), (status.State, status.Error?.Code, status.Error?.MessageKey));
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (string?)(await Put(host.Services.GetRequiredService<IBlobStore>(), "a.txt")).Error!.Details!["reason"]);
+
+        // 运维建桶：后台的下一次探测通过（条目的连通性部分照旧等下一轮 HEAD，启动时那次 HEAD 也因缺桶失败）
+        fake.AddBucket(Bucket);
+        clock.Advance(TimeSpan.FromSeconds(2));
         await Within(gate.Settled);
         Assert.Equal("confirmed", Connection(host).Data["conditionalWrites"]);
         Assert.True((await Put(host.Services.GetRequiredService<IBlobStore>(), "a.txt")).IsSuccess);
@@ -227,7 +255,7 @@ public sealed class S3ConditionalWriteRetryTests
     }
 
     [Fact]
-    public async Task NamedStore_WhenTheProbeCannotConnect_IsCreatedDegraded_AndRecovers_ButAnUnsupportedServiceIsNotCreated()
+    public async Task NamedStore_WhenTheProbeCannotConnect_IsCreated_SurvivesALaterDenial_AndRecovers_ButAnUnsupportedServiceIsNotCreated()
     {
         var reachableLater = FakeS3Client.Create(Bucket);
         reachableLater.Fault = static request => request == "PutObject" ? new HttpRequestException("Connection refused.") : null;
@@ -244,11 +272,18 @@ public sealed class S3ConditionalWriteRetryTests
             Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, (await Put(store, "a.txt")).Error?.Code);
             Assert.Equal(ObjectStorageErrors.StoreUnavailable, (await provider.ProbeAsync(store, CancellationToken.None)).Error?.Code);
 
-            // 后台重试通过：健康探测恢复，不覆盖写入照常
+            // 连上时被拒（凭据已被吊销）：实例仍登记着、照常重试，健康探测带出被拒（注册表记为 Degraded）
             var gate = Assert.IsType<S3BlobStore>(store).ConditionalWrites;
             await Within(gate.WhenRetryScheduledAsync(1));
-            reachableLater.Fault = static _ => null;
+            reachableLater.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
             clock.Advance(TimeSpan.FromSeconds(1));
+            await Within(gate.WhenRetryScheduledAsync(2));
+            Assert.Equal(ObjectStorageErrors.ProbeDenied, (await provider.ProbeAsync(store, CancellationToken.None)).Error?.Code);
+            Assert.Equal(["media"], registry.Names);
+
+            // 权限改好后后台重试通过：健康探测恢复，不覆盖写入照常
+            reachableLater.Fault = static _ => null;
+            clock.Advance(TimeSpan.FromSeconds(2));
             await Within(gate.Settled);
             Assert.True((await provider.ProbeAsync(store, CancellationToken.None)).IsSuccess);
             Assert.True((await Put(store, "a.txt")).IsSuccess);
@@ -310,9 +345,21 @@ public sealed class S3ConditionalWriteRetryTests
     private static Task<T> Within<T>(Task<T> task) => task.WaitAsync(TimeSpan.FromSeconds(30));
 
     /// <summary>
+    /// 条件写入状态的日志，按写入顺序。
+    /// </summary>
+    private static List<(LogLevel Level, string Category, string Message)> GateLogs(LogCapture logs)
+        => [.. logs.Entries.Where(static e => e.Category == typeof(S3ConditionalWriteGate).FullName)];
+
+    /// <summary>
     /// 以替身为客户端、以假时钟启动只装 S3 的宿主。
     /// </summary>
     private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, params (string Key, string Value)[] extra)
+        => StartAsync(fake, clock, logs: null, extra);
+
+    /// <summary>
+    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）。
+    /// </summary>
+    private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, LogCapture? logs, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
             static b => b.UseFeature<S3ObjectStorageFeature>(),
             [
@@ -324,5 +371,9 @@ public sealed class S3ConditionalWriteRetryTests
             {
                 services.AddSingleton(fake.AsClient());
                 services.AddSingleton<TimeProvider>(clock);
+                if (logs is not null)
+                {
+                    services.AddSingleton<ILoggerFactory>(logs);
+                }
             });
 }

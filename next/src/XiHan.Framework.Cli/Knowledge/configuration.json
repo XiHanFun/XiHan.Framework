@@ -959,7 +959,7 @@
           "key": "ConditionalWrites",
           "type": "boolean",
           "default": "true",
-          "summary": "不覆盖写入由条件写入（If-None-Match）保证：开启时启动探测，探明不认即启动失败；连不上、被拒绝或桶不存在照常启动、后台重试，探明之前 Overwrite = false 的写入返回 OBJECTSTORAGE_UNAVAILABLE_004；关闭时一律 OBJECTSTORAGE_UNAVAILABLE_003"
+          "summary": "不覆盖写入由条件写入（If-None-Match）保证：开启时启动探测，探明不认、凭据被拒或探测桶不存在即启动失败；只有连不上照常启动、后台重试，探明之前 Overwrite = false 的写入返回 OBJECTSTORAGE_UNAVAILABLE_004；关闭时一律 OBJECTSTORAGE_UNAVAILABLE_003"
         },
         {
           "key": "Region",

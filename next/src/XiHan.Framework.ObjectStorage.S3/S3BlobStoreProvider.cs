@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 命名存储实例的 S3 Provider（名 <c>s3</c>）。
 /// </summary>
 /// <remarks>
-/// 设置的键同 <see cref="S3ObjectStorageOptions"/>（不含探测间隔），每个实例按自己的端点、区域与密钥建客户端，实例被替换、移除或注册表停止时停止重试并释放客户端。<c>ConditionalWrites</c> 开启（缺省）时建实例时在实例的 <c>HealthBucket</c> 里探一次服务是否认条件写入（含分片上传的条件完成，ADR-0089）：只有探明不认才不建，抛出携带 <c>OBJECTSTORAGE_UNAVAILABLE_003</c> 的 <see cref="FrameworkException"/>，注册表转成同码的失败结果、不登记实例；连不上、被拒绝或探测桶不存在照常建出实例，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>（ADR-0090）；关闭时建实例不发请求。健康探测按实例的 <c>HealthBucket</c> HEAD 桶（没配时列桶），连通之后再看条件写入是否已确认。实例同时是 <c>IBlobMultipartStore</c> 与 <c>IBlobUrlSigner</c>。
+/// 设置的键同 <see cref="S3ObjectStorageOptions"/>（不含探测间隔），每个实例按自己的端点、区域与密钥建客户端，实例被替换、移除或注册表停止时停止重试并释放客户端。<c>ConditionalWrites</c> 开启（缺省）时建实例时在实例的 <c>HealthBucket</c> 里探一次服务是否认条件写入（含分片上传的条件完成，ADR-0089）：探明不认、被拒绝或探测桶不存在都不建，抛出携带 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>、<c>OBJECTSTORAGE_DENIED_002</c> 或 <c>OBJECTSTORAGE_NOTFOUND_001</c> 的 <see cref="FrameworkException"/>，注册表转成同码的失败结果、不登记实例（ADR-0093）；只有连不上照常建出实例，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>（ADR-0090）；关闭时建实例不发请求。健康探测按实例的 <c>HealthBucket</c> HEAD 桶（没配时列桶），连通之后再看条件写入是否已确认。实例同时是 <c>IBlobMultipartStore</c> 与 <c>IBlobUrlSigner</c>。
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3BlobStoreProvider : IBlobStoreProvider
@@ -74,8 +74,8 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
         var conditionalWrites = S3ConditionalWriteGate.Create(client, options, multipart: true, _clock, _logger, definition.Name);
         try
         {
-            // 每个实例各探一次：命名实例可能指向不同的服务。只有探明不认才不建——不覆盖写入不会落到不认条件写入的服务上；
-            // 暂时连不上、被拒绝或缺桶照常建出，后台重试，探明之前不覆盖写入由状态拒绝
+            // 每个实例各探一次：命名实例可能指向不同的服务。探明不认、被拒绝或缺桶都不建——不覆盖写入不会落到不认条件写入的服务上，
+            // 配置错误在登记实例时就报给调用方；只有暂时连不上照常建出，后台重试，探明之前不覆盖写入由状态拒绝
             (await conditionalWrites.StartAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
             return new S3BlobStore(client, options, _clock, conditionalWrites, owned: true);
         }

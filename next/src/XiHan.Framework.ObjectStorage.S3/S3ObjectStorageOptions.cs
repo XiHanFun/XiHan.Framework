@@ -90,7 +90,7 @@ public sealed record S3ObjectStorageOptions
     /// 不覆盖写入是否由条件写入保证。
     /// </summary>
     /// <remarks>
-    /// 默认开启：缺省实例启动时、命名实例建出时在 <see cref="HealthBucket"/> 里探测服务是否认 <c>If-None-Match: *</c>。探明不认即启动失败或不建实例；连不上、被拒绝或桶不存在只是尚未确认，照常启动、在后台重试，探明之前 <c>Overwrite = false</c> 的写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>——任何时候都不带着可能静默覆盖的不覆盖写入运行（ADR-0089、ADR-0090）。关闭表示应用明确不需要不覆盖写入：不探测、<see cref="HealthBucket"/> 可以不配，<c>Overwrite = false</c> 的写入与分片上传一律返回 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>，不访问存储。
+    /// 默认开启：缺省实例启动时、命名实例建出时在 <see cref="HealthBucket"/> 里探测服务是否认 <c>If-None-Match: *</c>。探明不认、凭据被拒或探测桶不存在即启动失败或不建实例；只有连不上是尚未确认，照常启动、在后台重试，探明之前 <c>Overwrite = false</c> 的写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>——任何时候都不带着可能静默覆盖的不覆盖写入运行（ADR-0089、ADR-0090、ADR-0093）。关闭表示应用明确不需要不覆盖写入：不探测、<see cref="HealthBucket"/> 可以不配，<c>Overwrite = false</c> 的写入与分片上传一律返回 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>，不访问存储。
     /// </remarks>
     public bool ConditionalWrites { get; init; } = true;
 

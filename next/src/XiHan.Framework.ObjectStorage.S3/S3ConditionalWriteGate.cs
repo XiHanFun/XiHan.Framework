@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 一个 S3 存储实例的条件写入状态：探明服务认条件写入之前，不放行不覆盖写入。
 /// </summary>
 /// <remarks>
-/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认即返回失败（调用方启动失败或不建实例）；连不上、被拒绝、探测桶不存在都是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态。
+/// 状态只往前走：尚未确认 → 已确认，或尚未确认 → 不认；关闭条件写入时一直是关闭（ADR-0089、ADR-0090）。启动或建实例时经 <see cref="StartAsync"/> 探一次：探明不认、被拒绝、探测桶不存在都返回失败（配置问题要早暴露，调用方启动失败或不建实例，ADR-0093）；只有连不上是尚未确认，照常启动，在后台按退避重试（第一次 <see cref="InitialRetryDelay"/> 后，每次加倍，最长 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/>，按注入的时钟计时），有了终态即停止。启动之后的探测才被拒绝或缺桶时仍是尚未确认、照常重试，健康项 Failed。不覆盖写入经 <see cref="RefuseAsync"/> 放行或拒绝：尚未确认时等正在进行的探测，或距上一次探测满最小间隔时就地探一次（每个实例同一时刻只有一个探测，后台重试与写入共用），仍未确认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。健康项经 <see cref="Annotate"/> 与 <see cref="Health"/> 反映当前状态。
 /// </remarks>
 internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDisposable
 {
@@ -125,6 +125,14 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     private Task? _retrying;
 
     /// <summary>
+    /// 启动或建实例时的那次探测是否已放行（<see cref="StartAsync"/> 返回了成功）。
+    /// </summary>
+    /// <remarks>
+    /// 放行之前的配置错误由调用方以启动失败或不建实例报告，不再另记日志；放行之后的配置错误才记 Error 日志。
+    /// </remarks>
+    private bool _started;
+
+    /// <summary>
     /// 是否已停止（停止后不再起新的探测）。
     /// </summary>
     private bool _stopped;
@@ -164,8 +172,11 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         Disabled,
 
         /// <summary>
-        /// 尚未确认：还没探过，或探测连不上、被拒绝、探测桶不存在。
+        /// 尚未确认：还没探过，或探测连不上。
         /// </summary>
+        /// <remarks>
+        /// 启动之后的探测被拒绝、探测桶不存在也停在这里（配置错误，健康项 Failed，照常重试，ADR-0093）。
+        /// </remarks>
         Unconfirmed,
 
         /// <summary>
@@ -226,10 +237,10 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         => new(client, options, multipart: false, clock, NullLogger.Instance, "unprobed", options.ConditionalWrites ? GateState.Confirmed : GateState.Disabled);
 
     /// <summary>
-    /// 启动或建实例时探一次，尚未确认就起后台重试。
+    /// 启动或建实例时探一次，连不上就起后台重试。
     /// </summary>
     /// <remarks>
-    /// 只有探明服务不认条件写入时返回失败（<see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>），调用方据此启动失败或不建实例；连不上、被拒绝、探测桶不存在都返回成功，状态是尚未确认。调用方的取消原样抛出。重复调用不再起第二个后台重试。
+    /// 探明服务不认条件写入（<see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>）、探测被拒绝（<see cref="ObjectStorageErrors.ProbeDenied"/>）或探测桶不存在（<see cref="ObjectStorageErrors.BlobNotFound"/>）时返回该失败，调用方据此启动失败或不建实例，不起后台重试；只有连不上（<see cref="ObjectStorageErrors.StoreUnavailable"/>）返回成功，状态是尚未确认（ADR-0093）。调用方的取消原样抛出。重复调用不再起第二个后台重试。
     /// </remarks>
     internal async ValueTask<Result> StartAsync(CancellationToken cancellationToken)
     {
@@ -237,6 +248,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         {
             if (_state is not GateState.Unconfirmed)
             {
+                _started = true;
                 return Result.Success();
             }
         }
@@ -249,7 +261,14 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
                 return Result.Failure(unsupported);
             }
 
-            // 尚未确认（含被拒绝与缺桶）：不阻止启动，在后台按退避重试；停止后不再起
+            // 被拒绝与缺桶是配置错误：修好它要改凭据或建桶，启动这一刻就报出来，不带着它进入服务（ADR-0093）
+            if (_state is GateState.Unconfirmed && _error is { } misconfigured && IsConfigurationError(misconfigured))
+            {
+                return Result.Failure(misconfigured);
+            }
+
+            _started = true;
+            // 只剩连不上（S3 晚于应用就绪、网络抖动）：不阻止启动，在后台按退避重试；停止后不再起
             if (_state is GateState.Unconfirmed && _retrying is null && !_stopped)
             {
                 var stopping = _stopping.Token;
@@ -302,7 +321,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 把条件写入的状态并进连通性的健康条目。
     /// </summary>
     /// <remarks>
-    /// 数据 <c>conditionalWrites</c> 为 <c>confirmed</c> / <c>unconfirmed</c> / <c>unsupported</c> / <c>disabled</c>。尚未确认时 Degraded，错误是最近一次探测失败（连通性探测成功也一样）；不认时 Failed，错误是不认的错误；其余照连通性的状态。
+    /// 数据 <c>conditionalWrites</c> 为 <c>confirmed</c> / <c>unconfirmed</c> / <c>unsupported</c> / <c>disabled</c>。尚未确认时错误是最近一次探测失败（连通性探测成功也一样）：连不上 Degraded，被拒绝或探测桶不存在 Failed；不认时 Failed，错误是不认的错误；其余照连通性的状态。
     /// </remarks>
     internal ContributorStatus Annotate(ContributorStatus status)
     {
@@ -320,6 +339,8 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         {
             // 不认是终态，要换服务或关闭条件写入后重启：与"暂时降级"区分开
             GateState.Unsupported => status with { State = LifecycleState.Failed, Error = error, Data = data },
+            // 启动之后才被拒绝或缺桶是配置错误，要人改凭据或建桶（改好后重试自动恢复）：同样 Failed，不混同于连不上
+            GateState.Unconfirmed when error is not null && IsConfigurationError(error) => status with { State = LifecycleState.Failed, Error = error, Data = data },
             GateState.Unconfirmed => status with { State = LifecycleState.Degraded, Error = error ?? status.Error, Data = data },
             _ => status with { Data = data },
         };
@@ -329,7 +350,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 条件写入的状态作为探测结果（命名实例的健康项用）。
     /// </summary>
     /// <remarks>
-    /// 已确认与关闭为成功；尚未确认与不认为失败，错误同 <see cref="Annotate"/>。
+    /// 已确认与关闭为成功；尚未确认与不认为失败，错误同 <see cref="Annotate"/>（注册表对 Provider 的探测失败一律记为 Degraded，被拒绝与缺桶也是）。
     /// </remarks>
     internal Result Health()
     {
@@ -440,6 +461,14 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     }
 
     /// <summary>
+    /// 探测失败是配置错误：被拒绝（<see cref="ObjectStorageErrors.ProbeDenied"/>）或探测桶不存在（<see cref="ObjectStorageErrors.BlobNotFound"/>）。
+    /// </summary>
+    /// <remarks>
+    /// 启动或建实例时遇到即失败；启动之后遇到时健康项 Failed、记 Error 日志，仍照常重试。其余的尚未确认（连不上、超时、服务端错误）是暂时的。
+    /// </remarks>
+    private static bool IsConfigurationError(Error error) => error.Code is ObjectStorageErrors.ProbeDenied or ObjectStorageErrors.BlobNotFound;
+
+    /// <summary>
     /// 状态名。
     /// </summary>
     private static string Describe(GateState state) => state switch
@@ -520,7 +549,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// 记下一次探测的结论。
     /// </summary>
     /// <remarks>
-    /// 只在尚未确认时改变状态：通过 → 已确认，不认 → 不认，其余仍是尚未确认、记下错误；状态或错误码变化时记日志。
+    /// 只在尚未确认时改变状态：通过 → 已确认，不认 → 不认，其余仍是尚未确认、记下错误；状态或错误码变化时记日志（启动或建实例那次探测的配置错误除外，调用方以失败报告它）。
     /// </remarks>
     private void Record(Result outcome)
     {
@@ -528,10 +557,12 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         GateState current;
         string? previousCode;
         Error? error;
+        bool started;
         lock (_sync)
         {
             previous = _state;
             previousCode = _error?.Code;
+            started = _started;
             _inflight = null;
             _lastAttemptEnded = _clock.GetUtcNow();
             if (_state is GateState.Unconfirmed)
@@ -557,11 +588,6 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
             error = _error;
         }
 
-        if (current != previous)
-        {
-            _settled.TrySetResult();
-        }
-
         switch (current)
         {
             case GateState.Confirmed when previous is GateState.Unconfirmed && previousCode is not null:
@@ -571,9 +597,24 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
                 LogUnsupported(_logger, _store, error.Code, error.Message);
                 break;
             case GateState.Unconfirmed when error is not null && !string.Equals(previousCode, error.Code, StringComparison.Ordinal):
-                // 只在原因变化时记：稳定的失败（一直连不上）不随每次重试刷屏
-                LogUnconfirmed(_logger, _store, error.Code, error.Message);
+                // 只在原因变化时记：稳定的失败（一直连不上）不随每次重试刷屏；
+                // 配置错误在启动放行之前由调用方以启动失败报告，放行之后才记，而且是要人处理的 Error
+                if (!IsConfigurationError(error))
+                {
+                    LogUnconfirmed(_logger, _store, error.Code, error.Message);
+                }
+                else if (started)
+                {
+                    LogMisconfigured(_logger, _store, error.Code, error.Message);
+                }
+
                 break;
+        }
+
+        // 记完日志再宣告终态：等终态的一方（测试、停止流程）看到的日志已经完整
+        if (current != previous)
+        {
+            _settled.TrySetResult();
         }
     }
 
@@ -654,6 +695,12 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Conditional writes of S3 store '{Store}' are not confirmed yet ({Code}: {Message}); writes without overwrite are refused until a probe succeeds, retrying in the background.")]
     private static partial void LogUnconfirmed(ILogger logger, string store, string code, string message);
+
+    /// <summary>
+    /// 启动之后的探测被拒绝或探测桶不存在（或原因变了）。
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "The conditional write probe of S3 store '{Store}' failed because of its configuration ({Code}: {Message}); writes without overwrite are refused. Grant the credentials access to the probe key or create the probe bucket; the probe keeps retrying in the background.")]
+    private static partial void LogMisconfigured(ILogger logger, string store, string code, string message);
 
     /// <summary>
     /// 重试后确认了条件写入。
