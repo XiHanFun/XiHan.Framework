@@ -175,7 +175,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
-- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](../guide/ai#超时与取消)。
+- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](../guide/ai#超时与取消)。
 
 | 错误码 | 何时出现 |
 | --- | --- |

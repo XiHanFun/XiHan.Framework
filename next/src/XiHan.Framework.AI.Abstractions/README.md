@@ -28,7 +28,7 @@ var reply = await chat.CompleteAsync(new AIChatRequest
 
 错误：Provider 未配置或种类无工厂 → `AI_NOTFOUND_001`；提示词不存在 → `AI_NOTFOUND_002`；工具不存在 → `AI_NOTFOUND_003`；护栏拦截 → `AI_DENIED_001`；模型不可达 → `AI_UNAVAILABLE_001`，超时 → `AI_TIMEOUT_001`；没有知识库 Provider → `AI_UNAVAILABLE_002`；嵌入维度不一致 → `AI_VALIDATION_002`。
 
-超时与取消（RFC-0022「超时与取消」，ADR-0095）：`IAIChat` 与知识库流水线调用 Provider 时，把它的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider。完整应答的时限覆盖 Provider 的整次调用（含它自己的函数调用循环与其中的工具调用），嵌入是每次嵌入批调用，流式是等每个更新（含第一个）的时长、调用方处理更新的时间不算。归因只看令牌：超时令牌已触发即 `AI_TIMEOUT_001`（流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`，交给管道按截止令牌归因；两个都没触发时 Provider 抛出的取消视为它自己的传输超时。直接从目录解析的客户端不经这一层。
+超时与取消（RFC-0022「超时与取消」，ADR-0095）：`IAIChat` 与知识库流水线调用 Provider 时，把它的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider。完整应答的时限覆盖 Provider 的整次调用（含它自己的函数调用循环与其中的工具调用），嵌入是每次嵌入批调用，流式是等每个更新（含第一个）的时长、调用方处理更新的时间不算——这是已定的做法（ADR-0097）：不设整条流的总时限（会截断正常的长回答），也不退回不计时（卡住的连接没有上限），总时长由调用方的取消令牌或截止时间限制。归因只看令牌：超时令牌已触发即 `AI_TIMEOUT_001`（流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`，交给管道按截止令牌归因；两个都没触发时 Provider 抛出的取消视为它自己的传输超时。直接从目录解析的客户端不经这一层。
 
 AI 配置不热更新（ADR-0074）：`XiHan:AI` 的全部配置——Provider、默认 Provider、提示词、护栏、工具名覆盖、知识库——在装配时读一次，改了要重启应用。框架不监听配置变化，`IAIProviderCatalog.Invalidate` 只丢弃缓存的客户端、用同一份选项重建；提示词目录、工具目录、护栏、知识库选项与提示增强器都在创建时取定。
 

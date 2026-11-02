@@ -151,6 +151,8 @@ public sealed class AskAssistant(IAIChat chat) : IOperation<AskRequest, AskRespo
 | 摄入、检索 | 每一次嵌入批调用 |
 | `StreamAsync` | 等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限 |
 
+流式按每次更新计时是已定的做法（ADR-0097）：不改成整条流的总时限——那会把正常输出的长回答、调用方处理得慢的流截断；也不退回不计时——卡住的连接就没有上限，流里的超时也没有归因。要限制一次对话的总时长，给 `StreamAsync` 传自己的取消令牌，或给调用设截止时间（只有调用方取消时枚举抛出 `OperationCanceledException`）。
+
 归因只看令牌，Provider 抛出与接住取消后正常返回是同一个回答：
 
 | 触发的令牌 | `CompleteAsync`、摄入、检索 | `StreamAsync` 的枚举 |
