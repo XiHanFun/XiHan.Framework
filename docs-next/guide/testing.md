@@ -64,7 +64,7 @@ dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --
 
 ### SQLite 文件库
 
-用例用临时的 SQLite 文件库时，宿主停止后先清这个库的连接池再删文件：`using var connection = new SqliteConnection(连接串); SqliteConnection.ClearPool(connection);`——连接池按连接串分组，用例自己在连接串后追加了参数（如 `Default Timeout`）的，那个连接串也清一次。不要在用例里调 `SqliteConnection.ClearAllPools()`：它清的是整个进程的连接池，xUnit 并行跑的别的用例此刻正在打开的连接会被 Microsoft.Data.Sqlite 当作泄漏的连接回收并关掉句柄（它在池锁之外先置活动标记、再记外层连接，清池恰好落在两步之间），那个用例随即以 `ObjectDisposedException`（`SQLitePCL.sqlite3`）失败，SqlSugar 建表时报成「需要系统表权限」；负载越高越容易碰到。给连接串加 `Pooling=False` 也能避开，但每次开连接都要重新打开文件，并行负载下实测慢一倍多。用 SqlSugar 的宿主停止后，清池之前先 `GC.Collect(); GC.WaitForPendingFinalizers();`：SqlSugar 在 SQLite 上读数据后不释放命令，事务里用过的命令被回收后，它的预编译语句要等终结器才 finalize，在此之前连接虽已关闭，库仍占着文件，删除偶发「文件被另一进程使用」。框架自己的数据库测试项目都按这两条做。
+用例用临时的 SQLite 文件库时，宿主停止后先清这个库的连接池再删文件：`using var connection = new SqliteConnection(连接串); SqliteConnection.ClearPool(connection);`——连接池按连接串分组，用例自己在连接串后追加了参数（如 `Default Timeout`）的，那个连接串也清一次。不要在用例里调 `SqliteConnection.ClearAllPools()`：它清的是整个进程的连接池，xUnit 并行跑的别的用例此刻正在打开的连接会被 Microsoft.Data.Sqlite 当作泄漏的连接回收并关掉句柄（它在池锁之外先置活动标记、再记外层连接，清池恰好落在两步之间），那个用例随即以 `ObjectDisposedException`（`SQLitePCL.sqlite3`）失败，SqlSugar 建表时报成「需要系统表权限」；负载越高越容易碰到。给连接串加 `Pooling=False` 也能避开，但每次开连接都要重新打开文件，并行负载下实测慢一倍多。用 SqlSugar 的宿主停止后，清池之前先 `GC.Collect(); GC.WaitForPendingFinalizers();`：SqlSugar 在 SQLite 上读数据后不释放命令（已报上游 [DotNetNext/SqlSugar#1461](https://github.com/DotNetNext/SqlSugar/issues/1461)），事务里用过的命令被回收后，它的预编译语句要等终结器才 finalize，在此之前连接虽已关闭，库仍占着文件，删除偶发「文件被另一进程使用」。框架自己的数据库测试项目都按这两条做。
 
 ## 测一个中间件
 
