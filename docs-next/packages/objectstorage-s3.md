@@ -105,6 +105,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 - 后台重试：第一次 1 秒后，之后间隔加倍，最长 `HealthProbeIntervalSeconds`（缺省 15 秒），按容器里的 `TimeProvider` 计时；有了结论即停，应用停止或命名实例释放时也停。
 - `Overwrite = false` 的写入、分片上传的发起与完成：有探测在进行就等它；没有而距上一次探测满 1 秒，就地再探一次（每个实例同一时刻只有一个探测，后台重试与写入共用）；仍未确认返回 `OBJECTSTORAGE_UNAVAILABLE_004`（HTTP 503，参数 `reason` 是最近一次探测失败的错误码），不访问写入目标，不退回先查再写。覆盖写入、读取、删除、列举与预签名照常。
 - 健康项 `objectstorage.s3.connection` 的错误是最近一次探测失败的错误码（即便 HEAD 成功），数据 `conditionalWrites` 为 `unconfirmed`：连不上为 Degraded；连上后才被拒绝或缺桶为 Failed（配置错误要人处理），应用聚合为 Degraded、仍就绪，不覆盖写入仍是 `OBJECTSTORAGE_UNAVAILABLE_004`（`reason` 为 `OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），不以 403 / 404 回给这次写入的调用方。探测通过后即时恢复，不等下一轮健康探测。命名实例的健康项 `objectstorage.store.<name>` 一律 Degraded（注册表的限制），错误同上。
+- 启动之后才被拒绝或缺桶时继续重试、缺省实例健康项 Failed，是已定的做法（ADR-0097）：不改为停止重试（权限或桶修好之后还得重启），也不只记 Degraded（与连不上分不开，看不出要人处理）。
 - 已确认之后凭据被吊销或桶被删除：已确认是终态，不再探测；读写照常访问存储、按错误映射失败（被拒等服务端错误为 `OBJECTSTORAGE_UNAVAILABLE_001`），连通性的 HEAD 失败让健康项 Degraded。
 
 `ConditionalWrites = false` 只给明确不需要不覆盖写入的应用（只做覆盖写入，或凭据只读，或服务实测不认条件写入）：不探测，`HealthBucket` 可以不配；`Overwrite = false` 的写入、分片上传的发起与完成一律返回 `OBJECTSTORAGE_UNAVAILABLE_003`，不访问存储，框架不做没有保证的先查再写。覆盖写入、读取、删除、列举与预签名不受影响。关掉之后"只在不存在时写入"在这个存储上不再可用：需要它的业务改用不会冲突的键（如带随机后缀），或改为覆盖写入（`BlobPutOptions` 缺省就是覆盖写入）。
