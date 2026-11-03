@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Values;
 
@@ -19,7 +20,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class HttpActivity : IActivity
+public sealed partial class HttpActivity : IActivity
 {
     /// <summary>
     /// 属性：URL（模板）
@@ -148,7 +149,10 @@ public sealed class HttpActivity : IActivity
         }
         catch (HttpRequestException exception)
         {
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", exception.Message)));
+            // 故障存进实例、经接口返回，连接异常的消息常带目标主机与端口：reason 只写类型，完整异常只进日志
+            LogRequestFailed(context.Services.GetRequiredService<ILoggerFactory>().CreateLogger<HttpActivity>(), exception);
+            var type = exception.GetType();
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", type.FullName ?? type.Name)));
         }
 
         using (response)
@@ -294,4 +298,10 @@ public sealed class HttpActivity : IActivity
             ["truncated"] = truncated,
         };
     }
+
+    /// <summary>
+    /// HTTP 请求没有发出去或没有响应
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The HTTP activity could not complete its request.")]
+    private static partial void LogRequestFailed(ILogger logger, Exception exception);
 }

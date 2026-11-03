@@ -195,6 +195,9 @@ public sealed class RabbitMQPublisherConfirmTests
         var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await broker.PublishManyAsync(Topic, [Envelope("a"), Envelope("b")], CancellationToken.None));
 
         Assert.Equal(MessagingErrors.BrokerUnavailable, exception.Code);
+        // 框架异常的消息会进发件箱行（ADR-0108）：只写框架自己的文字，代理的异常放在内层
+        Assert.DoesNotContain("connection reset", exception.Message, StringComparison.Ordinal);
+        Assert.IsType<IOException>(exception.InnerException);
         Assert.Equal(2, Assert.Single(fake.Channels).Published.Count);
     }
 

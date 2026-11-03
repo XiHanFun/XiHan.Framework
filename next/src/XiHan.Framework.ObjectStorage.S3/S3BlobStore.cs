@@ -6,6 +6,7 @@ using System.Net;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
@@ -23,8 +24,13 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不探测条件写入（由调用方负责服务认它），也不拥有客户端，释放什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
+public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
 {
+    /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
     /// <summary>
     /// 自定义元数据在 S3 头里的前缀
     /// </summary>
@@ -69,8 +75,10 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// <remarks>
     /// 客户端归调用方（或容器）所有。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>
     /// </remarks>
-    public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
+    public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<S3BlobStore>();
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -84,8 +92,10 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// <remarks>
     /// <paramref name="owned"/> 为真时客户端与条件写入的状态归本实例所有，释放实例即停止重试、释放客户端（命名实例）；为假时归容器（缺省实例）
     /// </remarks>
-    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, S3ConditionalWriteGate conditionalWrites, bool owned)
+    internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory, S3ConditionalWriteGate conditionalWrites, bool owned)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<S3BlobStore>();
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -243,7 +253,8 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
                 }, cancellationToken).ConfigureAwait(false);
                 foreach (var error in response.DeleteErrors ?? [])
                 {
-                    failed[error.Key] = Unavailable(error.Code + ": " + error.Message);
+                    // 服务端给的文字不进错误，错误码足够区分
+                    failed[error.Key] = Unavailable(error.Code);
                 }
             }
             catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
@@ -840,11 +851,25 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     /// <summary>
     /// 存储不可用
     /// </summary>
-    private static Error Unavailable(Exception exception) => Unavailable(exception.Message);
+    /// <remarks>
+    /// SDK 的异常消息可能带端点与桶名，而这个错误会返回给调用方：<c>reason</c> 只写类型，完整异常只进日志
+    /// </remarks>
+    private Error Unavailable(Exception exception)
+    {
+        LogOperationFailed(_logger, exception);
+        var type = exception.GetType();
+        return Unavailable(type.FullName ?? type.Name);
+    }
 
     /// <summary>
     /// 存储不可用
     /// </summary>
     private static Error Unavailable(string reason)
         => Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));
+
+    /// <summary>
+    /// 存储操作失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "An S3 operation of the blob store failed.")]
+    private static partial void LogOperationFailed(ILogger logger, Exception exception);
 }

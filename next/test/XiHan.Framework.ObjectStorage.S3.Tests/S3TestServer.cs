@@ -3,6 +3,7 @@
 
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
@@ -138,7 +139,7 @@ internal static class S3TestServer
     {
         var client = Client();
         EnsureBucket(client, bucket);
-        return new S3BlobStore(client, Options(), TimeProvider.System);
+        return new S3BlobStore(client, Options(), TimeProvider.System, NullLoggerFactory.Instance);
     }
 
     /// <summary>

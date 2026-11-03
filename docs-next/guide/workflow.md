@@ -659,7 +659,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | 活动的超时令牌已触发（不论调用方是否也已取消，不论客户端抛出取消还是处理器接住取消后交回了响应） | 节点故障 `WORKFLOW_UNEXPECTED_001`，消息键 `workflow.http.timed_out`（没有参数），响应不写进变量 |
 | 只有调用方取消 | 抛出 `OperationCanceledException`：整个操作随调用回滚，不记成节点故障；交回的响应同样不写进变量 |
 | 两个都没触发，客户端抛出取消（它自己的超时）或 `TimeoutException` | 同超时 |
-| `HttpRequestException` | 同码故障，`details.reason` 是异常消息 |
+| `HttpRequestException` | 同码故障，`details.reason` 只写异常类型的全名，完整异常进日志（故障会存进实例、经接口返回，连接异常的消息常带目标主机与端口，ADR-0115） |
 
 测试里注入 `FakeTimeProvider`（在装配工作流特性之前登记为 `TimeProvider`），推进时钟即让请求超时，不用真实等待。
 
@@ -710,7 +710,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | 把故障作为错误返回给调用方 | `instance.Fault.ToError()`：带键、参数与内层的错误，宿主在 Egress 按调用方的区域翻译 |
 | 在调用之外按收件人的区域渲染（通知、邮件） | `using (MessageScope.Use(null, recipientLocale)) { text = fault.Localize(); }` |
 
-引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。应用或第三方给的文本——活动抛出的异常消息、HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），状态名不进文案，参数 `status` 是枚举名。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
+引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。活动抛出时 `reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；要让调用方看到说明，活动返回失败，不靠抛异常。应用或第三方给的文本——HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），状态名不进文案，参数 `status` 是枚举名。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
 
 ### 设计期诊断
 

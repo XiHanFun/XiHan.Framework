@@ -192,7 +192,7 @@ public static class AuditTestExtensions
 | 错误码 | 何时出现 |
 | --- | --- |
 | `AUDITING_VALIDATION_001` | 页大小越界、起止颠倒、续页令牌不是非负整数 |
-| `AUDITING_UNAVAILABLE_001` | 查询时存储抛出基础设施异常，`reason` 是异常消息 |
+| `AUDITING_UNAVAILABLE_001` | 查询时存储抛出基础设施异常，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 
 ## 相关
 

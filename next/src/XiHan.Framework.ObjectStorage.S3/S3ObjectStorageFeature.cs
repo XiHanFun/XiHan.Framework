@@ -120,7 +120,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
         // 条件写入的状态是缺省实例与健康项共用的单例；提供分片上传时探测也核对分片的条件完成
         var multipart = _providesMultipart;
         context.Services.TryAddSingleton(sp => S3ConditionalWriteGate.Create(sp.GetRequiredService<IAmazonS3>(), options, multipart, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>().CreateLogger<S3ConditionalWriteGate>(), "default"));
-        context.Services.TryAddSingleton(sp => new S3BlobStore(sp.GetRequiredService<IAmazonS3>(), options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<S3ConditionalWriteGate>(), owned: false));
+        context.Services.TryAddSingleton(sp => new S3BlobStore(sp.GetRequiredService<IAmazonS3>(), options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<S3ConditionalWriteGate>(), owned: false));
         // 走到这里本包已被选为 objectstorage.blob，是缺省存储；其余能力被选中就注册（兜底选出的也注册）
         context.Services.TryAddSingleton<IBlobStore>(static sp => sp.GetRequiredService<S3BlobStore>());
         if (_providesMultipart)

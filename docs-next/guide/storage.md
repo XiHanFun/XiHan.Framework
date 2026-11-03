@@ -433,7 +433,7 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 | `OBJECTSTORAGE_DENIED_001` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | 条件写入探测被存储拒绝（S3：凭据无效、只读或无权写探测键；启动或建实例时即失败，启动之后才被拒时健康项 Failed、后台照常重试，已定，ADR-0097） |
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败 |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | 不覆盖写入暂不可用：S3 兼容服务是否认条件写入尚未确认（启动时连不上，后台在重试；之后的探测被拒绝或缺桶时同样返回它；HTTP 503，探测通过后自动恢复） |

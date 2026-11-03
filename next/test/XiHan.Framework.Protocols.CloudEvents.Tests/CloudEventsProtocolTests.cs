@@ -234,7 +234,15 @@ public sealed class CloudEventsProtocolTests
         Assert.Equal(CloudEventsErrors.WebhookFailed, failed.Error?.Code);
         Assert.Equal(500, failed.Error?.Details?["status"]);
         outbound.Unreachable = true;
-        Assert.Equal(CloudEventsErrors.WebhookUnreachable, (await publisher.PublishAsync("orders", envelope, CancellationToken.None)).Error?.Code);
+        var unreachable = await publisher.PublishAsync("orders", envelope, CancellationToken.None);
+        Assert.Equal(CloudEventsErrors.WebhookUnreachable, unreachable.Error?.Code);
+        // 连接异常的消息常带订阅方的地址：reason 只写类型，完整异常进日志
+        Assert.Equal(typeof(HttpRequestException).FullName, unreachable.Error?.Details?["reason"]);
+        Assert.DoesNotContain("connection refused", unreachable.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+        var logs = new LogCapture();
+        var logging = new CloudEventsWebhookPublisher(app.Services.GetRequiredService<IHttpClientFactory>(), app.Services.GetRequiredService<CloudEventsProtocolOptions>(), logs);
+        await logging.PublishAsync("orders", envelope, CancellationToken.None);
+        Assert.IsType<HttpRequestException>(Assert.Single(logs.Entries, static entry => entry.Exception is not null).Exception);
     }
 
     [Fact]

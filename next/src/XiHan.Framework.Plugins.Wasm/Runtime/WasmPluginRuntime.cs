@@ -844,7 +844,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 Background(() => HandleCrashAsync(instance, new Error(PluginErrors.Timeout, PluginMessages.ProcessTimeout, MessageArguments.Of(("id", Manifest.Id), ("phase", export)))));
                 return new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded);
             default:
-                var crashed = Error.Unexpected(PluginErrors.Crashed, PluginMessages.ModuleTrapped, details: MessageArguments.Of(("id", Manifest.Id), ("trap", outcome.Detail)));
+                // 这个错误会返回给调用方，陷阱原文可能带模块内部的函数名：错误里只写陷阱种类，原文只进日志
+                LogCallCrashed(Logger, Manifest.Id, export, outcome.Detail);
+                var crashed = Error.Unexpected(PluginErrors.Crashed, PluginMessages.ModuleTrapped, details: MessageArguments.Of(("id", Manifest.Id), ("trap", outcome.Summary)));
                 Background(() => HandleCrashAsync(instance, crashed));
                 return crashed;
         }
@@ -1262,4 +1264,10 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Stop call to Wasm plugin {PluginId} failed with {Code}; dropping the instance.")]
     private static partial void LogStopFailed(ILogger logger, string pluginId, string code);
+
+    /// <summary>
+    /// 调用崩溃
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Calling '{Export}' of WebAssembly plugin '{PluginId}' crashed: {Detail}")]
+    private static partial void LogCallCrashed(ILogger logger, string pluginId, string export, string? detail);
 }

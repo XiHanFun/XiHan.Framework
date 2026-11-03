@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
@@ -88,7 +89,7 @@ public sealed class TenantShardScopeTests
         Assert.False((await plain.BindTenantAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Throws<ArgumentException>(() => plain.BindTenantAsync(" ", CancellationToken.None).AsTask().GetAwaiter().GetResult());
 
-        var failing = new TenantShardScope(new TenantStoreShardResolver(new UnreachableStore(), new MultiTenancyOptions()));
+        var failing = new TenantShardScope(new TenantStoreShardResolver(new UnreachableStore(), new MultiTenancyOptions(), NullLoggerFactory.Instance));
         var failed = await failing.BindTenantAsync("acme", CancellationToken.None);
         Assert.Equal(MultiTenancyErrors.ShardUnavailable, failed.Error?.Code);
         Assert.False(failing.Shard.HasValue);

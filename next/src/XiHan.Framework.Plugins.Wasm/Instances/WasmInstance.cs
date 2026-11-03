@@ -184,12 +184,12 @@ internal sealed class WasmInstance : IDisposable
         catch (TrapException exception)
         {
             return exception.Type == TrapCode.Interrupt
-                ? WasmCallOutcome.Failed(WasmCallStatus.Timeout, exception.Message)
-                : WasmCallOutcome.Failed(WasmCallStatus.Trapped, $"{exception.Type}: {exception.Message}");
+                ? WasmCallOutcome.Failed(WasmCallStatus.Timeout, exception.Message, exception.Type.ToString())
+                : WasmCallOutcome.Failed(WasmCallStatus.Trapped, $"{exception.Type}: {exception.Message}", exception.Type.ToString());
         }
         catch (WasmtimeException exception)
         {
-            return WasmCallOutcome.Failed(WasmCallStatus.Faulted, exception.Message);
+            return WasmCallOutcome.Failed(WasmCallStatus.Faulted, exception.Message, exception.GetType().FullName);
         }
     }
 

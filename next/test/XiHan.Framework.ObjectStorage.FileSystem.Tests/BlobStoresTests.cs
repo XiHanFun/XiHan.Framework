@@ -4,6 +4,8 @@
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
@@ -42,7 +44,7 @@ public sealed class BlobStoresTests : IDisposable
             ("XiHan:ObjectStorage:Stores:broken:RootPath", Path.Combine(_root.Path, "broken")),
             ("XiHan:ObjectStorage:Stores:broken:MaxTotalBytes", "lots"),
             ("XiHan:ObjectStorage:Stores:Invalid_Name:Provider", "filesystem"));
-        var registry = new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System)], TimeProvider.System, configuration);
+        var registry = new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance, configuration);
         await using (registry)
         {
             // 名字不合法的配置节不算实例
@@ -63,13 +65,13 @@ public sealed class BlobStoresTests : IDisposable
         }
 
         Assert.Throws<ArgumentException>(static () => new BlobStoreDefinition("Upper", "filesystem", new Dictionary<string, string>()));
-        Assert.Throws<ArgumentException>(() => new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System), new FileSystemBlobStoreProvider(TimeProvider.System)], TimeProvider.System));
+        Assert.Throws<ArgumentException>(() => new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance), new FileSystemBlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance));
     }
 
     [Fact]
     public async Task Health_FollowsEachInstance_AndQuotaExhaustionDegrades()
     {
-        var registry = new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System)], TimeProvider.System);
+        var registry = new BlobStores([new FileSystemBlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var tiny = (await registry.GetOrAddAsync(Definition("tiny", ("RootPath", Path.Combine(_root.Path, "tiny")), ("MaxTotalBytes", "4")), CancellationToken.None)).ValueOrThrow();
@@ -85,10 +87,41 @@ public sealed class BlobStoresTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAndProbeFailures_ReportOnlyTheExceptionType_AndLogTheFullException()
+    {
+        const string secret = "C:/data/blobs/tenant-a";
+        var logs = new LogCapture();
+        var provider = new FaultingProvider { CreateFault = new IOException($"Access to the path '{secret}' is denied.") };
+        await using var registry = new BlobStores([provider], TimeProvider.System, logs);
+
+        var refused = await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None);
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, refused.Error?.Code);
+        Assert.Equal(typeof(IOException).FullName, refused.Error?.Details?["reason"]);
+        Assert.DoesNotContain(secret, refused.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+        var created = Assert.Single(logs.Entries, static entry => entry.Exception is not null);
+        Assert.Equal(LogLevel.Warning, created.Level);
+        Assert.Same(provider.CreateFault, created.Exception);
+
+        // 探测持续抛出：第一次 Warning，之后 Debug；健康快照里只有类型
+        provider.CreateFault = null;
+        provider.ProbeFault = new IOException($"The device behind '{secret}' is not ready.");
+        (await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None)).ValueOrThrow();
+        await registry.ProbeAsync(CancellationToken.None);
+        await registry.ProbeAsync(CancellationToken.None);
+
+        var status = Assert.Single(registry.Check());
+        Assert.Equal(LifecycleState.Degraded, status.State);
+        Assert.Equal(typeof(IOException).FullName, status.Error?.Details?["reason"]);
+        var probed = logs.Entries.Where(entry => ReferenceEquals(entry.Exception, provider.ProbeFault)).Select(static entry => entry.Level).ToList();
+        Assert.Contains(LogLevel.Warning, probed);
+        Assert.Contains(LogLevel.Debug, probed);
+    }
+
+    [Fact]
     public async Task Instances_AreDisposedWhenReplacedRemovedOrStopped()
     {
         var provider = new CountingProvider();
-        var registry = new BlobStores([provider], TimeProvider.System);
+        var registry = new BlobStores([provider], TimeProvider.System, NullLoggerFactory.Instance);
         CountingStore first, second, third;
         await using (registry)
         {
@@ -143,6 +176,33 @@ public sealed class BlobStoresTests : IDisposable
     /// </summary>
     private static BlobStoreDefinition Counting(string name, string version)
         => new(name, "counting", new Dictionary<string, string> { ["Version"] = version });
+
+    /// <summary>
+    /// 按脚本抛出的 Provider
+    /// </summary>
+    private sealed class FaultingProvider : IBlobStoreProvider
+    {
+        /// <summary>
+        /// 建实例时抛出的异常
+        /// </summary>
+        public Exception? CreateFault { get; set; }
+
+        /// <summary>
+        /// 探测时抛出的异常
+        /// </summary>
+        public Exception? ProbeFault { get; set; }
+
+        /// <inheritdoc />
+        public string Name => "counting";
+
+        /// <inheritdoc />
+        public ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
+            => CreateFault is { } fault ? throw fault : ValueTask.FromResult<IBlobStore>(new CountingStore());
+
+        /// <inheritdoc />
+        public ValueTask<Result> ProbeAsync(IBlobStore store, CancellationToken cancellationToken)
+            => ProbeFault is { } fault ? throw fault : ValueTask.FromResult(Result.Success());
+    }
 
     /// <summary>
     /// 记录释放次数的 Provider：设置原样接受，探测总是成功

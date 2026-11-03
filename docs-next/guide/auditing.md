@@ -337,7 +337,7 @@ builder.AddXiHan(xihan => xihan
 | 错误码 | 何时出现 |
 | --- | --- |
 | `AUDITING_VALIDATION_001` | 查询不合法：页大小越界、起止颠倒、续页令牌不可识别 |
-| `AUDITING_UNAVAILABLE_001` | 审计存储不可达（数据库存储的查询抛出基础设施异常，`reason` 是异常消息） |
+| `AUDITING_UNAVAILABLE_001` | 审计存储不可达（数据库存储的查询抛出基础设施异常，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）） |
 | `KERNEL_CANCELLED_001` | 事件的结果：调用被取消且管道没有写入结果 |
 | `KERNEL_UNEXPECTED_001` | 事件的结果：调用抛出未处理异常且管道没有写入结果 |
 

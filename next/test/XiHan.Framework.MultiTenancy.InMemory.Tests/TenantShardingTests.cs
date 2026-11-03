@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
@@ -36,7 +38,7 @@ public sealed class TenantShardingTests
                 new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c" } },
             ],
         });
-        var resolver = new TenantStoreShardResolver(store, new MultiTenancyOptions { ShardCacheSize = 2 });
+        var resolver = new TenantStoreShardResolver(store, new MultiTenancyOptions { ShardCacheSize = 2 }, NullLoggerFactory.Instance);
 
         Assert.Equal("Host=a", (await resolver.ResolveAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
         Assert.False((await resolver.ResolveAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
@@ -60,11 +62,18 @@ public sealed class TenantShardingTests
     [Fact]
     public async Task Resolver_ReturnsUnavailable_WhenStoreThrows()
     {
-        var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions());
+        var logs = new LogCapture();
+        var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions(), logs);
 
         var result = await resolver.ResolveAsync("acme", CancellationToken.None);
 
         Assert.Equal(MultiTenancyErrors.ShardUnavailable, result.Error?.Code);
+        // 这个错误会返回给调用方：reason 只写类型，完整异常进日志
+        Assert.Equal(typeof(InvalidOperationException).FullName, result.Error?.Details?["reason"]);
+        Assert.DoesNotContain("store offline", result.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+        var logged = Assert.Single(logs.Entries);
+        Assert.Equal(LogLevel.Warning, logged.Level);
+        Assert.Contains("store offline", logged.Exception?.Message, StringComparison.Ordinal);
         Assert.Equal(0, resolver.CachedCount);
         await Assert.ThrowsAsync<OperationCanceledException>(async () => await resolver.ResolveAsync("acme", new CancellationToken(canceled: true)));
     }

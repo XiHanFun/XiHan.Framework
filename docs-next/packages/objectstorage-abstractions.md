@@ -159,7 +159,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败 |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或关闭了条件写入 |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复） |

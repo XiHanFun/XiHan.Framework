@@ -139,7 +139,7 @@ public static class ShardInfo
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 

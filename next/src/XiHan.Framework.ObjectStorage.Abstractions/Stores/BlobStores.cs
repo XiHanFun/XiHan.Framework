@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.Primitives;
@@ -16,8 +17,13 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// 按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响。同时是健康项的贡献者：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class BlobStores : IHealthContributor, IAsyncDisposable
+public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
 {
+    /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
     /// <summary>
     /// 配置定义的实例所在的配置节
     /// </summary>
@@ -92,10 +98,13 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     /// </remarks>
     /// <param name="providers">Provider；同名重复是装配错误</param>
     /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
     /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例</param>
-    public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, IConfiguration? configuration = null)
+    public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, ILoggerFactory loggerFactory, IConfiguration? configuration = null)
     {
         ArgumentNullException.ThrowIfNull(providers);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<BlobStores>();
         foreach (var provider in providers)
         {
             ArgumentNullException.ThrowIfNull(provider, nameof(providers));
@@ -206,8 +215,9 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                // 后端此刻建不出来（目录无权限、磁盘错误）：不是定义的问题，下次取用会重试
-                return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message)));
+                // 后端此刻建不出来（目录无权限、磁盘错误）：不是定义的问题，下次取用会重试。IO 异常的消息常带完整路径，reason 只写类型，完整异常只进日志
+                LogCreateFailed(_logger, definition.Name, exception);
+                return Unavailable(exception);
             }
             catch (FrameworkException exception)
             {
@@ -398,7 +408,17 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
         }
         catch (Exception exception) when (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            status = entry.Status with { State = LifecycleState.Degraded, Error = Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message))) };
+            // 探测按周期重复：已经 Degraded 时记 Debug，否则每个周期一条带堆栈的 Warning 会淹没日志
+            if (entry.Status.State == LifecycleState.Degraded)
+            {
+                LogProbeStillThrowing(_logger, entry.Definition.Name, exception);
+            }
+            else
+            {
+                LogProbeThrew(_logger, entry.Definition.Name, exception);
+            }
+
+            status = entry.Status with { State = LifecycleState.Degraded, Error = Unavailable(exception) };
         }
         catch (OperationCanceledException)
         {
@@ -457,4 +477,34 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
         /// </summary>
         public ContributorStatus Status { get; set; } = status;
     }
+
+    /// <summary>
+    /// 存储不可用
+    /// </summary>
+    /// <remarks>
+    /// 这个 Provider 接任意后端，异常消息可能带路径或地址：<c>reason</c> 只写类型
+    /// </remarks>
+    private static Error Unavailable(Exception exception)
+    {
+        var type = exception.GetType();
+        return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+    }
+
+    /// <summary>
+    /// 建实例失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Creating blob store '{Store}' failed.")]
+    private static partial void LogCreateFailed(ILogger logger, string store, Exception exception);
+
+    /// <summary>
+    /// 探测抛出（从可用变成不可用）
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The health probe of blob store '{Store}' threw.")]
+    private static partial void LogProbeThrew(ILogger logger, string store, Exception exception);
+
+    /// <summary>
+    /// 探测持续抛出
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The health probe of blob store '{Store}' still throws.")]
+    private static partial void LogProbeStillThrowing(ILogger logger, string store, Exception exception);
 }

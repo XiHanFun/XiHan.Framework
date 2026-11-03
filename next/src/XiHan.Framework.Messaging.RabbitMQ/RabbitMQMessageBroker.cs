@@ -697,8 +697,11 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <summary>
     /// 把客户端或网络异常包装成携带 <see cref="MessagingErrors.BrokerUnavailable"/> 的框架异常
     /// </summary>
+    /// <remarks>
+    /// 框架异常的消息会进发件箱行与错误（ADR-0108）：只写框架自己的文字，代理的异常放在 <see cref="Exception.InnerException"/>
+    /// </remarks>
     private static FrameworkException Unavailable(string what, Exception exception)
-        => new(MessagingErrors.BrokerUnavailable, $"{what}: {exception.Message}", exception);
+        => new(MessagingErrors.BrokerUnavailable, $"{what}.", exception);
 
     /// <summary>
     /// 记录发布到没有订阅者的主题的消息被丢弃

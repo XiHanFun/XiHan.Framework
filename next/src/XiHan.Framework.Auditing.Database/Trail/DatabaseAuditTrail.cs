@@ -197,7 +197,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Error.Unavailable(AuditingErrors.TrailUnavailable, AuditingMessages.TrailUnavailable, MessageArguments.Of(("reason", exception.Message)));
+            // 查询接口把这个错误返回给调用方，存储的异常消息可能带数据库信息：reason 只写类型，完整异常只进日志
+            LogQueryFailed(_logger, exception);
+            var type = exception.GetType();
+            return Error.Unavailable(AuditingErrors.TrailUnavailable, AuditingMessages.TrailUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
         }
 
         var more = rows.Count > query.PageSize;
@@ -456,4 +459,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "{Count} audit records were rejected by the repository (first error '{ErrorCode}'); they are dropped.")]
     private static partial void LogRecordsRejected(ILogger logger, int count, string errorCode);
+
+    /// <summary>
+    /// 查询审计记录失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Querying the audit trail failed.")]
+    private static partial void LogQueryFailed(ILogger logger, Exception exception);
 }

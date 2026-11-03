@@ -157,7 +157,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 
     private static ValueTask<Result> Probe(IServiceProvider services, CancellationToken cancellationToken)
     {
-        // 打不开就抛出，PeriodicHealthContributor 把条目记为 Degraded 并带上异常消息
+        // 打不开就抛出，PeriodicHealthContributor 把条目记为 Degraded，reason 只写异常类型，完整异常进日志
         using var stream = File.OpenRead(services.GetRequiredService<FileSecurityOptions>().Path);
         return ValueTask.FromResult(Result.Success());
     }

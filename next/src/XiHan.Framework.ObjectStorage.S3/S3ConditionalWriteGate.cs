@@ -53,6 +53,14 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 上一次探测抛出的异常类型
+    /// </summary>
+    /// <remarks>
+    /// 探测成功后为空。探测一次只有一个在跑，不需要同步
+    /// </remarks>
+    private Type? _lastProbeFailure;
+
+    /// <summary>
     /// 存储名（日志用）：缺省实例为 <c>default</c>，命名实例为实例名
     /// </summary>
     private readonly string _store;
@@ -522,7 +530,11 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         Result outcome;
         try
         {
-            outcome = await S3ConditionalWriteProbe.RunAsync(_client, _options, _multipart, _clock, _stopping.Token).ConfigureAwait(false);
+            outcome = await S3ConditionalWriteProbe.RunAsync(_client, _options, _multipart, _clock, ReportProbeFailure, _stopping.Token).ConfigureAwait(false);
+            if (outcome.IsSuccess)
+            {
+                _lastProbeFailure = null;
+            }
         }
         catch (Exception) when (_stopping.IsCancellationRequested)
         {
@@ -538,11 +550,33 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         {
             // 探测没有归类的异常（客户端的意外错误）：按连不上记为尚未确认，健康项与日志都报告它，后台照常重试
             LogProbeCrashed(_logger, exception, _store, _options.HealthBucket);
-            outcome = Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message)));
+            var type = exception.GetType();
+            outcome = Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
         }
 
         Record(outcome);
         return outcome;
+    }
+
+    /// <summary>
+    /// 记下探测抛出的异常
+    /// </summary>
+    /// <remarks>
+    /// 后台按周期重试：同一种失败只记一次 Warning，持续时记 Debug，否则每次重试一条带堆栈的 Warning 会淹没日志
+    /// </remarks>
+    private void ReportProbeFailure(string operation, Exception exception)
+    {
+        var failure = exception.GetType();
+        if (failure == _lastProbeFailure)
+        {
+            LogProbeStillFailing(_logger, exception, _store, operation);
+        }
+        else
+        {
+            LogProbeFailed(_logger, exception, _store, operation);
+        }
+
+        _lastProbeFailure = failure;
     }
 
     /// <summary>
@@ -719,4 +753,16 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "The conditional write probe of S3 store '{Store}' in bucket '{Bucket}' failed unexpectedly.")]
     private static partial void LogProbeCrashed(ILogger logger, Exception exception, string store, string? bucket);
+
+    /// <summary>
+    /// 探测抛出（这一种失败第一次）
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The conditional write probe of store '{Store}' failed at {Operation}.")]
+    private static partial void LogProbeFailed(ILogger logger, Exception exception, string store, string operation);
+
+    /// <summary>
+    /// 探测持续抛出
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The conditional write probe of store '{Store}' still fails at {Operation}.")]
+    private static partial void LogProbeStillFailing(ILogger logger, Exception exception, string store, string operation);
 }

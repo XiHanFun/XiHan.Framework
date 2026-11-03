@@ -147,8 +147,9 @@ public sealed class S3ConditionalWriteRetryTests
         Assert.True((await Put(store, "a.txt")).IsSuccess);
 
         // 日志：连不上是 Warning，之后被拒是 Error，确认是 Information，各一条
-        Assert.Equal([LogLevel.Warning, LogLevel.Error, LogLevel.Information], GateLogs(logs).Select(static e => e.Level));
-        Assert.Contains(ObjectStorageErrors.ProbeDenied, GateLogs(logs)[1].Message, StringComparison.Ordinal);
+        // 第一条是连不上时带完整异常的探测日志，之后才是状态变化
+        Assert.Equal([LogLevel.Warning, LogLevel.Warning, LogLevel.Error, LogLevel.Information], GateLogs(logs).Select(static e => e.Level));
+        Assert.Contains(ObjectStorageErrors.ProbeDenied, GateLogs(logs)[2].Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -263,7 +264,7 @@ public sealed class S3ConditionalWriteRetryTests
         ignoring.HonoursPutCondition = false;
         var clock = new FakeTimeProvider();
         var provider = new S3BlobStoreProvider(clock, NullLoggerFactory.Instance, options => options.ServiceUrl == "http://ignoring:9000" ? ignoring.AsClient() : reachableLater.AsClient());
-        var registry = new BlobStores([provider], clock);
+        var registry = new BlobStores([provider], clock, NullLoggerFactory.Instance);
         await using (registry)
         {
             // 连不上：照常建出并登记，不覆盖写入不可用，健康探测带出原因
@@ -301,7 +302,7 @@ public sealed class S3ConditionalWriteRetryTests
         var fake = FakeS3Client.Create(Bucket);
         fake.Fault = static request => request == "PutObject" ? new HttpRequestException("Connection refused.") : null;
         var clock = new FakeTimeProvider();
-        var registry = new BlobStores([new S3BlobStoreProvider(clock, NullLoggerFactory.Instance, _ => fake.AsClient())], clock);
+        var registry = new BlobStores([new S3BlobStoreProvider(clock, NullLoggerFactory.Instance, _ => fake.AsClient())], clock, NullLoggerFactory.Instance);
         S3ConditionalWriteGate gate;
         await using (registry)
         {

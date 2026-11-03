@@ -242,7 +242,9 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
                 var delivered = await report.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
                 if (delivered.Error.IsError)
                 {
-                    throw new FrameworkException(MessagingErrors.BrokerUnavailable, $"Failed to publish to topic '{kafkaTopic}': {delivered.Error.Reason}");
+                    // 框架异常的消息会进发件箱行与错误：只写错误码，代理给的原文只进日志
+                    LogDeliveryFailed(_logger, kafkaTopic, delivered.Error.Code.ToString(), delivered.Error.Reason);
+                    throw new FrameworkException(MessagingErrors.BrokerUnavailable, $"Failed to publish to topic '{kafkaTopic}': {delivered.Error.Code}.");
                 }
             }
         }
@@ -389,7 +391,10 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
         }
         catch (KafkaException exception)
         {
-            return Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", exception.Message)));
+            // 代理的异常消息可能带主机与端口：reason 只写类型，完整异常只进日志
+            LogReplayFailed(_logger, topic, exception);
+            var type = exception.GetType();
+            return Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
         }
         catch (FrameworkException exception) when (exception.Code == MessagingErrors.BrokerUnavailable)
         {
@@ -692,8 +697,11 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <summary>
     /// 代理不可达
     /// </summary>
+    /// <remarks>
+    /// 框架异常的消息会进发件箱行与错误（ADR-0108）：只写框架自己的文字，代理的异常放在 <see cref="Exception.InnerException"/>
+    /// </remarks>
     private static FrameworkException Unavailable(string what, Exception exception)
-        => new(MessagingErrors.BrokerUnavailable, $"{what}: {exception.Message}", exception);
+        => new(MessagingErrors.BrokerUnavailable, $"{what}.", exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
     private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
@@ -721,4 +729,16 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "An error occurred while stopping the Kafka consumer.")]
     private static partial void LogStopFailed(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// 投递报告失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Delivering to Kafka topic '{Topic}' failed with {Code}: {Reason}")]
+    private static partial void LogDeliveryFailed(ILogger logger, string topic, string code, string reason);
+
+    /// <summary>
+    /// 重放失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Replaying Kafka topic '{Topic}' failed.")]
+    private static partial void LogReplayFailed(ILogger logger, string topic, Exception exception);
 }

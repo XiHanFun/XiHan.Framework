@@ -42,6 +42,11 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
     private readonly Func<S3ObjectStorageOptions, IAmazonS3> _clients;
 
     /// <summary>
+    /// 日志工厂
+    /// </summary>
+    private readonly ILoggerFactory _loggerFactory;
+
+    /// <summary>
     /// 创建
     /// </summary>
     /// <param name="clock">时钟（单次探测的超时、后台重试的退避都按它计时）</param>
@@ -57,7 +62,8 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
     internal S3BlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory, Func<S3ObjectStorageOptions, IAmazonS3> clients)
     {
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<S3ConditionalWriteGate>();
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _logger = loggerFactory.CreateLogger<S3ConditionalWriteGate>();
         _clients = clients ?? throw new ArgumentNullException(nameof(clients));
     }
 
@@ -77,7 +83,7 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
             // 每个实例各探一次：命名实例可能指向不同的服务。探明不认、被拒绝或缺桶都不建——不覆盖写入不会落到不认条件写入的服务上，
             // 配置错误在登记实例时就报给调用方；只有暂时连不上照常建出，后台重试，探明之前不覆盖写入由状态拒绝
             (await conditionalWrites.StartAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
-            return new S3BlobStore(client, options, _clock, conditionalWrites, owned: true);
+            return new S3BlobStore(client, options, _clock, _loggerFactory, conditionalWrites, owned: true);
         }
         catch
         {

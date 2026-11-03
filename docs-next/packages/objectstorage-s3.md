@@ -98,7 +98,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 服务不认条件写入（第二次没被拒，或回 501） | `OBJECTSTORAGE_UNAVAILABLE_003` | 启动失败（`KERNEL_HOSTING_002`，内层是本码）；命名实例不建、不登记，下次取用重新探测 | 后台或写入时才探明的：不覆盖写入一律返回本码，健康项 Failed，记 Error 日志，不再重试 | 换用认条件写入的服务（Amazon S3、RustFS、MinIO 实测通过）；应用从不写 `Overwrite = false` 时关闭 `ConditionalWrites`，重启 |
 | 被拒绝（403：密钥错、凭据只读、无权写探测键或放弃分片上传） | `OBJECTSTORAGE_DENIED_002` | 启动失败（`KERNEL_HOSTING_002`，内层是本码）；命名实例不建、不登记，下次取用重新探测 | 启动时连不上、连上时才被拒（凭据已被吊销，或配置本来就错）：仍是尚未确认、照常重试，健康项 Failed，记 Error 日志，权限改好即恢复 | 给凭据开探测键的写入与放弃分片上传权限；只读的应用关闭 `ConditionalWrites` |
 | 探测桶不存在 | `OBJECTSTORAGE_NOTFOUND_001` | 启动失败（`KERNEL_HOSTING_002`，内层是本码）；命名实例不建、不登记 | 启动时连不上、连上时才发现缺桶：同上，桶建好即恢复 | 先建桶、开 `EnsureBuckets`，或把 `HealthBucket` 改成已存在的桶 |
-| 连不上、超时或其余服务端错误 | `OBJECTSTORAGE_UNAVAILABLE_001` | 照常启动、照常建出，尚未确认 | 后台重试，通过即恢复（S3 晚于应用就绪、网络抖动） | 检查端点与网络 |
+| 连不上、超时或其余服务端错误（`reason` 只写异常类型，完整异常进日志） | `OBJECTSTORAGE_UNAVAILABLE_001` | 照常启动、照常建出，尚未确认 | 后台重试，通过即恢复（S3 晚于应用就绪、网络抖动） | 检查端点与网络 |
 
 尚未确认时（启动时连不上的实例）：
 
@@ -175,7 +175,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 - 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。
 - 预签名经 SDK 在本地签出（签名 V4，端点是 http 时按 http 签）：下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号。
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
-- 健康项 `objectstorage.s3.connection`：启动时与条件写入探测并行同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，原因是 SDK 的异常消息），应用仍在服务。条件写入的状态即时并入：数据 `conditionalWrites` 为 `confirmed` / `unconfirmed` / `unsupported` / `disabled`，连不上 Degraded，启动之后才被拒绝或缺桶 Failed（`OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），探明不认 Failed（`OBJECTSTORAGE_UNAVAILABLE_003`）。
+- 健康项 `objectstorage.s3.connection`：启动时与条件写入探测并行同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 只写异常类型，完整异常进日志），应用仍在服务。条件写入的状态即时并入：数据 `conditionalWrites` 为 `confirmed` / `unconfirmed` / `unsupported` / `disabled`，连不上 Degraded，启动之后才被拒绝或缺桶 Failed（`OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），探明不认 Failed（`OBJECTSTORAGE_UNAVAILABLE_003`）。
 - 命名实例建出时探测条件写入（探明不认、被拒绝、探测桶不存在都不建；只有连不上的照常建出、后台重试；`ConditionalWrites` 关闭时不探测、建实例不发请求），被替换、移除或应用停止时停止重试、释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；健康探测对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。
 - 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，此前对 MinIO 验证；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。`XIHAN_TEST_S3_UNCONDITIONAL` 指向不认条件写入的兼容服务（如 Zenko CloudServer）时，另核对启动与命名实例的建出都以 `OBJECTSTORAGE_UNAVAILABLE_003` 失败（2026-11-02 在 Zenko CloudServer 8.2.7 上补跑通过，ADR-0093）；对 RustFS 另核对密钥错、探测桶不存在让启动与命名实例的建出失败。
 

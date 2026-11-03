@@ -311,7 +311,7 @@ builder.AddXiHan(xihan => xihan
 | 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `RetryDelay × 2^(Attempts − 1)`，不超过 `MaxRetryDelay` |
 | 发布失败，次数达到 `MaxAttempts` | 记 `DeadLetteredAt` 进死信，日志 Error 级别 |
 | 载荷无法解码 | 直接进死信（重试也解不开），`LastError` 是 `MESSAGING_VALIDATION_002` |
-| 代理抛出（不可达，或某条消息让整批失败） | 这次调用里的每条按「发布失败」处理（计一次尝试、退避或进死信），`LastError` 是 `MESSAGING_UNAVAILABLE_001`，原因取框架异常的消息（别的异常只写类型名）；记一条 Warning；本轮停止发布，余下的不计尝试、留到下一轮 |
+| 代理抛出（不可达，或某条消息让整批失败） | 这次调用里的每条按「发布失败」处理（计一次尝试、退避或进死信），`LastError` 是 `MESSAGING_UNAVAILABLE_001`，原因取框架异常的消息（别的异常只写类型名；Kafka 与 RabbitMQ 的框架异常不拼代理的文字，代理的异常在 `InnerException`，ADR-0115）；记一条 Warning；本轮停止发布，余下的不计尝试、留到下一轮 |
 | 宿主停止（调用方取消） | 本轮回滚，不计尝试、不进死信，本轮已发出的下一轮重发 |
 
 退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。重试逐条发布：代理整批抛出时分不出是哪一条，单独重试后让整批失败的那条只拖累它自己，同批的别的消息随即发出（ADR-0108）。代理不可达时一轮只有一次调用抛出，积压的消息累计尝试比逐条失败慢；要更长的停机容忍度，调大 `MaxAttempts` 或 `MaxRetryDelaySeconds`（如 15 次、3600 秒约 5.4 小时）。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。

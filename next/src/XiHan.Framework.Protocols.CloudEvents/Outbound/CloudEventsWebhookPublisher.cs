@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.Protocols.CloudEvents.Outbound;
 /// 把信封以 CloudEvents（binary 或 structured）POST 到主题配置的 URL（<c>XiHan:Protocols:CloudEvents:Webhooks:&lt;主题&gt;</c>）；批量发布多条时用 batch 内容模式一次 POST，响应对整批生效。作为具体类型注册，不替换消息代理的 <see cref="IMessagePublisher"/>；非 2xx 与连接失败都是 UNAVAILABLE，由调用方决定重试（例如经发件箱）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class CloudEventsWebhookPublisher : IMessagePublisher
+public sealed partial class CloudEventsWebhookPublisher : IMessagePublisher
 {
     /// <summary>
     /// 使用的命名 HttpClient
@@ -36,10 +37,17 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
     private readonly CloudEventsProtocolOptions _options;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public CloudEventsWebhookPublisher(IHttpClientFactory httpClientFactory, CloudEventsProtocolOptions options)
+    public CloudEventsWebhookPublisher(IHttpClientFactory httpClientFactory, CloudEventsProtocolOptions options, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<CloudEventsWebhookPublisher>();
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
@@ -99,7 +107,10 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
         }
         catch (HttpRequestException exception)
         {
-            return Error.Unavailable(CloudEventsErrors.WebhookUnreachable, CloudEventsMessages.WebhookUnreachable, MessageArguments.Of(("topic", topic), ("reason", exception.Message)));
+            // 连接异常的消息常带订阅方的主机与端口：reason 只写类型，完整异常只进日志
+            LogWebhookUnreachable(_logger, topic, exception);
+            var type = exception.GetType();
+            return Error.Unavailable(CloudEventsErrors.WebhookUnreachable, CloudEventsMessages.WebhookUnreachable, MessageArguments.Of(("topic", topic), ("reason", type.FullName ?? type.Name)));
         }
     }
 
@@ -117,4 +128,10 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
         Array.Fill(results, result);
         return results;
     }
+
+    /// <summary>
+    /// Webhook 连不上
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The CloudEvents webhook of topic '{Topic}' could not be reached.")]
+    private static partial void LogWebhookUnreachable(ILogger logger, string topic, Exception exception);
 }

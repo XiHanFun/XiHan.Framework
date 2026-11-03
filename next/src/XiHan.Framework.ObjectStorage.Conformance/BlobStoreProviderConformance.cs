@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
@@ -87,7 +88,7 @@ public abstract class BlobStoreProviderConformance
     [Fact]
     public async Task Registry_ReusesReplacesAndRemovesInstances()
     {
-        var registry = new BlobStores([CreateProvider()], TimeProvider.System);
+        var registry = new BlobStores([CreateProvider()], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry.ConfigureAwait(false))
         {
             var provider = registry.Providers.Single();
@@ -122,7 +123,7 @@ public abstract class BlobStoreProviderConformance
     [Fact]
     public async Task Registry_TranslatesDefinitionErrors_AndKeepsTheExistingInstance()
     {
-        var registry = new BlobStores([CreateProvider()], TimeProvider.System);
+        var registry = new BlobStores([CreateProvider()], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry.ConfigureAwait(false))
         {
             var provider = registry.Providers.Single();

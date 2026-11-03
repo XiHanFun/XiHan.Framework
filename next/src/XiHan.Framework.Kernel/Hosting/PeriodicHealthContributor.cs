@@ -34,6 +34,14 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 上一次探针抛出的异常类型
+    /// </summary>
+    /// <remarks>
+    /// 探针没有抛出后为空。探测由循环逐次执行，这个字段不需要同步：万一并发，最多多记一条日志
+    /// </remarks>
+    private Type? _lastFailure;
+
+    /// <summary>
     /// 最近一次结果
     /// </summary>
     /// <remarks>
@@ -172,6 +180,7 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
         try
         {
             outcome = await _probe(linked.Token).ConfigureAwait(false);
+            _lastFailure = null;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -180,8 +189,21 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
         }
         catch (Exception exception)
         {
-            // 超时与探针异常都是"探不到"：条目 Degraded，原因是异常消息；应用仍在服务
-            outcome = Error.Unavailable(KernelErrors.HealthProbeFailed, KernelMessages.HealthProbeFailed, MessageArguments.Of(("name", Name), ("reason", exception.Message)));
+            // 超时与探针异常都是"探不到"：条目 Degraded；应用仍在服务
+            // 探针接任意外部服务，异常消息可能带地址或连接串：reason 只写类型，完整异常只进日志
+            // 同一种失败只记一次 Warning，持续时记 Debug：每个探测周期一条带堆栈的 Warning 会淹没日志
+            var failure = exception.GetType();
+            if (failure == _lastFailure)
+            {
+                LogProbeStillThrowing(_logger, Name, exception);
+            }
+            else
+            {
+                LogProbeThrew(_logger, Name, exception);
+            }
+
+            _lastFailure = failure;
+            outcome = Error.Unavailable(KernelErrors.HealthProbeFailed, KernelMessages.HealthProbeFailed, MessageArguments.Of(("name", Name), ("reason", failure.FullName ?? failure.Name)));
         }
 
         Apply(outcome, _clock.GetElapsedTime(started));
@@ -263,4 +285,16 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Health item '{Name}' changed from {Previous} to Ready.")]
     private static partial void LogRecovered(ILogger logger, string name, LifecycleState previous);
+
+    /// <summary>
+    /// 探针抛出（这一种失败第一次）
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The health probe of '{Name}' threw.")]
+    private static partial void LogProbeThrew(ILogger logger, string name, Exception exception);
+
+    /// <summary>
+    /// 探针持续抛出
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The health probe of '{Name}' still throws.")]
+    private static partial void LogProbeStillThrowing(ILogger logger, string name, Exception exception);
 }

@@ -309,7 +309,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在；`TenantRecordStore.RemoveAsync` 删除不存在的租户也返回它 | 404 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
 | `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满（`InMemoryTenantStore.Set` 与健康项） | 503 |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） | 503 |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） | 503 |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有租户的调用中新增 | 400 |
 | `KERNEL_CAPABILITY_001` | 装配了 `MultiTenancy.Database` 却没有持久化 Provider，启动中断 | — |
 

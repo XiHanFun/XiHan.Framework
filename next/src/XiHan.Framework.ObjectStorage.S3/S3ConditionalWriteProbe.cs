@@ -52,8 +52,9 @@ internal static class S3ConditionalWriteProbe
     /// <param name="options">选项；<see cref="S3ObjectStorageOptions.HealthBucket"/> 必须有值</param>
     /// <param name="multipart">是否也探测分片上传的完成</param>
     /// <param name="clock">时钟（超时按它计）</param>
+    /// <param name="onFailure">探测抛出时收到操作名与完整异常；错误里只写异常类型，由调用方记日志</param>
     /// <param name="cancellationToken">取消令牌</param>
-    internal static async ValueTask<Result> RunAsync(IAmazonS3 client, S3ObjectStorageOptions options, bool multipart, TimeProvider clock, CancellationToken cancellationToken)
+    internal static async ValueTask<Result> RunAsync(IAmazonS3 client, S3ObjectStorageOptions options, bool multipart, TimeProvider clock, Action<string, Exception> onFailure, CancellationToken cancellationToken)
     {
         var bucket = options.HealthBucket ?? throw new ArgumentException("The conditional write probe needs a health bucket.", nameof(options));
         using var deadline = new CancellationTokenSource(options.HealthProbeInterval, clock);
@@ -99,9 +100,18 @@ internal static class S3ConditionalWriteProbe
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested && exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException or OperationCanceledException)
         {
             // 调用方没有取消：取消只可能来自探测超时
-            var reason = exception is OperationCanceledException
-                ? string.Create(CultureInfo.InvariantCulture, $"{operation} of '{ProbeKey}' got no response within {options.HealthProbeInterval.TotalSeconds} s")
-                : $"{operation} of '{ProbeKey}': {exception.Message}";
+            string reason;
+            if (exception is OperationCanceledException)
+            {
+                reason = string.Create(CultureInfo.InvariantCulture, $"{operation} of '{ProbeKey}' got no response within {options.HealthProbeInterval.TotalSeconds} s");
+            }
+            else
+            {
+                // SDK 的异常消息可能带端点与桶名：reason 只写类型，完整异常交给调用方记日志
+                onFailure(operation, exception);
+                reason = $"{operation} of '{ProbeKey}': {exception.GetType().FullName}";
+            }
+
             return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));
         }
     }

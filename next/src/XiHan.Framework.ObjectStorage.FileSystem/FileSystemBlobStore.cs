@@ -4,6 +4,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
@@ -21,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// <c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；ETag 是内容的 SHA-256。配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。范围读取打开内容文件后定位到起点、只交出该段；分片上传暂存在 <c>&lt;root&gt;/&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，完成时拼接成临时文件再原子替换（见 <see cref="FileSystemMultipartUploads"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHealthContributor
+public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHealthContributor
 {
     /// <summary>
     /// 内容目录名
@@ -78,10 +79,17 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     private readonly FileSystemMultipartUploads _multipart;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public FileSystemBlobStore(FileSystemObjectStorageOptions options, TimeProvider clock)
+    public FileSystemBlobStore(FileSystemObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<FileSystemBlobStore>();
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _multipart = new FileSystemMultipartUploads(this, options, clock);
@@ -681,6 +689,19 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     /// <summary>
     /// IO 失败
     /// </summary>
-    internal static Error Unavailable(Exception exception)
-        => Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message)));
+    /// <remarks>
+    /// IO 异常的消息常带服务器上的完整路径，而这个错误会返回给调用方：<c>reason</c> 只写类型，完整异常只进日志
+    /// </remarks>
+    internal Error Unavailable(Exception exception)
+    {
+        LogIoFailed(_logger, exception);
+        var type = exception.GetType();
+        return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+    }
+
+    /// <summary>
+    /// IO 失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A file system operation of the blob store failed.")]
+    private static partial void LogIoFailed(ILogger logger, Exception exception);
 }

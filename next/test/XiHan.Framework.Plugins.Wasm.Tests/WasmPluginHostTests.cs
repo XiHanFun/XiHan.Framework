@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Wasmtime;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -163,6 +164,8 @@ public sealed class WasmPluginHostTests
 
         var trapped = await EchoWasmPluginHost.InvokeAsync(host, "echoes.trap", "{}");
         Assert.Equal(PluginErrors.Crashed, trapped.Outcome.Error?.Code);
+        // 这个错误会返回给调用方：只写陷阱种类，陷阱原文（带模块内部的函数名）只进日志
+        Assert.Equal(nameof(TrapCode.Unreachable), trapped.Outcome.Error?.Details?["trap"]);
 
         Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.Describe(EchoWasmPluginHost.PluginId)!.Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(5)));
         Assert.Equal(LifecycleState.Degraded, host.App.State);

@@ -4,6 +4,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Auditing.Abstractions;
 using XiHan.Framework.Auditing.Abstractions.Pipeline;
@@ -188,7 +189,8 @@ public sealed class DatabaseAuditingTests
     [Fact]
     public async Task PersistenceFailure_OnlyLogs_AndDoesNotAffectTheCall()
     {
-        await using var host = await StartAsync(new FakeTimeProvider(_start), static services => services.AddScoped<IRepository<AuditRecord, Guid>, ThrowingAuditRepository>());
+        var logs = new LogCapture();
+        await using var host = await StartAsync(new FakeTimeProvider(_start), services => services.AddSingleton<ILoggerFactory>(logs).AddScoped<IRepository<AuditRecord, Guid>, ThrowingAuditRepository>());
         var trail = host.Services.GetRequiredService<DatabaseAuditTrail>();
         Assert.True((await host.InvokeOperationAsync<CreateOrderRequest, OrderResponse>(CreateOrder.Id, new(1m), _alice)).IsSuccess);
         Assert.Equal(1, trail.PendingCount);
@@ -199,7 +201,9 @@ public sealed class DatabaseAuditingTests
         // 查询同样不抛出，返回存储不可达
         var failed = await trail.QueryAsync(new AuditQuery(), CancellationToken.None);
         Assert.Equal(AuditingErrors.TrailUnavailable, failed.Error?.Code);
-        Assert.Equal($"审计存储不可用：{ThrowingAuditRepository.Message}", host.Services.GetRequiredService<IMessageLocalizer>().Localize(failed.Error!, "zh-CN"));
+        // 这个错误会返回给调用方：文案里只有异常类型，完整异常进日志
+        Assert.Equal($"审计存储不可用：{typeof(InvalidOperationException).FullName}", host.Services.GetRequiredService<IMessageLocalizer>().Localize(failed.Error!, "zh-CN"));
+        Assert.Contains(logs.Entries, static entry => entry.Level == LogLevel.Warning && entry.Message.Contains("Querying the audit trail", StringComparison.Ordinal) && entry.Exception?.Message == ThrowingAuditRepository.Message);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.ObjectStorage.Conformance;
 
@@ -20,7 +21,7 @@ public sealed class FileSystemBlobStoreProviderConformanceTests : BlobStoreProvi
     private readonly TemporaryRoot _root = new();
 
     /// <inheritdoc />
-    protected override IBlobStoreProvider CreateProvider() => new FileSystemBlobStoreProvider(TimeProvider.System);
+    protected override IBlobStoreProvider CreateProvider() => new FileSystemBlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance);
 
     /// <inheritdoc />
     protected override IReadOnlyDictionary<string, string> ValidSettings() => new Dictionary<string, string> { ["RootPath"] = Path.Combine(_root.Path, "a") };

@@ -115,7 +115,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 | `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点不在对象内 |
 | `OBJECTSTORAGE_VALIDATION_002` | 分片清单不合法 |
 | `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | IO 失败 |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）：IO 异常的消息常带服务器上的完整路径 |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
 
 ## 相关

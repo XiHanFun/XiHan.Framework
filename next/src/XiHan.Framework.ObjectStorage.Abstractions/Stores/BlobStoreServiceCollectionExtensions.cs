@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
@@ -33,7 +34,7 @@ public static class BlobStoreServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IBlobStoreProvider, TProvider>());
         if (!services.Any(static d => d.ServiceType == typeof(BlobStores)))
         {
-            services.AddSingleton(sp => new BlobStores(sp.GetServices<IBlobStoreProvider>(), sp.GetRequiredService<TimeProvider>(), configuration));
+            services.AddSingleton(sp => new BlobStores(sp.GetServices<IBlobStoreProvider>(), sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>(), configuration));
             services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<BlobStores>());
         }
 

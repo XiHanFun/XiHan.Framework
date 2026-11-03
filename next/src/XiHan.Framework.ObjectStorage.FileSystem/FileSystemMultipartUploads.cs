@@ -70,7 +70,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return FileSystemBlobStore.Unavailable(exception);
+            return store.Unavailable(exception);
         }
     }
 
@@ -139,7 +139,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return FileSystemBlobStore.Unavailable(exception);
+            return store.Unavailable(exception);
         }
         finally
         {
@@ -171,7 +171,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return FileSystemBlobStore.Unavailable(exception);
+            return store.Unavailable(exception);
         }
     }
 
@@ -280,7 +280,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return FileSystemBlobStore.Unavailable(exception);
+            return store.Unavailable(exception);
         }
         finally
         {
@@ -316,7 +316,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return FileSystemBlobStore.Unavailable(exception);
+            return store.Unavailable(exception);
         }
     }
 

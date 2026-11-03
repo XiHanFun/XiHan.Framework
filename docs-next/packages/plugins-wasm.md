@@ -166,7 +166,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 模块不是 reactor、`xihan_abi_version` 不是 1、缺必需导出、签名不符、导入了宿主不提供的函数 | 加载失败 `PLUGINS_VALIDATION_005` |
 | 声明了流式操作 | 握手失败 `PLUGINS_VALIDATION_004` |
 | 未声明的操作 | 插件返回 `KERNEL_NOTFOUND_001` 的失败状态 |
-| 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`），按 1 秒起翻倍、上限 60 秒退避重建实例 |
+| 陷阱、导出返回 `0` | 插件 `Failed`（`PLUGINS_UNEXPECTED_002`，细节 `trap` 只写陷阱种类或异常类型，陷阱原文进日志），按 1 秒起翻倍、上限 60 秒退避重建实例 |
 | 调用超过截止时间 | 调用方得到 `KERNEL_TIMEOUT_001`，实例按崩溃重建 |
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002` |
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |

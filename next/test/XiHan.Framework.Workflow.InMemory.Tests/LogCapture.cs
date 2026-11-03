@@ -24,8 +24,18 @@ internal sealed class LogCapture : ILoggerFactory
     /// </summary>
     public IReadOnlyList<(LogLevel Level, string Category, string Message)> Entries => [.. _entries];
 
+    /// <summary>
+    /// 日志带的异常（类别、异常），按写入顺序
+    /// </summary>
+    public IReadOnlyList<(string Category, Exception Exception)> Exceptions => [.. _exceptions];
+
+    /// <summary>
+    /// 日志带的异常
+    /// </summary>
+    private readonly ConcurrentQueue<(string Category, Exception Exception)> _exceptions = new();
+
     /// <inheritdoc />
-    public ILogger CreateLogger(string categoryName) => new CapturedLogger(categoryName, _entries);
+    public ILogger CreateLogger(string categoryName) => new CapturedLogger(categoryName, _entries, _exceptions);
 
     /// <inheritdoc />
     public void AddProvider(ILoggerProvider provider) => throw new NotSupportedException("The log capture does not take providers.");
@@ -38,7 +48,7 @@ internal sealed class LogCapture : ILoggerFactory
     /// <summary>
     /// 一个类别的日志
     /// </summary>
-    private sealed class CapturedLogger(string category, ConcurrentQueue<(LogLevel Level, string Category, string Message)> entries) : ILogger
+    private sealed class CapturedLogger(string category, ConcurrentQueue<(LogLevel Level, string Category, string Message)> entries, ConcurrentQueue<(string Category, Exception Exception)> exceptions) : ILogger
     {
         /// <inheritdoc />
         public IDisposable? BeginScope<TState>(TState state)
@@ -52,6 +62,10 @@ internal sealed class LogCapture : ILoggerFactory
         {
             ArgumentNullException.ThrowIfNull(formatter);
             entries.Enqueue((logLevel, category, formatter(state, exception)));
+            if (exception is not null)
+            {
+                exceptions.Enqueue((category, exception));
+            }
         }
     }
 }

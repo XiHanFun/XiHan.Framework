@@ -179,7 +179,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Settings.g
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores
-XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.GetAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>

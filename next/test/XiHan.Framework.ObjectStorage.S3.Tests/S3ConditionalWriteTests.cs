@@ -40,6 +40,23 @@ public sealed class S3ConditionalWriteTests
     private const string Key = S3ConditionalWriteProbe.ProbeKey;
 
     [Fact]
+    public async Task StoreOperation_ReportsOnlyTheExceptionType_AndLogsTheFullException()
+    {
+        const string secret = "s3.internal:9000";
+        var logs = new LogCapture();
+        var fake = FakeS3Client.Create(Bucket);
+        fake.Fault = static _ => new HttpRequestException($"Connection refused by {secret}.");
+        var store = new S3BlobStore(fake.AsClient(), Options(), TimeProvider.System, logs);
+
+        var failed = await store.PutAsync(Bucket, "a.txt", Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None);
+
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, failed.Error?.Code);
+        Assert.Equal(typeof(HttpRequestException).FullName, failed.Error?.Details?["reason"]);
+        Assert.DoesNotContain(secret, failed.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+        Assert.IsType<HttpRequestException>(Assert.Single(logs.Exceptions, static entry => entry.Category == typeof(S3BlobStore).FullName).Exception);
+    }
+
+    [Fact]
     public async Task Probe_PassesOnAServiceThatHonoursConditions_AndKeepsOnlyTheProbeKey()
     {
         var fake = FakeS3Client.Create(Bucket);
@@ -117,7 +134,12 @@ public sealed class S3ConditionalWriteTests
         unreachable.Fault = static request => request == "PutObject" ? new HttpRequestException("Connection refused.") : null;
         var down = await Probe(unreachable, multipart: true);
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, down.Error?.Code);
-        Assert.Contains("Connection refused.", (string?)down.Error!.Details!["reason"], StringComparison.Ordinal);
+        // 只写步骤与异常类型：SDK 的异常消息可能带端点与桶名，完整异常交给调用方记日志
+        Assert.Contains(typeof(HttpRequestException).FullName!, (string?)down.Error!.Details!["reason"], StringComparison.Ordinal);
+        Assert.DoesNotContain("Connection refused.", (string?)down.Error.Details["reason"], StringComparison.Ordinal);
+        var reported = new List<(string Operation, Exception Exception)>();
+        await S3ConditionalWriteProbe.RunAsync(unreachable.AsClient(), Options(), multipart: true, TimeProvider.System, (operation, exception) => reported.Add((operation, exception)), CancellationToken.None);
+        Assert.IsType<HttpRequestException>(Assert.Single(reported).Exception);
 
         // 分片上传中途出错：尽力放弃上传，报原来的错误
         var broken = FakeS3Client.Create(Bucket);
@@ -151,7 +173,7 @@ public sealed class S3ConditionalWriteTests
         var clock = new FakeTimeProvider();
         var options = Options(TimeSpan.FromSeconds(5));
 
-        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), options, multipart: true, clock, CancellationToken.None).AsTask();
+        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), options, multipart: true, clock, static (_, _) => { }, CancellationToken.None).AsTask();
         Assert.False(probing.IsCompleted);
         clock.Advance(TimeSpan.FromSeconds(5));
         var result = await probing;
@@ -167,7 +189,7 @@ public sealed class S3ConditionalWriteTests
         fake.Hang = "PutObject";
         using var cancellation = new CancellationTokenSource();
 
-        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, new FakeTimeProvider(), cancellation.Token).AsTask();
+        var probing = S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options(), multipart: true, new FakeTimeProvider(), static (_, _) => { }, cancellation.Token).AsTask();
         await cancellation.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => probing);
@@ -239,7 +261,7 @@ public sealed class S3ConditionalWriteTests
         denied.Fault = static request => request == "PutObject" ? FakeS3Client.ServiceError(HttpStatusCode.Forbidden, "AccessDenied") : null;
         var missing = FakeS3Client.Create();
         var provider = new S3BlobStoreProvider(new FakeTimeProvider(), NullLoggerFactory.Instance, options => options.ServiceUrl == "http://denied:9000" ? denied.AsClient() : missing.AsClient());
-        var registry = new BlobStores([provider], TimeProvider.System);
+        var registry = new BlobStores([provider], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             // 配置错误在登记实例时就报给调用方：注册表原样返回 Provider 的错误码，不登记
@@ -310,7 +332,7 @@ public sealed class S3ConditionalWriteTests
     [Fact]
     public async Task NamedStore_ProbesOnCreation_CreatesAnUnreachableStore_AndRejectsInvalidDefinitions()
     {
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             // 连不上：建实例时的探测失败只是尚未确认，照常建出并登记；不覆盖写入不可用，原因是连不上
@@ -351,13 +373,13 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(0L, probe.ContentLength);
 
         // 探测键在保留前缀下，业务列举看不到它（ADR-0090）
-        var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System);
+        var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System, NullLoggerFactory.Instance);
         Assert.Empty((await store.ListAsync(fresh, new BlobQuery(), CancellationToken.None)).ValueOrThrow().Items);
         await client.DeleteObjectAsync(fresh, Key);
         await client.DeleteBucketAsync(fresh);
 
         // 命名实例建出时各探一次
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -376,7 +398,7 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(ObjectStorageErrors.ProbeDenied, Assert.IsType<FrameworkException>(failed.InnerException).Code);
 
         // 命名实例同理：密钥错、探测桶不存在都不建，注册表原样返回错误码
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = "wrong-secret-key", ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -407,7 +429,7 @@ public sealed class S3ConditionalWriteTests
         var probe = Assert.IsType<FrameworkException>(failed.InnerException);
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, probe.Code);
 
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = url, ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -420,7 +442,7 @@ public sealed class S3ConditionalWriteTests
     /// 对替身探测一次
     /// </summary>
     private static async Task<Result> Probe(FakeS3Client fake, bool multipart, bool ensureBuckets = false)
-        => await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options() with { EnsureBuckets = ensureBuckets }, multipart, TimeProvider.System, CancellationToken.None);
+        => await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options() with { EnsureBuckets = ensureBuckets }, multipart, TimeProvider.System, static (_, _) => { }, CancellationToken.None);
 
     /// <summary>
     /// 以替身的探测桶为健康桶的选项

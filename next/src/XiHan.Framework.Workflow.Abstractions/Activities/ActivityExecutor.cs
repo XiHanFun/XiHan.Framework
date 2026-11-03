@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -18,7 +19,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <remarks>
 /// 活动与引擎同一服务作用域、同一调用上下文、同一事务：活动与结果处理器的写入随引擎的写入一起提交或回滚。抛出的异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>；取消以调用的取消令牌为准，原样抛出
 /// </remarks>
-internal sealed class ActivityExecutor
+internal sealed partial class ActivityExecutor
 {
     /// <summary>
     /// 执行范围：取当前调用
@@ -46,10 +47,16 @@ internal sealed class ActivityExecutor
     private readonly TimeProvider _clock;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public ActivityExecutor(WorkflowScope scope, IServiceProvider services, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, TimeProvider clock)
+    public ActivityExecutor(WorkflowScope scope, IServiceProvider services, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, TimeProvider clock, ILogger logger)
     {
+        _logger = logger;
         _scope = scope;
         _services = services;
         _registry = registry;
@@ -136,7 +143,16 @@ internal sealed class ActivityExecutor
         catch (Exception exception)
         {
             // 活动抛出即节点故障；它在抛出之前做的写入留在同一事务里，不单独回滚
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", exception.Message)));
+            // 故障存进实例、经接口返回，异常消息可能带内部地址：reason 只写类型，完整异常只进日志
+            LogActivityThrew(_logger, node.ActivityType.Value, exception);
+            var type = exception.GetType();
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", node.ActivityType.Value), ("reason", type.FullName ?? type.Name)));
         }
     }
+
+    /// <summary>
+    /// 活动抛出
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Activity '{ActivityType}' threw.")]
+    private static partial void LogActivityThrew(ILogger logger, string activityType, Exception exception);
 }

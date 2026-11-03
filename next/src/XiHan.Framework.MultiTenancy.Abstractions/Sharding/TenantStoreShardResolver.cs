@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 
@@ -14,7 +15,7 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 /// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class TenantStoreShardResolver : ITenantShardResolver
+public sealed partial class TenantStoreShardResolver : ITenantShardResolver
 {
     /// <summary>
     /// 租户存储
@@ -32,11 +33,18 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
     private readonly ConcurrentDictionary<string, Maybe<TenantShard>> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options)
+    public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<TenantStoreShardResolver>();
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _capacity = options.ShardCacheSize;
     }
@@ -62,7 +70,10 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Error.Unavailable(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", exception.Message)));
+            // 这个错误由解析中间件返回给调用方，存储的异常消息可能带数据库信息：reason 只写类型，完整异常只进日志
+            LogStoreFailed(_logger, tenantId, exception);
+            var type = exception.GetType();
+            return Error.Unavailable(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", type.FullName ?? type.Name)));
         }
 
         var shard = found.TryGetValue(out var info) ? FromProperties(info) : Maybe.None<TenantShard>();
@@ -115,4 +126,10 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
         tenant.Properties.TryGetValue(TenantShardKeys.DatabaseProvider, out var provider);
         return Maybe.Some(new TenantShard(tenant.Id, connectionString, provider, properties));
     }
+
+    /// <summary>
+    /// 查租户存储失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Resolving the shard of tenant '{TenantId}' failed.")]
+    private static partial void LogStoreFailed(ILogger logger, string tenantId, Exception exception);
 }

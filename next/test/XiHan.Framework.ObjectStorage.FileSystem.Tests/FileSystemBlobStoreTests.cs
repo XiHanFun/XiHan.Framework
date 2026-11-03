@@ -4,6 +4,7 @@
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
@@ -38,7 +39,7 @@ public sealed class FileSystemBlobStoreTests : IDisposable
     /// 以给定配额创建存储
     /// </summary>
     private FileSystemBlobStore Store(long maxTotal = 1L << 30, long maxBlob = 256L << 20)
-        => new(new FileSystemObjectStorageOptions { RootPath = _root.Path, MaxTotalBytes = maxTotal, MaxBlobBytes = maxBlob }, _clock);
+        => new(new FileSystemObjectStorageOptions { RootPath = _root.Path, MaxTotalBytes = maxTotal, MaxBlobBytes = maxBlob }, _clock, NullLoggerFactory.Instance);
 
     /// <summary>
     /// UTF-8 字节
@@ -171,7 +172,7 @@ public sealed class FileSystemBlobStoreTests : IDisposable
     public async Task Initialize_RemovesExpiredMultipartUploads_AndKeepsRecentOnes()
     {
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
-        var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path, MultipartExpiry = TimeSpan.FromHours(24) }, clock);
+        var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path, MultipartExpiry = TimeSpan.FromHours(24) }, clock, NullLoggerFactory.Instance);
         await store.InitializeAsync(CancellationToken.None);
         var stale = (await store.StartAsync("uploads", "stale.bin", BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
         clock.Advance(TimeSpan.FromHours(20));

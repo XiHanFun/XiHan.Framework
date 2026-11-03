@@ -117,3 +117,4 @@
 | [0112](0112-存储操作的错误只写异常类型.md) | 第二十五批：`VectorDataKnowledgeStore` 的写入、删除、裁剪、搜索里连接器抛出时，`AI_UNAVAILABLE_002` 的 `reason` 只写异常类型全名，完整异常进日志（每次失败一条 Warning，带操作名与集合名）；错误码、消息键与参数名不变。修订 ADR-0111 第二节「影响」的最后一条 |
 | [0113](0113-模型调用的错误只写异常类型.md) | 第二十六批：`IAIChat` 与知识库嵌入调用抛出时，`AI_UNAVAILABLE_001` 的 `reason` 只写异常类型全名，完整异常进日志（每次失败一条 Warning，带 Provider 名）；错误码、消息键与参数名不变。`AIChat`、`KnowledgeIngestor`、`KnowledgeRetriever` 的构造增加 `ILoggerFactory`。修订 ADR-0112 |
 | [0114](0114-护栏抛出时的错误只写异常类型.md) | 第二十七批：护栏抛出时 `AI_UNEXPECTED_001` 的 `reason` 只写异常类型全名，完整异常进日志（每次一条 Error，带护栏名）；错误码、消息键与参数名不变；护栏自己返回的失败仍用它的文案。修订 ADR-0113 |
+| [0115](0115-其他模块的异常消息不再进reason.md) | 第二十八批，按审查清单 `ag-audit.md` 改：对象存储、多租户、审计、工作流活动与 HTTP、Wasm 崩溃、CloudEvents Webhook、Kafka 重放、健康项探针的 `reason` 只写异常类型（Wasm 写陷阱种类），完整异常进日志；Kafka 与 RabbitMQ 的 `FrameworkException` 不再拼代理文字，修复 ADR-0108 的前提。相关类型的构造增加 `ILoggerFactory`。其余 63 处保留 |

@@ -145,7 +145,7 @@ public sealed class LocalMirror : IDisposable
 
 | 健康项 | 状态 |
 | --- | --- |
-| `caching.redis.connection` | 启动时同步 PING 一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果；PING 失败或超时时 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 是异常消息），应用仍在服务 |
+| `caching.redis.connection` | 启动时同步 PING 一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果；PING 失败或超时时 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 只写异常类型，完整异常进日志），应用仍在服务 |
 
 ## 相关
 

@@ -5,6 +5,7 @@ using System.Text;
 using Amazon.S3;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
@@ -134,7 +135,7 @@ public sealed class S3ObjectStorageTests
     {
         var client = S3TestServer.Client();
         var bucket = "xihan-missing-" + Guid.NewGuid().ToString("N")[..8];
-        var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System);
+        var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System, NullLoggerFactory.Instance);
         using var content = new MemoryStream([1, 2, 3], writable: false);
 
         Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.GetAsync(bucket, "a", CancellationToken.None)).Error?.Code);
@@ -144,7 +145,7 @@ public sealed class S3ObjectStorageTests
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, (await store.PutAsync(bucket, "a", content, BlobPutOptions.Default, CancellationToken.None)).Error?.Code);
 
         // 开启 EnsureBuckets 后写入自动建桶
-        var ensuring = new S3BlobStore(client, S3TestServer.Options(ensureBuckets: true), TimeProvider.System);
+        var ensuring = new S3BlobStore(client, S3TestServer.Options(ensureBuckets: true), TimeProvider.System, NullLoggerFactory.Instance);
         content.Position = 0;
         var written = (await ensuring.PutAsync(bucket, "a", content, BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(3, written.Length);

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
@@ -20,5 +21,5 @@ public sealed class InMemoryTenantShardResolverConformanceTests : TenantShardRes
     /// 用给定租户建内存存储，再在其上建分片解析器
     /// </summary>
     protected override ValueTask<ITenantShardResolver> CreateResolverAsync(IReadOnlyList<TenantInfo> tenants)
-        => ValueTask.FromResult<ITenantShardResolver>(new TenantStoreShardResolver(new InMemoryTenantStore(new InMemoryMultiTenancyOptions { Tenants = tenants }), new MultiTenancyOptions()));
+        => ValueTask.FromResult<ITenantShardResolver>(new TenantStoreShardResolver(new InMemoryTenantStore(new InMemoryMultiTenancyOptions { Tenants = tenants }), new MultiTenancyOptions(), NullLoggerFactory.Instance));
 }

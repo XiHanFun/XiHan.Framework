@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Hosting;
@@ -145,7 +146,31 @@ public sealed class PeriodicHealthContributorTests
         Assert.Equal(KernelErrors.HealthProbeFailed, status.Error?.Code);
         Assert.Equal(KernelMessages.HealthProbeFailed, status.Error?.MessageKey);
         Assert.Equal(Name, status.Error?.Details?["name"]);
-        Assert.Equal("boom", status.Error?.Details?["reason"]);
+        // reason 只写类型：探针接任意外部服务，异常消息可能带地址
+        Assert.Equal(typeof(InvalidOperationException).FullName, status.Error?.Details?["reason"]);
+        Assert.DoesNotContain("boom", status.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Probe_Exception_IsLogged_WarningOnceForAFailure_ThenDebug()
+    {
+        var logs = new LogCapture();
+        Exception? fault = new InvalidOperationException("boom");
+        await using var contributor = new PeriodicHealthContributor(Name, _ => fault is null ? ValueTask.FromResult(Result.Success()) : throw fault, TimeSpan.FromSeconds(5), new FakeTimeProvider(), logs);
+
+        await contributor.ProbeAsync(CancellationToken.None);
+        await contributor.ProbeAsync(CancellationToken.None);
+        var thrown = logs.Entries.Where(static entry => entry.Exception is not null).ToList();
+        Assert.Equal([LogLevel.Warning, LogLevel.Debug], thrown.Select(static entry => entry.Level));
+        Assert.All(thrown, entry => Assert.Same(fault, entry.Exception));
+
+        // 探针恢复后再失败是新的失败
+        var original = fault;
+        fault = null;
+        await contributor.ProbeAsync(CancellationToken.None);
+        fault = original;
+        await contributor.ProbeAsync(CancellationToken.None);
+        Assert.Equal([LogLevel.Warning, LogLevel.Debug, LogLevel.Warning], logs.Entries.Where(static entry => entry.Exception is not null).Select(static entry => entry.Level));
     }
 
     [Fact]
