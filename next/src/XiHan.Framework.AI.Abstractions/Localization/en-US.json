@@ -9,6 +9,8 @@
   "ai.model.unavailable": "AI provider '{provider}' is unavailable: {reason}",
   "ai.prompt.argument_missing": "Prompt template '{name}' needs the argument '{argument}'.",
   "ai.prompt.not_found": "Prompt template '{name}' does not exist.",
+  "ai.provider.default_missing": "No default AI provider is set; name the provider in the request.",
+  "ai.provider.embedding_default_missing": "No default AI embedding provider is set; name the provider in the request.",
   "ai.provider.invalid": "AI provider '{name}' is misconfigured: {reason}",
   "ai.provider.kind_unknown": "AI provider '{name}' has kind '{kind}', which has no registered factory.",
   "ai.provider.not_found": "AI provider '{name}' is not configured.",

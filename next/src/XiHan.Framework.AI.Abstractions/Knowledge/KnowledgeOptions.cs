@@ -83,7 +83,7 @@ public sealed record KnowledgeOptions
     /// 嵌入 Provider 名
     /// </summary>
     /// <remarks>
-    /// 空表示默认嵌入 Provider
+    /// 空表示目录的默认嵌入 Provider（<see cref="Providers.IAIProviderCatalog.DefaultEmbeddingProvider"/>）；请求写了 Provider 时以请求为准
     /// </remarks>
     public string? EmbeddingProvider { get; init; }
 

@@ -32,11 +32,11 @@ internal static class KnowledgeErrors
     /// 超时令牌已触发即 <see cref="AIErrors.ModelTimeout"/>，不论调用方是否也取消、生成器是抛出还是正常返回；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
     /// </remarks>
     /// <param name="providers">Provider 目录</param>
-    /// <param name="provider">Provider 名；为空表示没有可用的默认嵌入 Provider</param>
+    /// <param name="provider">Provider 名（调用方已按请求、知识库配置与目录的默认名取定）</param>
     /// <param name="inputs">输入文本</param>
     /// <param name="timeProvider">时间源</param>
     /// <param name="cancellationToken">调用方令牌</param>
-    public static async ValueTask<Result<GeneratedEmbeddings<Embedding<float>>>> EmbedAsync(IAIProviderCatalog providers, string? provider, IReadOnlyList<string> inputs, TimeProvider timeProvider, CancellationToken cancellationToken)
+    public static async ValueTask<Result<GeneratedEmbeddings<Embedding<float>>>> EmbedAsync(IAIProviderCatalog providers, string provider, IReadOnlyList<string> inputs, TimeProvider timeProvider, CancellationToken cancellationToken)
     {
         var generator = providers.ResolveEmbeddingGenerator(provider);
         if (!generator.TryGetValue(out var embeddings))
@@ -45,7 +45,7 @@ internal static class KnowledgeErrors
         }
 
         // 时限取同一个 Provider 的配置：目录解析得出生成器就查得到它，查不到是目录前后不一致，按未配置报告而不是换个缺省时限
-        if (provider is null || !providers.Find(provider).TryGetValue(out var settings))
+        if (!providers.Find(provider).TryGetValue(out var settings))
         {
             return AIProviderCatalog.NotFound(provider);
         }

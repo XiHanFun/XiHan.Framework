@@ -18,6 +18,24 @@ public interface IAIProviderCatalog
     IReadOnlyCollection<string> Providers { get; }
 
     /// <summary>
+    /// 默认聊天 Provider 名
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示没有默认。<see cref="ResolveChatClient"/> 不给名字时按它解析，<c>IAIChat</c> 在请求没写 Provider 时也只问它、不读配置
+    /// 读它不做 I/O：要查库的目录持内存快照、写入后重载，默认名是快照的一部分，所以是同步属性、不带取消令牌。名字不保证在 <see cref="Providers"/> 里，按它解析时照常报未配置
+    /// </remarks>
+    string? DefaultProvider { get; }
+
+    /// <summary>
+    /// 默认嵌入 Provider 名
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 表示没有默认。<see cref="ResolveEmbeddingGenerator"/> 不给名字时按它解析，知识库的摄入与检索在请求与 <c>XiHan:AI:Knowledge:EmbeddingProvider</c> 都没写时也只问它
+    /// 可以与 <see cref="DefaultProvider"/> 相同；只支持一个默认的目录两者相同
+    /// </remarks>
+    string? DefaultEmbeddingProvider { get; }
+
+    /// <summary>
     /// 查 Provider 配置
     /// </summary>
     Maybe<AIProviderOptions> Find(string name);
@@ -26,7 +44,7 @@ public interface IAIProviderCatalog
     /// 解析聊天客户端
     /// </summary>
     /// <remarks>
-    /// <paramref name="name"/> 为空取默认 Provider。未配置或种类无工厂 → <see cref="AIErrors.ProviderNotFound"/>
+    /// <paramref name="name"/> 为空取 <see cref="DefaultProvider"/>，没有默认 → <see cref="AIErrors.ProviderNotFound"/>（<see cref="AIMessages.DefaultProviderMissing"/>）。未配置或种类无工厂 → <see cref="AIErrors.ProviderNotFound"/>
     /// </remarks>
     Result<IChatClient> ResolveChatClient(string? name = null);
 
@@ -34,7 +52,7 @@ public interface IAIProviderCatalog
     /// 解析嵌入生成器
     /// </summary>
     /// <remarks>
-    /// <paramref name="name"/> 为空取默认嵌入 Provider
+    /// <paramref name="name"/> 为空取 <see cref="DefaultEmbeddingProvider"/>，没有默认 → <see cref="AIErrors.ProviderNotFound"/>（<see cref="AIMessages.DefaultEmbeddingProviderMissing"/>）
     /// </remarks>
     Result<IEmbeddingGenerator<string, Embedding<float>>> ResolveEmbeddingGenerator(string? name = null);
 

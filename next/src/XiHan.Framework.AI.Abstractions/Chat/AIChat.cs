@@ -17,18 +17,13 @@ namespace XiHan.Framework.AI.Abstractions.Chat;
 /// <see cref="IAIChat"/> 的实现
 /// </summary>
 /// <remarks>
-/// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息
+/// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息；请求没写 Provider 时取目录的 <see cref="IAIProviderCatalog.DefaultProvider"/>，不读配置
 /// 调用 Provider 时把它的 <see cref="AIProviderOptions.Timeout"/> 按注入的 <see cref="TimeProvider"/> 落成超时令牌、与调用方令牌链接后交给它，
 /// 超时与取消按令牌归因（RFC-0022「超时与取消」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIChat : IAIChat
 {
-    /// <summary>
-    /// 选项
-    /// </summary>
-    private readonly AIOptions _options;
-
     /// <summary>
     /// Provider 目录
     /// </summary>
@@ -70,9 +65,8 @@ public sealed class AIChat : IAIChat
     /// <summary>
     /// 创建
     /// </summary>
-    public AIChat(AIOptions options, IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services)
+    public AIChat(IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services)
     {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _prompts = prompts ?? throw new ArgumentNullException(nameof(prompts));
         _tools = tools ?? throw new ArgumentNullException(nameof(tools));
@@ -237,8 +231,14 @@ public sealed class AIChat : IAIChat
             }
         }
 
-        var provider = request.Provider ?? _options.ResolveDefaultProvider() ?? string.Empty;
-        var client = _providers.ResolveChatClient(request.Provider);
+        // 默认名问目录而不是读配置：应用替换的目录（如落库的目录）有自己的默认名；名字在这里取定一次，解析、时限与错误细节都用同一个名字
+        var provider = request.Provider ?? _providers.DefaultProvider;
+        if (provider is null)
+        {
+            return AIProviderCatalog.DefaultMissing();
+        }
+
+        var client = _providers.ResolveChatClient(provider);
         if (!client.TryGetValue(out var resolved))
         {
             return client.Error!;

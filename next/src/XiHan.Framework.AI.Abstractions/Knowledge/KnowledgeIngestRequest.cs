@@ -41,7 +41,7 @@ public sealed record KnowledgeIngestRequest
     /// 嵌入 Provider
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>
+    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>，它也为空时取目录的默认嵌入 Provider（<see cref="Providers.IAIProviderCatalog.DefaultEmbeddingProvider"/>），都没有即 <c>AI_NOTFOUND_001</c>
     /// </remarks>
     public string? Provider { get; init; }
 

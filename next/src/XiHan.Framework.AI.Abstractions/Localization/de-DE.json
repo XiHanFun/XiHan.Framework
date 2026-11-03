@@ -9,6 +9,8 @@
   "ai.model.unavailable": "Der KI-Provider '{provider}' ist nicht verfügbar: {reason}",
   "ai.prompt.argument_missing": "Die Prompt-Vorlage '{name}' benötigt das Argument '{argument}'.",
   "ai.prompt.not_found": "Die Prompt-Vorlage '{name}' existiert nicht.",
+  "ai.provider.default_missing": "Es ist kein Standard-KI-Provider festgelegt; geben Sie den Provider in der Anfrage an.",
+  "ai.provider.embedding_default_missing": "Es ist kein Standard-KI-Provider für Einbettungen festgelegt; geben Sie den Provider in der Anfrage an.",
   "ai.provider.invalid": "Der KI-Provider '{name}' ist falsch konfiguriert: {reason}",
   "ai.provider.kind_unknown": "Der KI-Provider '{name}' hat die Art '{kind}', für die keine Factory registriert ist.",
   "ai.provider.not_found": "Der KI-Provider '{name}' ist nicht konfiguriert.",

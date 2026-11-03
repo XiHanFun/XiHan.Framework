@@ -9,6 +9,8 @@
   "ai.model.unavailable": "El proveedor de IA '{provider}' no está disponible: {reason}",
   "ai.prompt.argument_missing": "La plantilla de prompt '{name}' necesita el argumento '{argument}'.",
   "ai.prompt.not_found": "La plantilla de prompt '{name}' no existe.",
+  "ai.provider.default_missing": "No hay ningún proveedor de IA predeterminado; indique el proveedor en la solicitud.",
+  "ai.provider.embedding_default_missing": "No hay ningún proveedor de IA predeterminado para incrustaciones; indique el proveedor en la solicitud.",
   "ai.provider.invalid": "El proveedor de IA '{name}' está mal configurado: {reason}",
   "ai.provider.kind_unknown": "El proveedor de IA '{name}' es del tipo '{kind}', que no tiene fábrica registrada.",
   "ai.provider.not_found": "El proveedor de IA '{name}' no está configurado.",

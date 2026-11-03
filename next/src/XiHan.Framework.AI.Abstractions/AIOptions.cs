@@ -29,7 +29,7 @@ public sealed record AIOptions
     /// 默认聊天 Provider
     /// </summary>
     /// <remarks>
-    /// 空且只有一个 Provider 时取它
+    /// 空且只有一个 Provider 时取它。框架自带的目录由此给出 <see cref="IAIProviderCatalog.DefaultProvider"/>；聊天与知识库只问目录，应用替换了目录时这一项不起作用
     /// </remarks>
     public string? DefaultProvider { get; init; }
 
@@ -37,7 +37,7 @@ public sealed record AIOptions
     /// 默认嵌入 Provider
     /// </summary>
     /// <remarks>
-    /// 空时同 <see cref="DefaultProvider"/>
+    /// 空时同 <see cref="DefaultProvider"/>。框架自带的目录由此给出 <see cref="IAIProviderCatalog.DefaultEmbeddingProvider"/>
     /// </remarks>
     public string? DefaultEmbeddingProvider { get; init; }
 
@@ -67,12 +67,12 @@ public sealed record AIOptions
     public IReadOnlyList<AIPromptTemplate> Prompts { get; init; } = [];
 
     /// <summary>
-    /// 实际的默认聊天 Provider 名
+    /// 按配置推出的默认聊天 Provider 名（框架自带目录的 <see cref="IAIProviderCatalog.DefaultProvider"/>）
     /// </summary>
     public string? ResolveDefaultProvider() => DefaultProvider ?? (Providers.Count == 1 ? Providers.Keys.First() : null);
 
     /// <summary>
-    /// 实际的默认嵌入 Provider 名
+    /// 按配置推出的默认嵌入 Provider 名（框架自带目录的 <see cref="IAIProviderCatalog.DefaultEmbeddingProvider"/>）
     /// </summary>
     public string? ResolveDefaultEmbeddingProvider() => DefaultEmbeddingProvider ?? ResolveDefaultProvider();
 

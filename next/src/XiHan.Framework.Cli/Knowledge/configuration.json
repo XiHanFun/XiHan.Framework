@@ -81,13 +81,13 @@
           "key": "DefaultProvider",
           "type": "string",
           "sample": "openai",
-          "summary": "默认聊天 Provider；不写且只有一个 Provider 时取它"
+          "summary": "框架自带目录的默认聊天 Provider；不写且只有一个 Provider 时取它。IAIChat 与知识库在请求没写 Provider 时问目录，应用替换了目录时这一项不起作用"
         },
         {
           "key": "DefaultEmbeddingProvider",
           "type": "string",
           "sample": "openai",
-          "summary": "默认嵌入 Provider；不写时同 DefaultProvider"
+          "summary": "框架自带目录的默认嵌入 Provider；不写时同 DefaultProvider"
         },
         {
           "key": "Guardrails:Enabled",
@@ -117,7 +117,7 @@
           "key": "Knowledge:EmbeddingProvider",
           "type": "string",
           "sample": "openai",
-          "summary": "知识库的嵌入 Provider；不写用默认嵌入 Provider"
+          "summary": "知识库的嵌入 Provider；不写用目录的默认嵌入 Provider，请求写了 Provider 时以请求为准"
         },
         {
           "key": "Knowledge:PromptName",

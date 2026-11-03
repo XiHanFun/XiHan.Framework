@@ -10,7 +10,7 @@ namespace XiHan.Framework.AI.Abstractions.Providers;
 /// Provider 目录的实现（单例）
 /// </summary>
 /// <remarks>
-/// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准
+/// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准。默认名从配置给出（<see cref="AIOptions.ResolveDefaultProvider"/>、<see cref="AIOptions.ResolveDefaultEmbeddingProvider"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
@@ -71,6 +71,18 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     public IReadOnlyCollection<string> Providers => _options.Providers.Keys.ToList();
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 配置的 <c>DefaultProvider</c>；没写且只配了一个 Provider 时是它
+    /// </remarks>
+    public string? DefaultProvider => _options.ResolveDefaultProvider();
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 配置的 <c>DefaultEmbeddingProvider</c>；没写时同 <see cref="DefaultProvider"/>
+    /// </remarks>
+    public string? DefaultEmbeddingProvider => _options.ResolveDefaultEmbeddingProvider();
+
+    /// <inheritdoc />
     public Maybe<AIProviderOptions> Find(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -80,8 +92,13 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     /// <inheritdoc />
     public Result<IChatClient> ResolveChatClient(string? name = null)
     {
-        var resolved = name ?? _options.ResolveDefaultProvider();
-        if (resolved is null || !_options.Providers.TryGetValue(resolved, out var options))
+        var resolved = name ?? DefaultProvider;
+        if (resolved is null)
+        {
+            return DefaultMissing();
+        }
+
+        if (!_options.Providers.TryGetValue(resolved, out var options))
         {
             return NotFound(resolved);
         }
@@ -112,8 +129,13 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     /// <inheritdoc />
     public Result<IEmbeddingGenerator<string, Embedding<float>>> ResolveEmbeddingGenerator(string? name = null)
     {
-        var resolved = name ?? _options.ResolveDefaultEmbeddingProvider();
-        if (resolved is null || !_options.Providers.TryGetValue(resolved, out var options))
+        var resolved = name ?? DefaultEmbeddingProvider;
+        if (resolved is null)
+        {
+            return DefaultEmbeddingMissing();
+        }
+
+        if (!_options.Providers.TryGetValue(resolved, out var options))
         {
             return NotFound(resolved);
         }
@@ -180,8 +202,20 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     /// <summary>
     /// Provider 未配置
     /// </summary>
-    internal static Error NotFound(string? name)
-        => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.ProviderNotFound, MessageArguments.Of(("name", name ?? string.Empty)));
+    internal static Error NotFound(string name)
+        => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.ProviderNotFound, MessageArguments.Of(("name", name)));
+
+    /// <summary>
+    /// 没给名字而没有默认聊天 Provider
+    /// </summary>
+    internal static Error DefaultMissing()
+        => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.DefaultProviderMissing);
+
+    /// <summary>
+    /// 没给名字而没有默认嵌入 Provider
+    /// </summary>
+    internal static Error DefaultEmbeddingMissing()
+        => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.DefaultEmbeddingProviderMissing);
 
     /// <summary>
     /// 种类无工厂

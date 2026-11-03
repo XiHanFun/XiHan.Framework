@@ -31,7 +31,7 @@ XiHan.Framework.AI.Abstractions.AIToolsFeature.Manifest.get -> XiHan.Framework.P
 XiHan.Framework.AI.Abstractions.AIToolsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Abstractions.AIToolsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Abstractions.Chat.AIChat
-XiHan.Framework.AI.Abstractions.Chat.AIChat.AIChat(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog! prompts, XiHan.Framework.AI.Abstractions.Tools.IAIToolCatalog! tools, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail!>! guardrails, XiHan.Framework.Kernel.Pipeline.IInvocationAccessor! invocation, System.TimeProvider! timeProvider, System.IServiceProvider! services) -> void
+XiHan.Framework.AI.Abstractions.Chat.AIChat.AIChat(XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog! prompts, XiHan.Framework.AI.Abstractions.Tools.IAIToolCatalog! tools, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail!>! guardrails, XiHan.Framework.Kernel.Pipeline.IInvocationAccessor! invocation, System.TimeProvider! timeProvider, System.IServiceProvider! services) -> void
 XiHan.Framework.AI.Abstractions.Chat.AIChat.CompleteAsync(XiHan.Framework.AI.Abstractions.Chat.AIChatRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.ChatResponse!>>
 XiHan.Framework.AI.Abstractions.Chat.AIChat.StreamAsync(XiHan.Framework.AI.Abstractions.Chat.AIChatRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate!>!>>
 XiHan.Framework.AI.Abstractions.Chat.AIChatRequest
@@ -228,6 +228,8 @@ XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog.All() -> System.Collect
 XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>
 XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog
 XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.AIProviderCatalog(XiHan.Framework.AI.Abstractions.AIOptions! options, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Providers.IChatClientFactory!>! chatFactories, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Providers.IEmbeddingGeneratorFactory!>! embeddingFactories) -> void
+XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.DefaultEmbeddingProvider.get -> string?
+XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.DefaultProvider.get -> string?
 XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Dispose() -> void
 XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions!>
 XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Invalidate(string? name = null) -> void
@@ -255,6 +257,8 @@ XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions.Properties.init -> v
 XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions.Timeout.get -> System.TimeSpan
 XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions.Timeout.init -> void
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog
+XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.DefaultEmbeddingProvider.get -> string?
+XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.DefaultProvider.get -> string?
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions!>
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Invalidate(string? name = null) -> void
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Providers.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
@@ -295,6 +299,8 @@ const XiHan.Framework.AI.Abstractions.AIErrors.ToolNotFound = "AI_NOTFOUND_003" 
 const XiHan.Framework.AI.Abstractions.AIErrors.Unexpected = "AI_UNEXPECTED_001" -> string!
 const XiHan.Framework.AI.Abstractions.AIIdentifiers.MaxNameLength = 64 -> int
 const XiHan.Framework.AI.Abstractions.AIMessages.CatalogName = "ai" -> string!
+const XiHan.Framework.AI.Abstractions.AIMessages.DefaultEmbeddingProviderMissing = "ai.provider.embedding_default_missing" -> string!
+const XiHan.Framework.AI.Abstractions.AIMessages.DefaultProviderMissing = "ai.provider.default_missing" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailBlocked = "ai.guardrail.blocked" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailFailed = "ai.guardrail.failed" -> string!
 const XiHan.Framework.AI.Abstractions.AIMessages.GuardrailInjection = "ai.guardrail.injection" -> string!

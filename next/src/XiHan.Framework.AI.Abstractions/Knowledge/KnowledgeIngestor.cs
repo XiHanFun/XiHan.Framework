@@ -16,11 +16,6 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed class KnowledgeIngestor : IKnowledgeIngestor
 {
     /// <summary>
-    /// AI 选项（实际的默认嵌入 Provider）
-    /// </summary>
-    private readonly AIOptions _ai;
-
-    /// <summary>
     /// 选项
     /// </summary>
     private readonly KnowledgeOptions _options;
@@ -53,7 +48,7 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
     /// </summary>
     public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {
-        _ai = options ?? throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _chunking = chunking ?? throw new ArgumentNullException(nameof(chunking));
@@ -108,7 +103,13 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
             return removed.IsSuccess ? 0 : removed.Error!;
         }
 
-        var provider = request.Provider ?? _options.EmbeddingProvider ?? _ai.ResolveDefaultEmbeddingProvider();
+        // 请求 → 知识库配置 → 目录的默认嵌入名；默认名问目录而不是读 AI 配置，应用替换的目录有自己的默认名
+        var provider = request.Provider ?? _options.EmbeddingProvider ?? _providers.DefaultEmbeddingProvider;
+        if (provider is null)
+        {
+            return AIProviderCatalog.DefaultEmbeddingMissing();
+        }
+
         var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, chunks, _timeProvider, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors))
         {

@@ -17,8 +17,8 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 
 公开签名直接使用 `IChatClient`、`IEmbeddingGenerator<string, Embedding<float>>`、`ChatMessage`、`AITool` 等 `Microsoft.Extensions.AI` 类型，不复制一套模型接口（ADR-0017）。本包提供：
 
-- Provider 目录 `IAIProviderCatalog`：按名字解析客户端并缓存，Provider 包实现 `IChatClientFactory` / `IEmbeddingGeneratorFactory`。
-- 聊天入口 `IAIChat`：提示词渲染 → 工具绑定 → 护栏 → 解析 Provider → 调用。
+- Provider 目录 `IAIProviderCatalog`：按名字解析客户端并缓存，给出默认聊天与嵌入 Provider 名（`DefaultProvider`、`DefaultEmbeddingProvider`）；Provider 包实现 `IChatClientFactory` / `IEmbeddingGeneratorFactory`。
+- 聊天入口 `IAIChat`：提示词渲染 → 工具绑定 → 护栏 → 解析 Provider（没写名字时问目录的默认名）→ 调用。
 - 提示词目录 `IAIPromptCatalog` 与模板 `AIPromptTemplate`。
 - 护栏 `IAIGuardrail` 与内置的 `KeywordBlocklistGuardrail`。
 - 工具目录 `IAIToolCatalog`：`AddAITool` 的工具加上 `Expose.Ai` 的操作，后者在新作用域经完整管道执行。
@@ -44,8 +44,8 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
-| `DefaultProvider` | 只有一个 Provider 时取它 | 默认聊天 Provider |
-| `DefaultEmbeddingProvider` | 同 `DefaultProvider` | 默认嵌入 Provider |
+| `DefaultProvider` | 只有一个 Provider 时取它 | 框架自带目录的默认聊天 Provider |
+| `DefaultEmbeddingProvider` | 同 `DefaultProvider` | 框架自带目录的默认嵌入 Provider |
 | `Providers:<name>:Kind` | 必填 | 种类，转小写后与工厂的 `Kind` 匹配 |
 | `Providers:<name>:Endpoint` | 空 | 绝对的 http(s) 地址；空表示 Provider 的官方端点 |
 | `Providers:<name>:ApiKey` | 空 | 空时由 Provider 决定 |
@@ -62,7 +62,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | `Knowledge:Dimensions` | 1536 | 嵌入维度 |
 | `Knowledge:ChunkSize`、`ChunkOverlap` | 1000、100 | 切块（字符） |
 | `Knowledge:Top` | 5 | 默认检索条数 |
-| `Knowledge:EmbeddingProvider`、`PromptName` | 空 | 知识库的嵌入 Provider 与增强模板（模板启动时校验，找不到或渲染不了即启动失败） |
+| `Knowledge:EmbeddingProvider`、`PromptName` | 空 | 知识库的嵌入 Provider（空时用目录的默认嵌入 Provider）与增强模板（模板启动时校验，找不到或渲染不了即启动失败） |
 
 ```json
 {
@@ -85,10 +85,10 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | 类型 | 说明 |
 | --- | --- |
 | `AICapabilities` | `Chat`、`Embedding`、`Tools`、`Knowledge` 与版本 1 |
-| `AIOptions`、`Providers.AIProviderOptions` | 选项；`ResolveDefaultProvider()`、`ResolveDefaultEmbeddingProvider()` 给出实际的默认名；`AIProviderOptions.DefaultTimeout` 为 100 秒 |
+| `AIOptions`、`Providers.AIProviderOptions` | 选项；`ResolveDefaultProvider()`、`ResolveDefaultEmbeddingProvider()` 按配置推出框架自带目录的默认名；`AIProviderOptions.DefaultTimeout` 为 100 秒 |
 | `AIServiceCollectionExtensions` | `AddAI`、`AddAIChatClientFactory<T>`、`AddAIEmbeddingGeneratorFactory<T>`、`AddAIGuardrail<T>`、`AddAIPrompt`、`AddAITool` |
 | `AIToolsFeature` | `ai.tools@1` 的特性入口 |
-| `Providers.IAIProviderCatalog` | `Providers`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate` |
+| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架实现 `AIProviderCatalog` |
 | `Providers.IChatClientFactory`、`IEmbeddingGeneratorFactory` | Provider 包实现：`Kind` 与 `Create(AIProviderOptions)` |
 | `Chat.IAIChat`、`Chat.AIChatRequest` | 聊天入口；`CompleteAsync`、`StreamAsync` |
 | `Prompts.IAIPromptCatalog`、`Prompts.AIPromptTemplate` | 提示词目录与模板；`Render`、`Placeholders` |
@@ -169,6 +169,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 ## 行为与限制
 
 - 目录按名字缓存实例；`Invalidate(name)` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
+- 默认名由目录给出（ADR-0110）：`IAIChat` 不写 Provider 时取 `DefaultProvider`，摄入与检索依次取请求的 `Provider`、`Knowledge:EmbeddingProvider`、`DefaultEmbeddingProvider`，都不读 `XiHan:AI` 的默认键。框架的 `AIProviderCatalog` 从配置推出默认名；应用替换的目录（如 Provider 存在库里）给出自己的。两个属性是同步的、不做 I/O，要查库的目录持内存快照。没有默认又没写名字时 `AI_NOTFOUND_001`（`ai.provider.default_missing` / `ai.provider.embedding_default_missing`）。
 - `IAIChat` 是作用域服务；没有当前调用时工具绑定到本作用域新建的调用上下文。
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。
 - 工具目录在 `AIToolsFeature` 或 `OpenAIFeature` 启动时构建；稳定性为 `Internal` 的操作不进目录。
@@ -181,7 +182,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 | --- | --- |
 | `AI_VALIDATION_001` | Provider 缺必填项、提示词缺参数、文档 ID 或问题为空、工具名不合法或重名、工具参数序列化不了（以 JSON 错误交给模型） |
 | `AI_VALIDATION_002` | 嵌入维度与知识库配置不一致 |
-| `AI_NOTFOUND_001` | Provider 未配置，或种类没有登记工厂 |
+| `AI_NOTFOUND_001` | Provider 未配置，或种类没有登记工厂；没写名字而目录没有默认 |
 | `AI_NOTFOUND_002` | 提示词模板不存在 |
 | `AI_NOTFOUND_003` | 工具不存在 |
 | `AI_DENIED_001` | 被护栏拦截 |

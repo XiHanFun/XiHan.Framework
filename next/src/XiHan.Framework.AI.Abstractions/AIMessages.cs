@@ -37,6 +37,22 @@ public static class AIMessages
     public const string ProviderKindUnknown = "ai.provider.kind_unknown";
 
     /// <summary>
+    /// 没给 Provider 名而目录没有默认聊天 Provider
+    /// </summary>
+    /// <remarks>
+    /// 不带参数；错误码 <see cref="AIErrors.ProviderNotFound"/>
+    /// </remarks>
+    public const string DefaultProviderMissing = "ai.provider.default_missing";
+
+    /// <summary>
+    /// 没给 Provider 名而目录没有默认嵌入 Provider
+    /// </summary>
+    /// <remarks>
+    /// 不带参数；错误码 <see cref="AIErrors.ProviderNotFound"/>
+    /// </remarks>
+    public const string DefaultEmbeddingProviderMissing = "ai.provider.embedding_default_missing";
+
+    /// <summary>
     /// Provider 配置不合法
     /// </summary>
     /// <remarks>

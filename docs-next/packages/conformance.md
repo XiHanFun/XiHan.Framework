@@ -27,7 +27,7 @@
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
-| [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 2 |
+| [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
 | [Auditing](#auditing) | `AuditTrailConformance` | 4 |
 | [Caching](#caching) | `CacheStoreConformance` | 16 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
@@ -48,7 +48,7 @@
 | 基类 | 被测接口 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
 | `KnowledgeStoreConformance` | `IKnowledgeStore` | `StartAsync()` 返回 `KnowledgeStoreHost(store, dimensions, host)` | 写入与按相似度排序、`top`、按文档与元数据过滤、同 ID 重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索 |
-| `AIProviderConformance` | `IAIProviderCatalog` 上的聊天与嵌入 Provider | `StartAsync()` 返回 `AIProviderHost(services, providerName, embeddingDimensions, host)` | 应答、嵌入维度与批量条数、缓存与 `Invalidate`、未知名字 `AI_NOTFOUND_001` |
+| `AIProviderConformance` | `IAIProviderCatalog` 上的聊天与嵌入 Provider | `StartAsync()`（被测 Provider 是聊天与嵌入的默认）与 `StartWithoutDefaultAsync()`（目录没有默认）返回 `AIProviderHost(services, providerName, embeddingDimensions, host)`；能把聊天与嵌入的默认分开的目录再覆写 `StartWithSeparateDefaultsAsync()`，夹具以 `EmbeddingProviderName` 给出默认嵌入 Provider，不覆写时该例跳过 | 应答、嵌入维度与批量条数、缓存与 `Invalidate`、未知名字 `AI_NOTFOUND_001`；默认名：有默认时不写名字的解析与 `IAIChat` 用它，没有默认时 `AI_NOTFOUND_001`（`ai.provider.default_missing` / `ai.provider.embedding_default_missing`），分开的默认各按各的解析 |
 
 `HashingEmbeddingGenerator`、`HashingEmbeddingGeneratorFactory` 与提供 `ai.embedding@1` 的 `HashingEmbeddingFeature` 是确定性的词袋哈希嵌入（`Kind = hashing`），让知识库 Provider 的测试不依赖外部模型。仓库里 `AI.VectorData` 与 `AI.OpenAI` 通过本套件。
 

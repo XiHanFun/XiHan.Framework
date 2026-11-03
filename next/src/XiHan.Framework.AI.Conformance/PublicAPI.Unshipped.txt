@@ -30,15 +30,22 @@ XiHan.Framework.AI.Conformance.Providers.AIProviderConformance
 XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.AIProviderConformance() -> void
 XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_CachesUntilInvalidated_AndRejectsUnknownNames() -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_ResolvesChatAndEmbedding() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_WithADefault_ResolvesUnnamedRequestsToIt() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_WithSeparateDefaults_ResolvesChatAndEmbeddingEachToItsOwn() -> System.Threading.Tasks.Task!
+XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.Catalog_WithoutADefault_RejectsUnnamedRequests_AndServesNamedOnes() -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost.AIProviderHost(System.IServiceProvider! services, string! providerName, int embeddingDimensions, System.IAsyncDisposable! host) -> void
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost.EmbeddingDimensions.get -> int
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.EmbeddingProviderName.get -> string?
+XiHan.Framework.AI.Conformance.Providers.AIProviderHost.EmbeddingProviderName.init -> void
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost.ProviderName.get -> string!
 XiHan.Framework.AI.Conformance.Providers.AIProviderHost.Services.get -> System.IServiceProvider!
 abstract XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreHost!>!
 abstract XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.StartAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Providers.AIProviderHost!>!
+abstract XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.StartWithoutDefaultAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Providers.AIProviderHost!>!
 const XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator.DefaultDimensions = 64 -> int
 const XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGeneratorFactory.KindName = "hashing" -> string!
 static XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Collection(string! prefix) -> string!
 static XiHan.Framework.AI.Conformance.Knowledge.KnowledgeStoreConformance.Record(XiHan.Framework.AI.Conformance.Embeddings.HashingEmbeddingGenerator! generator, string! documentId, int index, string! text, params (string! Key, string! Value)[]! metadata) -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord!
+virtual XiHan.Framework.AI.Conformance.Providers.AIProviderConformance.StartWithSeparateDefaultsAsync() -> System.Threading.Tasks.Task<XiHan.Framework.AI.Conformance.Providers.AIProviderHost?>!

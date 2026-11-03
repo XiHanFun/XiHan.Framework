@@ -9,6 +9,8 @@
   "ai.model.unavailable": "AI Provider '{provider}' 不可用：{reason}",
   "ai.prompt.argument_missing": "提示词模板 '{name}' 缺少参数 '{argument}'。",
   "ai.prompt.not_found": "提示词模板 '{name}' 不存在。",
+  "ai.provider.default_missing": "没有设置默认的 AI Provider，请在请求里指定 Provider。",
+  "ai.provider.embedding_default_missing": "没有设置默认的 AI 嵌入 Provider，请在请求里指定 Provider。",
   "ai.provider.invalid": "AI Provider '{name}' 配置不合法：{reason}",
   "ai.provider.kind_unknown": "AI Provider '{name}' 的种类 '{kind}' 没有登记工厂。",
   "ai.provider.not_found": "AI Provider '{name}' 未配置。",

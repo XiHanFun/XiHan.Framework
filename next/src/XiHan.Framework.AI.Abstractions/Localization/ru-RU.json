@@ -9,6 +9,8 @@
   "ai.model.unavailable": "Поставщик ИИ '{provider}' недоступен: {reason}",
   "ai.prompt.argument_missing": "Шаблону подсказки '{name}' нужен аргумент '{argument}'.",
   "ai.prompt.not_found": "Шаблон подсказки '{name}' не существует.",
+  "ai.provider.default_missing": "Поставщик ИИ по умолчанию не задан; укажите поставщика в запросе.",
+  "ai.provider.embedding_default_missing": "Поставщик ИИ по умолчанию для эмбеддингов не задан; укажите поставщика в запросе.",
   "ai.provider.invalid": "Поставщик ИИ '{name}' настроен неверно: {reason}",
   "ai.provider.kind_unknown": "Поставщик ИИ '{name}' имеет вид '{kind}', для которого не зарегистрирована фабрика.",
   "ai.provider.not_found": "Поставщик ИИ '{name}' не настроен.",

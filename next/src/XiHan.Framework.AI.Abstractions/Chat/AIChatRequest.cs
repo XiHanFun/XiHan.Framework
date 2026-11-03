@@ -21,7 +21,7 @@ public sealed record AIChatRequest
     /// Provider 名
     /// </summary>
     /// <remarks>
-    /// 空取默认 Provider
+    /// 空取目录的默认聊天 Provider（<see cref="Providers.IAIProviderCatalog.DefaultProvider"/>），没有默认即 <c>AI_NOTFOUND_001</c>
     /// </remarks>
     public string? Provider { get; init; }
 

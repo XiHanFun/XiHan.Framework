@@ -16,11 +16,6 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed class KnowledgeRetriever : IKnowledgeRetriever
 {
     /// <summary>
-    /// AI 选项（实际的默认嵌入 Provider）
-    /// </summary>
-    private readonly AIOptions _ai;
-
-    /// <summary>
     /// 选项
     /// </summary>
     private readonly KnowledgeOptions _options;
@@ -48,7 +43,7 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
     /// </summary>
     public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {
-        _ai = options ?? throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
@@ -69,11 +64,17 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
             return KnowledgeErrors.NoStore();
         }
 
-        var provider = query.Provider ?? _options.EmbeddingProvider ?? _ai.ResolveDefaultEmbeddingProvider();
+        // 请求 → 知识库配置 → 目录的默认嵌入名；默认名问目录而不是读 AI 配置，应用替换的目录有自己的默认名
+        var provider = query.Provider ?? _options.EmbeddingProvider ?? _providers.DefaultEmbeddingProvider;
+        if (provider is null)
+        {
+            return AIProviderCatalog.DefaultEmbeddingMissing();
+        }
+
         var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, [query.Text], _timeProvider, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors) || vectors.Count == 0)
         {
-            return generated.Error ?? Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider ?? string.Empty), ("reason", "the provider returned no embedding")));
+            return generated.Error ?? Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", "the provider returned no embedding")));
         }
 
         var vector = vectors[0].Vector;

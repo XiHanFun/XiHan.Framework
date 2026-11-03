@@ -24,6 +24,9 @@ public static class AIErrors
     /// <summary>
     /// AI Provider 未配置，或其种类没有登记工厂
     /// </summary>
+    /// <remarks>
+    /// 没给名字而目录没有默认 Provider 时也是它
+    /// </remarks>
     public const string ProviderNotFound = "AI_NOTFOUND_001";
 
     /// <summary>

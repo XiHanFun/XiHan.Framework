@@ -79,7 +79,14 @@ app.Run();
 
 ## Provider 目录
 
-`IAIProviderCatalog` 按名字解析客户端：`ResolveChatClient(name)`、`ResolveEmbeddingGenerator(name)` 返回 `Result`，名字为空时取默认 Provider。默认聊天 Provider 是 `DefaultProvider`；没写且只配了一个 Provider 时就是它。默认嵌入 Provider 是 `DefaultEmbeddingProvider`，没写时同默认聊天 Provider。
+`IAIProviderCatalog` 按名字解析客户端：`ResolveChatClient(name)`、`ResolveEmbeddingGenerator(name)` 返回 `Result`，名字为空时取目录的默认 Provider。
+
+默认名也由目录给出：`DefaultProvider` 是默认聊天 Provider，`DefaultEmbeddingProvider` 是默认嵌入 Provider，`null` 表示没有默认。两者是同步属性，读的是目录当前的状态，不做 I/O。框架自带的目录从配置推出它们：
+
+- `DefaultProvider` 取配置的 `XiHan:AI:DefaultProvider`；没写且只配了一个 Provider 时就是它，否则没有默认。
+- `DefaultEmbeddingProvider` 取配置的 `XiHan:AI:DefaultEmbeddingProvider`，没写时同 `DefaultProvider`。
+
+`IAIChat` 与知识库在请求没写 Provider 时只问目录的这两个属性，不读配置。应用用自己的目录替换框架的实现（例如 Provider 存在库里、在界面上设默认）时，默认名随它走，不必在配置里再写一份。没有默认又没写名字时返回 `AI_NOTFOUND_001`，消息键聊天是 `ai.provider.default_missing`、嵌入是 `ai.provider.embedding_default_missing`。默认名不在 Provider 表里（例如配置写错）时，与其他未配置的名字一样报 `ai.provider.not_found`。
 
 每个 Provider 有一个种类 `Kind`（必填，转成小写），由登记的 `IChatClientFactory` / `IEmbeddingGeneratorFactory` 的 `Kind` 匹配；Provider 包以 `AddAIChatClientFactory<T>()`、`AddAIEmbeddingGeneratorFactory<T>()` 登记工厂，同一种类登记两次以后者为准。Provider 名字、提示词名字与 `XiHan:AI:Knowledge:Collection` 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`，不合法时构造选项抛出 `ArgumentException`。
 
@@ -94,13 +101,13 @@ app.Run();
 1. 提示词：`Prompt` 不为空时按 `PromptArguments` 渲染模板，结果作为首条 `System` 消息。
 2. 工具：`Tools` 列出的名字从工具目录绑定到当前调用；`Options.Tools` 会被绑定结果覆盖。
 3. 护栏：`SkipGuardrails` 为假时按登记顺序检查全部消息，任一拦截即返回。
-4. Provider：`Provider` 为空取默认 Provider，解析客户端。
+4. Provider：`Provider` 为空取目录的 `DefaultProvider`（没有即 `AI_NOTFOUND_001`），解析客户端。
 5. 调用模型。
 
 | `AIChatRequest` 成员 | 说明 |
 | --- | --- |
 | `Messages` | 必填，对话消息 |
-| `Provider` | Provider 名，空取默认 |
+| `Provider` | Provider 名，空取目录的默认聊天 Provider |
 | `Prompt`、`PromptArguments` | 提示词模板名与参数 |
 | `Tools` | 要带上的工具名（目录里的名字），空表示不带工具 |
 | `Options` | `ChatOptions`，温度、最大令牌数等原样传给模型 |
@@ -348,6 +355,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
+- 摄入与检索的嵌入 Provider 依次取请求的 `Provider`、`XiHan:AI:Knowledge:EmbeddingProvider`、目录的 `DefaultEmbeddingProvider`，都没有时返回 `AI_NOTFOUND_001`（`ai.provider.embedding_default_missing`）。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
 - `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：`AIToolsFeature`、`VectorDataKnowledgeFeature` 与 `OpenAIFeature` 启动时都解析增强器（只装其中任何一个也一样），模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。校验之后增强只用这份模板、只给这两个参数，不会再失败，所以返回 `string`。
 - 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
@@ -360,8 +368,8 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:AI:DefaultProvider` | string | 只有一个 Provider 时取它 | 默认聊天 Provider |
-| `XiHan:AI:DefaultEmbeddingProvider` | string | 同 `DefaultProvider` | 默认嵌入 Provider |
+| `XiHan:AI:DefaultProvider` | string | 只有一个 Provider 时取它 | 框架自带目录的默认聊天 Provider；替换了目录时不起作用 |
+| `XiHan:AI:DefaultEmbeddingProvider` | string | 同 `DefaultProvider` | 框架自带目录的默认嵌入 Provider |
 | `XiHan:AI:Providers:<name>:Kind` | string | 必填 | Provider 种类，转成小写后匹配工厂 |
 | `XiHan:AI:Providers:<name>:Endpoint` | 绝对的 http(s) 地址 | 空，即 Provider 的官方端点 | 模型端点 |
 | `XiHan:AI:Providers:<name>:ApiKey` | string | 空 | API 密钥；空时由 Provider 决定 |
@@ -379,7 +387,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | `XiHan:AI:Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
 | `XiHan:AI:Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
 | `XiHan:AI:Knowledge:Top` | int，至少 1 | 5 | 默认检索条数 |
-| `XiHan:AI:Knowledge:EmbeddingProvider` | string | 默认嵌入 Provider | 知识库用的嵌入 Provider |
+| `XiHan:AI:Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
 | `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}` |
 
 ::: warning 配置值写错时启动失败
@@ -392,7 +400,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | --- | --- |
 | `AI_VALIDATION_001` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、工具参数序列化不了（交给模型的 JSON 错误）、工具名不合法或重名（启动失败） |
 | `AI_VALIDATION_002` | 嵌入维度与 `XiHan:AI:Knowledge:Dimensions` 不一致 |
-| `AI_NOTFOUND_001` | Provider 未配置，或它的种类没有登记工厂 |
+| `AI_NOTFOUND_001` | Provider 未配置，或它的种类没有登记工厂；没写 Provider 名而目录没有默认 |
 | `AI_NOTFOUND_002` | 提示词模板不存在 |
 | `AI_NOTFOUND_003` | 请求里的工具名不在目录里 |
 | `AI_DENIED_001` | 被护栏拦截，细节带 `guardrail` 与 `reason` |
@@ -407,7 +415,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 
 - 执行管道：工具调用是一次完整的管道调用，审计、事务、校验都照常生效，审计事件与发起聊天的调用共享 trace-id，见[执行管道](./pipeline)。
 - 操作契约：`Expose.Ai` 是 `Expose` 的一个标志位，`Expose.All` 包含它，见[操作契约](./operations)。
-- 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[测试与一致性套件](./testing)。
+- 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[测试与一致性套件](./testing)。自写目录的应用继承 `AIProviderConformance`，实现 `StartAsync`（被测 Provider 是默认）与 `StartWithoutDefaultAsync`（没有默认），能把聊天与嵌入的默认分开时再覆写 `StartWithSeparateDefaultsAsync`。
 - 4.x：4.x 的 Agent 工厂不迁移，等 `Microsoft.Agents.AI` 稳定后另立规范；其余对照见[从 4.x 迁移](./upgrade)。
 
 ## 相关

@@ -9,6 +9,8 @@
   "ai.model.unavailable": "O provedor de IA '{provider}' está indisponível: {reason}",
   "ai.prompt.argument_missing": "O modelo de prompt '{name}' precisa do argumento '{argument}'.",
   "ai.prompt.not_found": "O modelo de prompt '{name}' não existe.",
+  "ai.provider.default_missing": "Nenhum provedor de IA padrão está definido; informe o provedor na solicitação.",
+  "ai.provider.embedding_default_missing": "Nenhum provedor de IA padrão para embeddings está definido; informe o provedor na solicitação.",
   "ai.provider.invalid": "O provedor de IA '{name}' está configurado incorretamente: {reason}",
   "ai.provider.kind_unknown": "O provedor de IA '{name}' é do tipo '{kind}', que não tem fábrica registrada.",
   "ai.provider.not_found": "O provedor de IA '{name}' não está configurado.",
