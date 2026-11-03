@@ -10,7 +10,7 @@ namespace XiHan.Framework.AI.VectorData.Tests;
 /// 进程内的向量存储
 /// </summary>
 /// <remarks>
-/// 只支持 <c>&lt;string, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用。存储级的 <see cref="CollectionExistsAsync"/>（健康探针只用它）可以让它抛出或挂起，模拟向量库不可达或连接卡住
+/// 只支持 <c>&lt;Guid, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用。存储级的 <see cref="CollectionExistsAsync"/>（健康探针只用它）可以让它抛出或挂起，模拟向量库不可达或连接卡住
 /// </remarks>
 internal sealed class TestVectorStore : VectorStore
 {
@@ -58,9 +58,9 @@ internal sealed class TestVectorStore : VectorStore
     /// <inheritdoc />
     public override VectorStoreCollection<TKey, TRecord> GetCollection<TKey, TRecord>(string name, VectorStoreCollectionDefinition? definition = null)
     {
-        if (typeof(TKey) != typeof(string) || typeof(TRecord) != typeof(KnowledgeVectorRecord))
+        if (typeof(TKey) != typeof(Guid) || typeof(TRecord) != typeof(KnowledgeVectorRecord))
         {
-            throw new NotSupportedException("The test store only supports string keys and knowledge records.");
+            throw new NotSupportedException("The test store only supports Guid keys and knowledge records.");
         }
 
         if (!_collections.TryGetValue(name, out var collection))

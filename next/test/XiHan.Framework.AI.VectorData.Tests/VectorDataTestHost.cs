@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Conformance.Embeddings;
@@ -33,7 +34,15 @@ internal static class VectorDataTestHost
     /// <remarks>
     /// <paramref name="clock"/> 为空时用内核登记的系统时钟；健康探针的循环与单次超时都按它计时
     /// </remarks>
-    public static Task<TestHost> StartAsync(VectorStore? store, TimeProvider? clock, params (string Key, string Value)[] extra)
+    public static Task<TestHost> StartAsync(VectorStore? store, TimeProvider? clock, params (string Key, string Value)[] extra) => StartAsync(store, clock, null, extra);
+
+    /// <summary>
+    /// 按给定的时钟与日志工厂启动
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="logs"/> 为空时用内核登记的日志
+    /// </remarks>
+    public static Task<TestHost> StartAsync(VectorStore? store, TimeProvider? clock, ILoggerFactory? logs, params (string Key, string Value)[] extra)
     {
         (string Key, string Value)[] configuration =
         [
@@ -56,6 +65,11 @@ internal static class VectorDataTestHost
                 if (clock is not null)
                 {
                     services.AddSingleton(clock);
+                }
+
+                if (logs is not null)
+                {
+                    services.AddSingleton(logs);
                 }
             });
     }

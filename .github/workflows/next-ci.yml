@@ -80,6 +80,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 12
+      qdrant:
+        # AI.VectorData 的真实 Qdrant 用例（一致性套件与摄入、检索）。镜像里没有 curl、wget，不配健康检查；用到它之前的还原与构建要几分钟，够它就绪
+        image: qdrant/qdrant:v1.18.2
+        ports:
+          - 6334:6334
     runs-on: ubuntu-latest
 
     steps:
@@ -115,6 +120,7 @@ jobs:
           # Oracle 的门控用例（XIHAN_TEST_ORACLE）在下面单独的 oracle 作业里跑，这里不设、跳过
           XIHAN_TEST_REDIS: localhost:6379
           XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
+          XIHAN_TEST_QDRANT: http://localhost:6334
           XIHAN_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
           XIHAN_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=XiHan_Test_2026;TrustServerCertificate=True
           XIHAN_TEST_MYSQL: Server=localhost;Port=3306;User Id=root;Password=XiHan_Test_2026

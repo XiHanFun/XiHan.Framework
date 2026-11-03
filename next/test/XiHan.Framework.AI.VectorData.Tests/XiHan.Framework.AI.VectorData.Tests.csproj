@@ -13,5 +13,6 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="CommunityToolkit.VectorData.Qdrant" />
   </ItemGroup>
 </Project>

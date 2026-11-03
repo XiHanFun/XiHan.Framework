@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.Kernel;
@@ -75,7 +76,7 @@ public sealed class VectorDataKnowledgeHealthTests
     [Fact]
     public async Task Health_IsDegraded_WhenTheStoreIsUnreachableAtStartup_AndTheAppStillServes()
     {
-        var store = new TestVectorStore { Fault = new HttpRequestException("Connection refused.") };
+        var store = new TestVectorStore { Fault = new HttpRequestException("Connection refused by qdrant-prod.internal:6334.") };
         await using var host = await VectorDataTestHost.StartAsync(store);
 
         var health = host.App.Health();
@@ -83,7 +84,9 @@ public sealed class VectorDataKnowledgeHealthTests
         Assert.Equal(LifecycleState.Degraded, status.State);
         Assert.Equal(AIErrors.KnowledgeUnavailable, status.Error?.Code);
         Assert.Equal(AIMessages.KnowledgeUnavailable, status.Error?.MessageKey);
-        Assert.Equal("Connection refused.", status.Error?.Details?["reason"]);
+        // reason 只写异常类型：异常消息可能带地址，不进健康快照
+        Assert.Equal(typeof(HttpRequestException).FullName, status.Error?.Details?["reason"]);
+        Assert.DoesNotContain("qdrant-prod", status.Error?.Message ?? string.Empty, StringComparison.Ordinal);
         Assert.Empty(status.Data);
         // 条目 Degraded 只把应用压成 Degraded，不影响就绪（ADR-0030）
         Assert.True(health.Ready);
@@ -112,6 +115,42 @@ public sealed class VectorDataKnowledgeHealthTests
     }
 
     [Fact]
+    public async Task Health_LogsTheFullException_WarningOnceForAFailure_ThenDebug()
+    {
+        var logs = new LogCapture();
+        var refused = new HttpRequestException("Connection refused by qdrant-prod.internal:6334.");
+        var store = new TestVectorStore { Fault = refused };
+        await using var host = await VectorDataTestHost.StartAsync(store, null, logs);
+        var contributor = Contributor(host);
+
+        // 首探失败：Warning 带完整异常，排查靠它；健康快照里只有类型
+        var first = Assert.Single(ProbeEntries(logs));
+        Assert.Equal(LogLevel.Warning, first.Level);
+        Assert.Same(refused, first.Exception);
+
+        // 同一种失败持续：Debug，不刷 Warning
+        await contributor.ProbeAsync(CancellationToken.None);
+        Assert.Equal([LogLevel.Warning, LogLevel.Debug], ProbeEntries(logs).Select(static entry => entry.Level));
+        Assert.Same(refused, ProbeEntries(logs)[1].Exception);
+
+        // 异常类型变了是新的失败
+        var denied = new UnauthorizedAccessException("Key rejected.");
+        store.Fault = denied;
+        await contributor.ProbeAsync(CancellationToken.None);
+        Assert.Equal(LogLevel.Warning, ProbeEntries(logs)[2].Level);
+        Assert.Same(denied, ProbeEntries(logs)[2].Exception);
+        Assert.Equal(typeof(UnauthorizedAccessException).FullName, Status(host).Error?.Details?["reason"]);
+
+        // 恢复后再失败也是新的失败
+        store.Fault = null;
+        await contributor.ProbeAsync(CancellationToken.None);
+        Assert.Equal(3, ProbeEntries(logs).Count);
+        store.Fault = denied;
+        await contributor.ProbeAsync(CancellationToken.None);
+        Assert.Equal(LogLevel.Warning, ProbeEntries(logs)[3].Level);
+    }
+
+    [Fact]
     public async Task Health_TimesOut_WhenTheStoreHangs_EvenIfItIgnoresCancellation()
     {
         var clock = new FakeTimeProvider();
@@ -133,6 +172,12 @@ public sealed class VectorDataKnowledgeHealthTests
         Assert.Equal(VectorDataKnowledgeFeature.HealthName, status.Error?.Details?["name"]);
         Assert.True(host.App.Health().Ready);
     }
+
+    /// <summary>
+    /// 存储记下的探测日志（带异常的条目）
+    /// </summary>
+    private static List<(LogLevel Level, string Category, Exception? Exception)> ProbeEntries(LogCapture logs)
+        => logs.Entries.Where(static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName && entry.Exception is not null).ToList();
 
     /// <summary>
     /// 本特性登记的探针宿主

@@ -10,12 +10,12 @@ namespace XiHan.Framework.AI.VectorData.Tests;
 /// <summary>
 /// 进程内的向量集合：字典存储，过滤表达式直接编译执行，余弦相似度搜索
 /// </summary>
-internal sealed class TestVectorCollection : VectorStoreCollection<string, KnowledgeVectorRecord>
+internal sealed class TestVectorCollection : VectorStoreCollection<Guid, KnowledgeVectorRecord>
 {
     /// <summary>
-    /// ID → 记录
+    /// 键 → 记录
     /// </summary>
-    private readonly Dictionary<string, KnowledgeVectorRecord> _records = new(StringComparer.Ordinal);
+    private readonly Dictionary<Guid, KnowledgeVectorRecord> _records = [];
 
     /// <summary>
     /// 创建
@@ -52,11 +52,11 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     }
 
     /// <inheritdoc />
-    public override Task<KnowledgeVectorRecord?> GetAsync(string key, RecordRetrievalOptions? options = null, CancellationToken cancellationToken = default)
+    public override Task<KnowledgeVectorRecord?> GetAsync(Guid key, RecordRetrievalOptions? options = null, CancellationToken cancellationToken = default)
         => Task.FromResult(_records.TryGetValue(key, out var record) ? Clone(record, options?.IncludeVectors == true) : null);
 
     /// <inheritdoc />
-    public override async IAsyncEnumerable<KnowledgeVectorRecord> GetAsync(IEnumerable<string> keys, RecordRetrievalOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public override async IAsyncEnumerable<KnowledgeVectorRecord> GetAsync(IEnumerable<Guid> keys, RecordRetrievalOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await Task.Yield();
         foreach (var key in keys)
@@ -80,14 +80,14 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     }
 
     /// <inheritdoc />
-    public override Task DeleteAsync(string key, CancellationToken cancellationToken = default)
+    public override Task DeleteAsync(Guid key, CancellationToken cancellationToken = default)
     {
         _records.Remove(key);
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public override Task DeleteAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
+    public override Task DeleteAsync(IEnumerable<Guid> keys, CancellationToken cancellationToken = default)
     {
         foreach (var key in keys)
         {
@@ -105,7 +105,7 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
             throw new InvalidOperationException("The collection does not exist.");
         }
 
-        _records[record.Id] = Clone(record, includeVectors: true);
+        _records[record.Key] = Clone(record, includeVectors: true);
         return Task.CompletedTask;
     }
 
@@ -149,7 +149,8 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     /// </summary>
     private static KnowledgeVectorRecord Clone(KnowledgeVectorRecord record, bool includeVectors) => new()
     {
-        Id = record.Id,
+        Key = record.Key,
+        RecordId = record.RecordId,
         DocumentId = record.DocumentId,
         ChunkIndex = record.ChunkIndex,
         Text = record.Text,

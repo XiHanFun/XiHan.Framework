@@ -3,6 +3,7 @@
 
 using System.Linq.Expressions;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Knowledge;
@@ -15,10 +16,10 @@ namespace XiHan.Framework.AI.VectorData;
 /// </summary>
 /// <remarks>
 /// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删
-/// 健康项 <see cref="VectorDataKnowledgeFeature.HealthName"/> 的探针也在这里，连接器抛出时与存储操作报告同一个错误
+/// 健康项 <see cref="VectorDataKnowledgeFeature.HealthName"/> 的探针也在这里：连接器抛出时错误码与存储操作相同，<c>reason</c> 只写异常类型，完整异常进日志
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class VectorDataKnowledgeStore : IKnowledgeStore
+public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
 {
     /// <summary>
     /// 按过滤条件取键删除时的分页大小
@@ -46,12 +47,27 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     private readonly string _probeCollection;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
+    /// 上一次探测失败的异常类型
+    /// </summary>
+    /// <remarks>
+    /// 探测成功后为空。探测由健康循环逐次执行，这个字段不需要同步：万一并发，最多多记一条日志
+    /// </remarks>
+    private Type? _lastProbeFailure;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public VectorDataKnowledgeStore(VectorStore store, AIOptions options)
+    public VectorDataKnowledgeStore(VectorStore store, AIOptions options, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(options);
         _store = store ?? throw new ArgumentNullException(nameof(store));
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<VectorDataKnowledgeStore>();
         _definition = KnowledgeVectorRecord.Definition(options.Knowledge.Dimensions);
         _probeCollection = options.Knowledge.Collection;
     }
@@ -177,7 +193,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// </summary>
     /// <remarks>
     /// 只问默认集合在不在：一次轻量往返，存在与否都说明连得上；不列集合（按租户分集合时集合很多）、不建集合、不读写记录
-    /// 连接器抛出 → <see cref="AIErrors.KnowledgeUnavailable"/>，与存储操作报告的错误相同；取消（含探针宿主的超时）原样抛出，由探针宿主记成超时
+    /// 连接器抛出 → <see cref="AIErrors.KnowledgeUnavailable"/>，<c>reason</c> 是异常类型的全名；取消（含探针宿主的超时）原样抛出，由探针宿主记成超时
     /// </remarks>
     internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {
@@ -185,18 +201,33 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
         {
             // 连接器不一定理会取消令牌：按令牌结束等待，卡住的连接也受探针宿主的时限约束，不拖住健康循环与启动
             await _store.CollectionExistsAsync(_probeCollection, cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
+            _lastProbeFailure = null;
             return Result.Success();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(exception);
+            // 同一种失败只记一次 Warning，持续时记 Debug：向量库停着时，每个探测周期一条带堆栈的 Warning 会淹没日志
+            var failure = exception.GetType();
+            if (failure == _lastProbeFailure)
+            {
+                LogProbeStillFailing(_logger, _probeCollection, exception);
+            }
+            else
+            {
+                LogProbeFailed(_logger, _probeCollection, exception);
+            }
+
+            _lastProbeFailure = failure;
+
+            // 这个 Provider 接任意连接器，异常消息可能带地址或连接串，健康快照里只写类型；完整异常在上面的日志里
+            return Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", failure.FullName ?? failure.Name)));
         }
     }
 
     /// <summary>
     /// 取集合
     /// </summary>
-    private VectorStoreCollection<string, KnowledgeVectorRecord> Collection(string name) => _store.GetCollection<string, KnowledgeVectorRecord>(name, _definition);
+    private VectorStoreCollection<Guid, KnowledgeVectorRecord> Collection(string name) => _store.GetCollection<Guid, KnowledgeVectorRecord>(name, _definition);
 
     /// <summary>
     /// 删除满足过滤条件的全部记录
@@ -204,15 +235,15 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// <remarks>
     /// 连接器不一定支持按过滤删除：先分页取键再按键删，直到取不满一页。删掉的记录不再出现在下一页里，所以不需要跳过
     /// </remarks>
-    private static async ValueTask DeleteMatchingAsync(VectorStoreCollection<string, KnowledgeVectorRecord> target, Expression<Func<KnowledgeVectorRecord, bool>> filter, CancellationToken cancellationToken)
+    private static async ValueTask DeleteMatchingAsync(VectorStoreCollection<Guid, KnowledgeVectorRecord> target, Expression<Func<KnowledgeVectorRecord, bool>> filter, CancellationToken cancellationToken)
     {
         var retrieval = new FilteredRecordRetrievalOptions<KnowledgeVectorRecord> { IncludeVectors = false };
         while (true)
         {
-            var keys = new List<string>();
+            var keys = new List<Guid>();
             await foreach (var record in target.GetAsync(filter, DeletePageSize, retrieval, cancellationToken).ConfigureAwait(false))
             {
-                keys.Add(record.Id);
+                keys.Add(record.Key);
             }
 
             if (keys.Count == 0)
@@ -261,7 +292,8 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// </summary>
     private static KnowledgeVectorRecord ToVector(KnowledgeRecord record) => new()
     {
-        Id = record.Id,
+        Key = KnowledgeVectorRecord.KeyOf(record.Id),
+        RecordId = record.Id,
         DocumentId = record.DocumentId,
         ChunkIndex = record.ChunkIndex,
         Text = record.Text,
@@ -274,7 +306,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// </summary>
     private static RetrievedChunk ToChunk(KnowledgeVectorRecord record, double score) => new()
     {
-        Id = record.Id,
+        Id = record.RecordId,
         DocumentId = record.DocumentId,
         ChunkIndex = record.ChunkIndex,
         Text = record.Text,
@@ -289,4 +321,16 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     /// </summary>
     private static Error Unavailable(Exception exception)
         => Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", exception.Message)));
+
+    /// <summary>
+    /// 探测失败（这一种失败第一次）
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The vector store did not answer the health probe of collection '{Collection}'.")]
+    private static partial void LogProbeFailed(ILogger logger, string collection, Exception exception);
+
+    /// <summary>
+    /// 探测持续失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The vector store still does not answer the health probe of collection '{Collection}'.")]
+    private static partial void LogProbeStillFailing(ILogger logger, string collection, Exception exception);
 }
