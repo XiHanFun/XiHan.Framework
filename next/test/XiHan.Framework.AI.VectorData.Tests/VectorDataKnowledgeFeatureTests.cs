@@ -80,7 +80,7 @@ public sealed class VectorDataKnowledgeFeatureTests
         Assert.All(billingOnly, chunk => Assert.Equal("billing", chunk.DocumentId));
 
         var prompt = host.Services.GetRequiredService<IRagPromptAugmenter>().Augment("how do I reset my password", chunks);
-        Assert.Contains("[1] (document: password", prompt, StringComparison.Ordinal);
+        Assert.Contains("[1] Source: password", prompt, StringComparison.Ordinal);
         Assert.EndsWith("how do I reset my password", prompt, StringComparison.Ordinal);
 
         Assert.True((await ingestor.RemoveAsync("faq", ["password"], CancellationToken.None)).IsSuccess);

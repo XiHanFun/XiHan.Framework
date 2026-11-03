@@ -127,6 +127,7 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.IngestAsync(System.C
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.KnowledgeIngestor(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Knowledge.IChunkingStrategy! chunking, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore? store = null) -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.RemoveAsync(string? collection, System.Collections.Generic.IReadOnlyList<string!>! documentIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestorExtensions
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.ChunkOverlap.get -> int
@@ -320,6 +321,8 @@ const XiHan.Framework.AI.Abstractions.AIMessages.ToolDuplicate = "ai.tool.duplic
 const XiHan.Framework.AI.Abstractions.AIMessages.ToolNotFound = "ai.tool.not_found" -> string!
 const XiHan.Framework.AI.Abstractions.AIOptions.ConfigurationSection = "XiHan:AI" -> string!
 const XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.GuardrailName = "keyword-blocklist" -> string!
+const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Source = "source" -> string!
+const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Title = "title" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollection = "knowledge" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.BuiltInTemplate = "Answer the question using only the knowledge snippets below. If they are not enough, say that no supporting evidence was found instead of guessing. Cite snippets by their number, like [1].\n\n# Knowledge snippets\n{context}\n# Question\n{question}" -> string!
 const XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention.MaxLength = 64 -> int

@@ -155,12 +155,12 @@ public sealed class KnowledgeTests
         await using var host = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:PromptName", "rag"), ("XiHan:AI:Prompts:rag:Template", "CTX:{context}|Q:{question}"));
         var augmenter = host.Services.GetRequiredService<IRagPromptAugmenter>();
         var configured = augmenter.Augment("why?", _chunks);
-        Assert.StartsWith("CTX:[1] (document: a, chunk: 0)\nfirst\n\n[2] (document: b, chunk: 1)\nsecond\n\n|Q:why?", configured, StringComparison.Ordinal);
+        Assert.StartsWith("CTX:[1] Source: a\nfirst\n\n[2] Source: b\nsecond\n\n|Q:why?", configured, StringComparison.Ordinal);
         Assert.Equal("why?", augmenter.Augment("why?", []));
 
         await using var plain = await StartAsync(new FakeKnowledgeStore());
         var builtIn = plain.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks);
-        Assert.Contains("# Knowledge snippets\n[1] (document: a, chunk: 0)\nfirst", builtIn, StringComparison.Ordinal);
+        Assert.Contains("# Knowledge snippets\n[1] Source: a\nfirst", builtIn, StringComparison.Ordinal);
         Assert.EndsWith("# Question\nwhy?", builtIn, StringComparison.Ordinal);
     }
 
@@ -179,7 +179,7 @@ public sealed class KnowledgeTests
 
         // 显式登记的模板同样可以被引用；校验通过后增强只用这份模板
         await using var registered = await StartWithToolsAsync(static services => services.AddAIPrompt(new AIPromptTemplate("rag", "Q:{question} C:{context}")), ("XiHan:AI:Knowledge:PromptName", "rag"));
-        Assert.StartsWith("Q:why? C:[1] (document: a, chunk: 0)", registered.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks), StringComparison.Ordinal);
+        Assert.StartsWith("Q:why? C:[1] Source: a", registered.Services.GetRequiredService<IRagPromptAugmenter>().Augment("why?", _chunks), StringComparison.Ordinal);
     }
 
     /// <summary>

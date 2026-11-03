@@ -95,6 +95,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | `Guardrails.IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏 |
 | `Tools.IAIToolCatalog`、`Tools.OperationAIFunction`、`Tools.AIToolNameConvention` | 工具目录、操作工具（`OperationId`）、命名约定（`Derive`、`DescriptionKeyOf`，上限 64） |
 | `Knowledge.IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 流水线；`KnowledgeIngestorExtensions` 提供单篇的 `IngestAsync` 与 `RemoveAsync` |
+| `Knowledge.KnowledgeMetadataKeys` | 框架认识的块元数据键：`Title`（`title`）、`Source`（`source`），提示增强依次用它们写片段的来源，都没有时用文档 ID |
 | `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（删一篇文档里块序号不小于给定值的记录）、`SearchAsync`（按 `Score` 降序） |
 | `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>` |
 | `AIIdentifiers` | 名字文法 `^[a-z0-9][a-z0-9._-]{0,63}$`，工具名 `^[A-Za-z0-9_-]{1,64}$` |

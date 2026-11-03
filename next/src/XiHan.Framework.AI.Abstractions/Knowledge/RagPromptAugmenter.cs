@@ -13,6 +13,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// </summary>
 /// <remarks>
 /// 创建时就定下模板：配置了 <see cref="KnowledgeOptions.PromptName"/> 就从提示词目录取它指向的模板，并用代表性参数试渲染一次；找不到或渲染不了抛出 <see cref="FrameworkException"/>，宿主启动失败（AI 的宿主特性启动时解析本服务）。没有配置用内置英文模板。之后增强只用这份模板，不再查目录，因而不会失败
+/// <c>{context}</c> 里每个片段一段：先是 <c>[序号] Source: 来源</c> 一行，再是片段文本。来源取元数据的 <see cref="KnowledgeMetadataKeys.Title"/>，没有或为空白取 <see cref="KnowledgeMetadataKeys.Source"/>，都没有取文档 ID（ADR-0116）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RagPromptAugmenter : IRagPromptAugmenter
@@ -54,7 +55,7 @@ public sealed class RagPromptAugmenter : IRagPromptAugmenter
         for (var index = 0; index < chunks.Count; index++)
         {
             var chunk = chunks[index];
-            context.Append('[').Append((index + 1).ToString(CultureInfo.InvariantCulture)).Append("] (document: ").Append(chunk.DocumentId).Append(", chunk: ").Append(chunk.ChunkIndex.ToString(CultureInfo.InvariantCulture)).Append(")\n");
+            context.Append('[').Append((index + 1).ToString(CultureInfo.InvariantCulture)).Append("] Source: ").Append(SourceOf(chunk)).Append('\n');
             context.Append(chunk.Text).Append("\n\n");
         }
 
@@ -81,7 +82,7 @@ public sealed class RagPromptAugmenter : IRagPromptAugmenter
         }
 
         // 用代表性参数试渲染：增强时只提供这两个参数，这里渲染得出来，运行时就渲染得出来
-        if (template.Render(Arguments("[1] (document: sample, chunk: 0)\nsample\n\n", "sample")).IsFailure)
+        if (template.Render(Arguments("[1] Source: sample\nsample\n\n", "sample")).IsFailure)
         {
             var extra = template.Placeholders.Where(static placeholder => placeholder is not ("context" or "question"));
             throw new FrameworkException(AIErrors.RequestInvalid, string.Format(CultureInfo.InvariantCulture, "The knowledge prompt '{0}' may only use the placeholders 'context' and 'question', but it also uses '{1}'.", name, string.Join("', '", extra)));
@@ -89,6 +90,21 @@ public sealed class RagPromptAugmenter : IRagPromptAugmenter
 
         return template;
     }
+
+    /// <summary>
+    /// 片段的来源
+    /// </summary>
+    /// <remarks>
+    /// 文档 ID 是兜底：多半是 Guid，模型拿它说不清依据。来源只占一行，值里的换行换成空格，否则后面的文本分不清哪里开始
+    /// </remarks>
+    private static string SourceOf(RetrievedChunk chunk)
+        => (Label(chunk, KnowledgeMetadataKeys.Title) ?? Label(chunk, KnowledgeMetadataKeys.Source) ?? chunk.DocumentId).ReplaceLineEndings(" ");
+
+    /// <summary>
+    /// 元数据里非空白的值
+    /// </summary>
+    private static string? Label(RetrievedChunk chunk, string key)
+        => chunk.Metadata.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
 
     /// <summary>
     /// 增强的模板参数
