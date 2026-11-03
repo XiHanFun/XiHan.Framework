@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives;
 
@@ -39,11 +40,18 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
     private readonly IKnowledgeStore? _store;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, IKnowledgeStore? store = null)
+    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<KnowledgeRetriever>();
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
@@ -71,7 +79,7 @@ public sealed class KnowledgeRetriever : IKnowledgeRetriever
             return AIProviderCatalog.DefaultEmbeddingMissing();
         }
 
-        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, [query.Text], _timeProvider, cancellationToken).ConfigureAwait(false);
+        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, [query.Text], _timeProvider, _logger, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors) || vectors.Count == 0)
         {
             return generated.Error ?? Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", "the provider returned no embedding")));

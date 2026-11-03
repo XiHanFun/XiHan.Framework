@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Providers;
@@ -63,10 +64,17 @@ public sealed class AIChat : IAIChat
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public AIChat(IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services)
+    public AIChat(IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<AIChat>();
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _prompts = prompts ?? throw new ArgumentNullException(nameof(prompts));
         _tools = tools ?? throw new ArgumentNullException(nameof(tools));
@@ -99,7 +107,7 @@ public sealed class AIChat : IAIChat
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(call.Provider, exception);
+            return ModelErrors.Unavailable(_logger, call.Provider, exception);
         }
 
         return timeout.ReturnedAfterTimeout() ? Timeout(call.Provider) : response;
@@ -255,12 +263,6 @@ public sealed class AIChat : IAIChat
     /// </summary>
     private static Error Timeout(string provider)
         => new(AIErrors.ModelTimeout, AIMessages.ModelTimeout, MessageArguments.Of(("provider", provider)));
-
-    /// <summary>
-    /// 不可达或返回错误
-    /// </summary>
-    private static Error Unavailable(string provider, Exception exception)
-        => Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", exception.Message)));
 
     /// <summary>
     /// 准备好的调用

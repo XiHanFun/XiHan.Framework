@@ -100,7 +100,7 @@ public sealed class AIChatTests
         client.Throw = new InvalidOperationException("endpoint down");
         var unavailable = await chat.CompleteAsync(request, CancellationToken.None);
         Assert.Equal(AIErrors.ModelUnavailable, unavailable.Error?.Code);
-        Assert.Equal("endpoint down", unavailable.Error!.Details!["reason"]);
+        Assert.Equal(typeof(InvalidOperationException).FullName, unavailable.Error!.Details!["reason"]);
         Assert.Equal("fake", unavailable.Error.Details["provider"]);
 
         client.Throw = new OperationCanceledException();

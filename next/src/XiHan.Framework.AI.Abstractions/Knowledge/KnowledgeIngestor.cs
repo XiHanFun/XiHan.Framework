@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives;
 
@@ -44,11 +45,18 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
     private readonly IKnowledgeStore? _store;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, IKnowledgeStore? store = null)
+    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        _logger = loggerFactory.CreateLogger<KnowledgeIngestor>();
         _options = options.Knowledge;
         _providers = providers ?? throw new ArgumentNullException(nameof(providers));
         _chunking = chunking ?? throw new ArgumentNullException(nameof(chunking));
@@ -110,7 +118,7 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
             return AIProviderCatalog.DefaultEmbeddingMissing();
         }
 
-        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, chunks, _timeProvider, cancellationToken).ConfigureAwait(false);
+        var generated = await KnowledgeErrors.EmbedAsync(_providers, provider, chunks, _timeProvider, _logger, cancellationToken).ConfigureAwait(false);
         if (!generated.TryGetValue(out var vectors))
         {
             return generated.Error!;

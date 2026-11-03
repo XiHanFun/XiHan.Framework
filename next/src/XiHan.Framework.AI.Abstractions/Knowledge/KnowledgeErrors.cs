@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
 using XiHan.Framework.Primitives;
 
@@ -35,8 +36,9 @@ internal static class KnowledgeErrors
     /// <param name="provider">Provider 名（调用方已按请求、知识库配置与目录的默认名取定）</param>
     /// <param name="inputs">输入文本</param>
     /// <param name="timeProvider">时间源</param>
+    /// <param name="logger">日志（调用失败时记下完整异常）</param>
     /// <param name="cancellationToken">调用方令牌</param>
-    public static async ValueTask<Result<GeneratedEmbeddings<Embedding<float>>>> EmbedAsync(IAIProviderCatalog providers, string provider, IReadOnlyList<string> inputs, TimeProvider timeProvider, CancellationToken cancellationToken)
+    public static async ValueTask<Result<GeneratedEmbeddings<Embedding<float>>>> EmbedAsync(IAIProviderCatalog providers, string provider, IReadOnlyList<string> inputs, TimeProvider timeProvider, ILogger logger, CancellationToken cancellationToken)
     {
         var generator = providers.ResolveEmbeddingGenerator(provider);
         if (!generator.TryGetValue(out var embeddings))
@@ -62,7 +64,7 @@ internal static class KnowledgeErrors
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", exception.Message)));
+            return ModelErrors.Unavailable(logger, provider, exception);
         }
 
         // 生成器接住取消、正常返回的结果可能条数不全：超时令牌已触发即超时，只有调用方取消时抛出取消

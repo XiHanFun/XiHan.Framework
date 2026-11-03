@@ -146,7 +146,7 @@ public sealed class AskAssistant(IAIChat chat) : IOperation<AskRequest, AskRespo
 }
 ```
 
-`StreamAsync` 在返回流之前完成提示词、工具、护栏与 Provider 解析，这些失败以 `Result` 返回；流开始后模型端点的异常在枚举时抛出。模型端点不可达或返回错误记 `AI_UNAVAILABLE_001`，超时记 `AI_TIMEOUT_001`。
+`StreamAsync` 在返回流之前完成提示词、工具、护栏与 Provider 解析，这些失败以 `Result` 返回；流开始后模型端点的异常在枚举时抛出。模型端点不可达或返回错误记 `AI_UNAVAILABLE_001`，`reason` 只写异常类型的全名，完整异常进日志（每次失败一条 Warning，带 Provider 名，ADR-0113）；超时记 `AI_TIMEOUT_001`。
 
 ### 超时与取消
 
