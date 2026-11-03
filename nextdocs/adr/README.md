@@ -119,3 +119,4 @@
 | [0114](0114-护栏抛出时的错误只写异常类型.md) | 第二十七批：护栏抛出时 `AI_UNEXPECTED_001` 的 `reason` 只写异常类型全名，完整异常进日志（每次一条 Error，带护栏名）；错误码、消息键与参数名不变；护栏自己返回的失败仍用它的文案。修订 ADR-0113 |
 | [0115](0115-其他模块的异常消息不再进reason.md) | 第二十八批，按审查清单 `ag-audit.md` 改：对象存储、多租户、审计、工作流活动与 HTTP、Wasm 崩溃、CloudEvents Webhook、Kafka 重放、健康项探针的 `reason` 只写异常类型（Wasm 写陷阱种类），完整异常进日志；Kafka 与 RabbitMQ 的 `FrameworkException` 不再拼代理文字，修复 ADR-0108 的前提。相关类型的构造增加 `ILoggerFactory`。其余 63 处保留 |
 | [0116](0116-提示增强里片段的来源.md) | 第二十九批：提示增强里片段的来源照 4.x 口径，依次取块元数据的 `title`、`source`，都没有才取文档 ID，键名是公开常量 `KnowledgeMetadataKeys`；片段头从 `[n] (document: …, chunk: …)` 改成 `[n] Source: …`，内置模板的英文指令不动 | 已采纳 |
+| [0117](0117-出站地址策略.md) | 第二十九批：内核 `Kernel.Security.OutboundAddressPolicy`，缺省只能连公网地址，回环、私网、链路本地与其余不可公网路由的地址都拒绝，经 `XiHan:Security:Outbound` 放行；检查放在 `SocketsHttpHandler.ConnectCallback`，按解析出的实际 IP 判，DNS 重绑定与重定向都覆盖；工作流 `Http` 活动、CloudEvents Webhook、S3 命名实例接入，OpenID Connect、OpenAI、S3 缺省实例、Nacos、Kubernetes 不接并写明原因 | 已采纳 |

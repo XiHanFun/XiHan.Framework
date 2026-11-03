@@ -82,6 +82,8 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 绑定的解析规则见[配置与选项](../guide/configuration#资源绑定)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
+命名实例的客户端过[出站地址策略](../guide/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+
 ## 条件写入探测
 
 不覆盖写入（`Overwrite = false`）在 S3 上靠条件写入 `If-None-Match: *` 保证原子。有的兼容服务不认这个请求头，照常写入：先 HEAD 再写的两个写入方都会成功，后写的静默覆盖先写的（实测 Garage、Zenko CloudServer 上 8 个并发写入方全部"成功"）。所以本包在不覆盖写入之前先探明服务是否认它（ADR-0089、ADR-0090、ADR-0093）：

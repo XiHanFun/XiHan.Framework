@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Ursache: {cause}",
   "workflow.http.failed": "Die HTTP-Anfrage ist mit Status {status} fehlgeschlagen: {reason}",
   "workflow.http.timed_out": "Die HTTP-Anfrage hat das Zeitlimit überschritten.",
+  "workflow.http.address_denied": "Die Richtlinie für ausgehende Adressen erlaubt keine HTTP-Anfrage an {host}.",
   "workflow.instance.active_exists": "Der Workflow '{name}' hat bereits eine unbeendete Instanz für die Korrelation '{correlation}'.",
   "workflow.instance.depth": "Die Sub-Workflow-Tiefe {depth} überschreitet das Limit von {max}.",
   "workflow.instance.is_canceled": "Die Workflow-Instanz '{id}' wurde abgebrochen und erlaubt diesen Vorgang nicht.",

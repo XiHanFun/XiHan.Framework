@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Primitives;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Protocols.CloudEvents;
 /// CloudEvents 协议适配器的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；注册选项、消息目录、出站 Webhook 的 HttpClient（缺省不写追踪上下文头，见 <see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射
+/// 提供 <c>protocols.cloudevents@1</c>，需要 <c>messaging.queue@1</c>（派发器、订阅表与发布者由消息 Provider 提供）；注册选项、消息目录、出站 Webhook 的 HttpClient（过出站地址策略，缺省不写追踪上下文头，见 <see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）与 <see cref="CloudEventsWebhookPublisher"/>；入站端点由应用在路由阶段调用 <c>MapXiHanCloudEvents()</c> 映射
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CloudEventsProtocolFeature : IFeature
@@ -49,6 +50,8 @@ public sealed class CloudEventsProtocolFeature : IFeature
         var options = CloudEventsProtocolOptions.FromConfiguration(context.Configuration);
         context.Services.AddSingleton(options);
         var client = context.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName);
+        // 地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网：过出站地址策略，重定向也在连接时检查（ADR-0117）
+        client.UseSocketsHttpHandler(static (handler, services) => services.GetRequiredService<OutboundAddressPolicy>().Apply(handler));
         if (!options.PropagateTraceContext)
         {
             // Webhook 的接收方是第三方：启用追踪时 HttpClient 会按当前 Activity 写 traceparent / tracestate / baggage 头，把内部追踪 ID 与 Baggage 推出去，

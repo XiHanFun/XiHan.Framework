@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
@@ -22,7 +23,7 @@ public sealed partial class CloudEventsWebhookPublisher : IMessagePublisher
     /// 使用的命名 HttpClient
     /// </summary>
     /// <remarks>
-    /// 应用可按此名配置超时、重试与基地址。主处理器缺省是不写追踪上下文头的 <see cref="SocketsHttpHandler"/>（<see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）；调连接参数用 <c>UseSocketsHttpHandler</c> 配置同一个处理器，整个替换主处理器则由替换后的处理器决定是否传播
+    /// 应用可按此名配置超时、重试与基地址。主处理器缺省是过出站地址策略（<see cref="OutboundAddressPolicy"/>）、不写追踪上下文头（<see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）的 <see cref="SocketsHttpHandler"/>；调连接参数用 <c>UseSocketsHttpHandler</c> 配置同一个处理器，整个替换主处理器则由替换后的处理器决定能连哪里、是否传播
     /// </remarks>
     public const string HttpClientName = "xihan.protocols.cloudevents";
 
@@ -107,9 +108,9 @@ public sealed partial class CloudEventsWebhookPublisher : IMessagePublisher
         }
         catch (HttpRequestException exception)
         {
-            // 连接异常的消息常带订阅方的主机与端口：reason 只写类型，完整异常只进日志
+            // 连接异常的消息常带订阅方的主机与端口：reason 只写类型，完整异常只进日志；地址被策略拒绝时写拒绝的类型，运维一眼能看出不是对方的问题
             LogWebhookUnreachable(_logger, topic, exception);
-            var type = exception.GetType();
+            var type = exception.InnerException is OutboundAddressDeniedException denied ? denied.GetType() : exception.GetType();
             return Error.Unavailable(CloudEventsErrors.WebhookUnreachable, CloudEventsMessages.WebhookUnreachable, MessageArguments.Of(("topic", topic), ("reason", type.FullName ?? type.Name)));
         }
     }

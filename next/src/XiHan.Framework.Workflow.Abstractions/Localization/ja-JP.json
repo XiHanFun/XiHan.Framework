@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message}原因：{cause}",
   "workflow.http.failed": "HTTP リクエストがステータス {status} で失敗しました：{reason}",
   "workflow.http.timed_out": "HTTP リクエストがタイムアウトしました。",
+  "workflow.http.address_denied": "送信先アドレスポリシーにより、{host} への HTTP リクエストは許可されていません。",
   "workflow.instance.active_exists": "ワークフロー '{name}' には相関 '{correlation}' の未完了インスタンスがすでにあります。",
   "workflow.instance.depth": "サブワークフローの深さ {depth} が上限 {max} を超えています。",
   "workflow.instance.is_canceled": "ワークフローインスタンス '{id}' はキャンセル済みのため、この操作はできません。",

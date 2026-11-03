@@ -17,7 +17,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 概述
 
-`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents` 与 `CloudEventsWebhookPublisher`。
+`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents`（过[出站地址策略](../guide/outbound)）与 `CloudEventsWebhookPublisher`。
 
 入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。
 

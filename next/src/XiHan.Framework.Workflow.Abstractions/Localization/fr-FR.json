@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Cause : {cause}",
   "workflow.http.failed": "La requête HTTP a échoué avec le statut {status} : {reason}",
   "workflow.http.timed_out": "La requête HTTP a expiré.",
+  "workflow.http.address_denied": "La stratégie d'adresses sortantes n'autorise pas la requête HTTP vers {host}.",
   "workflow.instance.active_exists": "Le flux de travail '{name}' a déjà une instance non terminée pour la corrélation '{correlation}'.",
   "workflow.instance.depth": "La profondeur de sous-workflow {depth} dépasse la limite de {max}.",
   "workflow.instance.is_canceled": "L'instance de workflow '{id}' a été annulée et n'autorise pas cette opération.",

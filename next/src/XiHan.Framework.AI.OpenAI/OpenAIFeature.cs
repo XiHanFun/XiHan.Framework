@@ -21,6 +21,14 @@ namespace XiHan.Framework.AI.OpenAI;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenAIFeature : IHostedFeature
 {
+    /// <summary>
+    /// 发请求用的命名 HttpClient
+    /// </summary>
+    /// <remarks>
+    /// 容器里有 <see cref="IHttpClientFactory"/> 时经这个名字的客户端发请求。框架的端点来自配置，不过出站地址策略（ADR-0117）；应用的提供商目录让用户填端点时，给这个名字接上策略：<c>services.AddHttpClient(OpenAIFeature.HttpClientName).UseSocketsHttpHandler(static (handler, sp) => sp.GetRequiredService&lt;OutboundAddressPolicy&gt;().Apply(handler))</c>
+    /// </remarks>
+    public const string HttpClientName = "xihan.ai.openai";
+
     /// <inheritdoc />
     public Manifest Manifest { get; } = new()
     {

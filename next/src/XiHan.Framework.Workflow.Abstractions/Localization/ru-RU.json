@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Причина: {cause}",
   "workflow.http.failed": "HTTP-запрос завершился со статусом {status}: {reason}",
   "workflow.http.timed_out": "Истекло время ожидания HTTP-запроса.",
+  "workflow.http.address_denied": "Политика исходящих адресов не разрешает HTTP-запрос к {host}.",
   "workflow.instance.active_exists": "У рабочего процесса '{name}' уже есть незавершённый экземпляр для корреляции '{correlation}'.",
   "workflow.instance.depth": "Глубина вложенного процесса {depth} превышает предел {max}.",
   "workflow.instance.is_canceled": "Экземпляр рабочего процесса '{id}' отменён, эта операция недоступна.",

@@ -52,6 +52,8 @@ await tasks.CompleteAsync(new UserTaskCompletion(todo.ValueOrThrow()[0].Id, "man
 
 节点以结果标签完成时（用户任务的 `approved` / `rejected` / `timeout`、事件网关的信号名、`ContinueOnError` 的 `error`、活动自定的标签），标签写进实例变量 `outcome`，当前节点与后继决策节点的出边条件都按它选边；条件都不成立时才走默认出边。
 
+`Http` 活动的地址由流程定义给出，不可信：缺省的 `WorkflowHttpClient` 过出站地址策略（RFC-0008、ADR-0117），只能连公网地址，重定向的目标同样检查；目标被拒绝是节点故障，消息键 `workflow.http.address_denied`。
+
 `Http` 活动的超时按引擎的 `TimeProvider` 计时、按令牌归因（RFC-0021，ADR-0097）：活动的超时令牌已触发即节点故障 `WORKFLOW_UNEXPECTED_001`（消息键 `workflow.http.timed_out`），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 `OperationCanceledException`（操作随调用回滚）；两个都没触发时客户端抛出的取消与 `TimeoutException` 也按超时。`WorkflowHttpClient.SendAsync(request, ct)` 不另计时。
 
 实例与节点实例的 `Fault`（`WorkflowFault`）存错误码、消息键、参数与内层原因，不存渲染好的文案（RFC-0010，ADR-0105）：展示用 `Fault.Localize()`（按当前消息作用域，调用链里是调用方的区域），返回给调用方用 `Fault.ToError()`（宿主在 Egress 翻译）；`Message` 是按进程默认区域渲染的文本，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程的回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例的状态是 `workflow.child.faulted` / `canceled` / `terminated`、内层是子实例的故障。设计期诊断（定义校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式照旧读 `code`）、活动描述符与状态名同样是消息键（ADR-0106）：状态的展示名用 `WorkflowStatusMessages`。

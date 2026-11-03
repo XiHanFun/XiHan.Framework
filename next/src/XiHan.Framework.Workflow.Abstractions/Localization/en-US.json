@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Cause: {cause}",
   "workflow.http.failed": "The HTTP request failed with status {status}: {reason}",
   "workflow.http.timed_out": "The HTTP request timed out.",
+  "workflow.http.address_denied": "The outbound address policy does not allow the HTTP request to '{host}'.",
   "workflow.instance.active_exists": "Workflow '{name}' already has an unfinished instance for correlation '{correlation}'.",
   "workflow.instance.depth": "Sub-workflow depth {depth} exceeds the limit of {max}.",
   "workflow.instance.is_canceled": "Workflow instance '{id}' has been canceled and does not allow this operation.",

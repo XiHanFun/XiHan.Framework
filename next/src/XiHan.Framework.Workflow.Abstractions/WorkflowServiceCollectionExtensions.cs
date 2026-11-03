@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
@@ -118,7 +119,8 @@ public static class WorkflowServiceCollectionExtensions
         services.AddActivity<CompensateActivity>(ActivityTypes.Compensate, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Compensate);
         services.AddActivity<HttpActivity>(ActivityTypes.Http, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.Http);
         services.AddActivity<ExternalTaskActivity>(ActivityTypes.ExternalTask, ActivityOutgoing.AllMatched, BuiltInActivityDescriptors.ExternalTask);
-        services.TryAddSingleton<WorkflowHttpClient>();
+        // 用工厂点名构造：两个公开构造都有候选，交给容器按「能解析的参数最多」挑，应用登记了 HttpClient 服务就会绕过地址策略
+        services.TryAddSingleton(static sp => new WorkflowHttpClient(sp.GetRequiredService<OutboundAddressPolicy>()));
         services.AddAssigneeProvider<UserAssigneeProvider>();
         services.AddAssigneeProvider<StarterAssigneeProvider>();
         services.AddAssigneeProvider<ExpressionAssigneeProvider>();

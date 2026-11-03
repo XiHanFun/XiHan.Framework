@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Causa: {cause}",
   "workflow.http.failed": "La solicitud HTTP falló con el estado {status}: {reason}",
   "workflow.http.timed_out": "La solicitud HTTP agotó el tiempo de espera.",
+  "workflow.http.address_denied": "La política de direcciones salientes no permite la solicitud HTTP a {host}.",
   "workflow.instance.active_exists": "El flujo de trabajo '{name}' ya tiene una instancia sin terminar para la correlación '{correlation}'.",
   "workflow.instance.depth": "La profundidad de subflujo {depth} supera el límite de {max}.",
   "workflow.instance.is_canceled": "La instancia de flujo de trabajo '{id}' fue cancelada y no permite esta operación.",

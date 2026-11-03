@@ -1928,6 +1928,37 @@
       ]
     },
     {
+      "section": "XiHan:Security:Outbound",
+      "options": "XiHan.Framework.Kernel.Security.OutboundAddressOptions",
+      "package": "XiHan.Framework.Kernel",
+      "keys": [
+        {
+          "key": "AllowLoopback",
+          "type": "boolean",
+          "default": "false",
+          "summary": "放行回环地址（127.0.0.0/8、::1）；本地开发用，生产环境不要打开"
+        },
+        {
+          "key": "AllowPrivateNetwork",
+          "type": "boolean",
+          "default": "false",
+          "summary": "放行私网地址（10.0.0.0/8、172.16.0.0/12、192.168.0.0/16、fc00::/7）；不含链路本地、运营商级 NAT 与云元数据地址"
+        },
+        {
+          "key": "AllowedNetworks:{index}",
+          "type": "string",
+          "sample": "10.1.0.0/16",
+          "summary": "放行的网段，CIDR 写法，主机位必须为零；优先于全部拒绝规则"
+        },
+        {
+          "key": "AllowedHosts:{index}",
+          "type": "string",
+          "sample": "minio",
+          "summary": "放行的主机名，不区分大小写，整名相等，不带协议和端口；只看请求里写的名字，不再看它解析到哪里"
+        }
+      ]
+    },
+    {
       "section": "XiHan:Workflow",
       "options": "XiHan.Framework.Workflow.Abstractions.WorkflowOptions",
       "package": "XiHan.Framework.Workflow.Abstractions",

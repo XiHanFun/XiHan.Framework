@@ -359,6 +359,9 @@ builder.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName, clien
 | 主题没有配置 Webhook | `PROTOCOLS_NOTFOUND_004` |
 | Webhook 返回非 2xx（`details.status` 是状态码） | `PROTOCOLS_UNAVAILABLE_001` |
 | 连接失败 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| 地址被[出站地址策略](./outbound)拒绝 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名，不发起连接 |
+
+Webhook 的接收方是第三方，它的 3xx 能把请求引到内网，所以这个命名客户端的连接与重定向都过出站地址策略。接收方在内网时，把它写进 `XiHan:Security:Outbound:AllowedHosts`。
 
 发布者自己不重试，重试由调用方决定：像上例那样放在消息处理器里，或经发件箱投递，得到至少一次语义。
 

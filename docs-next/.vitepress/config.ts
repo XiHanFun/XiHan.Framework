@@ -46,6 +46,7 @@ const guideChapters: [text: string, name: string][] = [
   ["多租户", "multi-tenancy"],
   ["认证", "authentication"],
   ["授权", "authorization"],
+  ["出站地址策略", "outbound"],
   ["缓存与分布式锁", "caching"],
   ["消息与事件", "messaging"],
   ["调度与后台作业", "scheduling"],

@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message}原因：{cause}",
   "workflow.http.failed": "HTTP 请求失败，状态码 {status}：{reason}",
   "workflow.http.timed_out": "HTTP 请求超时。",
+  "workflow.http.address_denied": "出站地址策略不允许向 {host} 发送 HTTP 请求。",
   "workflow.instance.active_exists": "工作流 '{name}' 在关联 '{correlation}' 下已有未结束的实例。",
   "workflow.instance.depth": "子流程深度 {depth} 超过上限 {max}。",
   "workflow.instance.is_canceled": "工作流实例 '{id}' 已取消，不允许该操作。",

@@ -22,6 +22,8 @@ AI 的 OpenAI 兼容 Provider（Ring 3，RFC-0022）：提供 `ai.chat@1` 与 `a
 
 `Endpoint` 为空用官方端点；`ApiKey` 为空用占位凭据（本地端点不校验）。网络超时只以 `TimeoutSeconds` 为准（缺省 100 秒，示例里的 300 秒照样生效）。容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`）经名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时是工厂的缺省客户端；可以用 `services.AddHttpClient("xihan.ai.openai")` 给它配置代理与处理器，但它的 `Timeout` 由本包置为不限，限时请改 `TimeoutSeconds`。经 `IAIChat` 与知识库流水线的调用另由框架按同一个 `TimeoutSeconds` 落成超时令牌（覆盖整次调用，含函数调用循环），超时与调用方取消同时发生时报 `AI_TIMEOUT_001`（RFC-0022「超时与取消」）。缺 `ChatModel` / `EmbeddingModel` → `AI_VALIDATION_001`。Provider 配置在装配时读一次、不热更新，改了要重启应用（ADR-0074）。
 
+框架的端点来自配置，不过出站地址策略（RFC-0008、ADR-0117）。应用的提供商目录让用户填端点时，给命名客户端 `OpenAIFeature.HttpClientName` 接上：`services.AddHttpClient(OpenAIFeature.HttpClientName).UseSocketsHttpHandler(static (handler, sp) => sp.GetRequiredService<OutboundAddressPolicy>().Apply(handler))`。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.AI.Abstractions`、`Microsoft.Extensions.AI`、`Microsoft.Extensions.AI.OpenAI`、`Microsoft.Extensions.Http`。不进 `Profiles.Full`（需要外部端点）。

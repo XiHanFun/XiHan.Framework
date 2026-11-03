@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 public sealed class S3BlobStoreProviderConformanceTests : BlobStoreProviderConformance
 {
     /// <inheritdoc />
-    protected override IBlobStoreProvider CreateProvider() => new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance);
+    protected override IBlobStoreProvider CreateProvider() => new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, S3TestServer.Addresses);
 
     /// <inheritdoc />
     /// <remarks>

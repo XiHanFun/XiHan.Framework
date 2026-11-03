@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Values;
 
@@ -18,6 +19,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <remarks>
 /// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象
 /// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
+/// 地址由流程定义给出、不可信：缺省的客户端过出站地址策略（ADR-0117），目标被拒绝是节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpAddressDenied"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class HttpActivity : IActivity
@@ -146,6 +148,11 @@ public sealed partial class HttpActivity : IActivity
         catch (Exception exception) when (IsTimeout(exception, timer.Token, cancellationToken))
         {
             return TimedOut();
+        }
+        catch (HttpRequestException exception) when (exception.InnerException is OutboundAddressDeniedException)
+        {
+            // 策略已经记了日志（带解析出的地址）；故障会经接口返回，只写请求里的主机名，这是调用方自己给的
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpAddressDenied, details: MessageArguments.Of(("host", uri.Host)));
         }
         catch (HttpRequestException exception)
         {

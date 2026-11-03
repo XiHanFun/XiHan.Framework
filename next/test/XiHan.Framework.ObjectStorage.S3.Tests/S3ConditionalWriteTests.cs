@@ -332,7 +332,7 @@ public sealed class S3ConditionalWriteTests
     [Fact]
     public async Task NamedStore_ProbesOnCreation_CreatesAnUnreachableStore_AndRejectsInvalidDefinitions()
     {
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, S3TestServer.Addresses)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             // 连不上：建实例时的探测失败只是尚未确认，照常建出并登记；不覆盖写入不可用，原因是连不上
@@ -379,7 +379,7 @@ public sealed class S3ConditionalWriteTests
         await client.DeleteBucketAsync(fresh);
 
         // 命名实例建出时各探一次
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, S3TestServer.Addresses)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -398,7 +398,7 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(ObjectStorageErrors.ProbeDenied, Assert.IsType<FrameworkException>(failed.InnerException).Code);
 
         // 命名实例同理：密钥错、探测桶不存在都不建，注册表原样返回错误码
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, S3TestServer.Addresses)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = S3TestServer.RequireServiceUrl(), ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = "wrong-secret-key", ["HealthBucket"] = S3TestServer.ProbeBucket };
@@ -429,7 +429,7 @@ public sealed class S3ConditionalWriteTests
         var probe = Assert.IsType<FrameworkException>(failed.InnerException);
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, probe.Code);
 
-        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance)], TimeProvider.System, NullLoggerFactory.Instance);
+        var registry = new BlobStores([new S3BlobStoreProvider(TimeProvider.System, NullLoggerFactory.Instance, S3TestServer.Addresses)], TimeProvider.System, NullLoggerFactory.Instance);
         await using (registry)
         {
             var settings = new Dictionary<string, string> { ["ServiceUrl"] = url, ["AccessKey"] = S3TestServer.AccessKey, ["SecretKey"] = S3TestServer.SecretKey, ["HealthBucket"] = S3TestServer.ProbeBucket };

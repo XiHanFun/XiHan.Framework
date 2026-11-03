@@ -19,7 +19,7 @@ XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.Name.get -> string!
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.S3BlobStoreProvider(System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.S3BlobStoreProvider(System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.Kernel.Security.OutboundAddressPolicy! addresses) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void

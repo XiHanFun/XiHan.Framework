@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} Causa: {cause}",
   "workflow.http.failed": "A requisição HTTP falhou com o status {status}: {reason}",
   "workflow.http.timed_out": "A requisição HTTP excedeu o tempo limite.",
+  "workflow.http.address_denied": "A política de endereços de saída não permite a requisição HTTP para {host}.",
   "workflow.instance.active_exists": "O fluxo de trabalho '{name}' já tem uma instância não concluída para a correlação '{correlation}'.",
   "workflow.instance.depth": "A profundidade de subfluxo {depth} excede o limite de {max}.",
   "workflow.instance.is_canceled": "A instância de fluxo de trabalho '{id}' foi cancelada e não permite esta operação.",

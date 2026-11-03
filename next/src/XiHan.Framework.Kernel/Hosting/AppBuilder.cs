@@ -270,6 +270,9 @@ public sealed class AppBuilder
         Services.TryAddSingleton(TimeProvider.System);
         Services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         Services.TryAddSingleton<IAuditSink>(NullAuditSink.Instance);
+        // 出站地址策略总是可取：放行项写错在这里就启动失败，应用也可以先登记自己的选项
+        Services.TryAddSingleton(OutboundAddressOptions.FromConfiguration(Configuration));
+        Services.TryAddSingleton<OutboundAddressPolicy>();
         Services.AddSingleton(permissions);
         Services.AddSingleton(operations);
         Services.TryAddSingleton<IOperationInvoker, OperationInvoker>();

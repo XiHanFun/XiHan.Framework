@@ -153,6 +153,7 @@
   "workflow.fault.caused_by": "{message} 원인: {cause}",
   "workflow.http.failed": "HTTP 요청이 상태 코드 {status}(으)로 실패했습니다: {reason}",
   "workflow.http.timed_out": "HTTP 요청 시간이 초과되었습니다.",
+  "workflow.http.address_denied": "아웃바운드 주소 정책에 따라 {host}(으)로의 HTTP 요청이 허용되지 않습니다.",
   "workflow.instance.active_exists": "워크플로 '{name}'에는 상관 ID '{correlation}'의 미완료 인스턴스가 이미 있습니다.",
   "workflow.instance.depth": "하위 워크플로 깊이 {depth}이(가) 한도 {max}을(를) 넘었습니다.",
   "workflow.instance.is_canceled": "워크플로 인스턴스 '{id}'은(는) 취소되어 이 작업을 할 수 없습니다.",

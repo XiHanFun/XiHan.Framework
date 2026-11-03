@@ -1987,6 +1987,34 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
+    /// 用例 42：缺省配置下 HTTP 活动的目标过出站地址策略
+    /// </summary>
+    /// <remarks>
+    /// 流程定义里的地址不可信：回环地址被拒绝是节点故障，故障只带请求里的主机名（ADR-0117）。被拒绝时根本不发起连接，所以这个端口上有没有服务都一样
+    /// </remarks>
+    [Fact]
+    public async Task Http_TargetDeniedByTheOutboundAddressPolicy_FaultsTheNode()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var definition = WorkflowDefinitionBuilder.Create("conf-http-denied")
+            .AddStart()
+            .AddHttp("call", "http://127.0.0.1:9/")
+            .AddEnd()
+            .AddTransition("start", "call").AddTransition("call", "end")
+            .Build();
+        await host.PublishAsync(definition).ConfigureAwait(false);
+
+        var instance = (await host.StartAsync("conf-http-denied").ConfigureAwait(false)).ValueOrThrow();
+
+        Assert.Equal(WorkflowInstanceStatus.Faulted, instance.Status);
+        Assert.Equal("call", instance.FaultNodeId);
+        Assert.Equal(WorkflowErrors.ActivityFailed, instance.Fault?.Code);
+        Assert.Equal(WorkflowMessages.HttpAddressDenied, instance.Fault?.MessageKey);
+        Assert.Equal("127.0.0.1", instance.Fault?.Arguments?["host"]);
+    }
+
+    /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)

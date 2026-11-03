@@ -171,8 +171,8 @@ XiHan.Framework.Workflow.Abstractions.Activities.WaitSignalActivity.WaitSignalAc
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.Dispose() -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.SendAsync(System.Net.Http.HttpRequestMessage! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage!>!
-XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttpClient() -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttpClient(System.Net.Http.HttpClient! client) -> void
+XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttpClient(XiHan.Framework.Kernel.Security.OutboundAddressPolicy! addresses) -> void
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Activity.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Definition.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
@@ -1577,6 +1577,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskLockDur
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskMaxTasksInvalid = "workflow.external.max_tasks_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExternalTaskRetryAfterNegative = "workflow.external.retry_after_negative" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.FaultCausedBy = "workflow.fault.caused_by" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpAddressDenied = "workflow.http.address_denied" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpFailed = "workflow.http.failed" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.HttpTimedOut = "workflow.http.timed_out" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.InstanceDepth = "workflow.instance.depth" -> string!

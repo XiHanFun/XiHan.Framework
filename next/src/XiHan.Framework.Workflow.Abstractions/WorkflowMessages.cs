@@ -383,6 +383,14 @@ public static class WorkflowMessages
     public const string HttpTimedOut = "workflow.http.timed_out";
 
     /// <summary>
+    /// HTTP 请求的目标被出站地址策略拒绝
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>host</c>（请求里的主机名）
+    /// </remarks>
+    public const string HttpAddressDenied = "workflow.http.address_denied";
+
+    /// <summary>
     /// 故障与它的内层原因连成一句
     /// </summary>
     /// <remarks>

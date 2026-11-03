@@ -4,6 +4,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging.Abstractions;
+using XiHan.Framework.Kernel.Security;
 
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
@@ -37,6 +38,11 @@ internal static class S3TestServer
     /// 进程内共享的客户端，首次使用时创建
     /// </summary>
     private static readonly Lazy<AmazonS3Client> _client = new(() => S3ObjectStorageFeature.CreateClient(Options()));
+
+    /// <summary>
+    /// 命名实例用的出站地址策略：测试服务在本机或内网，都放行
+    /// </summary>
+    public static OutboundAddressPolicy Addresses { get; } = new(new OutboundAddressOptions { AllowLoopback = true, AllowPrivateNetwork = true }, NullLoggerFactory.Instance);
 
     /// <summary>
     /// 已确认存在的桶（端点与桶名）

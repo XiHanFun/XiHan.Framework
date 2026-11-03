@@ -455,6 +455,26 @@ XiHan.Framework.Kernel.Security.AuthorizationResult.ToResult() -> XiHan.Framewor
 XiHan.Framework.Kernel.Security.IPolicy
 XiHan.Framework.Kernel.Security.IPolicy.EvaluateAsync(XiHan.Framework.Kernel.Security.AuthorizationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.AuthorizationResult>>
 XiHan.Framework.Kernel.Security.IPolicy.Name.get -> string!
+XiHan.Framework.Kernel.Security.OutboundAddressDeniedException
+XiHan.Framework.Kernel.Security.OutboundAddressDeniedException.Host.get -> string!
+XiHan.Framework.Kernel.Security.OutboundAddressDeniedException.OutboundAddressDeniedException(string! host, int port) -> void
+XiHan.Framework.Kernel.Security.OutboundAddressDeniedException.Port.get -> int
+XiHan.Framework.Kernel.Security.OutboundAddressOptions
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.<Clone>$() -> XiHan.Framework.Kernel.Security.OutboundAddressOptions!
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowLoopback.get -> bool
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowLoopback.init -> void
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowPrivateNetwork.get -> bool
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowPrivateNetwork.init -> void
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowedHosts.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowedHosts.init -> void
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowedNetworks.get -> System.Collections.Generic.IReadOnlyList<System.Net.IPNetwork>!
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.AllowedNetworks.init -> void
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.Equals(XiHan.Framework.Kernel.Security.OutboundAddressOptions? other) -> bool
+XiHan.Framework.Kernel.Security.OutboundAddressOptions.OutboundAddressOptions() -> void
+XiHan.Framework.Kernel.Security.OutboundAddressPolicy
+XiHan.Framework.Kernel.Security.OutboundAddressPolicy.Apply(System.Net.Http.SocketsHttpHandler! handler) -> void
+XiHan.Framework.Kernel.Security.OutboundAddressPolicy.IsAllowed(System.Net.IPAddress! address) -> bool
+XiHan.Framework.Kernel.Security.OutboundAddressPolicy.OutboundAddressPolicy(XiHan.Framework.Kernel.Security.OutboundAddressOptions! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Kernel.Security.PermissionDefinition
 XiHan.Framework.Kernel.Security.PermissionDefinition.<Clone>$() -> XiHan.Framework.Kernel.Security.PermissionDefinition!
 XiHan.Framework.Kernel.Security.PermissionDefinition.Code.get -> string!
@@ -643,6 +663,7 @@ const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Workflow = "workflow" 
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.OperationsSection = "Operations" -> string!
+const XiHan.Framework.Kernel.Security.OutboundAddressOptions.ConfigurationSection = "XiHan:Security:Outbound" -> string!
 const XiHan.Framework.Kernel.Security.PermissionRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxDepth = 64 -> int
 const XiHan.Framework.Kernel.Validation.JsonSchemaValidator.MaxViolations = 32 -> int
@@ -706,6 +727,9 @@ override XiHan.Framework.Kernel.Security.AuthorizationRequest.Equals(object? obj
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.AuthorizationRequest.ToString() -> string!
 override XiHan.Framework.Kernel.Security.AuthorizationResult.GetHashCode() -> int
+override XiHan.Framework.Kernel.Security.OutboundAddressOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Security.OutboundAddressOptions.GetHashCode() -> int
+override XiHan.Framework.Kernel.Security.OutboundAddressOptions.ToString() -> string!
 override XiHan.Framework.Kernel.Security.PermissionDefinition.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Security.PermissionDefinition.GetHashCode() -> int
 override XiHan.Framework.Kernel.Security.PermissionDefinition.ToString() -> string!
@@ -796,6 +820,9 @@ static XiHan.Framework.Kernel.Security.AuthorizationResult.Allow() -> XiHan.Fram
 static XiHan.Framework.Kernel.Security.AuthorizationResult.Deny(XiHan.Framework.Primitives.Error! reason) -> XiHan.Framework.Kernel.Security.AuthorizationResult
 static XiHan.Framework.Kernel.Security.AuthorizationResult.operator !=(XiHan.Framework.Kernel.Security.AuthorizationResult left, XiHan.Framework.Kernel.Security.AuthorizationResult right) -> bool
 static XiHan.Framework.Kernel.Security.AuthorizationResult.operator ==(XiHan.Framework.Kernel.Security.AuthorizationResult left, XiHan.Framework.Kernel.Security.AuthorizationResult right) -> bool
+static XiHan.Framework.Kernel.Security.OutboundAddressOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Kernel.Security.OutboundAddressOptions!
+static XiHan.Framework.Kernel.Security.OutboundAddressOptions.operator !=(XiHan.Framework.Kernel.Security.OutboundAddressOptions? left, XiHan.Framework.Kernel.Security.OutboundAddressOptions? right) -> bool
+static XiHan.Framework.Kernel.Security.OutboundAddressOptions.operator ==(XiHan.Framework.Kernel.Security.OutboundAddressOptions? left, XiHan.Framework.Kernel.Security.OutboundAddressOptions? right) -> bool
 static XiHan.Framework.Kernel.Security.PermissionDefinition.operator !=(XiHan.Framework.Kernel.Security.PermissionDefinition? left, XiHan.Framework.Kernel.Security.PermissionDefinition? right) -> bool
 static XiHan.Framework.Kernel.Security.PermissionDefinition.operator ==(XiHan.Framework.Kernel.Security.PermissionDefinition? left, XiHan.Framework.Kernel.Security.PermissionDefinition? right) -> bool
 static XiHan.Framework.Kernel.Security.Principal.Anonymous.get -> XiHan.Framework.Kernel.Security.Principal!

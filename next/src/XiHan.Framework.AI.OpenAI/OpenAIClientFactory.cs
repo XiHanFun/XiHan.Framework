@@ -22,7 +22,7 @@ internal sealed class OpenAIClientFactory
     /// <remarks>
     /// 容器里有 <see cref="IHttpClientFactory"/>（应用在任何地方调用过 <c>AddHttpClient</c>）就经这个名字的客户端发请求，没有专门配置这个名字时取到的是工厂的缺省客户端；<c>services.AddHttpClient(OpenAIClientFactory.HttpClientName)</c> 可以给它配置处理器与代理
     /// </remarks>
-    public const string HttpClientName = "xihan.ai.openai";
+    public const string HttpClientName = OpenAIFeature.HttpClientName;
 
     /// <summary>
     /// <see cref="AIProviderOptions.ApiKey"/> 为空时的占位凭据：本地兼容端点通常不校验

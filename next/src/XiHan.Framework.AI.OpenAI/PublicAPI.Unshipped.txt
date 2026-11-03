@@ -14,3 +14,4 @@ XiHan.Framework.AI.OpenAI.OpenAIFeature.OpenAIFeature() -> void
 XiHan.Framework.AI.OpenAI.OpenAIFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.OpenAI.OpenAIFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 const XiHan.Framework.AI.OpenAI.OpenAIChatClientFactory.KindName = "openai" -> string!
+const XiHan.Framework.AI.OpenAI.OpenAIFeature.HttpClientName = "xihan.ai.openai" -> string!

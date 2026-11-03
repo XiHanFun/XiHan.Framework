@@ -197,11 +197,20 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     /// </summary>
     /// <remarks>
     /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链
+    /// 缺省实例用它，端点是运维配的，不过出站地址策略（ADR-0117）
     /// </remarks>
-    public static AmazonS3Client CreateClient(S3ObjectStorageOptions options)
+    public static AmazonS3Client CreateClient(S3ObjectStorageOptions options) => CreateClient(options, null);
+
+    /// <summary>
+    /// 按选项创建客户端，HTTP 客户端由 <paramref name="httpClients"/> 建出
+    /// </summary>
+    /// <remarks>
+    /// 空时用 SDK 自己的工厂
+    /// </remarks>
+    internal static AmazonS3Client CreateClient(S3ObjectStorageOptions options, HttpClientFactory? httpClients)
     {
         ArgumentNullException.ThrowIfNull(options);
-        var config = new AmazonS3Config { ForcePathStyle = options.ForcePathStyle };
+        var config = new AmazonS3Config { ForcePathStyle = options.ForcePathStyle, HttpClientFactory = httpClients };
         if (options.ServiceUrl is { } url)
         {
             config.ServiceURL = url;

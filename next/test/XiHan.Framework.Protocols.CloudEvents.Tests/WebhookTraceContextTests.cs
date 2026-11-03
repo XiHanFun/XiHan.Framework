@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.InMemory;
 using XiHan.Framework.Profiles.Minimal;
@@ -31,13 +32,13 @@ public sealed class WebhookTraceContextTests
     /// 启动只装出站所需特性的应用，<c>orders</c> 主题推给接收方
     /// </summary>
     /// <remarks>
-    /// 不替换命名客户端的主处理器；<paramref name="configureClient"/> 给应用自己对命名客户端的配置
+    /// 不替换命名客户端的主处理器；<paramref name="configureClient"/> 给应用自己对命名客户端的配置。接收方在回环地址上，<paramref name="allowLoopback"/> 决定出站地址策略放不放行
     /// </remarks>
-    private static async Task<WebApplication> StartAsync(WebhookReceiver receiver, string? propagate = null, Action<IHttpClientBuilder>? configureClient = null)
+    private static async Task<WebApplication> StartAsync(WebhookReceiver receiver, string? propagate = null, Action<IHttpClientBuilder>? configureClient = null, bool allowLoopback = true)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        var settings = new Dictionary<string, string?> { ["XiHan:Protocols:CloudEvents:Webhooks:orders"] = receiver.Url.ToString() };
+        var settings = new Dictionary<string, string?> { ["XiHan:Protocols:CloudEvents:Webhooks:orders"] = receiver.Url.ToString(), ["XiHan:Security:Outbound:AllowLoopback"] = allowLoopback ? "true" : "false" };
         if (propagate is not null)
         {
             settings["XiHan:Protocols:CloudEvents:PropagateTraceContext"] = propagate;
@@ -79,6 +80,20 @@ public sealed class WebhookTraceContextTests
         var headers = Assert.Single(receiver.Requests);
         Assert.Equal("evt-1", headers["ce-id"]);
         Assert.All(_traceHeaders, name => Assert.False(headers.ContainsKey(name), $"'{name}' must not be sent, but was '{headers.GetValueOrDefault(name)}'."));
+    }
+
+    [Fact]
+    public async Task ReceiverOnADeniedAddress_IsNotReached_AndTheReasonNamesTheDenial()
+    {
+        // 第三方的 3xx 能把请求引到内网，所以 Webhook 的客户端过出站地址策略（ADR-0117）
+        await using var receiver = await WebhookReceiver.StartAsync();
+        await using var app = await StartAsync(receiver, allowLoopback: false);
+
+        var result = await app.Services.GetRequiredService<CloudEventsWebhookPublisher>().PublishAsync("orders", new MessageEnvelope { Id = "evt-1", Source = "/orders", Type = "orders.placed" }, CancellationToken.None);
+
+        Assert.Equal(CloudEventsErrors.WebhookUnreachable, result.Error?.Code);
+        Assert.Equal(typeof(OutboundAddressDeniedException).FullName, result.Error?.Details?["reason"]);
+        Assert.Empty(receiver.Requests);
     }
 
     [Fact]

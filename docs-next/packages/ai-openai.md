@@ -115,7 +115,11 @@ builder.Services.AddHttpClient("xihan.ai.openai")
 
 `WebProxy` 在 `System.Net` 命名空间。
 
-`AddHttpClient` 来自 `Microsoft.Extensions.Http`。聊天、工具与护栏的用法见 [AI](../guide/ai#聊天入口)。
+`AddHttpClient` 来自 `Microsoft.Extensions.Http`。这个名字也是公开常量 `OpenAIFeature.HttpClientName`。
+
+框架的端点来自 `XiHan:AI:Providers`，是运维配的，不过[出站地址策略](../guide/outbound)。应用替换提供商目录、让用户填端点时，给这个名字接上策略，写法见那一章。
+
+聊天、工具与护栏的用法见 [AI](../guide/ai#聊天入口)。
 
 ## 行为与限制
 

@@ -401,6 +401,8 @@ var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownl
 存储包被要求提供分片上传或预签名、却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出被要求的能力与要改的键：比如只指定了对象存储，而应用的某个特性依赖 `objectstorage.presign`，预签名就解析到 S3 且是被要求的。选择规则见[能力包与清单](./modularity)。
 :::
 
+S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](./outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。缺省实例的端点是运维配的，不过策略。
+
 ## 两个实现
 
 | | 文件系统 | S3 |

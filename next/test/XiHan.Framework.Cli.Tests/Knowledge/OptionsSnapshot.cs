@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Text;
 
@@ -53,7 +54,8 @@ internal static class OptionsSnapshot
             case IFormattable formattable when value.GetType().IsPrimitive || value is decimal or TimeSpan or DateTimeOffset or DateTime or Guid or Enum:
                 builder.Append(formattable.ToString(null, CultureInfo.InvariantCulture));
                 return;
-            case bool or char or Uri or Type:
+            // IPNetwork 按文本比：往下展开会读到 IPAddress.ScopeId，它对 IPv4 地址抛异常
+            case bool or char or Uri or Type or IPNetwork:
                 builder.Append(value);
                 return;
             case IEnumerable items:

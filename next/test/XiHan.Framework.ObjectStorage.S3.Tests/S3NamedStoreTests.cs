@@ -39,6 +39,8 @@ public sealed class S3NamedStoreTests
             static app => app.UseFeature<S3ObjectStorageFeature>(),
             [
                 .. S3TestServer.Configuration(),
+                new("XiHan:Security:Outbound:AllowLoopback", "true"),
+                new("XiHan:Security:Outbound:AllowPrivateNetwork", "true"),
                 new("XiHan:ObjectStorage:Stores:media:Provider", "S3"),
                 new("XiHan:ObjectStorage:Stores:media:ServiceUrl", S3TestServer.RequireServiceUrl()),
                 new("XiHan:ObjectStorage:Stores:media:AccessKey", S3TestServer.AccessKey),

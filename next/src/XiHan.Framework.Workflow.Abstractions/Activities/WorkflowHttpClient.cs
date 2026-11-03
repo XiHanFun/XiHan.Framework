@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
@@ -9,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <c>Http</c> 活动用的 HTTP 客户端（单例，连接池寿命 2 分钟以跟随 DNS 变化）
 /// </summary>
 /// <remarks>
-/// 应用可在装配前注册自己的实例替换（如带代理、认证处理器）
+/// 流程定义里的地址不可信，缺省的客户端过出站地址策略（ADR-0117）。应用可在装配前注册自己的实例替换（如带代理、认证处理器），替换后由应用的客户端决定能连哪里
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowHttpClient : IDisposable
@@ -20,10 +21,10 @@ public sealed class WorkflowHttpClient : IDisposable
     private readonly HttpClient _client;
 
     /// <summary>
-    /// 以默认处理器创建
+    /// 以过 <paramref name="addresses"/> 的默认处理器创建
     /// </summary>
-    public WorkflowHttpClient()
-        : this(new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan })
+    public WorkflowHttpClient(OutboundAddressPolicy addresses)
+        : this(CreateClient(addresses))
     {
     }
 
@@ -49,4 +50,15 @@ public sealed class WorkflowHttpClient : IDisposable
 
     /// <inheritdoc />
     public void Dispose() => _client.Dispose();
+
+    /// <summary>
+    /// 建默认客户端
+    /// </summary>
+    private static HttpClient CreateClient(OutboundAddressPolicy addresses)
+    {
+        ArgumentNullException.ThrowIfNull(addresses);
+        var handler = new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) };
+        addresses.Apply(handler);
+        return new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
+    }
 }

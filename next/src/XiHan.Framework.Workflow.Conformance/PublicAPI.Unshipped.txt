@@ -38,6 +38,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.EventGatew
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_KeepMessageKeys_AndLocalizeInTheCallersLocale() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Faults_RetryPolicy_ManualRetry_AndContinueOnError() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_SendsRequests_AndMapsResponses() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Http_TargetDeniedByTheOutboundAddressPolicy_FaultsTheNode() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.InstanceTimeout_FaultsOrTerminates() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowEngineConformance.Instances_AreIsolatedPerPartition() -> System.Threading.Tasks.Task!
