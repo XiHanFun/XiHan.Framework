@@ -160,3 +160,10 @@ ADR-0084 第四节把 Oracle 的读列改为查数据字典：判自增要 `USER
 > 修订（2026-11-01）：第一节「影响」里记为待定的调度引擎改为同样的做法——应用不在服务状态时不持有领导租约，数据库实现的租约释放不经管道，见 ADR-0091 第一节。
 
 > 修订（2026-11-01）：第二节备选 3（普通工作单元里也支持命名连接上的实体）定为不做，EF Core 维持只支持绑定连接的工作单元，见 ADR-0091 第二节。
+
+> 修订（2026-11-03，第十八批）：BasicApp 报回「一致性套件删掉测试库那一刻，工作流轮询器还在抢领导权，冒一条 `WORKFLOW_UNAVAILABLE_001`」，查明不是本 ADR 的排空路径漏了情形，也不是工作流一致性夹具的释放顺序问题，定为已定、不改代码：
+>
+> - 来源是 BasicApp 为 `Security.Conformance` 用例 5（存储不可达）写的夹具 `ConformanceHosts.StartUnreachableAsync`：它在**完整的、还在服务的** BasicApp 宿主下 `DROP DATABASE … WITH (FORCE)`。这时轮询周期在服务状态下去拿领导权，驱动真实失败，`PollerLeadership` 如实告警；同一窗口里发件箱、授权策略、翻译加载等也各自报库不存在。在 BasicApp 的副本上把这个窗口拉长到 2.5 秒后稳定复现出同样的两条（`Acquiring the workflow poller leadership failed with 'WORKFLOW_UNAVAILABLE_001'`、发件箱 `3D000`）；工作流一致性两套 48 例在 BasicApp 宿主上跑没有这条。
+> - 工作流一致性夹具（BasicApp 的 `WorkflowConformanceHosts` 与框架自己的测试宿主）本来就是先停宿主再删库：停止让应用排空，轮询器释放领导权、等循环退出，之后删库没有告警。
+> - 服务状态下存储真的不可达时告警是正确的运维信号，不能压掉；本 ADR 只免去「应用不在服务状态」时的告警。
+> - 文档补上：工作流夹具的释放句柄先停宿主再删库（`WorkflowEngineHost` / `WorkflowStoreHost` 的参数说明、套件 README、docs-next 一致性页），`Security.Conformance` 的 `CreateUnavailableStoreAsync` 在完整宿主上实现时不要让整个宿主的库不可达，用最小宿主或只让被测存储的连接不可达。用例 `PollerOutageTests`（SQLite 与 PostgreSQL）：服务中拿走存储，周期如实报 `WORKFLOW_UNAVAILABLE_001`；先停宿主再拿走存储，没有任何工作流告警。

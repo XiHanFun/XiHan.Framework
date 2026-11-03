@@ -102,6 +102,19 @@ internal sealed class PostgresDatabase : IAsyncDisposable
     }
 
     /// <summary>
+    /// 立即删库（宿主可能还在服务）。
+    /// </summary>
+    /// <remarks>
+    /// 先断开本进程的连接池，再 <c>DROP DATABASE … WITH (FORCE)</c>；之后的 <see cref="DisposeAsync"/> 照常停宿主，再删一次是 <c>IF EXISTS</c>。
+    /// </remarks>
+    public void Drop()
+    {
+        NpgsqlConnection.ClearAllPools();
+        using var maintenance = Maintenance(_server);
+        maintenance.Ado.ExecuteCommand($"DROP DATABASE IF EXISTS \"{Name}\" WITH (FORCE)");
+    }
+
+    /// <summary>
     /// 停止宿主并删库。
     /// </summary>
     public async ValueTask DisposeAsync()

@@ -42,7 +42,7 @@ public abstract class PermissionGrantStoreConformance
     /// 创建背后存储不可达的被测存储（连接指向不存在的数据库、服务已停止等）。
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="null"/>，用例 5 跳过：只有进程内的存储（读取不会失败）才可以不覆写。访问外部存储的 Provider 必须覆写，证明故障返回 <see cref="SecurityErrors.StoreUnavailable"/> 而不是空集合。
+    /// 默认 <see langword="null"/>，用例 5 跳过：只有进程内的存储（读取不会失败）才可以不覆写。访问外部存储的 Provider 必须覆写，证明故障返回 <see cref="SecurityErrors.StoreUnavailable"/> 而不是空集合。在完整的应用宿主上实现时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱投递、调度、翻译加载等——在服务状态下会如实报存储不可达（如 <c>WORKFLOW_UNAVAILABLE_001</c>），那是真实的故障信号。只装被测特性的最小宿主（框架 <c>Security.Database</c> 的测试就是这样），或只让被测存储用的连接不可达。
     /// </remarks>
     protected virtual ValueTask<IPermissionGrantStore?> CreateUnavailableStoreAsync() => ValueTask.FromResult<IPermissionGrantStore?>(null);
 

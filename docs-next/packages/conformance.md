@@ -38,7 +38,7 @@
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 32 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
-| [Security](#security) | `PermissionGrantStoreConformance` | 4 |
+| [Security](#security) | `PermissionGrantStoreConformance` | 5 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 40 + 8 |
 
 ## AI
@@ -222,7 +222,9 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 ## Security
 
-包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储。`Security.InMemory` 与 `Security.Database` 通过本套件。
+包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
+
+在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 
 ## Workflow
 
@@ -234,7 +236,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 | `WorkflowEngineConformance` | `StartAsync(configure, configuration)` 返回 `WorkflowEngineHost(services, poll, host)`，`poll` 轮询一次到期书签；可覆写 `WaitTimeout`（缺省 10 秒） | 顺序流与事件、决策与默认出边、并行与汇合、用户任务 Any / All / Sequential、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、挂起 / 恢复 / 取消 / 终止与补偿、定义生命周期与结果处理器、死循环保护、分区隔离（平台与租户对等：任务、信号、定义的名字空间与实例的控制和查询）、并发的拒绝重复启动只建一个实例（套件给实例存储与锁套装饰器，Provider 要以具体类型登记它们、再以 `TryAdd` 把接口转给具体类型）、业务回滚丢弃引擎写入、办理任务随业务提交或回滚、实例锁持有到调用结束、只读调用在执行活动之前拒绝写入、轮询覆盖平台与每个启用的租户、实例查询的分页与清理的条数越界是校验错误（`WORKFLOW_VALIDATION_002`）、目录的定义查询（摘要的一页与总数、分页越界）、实例查询只取顶层与一组关联 ID（子流程继承发起人与关联 ID、集合越界与空集合）、按实例列出全部等待点（全部书签种类、分区隔离）、目录与实例查询的排序经引擎下推且排序项越界——字段不在白名单、重复、超过上限——是校验错误（ADR-0102、ADR-0104）、按状态排序是生命周期的先后且经目录与引擎改了状态之后位置随之变化（ADR-0103）、故障存消息键与参数并按调用方的区域本地化——发起即故障、完成任务之后活动失败、子流程故障（子实例的故障是内层原因），经存储与事件往返之后仍在——以及返回的校验错误只带消息键与参数（ADR-0105）、设计期诊断与活动描述符、`lastError`、表达式的运行期错误、子流程被取消与状态不允许操作都按调用方的区域渲染（ADR-0106）；不加入调用方事务的 Provider 覆写 `JoinsCallerTransaction => false`（只读调用的用例两种 Provider 同一断言，ADR-0099） |
 | `WorkflowTaskConformance` | 同 `WorkflowEngineConformance` 的 `StartAsync` | 会签阈值（按人数或百分比）、认领与释放、退回与历史、催办事件、条件查询的分页结果与总数（越界是校验错误、挂起的实例的任务不出现）、任务元数据（优先级、到期、表单键）与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、按创建先后限量领取与条数上限 |
 
-`ConformanceLog`（兼消息代理）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例，引擎与任务两套在装了发件箱的宿主上也通过。
+`ConformanceLog`（兼消息代理）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。自写宿主跑套件时，`WorkflowEngineHost` / `WorkflowStoreHost` 的释放句柄要先停宿主（应用排空：数据库工作流的轮询器释放领导权、后台循环退出，ADR-0087）再删库或删库文件；先删库再停，还在服务的宿主会如实报 `WORKFLOW_UNAVAILABLE_001`。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例，引擎与任务两套在装了发件箱的宿主上也通过。
 
 事件在代理一侧记录（ADR-0096 第六节）：`Register` 把 `ConformanceLog` 登记成 `IMessageBroker`——消息 Provider 以 `TryAdd` 登记代理与直接发布者（框架的内存、RabbitMQ、Kafka 都是），先登记的记录器不被顶替；没装消息 Provider 的宿主由套件补上 `DirectPublisher`。宿主装了发件箱（`OutboxFeature`）也照常：事件随事务写进发件箱，夹具的 `InScopeAsync`、`AsTenantAsync` 在操作结束之后、`PollAsync` 在轮询之后调 `WorkflowEngineHost.DrainOutboxAsync`，把已提交的事件立即投递给记录器，回滚的不送达；同一信封按 ID 只记一次。所以应用可以在自己装着发件箱的真实宿主上跑这两个套件，不用另起不装发件箱的宿主。记录器只记录、不消费：套件运行时宿主别的消息订阅收不到消息。在夹具之外操作引擎后要读事件，先调 `DrainOutboxAsync`。
 

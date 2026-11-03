@@ -46,6 +46,9 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     /// <summary>
     /// 创建。
     /// </summary>
+    /// <param name="services">已启动的宿主的根服务提供者。</param>
+    /// <param name="poll">轮询一次到期书签。</param>
+    /// <param name="host">释放宿主的句柄。释放时先停宿主（应用排空：轮询器释放领导权、后台循环退出），再删库或删库文件；先删库再停，还在服务的宿主会如实报存储不可达（<c>WORKFLOW_UNAVAILABLE_001</c>）。</param>
     public WorkflowEngineHost(IServiceProvider services, Func<CancellationToken, ValueTask<int>> poll, IAsyncDisposable host)
     {
         Services = services ?? throw new ArgumentNullException(nameof(services));

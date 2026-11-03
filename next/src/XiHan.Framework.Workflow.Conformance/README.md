@@ -29,6 +29,8 @@ public sealed class InMemoryWorkflowEngineConformanceTests : WorkflowEngineConfo
 }
 ```
 
+夹具的释放句柄先停宿主、再删库：`TestHost` / `WebApplication` 的停止让应用排空，数据库工作流的轮询器在排空中释放领导权、等循环退出（ADR-0087），之后删库没有任何告警；先删库再停，还在服务的宿主会如实报 `WORKFLOW_UNAVAILABLE_001`。
+
 ## 依赖方向
 
 依赖 `XiHan.Framework.Workflow.Abstractions` 与 xUnit v3。被各 Provider 的测试项目引用。
