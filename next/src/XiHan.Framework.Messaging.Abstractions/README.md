@@ -13,7 +13,7 @@
 | `MessageDispatcher` | 每条消息在新作用域内只执行与投递同一订阅方式的处理器，构造调用上下文（租户、主体、关联、区域按 `EnvelopeExtensions.BaggageMappings` 进入 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志）并经完整内核管道执行处理器 |
 | `MessagingRuntime`、`MessagingRegistration` | Provider 共用的装配与启停 |
 | `AddDomainEvent<TEvent>(topic, type, jsonTypeInfo, subject?)`、`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件派发（RFC-0009，ADR-0025）：应用显式登记每种事件到主题与 CloudEvents `type`（序列化元数据源生成，不经反射）；Transaction 阶段提交前把工作单元里聚合的事件映射成信封（`id` UUID v7、`source` `/{topic}`、`time` 为发生时间、`xihantenant`），同一主题一次 `PublishManyAsync`（追踪、主体、关联与区域由发布者补齐），全部成功后清空缓冲；未登记的事件类型 → `MESSAGING_VALIDATION_003`；装配了发件箱时与业务写入同事务 |
-| `OutboxFeature`、`OutboxMessage`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxOptions` | 事务性发件箱：有活动工作单元时先写发件箱表（批量发布一次写入），提交后由后台循环取到期的消息按主题分组批量发布、批量更新状态；失败按指数退避重试，尝试达到 `MaxAttempts`（缺省 10）或载荷无法解码进死信（`DeadLetteredAt`，不再投递），退避中与死信的消息不占批次，代理不可达的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除（ADR-0064）；表上的索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，实体上的 `[EntityIndex]`，ADR-0072）同时服务取到期消息与保留期清理 |
+| `OutboxFeature`、`OutboxMessage`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxOptions` | 事务性发件箱：有活动工作单元时先写发件箱表（批量发布一次写入），提交后由后台循环取到期的消息发布（首次投递按主题分组批量，重试逐条单独发布）、批量更新状态；失败——代理返回失败，或代理抛出（调用方取消除外）——按指数退避重试，尝试达到 `MaxAttempts`（缺省 10）或载荷无法解码进死信（`DeadLetteredAt`，不再投递），退避中与死信的消息不占批次；一次发布抛出时本轮停止发布、余下的留到下一轮，每次抛出记一条 Warning；宿主停止的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除（ADR-0064、ADR-0108）；表上的索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，实体上的 `[EntityIndex]`，ADR-0072）同时服务取到期消息与保留期清理 |
 
 ```csharp
 builder.Services.AddMessageHandler<OrderPlacedHandler>("orders");                                     // 竞争：只有一个实例收到

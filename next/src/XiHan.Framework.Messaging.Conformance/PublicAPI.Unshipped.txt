@@ -29,6 +29,12 @@ XiHan.Framework.Messaging.Conformance.MessageStreamConformance
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.MessageStreamConformance() -> void
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.PartitionKey_PreservesOrder_PerKey() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.Replay_RedeliversMessagesSince() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.OutboxConformance
+XiHan.Framework.Messaging.Conformance.OutboxConformance.Cancellation_RollsTheRoundBack_WithoutCountingAttempts() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.OutboxConformance.FailedAndThrownPublishes_FollowTheSameRetryRules() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.OutboxConformance.OperationCanceled_NotRequestedByTheCaller_CountsAsAFailedAttempt() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.OutboxConformance.OutboxConformance() -> void
+XiHan.Framework.Messaging.Conformance.OutboxConformance.ThrowingMessage_IsRetriedWithBackoff_AndDeadLettered_WithoutHoldingBackOthers() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.<Clone>$() -> XiHan.Framework.Messaging.Conformance.ReceivedMessage!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.Baggage.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
@@ -48,11 +54,14 @@ XiHan.Framework.Messaging.Conformance.RecordingHandler
 XiHan.Framework.Messaging.Conformance.RecordingHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Conformance.RecordingHandler.RecordingHandler(XiHan.Framework.Messaging.Conformance.DeliveryLog! log) -> void
 abstract XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
+abstract XiHan.Framework.Messaging.Conformance.OutboxConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.MaxAttempts = 2 -> int
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.NoticesTopic = "conformance.notices" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.OrdersTopic = "conformance.orders" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.ShipmentsTopic = "conformance.shipments" -> string!
 const XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.UnsubscribedTopic = "conformance.unsubscribed" -> string!
+const XiHan.Framework.Messaging.Conformance.OutboxConformance.OrdersTopic = "conformance.outbox.orders" -> string!
+const XiHan.Framework.Messaging.Conformance.OutboxConformance.ShipmentsTopic = "conformance.outbox.shipments" -> string!
 override XiHan.Framework.Messaging.Conformance.ReceivedMessage.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Conformance.ReceivedMessage.GetHashCode() -> int
 override XiHan.Framework.Messaging.Conformance.ReceivedMessage.ToString() -> string!
@@ -64,3 +73,4 @@ static XiHan.Framework.Messaging.Conformance.ReceivedMessage.operator ==(XiHan.F
 virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
 virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.DeliveryTimeout.get -> System.TimeSpan
 virtual XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.SupportsMultipleInstances.get -> bool
+virtual XiHan.Framework.Messaging.Conformance.OutboxConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!

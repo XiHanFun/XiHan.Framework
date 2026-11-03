@@ -96,7 +96,7 @@ builder.AddXiHan(xihan => xihan
 
 - 开启（Kafka 缺省）：发布或订阅到不存在的主题时由 broker 按集群缺省的分区数与副本数建出来。没人订阅的主题里的消息只留到保留期（`retention.ms`，缺省 7 天），没有消费组就没有积压（ADR-0079）。
 - 关闭（生产集群常见）：主题不存在是部署错误，框架不替你建，也不当作「没有订阅者」丢弃——那样主题名或 `TopicPrefix` 写错也会被吞成一条 Debug 日志，消息无声丢失（ADR-0085）。表现是：
-  - 发布在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒）；直接发布的返回失败，经发件箱的按发件箱规则退避重试、到上限进死信。
+  - 发布在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，librdkafka 的 `topic.metadata.propagation.max.ms`，缺省 30 秒），批量发布整批抛出；直接发布的把异常抛给发布方，经发件箱的按发件箱规则计入尝试、退避重试、到上限进死信（ADR-0108；此前发件箱遇到抛出整轮回滚，这条消息与同批的会一直卡住）。
   - 订阅的消费者每次取消息都报主题不存在，记 Warning 日志后继续等，主题建好之后才开始收。
   - 死信主题不存在时死信发布失败，消息回退重投（`RedeliveryDelaySeconds`），这个分区停在原地。
 

@@ -299,11 +299,11 @@ builder.AddXiHan(xihan => xihan
 装配后 `IMessagePublisher` 被替换成 `OutboxPublisher`：
 
 1. 有活动工作单元时（操作与消息处理器的 Transaction 阶段都开着），发布写成 `OutboxMessage` 行（主题、CloudEvents 结构化 JSON、创建时间，`NextAttemptAt` 等于创建时间），批量发布用仓储的 `AddRangeAsync` 一次写入，随业务事务提交或回滚。没有活动工作单元时直接发布到代理。
-2. 后台的 `OutboxDispatcher` 每隔 `PollInterval` 跑一轮，每轮一个工作单元：按创建时间取最多 `BatchSize` 条到期的消息（未投递、未进死信、`NextAttemptAt` 为空或已到），按主题分组各一次 `PublishManyAsync`，最后一次批量写回。
+2. 后台的 `OutboxDispatcher` 每隔 `PollInterval` 跑一轮，每轮一个工作单元：按创建时间取最多 `BatchSize` 条到期的消息（未投递、未进死信、`NextAttemptAt` 为空或已到），首次投递的按主题分组各一次 `PublishManyAsync`，重试的（`Attempts` 不为 0）逐条各一次，最后一次批量写回。工作单元只覆盖发件箱行，代理不在事务里。
 3. 删掉超过保留期的已投递行，每轮最多 `BatchSize` 行，与投递同一工作单元。
-4. 单轮异常记日志后继续下一轮，只有停止才退出循环。
+4. 存储失败（读不出、写不回、提交失败）让本轮回滚，记日志后继续下一轮，只有停止才退出循环。
 
-每条取到的消息计一次尝试（`Attempts`），结果写回行上：
+每条发布过的消息计一次尝试（`Attempts`），结果写回行上：
 
 | 结果 | 行的变化 |
 | --- | --- |
@@ -311,9 +311,10 @@ builder.AddXiHan(xihan => xihan
 | 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `RetryDelay × 2^(Attempts − 1)`，不超过 `MaxRetryDelay` |
 | 发布失败，次数达到 `MaxAttempts` | 记 `DeadLetteredAt` 进死信，日志 Error 级别 |
 | 载荷无法解码 | 直接进死信（重试也解不开），`LastError` 是 `MESSAGING_VALIDATION_002` |
-| 代理整批抛出（不可达） | 本轮回滚，不计尝试，下一轮再来 |
+| 代理抛出（不可达，或某条消息让整批失败） | 这次调用里的每条按「发布失败」处理（计一次尝试、退避或进死信），`LastError` 是 `MESSAGING_UNAVAILABLE_001`，原因取框架异常的消息（别的异常只写类型名）；记一条 Warning；本轮停止发布，余下的不计尝试、留到下一轮 |
+| 宿主停止（调用方取消） | 本轮回滚，不计尝试、不进死信，本轮已发出的下一轮重发 |
 
-退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
+退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。重试逐条发布：代理整批抛出时分不出是哪一条，单独重试后让整批失败的那条只拖累它自己，同批的别的消息随即发出（ADR-0108）。代理不可达时一轮只有一次调用抛出，积压的消息累计尝试比逐条失败慢；要更长的停机容忍度，调大 `MaxAttempts` 或 `MaxRetryDelaySeconds`（如 15 次、3600 秒约 5.4 小时）。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
 
 投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。表结构：`Topic` 长 128，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）；索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`）由实体上的 `[EntityIndex]` 声明，同时服务取到期消息与保留期清理，EF Core 应用在 `modelBuilder.Entity<OutboxMessage>()` 之后调用 `ApplyPersistenceConventions(Database)` 即得到它。
 

@@ -523,6 +523,10 @@
       ],
       "dependencies": [
         {
+          "id": "Microsoft.Extensions.TimeProvider.Testing",
+          "version": "10.11.0"
+        },
+        {
           "id": "xunit.v3.assert",
           "version": "4.0.2"
         },

@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Messaging.Abstractions;
@@ -21,7 +22,7 @@ namespace XiHan.Framework.Messaging.InMemory.Tests;
 /// 发件箱投递循环的尝试上限、退避、死信与保留期（RFC-0009「发件箱」，ADR-0064）。
 /// </summary>
 /// <remarks>
-/// 以内存持久化存行、脚本代理给结果、可推进的时钟逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>，不起后台循环、不等真实时间。行用载荷里的事件 ID 区分。
+/// 代理抛出与返回失败同样计入见 ADR-0108。以内存持久化存行、脚本代理给结果、可推进的时钟逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>，不起后台循环、不等真实时间。行用载荷里的事件 ID 区分。
 /// </remarks>
 public sealed class OutboxDispatcherTests
 {
@@ -29,6 +30,11 @@ public sealed class OutboxDispatcherTests
     /// 主题。
     /// </summary>
     private const string Topic = "orders";
+
+    /// <summary>
+    /// 第二个主题。
+    /// </summary>
+    private const string ShipmentsTopic = "shipments";
 
     /// <summary>
     /// 时钟起点。
@@ -117,25 +123,110 @@ public sealed class OutboxDispatcherTests
     }
 
     [Fact]
-    public async Task UnreachableBroker_RollsTheRoundBack_WithoutSpendingAttempts()
+    public async Task ThrowingMessage_UnderTheDispatchLoop_IsDeadLettered_AndTheRestOfItsBatchIsDispatched()
+    {
+        await using var host = await StartAsync();
+        var clock = new FakeTimeProvider(_start);
+        var logs = new LogCapture();
+        var broker = new ScriptedBroker { Throws = static e => e.Id == "poison" ? new FrameworkException(MessagingErrors.BrokerUnavailable, "Message 'poison' exceeds the broker's size limit.") : null };
+        var options = new OutboxOptions { MaxAttempts = 3, RetryDelay = TimeSpan.FromSeconds(10), MaxRetryDelay = TimeSpan.FromSeconds(15) };
+        var dispatcher = new OutboxDispatcher(host.Services, broker, options, clock, logs);
+        // 毒消息与两条好消息同一主题、同一批，另一个主题的一条排在后面
+        await SeedAsync(host, Row("ok-1", 0), Row("poison", 1), Row("ok-2", 2), Row("shipped", ShipmentsTopic, 3));
+
+        // 照 RunAsync 的做法逐轮投递：单轮异常记下后继续，每轮之间时钟走一个轮询间隔；两分钟远超退避的总和（10 + 15 秒）
+        var failedRounds = 0;
+        for (var round = 0; round < 120; round++)
+        {
+            try
+            {
+                await dispatcher.RunOnceAsync(CancellationToken.None);
+            }
+            catch (FrameworkException)
+            {
+                failedRounds++;
+            }
+
+            clock.Advance(options.PollInterval);
+        }
+
+        // 毒消息按与失败结果相同的规则用尽尝试进死信；同一批的好消息与排在后面的消息都已发出，没有一轮整体失败。
+        // 先整体比一次，失败信息里一眼看全（毒消息尝试次数、毒消息进死信、ok-1 / ok-2 / shipped 已发出、整体失败的轮数）：
+        // 修复前是 (0, False, False, False, False, 120)——毒消息从不计次、同批与排在后面的都被拖住、每轮都回滚
+        var rows = await RowsAsync(host);
+        Assert.Equal(
+            (3, true, true, true, true, 0),
+            (rows["poison"].Attempts, rows["poison"].DeadLetteredAt is not null, rows["ok-1"].DispatchedAt is not null, rows["ok-2"].DispatchedAt is not null, rows["shipped"].DispatchedAt is not null, failedRounds));
+        Assert.Null(rows["poison"].DispatchedAt);
+        Assert.Equal(MessagingErrors.BrokerUnavailable, ErrorCodeOf(rows["poison"]));
+        Assert.Equal(3, broker.Calls.Count(static c => c.Split(',').Contains("poison")));
+
+        // 每次抛出记一条告警（不带载荷），进死信记一条错误
+        var entries = logs.Entries.Where(static e => e.Category == typeof(OutboxDispatcher).FullName).ToList();
+        Assert.Equal(3, entries.Count(static e => e.Level == LogLevel.Warning && e.Message.Contains("threw", StringComparison.Ordinal)));
+        Assert.Single(entries, static e => e.Level == LogLevel.Error && e.Message.Contains("dead-lettered", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task UnreachableBroker_CountsAnAttemptOnlyForTheCallThatThrew_AndDefersTheRestOfTheRound()
     {
         await using var host = await StartAsync();
         var clock = new FakeTimeProvider(_start);
         var broker = new ScriptedBroker { Unreachable = true };
-        var dispatcher = new OutboxDispatcher(host.Services, broker, new OutboxOptions { MaxAttempts = 1 }, clock, NullLoggerFactory.Instance);
-        await SeedAsync(host, Row("a", 0));
+        var dispatcher = new OutboxDispatcher(host.Services, broker, new OutboxOptions { MaxAttempts = 3, RetryDelay = TimeSpan.FromSeconds(5) }, clock, NullLoggerFactory.Instance);
+        await SeedAsync(host, Row("a", 0), Row("b", ShipmentsTopic, 1));
 
-        var exception = await Assert.ThrowsAsync<FrameworkException>(() => dispatcher.RunOnceAsync(CancellationToken.None));
-        Assert.Equal(MessagingErrors.BrokerUnavailable, exception.Code);
-        var row = (await RowsAsync(host))["a"];
-        Assert.Equal(0, row.Attempts);
-        Assert.Null(row.DeadLetteredAt);
-        Assert.Null(row.DispatchedAt);
+        // 代理不可达时每轮只有一次调用抛出：它的消息计一次尝试并退避，本轮余下的不发布、不计尝试
+        Assert.Equal(0, await dispatcher.RunOnceAsync(CancellationToken.None));
+        var rows = await RowsAsync(host);
+        Assert.Equal(1, rows["a"].Attempts);
+        Assert.Equal(_start.AddSeconds(5), rows["a"].NextAttemptAt);
+        Assert.Equal(0, rows["b"].Attempts);
+        Assert.Equal(["a"], broker.Calls);
 
-        // 代理恢复后照常投递：代理故障不消耗尝试次数，MaxAttempts = 1 也没有被它用掉
+        Assert.Equal(0, await dispatcher.RunOnceAsync(CancellationToken.None));
+        Assert.Equal(0, await dispatcher.RunOnceAsync(CancellationToken.None));
+        rows = await RowsAsync(host);
+        Assert.Equal(1, rows["b"].Attempts);
+        Assert.Equal(["a", "b"], broker.Calls);
+
+        // 代理恢复后退避到期的照常投递，尝试次数没有用尽
         broker.Unreachable = false;
-        Assert.Equal(1, await dispatcher.RunOnceAsync(CancellationToken.None));
-        Assert.Equal(_start, (await RowsAsync(host))["a"].DispatchedAt);
+        clock.Advance(TimeSpan.FromSeconds(5));
+        Assert.Equal(2, await dispatcher.RunOnceAsync(CancellationToken.None));
+        rows = await RowsAsync(host);
+        Assert.All(rows.Values, static row => Assert.Equal(2, row.Attempts));
+        Assert.All(rows.Values, static row => Assert.Null(row.DeadLetteredAt));
+        Assert.All(rows.Values, row => Assert.Equal(clock.GetUtcNow(), row.DispatchedAt));
+    }
+
+    [Fact]
+    public async Task ThrownExceptions_AreRecordedWithoutTheirMessage_UnlessTheyAreFrameworkExceptions()
+    {
+        await using var host = await StartAsync();
+        var clock = new FakeTimeProvider(_start);
+        // 框架异常的消息是框架自己写的、照常记下；别的异常的消息可能带连接串、主机名等，只记类型名
+        var broker = new ScriptedBroker
+        {
+            Throws = static e => e.Id switch
+            {
+                "framework" => new FrameworkException(MessagingErrors.BrokerUnavailable, "Failed to publish to topic 'orders': the broker closed the channel."),
+                "foreign" => new InvalidOperationException("Host=db.internal;Password=hunter2"),
+                _ => null,
+            },
+        };
+        var dispatcher = new OutboxDispatcher(host.Services, broker, new OutboxOptions { MaxAttempts = 1 }, clock, NullLoggerFactory.Instance);
+        await SeedAsync(host, Row("framework", 0), Row("foreign", ShipmentsTopic, 1));
+
+        // 第一轮第一条抛出、第二条留到下一轮
+        await dispatcher.RunOnceAsync(CancellationToken.None);
+        await dispatcher.RunOnceAsync(CancellationToken.None);
+        var rows = await RowsAsync(host);
+        Assert.All(rows.Values, static row => Assert.NotNull(row.DeadLetteredAt));
+        Assert.All(rows.Values, static row => Assert.Equal(MessagingErrors.BrokerUnavailable, ErrorCodeOf(row)));
+        Assert.Contains("the broker closed the channel", rows["framework"].LastError, StringComparison.Ordinal);
+        Assert.Contains(typeof(InvalidOperationException).FullName!, rows["foreign"].LastError, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", rows["foreign"].LastError, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -163,8 +254,13 @@ public sealed class OutboxDispatcherTests
     /// <summary>
     /// 一条可解码的发件箱行。
     /// </summary>
-    private static OutboxMessage Row(string id, int order)
-        => Row(id, CloudEventsFormat.Encode(new MessageEnvelope { Id = id, Source = "/tests", Type = "orders.placed" }), order);
+    private static OutboxMessage Row(string id, int order) => Row(id, Topic, order);
+
+    /// <summary>
+    /// 一条给定主题、可解码的发件箱行。
+    /// </summary>
+    private static OutboxMessage Row(string id, string topic, int order)
+        => Row(id, CloudEventsFormat.Encode(new MessageEnvelope { Id = id, Source = "/tests", Type = "orders.placed" }), order, topic);
 
     /// <summary>
     /// 一条给定载荷的发件箱行。
@@ -172,10 +268,10 @@ public sealed class OutboxDispatcherTests
     /// <remarks>
     /// 创建时间按序号递增，决定投递顺序。
     /// </remarks>
-    private static OutboxMessage Row(string id, byte[] payload, int order) => new()
+    private static OutboxMessage Row(string id, byte[] payload, int order, string topic = Topic) => new()
     {
         Id = Guid.CreateVersion7(),
-        Topic = Topic,
+        Topic = topic,
         Payload = payload,
         CreatedAt = _start.AddMilliseconds(order),
         NextAttemptAt = _start,

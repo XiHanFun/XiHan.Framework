@@ -124,7 +124,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 - `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪与采样标志（与调用同一 trace 的当前 Activity 优先），租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。
 - `PublishManyAsync`：结果与入参等长同序，空集合不触代理，主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；代理不可达整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 领域事件：未登记的事件类型让调用以 `MESSAGING_VALIDATION_003` 结束；重复登记或超过 10000 种时 `AddDomainEvent` 抛 `FrameworkException`（`MESSAGING_VALIDATION_004`）；同一主题的事件一次批量发布，任一失败即回滚。
-- 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；失败按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；代理整批抛出时本轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064）。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）；实体上的 `[EntityIndex]` 声明索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，取到期消息与保留期清理共用，ADR-0072）。
+- 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；首次投递按主题批量发布，重试逐条单独发布；失败（代理返回失败，或代理抛出，调用方取消除外）按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；一次发布抛出时这次调用的每条计一次尝试、本轮停止发布，余下的留到下一轮（ADR-0108）；宿主停止的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064）。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）；实体上的 `[EntityIndex]` 声明索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，取到期消息与保留期清理共用，ADR-0072）。
 
 | 错误码 | 含义 |
 | --- | --- |

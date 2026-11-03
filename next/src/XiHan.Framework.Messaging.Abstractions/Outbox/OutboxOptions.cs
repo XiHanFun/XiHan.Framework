@@ -50,7 +50,7 @@ public sealed record OutboxOptions
     /// 一条消息最多尝试投递的次数（含首次）。
     /// </summary>
     /// <remarks>
-    /// 默认 10。用尽后进死信，不再投递；代理整批抛出（不可达）的一轮回滚，不计尝试。
+    /// 默认 10。用尽后进死信，不再投递。代理抛出与返回失败一样计一次尝试（ADR-0108）；只有调用方取消（宿主停止）的一轮回滚、不计尝试。
     /// </remarks>
     public int MaxAttempts
     {
