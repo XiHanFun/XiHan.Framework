@@ -83,7 +83,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合；`ConnectionOf(type)` 取实体登记的命名连接 |
 | `EntityQuery<T>`、`EntityQuery` | `…Abstractions.Queries` | 不可变查询：`Where`、`OrderBy`、`Page`、`Within`、`IncludeDeleted`；`EntityQuery.All<T>()`、`DefaultMaxTake`（1000） |
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
-| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、开启选项（`TenantId`、`IsReadOnly`、`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
+| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启选项（`TenantId`、`IsReadOnly`、`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
@@ -155,6 +155,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 批量方法的结果与入参等长、顺序一一对应；空集合不访问后端但仍要求活动的工作单元；批内重复项按入参顺序逐项施加语义。
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
+- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](../guide/uow#是否已开数据库事务)。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。

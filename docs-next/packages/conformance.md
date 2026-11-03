@@ -35,7 +35,7 @@
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 14 + 2 + 4 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance` | 4 + 3 |
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
-| [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 32 + 3 |
+| [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 5 |
@@ -141,10 +141,10 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `RepositoryConformance` | Stable | `CreateFeature()` 返回提供 `persistence.relational@1` 的特性；可覆写 `Configuration`、`ConfigureServices`、`ConfigureApp` | 读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识，只有一个成功）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义，判空与取反嵌套在与 / 或条件里照常过滤；规约里字符串的 `Contains` / `StartsWith` / `EndsWith` 按字面匹配，实参里的 `%`、`_`、`[`、反斜杠、`!` 与单引号不是通配符或转义符，不断言大小写；三个方法与闭包变量、常量、列三种实参在 ASCII 字母的大小写上一致，全都区分或全都不区分；一次最多取 1000 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_UNEXPECTED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、标识生成器 |
+| `RepositoryConformance` | Stable | `CreateFeature()` 返回提供 `persistence.relational@1` 的特性；可覆写 `Configuration`、`ConfigureServices`、`ConfigureApp`，以及 `EnsureTransaction`（Provider 的直接写入入口）与 `NamedConnection`（套件可用的命名连接，配置里要声明它），不覆写这两个的用例跳过 | 读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识，只有一个成功）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义，判空与取反嵌套在与 / 或条件里照常过滤；规约里字符串的 `Contains` / `StartsWith` / `EndsWith` 按字面匹配，实参里的 `%`、`_`、`[`、反斜杠、`!` 与单引号不是通配符或转义符，不断言大小写；三个方法与闭包变量、常量、列三种实参在 ASCII 字母的大小写上一致，全都区分或全都不区分；一次最多取 1000 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_UNEXPECTED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、`IUnitOfWork.HasTransaction`（开始与读取后为假，第一次写入后为真，提交与回滚后为假，只读工作单元恒为假；直接写入入口开启事务；绑定命名连接的工作单元只报告那个连接，与业务调用各报各的；ADR-0109）、标识生成器 |
 | `IdGeneratorConformance<TKey>` | Preview | `CreateGenerator(TimeProvider clock)` 返回 `IIdGenerator<TKey>`（`TKey : IComparable<TKey>`） | 顺序生成与 8 线程并发生成不重复（真实时钟）、时钟前进后标识更大（`ConformanceClock`） |
 
-`Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例。
+`Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`ConformanceLease` 只在给出 `NamedConnection` 时登记到那个连接，EF Core 的 `DbContext` 模型要包含它。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例。
 
 ```csharp
 using XiHan.Framework.Kernel.Hosting;
@@ -157,7 +157,7 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 }
 ```
 
-`Persistence.InMemory`、`Persistence.EntityFrameworkCore`（SQLite）、`Persistence.SqlSugar`（SQLite，设置了 `XIHAN_TEST_POSTGRES` 时另跑 PostgreSQL）通过仓储套件；`Persistence.SqlSugar` 的库结构套件另在 PostgreSQL、MySQL、SQL Server、Oracle 上跑（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE`）；`GuidV7IdGenerator`（`Guid`）与 `SnowflakeIdGenerator`（`long`）通过标识生成器套件。
+`Persistence.InMemory`、`Persistence.EntityFrameworkCore`（SQLite）、`Persistence.SqlSugar`（SQLite，设置了 `XIHAN_TEST_POSTGRES` 时另跑 PostgreSQL）通过仓储套件（内存实现没有直接写入入口、不支持命名连接，那两例跳过；SqlSugar 与 EF Core 在 SQLite 上把命名连接放在另一个库文件，SqlSugar 在 PostgreSQL 上指向同一个临时库）；`Persistence.SqlSugar` 的库结构套件另在 PostgreSQL、MySQL、SQL Server、Oracle 上跑（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE`）；`GuidV7IdGenerator`（`Guid`）与 `SnowflakeIdGenerator`（`long`）通过标识生成器套件。
 
 ## Plugins
 

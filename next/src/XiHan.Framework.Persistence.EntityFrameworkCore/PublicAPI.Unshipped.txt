@@ -37,6 +37,7 @@ XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.Co
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.EnsureTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.HasTransaction.get -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCoreUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState

@@ -97,6 +97,7 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
   - 更新或删除期间，别的工作单元已删掉那一行，或改过带并发戳的那一行，后提交的返回 `PERSISTENCE_CONFLICT_001`，不会把先提交的更新盖掉或把删掉的行写回来。
   - 不带并发戳的实体只校验行还在。
 - 更新沿用当前行的创建时间、租户与删除标记；软删除在当前行的副本上打标（调用方实例上的其他改动不写入），删除标记再同步回调用方实例。
+- 没有数据库事务，`HasTransaction` 与关系型 Provider 同义（ADR-0109）：可写工作单元里仓储第一次接受写入调用（单条，或集合非空的批量，不论结果）起为真，覆盖层从此可能有未提交、随回滚丢弃的变更；提交（含提交时校验失败）与回滚后为假，只读工作单元恒为假。
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）：写入在进覆盖层之前就返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
 - 进程退出数据即丢失；多个进程之间不共享。
 - 健康项 `persistence.inmemory.capacity`：任一张表达到容量即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，报告按实体名排序的第一个满表），否则 Ready。

@@ -28,6 +28,12 @@ XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceItem.Id.get -> int
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceItem.Id.init -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceItem.Label.get -> string!
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceItem.Label.set -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease.ConformanceLease() -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease.Holder.get -> string!
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease.Holder.set -> void
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease.Id.get -> System.Guid
+XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceLease.Id.init -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceNote
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceNote.ConformanceNote() -> void
 XiHan.Framework.Persistence.Conformance.Fixtures.ConformanceNote.Id.get -> System.Guid
@@ -82,6 +88,10 @@ XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_AreDi
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.DomainEvents_DispatchFailureRollsBack_AndMissingDispatcherIsRejected() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.Exception_RollsBack_AndBecomesUnexpectedOutcome() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.FailureOutcome_RollsBack() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.HasTransaction_InAUnitOfWorkBoundToANamedConnection_ReportsOnlyThatConnection() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.HasTransaction_IsAlwaysFalse_InAReadOnlyUnitOfWork() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.HasTransaction_OpensOnTheDirectWriteEntry() -> System.Threading.Tasks.Task!
+XiHan.Framework.Persistence.Conformance.RepositoryConformance.HasTransaction_OpensOnTheFirstWrite_AndResetsAfterCommitAndRollback() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_AppliesFilterOrderingAndPaging_CountIgnoresPaging() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten() -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Conformance.RepositoryConformance.List_NullableValueTypeComparedWithNull_FiltersByPresence() -> System.Threading.Tasks.Task!
@@ -142,5 +152,7 @@ virtual XiHan.Framework.Persistence.Conformance.DataSourceConformance.ConfigureS
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureApp(XiHan.Framework.Kernel.Hosting.AppBuilder! builder) -> void
 virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.EnsureTransaction.get -> System.Func<XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask>?
+virtual XiHan.Framework.Persistence.Conformance.RepositoryConformance.NamedConnection.get -> string?
 virtual XiHan.Framework.Persistence.Conformance.SchemaConformance.Configuration.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>!
 virtual XiHan.Framework.Persistence.Conformance.SchemaConformance.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void

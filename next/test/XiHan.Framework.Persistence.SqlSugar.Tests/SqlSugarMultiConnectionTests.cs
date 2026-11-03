@@ -7,6 +7,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
@@ -19,7 +20,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// 多库
 /// </summary>
 /// <remarks>
-/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；管道外的作用域显式绑定分片后同样分落两库；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误
+/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；第一次写入落在分片库时同样开启覆盖两个连接的事务，是否已开事务是一个值；管道外的作用域显式绑定分片后同样分落两库；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误
 /// </remarks>
 public sealed class SqlSugarMultiConnectionTests : IDisposable
 {
@@ -92,6 +93,43 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
             return Result.Success();
         })).ThrowIfFailure();
         Assert.Equal((true, true), seen);
+    }
+
+    [Fact]
+    public async Task HasTransaction_IsOneValueAcrossConnections_AndOpensWhenTheFirstWriteLandsOnTheShard()
+    {
+        using (var client = CreateClient(_second.ConnectionString))
+        {
+            client.CodeFirst.InitTables<ConformanceNote>();
+        }
+
+        await using var host = await StartShardedHostAsync();
+        var orderId = Guid.CreateVersion7();
+        var noteId = Guid.CreateVersion7();
+        var observed = new List<bool>();
+        IUnitOfWork? unitOfWork = null;
+
+        // 先读默认库（连接已取用、事务未开），第一次写入落在分片库：经 ITenant 开事务，一个值覆盖两个连接；再写默认库仍是同一事务
+        var result = await InvokeAsync(host, "acme", async ctx =>
+        {
+            unitOfWork = ctx.Services.GetRequiredService<IUnitOfWork>();
+            _ = await Orders(ctx).CountAsync(EntityQuery.All<ConformanceOrder>(), ctx.CancellationToken);
+            observed.Add(unitOfWork.HasTransaction);
+            (await Notes(ctx).AddAsync(new ConformanceNote { Id = noteId, TenantId = "acme", Text = "tenant" }, ctx.CancellationToken)).ThrowIfFailure();
+            observed.Add(unitOfWork.HasTransaction);
+            (await Orders(ctx).AddAsync(new ConformanceOrder { Id = orderId, Name = "platform" }, ctx.CancellationToken)).ThrowIfFailure();
+            observed.Add(unitOfWork.HasTransaction);
+            return Result.Success();
+        });
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.Equal([false, true, true], observed);
+        Assert.NotNull(unitOfWork);
+        Assert.False(unitOfWork.HasTransaction);
+        using var defaultClient = CreateClient(_default.ConnectionString);
+        using var shardClient = CreateClient(_second.ConnectionString);
+        Assert.Equal([orderId], defaultClient.Queryable<ConformanceOrder>().ToList().Select(static o => o.Id));
+        Assert.Equal([noteId], shardClient.Queryable<ConformanceNote>().ToList().Select(static n => n.Id));
     }
 
     [Fact]

@@ -48,6 +48,12 @@ public sealed class UnitOfWorkMiddlewareTests
         public bool IsReadOnly { get; private set; }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// 替身不写入，从不开事务
+        /// </remarks>
+        public bool HasTransaction => false;
+
+        /// <inheritdoc />
         public DomainEventTracker DomainEvents { get; } = new();
 
         /// <inheritdoc />

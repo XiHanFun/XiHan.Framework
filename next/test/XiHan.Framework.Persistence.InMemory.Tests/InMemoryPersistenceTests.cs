@@ -18,7 +18,7 @@ namespace XiHan.Framework.Persistence.InMemory.Tests;
 /// 内存 Provider 独有的行为
 /// </summary>
 /// <remarks>
-/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚、读写都复制、提交时按首次读到的状态校验（并发新增同一标识、行被改或被删）且跨表原子、并发提交。一致性套件覆盖的通用行为不在此重复
+/// 选项解析、容量上限、只读工作单元、状态机、提交校验失败后复位是否已开事务、覆盖层回滚、读写都复制、提交时按首次读到的状态校验（并发新增同一标识、行被改或被删）且跨表原子、并发提交。一致性套件覆盖的通用行为不在此重复
 /// </remarks>
 public sealed class InMemoryPersistenceTests
 {
@@ -298,6 +298,29 @@ public sealed class InMemoryPersistenceTests
         Assert.Equal(PersistenceErrors.Duplicate, commit.Error?.Code);
         Assert.Equal(UnitOfWorkState.RolledBack, second.State);
         Assert.Equal("first", store.Table<Widget, Guid>().Find(id).ValueOrThrow().Name);
+    }
+
+    [Fact]
+    public async Task HasTransaction_OpensOnTheFirstWriteCall_AndResetsWhenTheCommitFailsValidation()
+    {
+        var (store, first, repository) = Arrange(capacity: 1);
+        await first.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        (await repository.AddAsync(new Widget { Id = Guid.NewGuid() }, CancellationToken.None)).ThrowIfFailure();
+        (await first.CommitAsync(CancellationToken.None)).ThrowIfFailure();
+
+        // 内存实现没有数据库事务：可写工作单元里第一次写入调用起视为开启，空批量不算写入
+        var (_, second, secondRepository) = Open(store);
+        await second.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None);
+        Assert.Empty(await secondRepository.AddRangeAsync([], CancellationToken.None));
+        Assert.False(second.HasTransaction);
+        (await secondRepository.AddAsync(new Widget { Id = Guid.NewGuid() }, CancellationToken.None)).ThrowIfFailure();
+        Assert.True(second.HasTransaction);
+
+        // 提交时校验失败（超出容量）：工作单元记为回滚，事务随之复位
+        var commit = await second.CommitAsync(CancellationToken.None);
+        Assert.Equal(PersistenceErrors.CapacityExceeded, commit.Error?.Code);
+        Assert.Equal(UnitOfWorkState.RolledBack, second.State);
+        Assert.False(second.HasTransaction);
     }
 
     [Fact]

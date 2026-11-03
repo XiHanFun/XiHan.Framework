@@ -36,6 +36,14 @@ public interface IUnitOfWork
     bool IsReadOnly { get; }
 
     /// <summary>
+    /// 是否已开数据库事务
+    /// </summary>
+    /// <remarks>
+    /// 事务延迟开启，<see cref="State"/> 为 <see cref="UnitOfWorkState.Active"/> 说明不了事务开没开。可写工作单元里第一次写入时开启：仓储的单条写入或集合非空的批量写入一经调用即开启（不论这次写入的结果），Provider 的直接写入入口（<c>EnsureTransactionAsync</c>）同样开启；查找、查询、计数、空批量不开启。开启后为真，直到提交（成功或返回失败）或回滚；未开始、已提交、已回滚都为假，只读工作单元恒为假。多连接时任一连接开着事务即为真；绑定命名连接的工作单元只报告那个连接。内存实现没有数据库事务，第一次写入调用起同样为真（覆盖层从此可能有未提交、随回滚丢弃的变更）。调用里要立即对外产生、不随回滚撤回的副作用（立即推送、调用外部系统）之前据此判断：为真时本工作单元已有可能随回滚消失的写入（RFC-0005「是否已开数据库事务」）
+    /// </remarks>
+    bool HasTransaction { get; }
+
+    /// <summary>
     /// 本工作单元内写过的聚合
     /// </summary>
     /// <remarks>

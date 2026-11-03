@@ -293,6 +293,7 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.HasTransaction.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
@@ -383,12 +384,12 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.NotFound = "p
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ReadOnly = "persistence.unit_of_work.read_only" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.SchemaNotSupported = "persistence.schema.not_supported" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.SchemaReadFailed = "persistence.schema.read_failed" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ShardTimestampFormatMismatch = "persistence.schema.shard_timestamp_format_mismatch" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StaleStamp = "persistence.entity.stale_stamp" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.StoreUnavailable = "persistence.store.unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TableNotFound = "persistence.schema.table_not_found" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TakeExceeded = "persistence.query.take_exceeded" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TenantRequired = "persistence.entity.tenant_required" -> string!
-const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.ShardTimestampFormatMismatch = "persistence.schema.shard_timestamp_format_mismatch" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TimestampFormatMismatch = "persistence.schema.timestamp_format_mismatch" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TooManyTables = "persistence.schema.too_many_tables" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!

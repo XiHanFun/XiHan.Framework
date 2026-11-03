@@ -73,6 +73,22 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
+    /// Provider 的直接写入入口
+    /// </summary>
+    /// <remarks>
+    /// EF Core 与 SqlSugar 工作单元的 <c>EnsureTransactionAsync</c>（直接用客户端写入之前开启事务），参数是调用作用域里的 <see cref="IUnitOfWork"/>。为 <see langword="null"/>（缺省）表示 Provider 没有这个入口，用例 31 跳过
+    /// </remarks>
+    protected virtual Func<IUnitOfWork, CancellationToken, ValueTask>? EnsureTransaction => null;
+
+    /// <summary>
+    /// 套件可用的命名连接
+    /// </summary>
+    /// <remarks>
+    /// 支持命名连接的 Provider 返回一个连接名，并在 <see cref="Configuration"/> 里声明它；SQLite 上要是另一个库文件（用例在业务事务占着默认库写锁时另开作用域写这个连接）。套件把 <see cref="ConformanceLease"/> 登记到这个连接，EF Core 的 DbContext 模型要包含它。为 <see langword="null"/>（缺省）表示不支持，用例 32 跳过
+    /// </remarks>
+    protected virtual string? NamedConnection => null;
+
+    /// <summary>
     /// 用例 1：新增在同一工作单元内可读，提交后对新调用可见，并写入创建时间与并发戳
     /// </summary>
     [Fact]
@@ -806,6 +822,9 @@ public abstract class RepositoryConformance
     /// <summary>
     /// 装配并启动宿主：被测特性、套件特性、三种套件实体的登记、套件时钟
     /// </summary>
+    /// <remarks>
+    /// Provider 给出 <see cref="NamedConnection"/> 时另把 <see cref="ConformanceLease"/> 登记到那个连接
+    /// </remarks>
     protected Task<TestHost> StartAsync(Action<IServiceCollection>? extra = null) => TestHost.StartAsync(
         builder =>
         {
@@ -820,6 +839,11 @@ public abstract class RepositoryConformance
             services.AddRepository<ConformanceOrder, Guid>();
             services.AddRepository<ConformanceNote, Guid>();
             services.AddRepository<ConformanceItem, int>();
+            if (NamedConnection is { } connection)
+            {
+                services.AddRepository<ConformanceLease, Guid>(connection);
+            }
+
             ConfigureServices(services);
             extra?.Invoke(services);
         });
@@ -1231,6 +1255,336 @@ public abstract class RepositoryConformance
         Assert.False(ran);
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, nested.Error?.Code);
         Assert.Equal("outer", (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().Name);
+    }
+
+    /// <summary>
+    /// 用例 29：数据库事务在第一次写入时开启，提交与回滚后复位
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IUnitOfWork.HasTransaction"/>：开始前与刚开始时为假；查找、按标识集合查找、查询、计数与空批量之后仍为假；第一次写入之后为真，再写入仍为真；提交之后为假。失败结果、未处理异常、管道外的提交与回滚之后为假。结果失败的写入（更新不存在的实体）同样开启。管道外的值在作用域释放之前核对
+    /// </remarks>
+    [Fact]
+    public async Task HasTransaction_OpensOnTheFirstWrite_AndResetsAfterCommitAndRollback()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var existing = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = existing, Name = "existing" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        var observed = new List<(string Step, bool Open)>();
+        IUnitOfWork? committed = null;
+
+        var result = await RunAsync(host, async context =>
+        {
+            var unitOfWork = committed = context.Services.GetRequiredService<IUnitOfWork>();
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var cancellationToken = context.CancellationToken;
+            observed.Add(("begun", unitOfWork.HasTransaction));
+            _ = await repository.FindAsync(existing, cancellationToken).ConfigureAwait(false);
+            _ = await repository.FindManyAsync([existing], cancellationToken).ConfigureAwait(false);
+            _ = await repository.ListAsync(EntityQuery.All<ConformanceOrder>(), cancellationToken).ConfigureAwait(false);
+            _ = await repository.CountAsync(EntityQuery.All<ConformanceOrder>(), cancellationToken).ConfigureAwait(false);
+            _ = await repository.AddRangeAsync([], cancellationToken).ConfigureAwait(false);
+            _ = await repository.UpdateRangeAsync([], cancellationToken).ConfigureAwait(false);
+            _ = await repository.RemoveRangeAsync([], cancellationToken).ConfigureAwait(false);
+            observed.Add(("read", unitOfWork.HasTransaction));
+            (await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "fresh" }, cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            observed.Add(("written", unitOfWork.HasTransaction));
+            var stored = (await repository.FindAsync(existing, cancellationToken).ConfigureAwait(false)).ValueOrThrow();
+            stored.Name = "changed";
+            (await repository.UpdateAsync(stored, cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            observed.Add(("written again", unitOfWork.HasTransaction));
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.Equal([("begun", false), ("read", false), ("written", true), ("written again", true)], observed);
+        Assert.NotNull(committed);
+        Assert.Equal(UnitOfWorkState.Committed, committed.State);
+        Assert.False(committed.HasTransaction);
+
+        // 第一次写入的结果是失败（批量更新一个不存在的实体，逐项 NotFound）：事务照样已开启
+        var failedWriteOpened = false;
+        IUnitOfWork? afterFailure = null;
+        var rejection = Error.Literal("CONFORMANCE_VALIDATION_001", "Rejected by the business rule.");
+        var failed = await RunAsync(host, async context =>
+        {
+            afterFailure = context.Services.GetRequiredService<IUnitOfWork>();
+            var missing = await Repository<ConformanceOrder, Guid>(context).UpdateRangeAsync([new ConformanceOrder { Id = Guid.CreateVersion7() }], context.CancellationToken).ConfigureAwait(false);
+            Assert.Equal(PersistenceErrors.NotFound, Assert.Single(missing).Error?.Code);
+            failedWriteOpened = afterFailure.HasTransaction;
+            return rejection;
+        }).ConfigureAwait(false);
+
+        Assert.Equal(rejection, failed.Error);
+        Assert.True(failedWriteOpened);
+        Assert.NotNull(afterFailure);
+        Assert.Equal(UnitOfWorkState.RolledBack, afterFailure.State);
+        Assert.False(afterFailure.HasTransaction);
+
+        // 未处理异常：中间件回滚之后为假
+        IUnitOfWork? afterException = null;
+        var crashed = await RunAsync(host, async context =>
+        {
+            afterException = context.Services.GetRequiredService<IUnitOfWork>();
+            (await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "crashed" }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            throw new InvalidOperationException("The handler crashed.");
+        }).ConfigureAwait(false);
+
+        Assert.Equal(KernelErrors.Unexpected, crashed.Error?.Code);
+        Assert.NotNull(afterException);
+        Assert.Equal(UnitOfWorkState.RolledBack, afterException.State);
+        Assert.False(afterException.HasTransaction);
+
+        // 管道外：未开始为假，开始后为假，写入后为真，提交之后为假；在作用域释放之前看（释放时 Provider 回滚未结束的事务，会掩盖没有复位的实现）
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            Assert.False(manual.HasTransaction);
+            await manual.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None).ConfigureAwait(false);
+            Assert.False(manual.HasTransaction);
+            (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "manual" }, CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.True(manual.HasTransaction);
+            (await manual.CommitAsync(CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.False(manual.HasTransaction);
+        }
+
+        // 管道外：批量写入后为真，回滚之后为假
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await manual.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None).ConfigureAwait(false);
+            var batch = await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceItem, int>>().AddRangeAsync([new ConformanceItem { Id = 29, Label = "manual" }], CancellationToken.None).ConfigureAwait(false);
+            Fold(batch).ThrowIfFailure();
+            Assert.True(manual.HasTransaction);
+            await manual.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+            Assert.False(manual.HasTransaction);
+        }
+
+        Assert.Equal("changed", (await FindAsync<ConformanceOrder, Guid>(host, existing).ConfigureAwait(false)).ValueOrThrow().Name);
+        Assert.Equal(3, await CountAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+        Assert.False((await FindAsync<ConformanceItem, int>(host, 29).ConfigureAwait(false)).HasValue);
+    }
+
+    /// <summary>
+    /// 用例 30：只读工作单元里从不开事务
+    /// </summary>
+    /// <remarks>
+    /// 只读操作里读、被拒绝的单条与批量写入、空批量之后 <see cref="IUnitOfWork.HasTransaction"/> 都为假，Provider 的直接写入入口抛出 <see cref="PersistenceErrors.ReadOnly"/> 之后也为假；管道外以 <c>IsReadOnly: true</c> 开启的工作单元同样
+    /// </remarks>
+    [Fact]
+    public async Task HasTransaction_IsAlwaysFalse_InAReadOnlyUnitOfWork()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var existing = Guid.CreateVersion7();
+        (await RunAsync(host, context => Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = existing, Name = "existing" }, context.CancellationToken)).ConfigureAwait(false)).ThrowIfFailure();
+        var ensure = EnsureTransaction;
+        var observed = new List<bool>();
+        var codes = new List<string?>();
+        IUnitOfWork? unitOfWork = null;
+
+        var result = await InvokeScriptAsync(host, ReadScriptOperation.Id, async context =>
+        {
+            unitOfWork = context.Services.GetRequiredService<IUnitOfWork>();
+            var repository = Repository<ConformanceOrder, Guid>(context);
+            var cancellationToken = context.CancellationToken;
+            observed.Add(unitOfWork.HasTransaction);
+            _ = await repository.FindAsync(existing, cancellationToken).ConfigureAwait(false);
+            _ = await repository.CountAsync(EntityQuery.All<ConformanceOrder>(), cancellationToken).ConfigureAwait(false);
+            observed.Add(unitOfWork.HasTransaction);
+            codes.Add((await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, cancellationToken).ConfigureAwait(false)).Error?.Code);
+            observed.Add(unitOfWork.HasTransaction);
+            codes.AddRange((await repository.RemoveRangeAsync([new ConformanceOrder { Id = existing }], cancellationToken).ConfigureAwait(false)).Select(static r => r.Error?.Code));
+            _ = await repository.UpdateRangeAsync([], cancellationToken).ConfigureAwait(false);
+            observed.Add(unitOfWork.HasTransaction);
+            if (ensure is not null)
+            {
+                // 直接写入入口在只读工作单元里抛出，不开事务
+                try
+                {
+                    await ensure(unitOfWork, cancellationToken).ConfigureAwait(false);
+                    codes.Add(null);
+                }
+                catch (FrameworkException exception)
+                {
+                    codes.Add(exception.Code);
+                }
+
+                observed.Add(unitOfWork.HasTransaction);
+            }
+
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.Equal(PersistenceErrors.ReadOnly, result.Error?.Code);
+        Assert.All(codes, static code => Assert.Equal(PersistenceErrors.ReadOnly, code));
+        Assert.Equal(ensure is null ? 2 : 3, codes.Count);
+        Assert.Equal(Enumerable.Repeat(false, ensure is null ? 4 : 5), observed);
+        Assert.NotNull(unitOfWork);
+        Assert.False(unitOfWork.HasTransaction);
+
+        // 管道外的只读工作单元：读与被拒绝的写入之后为假，提交返回拒绝、之后仍为假
+        await using var scope = host.Services.CreateAsyncScope();
+        var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        await manual.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None).ConfigureAwait(false);
+        var orders = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
+        Assert.True((await orders.FindAsync(existing, CancellationToken.None).ConfigureAwait(false)).HasValue);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await orders.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.False(manual.HasTransaction);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await manual.CommitAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.False(manual.HasTransaction);
+        Assert.Equal(1, await CountAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 31：Provider 的直接写入入口开启事务
+    /// </summary>
+    /// <remarks>
+    /// 只对给出 <see cref="EnsureTransaction"/> 的 Provider：调用入口之后 <see cref="IUnitOfWork.HasTransaction"/> 为真，重复调用与随后的仓储写入仍为真，提交之后为假；管道外开始后调用入口为真，提交、回滚之后为假；没有活动工作单元（未开始、已提交）时入口抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>、仍为假
+    /// </remarks>
+    [Fact]
+    public async Task HasTransaction_OpensOnTheDirectWriteEntry()
+    {
+        var ensure = EnsureTransaction;
+        Assert.SkipWhen(ensure is null, "The provider has no direct write entry; override EnsureTransaction to cover it.");
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var id = Guid.CreateVersion7();
+        var observed = new List<bool>();
+        IUnitOfWork? committed = null;
+
+        var result = await RunAsync(host, async context =>
+        {
+            var unitOfWork = committed = context.Services.GetRequiredService<IUnitOfWork>();
+            observed.Add(unitOfWork.HasTransaction);
+            await ensure!(unitOfWork, context.CancellationToken).ConfigureAwait(false);
+            observed.Add(unitOfWork.HasTransaction);
+            // 重复调用复用已开启的事务，之后仓储写入也在同一事务里
+            await ensure(unitOfWork, context.CancellationToken).ConfigureAwait(false);
+            observed.Add(unitOfWork.HasTransaction);
+            (await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = id, Name = "direct" }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            observed.Add(unitOfWork.HasTransaction);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.Equal([false, true, true, true], observed);
+        Assert.NotNull(committed);
+        Assert.False(committed.HasTransaction);
+        Assert.Equal("direct", (await FindAsync<ConformanceOrder, Guid>(host, id).ConfigureAwait(false)).ValueOrThrow().Name);
+
+        // 管道外：未开始时入口抛出；开始后调用入口为真，提交之后为假、入口再抛出；都在作用域释放之前看
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var notStarted = await Assert.ThrowsAsync<FrameworkException>(async () => await ensure!(manual, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+            Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, notStarted.Code);
+            Assert.False(manual.HasTransaction);
+            await manual.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None).ConfigureAwait(false);
+            await ensure!(manual, CancellationToken.None).ConfigureAwait(false);
+            Assert.True(manual.HasTransaction);
+            (await manual.CommitAsync(CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.False(manual.HasTransaction);
+            var committedAlready = await Assert.ThrowsAsync<FrameworkException>(async () => await ensure!(manual, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+            Assert.Equal(PersistenceErrors.NoActiveUnitOfWork, committedAlready.Code);
+            Assert.False(manual.HasTransaction);
+        }
+
+        // 管道外：调用入口之后回滚为假
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await manual.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None).ConfigureAwait(false);
+            await ensure!(manual, CancellationToken.None).ConfigureAwait(false);
+            Assert.True(manual.HasTransaction);
+            await manual.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+            Assert.False(manual.HasTransaction);
+        }
+    }
+
+    /// <summary>
+    /// 用例 32：绑定命名连接的工作单元只报告那个连接上的事务
+    /// </summary>
+    /// <remarks>
+    /// 只对给出 <see cref="NamedConnection"/> 的 Provider：绑定它的工作单元开始与读取之后为假，写入之后为真，提交、回滚之后为假；只读的绑定连接工作单元恒为假。业务调用（不碰命名连接）里另开作用域、绑定连接的工作单元写入并提交，不让业务调用的工作单元变真；业务调用写过之后另开的工作单元开始时仍为假，各报各的
+    /// </remarks>
+    [Fact]
+    public async Task HasTransaction_InAUnitOfWorkBoundToANamedConnection_ReportsOnlyThatConnection()
+    {
+        var connection = NamedConnection;
+        Assert.SkipWhen(connection is null, "The provider does not support named connections; override NamedConnection to cover them.");
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var committedLease = Guid.CreateVersion7();
+        var rolledBackLease = Guid.CreateVersion7();
+
+        // 绑定连接的可写工作单元：开始与读取之后为假，写入之后为真，提交之后为假
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            var leases = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>();
+            Assert.False(unitOfWork.HasTransaction);
+            Assert.False((await leases.FindAsync(committedLease, CancellationToken.None).ConfigureAwait(false)).HasValue);
+            Assert.False(unitOfWork.HasTransaction);
+            (await leases.AddAsync(new ConformanceLease { Id = committedLease, Holder = "first" }, CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.True(unitOfWork.HasTransaction);
+            (await unitOfWork.CommitAsync(CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.False(unitOfWork.HasTransaction);
+        }
+
+        // 回滚之后为假，写入不留下
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>().AddAsync(new ConformanceLease { Id = rolledBackLease, Holder = "second" }, CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
+            Assert.True(unitOfWork.HasTransaction);
+            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+            Assert.False(unitOfWork.HasTransaction);
+        }
+
+        // 只读的绑定连接工作单元：读与被拒绝的写入之后都为假
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true, Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            var leases = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>();
+            Assert.Equal("first", (await leases.FindAsync(committedLease, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Holder);
+            Assert.False((await leases.FindAsync(rolledBackLease, CancellationToken.None).ConfigureAwait(false)).HasValue);
+            Assert.Equal(PersistenceErrors.ReadOnly, (await leases.AddAsync(new ConformanceLease { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+            Assert.False(unitOfWork.HasTransaction);
+            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+            Assert.False(unitOfWork.HasTransaction);
+        }
+
+        // 业务调用里另开作用域写命名连接：两个工作单元各报各的
+        var business = new List<bool>();
+        var bound = new List<bool>();
+        var result = await RunAsync(host, async context =>
+        {
+            var unitOfWork = context.Services.GetRequiredService<IUnitOfWork>();
+            await WriteLeaseAsync(host, connection!, bound, context.CancellationToken).ConfigureAwait(false);
+            business.Add(unitOfWork.HasTransaction);
+            (await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7(), Name = "business" }, context.CancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            business.Add(unitOfWork.HasTransaction);
+            await WriteLeaseAsync(host, connection!, bound, context.CancellationToken).ConfigureAwait(false);
+            business.Add(unitOfWork.HasTransaction);
+            return Result.Success();
+        }).ConfigureAwait(false);
+
+        Assert.True(result.IsSuccess, result.ToString());
+        Assert.Equal([false, true, true], business);
+        Assert.Equal([false, true, false, false, true, false], bound);
+
+        // 在新作用域里开绑定连接的可写工作单元写一条租约并提交，依次记下开始、写入、提交之后的值
+        static async Task WriteLeaseAsync(TestHost host, string connection, List<bool> observed, CancellationToken cancellationToken)
+        {
+            await using var scope = host.Services.CreateAsyncScope();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), cancellationToken).ConfigureAwait(false);
+            observed.Add(unitOfWork.HasTransaction);
+            (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>().AddAsync(new ConformanceLease { Id = Guid.CreateVersion7(), Holder = "bound" }, cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            observed.Add(unitOfWork.HasTransaction);
+            (await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            observed.Add(unitOfWork.HasTransaction);
+        }
     }
 
     /// <summary>

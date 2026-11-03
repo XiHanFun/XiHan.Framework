@@ -6,7 +6,7 @@
 | --- | --- |
 | `IRepository<TEntity, TKey>` | 查找、查询、计数、新增、更新、删除，以及按标识集合查找与批量新增 / 更新 / 删除（`FindManyAsync`、`AddRangeAsync` / `UpdateRangeAsync` / `RemoveRangeAsync`：逐项 `Result` 与入参一一对应、通过校验的项一次写入）；可恢复失败用 `Result` 返回 |
 | `EntityQuery<T>` | 过滤（规约）、排序、分页、是否包含已删除、时间范围提示（`Within`：只影响分表 / 分区 Provider 扫描的表，不过滤行）；`Take` 取 1 到 `EntityQuery.DefaultMaxTake`（1000），不截断：超过上限在构造时抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，调用里由 Transaction 阶段转为同码的校验结果（HTTP 400，消息键 `persistence.query.take_exceeded`，参数 `take`、`max`）；`Skip` 为负、`Take` 小于 1 是编程错误，抛 `ArgumentOutOfRangeException` |
-| `IUnitOfWork` | 事务边界与当前租户；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启、提交或回滚；`DomainEvents`（`DomainEventTracker`）登记本工作单元写过的聚合；只读操作（`OperationContract.IsReadOnly`）开只读工作单元，见下文 |
+| `IUnitOfWork` | 事务边界与当前租户；由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启、提交或回滚；`DomainEvents`（`DomainEventTracker`）登记本工作单元写过的聚合；`HasTransaction` 报告此刻是否已开数据库事务（事务延迟到第一次写入才开），见下文；只读操作（`OperationContract.IsReadOnly`）开只读工作单元，见下文 |
 | `IDomainEventDispatcher` | 领域事件的派发端口：处理器成功后、提交前，中间件把带有未派发事件的聚合交给它（Messaging 子系统实现，发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚；有事件却没有派发器返回 `PERSISTENCE_VALIDATION_003`，不静默丢弃 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | 标识生成端口；Provider 注册 `IIdGenerator<Guid>`（UUID 版本 7，时间有序） |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId`、`IWorkerIdSource`（`FixedWorkerIdSource` / `LeasedWorkerIdSource`） | 雪花 `long` 标识（ADR-0033）：应用显式装配特性后得到 `IIdGenerator<long>`，41 位毫秒 + 10 位机器位 + 12 位序列；机器位显式配置或经 `IDistributedLock` 租约分配；`SnowflakeId.Parse` 还原时间戳、机器位与序列，见下文 |
@@ -19,6 +19,26 @@
 ```csharp
 builder.Services.AddRepository<Order, Guid>();          // 应用登记实体
 builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());   // 或任一 Provider 的特性
+```
+
+## 是否已开数据库事务
+
+数据库事务延迟开启：工作单元开始时不开，第一次写入才开。所以 `State == Active` 说明不了开没开，`IUnitOfWork.HasTransaction`（ADR-0109）报告这一点：
+
+- 可写工作单元里仓储的单条写入或集合非空的批量写入一经调用即为真（不论这次写入的结果），Provider 的直接写入入口 `EnsureTransactionAsync` 同样；查找、查询、计数与空批量不开事务。
+- 提交（成功或返回失败）与回滚之后为假；未开始、已提交、已回滚都为假；只读工作单元恒为假。
+- 多连接时一个值，任一连接开着事务即为真；绑定命名连接的工作单元只报告那个连接，不同服务作用域的工作单元各报各的。
+- 内存实现没有数据库事务，第一次写入调用起同样为真，直到提交或回滚：覆盖层从此可能有未提交、随回滚丢弃的变更。
+- 不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
+
+调用里要立即对外产生、不随回滚撤回的副作用（立即推送、调用外部系统）之前据此判断：
+
+```csharp
+// 本工作单元写过数据时立即推送会描述可能回滚的数据；还没写入的调用（只读操作、先推送后写库）照常立即发出
+if (services.GetService<IUnitOfWork>() is { HasTransaction: true })
+{
+    throw new InvalidOperationException("The push is sent immediately and cannot follow a write in the same call; send it after the commit.");
+}
 ```
 
 ## 只读工作单元与嵌套调用

@@ -11,6 +11,7 @@
 | `State` | 当前状态（`UnitOfWorkState`） |
 | `TenantId` | 当前租户，无租户为 `null`；多租户实体据此写入与过滤 |
 | `IsReadOnly` | 是否只读 |
+| `HasTransaction` | 此刻是否已开数据库事务：第一次写入时开启，提交或回滚后复位，见下文[是否已开数据库事务](#是否已开数据库事务) |
 | `DomainEvents` | 本工作单元写过的聚合（`DomainEventTracker`），按首次写入顺序、同一实例只记一次 |
 | `BeginAsync(options, ct)` | 开始，只能调用一次；`UnitOfWorkOptions(TenantId, IsReadOnly)`，`UnitOfWorkOptions.Default` 为无租户、可写 |
 | `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突、标识重复、容量已满以失败结果返回 |
@@ -33,6 +34,36 @@
 所以操作代码不调用提交，只决定成败：返回 `Result` 失败或抛出异常，本次调用的全部写入都回滚，包括批量方法里已通过校验的项。
 
 数据库事务是延迟开启的：EF Core 与 SqlSugar Provider 在第一次写入时才开事务，只读过数据的调用不开事务，提交时也无事可做。这让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。
+
+### 是否已开数据库事务
+
+写操作的工作单元从调用开始就是 `Active`，但事务要到第一次写入才开，`State` 说明不了这一点。`IUnitOfWork.HasTransaction` 报告本工作单元此刻是否开着数据库事务（ADR-0109）：
+
+| 时机 | `HasTransaction` |
+| --- | --- |
+| 未开始；刚开始 | 假 |
+| 查找、按标识集合查找、查询、计数、空集合的批量方法之后 | 假 |
+| 仓储的单条写入，或集合非空的批量写入之后（不论这次写入成功与否） | 真 |
+| EF Core / SqlSugar 的 `EnsureTransactionAsync` 之后 | 真 |
+| 提交（成功或返回失败）、回滚之后 | 假 |
+| 只读工作单元里任何时候 | 假 |
+
+- 多连接时一个值：SqlSugar 的第一次写入落在哪个连接都会开事务，任一连接开着即为真。
+- 绑定命名连接的工作单元只报告那个连接。不同服务作用域的工作单元各报各的：业务调用里另开作用域写入并提交，不让业务调用的工作单元变真。
+- 内存实现没有数据库事务，第一次写入调用起同样为真，直到提交或回滚：覆盖层里这时有未提交、可能随回滚丢弃的变更，与真实库上的含义相同，测试里就能拦住误用。
+- 不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
+
+调用里要立即对外产生、不随回滚撤回的副作用（立即推送、调用外部系统）之前据此判断。为假时本工作单元还没有可能回滚的写入，可以先推送、最后写库；为真时改用随提交生效的做法（发件箱、提交之后再发）：
+
+```csharp
+// 本工作单元写过数据时立即推送会描述可能回滚的数据；还没写入的调用（只读操作、先推送后写库的回复）照常立即发出
+if (services.GetService<IUnitOfWork>() is { HasTransaction: true })
+{
+    throw new InvalidOperationException("The push is sent immediately and cannot follow a write in the same call; send it after the commit.");
+}
+```
+
+`HasTransaction` 只在 `Active` 时为真，不必再判 `State`。
 
 只读操作的工作单元从一开始就是只读的，连事务都不开；它的写入怎样被拒绝见下文[只读操作与只读工作单元](#只读操作与只读工作单元)。
 
@@ -60,7 +91,7 @@
 | | 内存 | EF Core | SqlSugar |
 | --- | --- | --- | --- |
 | 写入去向 | 本工作单元的覆盖层 | 每次写入立即 `SaveChanges`，在数据库事务内 | 每次写入立即执行，在数据库事务内 |
-| 事务开启 | 不需要 | 第一次写入时 `BeginTransaction` | 第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务 |
+| 事务开启 | 不需要（第一次写入调用起 `HasTransaction` 为真） | 第一次写入时 `BeginTransaction` | 第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务 |
 | 读己之写 | 覆盖层叠在已提交的表上 | 同一事务 | 同一事务 |
 | 提交 | 涉及的表依次加锁，逐表校验首次读到的状态后应用覆盖层 | 保存残余变更后提交事务 | 逐连接顺序提交 |
 | 回滚 | 丢弃覆盖层 | 回滚事务并清空变更跟踪器 | 逐连接回滚 |
@@ -244,4 +275,4 @@ AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行，各自一个�
 - [Messaging.Abstractions 包](../packages/messaging-abstractions)
 - [MultiTenancy.Abstractions 包](../packages/multitenancy-abstractions)
 - 规范：RFC-0005《领域协议与持久化》
-- 决策：ADR-0022、ADR-0025、ADR-0057
+- 决策：ADR-0022、ADR-0025、ADR-0057、ADR-0109

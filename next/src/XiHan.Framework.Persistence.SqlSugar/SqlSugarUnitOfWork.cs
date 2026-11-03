@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 事务型工作单元
 /// </summary>
 /// <remarks>
-/// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）
+/// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务；开没开见 <see cref="HasTransaction"/>），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -21,14 +21,6 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// 实体落点规则
     /// </summary>
     private readonly IEntityConnectionSelector _selector;
-
-    /// <summary>
-    /// 是否已在客户端连接上开启事务
-    /// </summary>
-    /// <remarks>
-    /// 为假表示本工作单元尚未写入
-    /// </remarks>
-    private bool _transactionOpen;
 
     /// <summary>
     /// 写入阶段记下的失败
@@ -73,6 +65,12 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
 
     /// <inheritdoc />
     public bool IsReadOnly { get; private set; }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 第一次 <see cref="EnsureTransactionAsync"/>（仓储的每次写入都先经它）在客户端连接上开启事务时置真，提交或回滚了事务即复位；多连接时是一个值，任一连接开着事务即为真。为假表示本工作单元尚未写入
+    /// </remarks>
+    public bool HasTransaction { get; private set; }
 
     /// <inheritdoc />
     public DomainEventTracker DomainEvents { get; } = new();
@@ -146,7 +144,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         // 只开一次：第一次写入经 ITenant 在已打开的连接上开启事务并置"全连接事务"标记，之后首次触及的连接由 SqlSugar 在取连接时补开事务；
         // 只有一个连接时与 Ado.BeginTran 等价，不另留单连接路径。SqlSugar 的事务 API 不接受取消令牌，进入前先检查取消
         cancellationToken.ThrowIfCancellationRequested();
-        if (!_transactionOpen)
+        if (!HasTransaction)
         {
             // 绑定了命名连接：事务只开在它上面。经 ITenant 开会连默认连接一起开，SQLite 上就要等业务事务释放默认库的写锁——等的可能正是同一请求里的业务事务
             if (_bound is not null)
@@ -158,7 +156,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
                 await Client.AsTenant().BeginTranAsync().ConfigureAwait(false);
             }
 
-            _transactionOpen = true;
+            HasTransaction = true;
         }
     }
 
@@ -178,7 +176,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         }
 
         // 没有事务说明本工作单元只读过数据，无需提交；多连接按顺序逐个提交，后一个失败时前一个已经提交（顺序提交，不是两阶段提交）
-        if (_transactionOpen)
+        if (HasTransaction)
         {
             if (_bound is not null)
             {
@@ -189,7 +187,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
                 await Client.AsTenant().CommitTranAsync().ConfigureAwait(false);
             }
 
-            _transactionOpen = false;
+            HasTransaction = false;
         }
 
         State = UnitOfWorkState.Committed;
@@ -199,7 +197,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     /// <inheritdoc />
     public async Task RollbackAsync(CancellationToken cancellationToken)
     {
-        if (_transactionOpen)
+        if (HasTransaction)
         {
             await RollbackTransactionAsync().ConfigureAwait(false);
         }
@@ -211,7 +209,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         // 作用域结束时若事务仍未提交（例如中间件之外的直接使用），释放即回滚
-        if (_transactionOpen)
+        if (HasTransaction)
         {
             await RollbackTransactionAsync().ConfigureAwait(false);
         }
@@ -234,7 +232,7 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
             await Client.AsTenant().RollbackTranAsync().ConfigureAwait(false);
         }
 
-        _transactionOpen = false;
+        HasTransaction = false;
     }
 
     /// <summary>

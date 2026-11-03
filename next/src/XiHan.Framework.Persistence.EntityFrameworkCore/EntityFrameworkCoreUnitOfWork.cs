@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// 事务型工作单元
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。DbContext 建在租户分片上而那个分片库还没有核对通过时，开始之前先核对 SQLite 的时间列，不符即抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>、工作单元保持未开始（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097）
+/// 首次写入时开启数据库事务（只读调用不开事务；开没开见 <see cref="HasTransaction"/>），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。DbContext 建在租户分片上而那个分片库还没有核对通过时，开始之前先核对 SQLite 的时间列，不符即抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>、工作单元保持未开始（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposable
@@ -116,6 +116,12 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
 
     /// <inheritdoc />
     public bool IsReadOnly { get; private set; }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 第一次 <see cref="EnsureTransactionAsync"/>（仓储的每次写入、提交时保存残余变更都先经它）在 DbContext 上开启事务时为真，提交或回滚了事务即复位
+    /// </remarks>
+    public bool HasTransaction => _transaction is not null;
 
     /// <inheritdoc />
     public DomainEventTracker DomainEvents { get; } = new();
@@ -233,10 +239,12 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
                 await Context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            // 没有事务说明本工作单元只读过数据，无需提交
-            if (_transaction is not null)
+            // 没有事务说明本工作单元只读过数据，无需提交；提交成功即释放并摘下事务，HasTransaction 随之为假
+            if (_transaction is { } transaction)
             {
-                await _transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                _transaction = null;
+                await transaction.DisposeAsync().ConfigureAwait(false);
             }
         }
         catch (DbUpdateConcurrencyException exception)
@@ -252,9 +260,12 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     /// <inheritdoc />
     public async Task RollbackAsync(CancellationToken cancellationToken)
     {
-        if (_transaction is not null)
+        // 回滚成功即释放并摘下事务，HasTransaction 随之为假；回滚抛出时事务留给作用域释放时处理
+        if (_transaction is { } transaction)
         {
-            await _transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            _transaction = null;
+            await transaction.DisposeAsync().ConfigureAwait(false);
         }
 
         // 清空跟踪器：已保存但被回滚的实体不能再以"未修改"状态留在上下文里；还没建出 DbContext 就没有可清的

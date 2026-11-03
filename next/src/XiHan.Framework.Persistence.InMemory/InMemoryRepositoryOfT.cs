@@ -97,7 +97,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Add(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Add(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -106,7 +106,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
-        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
             return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
@@ -128,7 +128,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Update(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Update(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -137,7 +137,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
-        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
             return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
@@ -158,7 +158,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     {
         ArgumentNullException.ThrowIfNull(entity);
         var changes = Active.Changes<TEntity, TKey>();
-        return Task.FromResult(RejectReadOnly() is { } rejected ? rejected : Remove(changes, entity, _timeProvider.GetUtcNow()));
+        return Task.FromResult(PrepareWrite() is { } rejected ? rejected : Remove(changes, entity, _timeProvider.GetUtcNow()));
     }
 
     /// <inheritdoc />
@@ -167,7 +167,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
         ArgumentNullException.ThrowIfNull(entities);
         var changes = Active.Changes<TEntity, TKey>();
         cancellationToken.ThrowIfCancellationRequested();
-        if (entities.Count > 0 && RejectReadOnly() is { } rejected)
+        if (entities.Count > 0 && PrepareWrite() is { } rejected)
         {
             return Task.FromResult<IReadOnlyList<Result>>(Repeat(rejected, entities.Count));
         }
@@ -277,15 +277,17 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 只读工作单元拒绝写入
+    /// 写入前：拒绝只读、记下事务已开启
     /// </summary>
     /// <remarks>
-    /// 只读时返回 <see cref="PersistenceErrors.ReadOnly"/> 并把工作单元记为失败（处理器忽略这次失败而返回成功时，提交返回同一错误）；可写时返回 <see langword="null"/>。在进入覆盖层之前判定，只读工作单元的覆盖层始终为空
+    /// 只读时返回 <see cref="PersistenceErrors.ReadOnly"/> 并把工作单元记为失败（处理器忽略这次失败而返回成功时，提交返回同一错误）；可写时把工作单元记为已开事务（<see cref="IUnitOfWork.HasTransaction"/>）并返回 <see langword="null"/>。在进入覆盖层之前判定，只读工作单元的覆盖层始终为空
     /// </remarks>
-    private Error? RejectReadOnly()
+    private Error? PrepareWrite()
     {
         if (!_unitOfWork.IsReadOnly)
         {
+            // 可写：从这次写入调用起覆盖层可能有未提交的变更，与关系型 Provider 写入前开事务同一时机，不论这次写入的结果
+            _unitOfWork.EnsureTransaction();
             return null;
         }
 

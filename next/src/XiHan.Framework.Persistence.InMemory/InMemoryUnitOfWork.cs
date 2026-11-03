@@ -48,6 +48,12 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     public bool IsReadOnly { get; private set; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 内存实现没有数据库事务：可写工作单元里仓储第一次接受写入调用（单条，或集合非空的批量，不论结果）起为真——覆盖层从此可能有未提交、随回滚丢弃的变更，与关系型 Provider 首次写入时开事务同一时机、同一含义；提交（成功或校验失败）与回滚后复位。只读工作单元的写入在此之前就被拒绝，恒为假
+    /// </remarks>
+    public bool HasTransaction { get; private set; }
+
+    /// <inheritdoc />
     public DomainEventTracker DomainEvents { get; } = new();
 
     /// <inheritdoc />
@@ -86,12 +92,14 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
         if (_failure is { } failure)
         {
             _pending.Clear();
+            HasTransaction = false;
             State = UnitOfWorkState.RolledBack;
             return Task.FromResult<Result>(failure);
         }
 
         var committed = Commit();
         _pending.Clear();
+        HasTransaction = false;
         State = committed.IsSuccess ? UnitOfWorkState.Committed : UnitOfWorkState.RolledBack;
         return Task.FromResult(committed);
     }
@@ -101,9 +109,18 @@ public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     {
         // 回滚只需丢弃覆盖层；表从未被未提交的变更触碰过
         _pending.Clear();
+        HasTransaction = false;
         State = UnitOfWorkState.RolledBack;
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// 仓储接受一次写入调用
+    /// </summary>
+    /// <remarks>
+    /// 仓储在可写工作单元里越过只读判定、进入覆盖层之前调用，对应关系型 Provider 写入前的 <c>EnsureTransactionAsync</c>：此后覆盖层可能有未提交的变更，<see cref="HasTransaction"/> 为真。只在活动状态下由仓储调用
+    /// </remarks>
+    internal void EnsureTransaction() => HasTransaction = true;
 
     /// <summary>
     /// 标为失败
