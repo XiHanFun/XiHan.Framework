@@ -23,7 +23,7 @@ namespace XiHan.Framework.AI.Abstractions.Chat;
 /// 超时与取消按令牌归因（RFC-0022「超时与取消」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class AIChat : IAIChat
+public sealed partial class AIChat : IAIChat
 {
     /// <summary>
     /// Provider 目录
@@ -224,7 +224,10 @@ public sealed class AIChat : IAIChat
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
-                    return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", exception.Message)));
+                    // 这个错误会写进响应，护栏又可以自写，异常消息可能带内部地址：reason 只写类型，完整异常只进日志
+                    LogGuardrailThrew(_logger, guardrail.Name, exception);
+                    var type = exception.GetType();
+                    return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", type.FullName ?? type.Name)));
                 }
 
                 if (!inspected.TryGetValue(out var verdict))
@@ -268,4 +271,10 @@ public sealed class AIChat : IAIChat
     /// 准备好的调用
     /// </summary>
     private sealed record PreparedCall(IChatClient Client, List<ChatMessage> Messages, ChatOptions? Options, string Provider, TimeSpan Timeout);
+
+    /// <summary>
+    /// 护栏抛出异常
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Guardrail '{Guardrail}' threw while inspecting the messages.")]
+    private static partial void LogGuardrailThrew(ILogger logger, string guardrail, Exception exception);
 }

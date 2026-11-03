@@ -116,3 +116,4 @@
 | [0111](0111-向量键由记录ID推出Guid与健康项只写异常类型.md) | 第二十四批：`KnowledgeVectorRecord` 的键改成由记录 ID 确定性推出的 `Guid`（SHA-256 前 16 字节，RFC 9562 版本 8），记录 ID 另存 `RecordId`，对外的 `KnowledgeRecord.Id` 不变，已有集合要重建；`AI.VectorData.Tests` 增加真实 Qdrant 的一致性与摄入检索用例（`XIHAN_TEST_QDRANT`）。健康项 `ai.vectordata.store` 的 `reason` 只写异常类型全名，完整异常进日志（第一次 Warning，持续时 Debug），修订 ADR-0110 |
 | [0112](0112-存储操作的错误只写异常类型.md) | 第二十五批：`VectorDataKnowledgeStore` 的写入、删除、裁剪、搜索里连接器抛出时，`AI_UNAVAILABLE_002` 的 `reason` 只写异常类型全名，完整异常进日志（每次失败一条 Warning，带操作名与集合名）；错误码、消息键与参数名不变。修订 ADR-0111 第二节「影响」的最后一条 |
 | [0113](0113-模型调用的错误只写异常类型.md) | 第二十六批：`IAIChat` 与知识库嵌入调用抛出时，`AI_UNAVAILABLE_001` 的 `reason` 只写异常类型全名，完整异常进日志（每次失败一条 Warning，带 Provider 名）；错误码、消息键与参数名不变。`AIChat`、`KnowledgeIngestor`、`KnowledgeRetriever` 的构造增加 `ILoggerFactory`。修订 ADR-0112 |
+| [0114](0114-护栏抛出时的错误只写异常类型.md) | 第二十七批：护栏抛出时 `AI_UNEXPECTED_001` 的 `reason` 只写异常类型全名，完整异常进日志（每次一条 Error，带护栏名）；错误码、消息键与参数名不变；护栏自己返回的失败仍用它的文案。修订 ADR-0113 |

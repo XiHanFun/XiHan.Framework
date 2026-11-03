@@ -178,7 +178,7 @@ Provider 接住取消、交回截断的应答、条数不全的嵌入或提前�
 
 ## 护栏
 
-护栏实现 `IAIGuardrail`，返回 `GuardrailVerdict.Allow()` 或 `GuardrailVerdict.Block(reasonKey, reasonArguments)`。原因是消息键加参数，`IAIChat` 拦截时返回 `AI_DENIED_001`，错误细节带 `guardrail`（护栏名）与 `reason`（按当前区域渲染的原因）。护栏抛出异常或返回失败时记 `AI_UNEXPECTED_001`。
+护栏实现 `IAIGuardrail`，返回 `GuardrailVerdict.Allow()` 或 `GuardrailVerdict.Block(reasonKey, reasonArguments)`。原因是消息键加参数，`IAIChat` 拦截时返回 `AI_DENIED_001`，错误细节带 `guardrail`（护栏名）与 `reason`（按当前区域渲染的原因）。护栏抛出异常或返回失败时记 `AI_UNEXPECTED_001`：抛出时 `reason` 只写异常类型的全名，完整异常进日志（每次一条 Error，带护栏名，ADR-0114）；返回失败时 `reason` 是那个错误的文案。
 
 ```csharp
 using Microsoft.Extensions.AI;
