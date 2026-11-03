@@ -10,7 +10,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 | 技术 | 要求 | 用途 |
 | --- | --- | --- |
-| .NET SDK | `global.json` 锁定的 10.0.1xx 功能带 | 编译与运行 |
+| .NET SDK | `global.json` 锁定的 10.0.3xx 功能带 | 编译与运行 |
 | C# | Nullable + ImplicitUsings | 框架源码 |
 | Microsoft.Testing.Platform | 由 `global.json` 启用 | 测试运行器 |
 | xUnit v3 | 以 `framework/props/test.props` 为准 | 单元与集成测试 |

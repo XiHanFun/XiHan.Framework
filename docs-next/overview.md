@@ -117,7 +117,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 | 项 | 要求 |
 | --- | --- |
-| SDK | .NET 10 SDK；构建框架源码时使用仓库 `global.json` 锁定的 10.0.1xx 功能带 |
+| SDK | .NET 10 SDK；构建框架源码时使用仓库 `global.json` 锁定的 10.0.3xx 功能带 |
 | 测试运行器 | Microsoft.Testing.Platform（由 `global.json` 启用，`dotnet test` 用 `--solution` 或 `--project`） |
 | 操作系统 | Windows、Linux、macOS；Wasm 插件宿主在 Windows 上要求宿主可执行项目设置 `CETCompat=false` |
 | 外部设施 | 默认实现不需要；Provider 按各自包页的说明 |

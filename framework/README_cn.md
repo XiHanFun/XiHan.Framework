@@ -211,7 +211,7 @@ XiHan.Framework/
 
 ## 本地构建与测试
 
-> 需要 .NET SDK **10.0.1xx** 功能带（`global.json` 以 `rollForward: latestPatch` 锁定）。装的是 10.0.4xx 会直接报 SDK not found、整仓无法构建。
+> 需要 .NET SDK **10.0.3xx** 功能带（`global.json` 以 `rollForward: latestPatch` 锁定）。装的是 10.0.4xx 会直接报 SDK not found、整仓无法构建。
 
 ```bash
 # 还原与构建
